@@ -20,12 +20,12 @@ package org.eclipse.jetty.util.thread.strategy;
 
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A strategy where the thread that produces will always run the resulting task.</p>
@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.thread.Invocable.InvocationType;
  */
 public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
 {
-    private static final Logger LOG = Log.getLogger(ExecuteProduceConsume.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExecuteProduceConsume.class);
 
     private final AutoLock _lock = new AutoLock();
     private final Runnable _runProduce = new RunProduce();

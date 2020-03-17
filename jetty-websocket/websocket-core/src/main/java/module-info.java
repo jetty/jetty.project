@@ -33,6 +33,7 @@ module org.eclipse.jetty.websocket.core
     requires jetty.servlet.api;
     requires transitive org.eclipse.jetty.client;
     requires transitive org.eclipse.jetty.server;
+    requires org.slf4j;
 
     // Only required if using XmlHttpClientProvider.
     requires static org.eclipse.jetty.xml;

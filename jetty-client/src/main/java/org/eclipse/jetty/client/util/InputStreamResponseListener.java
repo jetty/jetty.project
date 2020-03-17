@@ -41,8 +41,8 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of {@link Listener} that produces an {@link InputStream}
@@ -75,7 +75,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class InputStreamResponseListener extends Listener.Adapter
 {
-    private static final Logger LOG = Log.getLogger(InputStreamResponseListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
     private static final DeferredContentProvider.Chunk EOF = new DeferredContentProvider.Chunk(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
     private final Object lock = this;
     private final CountDownLatch responseLatch = new CountDownLatch(1);

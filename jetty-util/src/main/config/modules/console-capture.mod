@@ -7,6 +7,9 @@ including output from Jetty's default StdErrLog logging.
 [tags]
 logging
 
+[depends]
+logging
+
 [xml]
 etc/console-capture.xml
 

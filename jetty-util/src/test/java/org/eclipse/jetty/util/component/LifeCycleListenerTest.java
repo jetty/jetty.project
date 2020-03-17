@@ -20,7 +20,7 @@ package org.eclipse.jetty.util.component;
 
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

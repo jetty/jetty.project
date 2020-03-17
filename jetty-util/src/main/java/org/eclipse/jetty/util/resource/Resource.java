@@ -44,8 +44,8 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -58,7 +58,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public abstract class Resource implements ResourceFactory, Closeable
 {
-    private static final Logger LOG = Log.getLogger(Resource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     public static boolean __defaultUseCaches = true;
     volatile Object _associate;
 
@@ -124,7 +124,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             catch (Exception e)
             {
                 LOG.warn(e.toString());
-                LOG.debug(Log.EXCEPTION, e);
+                LOG.debug("Bad PathResource: " + url, e);
                 return new BadResource(url, e.toString());
             }
         }
@@ -239,7 +239,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             }
             catch (IllegalArgumentException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 // Catches scenario where a bad Windows path like "C:\dev" is
                 // improperly escaped, which various downstream classloaders
                 // tend to have a problem with
@@ -442,7 +442,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         }
         catch (Exception e)
         {
-            LOG.debug(e);
+            LOG.debug("Unable to addPath", e);
             return null;
         }
     }

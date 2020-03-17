@@ -35,8 +35,8 @@ import java.util.List;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.Destroyable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A specialized transformer for {@link AsyncMiddleManServlet} that performs
@@ -58,7 +58,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class AfterContentTransformer implements AsyncMiddleManServlet.ContentTransformer, Destroyable
 {
-    private static final Logger LOG = Log.getLogger(AfterContentTransformer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AfterContentTransformer.class);
 
     private final List<ByteBuffer> sourceBuffers = new ArrayList<>();
     private Path overflowDirectory = Paths.get(System.getProperty("java.io.tmpdir"));
@@ -290,7 +290,7 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
         }
         catch (IOException x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
         }
     }
 

@@ -31,12 +31,12 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpTransportOverFCGI implements HttpTransport
 {
-    private static final Logger LOG = Log.getLogger(HttpTransportOverFCGI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpTransportOverFCGI.class);
     private final ServerGenerator generator;
     private final Flusher flusher;
     private final int request;

@@ -35,9 +35,9 @@ import org.codehaus.plexus.util.SelectorUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SelectiveJarResource
@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.resource.JarResource;
  */
 public class SelectiveJarResource extends JarResource
 {
-    private static final Logger LOG = Log.getLogger(SelectiveJarResource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SelectiveJarResource.class);
     
     /**
      * Default matches every resource.

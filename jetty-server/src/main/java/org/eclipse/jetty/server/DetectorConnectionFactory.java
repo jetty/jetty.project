@@ -28,8 +28,8 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link ConnectionFactory} combining multiple {@link Detecting} instances that will upgrade to
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class DetectorConnectionFactory extends AbstractConnectionFactory implements ConnectionFactory.Detecting
 {
-    private static final Logger LOG = Log.getLogger(DetectorConnectionFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DetectorConnectionFactory.class);
 
     private final List<Detecting> _detectingConnectionFactories;
 

@@ -21,14 +21,14 @@ package org.eclipse.jetty.test.websocket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Basic Echo Client Socket
@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 @WebSocket(maxTextMessageSize = 64 * 1024)
 public class JettySimpleEchoSocket
 {
-    private static final Logger LOG = Log.getLogger(JettySimpleEchoSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JettySimpleEchoSocket.class);
     private final CountDownLatch closeLatch;
     @SuppressWarnings("unused")
     private Session session;
@@ -71,7 +71,7 @@ public class JettySimpleEchoSocket
         }
         catch (Throwable t)
         {
-            LOG.warn(t);
+            LOG.warn("Unable to send string+close", t);
         }
     }
 

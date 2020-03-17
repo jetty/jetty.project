@@ -31,8 +31,6 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -42,6 +40,8 @@ import org.eclipse.jetty.websocket.javax.tests.LocalServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BinaryStreamTest
 {
@@ -128,7 +128,7 @@ public class BinaryStreamTest
     @ServerEndpoint(PATH)
     public static class ServerBinaryStreamer
     {
-        private static final Logger LOG = Log.getLogger(ServerBinaryStreamer.class);
+        private static final Logger LOG = LoggerFactory.getLogger(ServerBinaryStreamer.class);
 
         @OnMessage
         public void echo(Session session, InputStream input) throws IOException

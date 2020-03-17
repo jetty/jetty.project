@@ -40,8 +40,8 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Quality of Service Filter.
@@ -78,7 +78,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Quality of Service Filter")
 public class QoSFilter implements Filter
 {
-    private static final Logger LOG = Log.getLogger(QoSFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QoSFilter.class);
 
     static final int __DEFAULT_MAX_PRIORITY = 10;
     static final int __DEFAULT_PASSES = 10;
@@ -235,7 +235,7 @@ public class QoSFilter implements Filter
                             }
                             catch (IllegalStateException x)
                             {
-                                LOG.warn(x);
+                                LOG.warn("Unable to resume suspended dispatch", x);
                                 continue;
                             }
                         }

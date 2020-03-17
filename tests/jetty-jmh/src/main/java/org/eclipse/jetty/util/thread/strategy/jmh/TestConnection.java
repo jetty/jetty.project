@@ -25,13 +25,16 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.ExecutionStrategy.Producer;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.openjdk.jmh.infra.Blackhole;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestConnection implements Producer
 {
+    private static final Logger LOG = LoggerFactory.getLogger(TestConnection.class);
+
     private final TestServer _server;
     private final String _sessionid;
     private final boolean _sleeping;
@@ -125,7 +128,7 @@ public class TestConnection implements Producer
                         }
                         catch (InterruptedException e)
                         {
-                            Log.getLogger(TestConnection.class).ignore(e);
+                            LOG.trace("IGNORED", e);
                         }
                     }
                     else

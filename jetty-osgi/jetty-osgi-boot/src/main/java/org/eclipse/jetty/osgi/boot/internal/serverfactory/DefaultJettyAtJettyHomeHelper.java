@@ -35,12 +35,12 @@ import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.utils.OSGiClassLoader;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DefaultJettyAtJettyHomeHelper
@@ -54,7 +54,7 @@ import org.osgi.framework.BundleContext;
  */
 public class DefaultJettyAtJettyHomeHelper
 {
-    private static final Logger LOG = Log.getLogger(DefaultJettyAtJettyHomeHelper.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultJettyAtJettyHomeHelper.class);
 
     /**
      * contains a comma separated list of paths to the etc/jetty-*.xml files
@@ -214,7 +214,7 @@ public class DefaultJettyAtJettyHomeHelper
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Failed to start Jetty at Jetty Home", e);
             throw e;
         }
         finally

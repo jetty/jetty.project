@@ -31,8 +31,8 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * PathSpec for URI Template based declarations
@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class UriTemplatePathSpec extends RegexPathSpec
 {
-    private static final Logger LOG = Log.getLogger(UriTemplatePathSpec.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UriTemplatePathSpec.class);
 
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{(.*)\\}");
     /**

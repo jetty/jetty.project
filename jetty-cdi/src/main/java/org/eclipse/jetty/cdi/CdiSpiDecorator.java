@@ -26,8 +26,8 @@ import java.util.Map;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.Decorator;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Decorator that invokes the CDI provider within a webapp to decorate objects created by
@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class CdiSpiDecorator implements Decorator
 {
-    private static final Logger LOG = Log.getLogger(CdiServletContainerInitializer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CdiServletContainerInitializer.class);
     public static final String MODE = "CdiSpiDecorator";
 
     private final ServletContextHandler _context;

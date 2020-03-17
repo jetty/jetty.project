@@ -26,19 +26,19 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebSocketCoreClient extends ContainerLifeCycle
 {
     public static final String WEBSOCKET_CORECLIENT_ATTRIBUTE = WebSocketCoreClient.class.getName();
 
-    private static final Logger LOG = Log.getLogger(WebSocketCoreClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketCoreClient.class);
     private final HttpClient httpClient;
     private WebSocketComponents components;
 

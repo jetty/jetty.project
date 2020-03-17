@@ -41,8 +41,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * CGI Servlet.
@@ -72,7 +72,7 @@ public class CGI extends HttpServlet
 {
     private static final long serialVersionUID = -6182088932884791074L;
 
-    private static final Logger LOG = Log.getLogger(CGI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CGI.class);
 
     private boolean _ok;
     private File _docRoot;
@@ -378,7 +378,7 @@ public class CGI extends HttpServlet
                     }
                     catch (IOException e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Unable to copy error stream", e);
                     }
                 }
             });
@@ -445,17 +445,7 @@ public class CGI extends HttpServlet
         }
         finally
         {
-            if (os != null)
-            {
-                try
-                {
-                    os.close();
-                }
-                catch (Exception e)
-                {
-                    LOG.debug(e);
-                }
-            }
+            IO.close(os);
             p.destroy();
             // LOG.debug("CGI: terminated!");
             async.complete();
@@ -478,7 +468,7 @@ public class CGI extends HttpServlet
                 }
                 catch (IOException e)
                 {
-                    LOG.debug(e);
+                    LOG.debug("Unable to write out to CGI", e);
                 }
             }
         }).start();
@@ -496,13 +486,14 @@ public class CGI extends HttpServlet
             {
                 try
                 {
-                    OutputStream outToCgi = p.getOutputStream();
-                    IO.copy(input, outToCgi, len);
-                    outToCgi.close();
+                    try (OutputStream outToCgi = p.getOutputStream())
+                    {
+                        IO.copy(input, outToCgi, len);
+                    }
                 }
                 catch (IOException e)
                 {
-                    LOG.debug(e);
+                    LOG.debug("Unable to write out to CGI", e);
                 }
             }
         }).start();

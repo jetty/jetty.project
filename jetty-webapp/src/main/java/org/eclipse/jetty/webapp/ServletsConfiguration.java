@@ -19,8 +19,8 @@
 package org.eclipse.jetty.webapp;
 
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Jetty Servlets Configuration</p>
@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ServletsConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(ServletsConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServletsConfiguration.class);
 
     public ServletsConfiguration()
     {
@@ -52,7 +52,7 @@ public class ServletsConfiguration extends AbstractConfiguration
         }
         catch (Throwable e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             return false;
         }
     }

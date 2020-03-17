@@ -36,12 +36,12 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HTTP2Flusher extends IteratingCallback implements Dumpable
 {
-    private static final Logger LOG = Log.getLogger(HTTP2Flusher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP2Flusher.class);
     private static final ByteBuffer[] EMPTY_BYTE_BUFFERS = new ByteBuffer[0];
 
     private final Queue<WindowEntry> windows = new ArrayDeque<>();

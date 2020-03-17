@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
@@ -44,8 +45,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -53,12 +52,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
 public class NcsaRequestLogTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(NcsaRequestLogTest.class);
+
     RequestLog _log;
     Server _server;
     LocalConnector _connector;
@@ -599,7 +602,7 @@ public class NcsaRequestLogTest
                         }
                         catch (IOException | IllegalStateException th)
                         {
-                            Log.getLog().ignore(th);
+                            LOG.trace("IGNORED", th);
                         }
                         finally
                         {

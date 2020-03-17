@@ -27,14 +27,14 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.BundleTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * BundleWebAppProvider
@@ -43,7 +43,7 @@ import org.osgi.util.tracker.BundleTracker;
  */
 public class BundleWebAppProvider extends AbstractWebAppProvider implements BundleProvider
 {
-    private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractWebAppProvider.class);
 
     /**
      * Map of Bundle to App. Used when a Bundle contains a webapp.
@@ -79,7 +79,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to add bundle {}", bundle, e);
             }
             return null;
         }
@@ -93,7 +93,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to remove bundle {}", bundle, e);
             }
         }
     }
@@ -129,7 +129,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to unregister {}", _serviceRegForBundles, e);
             }
         }
 

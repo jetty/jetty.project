@@ -21,8 +21,8 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utf8 Appendable abstract base class
@@ -49,7 +49,7 @@ import org.eclipse.jetty.util.log.Logger;
  **/
 public abstract class Utf8Appendable
 {
-    protected static final Logger LOG = Log.getLogger(Utf8Appendable.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(Utf8Appendable.class);
     // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
     public static final char REPLACEMENT = '\ufffd';
     // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
@@ -328,7 +328,7 @@ public abstract class Utf8Appendable
             }
             Throwable th = new NotUtf8Exception("incomplete UTF8 sequence");
             LOG.warn(th.toString());
-            LOG.debug(th);
+            LOG.debug("Unable to get replacement string", th);
         }
         return _appendable.toString();
     }

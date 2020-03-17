@@ -3,11 +3,15 @@
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <Get name="servletContext">
-    <Call name="log"><Arg>The test-spec webapp is deployed. DO NOT USE IN PRODUCTION!</Arg><Arg></Arg></Call>
+    <Call name="log">
+      <Arg>The test-spec webapp is deployed. DO NOT USE IN PRODUCTION!</Arg>
+      <Arg></Arg>
+    </Call>
   </Get>
-  <!--TODO uncomment once 9.4.19 is released with a fix for #3726
-  <Get class="org.eclipse.jetty.util.log.Log" name="rootLogger">
-    <Call name="info"><Arg>WEB-INF/lib/jetty-util.jar logging used!</Arg></Call>
-  </Get>
-  -->
+  <Call class="org.slf4j.LoggerFactory" name="getLogger">
+    <Arg>org.eclipse.jetty</Arg>
+    <Call name="info">
+      <Arg>WEB-INF/lib/jetty-util.jar logging used!</Arg>
+    </Call>
+  </Call>
 </Configure>

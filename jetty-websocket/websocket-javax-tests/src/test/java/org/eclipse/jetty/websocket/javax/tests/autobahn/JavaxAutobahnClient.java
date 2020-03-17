@@ -25,10 +25,10 @@ import javax.websocket.CloseReason;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.tests.EventSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -134,7 +134,7 @@ public class JavaxAutobahnClient
         }
     }
 
-    private static final Logger LOG = Log.getLogger(JavaxAutobahnClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JavaxAutobahnClient.class);
     private URI baseWebsocketUri;
     private JavaxWebSocketClientContainer clientContainer;
     private String userAgent;

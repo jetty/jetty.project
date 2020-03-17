@@ -40,7 +40,7 @@ public class LDAPLeakPreventer extends AbstractLeakPreventer
         }
         catch (ClassNotFoundException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
     }
 }

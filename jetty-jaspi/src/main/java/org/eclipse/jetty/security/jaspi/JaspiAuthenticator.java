@@ -44,15 +44,15 @@ import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
 public class JaspiAuthenticator extends LoginAuthenticator
 {
-    private static final Logger LOG = Log.getLogger(JaspiAuthenticator.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(JaspiAuthenticator.class.getName());
 
     private final ServerAuthConfig _authConfig;
 

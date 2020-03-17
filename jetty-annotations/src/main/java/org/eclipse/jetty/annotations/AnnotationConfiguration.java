@@ -39,7 +39,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
 
@@ -51,8 +50,6 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
@@ -63,13 +60,15 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebDescriptor;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Configuration for Annotations
  */
 public class AnnotationConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(AnnotationConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AnnotationConfiguration.class);
 
     public static final String SERVLET_CONTAINER_INITIALIZER_EXCLUSION_PATTERN = "org.eclipse.jetty.containerInitializerExclusionPattern";
     public static final String SERVLET_CONTAINER_INITIALIZER_ORDER = "org.eclipse.jetty.containerInitializerOrder";
@@ -337,7 +336,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         //handle introspectable annotations (postconstruct,predestroy, multipart etc etc)
         context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
-        
+
         if (!context.getMetaData().isMetaDataComplete())
         {
             //If web.xml not metadata-complete, if this is a servlet 3 webapp or above
@@ -411,7 +410,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     /**
      * Perform scanning of classes for discoverable
-     *  annotations such as WebServlet/WebFilter/WebListener
+     * annotations such as WebServlet/WebFilter/WebListener
      *
      * @param context the context for the scan
      * @throws Exception if unable to scan
@@ -836,8 +835,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
             catch (Error e)
             {
                 // Probably a SCI discovered on the system classpath that is hidden by the context classloader
-                LOG.info("Error: {} for {}", e.getMessage(), context);
-                LOG.debug(e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Error: {} for {}", e.getMessage(), context, e);
+                else
+                    LOG.info("Error: {} for {}", e.getMessage(), context);
                 continue;
             }
 
@@ -1026,7 +1027,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     /**
      * Scan jars in WEB-INF/lib.
-     * 
+     *
      * Only jars selected by MetaInfConfiguration, and that are not excluded
      * by an ordering will be considered.
      *

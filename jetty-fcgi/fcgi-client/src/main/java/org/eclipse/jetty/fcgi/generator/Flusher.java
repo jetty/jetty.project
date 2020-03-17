@@ -24,12 +24,12 @@ import java.util.Queue;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Flusher
 {
-    private static final Logger LOG = Log.getLogger(Flusher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
 
     private final Queue<Generator.Result> queue = new ArrayDeque<>();
     private final IteratingCallback flushCallback = new FlushCallback();

@@ -30,9 +30,9 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Holds the configuration for an OpenID Connect service.
@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public class OpenIdConfiguration extends ContainerLifeCycle
 {
-    private static final Logger LOG = Log.getLogger(OpenIdConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OpenIdConfiguration.class);
     private static final String CONFIG_PATH = "/.well-known/openid-configuration";
 
     private final HttpClient httpClient;

@@ -21,8 +21,8 @@ package org.eclipse.jetty.fcgi.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.fcgi.FCGI;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A stream content parser parses frame bodies of type STDIN, STDOUT and STDERR.</p>
@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class StreamContentParser extends ContentParser
 {
-    private static final Logger LOG = Log.getLogger(StreamContentParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StreamContentParser.class);
 
     private final FCGI.StreamType streamType;
     private final Parser.Listener listener;

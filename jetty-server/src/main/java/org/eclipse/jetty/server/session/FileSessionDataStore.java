@@ -41,8 +41,8 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * FileSessionDataStore
@@ -52,7 +52,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class FileSessionDataStore extends AbstractSessionDataStore
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(FileSessionDataStore.class);
     protected File _storeDir;
     protected boolean _deleteUnrestorableFiles = false;
     protected Map<String, String> _sessionFileMap = new ConcurrentHashMap<>();
@@ -166,7 +166,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to get expired for {}", filename, e);
             }
         }
 
@@ -220,13 +220,13 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                     }
                     catch (Exception e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Unable to sweep file {}", p, e);
                     }
                 });
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to walk path {}", _storeDir, e);
         }
     }
 
@@ -258,8 +258,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
         }
         catch (NumberFormatException e)
         {
-            LOG.warn("Not valid session filename {}", p.getFileName());
-            LOG.warn(e);
+            LOG.warn("Not valid session filename {}", p.getFileName(), e);
         }
     }
 
@@ -300,8 +299,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
                 }
                 catch (Exception x)
                 {
-                    LOG.warn("Unable to delete unrestorable file {} for session {}", filename, id);
-                    LOG.warn(x);
+                    LOG.warn("Unable to delete unrestorable file {} for session {}", filename, id, x);
                 }
             }
             throw e;

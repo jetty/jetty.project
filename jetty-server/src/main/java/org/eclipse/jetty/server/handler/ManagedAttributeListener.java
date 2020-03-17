@@ -26,15 +26,15 @@ import javax.servlet.ServletContextAttributeListener;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Enable Jetty style JMX MBeans from within a Context
  */
 public class ManagedAttributeListener implements ServletContextListener, ServletContextAttributeListener
 {
-    private static final Logger LOG = Log.getLogger(ManagedAttributeListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ManagedAttributeListener.class);
 
     final Set<String> _managedAttributes = new HashSet<>();
     final ContextHandler _context;

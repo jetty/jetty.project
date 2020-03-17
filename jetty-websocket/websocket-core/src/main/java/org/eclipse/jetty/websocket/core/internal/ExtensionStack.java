@@ -30,8 +30,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -40,6 +38,8 @@ import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Represents the stack of Extensions.
@@ -47,7 +47,7 @@ import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 @ManagedObject("Extension Stack")
 public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(ExtensionStack.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExtensionStack.class);
 
     private final WebSocketComponents components;
     private final Behavior behavior;

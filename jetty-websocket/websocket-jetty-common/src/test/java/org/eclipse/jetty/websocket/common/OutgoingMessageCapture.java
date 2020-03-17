@@ -27,8 +27,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -36,10 +34,12 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.util.messages.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
 import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSession
 {
-    private static final Logger LOG = Log.getLogger(OutgoingMessageCapture.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OutgoingMessageCapture.class);
 
     public BlockingQueue<String> textMessages = new LinkedBlockingDeque<>();
     public BlockingQueue<ByteBuffer> binaryMessages = new LinkedBlockingDeque<>();

@@ -48,10 +48,10 @@ import org.eclipse.jetty.unixsocket.common.UnixSocketEndPoint;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A server-side connector for UNIX sockets.</p>
@@ -61,7 +61,7 @@ public class UnixSocketConnector extends AbstractConnector
 {
     // See SockAddrUnix.ADDR_LENGTH.
     public static final int MAX_UNIX_SOCKET_PATH_LENGTH = 107;
-    private static final Logger LOG = Log.getLogger(UnixSocketConnector.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UnixSocketConnector.class);
 
     private final SelectorManager _manager;
     private String _unixSocket = "/tmp/jetty.sock";
@@ -242,7 +242,7 @@ public class UnixSocketConnector extends AbstractConnector
                 }
                 catch (IOException e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to close serverChannel: {}", serverChannel, e);
                 }
             }
 
@@ -252,7 +252,7 @@ public class UnixSocketConnector extends AbstractConnector
             }
             catch (IOException e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to delete UnixSocket at {}", _unixSocket, e);
             }
         }
     }

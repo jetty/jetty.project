@@ -24,4 +24,5 @@ module org.eclipse.jetty.websocket.jetty.client
     requires transitive org.eclipse.jetty.websocket.jetty.api;
     requires org.eclipse.jetty.websocket.core;
     requires org.eclipse.jetty.websocket.jetty.common;
+    requires org.slf4j;
 }

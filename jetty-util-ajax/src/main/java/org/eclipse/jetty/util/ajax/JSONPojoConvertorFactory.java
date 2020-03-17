@@ -23,9 +23,12 @@ import java.util.Map;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.ajax.JSON.Convertor;
 import org.eclipse.jetty.util.ajax.JSON.Output;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JSONPojoConvertorFactory implements JSON.Convertor
 {
+    private static final Logger LOG = LoggerFactory.getLogger(JSONPojoConvertorFactory.class);
     private final JSON _json;
     private final boolean _fromJson;
 
@@ -79,7 +82,7 @@ public class JSONPojoConvertorFactory implements JSON.Convertor
                 }
                 catch (ClassNotFoundException e)
                 {
-                    JSON.LOG.warn(e);
+                    LOG.warn("Unable to find class: " + clsName, e);
                 }
             }
             if (convertor != null)

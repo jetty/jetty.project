@@ -1,46 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="144"
-   height="144"
-   id="svg2"
-   sodipodi:version="0.32"
-   inkscape:version="0.47 r22583"
-   version="1.0"
-   sodipodi:docname="ijetty_icon (abstract 6).svg"
-   inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="/home/joakim/code/webtide/i-jetty/trunk/i-jetty-ui/resources/ijetty_icon (abstract 6)_stat_mdpi.png"
-   inkscape:export-xdpi="15.62"
-   inkscape:export-ydpi="15.62">
-  <defs
-     id="defs4">
-    <linearGradient
-       id="linearGradient3767">
-      <stop
-         style="stop-color:#ffccc5;stop-opacity:1;"
-         offset="0"
-         id="stop3769" />
-      <stop
-         style="stop-color:#ff6b56;stop-opacity:1;"
-         offset="1"
-         id="stop3771" />
+<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="144" height="144" id="svg2" sodipodi:version="0.32" inkscape:version="0.47 r22583" version="1.0" sodipodi:docname="ijetty_icon (abstract 6).svg" inkscape:output_extension="org.inkscape.output.svg.inkscape" inkscape:export-filename="/home/joakim/code/webtide/i-jetty/trunk/i-jetty-ui/resources/ijetty_icon (abstract 6)_stat_mdpi.png" inkscape:export-xdpi="15.62" inkscape:export-ydpi="15.62">
+  <defs id="defs4">
+    <linearGradient id="linearGradient3767">
+      <stop style="stop-color:#ffccc5;stop-opacity:1;" offset="0" id="stop3769" />
+      <stop style="stop-color:#ff6b56;stop-opacity:1;" offset="1" id="stop3771" />
     </linearGradient>
-    <linearGradient
-       inkscape:collect="always"
-       id="linearGradient3699">
-      <stop
-         style="stop-color:#000000;stop-opacity:1;"
-         offset="0"
-         id="stop3701" />
+    <linearGradient inkscape:collect="always" id="linearGradient3699">
+      <stop style="stop-color:#000000;stop-opacity:1;" offset="0" id="stop3701" />
       <stop
          style="stop-color:#000000;stop-opacity:0;"
          offset="1"

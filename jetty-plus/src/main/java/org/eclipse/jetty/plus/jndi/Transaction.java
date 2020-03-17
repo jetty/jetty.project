@@ -26,8 +26,8 @@ import javax.naming.NamingException;
 import javax.transaction.UserTransaction;
 
 import org.eclipse.jetty.jndi.NamingUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Transaction
@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Transaction extends NamingEntry
 {
-    private static final Logger LOG = Log.getLogger(Transaction.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Transaction.class);
     public static final String USER_TRANSACTION = "UserTransaction";
 
     public static void bindToENC()
@@ -109,7 +109,7 @@ public class Transaction extends NamingEntry
         }
         catch (NamingException e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to unbind java:comp/{}", getJndiName(), e);
         }
     }
 }

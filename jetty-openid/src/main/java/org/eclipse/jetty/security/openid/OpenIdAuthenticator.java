@@ -45,9 +45,9 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Implements authentication using OpenId Connect on top of OAuth 2.0.
@@ -64,7 +64,7 @@ import org.eclipse.jetty.util.security.Constraint;
  */
 public class OpenIdAuthenticator extends LoginAuthenticator
 {
-    private static final Logger LOG = Log.getLogger(OpenIdAuthenticator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OpenIdAuthenticator.class);
 
     public static final String CLAIMS = "org.eclipse.jetty.security.openid.claims";
     public static final String RESPONSE = "org.eclipse.jetty.security.openid.response";

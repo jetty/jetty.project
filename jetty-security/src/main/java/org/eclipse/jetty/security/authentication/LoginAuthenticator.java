@@ -30,12 +30,12 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.session.Session;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class LoginAuthenticator implements Authenticator
 {
-    private static final Logger LOG = Log.getLogger(LoginAuthenticator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LoginAuthenticator.class);
 
     protected LoginService _loginService;
     protected IdentityService _identityService;

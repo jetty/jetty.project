@@ -36,9 +36,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -52,7 +52,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class DefaultHandler extends AbstractHandler
 {
-    private static final Logger LOG = Log.getLogger(DefaultHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultHandler.class);
 
     final long _faviconModified = (System.currentTimeMillis() / 1000) * 1000L;
     final byte[] _favicon;
@@ -61,10 +61,11 @@ public class DefaultHandler extends AbstractHandler
 
     public DefaultHandler()
     {
+        String faviconRef = "/org/eclipse/jetty/favicon.ico";
         byte[] favbytes = null;
         try
         {
-            URL fav = getClass().getResource("/org/eclipse/jetty/favicon.ico");
+            URL fav = getClass().getResource(faviconRef);
             if (fav != null)
             {
                 Resource r = Resource.newResource(fav);
@@ -73,7 +74,7 @@ public class DefaultHandler extends AbstractHandler
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to find default favicon: {}", faviconRef, e);
         }
         finally
         {

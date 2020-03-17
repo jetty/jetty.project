@@ -24,8 +24,6 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -33,6 +31,8 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -50,7 +50,7 @@ public class Parser
         FRAGMENT
     }
 
-    private static final Logger LOG = Log.getLogger(Parser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
     private final ByteBufferPool bufferPool;
     private final Configuration configuration;
 

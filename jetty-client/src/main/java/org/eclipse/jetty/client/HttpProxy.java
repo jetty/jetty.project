@@ -38,13 +38,13 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpProxy extends ProxyConfiguration.Proxy
 {
-    private static final Logger LOG = Log.getLogger(HttpProxy.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpProxy.class);
 
     public HttpProxy(String host, int port)
     {

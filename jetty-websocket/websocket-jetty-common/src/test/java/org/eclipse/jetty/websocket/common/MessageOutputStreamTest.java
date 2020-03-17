@@ -23,12 +23,12 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.util.messages.MessageOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
@@ -36,7 +36,7 @@ import static org.hamcrest.Matchers.is;
 
 public class MessageOutputStreamTest
 {
-    private static final Logger LOG = Log.getLogger(MessageOutputStreamTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessageOutputStreamTest.class);
     private static final int OUTPUT_BUFFER_SIZE = 4096;
 
     public TestableLeakTrackingBufferPool bufferPool = new TestableLeakTrackingBufferPool("Test");

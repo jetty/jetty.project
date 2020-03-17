@@ -30,12 +30,12 @@ import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.utils.OSGiClassLoader;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractContextProvider
@@ -45,7 +45,7 @@ import org.osgi.framework.Bundle;
  */
 public abstract class AbstractContextProvider extends AbstractLifeCycle implements AppProvider
 {
-    private static final Logger LOG = Log.getLogger(AbstractContextProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractContextProvider.class);
 
     private DeploymentManager _deploymentManager;
 

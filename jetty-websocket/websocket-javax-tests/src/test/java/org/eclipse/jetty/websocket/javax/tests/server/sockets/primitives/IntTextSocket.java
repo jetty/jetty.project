@@ -26,13 +26,13 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.toolchain.test.StackUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServerEndpoint("/echo/primitives/integer")
 public class IntTextSocket
 {
-    private static final Logger LOG = Log.getLogger(IntTextSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IntTextSocket.class);
 
     private Session session;
 

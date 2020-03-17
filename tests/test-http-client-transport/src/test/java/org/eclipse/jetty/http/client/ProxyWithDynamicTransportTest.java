@@ -78,8 +78,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
@@ -88,6 +86,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -95,7 +95,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProxyWithDynamicTransportTest
 {
-    private static final Logger LOG = Log.getLogger(ProxyWithDynamicTransportTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProxyWithDynamicTransportTest.class);
 
     private Server server;
     private ServerConnector serverConnector;

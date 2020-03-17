@@ -24,6 +24,7 @@ import java.lang.invoke.MethodType;
 import java.net.InetSocketAddress;
 import javax.servlet.ServletRequest;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -376,18 +377,18 @@ public class ForwardedRequestCustomizer implements Customizer
 
         // Do a single pass through the header fields as it is a more efficient single iteration.
         Forwarded forwarded = new Forwarded(request, config);
-        try
+        for (HttpField field : httpFields)
         {
-            for (HttpField field : httpFields)
+            try
             {
                 MethodHandle handle = _handles.get(field.getName());
                 if (handle != null)
                     handle.invoke(forwarded, field);
             }
-        }
-        catch (Throwable e)
-        {
-            throw new RuntimeException(e);
+            catch (Throwable t)
+            {
+                onError(field, t);
+            }
         }
 
         if (forwarded._proto != null)
@@ -418,6 +419,11 @@ public class ForwardedRequestCustomizer implements Customizer
             int port = forwarded._for.getPort() > 0 ? forwarded._for.getPort() : request.getRemotePort();
             request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for.getHost(), port));
         }
+    }
+
+    protected void onError(HttpField field, Throwable t)
+    {
+        throw new BadMessageException("Bad header value for " + field.getName(), t);
     }
 
     protected String getLeftMost(String headerValue)
@@ -621,35 +627,37 @@ public class ForwardedRequestCustomizer implements Customizer
         @SuppressWarnings("unused")
         public void handleFor(HttpField field)
         {
+            String authority = getLeftMost(field.getValue());
             if (!getForwardedPortAsAuthority() && !StringUtil.isEmpty(getForwardedPortHeader()))
             {
                 if (_for == null)
-                    _for = new PossiblyPartialHostPort(getLeftMost(field.getValue()));
+                    _for = new PossiblyPartialHostPort(authority);
                 else if (_for instanceof PortSetHostPort)
-                    _for = new HostPort(HostPort.normalizeHost(getLeftMost(field.getValue())), _for.getPort());
+                    _for = new HostPort(HostPort.normalizeHost(authority), _for.getPort());
             }
             else if (_for == null)
             {
-                _for = new HostPort(getLeftMost(field.getValue()));
+                _for = new HostPort(authority);
             }
         }
 
         @SuppressWarnings("unused")
         public void handlePort(HttpField field)
         {
+            int port = HostPort.parsePort(getLeftMost(field.getValue()));
             if (!getForwardedPortAsAuthority())
             {
                 if (_for == null)
-                    _for = new PortSetHostPort(_request.getRemoteHost(), Integer.parseInt(getLeftMost(field.getValue())));
+                    _for = new PortSetHostPort(_request.getRemoteHost(), port);
                 else if (_for instanceof PossiblyPartialHostPort && _for.getPort() <= 0)
-                    _for = new HostPort(HostPort.normalizeHost(_for.getHost()), Integer.parseInt(getLeftMost(field.getValue())));
+                    _for = new HostPort(HostPort.normalizeHost(_for.getHost()), port);
             }
             else
             {
                 if (_host == null)
-                    _host = new PortSetHostPort(_request.getServerName(), Integer.parseInt(getLeftMost(field.getValue())));
+                    _host = new PortSetHostPort(_request.getServerName(), port);
                 else if (_host instanceof PossiblyPartialHostPort && _host.getPort() <= 0)
-                    _host = new HostPort(HostPort.normalizeHost(_host.getHost()), Integer.parseInt(getLeftMost(field.getValue())));
+                    _host = new HostPort(HostPort.normalizeHost(_host.getHost()), port);
             }
         }
 

@@ -42,11 +42,11 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -63,6 +63,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class StopTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(StopTest.class);
+
     /**
      * Test completed writes during shutdown do not close output
      *
@@ -248,7 +250,7 @@ public class StopTest
     @Test
     public void testSlowCloseNotGraceful() throws Exception
     {
-        Log.getLogger(QueuedThreadPool.class).info("Expect some threads can't be stopped");
+        LOG.info("Expect some threads can't be stopped");
         testSlowClose(0, 5000, lessThan(750L));
     }
 
@@ -260,7 +262,7 @@ public class StopTest
     @Test
     public void testSlowCloseTinyGraceful() throws Exception
     {
-        Log.getLogger(QueuedThreadPool.class).info("Expect some threads can't be stopped");
+        LOG.info("Expect some threads can't be stopped");
         testSlowClose(1, 5000, lessThan(1500L));
     }
 

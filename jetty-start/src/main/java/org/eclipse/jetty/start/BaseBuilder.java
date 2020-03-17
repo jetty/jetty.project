@@ -136,7 +136,7 @@ public class BaseBuilder
         }
 
         if (StartLog.isDebugEnabled())
-            StartLog.debug("added=%s", newlyAdded);
+            StartLog.debug("Newly Added %s", newlyAdded);
 
         // Check the licenses
         if (startArgs.isLicenseCheckRequired())

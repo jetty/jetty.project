@@ -680,7 +680,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         for (Object obj : pluginArtifacts)
         {
             Artifact artifact = (Artifact)obj;
-            if ("jar".equals(artifact.getType()) && !artifact.getGroupId().contains("slf4j"))
+            if ("jar".equals(artifact.getType()))
             {
                 if (classPath.length() > 0)
                     classPath.append(File.pathSeparator);
@@ -689,7 +689,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             else
             {
                 if (artifact.getArtifactId().equals(plugin.getArtifactId())) //get the jetty-maven-plugin jar
-                 classPath.append(artifact.getFile().getAbsolutePath());                
+                    classPath.append(artifact.getFile().getAbsolutePath());
             }
         }
         

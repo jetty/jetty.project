@@ -31,8 +31,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,6 +39,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.condition.OS.MAC;
 @DisabledOnOs(MAC) // TODO: needs investigation
 public class StressTest
 {
-    private static final Logger LOG = Log.getLogger(StressTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StressTest.class);
 
     private static QueuedThreadPool _threads;
     private static Server _server;

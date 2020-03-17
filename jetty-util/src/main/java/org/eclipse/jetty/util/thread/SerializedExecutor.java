@@ -22,7 +22,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import org.eclipse.jetty.util.log.Log;
+import org.slf4j.LoggerFactory;
 
 /**
  * An executor than ensurers serial execution of submitted tasks.
@@ -55,7 +55,7 @@ public class SerializedExecutor implements Executor
     {
         if (task instanceof ErrorHandlingTask)
             ((ErrorHandlingTask)task).accept(t);
-        Log.getLogger(task.getClass()).warn(t);
+        LoggerFactory.getLogger(task.getClass()).error("Error", t);
     }
 
     private void run(Link link)

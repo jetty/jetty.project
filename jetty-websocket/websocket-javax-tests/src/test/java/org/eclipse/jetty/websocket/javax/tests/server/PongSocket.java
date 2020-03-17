@@ -27,13 +27,13 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServerEndpoint(value = "/pong-socket", configurator = PongContextListener.Config.class)
 public class PongSocket
 {
-    private static final Logger LOG = Log.getLogger(PongSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PongSocket.class);
     private String path = "?";
     private Session session;
 

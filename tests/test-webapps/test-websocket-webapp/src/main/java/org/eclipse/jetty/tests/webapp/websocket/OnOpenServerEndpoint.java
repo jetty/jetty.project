@@ -19,20 +19,19 @@
 package org.eclipse.jetty.tests.webapp.websocket;
 
 import java.io.IOException;
-
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServerEndpoint("/onopen/{arg}")
 public class OnOpenServerEndpoint
 {
-    private static final Logger LOGGER = Log.getLogger(OnOpenServerEndpoint.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OnOpenServerEndpoint.class);
     private static String open = "";
 
     @OnMessage

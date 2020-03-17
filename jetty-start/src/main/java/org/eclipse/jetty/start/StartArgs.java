@@ -617,7 +617,7 @@ public class StartArgs
             }
         }
         jmodAdds.add("ALL-MODULE-PATH");
-        StartLog.debug("Expanded JPMS directives:%nadd-modules: %s%npatch-modules: %s%nadd-opens: %s%nadd-exports: %s%nadd-reads: %s",
+        StartLog.debug("Expanded JPMS directives:%n  add-modules: %s%n  patch-modules: %s%n  add-opens: %s%n  add-exports: %s%n  add-reads: %s",
             jmodAdds, jmodPatch, jmodOpens, jmodExports, jmodReads);
     }
 

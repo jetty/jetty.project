@@ -32,11 +32,11 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A monitor for low resources, low resources can be detected by:
@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 @ManagedObject("Monitor for low resource conditions and activate a low resource mode if detected")
 public class LowResourceMonitor extends ContainerLifeCycle
 {
-    private static final Logger LOG = Log.getLogger(LowResourceMonitor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LowResourceMonitor.class);
 
     protected final Server _server;
     private Scheduler _scheduler;

@@ -37,14 +37,14 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject
 public class DuplexConnectionPool extends AbstractConnectionPool implements Sweeper.Sweepable
 {
-    private static final Logger LOG = Log.getLogger(DuplexConnectionPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DuplexConnectionPool.class);
 
     private final ReentrantLock lock = new ReentrantLock();
     private final Deque<Connection> idleConnections;

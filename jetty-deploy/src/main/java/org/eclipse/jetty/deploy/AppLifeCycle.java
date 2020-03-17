@@ -27,8 +27,8 @@ import java.util.Set;
 
 import org.eclipse.jetty.deploy.graph.Graph;
 import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The lifecycle of an App in the {@link DeploymentManager}.
@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class AppLifeCycle extends Graph
 {
-    private static final Logger LOG = Log.getLogger(AppLifeCycle.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AppLifeCycle.class);
 
     private static final String ALL_NODES = "*";
 

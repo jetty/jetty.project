@@ -32,9 +32,9 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION;
 import static javax.servlet.RequestDispatcher.ERROR_EXCEPTION_TYPE;
@@ -48,7 +48,7 @@ import static javax.servlet.RequestDispatcher.ERROR_STATUS_CODE;
  */
 public class HttpChannelState
 {
-    private static final Logger LOG = Log.getLogger(HttpChannelState.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannelState.class);
 
     private static final long DEFAULT_TIMEOUT = Long.getLong("org.eclipse.jetty.server.HttpChannelState.DEFAULT_TIMEOUT", 30000L);
 
@@ -471,7 +471,7 @@ public class HttpChannelState
                     case IDLE:
                     case REGISTERED:
                         break;
-                        
+
                     default:
                         throw new IllegalStateException(getStatusStringLocked());
                 }
@@ -555,7 +555,7 @@ public class HttpChannelState
                         catch (Throwable e)
                         {
                             // TODO Async Dispatch Error
-                            LOG.warn(e);
+                            LOG.warn("Async dispatch error", e);
                         }
                     }
                 }
@@ -664,8 +664,10 @@ public class HttpChannelState
                         }
                         catch (Throwable x)
                         {
-                            LOG.warn(x + " while invoking onTimeout listener " + listener);
-                            LOG.debug(x);
+                            if (LOG.isDebugEnabled())
+                                LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener, x);
+                            else
+                                LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener);
                         }
                     }
                 }
@@ -739,7 +741,7 @@ public class HttpChannelState
                 if (!(failure instanceof QuietException))
                     LOG.warn(failure.toString());
                 if (LOG.isDebugEnabled())
-                    LOG.debug(failure);
+                    LOG.debug("Async error", failure);
             }
         }
 
@@ -809,8 +811,10 @@ public class HttpChannelState
                 }
                 catch (Throwable x)
                 {
-                    LOG.warn(x + " while invoking onError listener " + listener);
-                    LOG.debug(x);
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("{} while invoking onError listener {}", x.toString(), listener, x);
+                    else
+                        LOG.warn("{} while invoking onError listener {}", x.toString(), listener);
                 }
             }
         });
@@ -989,10 +993,12 @@ public class HttpChannelState
                         {
                             listener.onComplete(event);
                         }
-                        catch (Throwable e)
+                        catch (Throwable x)
                         {
-                            LOG.warn(e + " while invoking onComplete listener " + listener);
-                            LOG.debug(e);
+                            if (LOG.isDebugEnabled())
+                                LOG.warn("{} while invoking onComplete listener {}", x.toString(), listener, x);
+                            else
+                                LOG.warn("{} while invoking onComplete listener {}", x.toString(), listener);
                         }
                     }
                 });

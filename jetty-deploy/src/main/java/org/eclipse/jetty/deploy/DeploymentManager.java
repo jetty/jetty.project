@@ -46,10 +46,10 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The Deployment Manager.
@@ -68,7 +68,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 @ManagedObject("Deployment Manager")
 public class DeploymentManager extends ContainerLifeCycle
 {
-    private static final Logger LOG = Log.getLogger(DeploymentManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DeploymentManager.class);
     private MultiException onStartupErrors;
 
     /**
@@ -534,7 +534,7 @@ public class DeploymentManager extends ContainerLifeCycle
             catch (Throwable ignore)
             {
                 // The runBindings failed for 'failed' node
-                LOG.ignore(ignore);
+                LOG.trace("IGNORED", ignore);
             }
 
             if (isStarting())

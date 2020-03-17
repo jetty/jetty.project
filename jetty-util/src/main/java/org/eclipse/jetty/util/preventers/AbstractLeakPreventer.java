@@ -19,8 +19,8 @@
 package org.eclipse.jetty.util.preventers;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractLeakPreventer
@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class AbstractLeakPreventer extends AbstractLifeCycle
 {
-    protected static final Logger LOG = Log.getLogger(AbstractLeakPreventer.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(AbstractLeakPreventer.class);
 
     public abstract void prevent(ClassLoader loader);
 

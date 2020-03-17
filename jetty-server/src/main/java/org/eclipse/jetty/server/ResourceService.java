@@ -54,9 +54,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
@@ -67,7 +67,7 @@ import static org.eclipse.jetty.http.HttpHeaderValue.IDENTITY;
  */
 public class ResourceService
 {
-    private static final Logger LOG = Log.getLogger(ResourceService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResourceService.class);
 
     private static final PreEncodedHttpField ACCEPT_RANGES = new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes");
 
@@ -297,7 +297,7 @@ public class ResourceService
         }
         catch (IllegalArgumentException e)
         {
-            LOG.warn(Log.EXCEPTION, e);
+            LOG.warn("Failed to serve resource: {}", pathInContext, e);
             if (!response.isCommitted())
                 response.sendError(500, e.getMessage());
         }
@@ -705,10 +705,11 @@ public class ResourceService
                         @Override
                         public void failed(Throwable x)
                         {
+                            String msg = "Failed to send content";
                             if (x instanceof IOException)
-                                LOG.debug(x);
+                                LOG.debug(msg, x);
                             else
-                                LOG.warn(x);
+                                LOG.warn(msg, x);
                             context.complete();
                             content.release();
                         }

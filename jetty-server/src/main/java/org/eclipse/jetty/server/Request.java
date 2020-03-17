@@ -95,8 +95,8 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Jetty Request.
@@ -142,7 +142,7 @@ public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
 
-    private static final Logger LOG = Log.getLogger(Request.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int INPUT_NONE = 0;
     private static final int INPUT_STREAM = 1;
@@ -189,7 +189,7 @@ public class Request implements HttpServletRequest
 
         return null;
     }
-    
+
     public static HttpServletMapping getServletMapping(PathSpec pathSpec, String servletPath, String servletName)
     {
         final MappingMatch match;
@@ -230,7 +230,7 @@ public class Request implements HttpServletRequest
             match = null;
             mapping = servletPath;
         }
-        
+
         return new HttpServletMapping()
         {
             @Override
@@ -262,10 +262,10 @@ public class Request implements HttpServletRequest
             @Override
             public String toString()
             {
-                return "HttpServletMapping{matchValue=" + getMatchValue() + 
-                    ", pattern=" + getPattern() + ", servletName=" + getServletName() + 
+                return "HttpServletMapping{matchValue=" + getMatchValue() +
+                    ", pattern=" + getPattern() + ", servletName=" + getServletName() +
                     ", mappingMatch=" + getMappingMatch() + "}";
-            }    
+            }
         };
     }
 
@@ -552,9 +552,9 @@ public class Request implements HttpServletRequest
                 catch (UnsupportedEncodingException e)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.warn(e);
+                        LOG.warn("Unable to decode query", e);
                     else
-                        LOG.warn(e.toString());
+                        LOG.warn("Unable to decode query - {}", e.toString());
                 }
             }
         }
@@ -595,8 +595,9 @@ public class Request implements HttpServletRequest
                     }
                     catch (IOException e)
                     {
-                        LOG.debug(e);
-                        throw new RuntimeIOException(e);
+                        String msg = "Unable to extract content parameters";
+                        LOG.debug(msg, e);
+                        throw new RuntimeIOException(msg, e);
                     }
                 }
             }
@@ -634,8 +635,9 @@ public class Request implements HttpServletRequest
         }
         catch (IOException e)
         {
-            LOG.debug(e);
-            throw new RuntimeIOException(e);
+            String msg = "Unable to extract form parameters";
+            LOG.debug(msg, e);
+            throw new RuntimeIOException(msg, e);
         }
     }
 
@@ -1023,7 +1025,7 @@ public class Request implements HttpServletRequest
             }
             catch (java.net.UnknownHostException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
         }
 
@@ -1055,7 +1057,7 @@ public class Request implements HttpServletRequest
         }
         catch (java.net.UnknownHostException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         return null;
     }
@@ -1374,7 +1376,7 @@ public class Request implements HttpServletRequest
         }
         catch (java.net.UnknownHostException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         return null;
     }
@@ -1790,7 +1792,7 @@ public class Request implements HttpServletRequest
             }
             catch (Exception e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 _reader = null;
             }
         }

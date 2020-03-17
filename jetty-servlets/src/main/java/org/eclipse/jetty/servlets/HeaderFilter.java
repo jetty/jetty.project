@@ -30,8 +30,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Header Filter
@@ -57,7 +57,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class HeaderFilter extends IncludeExcludeBasedFilter
 {
     private List<ConfiguredHeader> _configuredHeaders = new ArrayList<>();
-    private static final Logger LOG = Log.getLogger(HeaderFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HeaderFilter.class);
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException

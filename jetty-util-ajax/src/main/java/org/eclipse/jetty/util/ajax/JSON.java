@@ -32,8 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>JSON parser and generator.</p>
@@ -82,7 +82,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JSON
 {
-    static final Logger LOG = Log.getLogger(JSON.class);
+    static final Logger LOG = LoggerFactory.getLogger(JSON.class);
 
     private final Map<String, Convertor> _convertors = new ConcurrentHashMap<>();
     private int _stringBufferSize = 1024;

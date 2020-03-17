@@ -110,7 +110,7 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
     {
         if (isOpen())
             return super.handleAcceptFailure(ex);
-        LOG.ignore(ex);
+        LOG.trace("IGNORED", ex);
         return false;
     }
 

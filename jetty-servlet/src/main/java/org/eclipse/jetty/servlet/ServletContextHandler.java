@@ -72,8 +72,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Servlet Context.
@@ -91,7 +91,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Servlet Context Handler")
 public class ServletContextHandler extends ContextHandler
 {
-    private static final Logger LOG = Log.getLogger(ServletContextHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
 
     public static final int SESSIONS = 1;
     public static final int SECURITY = 2;
@@ -1260,7 +1260,7 @@ public class ServletContextHandler extends ContextHandler
         {
             return _objFactory.decorate(super.createInstance(clazz));
         }
-        
+
         public <T> T createInstance(BaseHolder<T> holder) throws ServletException
         {
             try

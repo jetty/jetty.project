@@ -34,9 +34,9 @@ import javax.servlet.http.HttpSessionContext;
 import javax.servlet.http.HttpSessionEvent;
 
 import org.eclipse.jetty.io.CyclicTimeout;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Session
@@ -55,7 +55,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
  */
 public class Session implements SessionHandler.SessionIf
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(Session.class);
 
     /**
      *
@@ -884,7 +884,7 @@ public class Session implements SessionHandler.SessionIf
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to invalidate Session {}", this, e);
         }
     }
 

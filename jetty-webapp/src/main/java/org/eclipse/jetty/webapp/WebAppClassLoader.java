@@ -43,10 +43,10 @@ import org.eclipse.jetty.util.ClassVisibilityChecker;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ClassLoader for HttpContext.
@@ -73,7 +73,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         registerAsParallelCapable();
     }
 
-    private static final Logger LOG = Log.getLogger(WebAppClassLoader.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebAppClassLoader.class);
     private static final ThreadLocal<Boolean> __loadServerClasses = new ThreadLocal<>();
 
     private final Context _context;
@@ -342,7 +342,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 }
                 catch (Exception ex)
                 {
-                    LOG.warn(Log.EXCEPTION, ex);
+                    LOG.warn("Unable to load WEB-INF/lib JAR {}", files[f], ex);
                 }
             }
         }

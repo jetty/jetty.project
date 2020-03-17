@@ -25,8 +25,8 @@ import javax.servlet.http.Cookie;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.CookieCutter;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Cookie parser
@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Cookies extends CookieCutter
 {
-    protected static final Logger LOG = Log.getLogger(Cookies.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(Cookies.class);
     protected final List<String> _rawFields = new ArrayList<>();
     protected final List<Cookie> _cookieList = new ArrayList<>();
     private int _addedFields;
@@ -137,7 +137,8 @@ public class Cookies extends CookieCutter
         }
         catch (Exception e)
         {
-            LOG.debug(e);
+            LOG.debug("Unable to add Cookie name={}, value={}, domain={}, path={}, version={}, comment={}",
+                name, value, domain, path, version, comment, e);
         }
     }
 }

@@ -23,12 +23,12 @@ import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestAsyncFrameHandler implements FrameHandler
 {
-    protected static final Logger LOG = Log.getLogger(TestAsyncFrameHandler.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(TestAsyncFrameHandler.class);
     protected final String name;
 
     public CoreSession coreSession;

@@ -28,12 +28,12 @@ import org.eclipse.jetty.io.ssl.ALPNProcessor;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
 import org.eclipse.jetty.util.JavaVersion;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JDK9ServerALPNProcessor implements ALPNProcessor.Server, SslHandshakeListener
 {
-    private static final Logger LOG = Log.getLogger(JDK9ServerALPNProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JDK9ServerALPNProcessor.class);
 
     @Override
     public void init()

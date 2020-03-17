@@ -29,8 +29,8 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Filter that merely manipulates the AsyncContext.
@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class AsyncManipFilter implements Filter, AsyncListener
 {
-    private static final Logger LOG = Log.getLogger(AsyncManipFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncManipFilter.class);
     private static final String MANIP_KEY = AsyncManipFilter.class.getName();
 
     @Override

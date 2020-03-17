@@ -48,8 +48,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -62,6 +60,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -75,7 +75,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @SuppressWarnings("Duplicates")
 public class SocketChannelEndPointTest
 {
-    private static final Logger LOG = Log.getLogger(SocketChannelEndPoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SocketChannelEndPoint.class);
 
     public interface Scenario
     {
@@ -673,7 +673,7 @@ public class SocketChannelEndPointTest
     @SuppressWarnings("Duplicates")
     public static class TestConnection extends AbstractConnection
     {
-        private static final Logger LOG = Log.getLogger(TestConnection.class);
+        private static final Logger LOG = LoggerFactory.getLogger(TestConnection.class);
 
         volatile FutureCallback _blockingRead;
         final AtomicInteger _blockAt;
@@ -814,13 +814,13 @@ public class SocketChannelEndPointTest
             catch (InterruptedException | EofException e)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(e);
+                    LOG.debug("Fill interrupted", e);
                 else
                     LOG.info(e.getClass().getName());
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to fill from endpoint", e);
             }
         }
     }
