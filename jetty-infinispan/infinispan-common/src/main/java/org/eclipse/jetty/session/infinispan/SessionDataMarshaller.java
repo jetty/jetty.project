@@ -46,8 +46,12 @@ public class SessionDataMarshaller
 
     private static SerializationContext serializationContext;
     
-    private static void initSerializationContext() throws IOException
+    private static synchronized void initSerializationContext() throws IOException
     {
+        if (serializationContext != null)
+        {
+            return;
+        }
         FileDescriptorSource fds = new FileDescriptorSource();
         fds.addProtoFiles("/session.proto");
         SerializationContext sCtx = ProtobufUtil.newSerializationContext();
