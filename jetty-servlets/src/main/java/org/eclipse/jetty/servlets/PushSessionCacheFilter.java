@@ -39,15 +39,15 @@ import javax.servlet.http.PushBuilder;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PushSessionCacheFilter implements Filter
 {
     private static final String RESPONSE_ATTR = "PushSessionCacheFilter.response";
     private static final String TARGET_ATTR = "PushSessionCacheFilter.target";
     private static final String TIMESTAMP_ATTR = "PushSessionCacheFilter.timestamp";
-    private static final Logger LOG = Log.getLogger(PushSessionCacheFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PushSessionCacheFilter.class);
     private final ConcurrentMap<String, Target> _cache = new ConcurrentHashMap<>();
     private long _associateDelay = 5000L;
 

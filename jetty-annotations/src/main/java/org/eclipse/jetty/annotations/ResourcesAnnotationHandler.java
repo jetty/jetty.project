@@ -23,20 +23,17 @@ import javax.annotation.Resources;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    private static final Logger LOG = Log.getLogger(ResourcesAnnotationHandler.class);
-
-    protected WebAppContext _wac;
+    private static final Logger LOG = LoggerFactory.getLogger(ResourcesAnnotationHandler.class);
 
     public ResourcesAnnotationHandler(WebAppContext wac)
     {
-        super(true);
-        _wac = wac;
+        super(true, wac);
     }
 
     @Override
@@ -64,13 +61,13 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
                 {
                     //TODO don't ignore the shareable, auth etc etc
 
-                    if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac, name, mappedName))
-                        if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_wac.getServer(), name, mappedName))
+                    if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context, name, mappedName))
+                        if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName))
                             LOG.warn("Skipping Resources(Resource) annotation on " + clazz.getName() + " for name " + name + ": No resource bound at " + (mappedName == null ? name : mappedName));
                 }
                 catch (NamingException e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to bind {} to {}", name, mappedName, e);
                 }
             }
         }

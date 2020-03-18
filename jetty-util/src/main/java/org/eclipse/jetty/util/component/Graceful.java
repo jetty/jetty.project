@@ -24,8 +24,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Jetty components that wish to be part of a Graceful shutdown implement this interface so that
@@ -124,7 +124,7 @@ public interface Graceful
      */
     static CompletableFuture<Void> shutdown(Container component)
     {
-        Logger log = Log.getLogger(component.getClass());
+        Logger log = LoggerFactory.getLogger(component.getClass());
 
         log.info("Shutdown {}", component);
 

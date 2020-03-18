@@ -34,8 +34,8 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.X509ExtendedKeyManager;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A {@link X509ExtendedKeyManager} that selects a key with an alias
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
 {
     public static final String SNI_X509 = "org.eclipse.jetty.util.ssl.snix509";
-    private static final Logger LOG = Log.getLogger(SniX509ExtendedKeyManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SniX509ExtendedKeyManager.class);
 
     private final X509ExtendedKeyManager _delegate;
     private final SslContextFactory.Server _sslContextFactory;

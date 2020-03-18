@@ -29,11 +29,10 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,7 +49,7 @@ public class DuplicateCookieTest
         String contextPath = "";
         String servletMapping = "/server";
         HttpClient client = null;
-        
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
@@ -62,13 +61,13 @@ public class DuplicateCookieTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create a valid session
             createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "4422");
-            
+
             client = new HttpClient();
             client.start();
 
@@ -105,7 +104,7 @@ public class DuplicateCookieTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create a valid session
             createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
@@ -152,7 +151,7 @@ public class DuplicateCookieTest
         server1.start();
         int port1 = server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(DuplicateCookieTest.class.getPackage()))
         {
             //create some of unexpired sessions
             createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),

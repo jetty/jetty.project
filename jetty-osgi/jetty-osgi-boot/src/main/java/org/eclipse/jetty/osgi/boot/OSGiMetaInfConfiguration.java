@@ -35,8 +35,6 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.Configuration;
@@ -45,6 +43,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * OSGiWebInfConfiguration
@@ -53,7 +53,7 @@ import org.osgi.framework.FrameworkUtil;
  */
 public class OSGiMetaInfConfiguration extends MetaInfConfiguration
 {
-    private static final Logger LOG = Log.getLogger(WebInfConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebInfConfiguration.class);
 
     /**
      * Comma separated list of symbolic names of bundles that contain tlds that should be considered

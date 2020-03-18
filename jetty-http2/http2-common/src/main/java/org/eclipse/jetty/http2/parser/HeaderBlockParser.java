@@ -27,14 +27,14 @@ import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HeaderBlockParser
 {
     public static final MetaData STREAM_FAILURE = new MetaData(HttpVersion.HTTP_2, null);
     public static final MetaData SESSION_FAILURE = new MetaData(HttpVersion.HTTP_2, null);
-    private static final Logger LOG = Log.getLogger(HeaderBlockParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HeaderBlockParser.class);
 
     private final HeaderParser headerParser;
     private final ByteBufferPool byteBufferPool;
@@ -102,21 +102,21 @@ public class HeaderBlockParser
             catch (HpackException.StreamException x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug("Stream error, stream={}", headerParser.getStreamId(), x);
                 notifier.streamFailure(headerParser.getStreamId(), ErrorCode.PROTOCOL_ERROR.code, "invalid_hpack_block");
                 return STREAM_FAILURE;
             }
             catch (HpackException.CompressionException x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug("Compression error, buffer={}", BufferUtil.toDetailString(buffer), x);
                 notifier.connectionFailure(buffer, ErrorCode.COMPRESSION_ERROR.code, "invalid_hpack_block");
                 return SESSION_FAILURE;
             }
             catch (HpackException.SessionException x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug("Session error, buffer={}", BufferUtil.toDetailString(buffer), x);
                 notifier.connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_hpack_block");
                 return SESSION_FAILURE;
             }

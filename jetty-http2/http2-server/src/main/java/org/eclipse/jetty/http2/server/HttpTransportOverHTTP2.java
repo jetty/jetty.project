@@ -42,12 +42,12 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpTransportOverHTTP2 implements HttpTransport
 {
-    private static final Logger LOG = Log.getLogger(HttpTransportOverHTTP2.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpTransportOverHTTP2.class);
 
     private final AtomicBoolean commit = new AtomicBoolean();
     private final TransportCallback transportCallback = new TransportCallback();

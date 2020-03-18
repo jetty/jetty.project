@@ -27,12 +27,12 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractOSGiApp
@@ -41,7 +41,7 @@ import org.osgi.framework.ServiceRegistration;
  */
 public abstract class AbstractOSGiApp extends App
 {
-    private static final Logger LOG = Log.getLogger(AbstractOSGiApp.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractOSGiApp.class);
 
     protected Bundle _bundle;
     protected Dictionary<?, ?> _properties;
@@ -175,7 +175,7 @@ public abstract class AbstractOSGiApp extends App
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to find relative override location: {}", bundleOverrideLocation, e);
             }
         }
         if (res != null)

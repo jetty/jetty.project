@@ -95,8 +95,8 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Jetty Request.
@@ -142,7 +142,7 @@ public class Request implements HttpServletRequest
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
 
-    private static final Logger LOG = Log.getLogger(Request.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int INPUT_NONE = 0;
     private static final int INPUT_STREAM = 1;
@@ -188,6 +188,85 @@ public class Request implements HttpServletRequest
             return (Request)request;
 
         return null;
+    }
+
+    public static HttpServletMapping getServletMapping(PathSpec pathSpec, String servletPath, String servletName)
+    {
+        final MappingMatch match;
+        final String mapping;
+        if (pathSpec instanceof ServletPathSpec)
+        {
+            switch (((ServletPathSpec)pathSpec).getGroup())
+            {
+                case ROOT:
+                    match = MappingMatch.CONTEXT_ROOT;
+                    mapping = "";
+                    break;
+                case DEFAULT:
+                    match = MappingMatch.DEFAULT;
+                    mapping = "/";
+                    break;
+                case EXACT:
+                    match = MappingMatch.EXACT;
+                    mapping = servletPath.startsWith("/") ? servletPath.substring(1) : servletPath;
+                    break;
+                case SUFFIX_GLOB:
+                    match = MappingMatch.EXTENSION;
+                    int dot = servletPath.lastIndexOf('.');
+                    mapping = servletPath.substring(0, dot);
+                    break;
+                case PREFIX_GLOB:
+                    match = MappingMatch.PATH;
+                    mapping = servletPath;
+                    break;
+                default:
+                    match = null;
+                    mapping = servletPath;
+                    break;
+            }
+        }
+        else
+        {
+            match = null;
+            mapping = servletPath;
+        }
+
+        return new HttpServletMapping()
+        {
+            @Override
+            public String getMatchValue()
+            {
+                return (mapping == null ? "" : mapping);
+            }
+
+            @Override
+            public String getPattern()
+            {
+                if (pathSpec != null)
+                    return pathSpec.getDeclaration();
+                return "";
+            }
+
+            @Override
+            public String getServletName()
+            {
+                return (servletName == null ? "" : servletName);
+            }
+
+            @Override
+            public MappingMatch getMappingMatch()
+            {
+                return match;
+            }
+
+            @Override
+            public String toString()
+            {
+                return "HttpServletMapping{matchValue=" + getMatchValue() +
+                    ", pattern=" + getPattern() + ", servletName=" + getServletName() +
+                    ", mappingMatch=" + getMappingMatch() + "}";
+            }
+        };
     }
 
     private final HttpChannel _channel;
@@ -473,9 +552,9 @@ public class Request implements HttpServletRequest
                 catch (UnsupportedEncodingException e)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.warn(e);
+                        LOG.warn("Unable to decode query", e);
                     else
-                        LOG.warn(e.toString());
+                        LOG.warn("Unable to decode query - {}", e.toString());
                 }
             }
         }
@@ -516,8 +595,9 @@ public class Request implements HttpServletRequest
                     }
                     catch (IOException e)
                     {
-                        LOG.debug(e);
-                        throw new RuntimeIOException(e);
+                        String msg = "Unable to extract content parameters";
+                        LOG.debug(msg, e);
+                        throw new RuntimeIOException(msg, e);
                     }
                 }
             }
@@ -555,8 +635,9 @@ public class Request implements HttpServletRequest
         }
         catch (IOException e)
         {
-            LOG.debug(e);
-            throw new RuntimeIOException(e);
+            String msg = "Unable to extract form parameters";
+            LOG.debug(msg, e);
+            throw new RuntimeIOException(msg, e);
         }
     }
 
@@ -944,7 +1025,7 @@ public class Request implements HttpServletRequest
             }
             catch (java.net.UnknownHostException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
         }
 
@@ -976,7 +1057,7 @@ public class Request implements HttpServletRequest
         }
         catch (java.net.UnknownHostException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         return null;
     }
@@ -1295,7 +1376,7 @@ public class Request implements HttpServletRequest
         }
         catch (java.net.UnknownHostException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         return null;
     }
@@ -1711,7 +1792,7 @@ public class Request implements HttpServletRequest
             }
             catch (Exception e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 _reader = null;
             }
         }
@@ -2354,73 +2435,6 @@ public class Request implements HttpServletRequest
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        final PathSpec pathSpec = _pathSpec;
-        final MappingMatch match;
-        final String mapping;
-        if (pathSpec instanceof ServletPathSpec)
-        {
-            switch (((ServletPathSpec)pathSpec).getGroup())
-            {
-                case ROOT:
-                    match = MappingMatch.CONTEXT_ROOT;
-                    mapping = "";
-                    break;
-                case DEFAULT:
-                    match = MappingMatch.DEFAULT;
-                    mapping = "/";
-                    break;
-                case EXACT:
-                    match = MappingMatch.EXACT;
-                    mapping = _servletPath.startsWith("/") ? _servletPath.substring(1) : _servletPath;
-                    break;
-                case SUFFIX_GLOB:
-                    match = MappingMatch.EXTENSION;
-                    int dot = _servletPath.lastIndexOf('.');
-                    mapping = _servletPath.substring(0, dot);
-                    break;
-                case PREFIX_GLOB:
-                    match = MappingMatch.PATH;
-                    mapping = _servletPath;
-                    break;
-                default:
-                    match = null;
-                    mapping = _servletPath;
-                    break;
-            }
-        }
-        else
-        {
-            match = null;
-            mapping = _servletPath;
-        }
-
-        return new HttpServletMapping()
-        {
-            @Override
-            public String getMatchValue()
-            {
-                return mapping;
-            }
-
-            @Override
-            public String getPattern()
-            {
-                if (pathSpec != null)
-                    pathSpec.toString();
-                return null;
-            }
-
-            @Override
-            public String getServletName()
-            {
-                return Request.this.getServletName();
-            }
-
-            @Override
-            public MappingMatch getMappingMatch()
-            {
-                return match;
-            }
-        };
+        return Request.getServletMapping(_pathSpec, _servletPath, getServletName());
     }
 }

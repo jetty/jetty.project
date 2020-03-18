@@ -367,7 +367,7 @@ public class ServerConnector extends AbstractNetworkConnector
                 }
                 catch (IOException e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to close {}", serverChannel, e);
                 }
             }
         }
@@ -401,7 +401,7 @@ public class ServerConnector extends AbstractNetworkConnector
         }
         catch (SocketException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
     }
 

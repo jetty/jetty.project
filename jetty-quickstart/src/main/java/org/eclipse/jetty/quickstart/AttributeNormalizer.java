@@ -38,9 +38,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Normalize Attribute to String.
@@ -62,7 +62,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class AttributeNormalizer
 {
-    private static final Logger LOG = Log.getLogger(AttributeNormalizer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AttributeNormalizer.class);
     private static final Pattern __propertyPattern = Pattern.compile("(?<=[^$]|^)\\$\\{([^}]*)\\}");
 
     private static class Attribute
@@ -326,7 +326,7 @@ public class AttributeNormalizer
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Failed to normalize {}", o, e);
         }
         return String.valueOf(o);
     }
@@ -376,7 +376,7 @@ public class AttributeNormalizer
             }
             catch (IOException ignore)
             {
-                LOG.ignore(ignore);
+                LOG.trace("IGNORED", ignore);
             }
 
             if (path.startsWith(a.path))

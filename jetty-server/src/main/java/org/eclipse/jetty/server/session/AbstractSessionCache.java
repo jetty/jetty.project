@@ -29,9 +29,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractSessionCache
@@ -55,7 +55,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
 @ManagedObject
 public abstract class AbstractSessionCache extends ContainerLifeCycle implements SessionCache
 {
-    static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractSessionCache.class);
 
     /**
      * The authoritative source of session data
@@ -732,8 +732,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Passivation of idle session {} failed", session.getId());
-                    LOG.warn(e);
+                    LOG.warn("Passivation of idle session {} failed", session.getId(), e);
                 }
             }
         }
@@ -824,8 +823,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         }
         catch (Exception e)
         {
-            LOG.warn("Save of new session {} failed", id);
-            LOG.warn(e);
+            LOG.warn("Save of new session {} failed", id, e);
         }
         return session;
     }

@@ -31,6 +31,7 @@ module org.eclipse.jetty.apache.jsp
     requires jetty.servlet.api;
     requires org.eclipse.jetty.util;
     requires org.mortbay.apache.jasper;
+    requires org.slf4j;
 
     provides Log with JuliLog;
     provides ServletContainerInitializer with JettyJasperInitializer;

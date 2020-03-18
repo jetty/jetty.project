@@ -310,7 +310,7 @@ public class Main
         modules.registerAll();
 
         // 4) Active Module Resolution
-        for (String enabledModule : args.getEnabledModules())
+        for (String enabledModule : modules.getSortedNames(args.getEnabledModules()))
         {
             for (String source : args.getSources(enabledModule))
             {

@@ -21,8 +21,8 @@ package org.eclipse.jetty.util.component;
 import java.io.FileWriter;
 import java.io.Writer;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A LifeCycle Listener that writes state changes to a file.
@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class FileNoticeLifeCycleListener implements LifeCycle.Listener
 {
-    private static final Logger LOG = Log.getLogger(FileNoticeLifeCycleListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FileNoticeLifeCycleListener.class);
 
     private final String _filename;
 
@@ -47,7 +47,7 @@ public class FileNoticeLifeCycleListener implements LifeCycle.Listener
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to write state", e);
         }
     }
 

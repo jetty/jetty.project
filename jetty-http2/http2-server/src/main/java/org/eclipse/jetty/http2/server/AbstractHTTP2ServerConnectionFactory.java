@@ -24,11 +24,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
+import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.Frame;
@@ -46,6 +49,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 @ManagedObject
@@ -296,22 +300,25 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     }
 
     @ManagedObject("The container of HTTP/2 sessions")
-    public static class HTTP2SessionContainer implements Connection.Listener, Dumpable
+    public static class HTTP2SessionContainer implements Connection.Listener, Graceful, Dumpable
     {
-        private final Set<Session> sessions = ConcurrentHashMap.newKeySet();
+        private final Set<ISession> sessions = ConcurrentHashMap.newKeySet();
+        private final AtomicReference<CompletableFuture<Void>> shutdown = new AtomicReference<>();
 
         @Override
         public void onOpened(Connection connection)
         {
-            Session session = ((HTTP2Connection)connection).getSession();
+            ISession session = ((HTTP2Connection)connection).getSession();
             sessions.add(session);
             LifeCycle.start(session);
+            if (isShutdown())
+                shutdown(session);
         }
 
         @Override
         public void onClosed(Connection connection)
         {
-            Session session = ((HTTP2Connection)connection).getSession();
+            ISession session = ((HTTP2Connection)connection).getSession();
             if (sessions.remove(session))
                 LifeCycle.stop(session);
         }
@@ -325,6 +332,39 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         public int getSize()
         {
             return sessions.size();
+        }
+
+        @Override
+        public CompletableFuture<Void> shutdown()
+        {
+            CompletableFuture<Void> result = new CompletableFuture<>();
+            if (shutdown.compareAndSet(null, result))
+            {
+                CompletableFuture.allOf(sessions.stream().map(this::shutdown).toArray(CompletableFuture[]::new))
+                    .whenComplete((v, x) ->
+                    {
+                        if (x == null)
+                            result.complete(v);
+                        else
+                            result.completeExceptionally(x);
+                    });
+                return result;
+            }
+            else
+            {
+                return shutdown.get();
+            }
+        }
+
+        @Override
+        public boolean isShutdown()
+        {
+            return shutdown.get() != null;
+        }
+
+        private CompletableFuture<Void> shutdown(ISession session)
+        {
+            return session.shutdown();
         }
 
         @Override

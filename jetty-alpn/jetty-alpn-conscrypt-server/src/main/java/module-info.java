@@ -22,6 +22,7 @@ import org.eclipse.jetty.io.ssl.ALPNProcessor;
 module org.eclipse.jetty.alpn.conscrypt.server
 {
     requires org.conscrypt;
+    requires org.slf4j;
     requires transitive org.eclipse.jetty.alpn.server;
 
     provides ALPNProcessor.Server with ConscryptServerALPNProcessor;

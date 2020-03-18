@@ -88,10 +88,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
                 //create an instance of the listener and decorate it
                 try
                 {
-                    ServletContext context = contextHandler.getServletContext();
-                    _listener = (context != null)
-                        ? context.createListener(getHeldClass())
-                        : getHeldClass().getDeclaredConstructor().newInstance();
+                    _listener = createInstance();
                 }
                 catch (ServletException ex)
                 {
@@ -105,6 +102,20 @@ public class ListenerHolder extends BaseHolder<EventListener>
             }
             contextHandler.addEventListener(_listener);
         }
+    }
+
+    @Override
+    protected synchronized EventListener createInstance() throws Exception
+    {
+
+        EventListener listener = super.createInstance();
+        if (listener == null)
+        {
+            ServletContext ctx = getServletContext();
+            if (ctx != null)
+                listener = ctx.createListener(getHeldClass());
+        }
+        return listener;
     }
 
     @Override

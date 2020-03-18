@@ -39,13 +39,13 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.QuotedCSV;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
     public static final int DEFAULT_MAX_CONTENT_LENGTH = 16 * 1024;
-    public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
+    public static final Logger LOG = LoggerFactory.getLogger(AuthenticationProtocolHandler.class);
     private final HttpClient client;
     private final int maxContentLength;
     private final ResponseNotifier notifier;

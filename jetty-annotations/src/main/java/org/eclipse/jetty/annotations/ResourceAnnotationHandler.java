@@ -32,28 +32,25 @@ import javax.naming.NamingException;
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    private static final Logger LOG = Log.getLogger(ResourceAnnotationHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResourceAnnotationHandler.class);
 
     protected static final List<Class<?>> ENV_ENTRY_TYPES =
         Arrays.asList(new Class[]
-        {
-            String.class, Character.class, Integer.class, Boolean.class, Double.class, Byte.class, Short.class, Long.class,
-            Float.class
-        });
-
-    protected WebAppContext _context;
+            {
+                String.class, Character.class, Integer.class, Boolean.class, Double.class, Byte.class, Short.class, Long.class,
+                Float.class
+            });
 
     public ResourceAnnotationHandler(WebAppContext wac)
     {
-        super(true);
-        _context = wac;
+        super(true, wac);
     }
 
     /**
@@ -101,7 +98,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             }
             catch (NamingException e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to bind name {} to {} from class {}", name, mappedName, clazz, e);
             }
         }
     }

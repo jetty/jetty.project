@@ -24,7 +24,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -61,7 +61,7 @@ public class EatWhatYouKillTest
     @Test
     public void testExceptionThrownByTask() throws Exception
     {
-        try (StacklessLogging stackLess = new StacklessLogging(EatWhatYouKill.class))
+        try (StacklessLogging ignored = new StacklessLogging(EatWhatYouKill.class))
         {
             AtomicReference<Throwable> detector = new AtomicReference<>();
             CountDownLatch latch = new CountDownLatch(2);

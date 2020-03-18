@@ -73,11 +73,14 @@ public class TestResourceAnnotations
         new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", objA, false);
         new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", objB, false);
 
-        AnnotationIntrospector parser = new AnnotationIntrospector();
+        AnnotationIntrospector parser = new AnnotationIntrospector(wac);
         ResourceAnnotationHandler handler = new ResourceAnnotationHandler(wac);
         parser.registerHandler(handler);
-        parser.introspect(ResourceA.class);
-        parser.introspect(ResourceB.class);
+
+        ResourceA resourceA = new ResourceA();
+        ResourceB resourceB = new ResourceB();
+        parser.introspect(resourceA, null);
+        parser.introspect(resourceB, null);
 
         //processing classA should give us these jndi name bindings:
         // java:comp/env/myf
@@ -155,11 +158,13 @@ public class TestResourceAnnotations
         new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resA", objA, false);
         new org.eclipse.jetty.plus.jndi.EnvEntry(server, "resB", objB, false);
 
-        AnnotationIntrospector introspector = new AnnotationIntrospector();
+        AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         ResourcesAnnotationHandler handler = new ResourcesAnnotationHandler(wac);
         introspector.registerHandler(handler);
-        introspector.introspect(ResourceA.class);
-        introspector.introspect(ResourceB.class);
+        ResourceA resourceA = new ResourceA();
+        ResourceB resourceB = new ResourceB();
+        introspector.introspect(resourceA, null);
+        introspector.introspect(resourceB, null);
 
         assertEquals(objA, env.lookup("peach"));
         assertEquals(objB, env.lookup("pear"));

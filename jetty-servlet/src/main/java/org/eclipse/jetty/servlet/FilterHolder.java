@@ -34,12 +34,12 @@ import javax.servlet.ServletException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FilterHolder extends Holder<Filter>
 {
-    private static final Logger LOG = Log.getLogger(FilterHolder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FilterHolder.class);
 
     private transient Filter _filter;
     private transient Config _config;
@@ -113,10 +113,7 @@ public class FilterHolder extends Holder<Filter>
             {
                 try
                 {
-                    ServletContext context = getServletHandler().getServletContext();
-                    _filter = (context != null)
-                        ? context.createFilter(getHeldClass())
-                        : getHeldClass().getDeclaredConstructor().newInstance();
+                    _filter = createInstance();
                 }
                 catch (ServletException ex)
                 {
@@ -133,6 +130,19 @@ public class FilterHolder extends Holder<Filter>
                 LOG.debug("Filter.init {}", _filter);
             _filter.init(_config);
         }
+    }
+
+    @Override
+    protected synchronized Filter createInstance() throws Exception
+    {
+        Filter filter = super.createInstance();
+        if (filter == null)
+        {
+            ServletContext context = getServletContext();
+            if (context != null)
+                filter = context.createFilter(getHeldClass());
+        }
+        return filter;
     }
 
     @Override

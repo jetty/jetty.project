@@ -27,12 +27,12 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class NegotiatingServerConnection extends AbstractConnection
 {
-    private static final Logger LOG = Log.getLogger(NegotiatingServerConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NegotiatingServerConnection.class);
 
     public interface CipherDiscriminator
     {
@@ -153,7 +153,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
         }
         catch (IOException x)
         {
-            LOG.debug(x);
+            LOG.debug("Unable to fill from endpoint {}", getEndPoint(), x);
             close();
             return -1;
         }

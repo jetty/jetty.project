@@ -36,9 +36,9 @@ import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.security.AbstractLoginService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Credential;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DataSourceUserRealm
@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.security.Credential;
  */
 public class DataSourceLoginService extends AbstractLoginService
 {
-    private static final Logger LOG = Log.getLogger(DataSourceLoginService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DataSourceLoginService.class);
 
     private String _jndiName = "javax.sql.DataSource/default";
     private DataSource _datasource;

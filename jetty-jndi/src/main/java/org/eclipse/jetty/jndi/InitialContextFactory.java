@@ -27,8 +27,8 @@ import javax.naming.NameParser;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.jndi.local.localContextRoot;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * InitialContextFactory.java
@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class InitialContextFactory implements javax.naming.spi.InitialContextFactory
 {
-    private static final Logger LOG = Log.getLogger(InitialContextFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InitialContextFactory.class);
 
     public static class DefaultParser implements NameParser
     {

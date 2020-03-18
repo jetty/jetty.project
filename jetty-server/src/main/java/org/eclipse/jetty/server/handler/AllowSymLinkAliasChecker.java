@@ -22,10 +22,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.server.handler.ContextHandler.AliasCheck;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Symbolic Link AliasChecker.
@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class AllowSymLinkAliasChecker implements AliasCheck
 {
-    private static final Logger LOG = Log.getLogger(AllowSymLinkAliasChecker.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AllowSymLinkAliasChecker.class);
 
     @Override
     public boolean check(String uri, Resource resource)
@@ -64,7 +64,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
 
         return false;

@@ -75,7 +75,7 @@ public class IntegrationTestGetContent
                 }
                 String response = httpClient.GET(url).getContentAsString();
                 assertTrue(response.contains(contentCheck), "it test " + System.getProperty("maven.it.name") +
-                        ", response not contentCheck: " + contentCheck + ", response:" + response);
+                    ", response not contentCheck: " + contentCheck + ", response:" + response);
                 System.out.println("contentCheck");
             }
             if (Boolean.getBoolean("helloTestServlet"))
@@ -104,8 +104,9 @@ public class IntegrationTestGetContent
         int attempts = 70;
         int port = -1;
         String s = System.getProperty("jetty.port.file");
-        assertNotNull(s);
+        assertNotNull(s, "jetty.port.file System property");
         Path p = Paths.get(s);
+        System.err.println("Looking for port file: " + p);
         while (true)
         {
             if (Files.exists(p))
@@ -127,8 +128,9 @@ public class IntegrationTestGetContent
                 }
                 else
                 {
-                    Thread.currentThread().sleep(1000);
+                    Thread.sleep(1000);
                 }
+                System.err.printf("  attempts left: #%d%n", attempts);
             }
         }
         return port;

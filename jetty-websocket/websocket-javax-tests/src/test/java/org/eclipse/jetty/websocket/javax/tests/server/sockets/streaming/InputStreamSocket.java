@@ -28,13 +28,13 @@ import javax.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.toolchain.test.StackUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServerEndpoint("/echo/streaming/inputstream")
 public class InputStreamSocket
 {
-    private static final Logger LOG = Log.getLogger(InputStreamSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InputStreamSocket.class);
 
     @OnMessage
     public String onInputStream(InputStream stream) throws IOException

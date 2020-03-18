@@ -43,10 +43,10 @@ import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>LifeCycle wrapper for JMXConnectorServer.</p>
@@ -61,7 +61,7 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
 public class ConnectorServer extends AbstractLifeCycle
 {
     public static final String RMI_REGISTRY_CLIENT_SOCKET_FACTORY_ATTRIBUTE = "com.sun.jndi.rmi.factory.socket";
-    private static final Logger LOG = Log.getLogger(ConnectorServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectorServer.class);
 
     private JMXServiceURL _jmxURL;
     private final Map<String, Object> _environment;
@@ -183,7 +183,7 @@ public class ConnectorServer extends AbstractLifeCycle
         }
         catch (Throwable ex)
         {
-            LOG.ignore(ex);
+            LOG.trace("IGNORED", ex);
         }
 
         RMIClientSocketFactory csf = _sslContextFactory == null ? null : new SslRMIClientSocketFactory();
@@ -208,7 +208,7 @@ public class ConnectorServer extends AbstractLifeCycle
             }
             catch (Exception ex)
             {
-                LOG.ignore(ex);
+                LOG.trace("IGNORED", ex);
             }
             finally
             {

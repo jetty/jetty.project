@@ -29,8 +29,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
+import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
@@ -38,21 +38,19 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
 public class JettyClientUpgradeRequest extends ClientUpgradeRequest
 {
-    private final WebSocketClient containerContext;
     private final DelegatedJettyClientUpgradeRequest handshakeRequest;
     private final JettyWebSocketFrameHandler frameHandler;
 
-    public JettyClientUpgradeRequest(WebSocketClient clientContainer, WebSocketCoreClient coreClient, UpgradeRequest request,
-                                     URI requestURI, Object websocketPojo)
+    public JettyClientUpgradeRequest(WebSocketCoreClient coreClient, UpgradeRequest request, URI requestURI, JettyWebSocketFrameHandlerFactory frameHandlerFactory,
+                                     Object websocketPojo)
     {
         super(coreClient, requestURI);
-        this.containerContext = clientContainer;
 
         if (request != null)
         {
             // Copy request details into actual request
             HttpFields fields = getHeaders();
-            request.getHeaders().forEach((name, values) -> fields.put(name, values));
+            request.getHeaders().forEach(fields::put);
 
             // Copy manually created Cookies into place
             List<HttpCookie> cookies = request.getCookies();
@@ -84,7 +82,7 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
         }
 
         handshakeRequest = new DelegatedJettyClientUpgradeRequest(this);
-        frameHandler = containerContext.newFrameHandler(websocketPojo);
+        frameHandler = frameHandlerFactory.newJettyFrameHandler(websocketPojo);
     }
 
     @Override

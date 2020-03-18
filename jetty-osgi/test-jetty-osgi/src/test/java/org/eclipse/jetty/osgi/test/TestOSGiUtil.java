@@ -37,7 +37,6 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
@@ -132,6 +131,8 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.apache.aries.spifly").artifactId("org.apache.aries.spifly.dynamic.bundle").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.apache.geronimo.specs").artifactId("geronimo-jta_1.1_spec").version("1.1.1").start());
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-log4j12").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-deploy").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-server").versionAsInProject().start());
@@ -304,9 +305,7 @@ public class TestOSGiUtil
         options.add(mavenBundle().groupId("org.slf4j").artifactId("jul-to-slf4j").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-log4j12").versionAsInProject().start());
         options.add(mavenBundle().groupId("log4j").artifactId("log4j").versionAsInProject().start());
-        options.add(systemProperty("org.eclipse.jetty.util.log.class").value(Slf4jLog.class.getName()));
          */
-        options.add(systemProperty("org.eclipse.jetty.util.log.class").value(StdErrLog.class.getName()));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value("INFO"));
         return options;
     }

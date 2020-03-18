@@ -23,8 +23,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Parser for the PARAMS frame body.</p>
@@ -60,7 +60,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ParamsContentParser extends ContentParser
 {
-    private static final Logger LOG = Log.getLogger(ParamsContentParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ParamsContentParser.class);
 
     private final ServerParser.Listener listener;
     private State state = State.LENGTH;

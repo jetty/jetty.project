@@ -29,8 +29,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>HttpSender abstracts the algorithm to send HTTP requests, so that subclasses only
@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class HttpSender
 {
-    private static final Logger LOG = Log.getLogger(HttpSender.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpSender.class);
 
     private final ContentConsumer consumer = new ContentConsumer();
     private final AtomicReference<RequestState> requestState = new AtomicReference<>(RequestState.QUEUED);
@@ -244,7 +244,7 @@ public abstract class HttpSender
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("Failure invoking demand()", x);
             anyToFailure(x);
         }
     }
@@ -259,7 +259,7 @@ public abstract class HttpSender
         catch (RejectedExecutionException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("Exchange aborted {}", exchange, x);
             abort(exchange, failure);
         }
     }

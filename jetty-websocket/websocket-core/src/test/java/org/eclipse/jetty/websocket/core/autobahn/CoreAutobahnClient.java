@@ -27,11 +27,11 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.TestMessageHandler;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -137,7 +137,7 @@ public class CoreAutobahnClient
         }
     }
 
-    private static final Logger LOG = Log.getLogger(CoreAutobahnClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CoreAutobahnClient.class);
     private URI baseWebsocketUri;
     private WebSocketCoreClient client;
     private String userAgent;

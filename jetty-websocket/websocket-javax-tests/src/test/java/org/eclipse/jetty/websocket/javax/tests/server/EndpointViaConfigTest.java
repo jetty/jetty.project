@@ -27,8 +27,6 @@ import com.acme.websocket.BasicEchoEndpointConfigContextListener;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -38,6 +36,8 @@ import org.eclipse.jetty.websocket.javax.tests.WSServer;
 import org.eclipse.jetty.websocket.javax.tests.framehandlers.FrameHandlerTracker;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -49,7 +49,7 @@ import static org.hamcrest.Matchers.is;
 @ExtendWith(WorkDirExtension.class)
 public class EndpointViaConfigTest
 {
-    private static final Logger LOG = Log.getLogger(EndpointViaConfigTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EndpointViaConfigTest.class);
 
     public WorkDir testdir;
 

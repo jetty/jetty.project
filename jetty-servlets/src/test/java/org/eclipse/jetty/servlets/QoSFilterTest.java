@@ -40,13 +40,13 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class QoSFilterTest
 {
-    private static final Logger LOG = Log.getLogger(QoSFilterTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QoSFilterTest.class);
 
     private ServletTester _tester;
     private LocalConnector[] _connectors;

@@ -36,16 +36,16 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Jetty implementation of {@link com.sun.net.httpserver.HttpServer}.
  */
 public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
 {
-    private static final Logger LOG = Log.getLogger(JettyHttpServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JettyHttpServer.class);
 
     private final HttpConfiguration _httpConfiguration;
 
@@ -223,7 +223,7 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
             }
             catch (Exception ex)
             {
-                LOG.warn(ex);
+                LOG.warn("Unable to stop connector {}", connector, ex);
             }
             _server.removeConnector(connector);
         }

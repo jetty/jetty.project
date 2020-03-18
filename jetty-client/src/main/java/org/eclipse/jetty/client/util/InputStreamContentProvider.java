@@ -28,8 +28,8 @@ import java.util.NoSuchElementException;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link ContentProvider} for an {@link InputStream}.
@@ -56,7 +56,7 @@ import org.eclipse.jetty.util.log.Logger;
 @Deprecated
 public class InputStreamContentProvider implements ContentProvider, Callback, Closeable
 {
-    private static final Logger LOG = Log.getLogger(InputStreamContentProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InputStreamContentProvider.class);
 
     private final InputStreamContentProviderIterator iterator = new InputStreamContentProviderIterator();
     private final InputStream stream;
@@ -134,7 +134,7 @@ public class InputStreamContentProvider implements ContentProvider, Callback, Cl
             }
             catch (IOException x)
             {
-                LOG.ignore(x);
+                LOG.trace("IGNORED", x);
             }
         }
     }
@@ -202,7 +202,7 @@ public class InputStreamContentProvider implements ContentProvider, Callback, Cl
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug("Failed to read", x);
                 if (failure == null)
                 {
                     failure = x;

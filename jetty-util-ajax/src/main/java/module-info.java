@@ -21,4 +21,5 @@ module org.eclipse.jetty.util.ajax
     exports org.eclipse.jetty.util.ajax;
 
     requires org.eclipse.jetty.util;
+    requires org.slf4j;
 }

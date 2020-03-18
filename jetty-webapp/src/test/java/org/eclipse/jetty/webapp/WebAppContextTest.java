@@ -483,6 +483,6 @@ public class WebAppContextTest
         context.setServer(new Server());
         new MetaInfConfiguration().preConfigure(context);
         assertEquals(Arrays.asList("acme.jar", "alpha.jar", "omega.jar"),
-            context.getMetaData().getWebInfJars().stream().map(r -> r.getURI().toString().replaceFirst(".+/", "")).collect(Collectors.toList()));
+            context.getMetaData().getWebInfResources(false).stream().map(r -> r.getURI().toString().replaceFirst(".+/", "")).collect(Collectors.toList()));
     }
 }

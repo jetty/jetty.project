@@ -24,13 +24,13 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject
 public abstract class AbstractHttpClientTransport extends ContainerLifeCycle implements HttpClientTransport
 {
-    protected static final Logger LOG = Log.getLogger(HttpClientTransport.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(HttpClientTransport.class);
 
     private HttpClient client;
     private ConnectionPool.Factory factory;

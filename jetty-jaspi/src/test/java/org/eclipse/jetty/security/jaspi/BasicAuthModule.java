@@ -32,13 +32,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.security.jaspi.modules.BaseAuthModule;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BasicAuthModule extends BaseAuthModule
 {
-    private static final Logger LOG = Log.getLogger(BasicAuthModule.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BasicAuthModule.class);
 
     private String realmName;
 

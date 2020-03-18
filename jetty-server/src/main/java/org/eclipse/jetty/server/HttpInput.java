@@ -36,8 +36,8 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Destroyable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link HttpInput} provides an implementation of {@link ServletInputStream} for {@link HttpChannel}.
@@ -121,7 +121,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    private static final Logger LOG = Log.getLogger(HttpInput.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpInput.class);
     static final Content EOF_CONTENT = new EofContent("EOF");
     static final Content EARLY_EOF_CONTENT = new EofContent("EARLY_EOF");
 
@@ -660,7 +660,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             }
             catch (Throwable e)
             {
-                LOG.debug(e);
+                LOG.debug("Unable to consume all input", e);
                 _state = new ErrorState(e);
                 return false;
             }
@@ -714,7 +714,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             return true;
         }
     }
@@ -796,7 +796,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                     // without modifying the original failure.
                     Throwable failure = new Throwable(_state.getError());
                     failure.addSuppressed(x);
-                    LOG.debug(failure);
+                    LOG.debug("HttpInput failure", failure);
                 }
             }
             else
@@ -887,8 +887,10 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
         catch (Throwable e)
         {
-            LOG.warn(e.toString());
-            LOG.debug(e);
+            if (LOG.isDebugEnabled())
+                LOG.warn("Unable to notify listener", e);
+            else
+                LOG.warn("Unable to notify listener: {}", e.toString());
             try
             {
                 if (aeof || error == null)
@@ -899,9 +901,12 @@ public class HttpInput extends ServletInputStream implements Runnable
             }
             catch (Throwable e2)
             {
-                LOG.warn(e2.toString());
-                LOG.debug(e2);
-                throw new RuntimeIOException(e2);
+                String msg = "Unable to notify error to listener";
+                if (LOG.isDebugEnabled())
+                    LOG.warn(msg, e2);
+                else
+                    LOG.warn(msg + ": {}", e2.toString());
+                throw new RuntimeIOException(msg, e2);
             }
         }
     }

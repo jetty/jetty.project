@@ -39,8 +39,6 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -55,6 +53,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,7 +66,7 @@ import static org.hamcrest.Matchers.is;
  */
 public class MessageReceivingTest
 {
-    private static final Logger LOG = Log.getLogger(MessageReceivingTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessageReceivingTest.class);
     private static CoreServer server;
     private WebSocketContainer container;
 
@@ -305,7 +305,7 @@ public class MessageReceivingTest
         @Override
         public void onError(Throwable cause, Callback callback)
         {
-            LOG.warn(cause);
+            LOG.warn("SendPartialBinaryFrameHandler Error", cause);
             callback.succeeded();
         }
     }
@@ -337,7 +337,7 @@ public class MessageReceivingTest
         @Override
         public void onError(Throwable cause, Callback callback)
         {
-            LOG.warn(cause);
+            LOG.warn("EchoWholeMessageFrameHandler Error", cause);
             callback.succeeded();
         }
     }
@@ -414,7 +414,7 @@ public class MessageReceivingTest
         @Override
         public void onError(Session session, Throwable thr)
         {
-            LOG.warn(thr);
+            LOG.warn("TestEndpoint Error", thr);
         }
     }
 
@@ -477,7 +477,7 @@ public class MessageReceivingTest
         @Override
         public void onMessage(ByteBuffer message)
         {
-            final String stringResult = new String(message.array());
+            final String stringResult = BufferUtil.toString(message);
             messageQueue.offer(stringResult);
         }
     }

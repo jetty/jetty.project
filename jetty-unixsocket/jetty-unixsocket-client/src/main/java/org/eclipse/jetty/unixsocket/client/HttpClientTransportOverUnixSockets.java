@@ -47,14 +47,14 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.unixsocket.common.UnixSocketEndPoint;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // TODO: this class needs a thorough review.
 public class HttpClientTransportOverUnixSockets extends AbstractConnectorHttpClientTransport
 {
-    private static final Logger LOG = Log.getLogger(HttpClientTransportOverUnixSockets.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpClientTransportOverUnixSockets.class);
 
     private final ClientConnectionFactory factory = new HttpClientConnectionFactory();
 

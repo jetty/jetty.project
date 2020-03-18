@@ -20,12 +20,12 @@ package org.eclipse.jetty.util.thread.strategy;
 
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A strategy where the caller thread iterates over task production, submitting each
@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.thread.Invocable.InvocationType;
  */
 public class ProduceExecuteConsume implements ExecutionStrategy
 {
-    private static final Logger LOG = Log.getLogger(ProduceExecuteConsume.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProduceExecuteConsume.class);
 
     private final AutoLock _lock = new AutoLock();
     private final Producer _producer;

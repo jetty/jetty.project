@@ -27,12 +27,12 @@ import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.javax.common.Defaults;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public abstract class AbstractStringEndpoint extends Endpoint implements MessageHandler.Whole<String>
 {
-    private static final Logger LOG = Log.getLogger(AbstractStringEndpoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractStringEndpoint.class);
     public CountDownLatch closeLatch = new CountDownLatch(1);
     public AtomicReference<CloseStatus> closeInfo = new AtomicReference<>();
     protected Session session;

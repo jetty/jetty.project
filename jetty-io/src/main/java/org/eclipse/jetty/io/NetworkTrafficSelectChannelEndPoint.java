@@ -25,13 +25,13 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NetworkTrafficSelectChannelEndPoint extends SocketChannelEndPoint
 {
-    private static final Logger LOG = Log.getLogger(NetworkTrafficSelectChannelEndPoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NetworkTrafficSelectChannelEndPoint.class);
 
     private final List<NetworkTrafficListener> listeners;
 
@@ -85,7 +85,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SocketChannelEndPoint
                 }
                 catch (Exception x)
                 {
-                    LOG.warn(x);
+                    LOG.warn("listener.opened failure", x);
                 }
             }
         }
@@ -105,7 +105,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SocketChannelEndPoint
                 }
                 catch (Exception x)
                 {
-                    LOG.warn(x);
+                    LOG.warn("listener.closed failure", x);
                 }
             }
         }
@@ -124,7 +124,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SocketChannelEndPoint
                 }
                 catch (Exception x)
                 {
-                    LOG.warn(x);
+                    LOG.warn("listener.incoming() failure", x);
                 }
             }
         }
@@ -143,7 +143,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SocketChannelEndPoint
                 }
                 catch (Exception x)
                 {
-                    LOG.warn(x);
+                    LOG.warn("listener.outgoing() failure", x);
                 }
             }
         }

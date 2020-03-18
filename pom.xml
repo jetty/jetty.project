@@ -19,9 +19,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.4</build-support.version>
     <checkstyle.version>8.20</checkstyle.version>
-    <slf4j.version>1.8.0-beta2</slf4j.version>
-    <log4j2.version>2.11.2</log4j2.version>
-    <logback.version>1.3.0-alpha4</logback.version>
+    <slf4j.version>2.0.0-alpha1</slf4j.version>
+    <log4j2.version>2.13.0</log4j2.version>
+    <logback.version>1.3.0-alpha5</logback.version>
     <spring-version>5.1.1.RELEASE</spring-version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <servlet.api.version>4.0.3</servlet.api.version>
@@ -30,7 +30,7 @@
     <infinispan.version>9.4.8.Final</infinispan.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <alpn.version>undefined</alpn.version>
-    <conscrypt.version>2.1.0</conscrypt.version>
+    <conscrypt.version>2.4.0</conscrypt.version>
     <asm.version>7.2</asm.version>
     <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
@@ -90,6 +90,7 @@
 
   <modules>
     <module>build-resources</module>
+    <module>jetty-slf4j-impl</module>
     <module>jetty-ant</module>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
@@ -476,6 +477,7 @@
             <source>${compiler.source}</source>
             <target>${compiler.target}</target>
             <release>${compiler.release}</release>
+            <showWarnings>true</showWarnings>
             <compilerArgs>
               <compilerArg>-Xlint:exports</compilerArg>
             </compilerArgs>
@@ -616,7 +618,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.2.1</version>
+          <version>3.2.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -952,6 +954,11 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-slf4j-impl</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-servlet-api</artifactId>
         <version>${servlet.api.version}</version>
@@ -1096,6 +1103,16 @@
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
         <version>0.24</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.derby</groupId>
+        <artifactId>derby</artifactId>
+        <version>10.14.2.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.derby</groupId>
+        <artifactId>derbytools</artifactId>
+        <version>10.14.2.0</version>
       </dependency>
       <!-- avoid depending on a range dependency from a transitive dependency -->
       <dependency>
@@ -1329,7 +1346,6 @@
                   <copyGenerated>true</copyGenerated>
                   <attachArtifact>false</attachArtifact>
                   <updateDate>true</updateDate>
-                  <versionTagHeader>Tag for release: jetty-${project.version}</versionTagHeader>
                   <filenameExcludes>
                     <filenameExclude>jetty-documentation/.*</filenameExclude>
                     <filenameExclude>examples/.*</filenameExclude>
@@ -1422,16 +1438,6 @@
             <enabled>true</enabled>
           </snapshots>
         </repository>
-        <!--repository>
-          <id>apache.snapshots</id>
-          <url>https://repository.apache.org/content/repositories/snapshots</url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </repository-->
         <repository>
           <id>oss.snapshots</id>
           <name>OSS Snapshots</name>
@@ -1573,29 +1579,4 @@
       <url>scp://build.eclipse.org:/home/data/httpd/download.eclipse.org/jetty/${project.version}/</url>
     </site>
   </distributionManagement>
-
-  <!-- comment this until if we do not need some Apache maven plugins SNAPSHOT versions -->
-<!--  <pluginRepositories>-->
-<!--    <pluginRepository>-->
-<!--      <id>apache.snapshots</id>-->
-<!--      <url>https://repository.apache.org/content/repositories/snapshots</url>-->
-<!--      <releases>-->
-<!--        <enabled>false</enabled>-->
-<!--      </releases>-->
-<!--      <snapshots>-->
-<!--        <enabled>true</enabled>-->
-<!--      </snapshots>-->
-<!--    </pluginRepository>-->
-<!--    <pluginRepository>-->
-<!--      <id>plexus-snapshots</id>-->
-<!--      <url>https://oss.sonatype.org/content/repositories/plexus-snapshots</url>-->
-<!--      <releases>-->
-<!--        <enabled>false</enabled>-->
-<!--      </releases>-->
-<!--      <snapshots>-->
-<!--        <enabled>true</enabled>-->
-<!--      </snapshots>-->
-<!--    </pluginRepository>-->
-<!--  </pluginRepositories>-->
-
 </project>

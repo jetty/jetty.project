@@ -33,8 +33,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Container;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A Listener that limits the number of Connections.</p>
@@ -60,7 +60,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class ConnectionLimit extends AbstractLifeCycle implements Listener, SelectorManager.AcceptListener
 {
-    private static final Logger LOG = Log.getLogger(ConnectionLimit.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectionLimit.class);
 
     private final Server _server;
     private final List<AbstractConnector> _connectors = new ArrayList<>();

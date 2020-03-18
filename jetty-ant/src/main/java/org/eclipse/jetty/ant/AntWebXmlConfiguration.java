@@ -21,10 +21,10 @@ package org.eclipse.jetty.ant;
 import java.io.File;
 import java.util.List;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This configuration object provides additional way to inject application
@@ -34,7 +34,7 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
  */
 public class AntWebXmlConfiguration extends WebXmlConfiguration
 {
-    private static final Logger LOG = Log.getLogger(WebXmlConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebXmlConfiguration.class);
 
     /**
      * List of classpath files.

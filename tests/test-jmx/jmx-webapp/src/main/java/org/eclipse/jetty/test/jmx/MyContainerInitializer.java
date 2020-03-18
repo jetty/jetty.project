@@ -23,12 +23,12 @@ import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MyContainerInitializer implements ServletContainerInitializer
 {
-    private static final Logger LOG = Log.getLogger(MyContainerInitializer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MyContainerInitializer.class);
 
     @Override
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException

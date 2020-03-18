@@ -43,8 +43,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.invoke.MethodType.methodType;
 
@@ -57,7 +57,7 @@ import static java.lang.invoke.MethodType.methodType;
  */
 public class TypeUtil
 {
-    private static final Logger LOG = Log.getLogger(TypeUtil.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TypeUtil.class);
     public static final Class<?>[] NO_ARGS = new Class[]{};
     public static final int CR = '\r';
     public static final int LF = '\n';
@@ -309,13 +309,13 @@ public class TypeUtil
         }
         catch (NoSuchMethodException | IllegalAccessException | InstantiationException x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
         }
         catch (InvocationTargetException x)
         {
             if (x.getTargetException() instanceof Error)
                 throw (Error)x.getTargetException();
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
         }
         return null;
     }

@@ -26,18 +26,18 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Support for writing a single WebSocket BINARY message via a {@link OutputStream}
  */
 public class MessageOutputStream extends OutputStream
 {
-    private static final Logger LOG = Log.getLogger(MessageOutputStream.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessageOutputStream.class);
 
     private final CoreSession coreSession;
     private final ByteBufferPool bufferPool;
@@ -55,7 +55,6 @@ public class MessageOutputStream extends OutputStream
         this.bufferPool = bufferPool;
         this.bufferSize = coreSession.getOutputBufferSize();
         this.buffer = bufferPool.acquire(bufferSize, true);
-        BufferUtil.clear(buffer);
     }
 
     void setMessageType(byte opcode)
@@ -84,6 +83,20 @@ public class MessageOutputStream extends OutputStream
         try
         {
             send(ByteBuffer.wrap(new byte[]{(byte)b}));
+        }
+        catch (Throwable x)
+        {
+            // Notify without holding locks.
+            notifyFailure(x);
+            throw x;
+        }
+    }
+
+    public void write(ByteBuffer buffer) throws IOException
+    {
+        try
+        {
+            send(buffer);
         }
         catch (Throwable x)
         {

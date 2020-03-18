@@ -24,8 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Pre encoded HttpField.
@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class PreEncodedHttpField extends HttpField
 {
-    private static final Logger LOG = Log.getLogger(PreEncodedHttpField.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PreEncodedHttpField.class);
     private static final HttpFieldPreEncoder[] __encoders;
 
     static
@@ -55,7 +55,7 @@ public class PreEncodedHttpField extends HttpField
             }
             catch (Error | RuntimeException e)
             {
-                LOG.debug(e);
+                LOG.debug("Unable to add HttpFieldPreEncoder", e);
             }
         }
         LOG.debug("HttpField encoders loaded: {}", encoders);

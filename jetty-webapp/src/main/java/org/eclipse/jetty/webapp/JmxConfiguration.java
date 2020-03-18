@@ -21,8 +21,8 @@ package org.eclipse.jetty.webapp;
 import java.util.ServiceLoader;
 
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>JMX Configuration</p>
@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JmxConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(JmxConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JmxConfiguration.class);
 
     public JmxConfiguration()
     {
@@ -53,7 +53,7 @@ public class JmxConfiguration extends AbstractConfiguration
         }
         catch (Throwable e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             return false;
         }
     }

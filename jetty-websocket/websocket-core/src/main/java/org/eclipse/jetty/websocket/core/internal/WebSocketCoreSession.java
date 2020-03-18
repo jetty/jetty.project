@@ -33,8 +33,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -53,6 +51,8 @@ import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
 
@@ -61,7 +61,7 @@ import static org.eclipse.jetty.util.Callback.NOOP;
  */
 public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(WebSocketCoreSession.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketCoreSession.class);
     private static final CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
 
     private final WebSocketComponents components;
@@ -354,7 +354,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
                 }
                 catch (Throwable e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Failure from onClosed on handler {}", handler, e);
                     callback.failed(e);
                 }
             });
@@ -368,7 +368,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
             {
                 if (e != cause)
                     cause.addSuppressed(e);
-                LOG.warn(cause);
+                LOG.warn("Failure from onError on handler {}", handler, cause);
                 errorCallback.failed(cause);
             }
         }
@@ -380,7 +380,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
             }
             catch (Throwable e)
             {
-                LOG.warn(e);
+                LOG.warn("Failure from onClosed on handler {}", handler, e);
                 callback.failed(e);
             }
         }

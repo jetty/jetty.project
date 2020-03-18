@@ -21,10 +21,10 @@ package org.eclipse.jetty.webapp;
 import java.io.IOException;
 import java.util.Map;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * JettyWebConfiguration.
@@ -33,7 +33,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class JettyWebXmlConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(JettyWebXmlConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JettyWebXmlConfiguration.class);
 
     public static final String PROPERTY_WEB_INF_URI = "web-inf.uri";
     public static final String PROPERTY_WEB_INF = "web-inf";

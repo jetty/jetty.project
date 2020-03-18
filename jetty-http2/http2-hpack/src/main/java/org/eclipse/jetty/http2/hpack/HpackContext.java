@@ -32,8 +32,8 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * HPACK - Header Compression for HTTP/2
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HpackContext
 {
-    public static final Logger LOG = Log.getLogger(HpackContext.class);
+    public static final Logger LOG = LoggerFactory.getLogger(HpackContext.class);
     private static final String EMPTY = "";
     public static final String[][] STATIC_TABLE =
         {

@@ -23,12 +23,13 @@ import javax.servlet.ServletContext;
 import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractHolder
@@ -41,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpable
 {
-    private static final Logger LOG = Log.getLogger(BaseHolder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BaseHolder.class);
 
     private final Source _source;
     private Class<? extends T> _class;
@@ -91,7 +92,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to load class {}", _className, e);
                 throw new UnavailableException("Class loading error for holder " + toString());
             }
         }
@@ -175,6 +176,40 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     protected synchronized T getInstance()
     {
         return _instance;
+    }
+
+    protected synchronized T createInstance() throws Exception
+    {
+        ServletContext ctx = getServletContext();
+        if (ctx == null)
+            return getHeldClass().getDeclaredConstructor().newInstance();
+
+        if (ServletContextHandler.Context.class.isAssignableFrom(ctx.getClass()))
+            return ((ServletContextHandler.Context)ctx).createInstance(this);
+
+        return null;
+    }
+
+    public ServletContext getServletContext()
+    {
+        ServletContext scontext = null;
+
+        //try the ServletHandler first
+        if (getServletHandler() != null)
+            scontext = getServletHandler().getServletContext();
+
+        if (scontext != null)
+            return scontext;
+
+        //try the ContextHandler next
+        Context ctx = ContextHandler.getCurrentContext();
+        if (ctx != null)
+        {
+            ContextHandler contextHandler = ctx.getContextHandler();
+            if (contextHandler != null)
+                return contextHandler.getServletContext();
+        }
+        return null;
     }
 
     /**

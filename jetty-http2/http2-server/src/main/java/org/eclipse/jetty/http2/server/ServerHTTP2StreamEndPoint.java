@@ -27,12 +27,12 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServerHTTP2StreamEndPoint extends HTTP2StreamEndPoint implements HTTP2Channel.Server
 {
-    private static final Logger LOG = Log.getLogger(ServerHTTP2StreamEndPoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServerHTTP2StreamEndPoint.class);
 
     public ServerHTTP2StreamEndPoint(IStream stream)
     {

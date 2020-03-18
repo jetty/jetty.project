@@ -25,8 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A facility to detect improper usage of resource pools.
@@ -59,7 +59,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
 {
-    private static final Logger LOG = Log.getLogger(LeakDetector.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LeakDetector.class);
 
     private final ReferenceQueue<T> queue = new ReferenceQueue<>();
     private final ConcurrentMap<String, LeakInfo> resources = new ConcurrentHashMap<>();

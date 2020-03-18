@@ -48,8 +48,8 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * JAASLoginService
@@ -60,7 +60,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JAASLoginService extends AbstractLifeCycle implements LoginService
 {
-    private static final Logger LOG = Log.getLogger(JAASLoginService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JAASLoginService.class);
 
     public static final String DEFAULT_ROLE_CLASS_NAME = "org.eclipse.jetty.jaas.JAASRole";
     public static final String[] DEFAULT_ROLE_CLASS_NAMES = {DEFAULT_ROLE_CLASS_NAME};
@@ -263,7 +263,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         return null;
     }
@@ -293,7 +293,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         }
         catch (LoginException e)
         {
-            LOG.warn(e);
+            LOG.warn("Failed to logout {}", user, e);
         }
     }
 

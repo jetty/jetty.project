@@ -41,13 +41,13 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ProcessorUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -62,7 +62,7 @@ public class ProxyServletLoadTest
             .map(Arguments::of);
     }
 
-    private static final Logger LOG = Log.getLogger(ProxyServletLoadTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProxyServletLoadTest.class);
     private static final String PROXIED_HEADER = "X-Proxied";
 
     private HttpClient client;

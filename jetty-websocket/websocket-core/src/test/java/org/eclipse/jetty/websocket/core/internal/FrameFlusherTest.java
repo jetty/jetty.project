@@ -35,8 +35,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -47,6 +45,8 @@ import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -276,7 +276,7 @@ public class FrameFlusherTest
 
     public static class BlockingEndpoint extends CapturingEndPoint
     {
-        private static final Logger LOG = Log.getLogger(BlockingEndpoint.class);
+        private static final Logger LOG = LoggerFactory.getLogger(BlockingEndpoint.class);
 
         private long blockTime = 0;
         public CountDownLatch closeLatch = new CountDownLatch(1);

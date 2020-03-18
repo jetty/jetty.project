@@ -32,8 +32,8 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The base parser for the frame body of HTTP/2 frames.</p>
@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class BodyParser
 {
-    protected static final Logger LOG = Log.getLogger(BodyParser.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(BodyParser.class);
 
     private final HeaderParser headerParser;
     private final Parser.Listener listener;

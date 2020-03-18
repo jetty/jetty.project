@@ -12,11 +12,13 @@ annotations
 
 [lib]
 lib/websocket/websocket-core-${jetty.version}.jar
-lib/websocket/websocket-util-${jetty.version}.jar
 lib/websocket/websocket-servlet-${jetty.version}.jar
-lib/websocket/websocket-jetty-*.jar
+lib/websocket/websocket-util-${jetty.version}.jar
+lib/websocket/websocket-jetty-api-${jetty.version}.jar
+lib/websocket/websocket-jetty-common-${jetty.version}.jar
+lib/websocket/websocket-jetty-server-${jetty.version}.jar
 
 [jpms]
 # The implementation needs to access method handles in
 # classes that are in the web application classloader.
-add-reads: org.eclipse.jetty.websocket.common=ALL-UNNAMED
+add-reads: org.eclipse.jetty.websocket.jetty.common=ALL-UNNAMED

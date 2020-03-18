@@ -27,6 +27,7 @@ import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -35,12 +36,12 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Dispatcher implements RequestDispatcher
 {
-    private static final Logger LOG = Log.getLogger(Dispatcher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Dispatcher.class);
 
     /**
      * Dispatch include attribute names
@@ -108,7 +109,7 @@ public class Dispatcher implements RequestDispatcher
                 attr._servletPath = null; // set by ServletHandler
                 attr._pathInfo = _pathInContext;
                 attr._query = _uri.getQuery();
-
+                attr._mapping = null; //set by ServletHandler
                 if (attr._query != null)
                     baseRequest.mergeQueryParameters(baseRequest.getQueryString(), attr._query, false);
                 baseRequest.setAttributes(attr);
@@ -147,6 +148,7 @@ public class Dispatcher implements RequestDispatcher
         final String old_context_path = baseRequest.getContextPath();
         final String old_servlet_path = baseRequest.getServletPath();
         final String old_path_info = baseRequest.getPathInfo();
+        final HttpServletMapping old_mapping = baseRequest.getHttpServletMapping();
 
         final MultiMap<String> old_query_params = baseRequest.getQueryParameters();
         final Attributes old_attr = baseRequest.getAttributes();
@@ -175,6 +177,7 @@ public class Dispatcher implements RequestDispatcher
                     attr._requestURI = (String)old_attr.getAttribute(FORWARD_REQUEST_URI);
                     attr._contextPath = (String)old_attr.getAttribute(FORWARD_CONTEXT_PATH);
                     attr._servletPath = (String)old_attr.getAttribute(FORWARD_SERVLET_PATH);
+                    attr._mapping = (HttpServletMapping)old_attr.getAttribute(FORWARD_MAPPING);
                 }
                 else
                 {
@@ -183,6 +186,7 @@ public class Dispatcher implements RequestDispatcher
                     attr._requestURI = old_uri.getPath();
                     attr._contextPath = old_context_path;
                     attr._servletPath = old_servlet_path;
+                    attr._mapping = old_mapping;
                 }
 
                 HttpURI uri = new HttpURI(old_uri.getScheme(), old_uri.getHost(), old_uri.getPort(),
@@ -261,6 +265,7 @@ public class Dispatcher implements RequestDispatcher
         String _servletPath;
         String _pathInfo;
         String _query;
+        HttpServletMapping _mapping;
 
         ForwardAttributes(Attributes attributes)
         {
@@ -282,6 +287,8 @@ public class Dispatcher implements RequestDispatcher
                     return _contextPath;
                 if (key.equals(FORWARD_QUERY_STRING))
                     return _query;
+                if (key.equals(FORWARD_MAPPING))
+                    return _mapping;
             }
 
             if (key.startsWith(__INCLUDE_PREFIX))
@@ -312,6 +319,7 @@ public class Dispatcher implements RequestDispatcher
                 set.add(FORWARD_REQUEST_URI);
                 set.add(FORWARD_SERVLET_PATH);
                 set.add(FORWARD_CONTEXT_PATH);
+                set.add(FORWARD_MAPPING);
                 if (_query != null)
                     set.add(FORWARD_QUERY_STRING);
                 else
@@ -336,7 +344,8 @@ public class Dispatcher implements RequestDispatcher
                     _contextPath = (String)value;
                 else if (key.equals(FORWARD_QUERY_STRING))
                     _query = (String)value;
-
+                else if (key.equals(FORWARD_MAPPING))
+                    _mapping = (HttpServletMapping)value;
                 else if (value == null)
                     _attr.removeAttribute(key);
                 else
@@ -376,6 +385,7 @@ public class Dispatcher implements RequestDispatcher
         String _servletPath;
         String _pathInfo;
         String _query;
+        HttpServletMapping _mapping;
 
         IncludeAttributes(Attributes attributes)
         {
@@ -397,6 +407,8 @@ public class Dispatcher implements RequestDispatcher
                     return _query;
                 if (key.equals(INCLUDE_REQUEST_URI))
                     return _requestURI;
+                if (key.equals(INCLUDE_MAPPING))
+                    return _mapping;
             }
             else if (key.startsWith(__INCLUDE_PREFIX))
                 return null;
@@ -425,6 +437,7 @@ public class Dispatcher implements RequestDispatcher
                 set.add(INCLUDE_REQUEST_URI);
                 set.add(INCLUDE_SERVLET_PATH);
                 set.add(INCLUDE_CONTEXT_PATH);
+                set.add(INCLUDE_MAPPING);
                 if (_query != null)
                     set.add(INCLUDE_QUERY_STRING);
                 else
@@ -449,6 +462,8 @@ public class Dispatcher implements RequestDispatcher
                     _contextPath = (String)value;
                 else if (key.equals(INCLUDE_QUERY_STRING))
                     _query = (String)value;
+                else if (key.equals(INCLUDE_MAPPING))
+                    _mapping = (HttpServletMapping)value;
                 else if (value == null)
                     _attr.removeAttribute(key);
                 else

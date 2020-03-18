@@ -27,6 +27,8 @@ import java.util.jar.Manifest;
 
 public class ManifestUtils
 {
+    // IMPORTANT NOTE: This class cannot use Logging, as this class is used by jetty-start
+
     private ManifestUtils()
     {
     }

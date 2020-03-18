@@ -31,7 +31,6 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -55,8 +54,7 @@ public class QuickStartTest
         PreconfigureStandardTestWar.main(new String[]{});
 
         WebDescriptor descriptor = new WebDescriptor(Resource.newResource("./target/test-standard-preconfigured/WEB-INF/quickstart-web.xml"));
-        descriptor.setValidating(!Log.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled());
-        descriptor.parse();
+        descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());
 
@@ -72,9 +70,9 @@ public class QuickStartTest
 
         WebAppContext webapp = new WebAppContext();
         webapp.addConfiguration(new QuickStartConfiguration(),
-                                new EnvConfiguration(),
-                                new PlusConfiguration(),
-                                new AnnotationConfiguration());
+            new EnvConfiguration(),
+            new PlusConfiguration(),
+            new AnnotationConfiguration());
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setWar(war);
         webapp.setContextPath("/");
@@ -109,8 +107,7 @@ public class QuickStartTest
         assertTrue(Files.exists(webXmlPath), "Path should exist:" + webXmlPath);
 
         WebDescriptor descriptor = new WebDescriptor(new PathResource(webXmlPath));
-        descriptor.setValidating(!Log.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled());
-        descriptor.parse();
+        descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());
 
@@ -126,9 +123,9 @@ public class QuickStartTest
 
         WebAppContext webapp = new WebAppContext();
         webapp.addConfiguration(new QuickStartConfiguration(),
-                                new EnvConfiguration(),
-                                new PlusConfiguration(),
-                                new AnnotationConfiguration());
+            new EnvConfiguration(),
+            new PlusConfiguration(),
+            new AnnotationConfiguration());
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setWar(war);
         webapp.setContextPath("/");
@@ -160,8 +157,7 @@ public class QuickStartTest
         PreconfigureJNDIWar.main(new String[]{});
 
         WebDescriptor descriptor = new WebDescriptor(Resource.newResource("./target/test-jndi-preconfigured/WEB-INF/quickstart-web.xml"));
-        descriptor.setValidating(!Log.getLogger(QuickStartGeneratorConfiguration.class).isDebugEnabled());
-        descriptor.parse();
+        descriptor.parse(WebDescriptor.getParser(!QuickStartGeneratorConfiguration.LOG.isDebugEnabled()));
         Node node = descriptor.getRoot();
         assertThat(node, Matchers.notNullValue());
 
@@ -177,9 +173,9 @@ public class QuickStartTest
 
         WebAppContext webapp = new WebAppContext();
         webapp.addConfiguration(new QuickStartConfiguration(),
-                                new EnvConfiguration(),
-                                new PlusConfiguration(),
-                                new AnnotationConfiguration());
+            new EnvConfiguration(),
+            new PlusConfiguration(),
+            new AnnotationConfiguration());
         webapp.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.QUICKSTART);
         webapp.setWar(war);
         webapp.setContextPath("/");

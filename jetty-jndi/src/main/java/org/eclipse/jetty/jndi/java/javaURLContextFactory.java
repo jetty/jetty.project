@@ -24,8 +24,8 @@ import javax.naming.Name;
 import javax.naming.NamingException;
 import javax.naming.spi.ObjectFactory;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // This is a required name for JNDI
 // @checkstyle-disable-check : TypeNameCheck
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class javaURLContextFactory implements ObjectFactory
 {
-    private static final Logger LOG = Log.getLogger(javaURLContextFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(javaURLContextFactory.class);
 
     /**
      * Either return a new context or the resolution of a url.

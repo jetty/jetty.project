@@ -32,11 +32,11 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -49,7 +49,7 @@ import static org.hamcrest.Matchers.notNullValue;
  */
 public class WSServer extends LocalServer implements LocalFuzzer.Provider
 {
-    private static final Logger LOG = Log.getLogger(WSServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WSServer.class);
     private final Path contextDir;
     private final String contextPath;
     private ContextHandlerCollection contexts;

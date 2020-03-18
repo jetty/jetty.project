@@ -31,10 +31,10 @@ import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ServletSecurityAnnotationHandler
@@ -55,14 +55,11 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    private static final Logger LOG = Log.getLogger(ServletSecurityAnnotationHandler.class);
-
-    private WebAppContext _context;
+    private static final Logger LOG = LoggerFactory.getLogger(ServletSecurityAnnotationHandler.class);
 
     public ServletSecurityAnnotationHandler(WebAppContext wac)
     {
-        super(false);
-        _context = wac;
+        super(false, wac);
     }
 
     @Override

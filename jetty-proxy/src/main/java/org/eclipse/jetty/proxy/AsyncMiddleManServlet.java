@@ -56,8 +56,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Destroyable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Servlet 3.1 asynchronous proxy servlet with capability
@@ -760,7 +760,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
     public static class GZIPContentTransformer implements ContentTransformer
     {
-        private static final Logger logger = Log.getLogger(GZIPContentTransformer.class);
+        private static final Logger logger = LoggerFactory.getLogger(GZIPContentTransformer.class);
 
         private final List<ByteBuffer> buffers = new ArrayList<>(2);
         private final ContentTransformer transformer;

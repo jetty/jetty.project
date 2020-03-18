@@ -19,9 +19,9 @@
 package org.eclipse.jetty.webapp;
 
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DiscoveredAnnotation
@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public abstract class DiscoveredAnnotation
 {
-    private static final Logger LOG = Log.getLogger(DiscoveredAnnotation.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DiscoveredAnnotation.class);
 
     protected WebAppContext _context;
     protected String _className;
@@ -50,6 +50,11 @@ public abstract class DiscoveredAnnotation
         _context = context;
         _className = className;
         _resource = resource;
+    }
+
+    public String getClassName()
+    {
+        return _className;
     }
 
     public Resource getResource()
@@ -81,7 +86,13 @@ public abstract class DiscoveredAnnotation
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to load {}", _className, e);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getName() + "[" + getClassName() + "," + getResource() + "]";
     }
 }

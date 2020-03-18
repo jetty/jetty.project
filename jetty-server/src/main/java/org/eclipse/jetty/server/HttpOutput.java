@@ -43,8 +43,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>{@link HttpOutput} implements {@link ServletOutputStream}
@@ -174,7 +174,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
     }
 
-    private static Logger LOG = Log.getLogger(HttpOutput.class);
+    private static Logger LOG = LoggerFactory.getLogger(HttpOutput.class);
     private static final ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
 
     private final HttpChannel _channel;
@@ -1269,7 +1269,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
         catch (Throwable x)
         {
-            LOG.debug(x);
+            LOG.debug("Unable to access ReadableByteChannel for content {}", httpContent, x);
         }
         if (rbc != null)
         {
@@ -1285,7 +1285,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
         catch (Throwable x)
         {
-            LOG.debug(x);
+            LOG.debug("Unable to access InputStream for content {}", httpContent, x);
         }
         if (in != null)
         {
@@ -1452,7 +1452,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(t);
+            {
+                t.addSuppressed(error);
+                LOG.debug("Failed in call onError on {}", _writeListener, t);
+            }
         }
         finally
         {

@@ -22,4 +22,5 @@ module org.eclipse.jetty.proxy
 
     requires transitive org.eclipse.jetty.client;
     requires transitive org.eclipse.jetty.server;
+    requires transitive org.slf4j;
 }

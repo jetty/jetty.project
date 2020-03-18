@@ -30,8 +30,8 @@ import org.eclipse.jetty.security.AbstractUserAuthentication;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SessionAuthentication
@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class SessionAuthentication extends AbstractUserAuthentication
     implements Serializable, HttpSessionActivationListener, HttpSessionBindingListener
 {
-    private static final Logger LOG = Log.getLogger(SessionAuthentication.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SessionAuthentication.class);
 
     private static final long serialVersionUID = -4643200685888258706L;
 

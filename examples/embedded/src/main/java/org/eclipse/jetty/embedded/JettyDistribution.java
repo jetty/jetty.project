@@ -23,8 +23,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A utility test class to locate a Jetty Distribution for testing purposes by searching:
@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class JettyDistribution
 {
-    private static final Logger LOG = Log.getLogger(JettyDistribution.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JettyDistribution.class);
     public static final Path DISTRIBUTION;
 
     static
@@ -64,7 +64,7 @@ public class JettyDistribution
             }
             catch (Throwable th)
             {
-                LOG.warn(th);
+                LOG.warn("Unable to resolve Jetty Distribution location", th);
             }
         }
 
@@ -119,7 +119,7 @@ public class JettyDistribution
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         return null;
     }

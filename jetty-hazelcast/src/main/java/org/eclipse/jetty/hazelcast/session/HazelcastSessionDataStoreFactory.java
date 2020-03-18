@@ -19,6 +19,7 @@
 package org.eclipse.jetty.hazelcast.session;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
@@ -57,6 +58,8 @@ public class HazelcastSessionDataStoreFactory
 
     private boolean scavengeZombies = false;
 
+    private String addresses;
+
     public boolean isScavengeZombies()
     {
         return scavengeZombies;
@@ -82,6 +85,12 @@ public class HazelcastSessionDataStoreFactory
                     if (configurationLocation == null)
                     {
                         ClientConfig config = new ClientConfig();
+
+                        if (addresses != null && !addresses.isEmpty())
+                        {
+                            config.getNetworkConfig().setAddresses(Arrays.asList(addresses.split(",")));
+                        }
+
                         SerializerConfig sc = new SerializerConfig()
                             .setImplementation(new SessionDataSerializer())
                             .setTypeClass(SessionData.class);
@@ -201,5 +210,15 @@ public class HazelcastSessionDataStoreFactory
     public void setHazelcastInstanceName(String hazelcastInstanceName)
     {
         this.hazelcastInstanceName = hazelcastInstanceName;
+    }
+
+    public String getAddresses()
+    {
+        return addresses;
+    }
+
+    public void setAddresses(String addresses)
+    {
+        this.addresses = addresses;
     }
 }

@@ -221,6 +221,13 @@ public class Frame
         return payload;
     }
 
+    /**
+     * Get the payload of the frame as a UTF-8 string.
+     * <p>Should only be used in testing, does not validate the
+     * UTF-8 and a non fin frame can contain partial UTF-8 characters.</p>
+     *
+     * @return the payload as a UTF-8 string.
+     */
     public String getPayloadAsUTF8()
     {
         if (payload == null)

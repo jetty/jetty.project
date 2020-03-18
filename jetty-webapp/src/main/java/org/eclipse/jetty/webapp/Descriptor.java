@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.util.Objects;
+
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
 
@@ -26,30 +28,21 @@ public abstract class Descriptor
     protected Resource _xml;
     protected XmlParser.Node _root;
     protected String _dtd;
-    protected boolean _validating;
 
     public Descriptor(Resource xml)
     {
-        _xml = xml;
+        _xml = Objects.requireNonNull(xml);
     }
 
-    public abstract XmlParser ensureParser()
-        throws ClassNotFoundException;
-
-    public void setValidating(boolean validating)
-    {
-        _validating = validating;
-    }
-
-    public void parse()
+    public void parse(XmlParser parser)
         throws Exception
     {
 
         if (_root == null)
         {
+            Objects.requireNonNull(parser);
             try
             {
-                XmlParser parser = ensureParser();
                 _root = parser.parse(_xml.getInputStream());
                 _dtd = parser.getDTD();
             }
@@ -58,6 +51,11 @@ public abstract class Descriptor
                 _xml.close();
             }
         }
+    }
+
+    public boolean isParsed()
+    {
+        return _root != null;
     }
 
     public Resource getResource()

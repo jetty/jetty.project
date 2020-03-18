@@ -29,13 +29,13 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject
 public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(AbstractConnectionPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractConnectionPool.class);
 
     private final AtomicBoolean closed = new AtomicBoolean();
 

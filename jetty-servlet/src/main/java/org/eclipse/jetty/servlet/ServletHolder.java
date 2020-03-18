@@ -58,8 +58,8 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Servlet Instance and Context Holder.
@@ -72,7 +72,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Servlet Holder")
 public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable<ServletHolder>
 {
-    private static final Logger LOG = Log.getLogger(ServletHolder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServletHolder.class);
     private int _initOrder = -1;
     private boolean _initOnStartup = false;
     private Map<String, String> _roleMap;
@@ -364,7 +364,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             makeUnavailable(ex);
             if (getServletHandler().isStartWithUnavailable())
             {
-                LOG.ignore(ex);
+                LOG.trace("IGNORED", ex);
                 return;
             }
             else
@@ -381,7 +381,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             makeUnavailable(ex);
             if (getServletHandler().isStartWithUnavailable())
             {
-                LOG.ignore(ex);
+                LOG.trace("IGNORED", ex);
                 return;
             }
             else
@@ -442,7 +442,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to destroy servlet {}", servlet, e);
                 }
             }
             _config = null;
@@ -594,7 +594,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             makeUnavailable(e);
             if (getServletHandler().isStartWithUnavailable())
-                LOG.warn(e);
+                LOG.warn("{} is marked as Unavailable", this, e);
             else
                 throw e;
         }
@@ -792,8 +792,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             String tmp = StringUtil.replace(jsp, '.', '_');
             if (LOG.isDebugEnabled())
             {
-                LOG.warn("JspUtil.makeJavaIdentifier failed for jsp " + jsp + " using " + tmp + " instead");
-                LOG.warn(e);
+                LOG.warn("JspUtil.makeJavaIdentifier failed for jsp {} using {} instead", jsp, tmp, e);
             }
             return tmp;
         }
@@ -829,8 +828,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             tmp = (".".equals(tmp) ? "" : tmp);
             if (LOG.isDebugEnabled())
             {
-                LOG.warn("JspUtil.makeJavaPackage failed for " + jsp + " using " + tmp + " instead");
-                LOG.warn(e);
+                LOG.warn("JspUtil.makeJavaPackage failed for {} using {} instead", jsp, tmp, e);
             }
             return tmp;
         }
@@ -1013,13 +1011,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             {
                 while (_stack.size() > 0)
                 {
+                    Servlet servlet = _stack.pop();
                     try
                     {
-                        (_stack.pop()).destroy();
+                        servlet.destroy();
                     }
                     catch (Exception e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Unable to destroy servlet {}", servlet, e);
                     }
                 }
             }
@@ -1110,30 +1109,22 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      * @throws NoSuchMethodException if creating new instance resulted in error
      * @throws InvocationTargetException If creating new instance throws an exception
      */
-    protected Servlet newInstance() throws ServletException, IllegalAccessException, InstantiationException,
-        NoSuchMethodException, InvocationTargetException
+    protected Servlet newInstance() throws Exception
     {
-        try
-        {
-            ServletContext ctx = getServletHandler().getServletContext();
-            if (ctx != null)
-                return ctx.createServlet(getHeldClass());
-            return getHeldClass().getDeclaredConstructor().newInstance();
+        return createInstance();
+    }
 
-        }
-        catch (ServletException ex)
+    @Override
+    protected synchronized Servlet createInstance() throws Exception
+    {
+        Servlet servlet = super.createInstance();
+        if (servlet == null)
         {
-            Throwable cause = ex.getRootCause();
-            if (cause instanceof InstantiationException)
-                throw (InstantiationException)cause;
-            if (cause instanceof IllegalAccessException)
-                throw (IllegalAccessException)cause;
-            if (cause instanceof NoSuchMethodException)
-                throw (NoSuchMethodException)cause;
-            if (cause instanceof InvocationTargetException)
-                throw (InvocationTargetException)cause;
-            throw ex;
+            ServletContext ctx = getServletContext();
+            if (ctx != null)
+                servlet = ctx.createServlet(getHeldClass());
         }
+        return servlet;
     }
 
     @Override
@@ -1216,7 +1207,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 }
                 catch (Throwable th)
                 {
-                    LOG.warn(th);
+                    LOG.warn("Unable to destroy {}", _servlet, th);
                 }
             }
         }

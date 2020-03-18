@@ -30,12 +30,12 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JarFileResource extends JarResource
 {
-    private static final Logger LOG = Log.getLogger(JarFileResource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JarFileResource.class);
     private JarFile _jarFile;
     private File _file;
     private String[] _list;
@@ -71,7 +71,7 @@ public class JarFileResource extends JarResource
                 }
                 catch (IOException ioe)
                 {
-                    LOG.ignore(ioe);
+                    LOG.trace("IGNORED", ioe);
                 }
             }
         }
@@ -138,7 +138,7 @@ public class JarFileResource extends JarResource
             }
             catch (Exception e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 return false;
             }
         }
@@ -172,7 +172,7 @@ public class JarFileResource extends JarResource
                 }
                 catch (Exception e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
             }
 
@@ -217,7 +217,7 @@ public class JarFileResource extends JarResource
                 }
                 catch (IOException ioe)
                 {
-                    LOG.ignore(ioe);
+                    LOG.trace("IGNORED", ioe);
                 }
             }
         }
@@ -271,7 +271,7 @@ public class JarFileResource extends JarResource
                 //by other code.
                 //So, do one retry to drop a connection and get a fresh JarFile
                 LOG.warn("Retrying list:" + e);
-                LOG.debug(e);
+                LOG.debug("JarFile list failure", e);
                 close();
                 list = listEntries();
             }
@@ -303,7 +303,7 @@ public class JarFileResource extends JarResource
             {
 
                 e.printStackTrace();
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
             if (jarFile == null)
                 throw new IllegalStateException();
