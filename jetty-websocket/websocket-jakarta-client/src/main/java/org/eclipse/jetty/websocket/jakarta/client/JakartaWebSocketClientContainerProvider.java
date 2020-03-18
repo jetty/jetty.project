@@ -22,7 +22,6 @@ import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ShutdownThread;
-import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 
 /**
  * Client {@link ContainerProvider} implementation.

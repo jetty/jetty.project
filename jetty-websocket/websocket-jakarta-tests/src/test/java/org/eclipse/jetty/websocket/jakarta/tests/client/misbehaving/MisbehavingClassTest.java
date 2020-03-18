@@ -58,7 +58,7 @@ public class MisbehavingClassTest
         server.addBean(container); // allow to shutdown with server
         EndpointRuntimeOnOpen socket = new EndpointRuntimeOnOpen();
 
-        try (StacklessLogging ignored = new StacklessLogging( WebSocketCoreSession.class))
+        try (StacklessLogging ignored = new StacklessLogging(WebSocketCoreSession.class))
         {
             // expecting RuntimeException during onOpen
             container.connectToServer(socket, null, server.getWsUri());

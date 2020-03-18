@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jakarta.server.examples;
 
 import java.io.IOException;
+
 import jakarta.servlet.http.HttpSession;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.OnMessage;

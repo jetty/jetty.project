@@ -29,7 +29,6 @@ import jakarta.websocket.server.ServerEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 @ServerEndpoint("/onclose/{arg}")
 public class OnCloseServerEndpoint
 {
