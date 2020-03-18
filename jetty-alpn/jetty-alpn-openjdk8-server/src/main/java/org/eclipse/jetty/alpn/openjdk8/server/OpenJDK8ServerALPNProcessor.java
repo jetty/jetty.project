@@ -52,10 +52,13 @@ public class OpenJDK8ServerALPNProcessor implements ALPNProcessor.Server
             // JDK 8u252 has the JDK 9 ALPN API backported.
             // Use reflection so we can build with a JDK version less than 8u252.
             alpnSelector = SSLEngine.class.getMethod("setHandshakeApplicationProtocolSelector", BiFunction.class);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Using OpenJDK ALPN APIs instead of Jetty ALPN APIs");
             return;
         }
-        catch (NoSuchMethodException ignored)
+        catch (NoSuchMethodException x)
         {
+            LOG.ignore(x);
         }
 
         // Backported ALPN APIs not available.

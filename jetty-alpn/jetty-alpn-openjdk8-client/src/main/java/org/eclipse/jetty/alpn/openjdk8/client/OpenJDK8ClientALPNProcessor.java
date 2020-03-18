@@ -55,10 +55,13 @@ public class OpenJDK8ClientALPNProcessor implements ALPNProcessor.Client
             // Use reflection so we can build with a JDK version less than 8u252.
             alpnProtocols = SSLParameters.class.getMethod("setApplicationProtocols", String[].class);
             alpnProtocol = SSLEngine.class.getMethod("getApplicationProtocol");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Using OpenJDK ALPN APIs instead of Jetty ALPN APIs");
             return;
         }
-        catch (NoSuchMethodException ignored)
+        catch (NoSuchMethodException x)
         {
+            LOG.ignore(x);
         }
 
         // Backported ALPN APIs not available.
