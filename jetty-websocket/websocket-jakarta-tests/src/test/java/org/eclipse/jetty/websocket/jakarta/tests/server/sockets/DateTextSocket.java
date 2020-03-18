@@ -26,13 +26,13 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
+
 import org.eclipse.jetty.toolchain.test.StackUtils;
 import org.eclipse.jetty.websocket.jakarta.tests.coders.DateDecoder;
 import org.eclipse.jetty.websocket.jakarta.tests.coders.DateEncoder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 @ServerEndpoint(value = "/echo/beans/date", decoders = {DateDecoder.class}, encoders = {DateEncoder.class})
 public class DateTextSocket

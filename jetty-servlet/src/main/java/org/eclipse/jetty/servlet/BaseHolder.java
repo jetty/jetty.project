@@ -19,6 +19,7 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.UnavailableException;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -78,7 +79,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     {
         //if no class already loaded and no classname, make permanently unavailable
         if (_class == null && (_className == null || _className.equals("")))
-            throw new UnavailableException( "No class in holder " + toString());
+            throw new UnavailableException("No class in holder " + toString());
 
         //try to load class
         if (_class == null)

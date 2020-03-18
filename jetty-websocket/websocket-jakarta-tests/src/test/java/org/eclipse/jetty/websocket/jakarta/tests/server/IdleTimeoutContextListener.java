@@ -25,6 +25,7 @@ import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.idletimeout.OnOpenIdleTimeoutEndpoint;
+
 /**
  * Example of adding a server WebSocket (extending {@link jakarta.websocket.Endpoint}) programmatically via config
  */
