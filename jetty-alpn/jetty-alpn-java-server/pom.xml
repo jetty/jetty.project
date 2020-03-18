@@ -19,8 +19,8 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>1.9</source>
-          <target>1.9</target>
+          <source>9</source>
+          <target>9</target>
           <release>9</release>
         </configuration>
       </plugin>
@@ -45,11 +45,6 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-io</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.alpn</groupId>
-      <artifactId>alpn-api</artifactId>
-      <version>${alpn.api.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
