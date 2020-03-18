@@ -33,19 +33,20 @@ When using Jetty as a standalone server via the Jetty distribution, the `jetty-a
 
 When using Jetty embedded, the `jetty-alpn-client` and `jetty-alpn-server` artifacts must be included in the classpath, respectively for client and server use cases.
 
-The ALPN implementation is _provided_ to these two artifacts with the following three options:
+The ALPN implementation is _provided_ to these two artifacts with the following options:
 
-* For JDK 8 only, a provider based on modified OpenJDK classes
-** Only works with JDK 8, pure Java implementation
-** Requires the `-Xbootclasspath/p` option on command line
-* For JDK 8 or later, a provider based on the link:#conscrypt[Conscrypt security provider]
+* For Java 8 only, a provider based on a pure Java implementation (no native code)
+** For Java 8 up to `1.8.0_242` included, this provider uses modified OpenJDK classes
+  and requires the `-Xbootclasspath/p:` option on command line
+** For Java 8 from `1.8.0_252` included and later, this provider uses the standard OpenJDK
+  ALPN APIs introduced in Java 9 (see below) that have been backported to `1.8.0_252` and
+  does not require the `-Xbootclasspath/p:` option on command line
+* For Java 8 or later, a provider based on the link:#conscrypt[Conscrypt security provider]
 ** Works with JDK 8 or later and provides improved performance
 ** Binds to the OpenSSL native library shipped by Conscrypt and is therefore only available on the platforms supported by Conscrypt
-* For JDK 9 or later, a provider based on the ALPN APIs present in the JDK
-** Works with JDK 9 or later, pure Java implementation
+* For Java 9 or later, a provider based on the standard OpenJDK ALPN APIs
+** Works with JDK 9 or later, pure Java implementation (no native code)
 ** Lower performance than Conscrypt
-
-The first, although hosted under the umbrella of the Jetty project, is independent of Jetty (the Servlet Container); you can use it in any other Java network server.
 
 Each provider above provides an ALPN _service_ implementation; Jetty uses the `ServiceLoader` mechanism to load these service implementations.
 At least one valid provider must be present in the server classpath.
@@ -60,7 +61,18 @@ It is therefore possible to have multiple providers active at the same time, for
 [[alpn-openjdk8]]
 ==== ALPN and OpenJDK 8
 
-When using JDKs based on OpenJDK 8 (for JDK 9 see link:#alpn-jdk9[above]), and you do not or cannot use link:#conscrypt[Conscrypt], you can use Jetty's ALPN boot library to provide the ALPN service implementation, via the `alpn-boot` artifact.
+When using JDKs based on OpenJDK 8 (for JDK 9 see link:#alpn-jdk9[here]), and you do not or
+cannot use link:#conscrypt[Conscrypt], the ALPN implementation is provided by the
+`jetty-alpn-openjdk8-client` or `jetty-alpn-openjdk8-server` artifacts.
+
+For Java 8 versions up to `1.8.0_242` included, you also need the Jetty's ALPN boot library
+to provide the ALPN service implementation, via the `alpn-boot` artifact.
+For Java 8 versions from `1.8.0_252` included and later, Jetty's ALPN boot library is not
+necessary because the OpenJDK ALPN APIs have been backported to `1.8.0_252` and the
+`jetty-alpn-openjdk8-*` artifacts can use these backported APIs if their presence is detected.
+
+Alternatively, you can use the link:#alpn-openjdk8-agent[Jetty ALPN agent], that in turn uses
+theJetty ALPN boot library to transform the relevant OpenJDK classes when they are loaded.
 
 The Jetty ALPN boot library modifies the relevant OpenJDK classes to add ALPN support and provides an ALPN API that application can use to enable ALPN.
 
@@ -69,13 +81,14 @@ This enables transitively the `alpn-8` module which puts the `jetty-alpn-openjdk
 
 When using Jetty embedded, the ALPN support is provided by the `jetty-alpn-openjdk8-client` and `jetty-alpn-openjdk8-server` artifacts, respectively for client usage and server usage.
 
-To get ALPN working with the Jetty ALPN Boot library, you need:
+To get ALPN working with Java 8, you must have the `jetty-alpn-openjdk8-client` artifact or
+the `jetty-alpn-openjdk8-server` artifact in the classpath.
 
-* to start the JVM with the Jetty ALPN Boot library in the boot classpath
-* to have the `jetty-alpn-openjdk8-client` artifact or the `jetty-alpn-openjdk8-server`
-artifact in the classpath
+Additionally, if you are using OpenJDK `1.8.0_242` or earlier, you need the Jetty ALPN boot
+library (corresponding to the exact OpenJDK version you are using) in the boot classpath,
+or alternatively you need the link:#alpn-openjdk8-agent[Jetty ALPN agent].
 
-Start the JVM as follows:
+In the case of the Jetty ALPN boot library, start the JVM as follows:
 
 [source, plain, subs="{sub-order}"]
 ----
@@ -84,7 +97,45 @@ java -Xbootclasspath/p:<path_to_alpn_boot_jar> ...
 
 Where `path_to_alpn_boot_jar` is the path on the file system for the `alpn-boot` artifact, such as the one at the Maven coordinates `org.mortbay.jetty.alpn:alpn-boot`.
 
-Be certain to get the link:#alpn-versions[ALPN boot artifact version that matches the version of your JRE].
+____
+[IMPORTANT]
+Be certain to get the
+link:#alpn-versions[ALPN boot artifact version that matches the version of your JRE].
+____
+
+[[alpn-openjdk8-agent]]
+==== ALPN agent and OpenJDK 8
+
+The Jetty Project also maintains the
+https://github.com/jetty-project/jetty-alpn-agent[Jetty ALPN agent], which is a JVM
+agent that provides the ALPN implementation.
+The Jetty ALPN agent can be use in alternative (never together) with the
+link:#alpn-openjdk8[ALPN boot library].
+
+The Jetty ALPN agent contains the ALPN boot libraries for every JDK 8 version.
+The agent can be used only with Java 8, but works with _any_ Java 8 version.
+
+The Jetty ALPN agent detects the JDK version currently running, picks the correspondent
+ALPN boot library (or picks none if the JDK version is `1.8.0_252` or later), and
+transforms, if necessary, the relevant OpenJDK classes to provide the ALPN support.
+
+To use the Jetty ALPN agent, start the JVM as follows:
+
+[source, plain, subs="{sub-order}"]
+----
+java -javaagent:<path_to_alpn_agent_jar> ...
+----
+
+____
+[NOTE]
+The Jetty ALPN agent works with any Java 8 version. It is _required_ if you use
+an OpenJDK version up to `1.8.0_242` included, and it is _optional_ if you use an
+OpenJDK version equal or greater than `1.8.0_252`.
+
+The Jetty ALPN agent can be left on the command line even when using an OpenJDK version
+equal or greater than `1.8.0_252` but we recommend to remove it from the command line
+when you use OpenJDK `1.8.0_252` or later.
+____
 
 [[alpn-conscrypt]]
 ==== ALPN and Conscrypt
@@ -359,6 +410,7 @@ The ALPN implementation, relying on modifications of OpenJDK classes, updates ev
 |1.8.0u232 |8.1.13.v20181017
 |1.8.0u241^[1]^ |8.1.13.v20181017
 |1.8.0u242 |8.1.13.v20181017
+|1.8.0u252 and later | NOT NECESSARY
 |=============================
 ^[1]^ These are Oracle releases for which the source code is not available,
 or it is unclear what exactly is because there is no correspondent tag in
