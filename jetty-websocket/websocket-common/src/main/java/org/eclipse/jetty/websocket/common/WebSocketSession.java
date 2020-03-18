@@ -64,6 +64,7 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 public class WebSocketSession extends ContainerLifeCycle implements Session, RemoteEndpointFactory, WebSocketSessionScope, IncomingFrames, OutgoingFrames, Connection.Listener
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
+    private static final RemoteEndpointFactory defaultRemoteEndpointFactory;
     private final WebSocketContainerScope containerScope;
     private final URI requestURI;
     private final LogicalConnection connection;
@@ -71,9 +72,9 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private final Executor executor;
     private final WebSocketPolicy policy;
     private final AtomicBoolean onCloseCalled = new AtomicBoolean(false);
+    private final RemoteEndpointFactory remoteEndpointFactory;
     private ClassLoader classLoader;
     private ExtensionFactory extensionFactory;
-    private RemoteEndpointFactory remoteEndpointFactory;
     private String protocolVersion;
     private Map<String, String[]> parameterMap = new HashMap<>();
     private RemoteEndpoint remote;
@@ -82,6 +83,15 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
     private CompletableFuture<Session> openFuture;
+
+    static
+    {
+        // Attempt to discover a RemoteEndpointFactory with the SerivceLoader.
+        Iterator<RemoteEndpointFactory> iter = ServiceLoader.load(RemoteEndpointFactory.class).iterator();
+        defaultRemoteEndpointFactory = iter.hasNext() ? iter.next() : null;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Discovered default RemoteEndpointFactory: {}", defaultRemoteEndpointFactory);
+    }
 
     public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
@@ -97,6 +107,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         this.outgoingHandler = connection;
         this.incomingHandler = websocket;
         this.policy = websocket.getPolicy();
+
+        remoteEndpointFactory = (defaultRemoteEndpointFactory == null) ? this : defaultRemoteEndpointFactory;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Using RemoteEndpointFactory: {}", remoteEndpointFactory);
 
         this.connection.setSession(this);
 
@@ -167,16 +181,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     {
         if (LOG.isDebugEnabled())
             LOG.debug("starting - {}", this);
-
-        Iterator<RemoteEndpointFactory> iter = ServiceLoader.load(RemoteEndpointFactory.class).iterator();
-        if (iter.hasNext())
-            remoteEndpointFactory = iter.next();
-
-        if (remoteEndpointFactory == null)
-            remoteEndpointFactory = this;
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("Using RemoteEndpointFactory: {}", remoteEndpointFactory);
 
         super.doStart();
     }
