@@ -28,8 +28,6 @@ import javax.websocket.OnMessage;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -40,13 +38,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Test various {@link javax.websocket.Decoder.Binary Decoder.Binary} / {@link javax.websocket.Encoder.Binary Encoder.Binary} echo behavior of Java Primitives
  */
 public class PrimitivesBinaryEchoTest
 {
-    private static final Logger LOG = Log.getLogger(PrimitivesBinaryEchoTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PrimitivesBinaryEchoTest.class);
 
     public static class BaseSocket
     {

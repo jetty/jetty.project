@@ -46,13 +46,13 @@ import org.eclipse.jetty.util.ByteArrayOutputStream2;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Disabled
 public class SmallThreadPoolLoadTest extends AbstractTest
 {
-    private final Logger logger = Log.getLogger(SmallThreadPoolLoadTest.class);
+    private final Logger logger = LoggerFactory.getLogger(SmallThreadPoolLoadTest.class);
     private final AtomicLong requestIds = new AtomicLong();
 
     @Override

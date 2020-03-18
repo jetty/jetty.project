@@ -28,13 +28,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -132,7 +132,7 @@ public class CustomResourcesMonitorTest
 
     static class FileOnDirectoryMonitor implements LowResourceMonitor.LowResourceCheck
     {
-        private static final Logger LOG = Log.getLogger(FileOnDirectoryMonitor.class);
+        private static final Logger LOG = LoggerFactory.getLogger(FileOnDirectoryMonitor.class);
 
         private final Path _pathToMonitor;
 

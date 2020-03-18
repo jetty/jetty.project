@@ -29,10 +29,10 @@ import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * JSTLBundleDiscoverer
@@ -47,7 +47,7 @@ import org.osgi.framework.FrameworkUtil;
  */
 public class JSTLBundleDiscoverer implements TldBundleDiscoverer
 {
-    private static final Logger LOG = Log.getLogger(JSTLBundleDiscoverer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JSTLBundleDiscoverer.class);
 
     /**
      * Default name of a class that belongs to the jstl bundle. From that class

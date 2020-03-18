@@ -29,14 +29,14 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ClientEndpoint
 @ServerEndpoint("/")
 public class JavaxAutobahnSocket
 {
-    private static final Logger LOG = Log.getLogger(JavaxAutobahnSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JavaxAutobahnSocket.class);
 
     public Session session;
     public CountDownLatch closeLatch = new CountDownLatch(1);

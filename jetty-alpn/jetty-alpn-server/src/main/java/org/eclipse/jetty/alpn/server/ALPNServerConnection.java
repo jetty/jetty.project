@@ -27,12 +27,12 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NegotiatingServerConnection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ALPNServerConnection extends NegotiatingServerConnection
 {
-    private static final Logger LOG = Log.getLogger(ALPNServerConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ALPNServerConnection.class);
 
     public ALPNServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
     {

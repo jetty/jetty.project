@@ -24,10 +24,10 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 
 /**
@@ -37,7 +37,7 @@ import org.xml.sax.InputSource;
  */
 public class WebDescriptor extends Descriptor
 {
-    private static final Logger LOG = Log.getLogger(WebDescriptor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebDescriptor.class);
 
     public static XmlParser __nonValidatingStaticParser = newParser(false);
     protected MetaData.Complete _metaDataComplete;
@@ -47,13 +47,12 @@ public class WebDescriptor extends Descriptor
     protected boolean _distributable;
     protected boolean _isOrdered = false;
     protected List<String> _ordering = new ArrayList<>();
-     
+
     /**
      * Check if the descriptor is metadata-complete.
-     * 
-     * @param d the descriptor (web.xml, web-fragment.xml, 
+     *
+     * @param d the descriptor (web.xml, web-fragment.xml,
      * web-default.xml, web-override.xml) to check
-     * 
      * @return true iff metadata-complete=true is declared in the
      * descriptor
      */
@@ -64,7 +63,7 @@ public class WebDescriptor extends Descriptor
 
     /**
      * Get a parser for parsing web descriptor content.
-     * 
+     *
      * @param validating true if the parser should validate syntax, false otherwise
      * @return an XmlParser for web descriptors
      */
@@ -75,10 +74,10 @@ public class WebDescriptor extends Descriptor
         else
             return newParser(true);
     }
-    
+
     /**
      * Create a new parser for parsing web descriptors.
-     * 
+     *
      * @param validating if true, the parser will validate syntax
      * @return an XmlParser
      */
@@ -148,7 +147,7 @@ public class WebDescriptor extends Descriptor
                 }
                 catch (Exception e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
                 finally
                 {
@@ -234,7 +233,7 @@ public class WebDescriptor extends Descriptor
     {
         super(xml);
     }
-    
+
     @Override
     public void parse(XmlParser parser)
         throws Exception
@@ -327,7 +326,7 @@ public class WebDescriptor extends Descriptor
                 _ordering.add(node.toString(false, true));
         }
     }
-    
+
     public void processDistributable()
     {
         XmlParser.Node distributable = _root.get("distributable");

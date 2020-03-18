@@ -25,13 +25,13 @@ import java.nio.channels.SelectionKey;
 import jnr.unixsocket.UnixSocketChannel;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UnixSocketEndPoint extends ChannelEndPoint
 {
-    private static final Logger LOG = Log.getLogger(UnixSocketEndPoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UnixSocketEndPoint.class);
 
     private final UnixSocketChannel _channel;
 
@@ -65,7 +65,7 @@ public class UnixSocketEndPoint extends ChannelEndPoint
         }
         catch (IOException e)
         {
-            LOG.debug(e);
+            LOG.debug("Unable to shutdown output", e);
         }
     }
 }

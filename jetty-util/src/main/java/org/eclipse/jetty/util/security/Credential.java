@@ -24,8 +24,8 @@ import java.security.MessageDigest;
 import java.util.ServiceLoader;
 
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Credentials. The Credential class represents an abstract mechanism for checking authentication credentials. A credential instance either represents a secret,
@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class Credential implements Serializable
 {
     private static final long serialVersionUID = -7760551052768181572L;
-    private static final Logger LOG = Log.getLogger(Credential.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Credential.class);
     private static final ServiceLoader<CredentialProvider> CREDENTIAL_PROVIDER_LOADER = ServiceLoader.load(CredentialProvider.class);
 
     /**
@@ -234,7 +234,7 @@ public abstract class Credential implements Serializable
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Failed message digest", e);
                 return false;
             }
         }
@@ -262,7 +262,7 @@ public abstract class Credential implements Serializable
                         }
                         catch (Exception e)
                         {
-                            LOG.warn(e);
+                            LOG.warn("Unable to access MD5 message digest", e);
                             return null;
                         }
                     }
@@ -276,7 +276,7 @@ public abstract class Credential implements Serializable
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Message Digest failure", e);
                 return null;
             }
         }

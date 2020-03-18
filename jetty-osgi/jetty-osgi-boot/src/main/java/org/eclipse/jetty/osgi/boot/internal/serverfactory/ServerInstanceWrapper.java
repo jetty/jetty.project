@@ -51,10 +51,10 @@ import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ServerInstanceWrapper
@@ -73,7 +73,7 @@ public class ServerInstanceWrapper
 
     private static Collection<TldBundleDiscoverer> __containerTldBundleDiscoverers = new ArrayList<>();
 
-    private static Logger LOG = Log.getLogger(ServerInstanceWrapper.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(ServerInstanceWrapper.class.getName());
 
     private final String _managedServerName;
 
@@ -278,7 +278,7 @@ public class ServerInstanceWrapper
                 }
                 catch (Exception x)
                 {
-                    LOG.ignore(x);
+                    LOG.trace("IGNORED", x);
                 }
             }
             throw e;
@@ -300,7 +300,7 @@ public class ServerInstanceWrapper
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Failed to stop server", e);
         }
     }
 
@@ -356,7 +356,7 @@ public class ServerInstanceWrapper
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Failed to add BundleAppProvider to DeploymentManager", e);
             }
         }
 
@@ -370,7 +370,7 @@ public class ServerInstanceWrapper
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Failed to add ServiceWebAppProvider to DeploymentManager", e);
             }
         }
 
@@ -383,7 +383,7 @@ public class ServerInstanceWrapper
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Failed to add BundleContextProvider to DeploymentManager", e);
             }
         }
 
@@ -396,7 +396,7 @@ public class ServerInstanceWrapper
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Failed to add ServiceContextProvider to DeploymentManager", e);
             }
         }
     }
@@ -438,7 +438,7 @@ public class ServerInstanceWrapper
             }
             catch (Throwable mfe)
             {
-                LOG.warn(mfe);
+                LOG.warn("Unable to process legacy lib folder {}", tok, mfe);
             }
         }
         return libURLs;

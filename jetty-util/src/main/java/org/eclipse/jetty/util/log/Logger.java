@@ -19,8 +19,11 @@
 package org.eclipse.jetty.util.log;
 
 /**
- * A simple logging facade that is intended simply to capture the style of logging as used by Jetty.
+ * Legacy Bridge API to Slf4j
+ *
+ * @deprecated
  */
+@Deprecated
 public interface Logger
 {
     /**

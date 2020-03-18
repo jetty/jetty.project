@@ -27,8 +27,8 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.util.IntrospectionUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Injection
@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Injection
 {
-    private static final Logger LOG = Log.getLogger(Injection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Injection.class);
 
     private final Class<?> _targetClass;
     private final String _jndiName;
@@ -205,7 +205,7 @@ public class Injection
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to inject field {} with {}", field, injectable, e);
             throw new IllegalStateException("Inject failed for field " + field.getName());
         }
     }
@@ -227,7 +227,7 @@ public class Injection
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to inject method {} with {}", method, injectable, e);
             throw new IllegalStateException("Inject failed for method " + method.getName());
         }
     }

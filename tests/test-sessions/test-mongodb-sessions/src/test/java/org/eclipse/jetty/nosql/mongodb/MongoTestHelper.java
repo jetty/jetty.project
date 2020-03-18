@@ -32,8 +32,8 @@ import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class MongoTestHelper
 {
-    private static final Logger LOG = Log.getLogger(MongoTestHelper.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MongoTestHelper.class);
     public static final String DB_NAME = "HttpSessions";
     public static final String COLLECTION_NAME = "testsessions";
 

@@ -60,9 +60,9 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 /**
@@ -82,7 +82,7 @@ import org.xml.sax.SAXException;
  */
 public class XmlConfiguration
 {
-    private static final Logger LOG = Log.getLogger(XmlConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(XmlConfiguration.class);
     private static final Class<?>[] PRIMITIVES =
         {
             Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE
@@ -219,7 +219,7 @@ public class XmlConfiguration
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to get webapp file reference", e);
         }
     }
 
@@ -388,7 +388,7 @@ public class XmlConfiguration
             if (id != null)
                 _configuration.getIdMap().put(id, obj);
 
-            AttrOrElementNode aoeNode = new AttrOrElementNode(obj, _root, "Arg");
+            AttrOrElementNode aoeNode = new AttrOrElementNode(obj, _root, "Id", "Class", "Arg");
             // The Object already existed, if it has <Arg> nodes, warn about them not being used.
             aoeNode.getNodes("Arg")
                 .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, this._configuration._location));
@@ -399,19 +399,22 @@ public class XmlConfiguration
         @Override
         public Object configure() throws Exception
         {
-            Class<?> oClass = nodeClass(_root);
-
-            String id = _root.getAttribute("id");
+            AttrOrElementNode aoeNode = new AttrOrElementNode(_root, "Id", "Class", "Arg");
+            String id = aoeNode.getString("Id");
+            String clazz = aoeNode.getString("Class");
             Object obj = id == null ? null : _configuration.getIdMap().get(id);
+            Class<?> oClass = clazz != null ? Loader.loadClass(clazz) : obj == null ? null : obj.getClass();
 
-            AttrOrElementNode aoeNode;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Configure {} {}", oClass, obj);
 
             if (obj == null && oClass != null)
             {
-                aoeNode = new AttrOrElementNode(_root, "Arg");
                 try
                 {
                     obj = construct(oClass, new Args(null, oClass, aoeNode.getNodes("Arg")));
+                    if (id != null)
+                        _configuration.getIdMap().put(id, obj);
                 }
                 catch (NoSuchMethodException x)
                 {
@@ -420,13 +423,10 @@ public class XmlConfiguration
             }
             else
             {
-                aoeNode = new AttrOrElementNode(obj, _root, "Arg");
                 // The Object already existed, if it has <Arg> nodes, warn about them not being used.
                 aoeNode.getNodes("Arg")
                     .forEach((node) -> LOG.warn("Ignored arg {} in {}", node, this._configuration._location));
             }
-            if (id != null)
-                _configuration.getIdMap().put(id, obj);
 
             _configuration.initializeDefaults(obj);
             configure(obj, _root, aoeNode.getNext());
@@ -578,7 +578,7 @@ public class XmlConfiguration
                 }
                 catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                     me.add(e);
                 }
 
@@ -593,7 +593,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                     me.add(e);
                 }
 
@@ -630,7 +630,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchFieldException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                     me.add(e);
                 }
 
@@ -654,7 +654,7 @@ public class XmlConfiguration
                         }
                         catch (IllegalArgumentException | IllegalAccessException e)
                         {
-                            LOG.ignore(e);
+                            LOG.trace("IGNORED", e);
                             me.add(e);
                         }
 
@@ -672,7 +672,7 @@ public class XmlConfiguration
                         }
                         catch (IllegalAccessException e)
                         {
-                            LOG.ignore(e);
+                            LOG.trace("IGNORED", e);
                             me.add(e);
                         }
                     }
@@ -704,7 +704,7 @@ public class XmlConfiguration
                     }
                     catch (NoSuchMethodException | IllegalAccessException | InstantiationException e)
                     {
-                        LOG.ignore(e);
+                        LOG.trace("IGNORED", e);
                         me.add(e);
                     }
                 }
@@ -947,7 +947,7 @@ public class XmlConfiguration
                 }
                 catch (IllegalAccessException | IllegalArgumentException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
             }
 
@@ -1007,7 +1007,7 @@ public class XmlConfiguration
                 }
                 catch (InstantiationException | IllegalAccessException | IllegalArgumentException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
             }
             throw new NoSuchMethodException("<init>");
@@ -1021,13 +1021,14 @@ public class XmlConfiguration
          */
         private Object refObj(XmlParser.Node node) throws Exception
         {
-            String refid = node.getAttribute("refid");
+            AttrOrElementNode aoeNode = new AttrOrElementNode(node, "Id");
+            String refid = aoeNode.getString("Id");
             if (refid == null)
-                refid = node.getAttribute("id");
+                refid = node.getAttribute("refid");
             Object obj = _configuration.getIdMap().get(refid);
             if (obj == null && node.size() > 0)
                 throw new IllegalStateException("No object for refid=" + refid);
-            configure(obj, node, 0);
+            configure(obj, node, aoeNode.getNext());
             return obj;
         }
 
@@ -1861,7 +1862,7 @@ public class XmlConfiguration
         }
         catch (Error | Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to execute XmlConfiguration", e);
             throw e;
         }
     }

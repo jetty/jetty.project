@@ -35,8 +35,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.Charset;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * IO Utilities.
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class IO
 {
-    private static final Logger LOG = Log.getLogger(IO.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IO.class);
 
     public static final String
         CRLF = "\r\n";
@@ -90,7 +90,7 @@ public class IO
             }
             catch (IOException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 try
                 {
                     if (out != null)
@@ -100,7 +100,7 @@ public class IO
                 }
                 catch (IOException e2)
                 {
-                    LOG.ignore(e2);
+                    LOG.trace("IGNORED", e2);
                 }
             }
         }
@@ -372,7 +372,7 @@ public class IO
         }
         catch (IOException ignore)
         {
-            LOG.ignore(ignore);
+            LOG.trace("IGNORED", ignore);
         }
     }
 

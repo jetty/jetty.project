@@ -28,7 +28,7 @@ import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.websocket.javax.client.BasicClientEndpointConfig;
+import org.eclipse.jetty.websocket.javax.client.internal.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.decoders.IntegerDecoder;
 import org.eclipse.jetty.websocket.util.InvalidWebSocketException;

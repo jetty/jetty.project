@@ -46,16 +46,16 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.Sweeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject
 public abstract class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Callback, Dumpable
 {
-    protected static final Logger LOG = Log.getLogger(HttpDestination.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(HttpDestination.class);
 
     private final HttpClient client;
     private final Origin origin;

@@ -142,10 +142,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private void process()
     {
+        HttpConnectionOverHTTP connection = getHttpConnection();
+        EndPoint endPoint = connection.getEndPoint();
         try
         {
-            HttpConnectionOverHTTP connection = getHttpConnection();
-            EndPoint endPoint = connection.getEndPoint();
             while (true)
             {
                 // Always parse even empty buffers to advance the parser.
@@ -192,7 +192,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("Unable to fill from endpoint {}", endPoint, x);
             networkBuffer.clear();
             releaseNetworkBuffer();
             failAndClose(x);

@@ -33,15 +33,17 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpServerTestFixture
 {
-    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-    
+    private static final Logger LOG = LoggerFactory.getLogger(HttpServerTestFixture.class);
+
     // Useful constants
     protected static final long PAUSE = 10L;
     protected static final int LOOPS = 50;
@@ -115,7 +117,7 @@ public class HttpServerTestFixture
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            Log.getRootLogger().debug("handle " + target);
+            LOG.debug("handle " + target);
             baseRequest.setHandled(true);
 
             if (request.getContentType() != null)
@@ -157,7 +159,7 @@ public class HttpServerTestFixture
             if (reader.read() >= 0)
                 throw new IllegalStateException("Not closed");
 
-            Log.getRootLogger().debug("handled " + target);
+            LOG.debug("handled " + target);
         }
     }
 

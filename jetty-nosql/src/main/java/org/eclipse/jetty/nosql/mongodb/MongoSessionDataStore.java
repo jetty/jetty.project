@@ -43,8 +43,8 @@ import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MongoSessionDataStore
@@ -97,7 +97,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class MongoSessionDataStore extends NoSqlSessionDataStore
 {
 
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(MongoSessionDataStore.class);
 
     /**
      * Special attribute for a session that is context-specific

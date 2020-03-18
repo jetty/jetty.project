@@ -25,6 +25,7 @@ module org.eclipse.jetty.http
     exports org.eclipse.jetty.http.pathmap;
 
     requires transitive org.eclipse.jetty.io;
+    requires org.slf4j;
 
     uses HttpFieldPreEncoder;
 

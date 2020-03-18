@@ -29,8 +29,8 @@ import javax.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An ErrorHandler that maps exceptions and status codes to URIs for dispatch using
@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.ErrorPageMapper
 {
     public static final String GLOBAL_ERROR_PAGE = "org.eclipse.jetty.server.error_page.global";
-    private static final Logger LOG = Log.getLogger(ErrorPageErrorHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ErrorPageErrorHandler.class);
 
     private enum PageLookupTechnique
     {

@@ -34,13 +34,13 @@ import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelperFactory;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * OSGiWebappClassLoader
@@ -51,7 +51,7 @@ import org.osgi.framework.BundleReference;
 public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleReference
 {
 
-    private static final Logger __logger = Log.getLogger(OSGiWebappClassLoader.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(OSGiWebappClassLoader.class.getName());
 
     /**
      * when a logging framework is setup in the osgi classloaders, it can access
@@ -214,7 +214,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
             }
             else
             {
-                __logger.info("Did not add " + path + " to the classloader of the webapp " + getContext());
+                LOG.info("Did not add " + path + " to the classloader of the webapp " + getContext());
             }
         }
     }
@@ -266,7 +266,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         catch (IOException e)
         {
             // nevermind. just trying our best
-            __logger.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         return true;
     }
@@ -300,7 +300,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         catch (Throwable t)
         {
             // humf that will hurt if it does not work.
-            __logger.warn("Unable to set webappcontext", t);
+            LOG.warn("Unable to set webappcontext", t);
         }
     }
 }

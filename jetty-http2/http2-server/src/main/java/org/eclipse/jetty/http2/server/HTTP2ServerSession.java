@@ -39,13 +39,13 @@ import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Listener
 {
-    private static final Logger LOG = Log.getLogger(HTTP2ServerSession.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP2ServerSession.class);
 
     private final ServerSessionListener listener;
 

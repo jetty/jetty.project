@@ -35,13 +35,13 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketServerContainer;
 import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
 import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @HandlesTypes({ServerApplicationConfig.class, ServerEndpoint.class, Endpoint.class})
 public class JavaxWebSocketServletContainerInitializer implements ServletContainerInitializer
@@ -54,7 +54,7 @@ public class JavaxWebSocketServletContainerInitializer implements ServletContain
 
     public static final String ENABLE_KEY = "org.eclipse.jetty.websocket.javax";
     public static final String HTTPCLIENT_ATTRIBUTE = "org.eclipse.jetty.websocket.javax.HttpClient";
-    private static final Logger LOG = Log.getLogger(JavaxWebSocketServletContainerInitializer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketServletContainerInitializer.class);
 
     /**
      * Test a ServletContext for {@code init-param} or {@code attribute} at {@code keyName} for

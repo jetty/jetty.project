@@ -74,13 +74,13 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>HttpClient provides an efficient, asynchronous, non-blocking implementation
@@ -122,7 +122,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 public class HttpClient extends ContainerLifeCycle
 {
     public static final String USER_AGENT = "Jetty/" + Jetty.VERSION;
-    private static final Logger LOG = Log.getLogger(HttpClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
 
     private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ProtocolHandlers handlers = new ProtocolHandlers();

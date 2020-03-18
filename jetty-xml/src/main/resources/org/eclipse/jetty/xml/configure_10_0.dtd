@@ -19,21 +19,18 @@ my be specified if a match is not achieved.
 
 <!ENTITY % CONFIG "Set|Get|Put|Call|New|Ref|Array|Map|Property">
 <!ENTITY % VALUE "#PCDATA|Get|Call|New|Ref|Array|Map|SystemProperty|Env|Property">
-
-<!ENTITY % TYPEATTR "type CDATA #IMPLIED " > <!-- String|Character|Short|Byte|Integer|Long|Boolean|Float|Double|char|short|byte|int|long|boolean|float|double|URL|InetAddress|InetAddrPort| #classname -->
-<!ENTITY % IMPLIEDCLASSATTR "class CDATA #IMPLIED" >
-<!ENTITY % CLASSATTR "class CDATA #REQUIRED" >
-<!ENTITY % NAMEATTR "name CDATA #REQUIRED" >
-<!ENTITY % IMPLIEDNAMEATTR "name CDATA #IMPLIED" >
-<!ENTITY % PROPERTYATTR "property CDATA #IMPLIED" >
-<!ENTITY % DEPRECATEDATTR "deprecated CDATA #IMPLIED" >
-<!ENTITY % DEFAULTATTR "default CDATA #IMPLIED" >
-<!ENTITY % IDATTR "id ID #IMPLIED" >
-<!ENTITY % ARGATTR "arg CDATA #IMPLIED" >
-<!ENTITY % ITEMATTR "item CDATA #IMPLIED" >
-<!ENTITY % REFATTR "refid CDATA #IMPLIED" >
-<!ENTITY % REQUIREDIDATTR "id ID #REQUIRED" >
-
+<!ENTITY % TYPE_ATTR "type CDATA #IMPLIED " >
+<!ENTITY % CLASS_ATTR "class CDATA #IMPLIED" >
+<!ENTITY % NAME_ATTR_REQUIRED "name CDATA #REQUIRED" >
+<!ENTITY % NAME_ATTR "name CDATA #IMPLIED" >
+<!ENTITY % PROPERTY_ATTR "property CDATA #IMPLIED" >
+<!ENTITY % DEPRECATED_ATTR "deprecated CDATA #IMPLIED" >
+<!ENTITY % DEFAULT_ATTR "default CDATA #IMPLIED" >
+<!ENTITY % ID_ATTR "id ID #IMPLIED" >
+<!ENTITY % ARG_ATTR "arg CDATA #IMPLIED" >
+<!ENTITY % ITEM_ATTR "item CDATA #IMPLIED" >
+<!ENTITY % REF_ATTR "refid CDATA #IMPLIED" >
+<!ENTITY % ID_ATTR_REQUIRED "id ID #REQUIRED" >
 
 <!--
 Configure Element.
@@ -42,9 +39,8 @@ can be configured:
 
     <Configure class="com.acme.MyClass"> ... </Configure>
 -->
-<!ELEMENT Configure (Arg*,(%CONFIG;)*) >
-<!ATTLIST Configure %IMPLIEDCLASSATTR; %IDATTR; >
-
+<!ELEMENT Configure (Id?,Class?,Arg*,(%CONFIG;)*) >
+<!ATTLIST Configure %CLASS_ATTR; %ID_ATTR; >
 
 <!--
 Set Element.
@@ -68,7 +64,7 @@ value.
 A Set with a class attribute is treated as a static set method invocation.
 -->
 <!ELEMENT Set (%VALUE;)* >
-<!ATTLIST Set  %IDATTR; %NAMEATTR; %TYPEATTR; %IMPLIEDCLASSATTR; %PROPERTYATTR;>
+<!ATTLIST Set  %ID_ATTR; %NAME_ATTR_REQUIRED; %TYPE_ATTR; %CLASS_ATTR; %PROPERTY_ATTR;>
 
 <!--
 Get Element.
@@ -82,7 +78,7 @@ which act on the object returned by the get call.
 A Get with a class attribute is treated as a static get method or field.
 -->
 <!ELEMENT Get (%CONFIG;)* >
-<!ATTLIST Get %NAMEATTR; %IMPLIEDCLASSATTR; %IDATTR; >
+<!ATTLIST Get %NAME_ATTR_REQUIRED; %CLASS_ATTR; %ID_ATTR; >
 
 
 <!--
@@ -99,7 +95,7 @@ elements they are added as strings before being converted to any
 specified type.
 -->
 <!ELEMENT Put (%VALUE;)* >
-<!ATTLIST Put %NAMEATTR; %TYPEATTR; >
+<!ATTLIST Put %NAME_ATTR_REQUIRED; %TYPE_ATTR; >
 
 
 <!--
@@ -166,7 +162,7 @@ This is equivalent to:
 A Call with a class attribute is treated as a static call.
 -->
 <!ELEMENT Call (Id?,Name?,Class?,Arg*,(%CONFIG;)*) >
-<!ATTLIST Call %ARGATTR; %IMPLIEDNAMEATTR; %IMPLIEDCLASSATTR; %IDATTR; >
+<!ATTLIST Call %ARG_ATTR; %NAME_ATTR; %CLASS_ATTR; %ID_ATTR; >
 
 
 <!--
@@ -182,7 +178,7 @@ elements they are added as strings before being converted to any
 specified type.
 -->
 <!ELEMENT Arg (%VALUE;)* >
-<!ATTLIST Arg %TYPEATTR; %IMPLIEDNAMEATTR; >
+<!ATTLIST Arg %TYPE_ATTR; %NAME_ATTR; >
 
 
 <!--
@@ -207,7 +203,7 @@ This is equivalent to:
  o.setTest("Value2");
 -->
 <!ELEMENT New (Id?,Name?,Class?,Arg*,(%CONFIG;)*) >
-<!ATTLIST New %IDATTR; %IMPLIEDCLASSATTR; %ARGATTR; >
+<!ATTLIST New %ID_ATTR; %CLASS_ATTR; %ARG_ATTR; >
 
 
 <!--
@@ -222,8 +218,8 @@ which act on the referenced object.
    <Set name="Test">Value2</Set>
  </New>
 -->
-<!ELEMENT Ref (%CONFIG;)* >
-<!ATTLIST Ref %IDATTR; %REFATTR;>
+<!ELEMENT Ref (Id?,(%CONFIG;)*) >
+<!ATTLIST Ref %ID_ATTR; %REF_ATTR;>
 
 
 <!--
@@ -242,7 +238,7 @@ This is equivalent to:
  String[] a = new String[] { "value0", new String("value1") };
 -->
 <!ELEMENT Array (Id?,Type?,Item*) >
-<!ATTLIST Array %IDATTR;%TYPEATTR;%ITEMATTR; >
+<!ATTLIST Array %ID_ATTR;%TYPE_ATTR;%ITEM_ATTR; >
 
 
 <!--
@@ -264,7 +260,7 @@ This is equivalent to:
  m.put("keyName", new String("value1"));
 -->
 <!ELEMENT Map (Id?,Entry*) >
-<!ATTLIST Map %IDATTR; >
+<!ATTLIST Map %ID_ATTR; >
 <!ELEMENT Entry (Item,Item) >
 
 
@@ -280,7 +276,7 @@ If it contains multiple value elements they are added as strings
 before being converted to any specified type.
 -->
 <!ELEMENT Item (%VALUE;)* >
-<!ATTLIST Item %TYPEATTR; %IDATTR; >
+<!ATTLIST Item %TYPE_ATTR; %ID_ATTR; >
 
 
 <!--
@@ -297,7 +293,7 @@ This is equivalent to:
  System.getProperty("Test","value");
 -->
 <!ELEMENT SystemProperty (Id?,Name?,Deprecated*,Default?) >
-<!ATTLIST SystemProperty %IMPLIEDNAMEATTR; %DEFAULTATTR; %DEPRECATEDATTR; %IDATTR; >
+<!ATTLIST SystemProperty %NAME_ATTR; %DEFAULT_ATTR; %DEPRECATED_ATTR; %ID_ATTR; >
 
 
 <!--
@@ -316,7 +312,7 @@ This is equivalent to:
 
 -->
 <!ELEMENT Env (Id?,Name?,Deprecated*,Default?) >
-<!ATTLIST Env %IMPLIEDNAMEATTR; %DEFAULTATTR; %DEPRECATEDATTR; %IDATTR; >
+<!ATTLIST Env %NAME_ATTR; %DEFAULT_ATTR; %DEPRECATED_ATTR; %ID_ATTR; >
 
 
 <!--
@@ -326,4 +322,4 @@ The name attribute specifies the property name and the optional
 default argument provides a default value.
 -->
 <!ELEMENT Property (Id?,Name?,Deprecated*,Default?) >
-<!ATTLIST Property %IMPLIEDNAMEATTR; %DEFAULTATTR; %DEPRECATEDATTR; %IDATTR; >
+<!ATTLIST Property %NAME_ATTR; %DEFAULT_ATTR; %DEPRECATED_ATTR; %ID_ATTR; >

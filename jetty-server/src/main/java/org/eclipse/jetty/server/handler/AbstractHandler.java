@@ -34,8 +34,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractHandler.
@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Jetty Handler")
 public abstract class AbstractHandler extends ContainerLifeCycle implements Handler
 {
-    private static final Logger LOG = Log.getLogger(AbstractHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractHandler.class);
 
     private Server _server;
 

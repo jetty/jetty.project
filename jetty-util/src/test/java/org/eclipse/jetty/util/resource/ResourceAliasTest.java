@@ -27,9 +27,10 @@ import java.nio.file.Path;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -41,6 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(WorkDirExtension.class)
 public class ResourceAliasTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ResourceAliasTest.class);
+
     public WorkDir workDir;
 
     @Test
@@ -143,7 +146,7 @@ public class ResourceAliasTest
         catch (InvalidPathException e)
         {
             // this file system does allow null char ending filenames
-            Log.getRootLogger().ignore(e);
+            LOG.trace("IGNORED", e);
         }
     }
 }

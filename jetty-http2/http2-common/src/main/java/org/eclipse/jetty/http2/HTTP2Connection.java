@@ -36,15 +36,15 @@ import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.TryExecutor;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HTTP2Connection extends AbstractConnection implements WriteFlusher.Listener, Connection.UpgradeTo
 {
-    protected static final Logger LOG = Log.getLogger(HTTP2Connection.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(HTTP2Connection.class);
 
     // TODO remove this once we are sure EWYK is OK for http2
     private static final boolean PEC_MODE = Boolean.getBoolean("org.eclipse.jetty.http2.PEC_MODE");

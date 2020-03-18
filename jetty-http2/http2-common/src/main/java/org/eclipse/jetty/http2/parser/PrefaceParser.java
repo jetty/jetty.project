@@ -23,12 +23,12 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PrefaceParser
 {
-    private static final Logger LOG = Log.getLogger(PrefaceParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PrefaceParser.class);
 
     private final Parser.Listener listener;
     private int cursor;

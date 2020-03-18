@@ -35,8 +35,8 @@ import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * JDBCSessionDataStore
@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class JDBCSessionDataStore extends AbstractSessionDataStore
 {
-    static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(JDBCSessionDataStore.class);
 
     /**
      * Used for Oracle and other databases where "" is treated as NULL
@@ -865,8 +865,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         }
                         catch (Exception e)
                         {
-                            LOG.warn("{} Problem checking if potentially expired session {} exists in db", _context.getWorkerName(), k);
-                            LOG.warn(e);
+                            LOG.warn("{} Problem checking if potentially expired session {} exists in db", _context.getWorkerName(), k, e);
                         }
                     }
                 }
@@ -876,7 +875,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to get expired sessions", e);
             return expiredSessionKeys; //return whatever we got
         }
     }

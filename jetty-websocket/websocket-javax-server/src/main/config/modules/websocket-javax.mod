@@ -12,10 +12,12 @@ annotations
 
 [lib]
 lib/websocket/websocket-core-${jetty.version}.jar
-lib/websocket/websocket-util-${jetty.version}.jar
 lib/websocket/websocket-servlet-${jetty.version}.jar
+lib/websocket/websocket-util-${jetty.version}.jar
 lib/websocket/jetty-javax-websocket-api-1.1.2.jar
-lib/websocket/websocket-javax-*.jar
+lib/websocket/websocket-javax-client-${jetty.version}.jar
+lib/websocket/websocket-javax-common-${jetty.version}.jar
+lib/websocket/websocket-javax-server-${jetty.version}.jar
 
 [jpms]
 # The implementation needs to access method handles in

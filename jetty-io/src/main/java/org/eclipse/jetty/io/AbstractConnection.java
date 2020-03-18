@@ -26,9 +26,9 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A convenience base implementation of {@link Connection}.</p>
@@ -39,7 +39,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public abstract class AbstractConnection implements Connection
 {
-    private static final Logger LOG = Log.getLogger(AbstractConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractConnection.class);
 
     private final List<Listener> _listeners = new CopyOnWriteArrayList<>();
     private final long _created = System.currentTimeMillis();
@@ -95,7 +95,7 @@ public abstract class AbstractConnection implements Connection
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Failed callback", x);
             }
         };
 
@@ -108,7 +108,7 @@ public abstract class AbstractConnection implements Connection
                 }
                 catch (RejectedExecutionException e)
                 {
-                    LOG.debug(e);
+                    LOG.debug("Rejected", e);
                     callback.failed(x);
                 }
                 break;

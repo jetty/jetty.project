@@ -43,8 +43,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.core.internal.Parser;
@@ -57,6 +55,8 @@ import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provider
 {
@@ -70,7 +70,7 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
         }
     }
 
-    private static final Logger LOG = Log.getLogger(LocalServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LocalServer.class);
     private final ByteBufferPool bufferPool = new MappedByteBufferPool();
     private Server server;
     private ServerConnector connector;

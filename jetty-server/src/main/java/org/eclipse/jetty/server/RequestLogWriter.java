@@ -28,8 +28,8 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Writer which outputs pre-formatted request log strings to a file using {@link RolloverFileOutputStream}.
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Request Log writer which writes to file")
 public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Writer
 {
-    private static final Logger LOG = Log.getLogger(RequestLogWriter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RequestLogWriter.class);
 
     private String _filename;
     private boolean _append;
@@ -230,7 +230,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
             }
             catch (IOException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
             if (_out != null && _closeOut)
                 try
@@ -239,7 +239,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
                 }
                 catch (IOException e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
 
             _out = null;

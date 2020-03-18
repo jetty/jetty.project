@@ -32,8 +32,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The parser for STDOUT type frame bodies.</p>
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ResponseContentParser extends StreamContentParser
 {
-    private static final Logger LOG = Log.getLogger(ResponseContentParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResponseContentParser.class);
 
     private final Map<Integer, ResponseParser> parsers = new ConcurrentHashMap<>();
     private final ClientParser.Listener listener;

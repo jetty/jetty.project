@@ -27,8 +27,8 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,15 +45,15 @@ public class FilterHolderTest
         public DummyFilter()
         {
         }
-        
+
         @Override
         public void init(FilterConfig filterConfig) throws ServletException
         {
         }
-        
+
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-        { 
+        {
         }
     }
 
@@ -113,7 +113,7 @@ public class FilterHolderTest
         fh.initialize();
         assertEquals(2, counter.get());
     }
-    
+
     @Test
     public void testCreateInstance() throws Exception
     {
@@ -125,7 +125,7 @@ public class FilterHolderTest
             holder.setHeldClass(DummyFilter.class);
             Filter filter = holder.createInstance();
             assertNotNull(filter);
-            
+
             //test with a ServletContextHandler
             Server server = new Server();
             ServletContextHandler context = new ServletContextHandler();

@@ -24,10 +24,10 @@ import java.nio.channels.ReadPendingException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Utility class to help implement {@link EndPoint#fillInterested(Callback)}
@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.thread.Invocable.InvocationType;
  */
 public abstract class FillInterest
 {
-    private static final Logger LOG = Log.getLogger(FillInterest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FillInterest.class);
     private final AtomicReference<Callback> _interested = new AtomicReference<>(null);
 
     protected FillInterest()

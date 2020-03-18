@@ -45,8 +45,8 @@ import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Container class for the MBean instances
@@ -54,7 +54,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("The component that registers beans as MBeans")
 public class MBeanContainer implements Container.InheritedListener, Dumpable, Destroyable
 {
-    private static final Logger LOG = Log.getLogger(MBeanContainer.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(MBeanContainer.class.getName());
     private static final ConcurrentMap<String, AtomicInteger> __unique = new ConcurrentHashMap<>();
     private static final Container ROOT = new ContainerLifeCycle();
 
@@ -436,11 +436,11 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         }
         catch (MBeanRegistrationException | InstanceNotFoundException x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
         }
         catch (Throwable x)
         {
-            LOG.warn(x);
+            LOG.warn("Unable to unregister {}", objectName, x);
         }
     }
 }

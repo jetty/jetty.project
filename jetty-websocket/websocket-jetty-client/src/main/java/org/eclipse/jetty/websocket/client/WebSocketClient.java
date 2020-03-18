@@ -38,28 +38,28 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.client.impl.JettyClientUpgradeRequest;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.SessionTracker;
-import org.eclipse.jetty.websocket.common.WebSocketContainer;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebSocketClient extends ContainerLifeCycle implements WebSocketPolicy, WebSocketContainer
 {
-    private static final Logger LOG = Log.getLogger(WebSocketClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketClient.class);
     private final WebSocketCoreClient coreClient;
     private final int id = ThreadLocalRandom.current().nextInt();
     private final JettyWebSocketFrameHandlerFactory frameHandlerFactory;
@@ -131,7 +131,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
             coreClient.addBean(listener);
         }
 
-        JettyClientUpgradeRequest upgradeRequest = new JettyClientUpgradeRequest(this, coreClient, request, toUri, websocket);
+        JettyClientUpgradeRequest upgradeRequest = new JettyClientUpgradeRequest(coreClient, request, toUri, frameHandlerFactory, websocket);
         if (upgradeListener != null)
         {
             upgradeRequest.addListener(new UpgradeListener()
@@ -351,11 +351,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     public Collection<Session> getOpenSessions()
     {
         return sessionTracker.getSessions();
-    }
-
-    public JettyWebSocketFrameHandler newFrameHandler(Object websocketPojo)
-    {
-        return frameHandlerFactory.newJettyFrameHandler(websocketPojo);
     }
 
     /**

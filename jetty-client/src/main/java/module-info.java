@@ -28,9 +28,11 @@ module org.eclipse.jetty.client
 
     requires org.eclipse.jetty.alpn.client;
     requires transitive org.eclipse.jetty.http;
+    requires org.slf4j;
 
     // Only required if using SPNEGO.
     requires static java.security.jgss;
     // Only required if using JMX.
+    requires static java.management;
     requires static org.eclipse.jetty.jmx;
 }

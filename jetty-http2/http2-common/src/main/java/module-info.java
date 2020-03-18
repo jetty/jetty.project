@@ -26,4 +26,5 @@ module org.eclipse.jetty.http2.common
     exports org.eclipse.jetty.http2.parser;
 
     requires transitive org.eclipse.jetty.http2.hpack;
+    requires org.slf4j;
 }

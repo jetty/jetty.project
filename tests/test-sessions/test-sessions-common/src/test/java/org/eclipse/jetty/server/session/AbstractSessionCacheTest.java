@@ -20,17 +20,15 @@ package org.eclipse.jetty.server.session;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionEvent;
 
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,8 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- *  Base class for all tests on all flavours of SessionCache
- *
+ * Base class for all tests on all flavours of SessionCache
  */
 public abstract class AbstractSessionCacheTest
 {
@@ -150,7 +147,7 @@ public abstract class AbstractSessionCacheTest
         context.getSessionHandler().setSessionCache(cache);
         server.start();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(AbstractSessionCacheTest.class.getPackage()))
         {
             //check that session 1234 cannot be read, ie returns null AND
             //that it is deleted in the datastore

@@ -21,8 +21,6 @@ package org.eclipse.jetty.websocket.server.config;
 import java.util.ServiceLoader;
 
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
@@ -30,6 +28,8 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppConfiguration;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Websocket Configuration</p>
@@ -43,7 +43,7 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration;
  */
 public class JettyWebSocketConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(JettyWebSocketConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketConfiguration.class);
 
     public JettyWebSocketConfiguration()
     {
@@ -78,7 +78,7 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
         }
         catch (Throwable e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             return false;
         }
     }

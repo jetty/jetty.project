@@ -31,12 +31,12 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.ALPNProcessor;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
 {
-    private static final Logger LOG = Log.getLogger(ConscryptServerALPNProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConscryptServerALPNProcessor.class);
 
     @Override
     public void init()

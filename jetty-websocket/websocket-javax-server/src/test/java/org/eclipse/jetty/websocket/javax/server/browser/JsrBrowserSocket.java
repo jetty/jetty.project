@@ -33,8 +33,8 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServerEndpoint(value = "/", subprotocols = {"tool"}, configurator = JsrBrowserConfigurator.class)
 public class JsrBrowserSocket
@@ -74,7 +74,7 @@ public class JsrBrowserSocket
         }
     }
 
-    private static final Logger LOG = Log.getLogger(JsrBrowserSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JsrBrowserSocket.class);
     private Session session;
     private Async remote;
     private String userAgent;

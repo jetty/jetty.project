@@ -24,4 +24,5 @@ module org.eclipse.jetty.unixsocket.server
     requires jnr.unixsocket;
     requires transitive org.eclipse.jetty.server;
     requires transitive org.eclipse.jetty.unixsocket.common;
+    requires org.slf4j;
 }

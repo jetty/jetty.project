@@ -34,8 +34,6 @@ import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.FrameHandler;
@@ -44,6 +42,8 @@ import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
 
@@ -59,7 +59,7 @@ import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
  */
 public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 {
-    private static final Logger LOG = Log.getLogger(WebSocketMapping.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketMapping.class);
 
     public static WebSocketMapping getMapping(ServletContext servletContext, String mappingKey)
     {

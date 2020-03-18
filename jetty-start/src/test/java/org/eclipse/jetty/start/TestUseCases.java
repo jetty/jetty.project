@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +37,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -83,19 +83,7 @@ public class TestUseCases
         PrintStream originalStream = StartLog.setStream(new PrintStream(out));
         try
         {
-            // If there is a "{caseName}.prepare.txt" then use those
-            // lines as if you are calling start.jar once to setup
-            // the base directory.
-            List<String> prepareArgs = lines(caseName + ".prepare.txt");
-            if (!prepareArgs.isEmpty())
-            {
-                Main main = new Main();
-                List<String> cmdLine = new ArrayList<>();
-                cmdLine.add("--testing-mode");
-                cmdLine.addAll(prepareArgs);
-
-                main.start(main.processCommandLine(cmdLine));
-            }
+            prepare(caseName);
 
             Main main = new Main();
             List<String> cmdLine = new ArrayList<>();
@@ -110,23 +98,45 @@ public class TestUseCases
             BaseHome baseHome = main.getBaseHome();
 
             StartLog.setStream(originalStream);
-            String output = out.toString(StandardCharsets.UTF_8.name());
+            String output = out.toString(UTF_8);
             ConfigurationAssert.assertConfiguration(baseHome, args, output, assertFile);
         }
         catch (Exception e)
         {
-            List<String> exceptions = lines(assertFile).stream().filter(s -> s.startsWith("EX|")).collect(toList());
-            if (exceptions.isEmpty())
+            List<String> expectedExceptions = lines(assertFile).stream().filter(s -> s.startsWith("EX|")).collect(toList());
+            if (expectedExceptions.isEmpty())
                 throw e;
-            for (String ex : exceptions)
+
+            for (String ex : expectedExceptions)
             {
                 ex = ex.substring(3);
-                assertThat(e.toString(), Matchers.containsString(ex));
+                if (!e.toString().contains(ex))
+                {
+                    System.err.println(out.toString(UTF_8));
+                    assertThat(e.toString(), Matchers.containsString(ex));
+                }
             }
         }
         finally
         {
             StartLog.setStream(originalStream);
+        }
+    }
+
+    private void prepare(String caseName) throws Exception
+    {
+        // If there is a "{caseName}.prepare.txt" then use those
+        // lines as if you are calling start.jar once to setup
+        // the base directory.
+        List<String> prepareArgs = lines(caseName + ".prepare.txt");
+        if (!prepareArgs.isEmpty())
+        {
+            Main main = new Main();
+            List<String> cmdLine = new ArrayList<>();
+            cmdLine.add("--testing-mode");
+            cmdLine.addAll(prepareArgs);
+
+            main.start(main.processCommandLine(cmdLine));
         }
     }
 
@@ -147,6 +157,8 @@ public class TestUseCases
             while ((line = buf.readLine()) != null)
             {
                 line = line.trim();
+                if (line.startsWith("#"))
+                    continue; // skip this line
                 if (line.length() > 0)
                 {
                     ret.add(line);

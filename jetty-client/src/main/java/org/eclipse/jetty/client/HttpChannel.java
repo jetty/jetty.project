@@ -19,12 +19,12 @@
 package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class HttpChannel
 {
-    protected static final Logger LOG = Log.getLogger(HttpChannel.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
 
     private final HttpDestination _destination;
     private final TimeoutCompleteListener _totalTimeout;

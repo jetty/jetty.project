@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import org.eclipse.jetty.util.log.Log;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A callback abstraction that handles completed/failed events of asynchronous operations.</p>
@@ -60,7 +60,7 @@ public interface Promise<C>
         @Override
         public void failed(Throwable x)
         {
-            Log.getLogger(this.getClass()).warn(x);
+            LoggerFactory.getLogger(this.getClass()).warn("Failed", x);
         }
     }
 

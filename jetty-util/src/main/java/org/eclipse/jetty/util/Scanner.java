@@ -43,8 +43,8 @@ import java.util.TimerTask;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Scanner
@@ -63,8 +63,8 @@ public class Scanner extends AbstractLifeCycle
      */
     public static final int DEFAULT_SCAN_DEPTH = 1;
     public static final int MAX_SCAN_DEPTH = Integer.MAX_VALUE;
-    
-    private static final Logger LOG = Log.getLogger(Scanner.class);
+
+    private static final Logger LOG = LoggerFactory.getLogger(Scanner.class);
     private static int __scannerId = 0;
     private int _scanInterval;
     private int _scanCount = 0;
@@ -235,7 +235,7 @@ public class Scanner extends AbstractLifeCycle
         @Override
         public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException
         {
-            LOG.warn(exc);
+            LOG.warn("FileVisit failed: " + file, exc);
             return FileVisitResult.CONTINUE;
         }
 
@@ -338,7 +338,7 @@ public class Scanner extends AbstractLifeCycle
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to add: " + dir, e);
         }
     }
     
@@ -652,7 +652,7 @@ public class Scanner extends AbstractLifeCycle
             }
             catch (Throwable e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to scan", e);
             }
         }
     }

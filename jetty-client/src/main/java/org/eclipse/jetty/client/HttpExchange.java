@@ -22,12 +22,12 @@ import java.util.List;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpExchange
 {
-    private static final Logger LOG = Log.getLogger(HttpExchange.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpExchange.class);
 
     private final HttpDestination destination;
     private final HttpRequest request;

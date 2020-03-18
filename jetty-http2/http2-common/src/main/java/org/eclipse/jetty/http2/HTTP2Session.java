@@ -68,14 +68,14 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject
 public abstract class HTTP2Session extends ContainerLifeCycle implements ISession, Parser.Listener
 {
-    private static final Logger LOG = Log.getLogger(HTTP2Session.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP2Session.class);
 
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
     private final AtomicBiInteger streamCount = new AtomicBiInteger(); // Hi = closed, Lo = stream count
@@ -1598,7 +1598,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("Reset failed", x);
             complete();
         }
 
@@ -1620,7 +1620,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("OnReset failed", x);
             complete();
         }
 
@@ -1658,7 +1658,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("CloseCallback failed", x);
             complete();
         }
 
@@ -1680,7 +1680,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("DisconnectCallback failed", x);
             complete();
         }
 

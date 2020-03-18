@@ -33,10 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * 
- *
- */
 public class TestJettyEmbedder
 {
 
@@ -82,7 +78,7 @@ public class TestJettyEmbedder
         MavenWebAppContext webApp = new MavenWebAppContext();
         Server server = new Server();
         Map<String,String> jettyProperties = new HashMap<>();
-        jettyProperties.put("jetty.server.dumpAfterStart", "true");
+        jettyProperties.put("jetty.server.dumpAfterStart", "false");
 
         ContextHandler otherHandler = new ContextHandler();
         otherHandler.setContextPath("/other");

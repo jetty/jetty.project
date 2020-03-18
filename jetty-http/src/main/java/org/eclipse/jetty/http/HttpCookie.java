@@ -25,13 +25,13 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // TODO consider replacing this with java.net.HttpCookie (once it supports RFC6265)
 public class HttpCookie
 {
-    private static final Logger LOG = Log.getLogger(HttpCookie.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpCookie.class);
     
     private static final String __COOKIE_DELIM = "\",;\\ \t";
     private static final String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();

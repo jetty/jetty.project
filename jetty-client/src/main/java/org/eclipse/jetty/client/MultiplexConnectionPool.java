@@ -32,13 +32,13 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MultiplexConnectionPool extends AbstractConnectionPool implements ConnectionPool.Multiplexable, Sweeper.Sweepable
 {
-    private static final Logger LOG = Log.getLogger(MultiplexConnectionPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MultiplexConnectionPool.class);
 
     private final HttpDestination destination;
     private final Deque<Holder> idleConnections;

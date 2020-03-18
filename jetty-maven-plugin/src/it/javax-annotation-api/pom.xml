@@ -19,6 +19,7 @@
     <!--maven.compiler.release>11</maven.compiler.release-->
     <jetty.port.file>${project.build.directory}/jetty-run-mojo-annotation.txt</jetty.port.file>
     <jetty.deployMode>EMBED</jetty.deployMode>
+    <logging.slf4j.version>1.7.30</logging.slf4j.version>
   </properties>
 
   <dependencies>
@@ -41,12 +42,17 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>@slf4j.version@</version>
+      <version>${logging.slf4j.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j18-impl</artifactId>
-      <version>@log4j2.version@</version>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>${logging.slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+      <version>${logging.slf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -87,9 +93,7 @@
               <systemProperties>
                   <jetty.port.file>${jetty.port.file}</jetty.port.file>
               </systemProperties>
-              <jettyXmls>
-                <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
-              </jettyXmls>
+              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
             </configuration>
           </execution>
         </executions>

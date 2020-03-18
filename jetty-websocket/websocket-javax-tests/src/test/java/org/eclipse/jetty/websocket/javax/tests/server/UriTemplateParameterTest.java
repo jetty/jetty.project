@@ -26,8 +26,6 @@ import javax.websocket.OnMessage;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -36,10 +34,12 @@ import org.eclipse.jetty.websocket.javax.tests.LocalServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UriTemplateParameterTest
 {
-    private static final Logger LOG = Log.getLogger(UriTemplateParameterTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UriTemplateParameterTest.class);
 
     @ServerEndpoint("/echo/params/{a}/{b}")
     public static class IntParamTextSocket

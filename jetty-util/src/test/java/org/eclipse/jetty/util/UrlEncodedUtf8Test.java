@@ -22,9 +22,9 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -32,8 +32,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class UrlEncodedUtf8Test
 {
-
-    static final Logger LOG = Log.getLogger(UrlEncodedUtf8Test.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UrlEncodedUtf8Test.class);
 
     @Test
     public void testIncompleteSequestAtTheEnd() throws Exception
@@ -96,7 +95,7 @@ public class UrlEncodedUtf8Test
         {
             if (!thrown)
                 throw e;
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
     }
 
@@ -116,7 +115,7 @@ public class UrlEncodedUtf8Test
         {
             if (!thrown)
                 throw e;
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
     }
 }

@@ -36,22 +36,25 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.logging.JettyLogger;
+import org.eclipse.jetty.logging.StdErrAppender;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 import org.xml.sax.SAXException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -262,11 +265,19 @@ public class XmlConfigurationTest
 
     public XmlConfiguration asXmlConfiguration(String rawXml) throws IOException, SAXException
     {
+        if (rawXml.indexOf("!DOCTYPE") < 0)
+            rawXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">\n" +
+                rawXml;
         return asXmlConfiguration("raw.xml", rawXml);
     }
 
     public XmlConfiguration asXmlConfiguration(String filename, String rawXml) throws IOException, SAXException
     {
+        if (rawXml.indexOf("!DOCTYPE") < 0)
+            rawXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">\n" +
+                rawXml;
         Path testFile = workDir.getEmptyPathDir().resolve(filename);
         try (BufferedWriter writer = Files.newBufferedWriter(testFile, UTF_8))
         {
@@ -1389,23 +1400,20 @@ public class XmlConfigurationTest
                 "  <Arg name=\"foo\"><Ref refid=\"foo\"/></Arg>\n" +
                 "</Configure>");
 
-        Logger logger = Log.getLogger(XmlConfiguration.class);
-        assertTrue(logger instanceof StdErrLog);
-        StdErrLog stdErrLog = (StdErrLog)logger;
-        ByteArrayOutputStream logBytes = new ByteArrayOutputStream();
-        stdErrLog.setStdErrStream(new PrintStream(logBytes));
+        ByteArrayOutputStream logBytes = captureLoggingBytes(() ->
+        {
+            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar);
+            Object obj = idMap.get("bar");
+            assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
+            BarNamed bar = (BarNamed)obj;
+            assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
+        });
 
-        Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar);
-        Object obj = idMap.get("bar");
-        assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
-        BarNamed bar = (BarNamed)obj;
-        assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
-
-        List<String> warnLogs = Arrays.stream(logBytes.toString(UTF_8.name()).split(System.lineSeparator()))
+        List<String> warnings = Arrays.stream(logBytes.toString(UTF_8.name()).split(System.lineSeparator()))
             .filter(line -> line.contains(":WARN"))
             .collect(Collectors.toList());
 
-        assertThat("WARN logs size", warnLogs.size(), is(0));
+        assertThat("WARN logs size", warnings.size(), is(0));
     }
 
     @Test
@@ -1422,23 +1430,20 @@ public class XmlConfigurationTest
                 "  <Arg><Ref refid=\"foo\"/></Arg>\n" + // no name specified
                 "</Configure>");
 
-        Logger logger = Log.getLogger(XmlConfiguration.class);
-        assertTrue(logger instanceof StdErrLog);
-        StdErrLog stdErrLog = (StdErrLog)logger;
-        ByteArrayOutputStream logBytes = new ByteArrayOutputStream();
-        stdErrLog.setStdErrStream(new PrintStream(logBytes));
+        ByteArrayOutputStream logBytes = captureLoggingBytes(() ->
+        {
+            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar);
+            Object obj = idMap.get("bar");
+            assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
+            BarNamed bar = (BarNamed)obj;
+            assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
+        });
 
-        Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar);
-        Object obj = idMap.get("bar");
-        assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
-        BarNamed bar = (BarNamed)obj;
-        assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
-
-        List<String> warnLogs = Arrays.stream(logBytes.toString(UTF_8.name()).split(System.lineSeparator()))
-            .filter(line -> line.contains(":WARN"))
+        List<String> warnings = Arrays.stream(logBytes.toString(UTF_8.name()).split(System.lineSeparator()))
+            .filter(line -> line.contains(":WARN :"))
             .collect(Collectors.toList());
 
-        assertThat("WARN logs size", warnLogs.size(), is(0));
+        assertThat("WARN logs size", warnings.size(), is(0));
     }
 
     @Test
@@ -1491,30 +1496,25 @@ public class XmlConfigurationTest
                 "  </Call>\n" +
                 "</Configure>");
 
+        ByteArrayOutputStream logBytes = captureLoggingBytes(() ->
+        {
+            Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar, xmlAddZed);
+            Object obj = idMap.get("bar");
+            assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
+            BarNamed bar = (BarNamed)obj;
+            assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
+            List<String> zeds = bar.getZeds();
+            assertThat("BarNamed has zeds", zeds, not(empty()));
+            assertThat("Zeds[0]", zeds.get(0), is("plain-zero"));
+        });
 
-        Logger logger = Log.getLogger(XmlConfiguration.class);
-        assertTrue(logger instanceof StdErrLog);
-        StdErrLog stdErrLog = (StdErrLog)logger;
-        ByteArrayOutputStream logBytes = new ByteArrayOutputStream();
-        stdErrLog.setStdErrStream(new PrintStream(logBytes));
-
-        Map<String, Object> idMap = mimicXmlConfigurationMain(xmlFoo, xmlBar, xmlAddZed);
-        Object obj = idMap.get("bar");
-        assertThat("BarNamed instance created", obj, instanceOf(BarNamed.class));
-        BarNamed bar = (BarNamed)obj;
-        assertThat("BarNamed has foo", bar.getFoo(), is("foozball"));
-        List<String> zeds = bar.getZeds();
-        assertThat("BarNamed has zeds", zeds, not(empty()));
-        assertThat("Zeds[0]", zeds.get(0), is("plain-zero"));
-
-
-        List<String> warnLogs = Arrays.stream(logBytes.toString(UTF_8.name()).split(System.lineSeparator()))
-            .filter(line -> line.contains(":WARN"))
+        List<String> warnings = Arrays.stream(logBytes.toString(UTF_8.name()).split(System.lineSeparator()))
+            .filter(line -> line.contains(":WARN :"))
             .collect(Collectors.toList());
 
-        assertThat("WARN logs count", warnLogs.size(), is(1));
+        assertThat("WARN logs count", warnings.size(), is(1));
 
-        String actualWarn = warnLogs.get(0);
+        String actualWarn = warnings.get(0);
         assertThat("WARN logs", actualWarn,
             allOf(containsString("Ignored arg <Arg name="),
                 containsString("zed.xml")
@@ -1570,33 +1570,51 @@ public class XmlConfigurationTest
                 "  <Get name=\"obsolete\" />" +
                 "</Configure>");
 
-        ByteArrayOutputStream logBytes = null;
-        Logger logger = Log.getLogger(XmlConfiguration.class);
-        logger.setDebugEnabled(true);
-        if (logger instanceof StdErrLog)
-        {
-            StdErrLog stdErrLog = (StdErrLog)logger;
-            logBytes = new ByteArrayOutputStream();
-            stdErrLog.setStdErrStream(new PrintStream(logBytes));
-        }
+        ByteArrayOutputStream logBytes = captureLoggingBytes(xmlConfiguration::configure);
 
-        xmlConfiguration.configure();
+        String[] lines = logBytes.toString(UTF_8.name()).split(System.lineSeparator());
+        List<String> warnings = Arrays.stream(lines)
+            .filter(line -> line.contains(":WARN :"))
+            .filter(line -> line.contains(testClass.getSimpleName()))
+            .collect(Collectors.toList());
+        // 1. Deprecated constructor
+        // 2. Deprecated <Set> method
+        // 3. Deprecated <Get> method
+        // 4. Deprecated <Call> method
+        // 5. Deprecated <Set> field
+        // 6. Deprecated <Get> field
+        assertEquals(6, warnings.size());
+    }
 
-        logger.setDebugEnabled(false);
-        if (logBytes != null)
+    private ByteArrayOutputStream captureLoggingBytes(ThrowableAction action) throws Exception
+    {
+        Logger slf4jLogger = LoggerFactory.getLogger(XmlConfiguration.class);
+        Assumptions.assumeTrue(slf4jLogger instanceof JettyLogger);
+
+        ByteArrayOutputStream logBytes = new ByteArrayOutputStream();
+        JettyLogger jettyLogger = (JettyLogger)slf4jLogger;
+        StdErrAppender appender = (StdErrAppender)jettyLogger.getAppender();
+        PrintStream oldStream = appender.getStream();
+        int oldLevel = jettyLogger.getLevel();
+        try
         {
-            String[] lines = logBytes.toString(UTF_8.name()).split(System.lineSeparator());
-            List<String> warnings = Arrays.stream(lines)
-                .filter(line -> line.contains(":WARN:"))
-                .filter(line -> line.contains(testClass.getSimpleName()))
-                .collect(Collectors.toList());
-            // 1. Deprecated constructor
-            // 2. Deprecated <Set> method
-            // 3. Deprecated <Get> method
-            // 4. Deprecated <Call> method
-            // 5. Deprecated <Set> field
-            // 6. Deprecated <Get> field
-            assertEquals(6, warnings.size());
+            // capture events
+            appender.setStream(new PrintStream(logBytes, true));
+            // make sure we are seeing WARN level events
+            jettyLogger.setLevel(Level.WARN);
+
+            action.run();
         }
+        finally
+        {
+            appender.setStream(oldStream);
+            jettyLogger.setLevel(oldLevel);
+        }
+        return logBytes;
+    }
+
+    private interface ThrowableAction
+    {
+        void run() throws Exception;
     }
 }

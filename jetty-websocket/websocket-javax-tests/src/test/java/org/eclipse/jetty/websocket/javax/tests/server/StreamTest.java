@@ -51,14 +51,14 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainerProvider;
 import org.eclipse.jetty.websocket.javax.tests.LocalServer;
 import org.eclipse.jetty.websocket.javax.tests.Sha1Sum;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
@@ -67,7 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class StreamTest
 {
-    private static final Logger LOG = Log.getLogger(StreamTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StreamTest.class);
 
     private static File outputDir;
     private static LocalServer server;

@@ -278,7 +278,7 @@ public class LocalConnector extends AbstractConnector
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Close wait failed", e);
                 }
             }
         }
@@ -304,7 +304,7 @@ public class LocalConnector extends AbstractConnector
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Close wait failed", e);
                 }
             }
         }

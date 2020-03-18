@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractForker
@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class AbstractForker extends AbstractLifeCycle
 {
-    private static final Logger LOG = Log.getLogger(AbstractForker.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractForker.class);
     
     protected Map<String,String> env;
     
@@ -245,7 +245,7 @@ public abstract class AbstractForker extends AbstractLifeCycle
             int attempts = maxChildStartChecks;
             while (!tokenFile.exists() && attempts > 0)
             {
-                Thread.currentThread().sleep(maxChildStartCheckMs);
+                Thread.sleep(maxChildStartCheckMs);
                 --attempts;
             }
             if (attempts <= 0)

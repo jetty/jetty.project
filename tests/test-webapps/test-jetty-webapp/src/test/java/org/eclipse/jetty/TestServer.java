@@ -47,24 +47,21 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.FileSessionDataStore;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.Disabled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Disabled("Not a test case")
 public class TestServer
 {
-    private static final Logger LOG = Log.getLogger(TestServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TestServer.class);
 
     public static void main(String[] args) throws Exception
     {
-        ((StdErrLog)Log.getLog()).setSource(false);
-
         // TODO don't depend on this file structure
         Path jettyRoot = FileSystems.getDefault().getPath(".").toAbsolutePath().normalize();
         if (!Files.exists(jettyRoot.resolve("VERSION.txt")))
@@ -84,7 +81,6 @@ public class TestServer
         // Setup JMX
         MBeanContainer mbContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
-        server.addBean(Log.getLog());
 
         // Common HTTP configuration
         HttpConfiguration config = new HttpConfiguration();
@@ -184,7 +180,7 @@ public class TestServer
                         }
                         catch (Exception e)
                         {
-                            LOG.warn(e);
+                            LOG.warn("Unable to restart server", e);
                         }
                     }
                 }.start();

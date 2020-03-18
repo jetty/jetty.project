@@ -22,4 +22,5 @@ module org.eclipse.jetty.http2.server
 
     requires transitive org.eclipse.jetty.http2.common;
     requires transitive org.eclipse.jetty.server;
+    requires org.slf4j;
 }

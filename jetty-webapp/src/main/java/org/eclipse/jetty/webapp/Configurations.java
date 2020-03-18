@@ -40,8 +40,8 @@ import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An ordered list of {@link Configuration} instances.
@@ -64,7 +64,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Configurations extends AbstractList<Configuration> implements Dumpable
 {
-    private static final Logger LOG = Log.getLogger(Configurations.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Configurations.class);
 
     private static final List<Configuration> __known = new ArrayList<>();
     private static final List<Configuration> __unavailable = new ArrayList<>();
@@ -77,9 +77,9 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
             ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
             for (Iterator<Configuration> i = configs.iterator(); i.hasNext(); )
             {
+                Configuration configuration = i.next();
                 try
                 {
-                    Configuration configuration = i.next();
                     if (!configuration.isAvailable())
                     {
                         if (LOG.isDebugEnabled())
@@ -92,7 +92,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
                 }
                 catch (Throwable e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to get known {}", configuration, e);
                 }
             }
 

@@ -24,8 +24,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An ObjectFactory enhanced by {@link Decorator} instances.
@@ -39,14 +39,14 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class DecoratedObjectFactory implements Iterable<Decorator>
 {
-    private static final Logger LOG = Log.getLogger(DecoratedObjectFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DecoratedObjectFactory.class);
 
     /**
      * ServletContext attribute for the active DecoratedObjectFactory
      */
     public static final String ATTR = DecoratedObjectFactory.class.getName();
-    
-    private static final ThreadLocal<Object> decoratorInfo = new ThreadLocal<>(); 
+
+    private static final ThreadLocal<Object> decoratorInfo = new ThreadLocal<>();
 
     private List<Decorator> decorators = new ArrayList<>();
 
@@ -54,17 +54,17 @@ public class DecoratedObjectFactory implements Iterable<Decorator>
     {
         decoratorInfo.set(info);
     }
-    
+
     public static void disassociateInfo()
     {
         decoratorInfo.set(null);
     }
-    
+
     public static Object getAssociatedInfo()
     {
         return decoratorInfo.get();
     }
-    
+
     public void addDecorator(Decorator decorator)
     {
         LOG.debug("Adding Decorator: {}", decorator);

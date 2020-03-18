@@ -27,13 +27,13 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.toolchain.test.StackUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ServerEndpoint("/echo/streaming/reader")
 public class ReaderSocket
 {
-    private static final Logger LOG = Log.getLogger(ReaderSocket.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReaderSocket.class);
 
     @OnMessage
     public String onReader(Reader reader) throws IOException

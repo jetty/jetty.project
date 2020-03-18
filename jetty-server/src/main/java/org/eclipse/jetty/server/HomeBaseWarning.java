@@ -24,8 +24,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Display an optional Warning Message if the {jetty.home} and {jetty.base} are the same directory.
@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HomeBaseWarning
 {
-    private static final Logger LOG = Log.getLogger(HomeBaseWarning.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HomeBaseWarning.class);
 
     public HomeBaseWarning()
     {
@@ -59,7 +59,7 @@ public class HomeBaseWarning
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             // Can't definitively determine this state
             return;
         }

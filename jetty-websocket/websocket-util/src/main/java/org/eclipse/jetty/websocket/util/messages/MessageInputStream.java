@@ -29,9 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Support class for reading a WebSocket BINARY message via a InputStream.
@@ -41,7 +41,7 @@ import org.eclipse.jetty.websocket.core.Frame;
  */
 public class MessageInputStream extends InputStream implements MessageSink
 {
-    private static final Logger LOG = Log.getLogger(MessageInputStream.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessageInputStream.class);
     private static final Entry EOF = new Entry(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
     private static final Entry CLOSED = new Entry(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
     private final BlockingArrayQueue<Entry> buffers = new BlockingArrayQueue<>();

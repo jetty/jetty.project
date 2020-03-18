@@ -29,7 +29,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
 
 public abstract class ProxyConnection extends AbstractConnection
 {

@@ -19,22 +19,18 @@
 package org.eclipse.jetty.webapp;
 
 import java.lang.annotation.Annotation;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import javax.servlet.ServletContext;
 
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.xml.XmlParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MetaData
@@ -43,7 +39,7 @@ import org.eclipse.jetty.xml.XmlParser;
  */
 public class MetaData
 {
-    private static final Logger LOG = Log.getLogger(MetaData.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MetaData.class);
 
     public static final String VALIDATE_XML = "org.eclipse.jetty.webapp.validateXml";
     public static final String ORDERED_LIBS = "javax.servlet.context.orderedLibs";
@@ -66,16 +62,15 @@ public class MetaData
     protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean _allowDuplicateFragmentNames = false;
     protected boolean _validateXml = false;
-    
+
     public enum Complete
     {
         NotSet, True, False
     }
-    
+
     /**
-     * Metadata regarding where a deployable element was declared: 
+     * Metadata regarding where a deployable element was declared:
      * by annotation or by descriptor.
-     *
      */
     public static class OriginInfo
     {
@@ -83,22 +78,22 @@ public class MetaData
          * Identifier for the deployable element
          */
         private final String name;
-        
+
         /**
          * Origin of the deployable element
          */
         private final Origin origin;
-        
+
         /**
          * Reference to the descriptor, if declared in one
          */
         private final Descriptor descriptor;
-        
+
         /**
          * Reference to the annotation, if declared by one
          */
         private final Annotation annotation;
-        
+
         /**
          * The class containing the annotation, if declared by one
          */
@@ -125,7 +120,7 @@ public class MetaData
             origin = Origin.of(d);
             descriptor = d;
             annotation = null;
-            annotated = null;                
+            annotated = null;
         }
 
         public OriginInfo(String n)
@@ -194,9 +189,8 @@ public class MetaData
 
     /**
      * Set the web-default.xml.
-     * 
+     *
      * @param descriptor the web-default.xml
-     * @throws Exception
      */
     public void setDefaultsDescriptor(DefaultsDescriptor descriptor)
         throws Exception
@@ -225,7 +219,6 @@ public class MetaData
 
     /**
      * @param descriptor the web.xml descriptor
-     * @throws Exception
      */
     public void setWebDescriptor(WebDescriptor descriptor)
         throws Exception
@@ -256,9 +249,8 @@ public class MetaData
 
     /**
      * Add a override-web.xml descriptor.
-     * 
+     *
      * @param descriptor the override-web.xml
-     * @throws Exception
      */
     public void addOverrideDescriptor(OverrideDescriptor descriptor)
         throws Exception
@@ -314,7 +306,7 @@ public class MetaData
 
         Objects.requireNonNull(jarResource);
         Objects.requireNonNull(descriptor);
-        
+
         //Metadata-complete is not set, or there is no web.xml
         _webFragmentResourceMap.put(jarResource, descriptor);
         _webFragmentRoots.add(descriptor);
@@ -361,7 +353,7 @@ public class MetaData
     /**
      * Add an annotation that has been discovered on a class, method or field within a resource
      * eg a jar or dir. The annotation may also have no associated resource, or that resource
-     * may be a system or container resource. 
+     * may be a system or container resource.
      *
      * This method is synchronized as it is anticipated that it may be called by many threads
      * during the annotation scanning phase.
@@ -404,12 +396,12 @@ public class MetaData
 
         list.add(annotation);
     }
-    
+
     /**
      * Check if the resource is contained within one of the list of resources.
      * In other words, check if the given resource is a sub-resource of one
      * of the list of resources.
-     * 
+     *
      * @param resources the list of resources to check against
      * @param resource the resource for which to find the parent resource
      * @return the resource from the list that contains the given resource.
@@ -431,7 +423,7 @@ public class MetaData
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Not contained within?", e);
             return null;
         }
     }
@@ -543,7 +535,7 @@ public class MetaData
      * A webapp is distributable if web.xml is metadata-complete and
      * distributable=true, or if metadata-complete is false, but all
      * web-fragments.xml are distributable=true.
-     * 
+     *
      * @return true if the webapp is distributable, false otherwise
      */
     public boolean isDistributable()
@@ -609,7 +601,7 @@ public class MetaData
     {
         return _webFragmentNameMap.get(name);
     }
-    
+
     /**
      * @param descriptorResource the web-fragment.xml location as a Resource
      * @return the FrgmentDescriptor for the web-fragment.xml, or null if none exists
@@ -626,19 +618,19 @@ public class MetaData
     public Resource getJarForFragmentName(String name)
     {
         Resource jar = null;
-        
+
         FragmentDescriptor f = getFragmentDescriptor(name);
         if (f == null)
             return null;
 
-        for (Map.Entry<Resource,FragmentDescriptor> entry : _webFragmentResourceMap.entrySet())
+        for (Map.Entry<Resource, FragmentDescriptor> entry : _webFragmentResourceMap.entrySet())
         {
             if (entry.getValue().equals(f))
                 jar = entry.getKey();
         }
         return jar;
     }
-    
+
     /**
      * Get the web-fragment.xml related to a jar
      *
@@ -646,7 +638,7 @@ public class MetaData
      * @return the FragmentDescriptor or null if no web-fragment.xml is associated with the jar
      */
     public FragmentDescriptor getFragmentDescriptorForJar(Resource jar)
-    {        
+    {
         return _webFragmentResourceMap.get(jar);
     }
 
@@ -689,7 +681,7 @@ public class MetaData
     {
         if (name == null)
             return;
-        
+
         OriginInfo x = new OriginInfo(name, d);
         _origins.put(name, x);
     }
@@ -727,7 +719,7 @@ public class MetaData
         if (!withOrdering)
             return Collections.unmodifiableList(_webInfJars);
         else
-            return  Collections.unmodifiableList(_orderedWebInfResources);
+            return Collections.unmodifiableList(_orderedWebInfResources);
     }
 
     public List<Resource> getContainerResources()
@@ -767,7 +759,7 @@ public class MetaData
     {
         return _validateXml;
     }
-    
+
     /**
      * @param validateXml if true xml syntax is validated by the parser, false otherwise
      */

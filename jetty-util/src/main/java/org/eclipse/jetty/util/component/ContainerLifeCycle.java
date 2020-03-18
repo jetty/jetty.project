@@ -31,8 +31,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A ContainerLifeCycle is an {@link LifeCycle} implementation for a collection of contained beans.
@@ -82,7 +82,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Implementation of Container and LifeCycle")
 public class ContainerLifeCycle extends AbstractLifeCycle implements Container, Destroyable, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(ContainerLifeCycle.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ContainerLifeCycle.class);
     private final List<Bean> _beans = new CopyOnWriteArrayList<>();
     private final List<Container.Listener> _listeners = new CopyOnWriteArrayList<>();
     private boolean _doStarted;
@@ -236,7 +236,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 }
                 catch (Throwable th)
                 {
-                    LOG.warn(th);
+                    LOG.warn("Unable to destroy", th);
                 }
             }
         }
@@ -711,7 +711,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         }
         catch (IOException e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to dump", e);
         }
     }
 

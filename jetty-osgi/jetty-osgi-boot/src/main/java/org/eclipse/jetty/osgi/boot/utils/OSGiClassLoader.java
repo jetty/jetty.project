@@ -26,9 +26,9 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * OSGiClassLoader
@@ -38,7 +38,7 @@ import org.osgi.framework.Bundle;
  */
 public class OSGiClassLoader extends URLClassLoader
 {
-    private static final Logger LOG = Log.getLogger(OSGiClassLoader.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OSGiClassLoader.class);
 
     private Bundle _bundle;
     private ClassLoader _osgiBundleClassLoader;

@@ -30,9 +30,9 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A connection pool that validates connections before
@@ -59,7 +59,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public class ValidatingConnectionPool extends DuplexConnectionPool
 {
-    private static final Logger LOG = Log.getLogger(ValidatingConnectionPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ValidatingConnectionPool.class);
 
     private final Scheduler scheduler;
     private final long timeout;

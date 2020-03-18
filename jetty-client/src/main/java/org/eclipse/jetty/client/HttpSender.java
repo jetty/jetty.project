@@ -31,8 +31,8 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link HttpSender} abstracts the algorithm to send HTTP requests, so that subclasses only implement
@@ -59,7 +59,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class HttpSender implements AsyncContentProvider.Listener
 {
-    private static final Logger LOG = Log.getLogger(HttpSender.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpSender.class);
 
     private final AtomicReference<RequestState> requestState = new AtomicReference<>(RequestState.QUEUED);
     private final AtomicReference<SenderState> senderState = new AtomicReference<>(SenderState.IDLE);
@@ -363,7 +363,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         catch (RejectedExecutionException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("Exchange aborted {}", exchange, x);
             abort(exchange, failure);
         }
     }

@@ -9,6 +9,6 @@ gcloud
 
 [depends]
 gcloud
-jcl-slf4j
-jul-impl
+logging-jcl-capture
+logging-jul
 

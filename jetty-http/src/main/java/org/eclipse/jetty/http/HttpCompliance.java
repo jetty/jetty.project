@@ -25,8 +25,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableSet;
@@ -84,7 +84,7 @@ public final class HttpCompliance implements ComplianceViolation.Mode
         }
     }
 
-    private static final Logger LOG = Log.getLogger(HttpParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpParser.class);
     public static final String VIOLATIONS_ATTR = "org.eclipse.jetty.http.compliance.violations";
 
     public static final HttpCompliance RFC7230 = new HttpCompliance("RFC7230", noneOf(Violation.class));
