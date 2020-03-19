@@ -65,50 +65,57 @@ public class Slf4jEffort
         AtomicInteger countPomSlf4jImpls = new AtomicInteger(0);
         AtomicInteger countOldLogClassProps = new AtomicInteger(0);
 
-        getProjectsStream(root).forEach((pom) ->
-        {
-            Path project = pom.getParent();
-            try
+        getProjectsStream(root)
+            .filter(pom ->
             {
-                Path testLoggingProps = project.resolve("src/test/resources/jetty-logging.properties");
-
-                boolean isMainSrcUsingLogging = getSources(project.resolve("src/main/java")).anyMatch(Slf4jEffort::isUsingLogging);
-                boolean isTestSrcUsingLogging = getSources(project.resolve("src/test/java")).anyMatch(Slf4jEffort::isUsingLogging);
-
-                if (isMainSrcUsingLogging || isTestSrcUsingLogging)
+                String fullpath = pom.toString();
+                return !((fullpath.contains("/jetty-osgi") ||
+                    fullpath.contains("/jetty-slf4j-impl/")));
+            })
+            .forEach((pom) ->
+            {
+                Path project = pom.getParent();
+                try
                 {
-                    // Must include slf4j in module-info and pom
-                    Path moduleInfo = project.resolve("src/main/java/module-info.java");
-                    if (Files.exists(moduleInfo) && isMainSrcUsingLogging && !isLoggingJpmsPresent(moduleInfo))
-                    {
-                        System.err.printf("[Missing: JPMS] %s%n", moduleInfo);
-                        countJpms.incrementAndGet();
-                    }
+                    Path testLoggingProps = project.resolve("src/test/resources/jetty-logging.properties");
 
-                    if (!isSlf4jDepPresent(pom))
-                    {
-                        // System.err.printf("[Missing: Dep: slf4j-api] %s%n", pom);
-                        countPomSlf4jApis.incrementAndGet();
-                    }
+                    boolean isMainSrcUsingLogging = getSources(project.resolve("src/main/java")).anyMatch(Slf4jEffort::isUsingLogging);
+                    boolean isTestSrcUsingLogging = getSources(project.resolve("src/test/java")).anyMatch(Slf4jEffort::isUsingLogging);
 
-                    if (isTestSrcUsingLogging && !isSlf4jImplDepPresent(pom))
+                    if (isMainSrcUsingLogging || isTestSrcUsingLogging)
                     {
-                        // System.err.printf("[Missing: Dep: jetty-slf4j-impl] %s%n", pom);
-                        countPomSlf4jImpls.incrementAndGet();
-                    }
+                        if (!isSlf4jImplDepPresent(pom))
+                        {
+                            System.err.printf("[Missing: Dep: jetty-slf4j-impl] %s%n", pom);
+                            countPomSlf4jImpls.incrementAndGet();
+                        }
 
-                    if (Files.exists(testLoggingProps) && isOldLogClassPropPresent(testLoggingProps))
-                    {
-                        System.err.printf("[Deprecated: log.class=LogImpl] %s%n", testLoggingProps);
-                        countOldLogClassProps.incrementAndGet();
+                        // Must include slf4j in module-info and pom
+                        Path moduleInfo = project.resolve("src/main/java/module-info.java");
+                        if (Files.exists(moduleInfo) && isMainSrcUsingLogging && !isLoggingJpmsPresent(moduleInfo))
+                        {
+                            System.err.printf("[Missing: JPMS] %s%n", moduleInfo);
+                            countJpms.incrementAndGet();
+                        }
+
+                        if (!isSlf4jDepPresent(pom))
+                        {
+                            System.err.printf("[Missing: Dep: slf4j-api] %s%n", pom);
+                            countPomSlf4jApis.incrementAndGet();
+                        }
+
+                        if (Files.exists(testLoggingProps) && isOldLogClassPropPresent(testLoggingProps))
+                        {
+                            System.err.printf("[Deprecated: log.class=LogImpl] %s%n", testLoggingProps);
+                            countOldLogClassProps.incrementAndGet();
+                        }
                     }
                 }
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
-        });
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            });
 
         System.out.printf("JPMS (module-info.java) to fix: %d%n", countJpms.get());
         System.out.printf("POMS (pom.xml) - slf4j-api to fix: %d%n", countPomSlf4jApis.get());
@@ -184,7 +191,9 @@ public class Slf4jEffort
             String line;
             while ((line = reader.readLine()) != null)
             {
-                if (line.contains("requires org.slf4j;"))
+                if (line.contains("requires org.slf4j;") ||
+                    line.contains("requires transitive org.slf4j;") ||
+                    line.contains("requires static org.slf4j;"))
                 {
                     return true;
                 }
