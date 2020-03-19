@@ -39,7 +39,6 @@ import org.osgi.framework.BundleContext;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  * Pax-Exam to make sure the jetty-osgi-boot can be started along with the
@@ -50,8 +49,6 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 public class TestJettyOSGiBootWithAnnotations
 {
-    private static final String LOG_LEVEL = "WARN";
-
     @Inject
     BundleContext bundleContext = null;
 
@@ -59,6 +56,9 @@ public class TestJettyOSGiBootWithAnnotations
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>();
+
+        options.addAll(TestOSGiUtil.configurePaxExamLogging());
+
         options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-annotations.xml"));
@@ -68,12 +68,9 @@ public class TestJettyOSGiBootWithAnnotations
             "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
 
         options.addAll(TestOSGiUtil.coreJettyDependencies());
-        // TODO uncomment and update the following once 9.4.19 is released with a fix for #3726
-        // options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").version("9.4.19.v????????").noStart());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
-        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
-        options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
+
         options.addAll(jspDependencies());
         options.addAll(annotationDependencies());
         options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-fragment").versionAsInProject().noStart());

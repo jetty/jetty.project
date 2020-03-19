@@ -40,6 +40,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.options.WrappedUrlProvisionOption.OverwriteMode;
 import org.ops4j.pax.url.mvn.internal.AetherBasedResolver;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -52,6 +53,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
 
 /**
  * Helper methods for pax-exam tests
@@ -90,6 +92,16 @@ public class TestOSGiUtil
         options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
         return options;
     }
+    
+    public static List<Option> configurePaxExamLogging()
+    {
+        //sort out logging from the pax-exam environment
+        List<Option> options = new ArrayList<>();
+        options.add(systemProperty("pax.exam.logging").value("none"));
+        String paxExamLogLevel = System.getProperty("pax.exam.LEVEL", "WARN");
+        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(paxExamLogLevel));
+        return options;
+    }
 
     public static List<Option> provisionCoreJetty()
     {
@@ -108,9 +120,11 @@ public class TestOSGiUtil
 
     public static List<Option> coreJettyDependencies()
     {
-        AetherBasedResolver l;
         List<Option> res = new ArrayList<>();
+        //enables a dump of the status of all deployed bundles
         res.add(systemProperty("bundle.debug").value(Boolean.toString(Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))));
+
+        //add locations to look for jars to deploy
         String mavenRepoPath = System.getProperty("mavenRepoPath");
         if (!StringUtil.isBlank(mavenRepoPath))
         {
@@ -124,6 +138,11 @@ public class TestOSGiUtil
         {
             res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
+        
+        //sort out logging level from jetty
+        String jettyLogLevel = System.getProperty("org.eclipse.jetty.LEVEL", "WARN");
+        res.add(systemProperty("org.eclipse.jetty.LEVEL").value(jettyLogLevel));
+        
         res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-servlet-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-commons").versionAsInProject().start());
@@ -131,8 +150,12 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.apache.aries.spifly").artifactId("org.apache.aries.spifly.dynamic.bundle").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.apache.geronimo.specs").artifactId("geronimo-jta_1.1_spec").version("1.1.1").start());
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-log4j12").versionAsInProject().noStart());
+        //the slf4j-api jar does not have support for ServiceLoader in osgi in its manifest, so add it now
+        res.add(wrappedBundle(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject())
+            .instructions("Require-Capability=osgi.serviceloader;filter:=\"(osgi.serviceloader=org.slf4j.spi.SLF4JServiceProvider)\",osgi.extender;filter:=\"(osgi.extender=osgi.serviceloader.processor)\"")
+            .overwriteManifest(OverwriteMode.MERGE)
+            .start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-deploy").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-server").versionAsInProject().start());
