@@ -87,6 +87,9 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
                     // handle the HTTP/2 response to the upgrade request.
                     promise.succeeded(connection);
                     connection.upgrade(context);
+                    // The connection can be used only after the upgrade that
+                    // creates stream #1 corresponding to the HTTP/1.1 upgrade
+                    // request, otherwise other requests can steal id #1.
                     destination.accept(connection);
                 }
 

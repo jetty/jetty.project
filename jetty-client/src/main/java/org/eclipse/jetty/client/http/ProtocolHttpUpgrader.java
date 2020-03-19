@@ -35,8 +35,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A HttpUpgrader that upgrades to a given protocol.</p>
@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ProtocolHttpUpgrader implements HttpUpgrader
 {
-    private static final Logger LOG = Log.getLogger(ProtocolHttpUpgrader.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProtocolHttpUpgrader.class);
 
     private final HttpDestination destination;
     private final String protocol;
