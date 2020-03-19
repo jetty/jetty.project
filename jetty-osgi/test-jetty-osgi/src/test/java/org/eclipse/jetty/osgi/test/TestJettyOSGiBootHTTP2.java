@@ -47,7 +47,6 @@ import org.osgi.framework.ServiceReference;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
@@ -93,18 +92,13 @@ public class TestJettyOSGiBootHTTP2
         List<Option> res = new ArrayList<>();
         res.add(CoreOptions.systemProperty("jetty.alpn.protocols").value("h2,http/1.1"));
 
-        String alpnBoot = System.getProperty("mortbay-alpn-boot");
-        if (alpnBoot == null)
-        {
-            throw new IllegalStateException("Define path to alpn boot jar as system property -Dmortbay-alpn-boot");
-        }
-        File checkALPNBoot = new File(alpnBoot);
-        if (!checkALPNBoot.exists())
-        {
-            throw new IllegalStateException("Unable to find the alpn boot jar here: " + alpnBoot);
-        }
-
-        res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + checkALPNBoot.getAbsolutePath()));
+        String alpnAgent = System.getProperty("mortbay-alpn-agent");
+        if (alpnAgent == null)
+            throw new IllegalStateException("Define path to alpn agent jar as system property -Dmortbay-alpn-agent");
+        File alpnAgentFile = new File(alpnAgent);
+        if (!alpnAgentFile.exists())
+            throw new IllegalStateException("Unable to find the alpn agent jar here: " + alpnAgent);
+        res.add(CoreOptions.vmOptions("-javaagent:" + alpnAgentFile.getAbsolutePath() + "=debug=true"));
 
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-openjdk8-server").versionAsInProject().start());
@@ -116,20 +110,13 @@ public class TestJettyOSGiBootHTTP2
         return res;
     }
 
-    public void checkALPNBootOnBootstrapClasspath() throws Exception
-    {
-        Class<?> alpn = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.alpn.ALPN");
-        assertNotNull(alpn);
-        assertNull(alpn.getClassLoader());
-    }
-
     public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
         Bundle openjdk8 = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.openjdk8.server");
         assertNotNull(openjdk8);
-        ServiceReference[] services = openjdk8.getRegisteredServices();
+        ServiceReference<?>[] services = openjdk8.getRegisteredServices();
         assertNotNull(services);
         Bundle server = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.server");
         assertNotNull(server);
@@ -139,10 +126,7 @@ public class TestJettyOSGiBootHTTP2
     public void testHTTP2() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
-        {
-            checkALPNBootOnBootstrapClasspath();
             assertAllBundlesActiveOrResolved();
-        }
 
         HttpClient httpClient = null;
         HTTP2Client http2Client = null;
@@ -151,7 +135,7 @@ public class TestJettyOSGiBootHTTP2
             //get the port chosen for https
             String tmp = System.getProperty("boot.https.port");
             assertNotNull(tmp);
-            int port = Integer.valueOf(tmp.trim());
+            int port = Integer.parseInt(tmp.trim());
 
             Path path = Paths.get("src", "test", "config");
             File keys = path.resolve("etc").resolve("keystore").toFile();

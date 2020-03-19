@@ -774,7 +774,7 @@
     <profile>
       <id>jdk9</id>
       <activation>
-        <jdk>[1.9,)</jdk>
+        <jdk>[9,)</jdk>
       </activation>
       <dependencies>
         <dependency>

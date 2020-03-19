@@ -20,7 +20,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <id>copy</id>
+            <id>copy-alpn-agent</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>copy</goal>
@@ -29,8 +29,8 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>org.mortbay.jetty.alpn</groupId>
-                  <artifactId>alpn-boot</artifactId>
-                  <version>${alpn.version}</version>
+                  <artifactId>jetty-alpn-agent</artifactId>
+                  <version>${alpn.agent.version}</version>
                   <type>jar</type>
                   <overWrite>false</overWrite>
                   <outputDirectory>${project.build.directory}/alpn</outputDirectory>
@@ -43,7 +43,7 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>-Xbootclasspath/p:${project.build.directory}/alpn/alpn-boot-${alpn.version}.jar</argLine>
+          <argLine>-javaagent:${project.build.directory}/alpn/jetty-alpn-agent-${alpn.agent.version}.jar=debug=true</argLine>
         </configuration>
       </plugin>
     </plugins>
@@ -54,17 +54,23 @@
       <groupId>org.eclipse.jetty.alpn</groupId>
       <artifactId>alpn-api</artifactId>
       <version>${alpn.api.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-openjdk8-server</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-server</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-openjdk8-server</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -81,21 +87,4 @@
     </dependency>
   </dependencies>
 
-  <profiles>
-    <profile>
-      <id>jdk9</id>
-      <activation>
-        <jdk>[1.9,)</jdk>
-      </activation>
-
-      <dependencies>
-        <dependency>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-alpn-java-server</artifactId>
-          <version>${project.version}</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
 </project>

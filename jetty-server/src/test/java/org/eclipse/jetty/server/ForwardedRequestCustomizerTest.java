@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -617,6 +618,25 @@ public class ForwardedRequestCustomizerTest
         assertThat("status", response.getStatus(), is(200));
 
         expectations.accept(actual);
+    }
+
+    @Test
+    public void testBadInput() throws Exception
+    {
+        Request request = new Request("Bad port value")
+            .headers(
+                "GET / HTTP/1.1",
+                "Host: myhost",
+                "X-Forwarded-Port: "
+            );
+
+        request.configure(customizer);
+
+        String rawRequest = request.getRawRequest((header) -> header);
+        System.out.println(rawRequest);
+
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(rawRequest));
+        assertThat("status", response.getStatus(), is(400));
     }
 
     private static class Request

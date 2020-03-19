@@ -43,6 +43,7 @@ public class HostPortTest
             Arguments.of("[0::0::0::1]", "[0::0::0::1]", null),
             Arguments.of("[0::0::0::1]:80", "[0::0::0::1]", "80"),
             Arguments.of("0:1:2:3:4:5:6", "[0:1:2:3:4:5:6]", null),
+            Arguments.of("127.0.0.1:65535", "127.0.0.1", "65535"),
             // Localhost tests
             Arguments.of("localhost:80", "localhost", "80"),
             Arguments.of("127.0.0.1:80", "127.0.0.1", "80"),
@@ -79,7 +80,9 @@ public class HostPortTest
             "[0::0::0::0::1]:xxx",
             "host:-80",
             "127.0.0.1:-80",
-            "[0::0::0::0::1]:-80")
+            "[0::0::0::0::1]:-80",
+            "127.0.0.1:65536"
+            )
             .map(Arguments::of);
     }
 

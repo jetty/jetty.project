@@ -36,9 +36,9 @@ import java.util.Arrays;
  */
 public class SearchPattern
 {
-    static final int alphabetSize = 256;
-    private int[] table;
-    private byte[] pattern;
+    private static final int ALPHABET_SIZE = 256;
+    private final int[] table = new int[ALPHABET_SIZE];
+    private final byte[] pattern;
 
     /**
      * Produces a SearchPattern instance which can be used
@@ -70,16 +70,11 @@ public class SearchPattern
     private SearchPattern(byte[] pattern)
     {
         this.pattern = pattern;
-
         if (pattern.length == 0)
             throw new IllegalArgumentException("Empty Pattern");
 
         //Build up the pre-processed table for this pattern.
-        table = new int[alphabetSize];
-        for (int i = 0; i < table.length; ++i)
-        {
-            table[i] = pattern.length;
-        }
+        Arrays.fill(table, pattern.length);
         for (int i = 0; i < pattern.length - 1; ++i)
         {
             table[0xff & pattern[i]] = pattern.length - 1 - i;
@@ -97,7 +92,7 @@ public class SearchPattern
      */
     public int match(byte[] data, int offset, int length)
     {
-        validate(data, offset, length);
+        validateArgs(data, offset, length);
 
         int skip = offset;
         while (skip <= offset + length - pattern.length)
@@ -125,7 +120,7 @@ public class SearchPattern
      */
     public int endsWith(byte[] data, int offset, int length)
     {
-        validate(data, offset, length);
+        validateArgs(data, offset, length);
 
         int skip = (pattern.length <= length) ? (offset + length - pattern.length) : offset;
         while (skip < offset + length)
@@ -136,10 +131,8 @@ public class SearchPattern
                     return (offset + length - skip);
             }
 
-            if (skip + pattern.length - 1 < data.length)
-                skip += table[0xff & data[skip + pattern.length - 1]];
-            else
-                skip++;
+            // We can't use the pre-processed table as we are not matching on the full pattern.
+            skip++;
         }
 
         return 0;
@@ -157,10 +150,9 @@ public class SearchPattern
      */
     public int startsWith(byte[] data, int offset, int length, int matched)
     {
-        validate(data, offset, length);
+        validateArgs(data, offset, length);
 
         int matchedCount = 0;
-
         for (int i = 0; i < pattern.length - matched && i < length; i++)
         {
             if (data[offset + i] == pattern[i + matched])
@@ -180,7 +172,7 @@ public class SearchPattern
      * @param offset The offset within the data to start the search
      * @param length The length of the data to search
      */
-    private void validate(byte[] data, int offset, int length)
+    private void validateArgs(byte[] data, int offset, int length)
     {
         if (offset < 0)
             throw new IllegalArgumentException("offset was negative");
