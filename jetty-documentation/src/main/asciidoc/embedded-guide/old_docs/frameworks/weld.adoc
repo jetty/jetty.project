@@ -1,19 +1,19 @@
 //
-// ========================================================================
-// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  ========================================================================
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
 //
-// This program and the accompanying materials are made available under
-// the terms of the Eclipse Public License 2.0 which is available at
-// https://www.eclipse.org/legal/epl-2.0
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
 //
-// This Source Code may also be made available under the following
-// Secondary Licenses when the conditions for such availability set
-// forth in the Eclipse Public License, v. 2.0 are satisfied:
-// the Apache License v2.0 which is available at
-// https://www.apache.org/licenses/LICENSE-2.0
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
 //
-// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
-// ========================================================================
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
 //
 
 [[framework-weld]]
@@ -25,30 +25,74 @@ It is easily configured with Jetty 9.
 [[weld-setup-distro]]
 ==== Weld Setup
 
-The easiest way to configure weld is within the jetty distribution itself:
+The easiest way to configure weld is within the Jetty distribution itself.
+This can be accomplished either by enabling one of the startup link:#startup-modules[modules] for Weld, or by creating/editing a `jetty-web.xml` descriptor (see also https://www.eclipse.org/jetty/documentation/current/jetty-web-xml-config.html[Jetty XML Reference]).
 
-1.  Enable the startup link:#startup-modules[module] called "cdi".
-2.  Ensure your `WEB-INF/web.xml` contains the following:
-+
-[source, xml, subs="{sub-order}"]
-----
-  <listener>
-    <listener-class>org.jboss.weld.environment.servlet.Listener</listener-class>
-  </listener>
+===== Jetty Weld Modules
 
-  <resource-env-ref>
-    <description>Object factory for the CDI Bean Manager</description>
-    <resource-env-ref-name>BeanManager</resource-env-ref-name>
-    <resource-env-ref-type>javax.enterprise.inject.spi.BeanManager</resource-env-ref-type>
-  </resource-env-ref>
-----
+====== Jetty `cdi-decorate` Module
 
-That should be it so when you start up your jetty distribution with the webapp you should see output similar to the following (providing your logging is the default configuration):
+Since Jetty 9.4.20 and Weld 3.1.2.Final, the Weld/Jetty integration uses the jetty `cdi-decorate` module.
+To activate this module in Jetty the `cdi-decorate` module needs activated on the command line, which can be done as follows:
+
+-------------------------
+cd $JETTY_BASE
+java -jar $JETTY_HOME/start.jar --add-to-start=cdi-decorate
+-------------------------
+
+====== Jetty `cdi2` Module
+
+For versions prior to Jetty 9.4.20 and Weld 3.1.2, the Weld/Jetty integration required some internal Jetty APIs to be made visible to the web application.
+This can be done using the deprecated `cdi2` module either by activating the `cdi2` module:
+
+-------------------------
+cd $JETTY_BASE
+java -jar $JETTY_HOME/start.jar --add-to-start=cdi2
+-------------------------
+
+
+===== Jetty-Web XML
+
+
+[source.XML, xml]
+-------------------------------------------------------------
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+   <Call name="prependServerClass">
+      <Arg>-org.eclipse.jetty.util.Decorator</Arg>
+   </Call>
+   <Call name="prependServerClass">
+      <Arg>-org.eclipse.jetty.util.DecoratedObjectFactory</Arg>
+   </Call>
+   <Call name="prependServerClass">
+      <Arg>-org.eclipse.jetty.server.handler.ContextHandler.</Arg>
+   </Call>
+   <Call name="prependServerClass">
+      <Arg>-org.eclipse.jetty.server.handler.ContextHandler</Arg>
+   </Call>
+   <Call name="prependServerClass">
+      <Arg>-org.eclipse.jetty.servlet.ServletContextHandler</Arg>
+   </Call>
+</Configure>
+-------------------------------------------------------------
+
+//TODO Fix for 10
+____
+[TIP]
+Directly modifying the web application classpath via `jetty-web.xml` will not work for Jetty 10.0.0 and later.
+____
+
+===== Jetty `cdi-spi` Module
+Since Jetty 9.4.20 the Jetty `cdi-spi` module has been available that integrates any compliant CDI implementation by directly calling the CDI SPI.
+Since Weld support specific Jetty integration, it is not recommended to use this module with Weld.
+
+When you start up your Jetty distribution with the webapp you should see output similar to the following (providing your logging is the default configuration):
 
 [source, screen, subs="{sub-order}"]
 ....
 2015-06-18 12:13:54.924:INFO::main: Logging initialized @485ms
-2015-06-18 12:13:55.231:INFO:oejs.Server:main: jetty-9.3.1-SNAPSHOT
+2015-06-18 12:13:55.231:INFO:oejs.Server:main: jetty-{VERSION}
 2015-06-18 12:13:55.264:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:///tmp/cdi-demo/webapps/] at interval 1
 2015-06-18 12:13:55.607:WARN:oeja.AnnotationConfiguration:main: ServletContainerInitializers: detected. Class hierarchy: empty
 Jun 18, 2015 12:13:55 PM org.jboss.weld.environment.servlet.EnhancedListener onStartup
@@ -80,4 +124,43 @@ INFO: WELD-ENV-001009: org.jboss.weld.environment.servlet.Listener used for Serv
 
 ....
 
-For use with the jetty-maven-plugin, the best idea is to make the org.jboss.weld.servlet:weld-servlet artifact a _plugin_ dependency (__not__ a webapp dependency), then follow step 2 above.
+For use with the jetty-maven-plugin, the best idea is to make the org.jboss.weld.servlet:weld-servlet artifact a _plugin_ dependency (__not__ a webapp dependency).
+
+[[weld-embedded]]
+==== Embedded Jetty
+
+When starting embedded Jetty programmatically from the `main` method it is necessary to register Weld's listener:
+
+[source.JAVA, java]
+----
+public class Main {
+
+    public static void main(String[] args) throws Exception {
+        Server jetty = new Server(8080);
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        context.setResourceBase("src/main/resources");
+        jetty.setHandler(context);
+        context.addServlet(HelloWorldServlet.class, "/*");
+
+        context.addEventListener(new DecoratingListener()); # <1>
+        context.addEventListener(new Listener()); # <2>
+
+        jetty.start();
+        jetty.join();
+    }
+
+    public static class HelloWorldServlet extends HttpServlet {
+
+        @Inject BeanManager manager;
+
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+            resp.setContentType("text/plain");
+            resp.getWriter().append("Hello from " + manager);
+        }
+    }
+}
+
+<1> Jetty's `org.eclipse.jetty.webapp.DecoratingListener` registered programmatically (since Jetty-9.4.20)
+<2> Weld's `org.jboss.weld.environment.servlet.Listener` registered programmatically
+----
