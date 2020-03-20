@@ -70,7 +70,7 @@ public interface ClientConnectionFactory
      * (for example {@code ["h2", "h2-17", "h2-16"]}) and a {@link ClientConnectionFactory}
      * that creates connections that speak that network protocol.</p>
      */
-    public static class Info
+    public static class Info extends ContainerLifeCycle
     {
         private final List<String> protocols;
         private final ClientConnectionFactory factory;
@@ -79,6 +79,7 @@ public interface ClientConnectionFactory
         {
             this.protocols = protocols;
             this.factory = factory;
+            addBean(factory);
         }
 
         public List<String> getProtocols()
@@ -100,6 +101,11 @@ public interface ClientConnectionFactory
         public boolean matches(List<String> candidates)
         {
             return protocols.stream().anyMatch(p -> candidates.stream().anyMatch(c -> c.equalsIgnoreCase(p)));
+        }
+
+        public void upgrade(EndPoint endPoint, Map<String, Object> context)
+        {
+            throw new UnsupportedOperationException(this + " does not support upgrade to another protocol");
         }
 
         @Override

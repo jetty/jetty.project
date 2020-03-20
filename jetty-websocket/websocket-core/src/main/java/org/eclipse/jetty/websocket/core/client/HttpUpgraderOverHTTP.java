@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 
@@ -71,20 +72,35 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
     }
 
     @Override
-    public void upgrade(HttpResponse response, EndPoint endPoint)
+    public void upgrade(HttpResponse response, EndPoint endPoint, Callback callback)
     {
         HttpRequest request = (HttpRequest)response.getRequest();
         HttpFields requestHeaders = request.getHeaders();
-        if (!requestHeaders.get(HttpHeader.UPGRADE).equalsIgnoreCase("websocket"))
-            throw new HttpResponseException("Not a WebSocket Upgrade", response);
-
-        // Check the Accept hash
-        String reqKey = requestHeaders.get(HttpHeader.SEC_WEBSOCKET_KEY);
-        String expectedHash = WebSocketCore.hashKey(reqKey);
-        String respHash = response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_ACCEPT);
-        if (!expectedHash.equalsIgnoreCase(respHash))
-            throw new HttpResponseException("Invalid Sec-WebSocket-Accept hash (was:" + respHash + ", expected:" + expectedHash + ")", response);
-
-        clientUpgradeRequest.upgrade(response, endPoint);
+        if (requestHeaders.contains(HttpHeader.UPGRADE, "websocket"))
+        {
+            HttpFields responseHeaders = response.getHeaders();
+            if (responseHeaders.contains(HttpHeader.CONNECTION, "upgrade"))
+            {
+                // Check the Accept hash
+                String reqKey = requestHeaders.get(HttpHeader.SEC_WEBSOCKET_KEY);
+                String expectedHash = WebSocketCore.hashKey(reqKey);
+                String respHash = responseHeaders.get(HttpHeader.SEC_WEBSOCKET_ACCEPT);
+                if (expectedHash.equalsIgnoreCase(respHash))
+                {
+                    clientUpgradeRequest.upgrade(response, endPoint);
+                    callback.succeeded();
+                }
+                else
+                    callback.failed(new HttpResponseException("Invalid Sec-WebSocket-Accept hash (was: " + respHash + " expected: " + expectedHash + ")", response));
+            }
+            else
+            {
+                callback.failed(new HttpResponseException("WebSocket upgrade missing 'Connection: Upgrade' header", response));
+            }
+        }
+        else
+        {
+            callback.failed(new HttpResponseException("Not a WebSocket upgrade", response));
+        }
     }
 }

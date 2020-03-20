@@ -56,6 +56,11 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         this.connectionFactory = connectionFactory;
     }
 
+    public ClientConnectionFactory getClientConnectionFactory()
+    {
+        return connectionFactory;
+    }
+
     public void setDirectBuffersForEncryption(boolean useDirectBuffers)
     {
         this._directBuffersForEncryption = useDirectBuffers;

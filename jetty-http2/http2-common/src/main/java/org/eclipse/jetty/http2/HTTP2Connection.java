@@ -29,6 +29,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.WriteFlusher;
@@ -41,7 +42,7 @@ import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP2Connection extends AbstractConnection implements WriteFlusher.Listener
+public class HTTP2Connection extends AbstractConnection implements WriteFlusher.Listener, Connection.UpgradeTo
 {
     protected static final Logger LOG = LoggerFactory.getLogger(HTTP2Connection.class);
 
@@ -95,8 +96,11 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         return parser;
     }
 
-    protected void setInputBuffer(ByteBuffer buffer)
+    @Override
+    public void onUpgradeTo(ByteBuffer buffer)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP2 onUpgradeTo {} {}", this, BufferUtil.toDetailString(buffer));
         if (buffer != null)
             producer.setInputBuffer(buffer);
     }

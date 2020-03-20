@@ -62,7 +62,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     }
 
     @SuppressWarnings("unchecked")
-    private Promise<Connection> connectionPromise()
+    private Promise<Connection> httpConnectionPromise()
     {
         return (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
     }
@@ -77,6 +77,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
             if (destination instanceof HttpDestination.Multiplexed)
                 ((HttpDestination.Multiplexed)destination).setMaxRequestsPerConnection(settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS));
         }
+        // The first SETTINGS frame is the server preface reply.
         if (!connection.isMarked())
             onServerPreface(session);
     }
@@ -85,7 +86,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     {
         HttpConnectionOverHTTP2 connection = newHttpConnection(destination(), session);
         if (this.connection.compareAndSet(null, connection, false, true))
-            connectionPromise().succeeded(connection);
+            httpConnectionPromise().succeeded(connection);
     }
 
     protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
@@ -105,6 +106,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
 
     void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
     {
+        connection.close();
     }
 
     @Override
@@ -133,7 +135,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     {
         boolean result = connection.compareAndSet(null, null, false, true);
         if (result)
-            connectionPromise().failed(failure);
+            httpConnectionPromise().failed(failure);
         return result;
     }
 }

@@ -21,7 +21,6 @@ package org.eclipse.jetty.http2.client.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.function.BiFunction;
@@ -116,7 +115,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                     conversation.setAttribute(EndPoint.class.getName(), endPoint);
                     HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
                     if (upgrader != null)
-                        upgrader.upgrade(httpResponse, endPoint);
+                        upgrade(upgrader, httpResponse, endPoint);
                 }
 
                 if (responseHeaders(exchange))
@@ -148,6 +147,18 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         }
     }
 
+    private void upgrade(HttpUpgrader upgrader, HttpResponse response, EndPoint endPoint)
+    {
+        try
+        {
+            upgrader.upgrade(response, endPoint, Callback.from(Callback.NOOP::succeeded, this::responseFailure));
+        }
+        catch (Throwable x)
+        {
+            responseFailure(x);
+        }
+    }
+
     Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
@@ -166,8 +177,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
             if (listener != null)
             {
                 HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().acquireHttpChannel();
-                List<Response.ResponseListener> listeners = Collections.singletonList(listener);
-                HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest, listeners);
+                HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest, List.of(listener));
                 pushChannel.associate(pushExchange);
                 pushChannel.setStream(stream);
                 // TODO: idle timeout ?

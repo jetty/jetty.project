@@ -441,18 +441,12 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
 
         // Find the upgrade factory
-        ConnectionFactory.Upgrading factory = null;
-        for (ConnectionFactory f : getConnector().getConnectionFactories())
-        {
-            if (f instanceof ConnectionFactory.Upgrading)
-            {
-                if (f.getProtocols().contains(_upgrade.getValue()))
-                {
-                    factory = (ConnectionFactory.Upgrading)f;
-                    break;
-                }
-            }
-        }
+        ConnectionFactory.Upgrading factory = getConnector().getConnectionFactories().stream()
+            .filter(f -> f instanceof ConnectionFactory.Upgrading)
+            .map(ConnectionFactory.Upgrading.class::cast)
+            .filter(f -> f.getProtocols().contains(_upgrade.getValue()))
+            .findAny()
+            .orElse(null);
 
         if (factory == null)
         {

@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class HttpSender implements AsyncContentProvider.Listener
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(HttpSender.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpSender.class);
 
     private final AtomicReference<RequestState> requestState = new AtomicReference<>(RequestState.QUEUED);
     private final AtomicReference<SenderState> senderState = new AtomicReference<>(SenderState.IDLE);
@@ -363,11 +363,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         catch (RejectedExecutionException x)
         {
             if (LOG.isDebugEnabled())
-            {
-                if (x != failure)
-                    x.addSuppressed(failure);
                 LOG.debug("Exchange aborted {}", exchange, x);
-            }
             abort(exchange, failure);
         }
     }
