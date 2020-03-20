@@ -749,7 +749,7 @@ public class Request implements HttpServletRequest
 
     public long getContentRead()
     {
-        return _input.getContentLength();
+        return _input.getContentReceived();
     }
 
     @Override

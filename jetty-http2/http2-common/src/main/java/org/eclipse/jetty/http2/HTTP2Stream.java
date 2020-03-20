@@ -22,6 +22,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,7 +78,6 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private Listener listener;
     private long dataLength;
     private long dataDemand;
-    private Throwable failure;
     private boolean dataInitial;
     private boolean dataProcess;
 
@@ -237,20 +237,18 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     }
 
     @Override
-    public void fail(Throwable x)
+    public boolean failAllData(Throwable x)
     {
+        List<DataEntry> copy;
         try (AutoLock l = lock.lock())
         {
             dataDemand = 0;
-            failure = x;
-            while (true)
-            {
-                DataEntry dataEntry = dataQueue.poll();
-                if (dataEntry == null)
-                    break;
-                dataEntry.callback.failed(x);
-            }
+            copy = new ArrayList<>(dataQueue);
+            dataQueue.clear();
         }
+        copy.forEach(dataEntry -> dataEntry.callback.failed(x));
+        DataEntry lastDataEntry = copy.isEmpty() ? null : copy.get(copy.size() - 1);
+        return lastDataEntry != null && lastDataEntry.frame.isEndStream();
     }
 
     public boolean isLocallyClosed()
@@ -418,12 +416,6 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         DataEntry entry = new DataEntry(frame, callback);
         try (AutoLock l = lock.lock())
         {
-            if (failure != null)
-            {
-                // stream has been failed
-                callback.failed(failure);
-                return;
-            }
             dataQueue.offer(entry);
             initial = dataInitial;
             if (initial)
@@ -463,8 +455,6 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         boolean proceed = false;
         try (AutoLock l = lock.lock())
         {
-            if (failure != null)
-                return; // stream has been failed
             demand = dataDemand = MathUtils.cappedAdd(dataDemand, n);
             if (!dataProcess)
                 dataProcess = proceed = !dataQueue.isEmpty();

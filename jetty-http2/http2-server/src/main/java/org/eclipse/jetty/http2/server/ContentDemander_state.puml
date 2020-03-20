@@ -1,0 +1,26 @@
+@startuml
+
+null:
+content:
+DEMANDING:
+EOF:
+
+[*] --> null
+
+null --> DEMANDING : demand()
+null --> EOF : eof()
+null -left-> null : onTimeout()
+
+DEMANDING --> DEMANDING : demand()
+DEMANDING --> content : onContent()\n onTimeout()
+DEMANDING --> EOF : eof()
+
+EOF --> EOF : eof()\n onTimeout()
+
+note bottom of content: content1 -> content2 is only\nvalid if content1 is special
+note top of content: content -> null only happens\nwhen content is not special
+content --> content : onContent()\n onTimeout()
+content --> null: take()
+content --> EOF: eof()
+
+@enduml

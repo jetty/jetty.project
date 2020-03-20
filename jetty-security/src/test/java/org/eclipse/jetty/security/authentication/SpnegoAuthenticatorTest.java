@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -63,13 +64,33 @@ public class SpnegoAuthenticatorTest
             }
 
             @Override
-            public void produceContent()
+            public boolean failed(Throwable x)
             {
+                return false;
             }
 
             @Override
-            public void failContent(Throwable failure)
+            protected boolean eof()
             {
+                return false;
+            }
+
+            @Override
+            public boolean needContent()
+            {
+                return false;
+            }
+
+            @Override
+            public HttpInput.Content produceContent()
+            {
+                return null;
+            }
+
+            @Override
+            public boolean failAllContent(Throwable failure)
+            {
+                return false;
             }
 
             @Override
@@ -108,13 +129,33 @@ public class SpnegoAuthenticatorTest
             }
 
             @Override
-            public void produceContent()
+            public boolean failed(Throwable x)
             {
+                return false;
             }
 
             @Override
-            public void failContent(Throwable failure)
+            protected boolean eof()
             {
+                return false;
+            }
+
+            @Override
+            public boolean needContent()
+            {
+                return false;
+            }
+
+            @Override
+            public HttpInput.Content produceContent()
+            {
+                return null;
+            }
+
+            @Override
+            public boolean failAllContent(Throwable failure)
+            {
+                return false;
             }
 
             @Override

@@ -197,7 +197,7 @@ public class ServerFCGIConnection extends AbstractConnection
             {
                 ByteBuffer copy = ByteBuffer.allocate(buffer.remaining());
                 copy.put(buffer).flip();
-                channel.enqueueContent(new HttpInput.Content(copy));
+                channel.onContent(new HttpInput.Content(copy));
             }
             return false;
         }

@@ -33,8 +33,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.http.HttpParser.RequestHandler;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -69,7 +67,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final HttpParser _parser;
     private final AtomicInteger _contentBufferReferences = new AtomicInteger();
     private volatile ByteBuffer _requestBuffer = null;
-    private final BlockingReadCallback _blockingReadCallback = new BlockingReadCallback();
     private final AsyncReadCallback _asyncReadCallback = new AsyncReadCallback();
     private final SendCallback _sendCallback = new SendCallback();
     private final boolean _recordHttpComplianceViolations;
@@ -321,27 +318,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
      */
     void parseAndFillForContent()
     {
-        // parseRequestBuffer() must always be called after fillRequestBuffer() otherwise this method doesn't trigger EOF/earlyEOF
-        // which breaks AsyncRequestReadTest.testPartialReadThenShutdown()
+        // When fillRequestBuffer() is called, it must always be followed by a parseRequestBuffer() call otherwise this method
+        // doesn't trigger EOF/earlyEOF which breaks AsyncRequestReadTest.testPartialReadThenShutdown()
         int filled = Integer.MAX_VALUE;
         while (_parser.inContentState())
         {
             boolean handled = parseRequestBuffer();
-            if (handled || filled <= 0 || _input.hasContent())
-                break;
-            filled = fillRequestBuffer();
-        }
-    }
-
-    void failContent(Throwable failure)
-    {
-        int filled = Integer.MAX_VALUE;
-        while (_parser.inContentState())
-        {
-            // The parser is going generate and forward contents to the HttpInput
-            // so it's up to it to fail them individually.
-            parseRequestBuffer();
-            if (filled <= 0 || _input.hasContent())
+            if (handled || filled <= 0)
                 break;
             filled = fillRequestBuffer();
         }
@@ -614,25 +597,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     public void asyncReadFillInterested()
     {
-        getEndPoint().fillInterested(_asyncReadCallback);
-    }
-
-    public void blockingReadFillInterested()
-    {
-        // We try fillInterested here because of SSL and 
-        // spurious wakeups.  With  blocking reads, we read in a loop
-        // that tries to read/parse content and blocks waiting if there is
-        // none available.  The loop can be woken up by incoming encrypted 
-        // bytes, which due to SSL might not produce any decrypted bytes.
-        // Thus the loop needs to register fill interest again.  However if 
-        // the loop is woken up spuriously, then the register interest again
-        // can result in a pending read exception, unless we use tryFillInterested.
-        getEndPoint().tryFillInterested(_blockingReadCallback);
-    }
-
-    public void blockingReadFailure(Throwable e)
-    {
-        _blockingReadCallback.failed(e);
+        getEndPoint().tryFillInterested(_asyncReadCallback);
     }
 
     @Override
@@ -687,43 +652,29 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
     }
 
-    private class BlockingReadCallback implements Callback
-    {
-        @Override
-        public void succeeded()
-        {
-            _input.unblock();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            _input.failed(x);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            // This callback does not block, rather it wakes up the
-            // thread that is blocked waiting on the read.
-            return InvocationType.NON_BLOCKING;
-        }
-    }
-
     private class AsyncReadCallback implements Callback
     {
         @Override
         public void succeeded()
         {
-            if (_channel.getState().onReadPossible())
+            if (_channel.getRequest().getHttpInput().onContentProducible())
                 _channel.handle();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            if (_input.failed(x))
+            if (_channel.failed(x))
                 _channel.handle();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            // This callback does not block when the HttpInput is in blocking mode,
+            // rather it wakes up the thread that is blocked waiting on the read;
+            // but it can if it is in async mode, hence the varying InvocationType.
+            return _channel.getRequest().getHttpInput().isAsync() ? InvocationType.BLOCKING : InvocationType.NON_BLOCKING;
         }
     }
 

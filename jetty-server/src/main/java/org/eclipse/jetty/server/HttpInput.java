@@ -21,21 +21,15 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 
-import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Destroyable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p> While this class is-a Runnable, it should never be dispatched in it's own thread. It is a runnable only so that the calling thread can use {@link
@@ -43,28 +37,23 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpInput extends ServletInputStream implements Runnable
 {
-    private static final Logger LOG = Log.getLogger(HttpInput.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpInput.class);
 
     private final byte[] _oneByteBuffer = new byte[1];
+    private final BlockingContentProducer _blockingContentProducer;
+    private final AsyncContentProducer _asyncContentProducer;
 
     private final HttpChannelState _channelState;
-    private final ContentProducer _contentProducer = new ContentProducer();
-    // This semaphore is only used in blocking mode, and a standard lock with a condition variable
-    // cannot work here because there is a race condition between the _contentProducer.read() call
-    // and the blockForContent() call: content can be produced any time between these two calls so
-    // the call to unblock() done by the content-producing thread to wake up the user thread executing read()
-    // must 'remember' the unblock() call, such as if it happens before the thread executing read() reaches the
-    // blockForContent() method, it will not get stuck in it forever waiting for an unblock() call it missed.
-    private final Semaphore _semaphore = new Semaphore(0);
-
-    private Eof _eof = Eof.NOT_YET;
-    private Throwable _error;
+    private ContentProducer _contentProducer;
+    private boolean _consumedEof;
     private ReadListener _readListener;
-    private long _firstByteTimeStamp = Long.MIN_VALUE;
 
     public HttpInput(HttpChannelState state)
     {
         _channelState = state;
+        _asyncContentProducer = new AsyncContentProducer(state.getHttpChannel());
+        _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer);
+        _contentProducer = _blockingContentProducer;
     }
 
     /* HttpInput */
@@ -72,12 +61,11 @@ public class HttpInput extends ServletInputStream implements Runnable
     public void recycle()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("recycle");
-        _contentProducer.recycle();
-        _eof = Eof.NOT_YET;
-        _error = null;
+            LOG.debug("recycle {}", this);
+        _blockingContentProducer.recycle();
+        _contentProducer = _blockingContentProducer;
+        _consumedEof = false;
         _readListener = null;
-        _firstByteTimeStamp = Long.MIN_VALUE;
     }
 
     /**
@@ -95,6 +83,8 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public void setInterceptor(Interceptor interceptor)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("setting interceptor to {}", interceptor);
         _contentProducer.setInterceptor(interceptor);
     }
 
@@ -108,157 +98,52 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         Interceptor currentInterceptor = _contentProducer.getInterceptor();
         if (currentInterceptor == null)
-            _contentProducer.setInterceptor(interceptor);
-        else
-            _contentProducer.setInterceptor(new ChainedInterceptor(currentInterceptor, interceptor));
-    }
-
-    /**
-     * Called by channel when asynchronous IO needs to produce more content
-     */
-    public void asyncReadProduce()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("asyncReadProduce {}", _contentProducer);
-        produceContent();
-    }
-
-    /**
-     * Adds some content to this input stream.
-     *
-     * @param content the content to add
-     */
-    public void addContent(Content content)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("addContent {} {}", content, _contentProducer);
-        if (_firstByteTimeStamp == Long.MIN_VALUE)
         {
-            _firstByteTimeStamp = System.nanoTime();
-            if (_firstByteTimeStamp == Long.MIN_VALUE)
-                _firstByteTimeStamp++;
+            if (LOG.isDebugEnabled())
+                LOG.debug("adding single interceptor: {}", interceptor);
+            _contentProducer.setInterceptor(interceptor);
         }
-        _contentProducer.addContent(content);
-        if (isAsync() && _contentProducer.available(this::produceContent) > 0)
-            _channelState.onContentAdded();
-    }
-
-    public boolean hasContent()
-    {
-        return _contentProducer.hasRawContent();
-    }
-
-    // There are 3 sources which can call this method in parallel:
-    // 1) HTTP2 read() that has a demand served on the app thread;
-    // 2) HTTP2 read() that has a demand served by a server thread;
-    // 3) onIdleTimeout called by a server thread;
-    // which means the semaphore can have up to 2 permits.
-    public void unblock()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("signalling blocked thread to wake up");
-        if (!isError() && !_eof.isEof() && _semaphore.availablePermits() > 1)
-            throw new AssertionError("Only one thread should call unblock and only if we are blocked");
-        _semaphore.release();
-    }
-
-    public long getContentLength()
-    {
-        return _contentProducer.getRawContentArrived();
+        else
+        {
+            ChainedInterceptor chainedInterceptor = new ChainedInterceptor(currentInterceptor, interceptor);
+            if (LOG.isDebugEnabled())
+                LOG.debug("adding chained interceptor: {}", chainedInterceptor);
+            _contentProducer.setInterceptor(chainedInterceptor);
+        }
     }
 
     public long getContentReceived()
     {
-        return getContentLength();
-    }
-
-    /**
-     * This method should be called to signal that an EOF has been detected before all the expected content arrived.
-     * <p>
-     * Typically this will result in an EOFException being thrown from a subsequent read rather than a -1 return.
-     *
-     * @return true if content channel woken for read
-     */
-    public boolean earlyEOF()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("received early EOF");
-        _eof = Eof.EARLY_EOF;
-        if (isAsync())
-            return _channelState.onContentAdded();
-        unblock();
-        return false;
-    }
-
-    /**
-     * This method should be called to signal that all the expected content arrived.
-     *
-     * @return true if content channel woken for read
-     */
-    public boolean eof()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("received EOF");
-        _eof = Eof.EOF;
-        if (isAsync())
-            return _channelState.onContentAdded();
-        unblock();
-        return false;
+        return _contentProducer.getRawContentArrived();
     }
 
     public boolean consumeAll()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("consume all");
-        _contentProducer.consumeTransformedContent(this::failContent, new IOException("Unconsumed content"));
-        if (_eof.isEof())
-            _eof = Eof.CONSUMED_EOF;
+        boolean atEof = _contentProducer.consumeAll(new IOException("Unconsumed content"));
+        if (atEof)
+            _consumedEof = true;
 
         if (isFinished())
             return !isError();
 
-        _eof = Eof.EARLY_EOF;
         return false;
     }
 
     public boolean isError()
     {
-        return _error != null;
+        boolean error = _contentProducer.isError();
+        if (LOG.isDebugEnabled())
+            LOG.debug("isError = {}", error);
+        return error;
     }
 
     public boolean isAsync()
     {
-        return _readListener != null;
-    }
-
-    public boolean onIdleTimeout(Throwable x)
-    {
-        boolean neverDispatched = _channelState.isIdle();
-        boolean waitingForContent = _contentProducer.available(this::produceContent) == 0 && !_eof.isEof();
-        if ((waitingForContent || neverDispatched) && !isError())
-        {
-            x.addSuppressed(new Throwable("HttpInput idle timeout"));
-            _error = x;
-            if (isAsync())
-                return _channelState.onContentAdded();
-            unblock();
-        }
-        return false;
-    }
-
-    public boolean failed(Throwable x)
-    {
         if (LOG.isDebugEnabled())
-            LOG.debug("failed " + x);
-        if (_error != null && _error != x)
-            _error.addSuppressed(x);
-        else
-            _error = x;
-
-        if (isAsync())
-            return _channelState.onContentAdded();
-        unblock();
-        return false;
+            LOG.debug("isAsync read listener = " + _readListener);
+        return _readListener != null;
     }
 
     /* ServletInputStream */
@@ -266,7 +151,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public boolean isFinished()
     {
-        boolean finished = !_contentProducer.hasRawContent() && _eof.isConsumed();
+        boolean finished = _consumedEof;
         if (LOG.isDebugEnabled())
             LOG.debug("isFinished? {}", finished);
         return finished;
@@ -275,22 +160,24 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public boolean isReady()
     {
-        // calling _contentProducer.available() might change the _eof state, so the following test order matters
-        if (_contentProducer.available(this::produceContent) > 0 || _eof.isEof())
+        boolean ready = _contentProducer.isReady();
+        if (!ready)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("isReady? true");
-            return true;
+                LOG.debug("isReady? false");
+            return false;
         }
+
         if (LOG.isDebugEnabled())
-            LOG.debug("isReady? false");
-        _channelState.onReadUnready();
-        return false;
+            LOG.debug("isReady? true");
+        return true;
     }
 
     @Override
     public void setReadListener(ReadListener readListener)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("setting read listener to {}", readListener);
         if (_readListener != null)
             throw new IllegalStateException("ReadListener already set");
         _readListener = Objects.requireNonNull(readListener);
@@ -298,40 +185,15 @@ public class HttpInput extends ServletInputStream implements Runnable
         if (!_channelState.isAsyncStarted())
             throw new IllegalStateException("Async not started");
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("setReadListener error=" + _error + " eof=" + _eof + " " + _contentProducer);
-        boolean woken;
-        if (isError())
-        {
-            woken = _channelState.onReadReady();
-        }
-        else
-        {
-            if (_contentProducer.available(this::produceContent) > 0)
-            {
-                woken = _channelState.onReadReady();
-            }
-            else if (_eof.isEof())
-            {
-                woken = _channelState.onReadEof();
-            }
-            else
-            {
-                _channelState.onReadUnready();
-                woken = false;
-            }
-        }
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("setReadListener woken=" + woken);
-        if (woken)
-            scheduleReadListenerNotification();
+        _contentProducer = _asyncContentProducer;
+        // trigger content production
+        if (isReady() && _channelState.onReadEof()) // onReadEof b/c we want to transition from WAITING to WOKEN
+            scheduleReadListenerNotification(); // this is needed by AsyncServletIOTest.testStolenAsyncRead
     }
 
-    private void scheduleReadListenerNotification()
+    public boolean onContentProducible()
     {
-        HttpChannel channel = _channelState.getHttpChannel();
-        channel.execute(channel);
+        return _contentProducer.onContentProducible();
     }
 
     @Override
@@ -346,115 +208,74 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
-        // Calculate minimum request rate for DOS protection
-        long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
-        if (minRequestDataRate > 0 && _firstByteTimeStamp != Long.MIN_VALUE)
-        {
-            long period = System.nanoTime() - _firstByteTimeStamp;
-            if (period > 0)
-            {
-                long minimumData = minRequestDataRate * TimeUnit.NANOSECONDS.toMillis(period) / TimeUnit.SECONDS.toMillis(1);
-                if (_contentProducer.getRawContentArrived() < minimumData)
-                {
-                    BadMessageException bad = new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,
-                        String.format("Request content data rate < %d B/s", minRequestDataRate));
-                    if (_channelState.isResponseCommitted())
-                        _channelState.getHttpChannel().abort(bad);
-                    throw bad;
-                }
-            }
-        }
+        // Calculate minimum request rate for DoS protection
+        _contentProducer.checkMinDataRate();
 
-        while (true)
+        Content content = _contentProducer.nextContent();
+        if (content == null)
+            throw new IllegalStateException("read on unready input");
+        if (!content.isSpecial())
         {
-            // The semaphore's permits must be drained before we call read() because:
-            // 1) _contentProducer.read() may call unblock() which enqueues a permit even if the content was produced
-            //    by the exact thread that called HttpInput.read(), hence leaving around an unconsumed permit that would
-            //    be consumed the next time HttpInput.read() is called, mistakenly believing that content was produced.
-            // 2) HTTP2 demand served asynchronously does call unblock which does enqueue a permit in the semaphore;
-            //    this permit would then be mistakenly consumed by the next call to blockForContent() once all the produced
-            //    content got consumed.
-            if (!isAsync())
-                _semaphore.drainPermits();
-            int read = _contentProducer.read(this::produceContent, b, off, len);
+            int read = content.get(b, off, len);
             if (LOG.isDebugEnabled())
                 LOG.debug("read produced {} byte(s)", read);
-            if (read > 0)
-                return read;
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("read error = " + _error);
-            if (_error != null)
-                throw new IOException(_error);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("read EOF = {}", _eof);
-            if (_eof.isEarly())
-                throw new EofException("Early EOF");
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("read async = {}", isAsync());
-            if (!isAsync())
-            {
-                if (_eof.isEof())
-                {
-                    _eof = Eof.CONSUMED_EOF;
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("read on EOF, switching to CONSUMED_EOF and returning");
-                    return -1;
-                }
-                if (LOG.isDebugEnabled())
-                    LOG.debug("read blocked");
-                blockForContent();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("read unblocked");
-            }
-            else
-            {
-                if (_eof.isEof())
-                {
-                    _eof = Eof.CONSUMED_EOF;
-                    boolean wasInAsyncWait = _channelState.onReadEof();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("async read on EOF (was in async wait? {}), switching to CONSUMED_EOF and returning", wasInAsyncWait);
-                    if (wasInAsyncWait)
-                        scheduleReadListenerNotification();
-                    return -1;
-                }
-                else
-                {
-                    //TODO returning 0 breaks the InputStream contract. Shouldn't IOException be thrown instead?
-                    _channelState.getHttpChannel().onAsyncWaitForContent(); // switches on fill interested
-                    return 0;
-                }
-            }
+            if (content.isEmpty())
+                _contentProducer.reclaim(content);
+            return read;
         }
+
+        Throwable error = content.getError();
+        if (LOG.isDebugEnabled())
+            LOG.debug("read error = " + error);
+        if (error != null)
+        {
+            if (error instanceof IOException)
+                throw (IOException)error;
+            throw new IOException(error);
+        }
+
+        if (content.isEof())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("read at EOF, setting consumed EOF to true");
+            _consumedEof = true;
+            // If EOF do we need to wake for allDataRead callback?
+            if (onContentProducible())
+                scheduleReadListenerNotification();
+            return -1;
+        }
+
+        throw new AssertionError("no data, no error and not EOF");
+    }
+
+    private void scheduleReadListenerNotification()
+    {
+        HttpChannel channel = _channelState.getHttpChannel();
+        channel.execute(channel);
+    }
+
+    /**
+     * Check if this HttpInput instance has content stored internally, without fetching/parsing
+     * anything from the underlying channel.
+     * @return true if the input contains content, false otherwise.
+     */
+    public boolean hasContent()
+    {
+        // Do not call _contentProducer.available() as it calls HttpChannel.produceContent()
+        // which is forbidden by this method's contract.
+        boolean hasContent = _contentProducer.hasContent();
+        if (LOG.isDebugEnabled())
+            LOG.debug("hasContent = {}", hasContent);
+        return hasContent;
     }
 
     @Override
     public int available()
     {
-        int available = _contentProducer.available(this::produceContent);
+        int available = _contentProducer.available();
         if (LOG.isDebugEnabled())
             LOG.debug("available = {}", available);
         return available;
-    }
-
-    private void blockForContent()
-    {
-        try
-        {
-            _channelState.getHttpChannel().onBlockWaitForContent(); // switches on fill interested
-            if (LOG.isDebugEnabled())
-                LOG.debug("waiting for signal to wake up");
-            _semaphore.acquire();
-            if (LOG.isDebugEnabled())
-                LOG.debug("signalled to wake up");
-        }
-        catch (Throwable x)
-        {
-            _channelState.getHttpChannel().onBlockWaitForContentFailure(x);
-        }
     }
 
     /* Runnable */
@@ -466,23 +287,40 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public void run()
     {
-        if (!_contentProducer.hasRawContent())
+        Content content = _contentProducer.nextContent();
+        if (LOG.isDebugEnabled())
+            LOG.debug("running on content {}", content);
+        // The nextContent() call could return null if the transformer ate all
+        // the raw bytes without producing any transformed content.
+        if (content == null)
+            return;
+
+        // This check is needed when a request is started async but no read listener is registered.
+        if (_readListener == null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("running has no raw content; error: {}, EOF = {}", _error, _eof);
-            if (_error != null || _eof.isEarly())
+                LOG.debug("running without a read listener");
+            onContentProducible();
+            return;
+        }
+
+        if (content.isSpecial())
+        {
+            Throwable error = content.getError();
+            if (error != null)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("running has error: {}", (Object)error);
                 // TODO is this necessary to add here?
                 _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE);
-                if (_error != null)
-                    _readListener.onError(_error);
-                else
-                    _readListener.onError(new EofException("Early EOF"));
+                _readListener.onError(error);
             }
-            else if (_eof.isEof())
+            else if (content.isEof())
             {
                 try
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("running at EOF");
                     _readListener.onAllDataRead();
                 }
                 catch (Throwable x)
@@ -492,12 +330,11 @@ public class HttpInput extends ServletInputStream implements Runnable
                     _readListener.onError(x);
                 }
             }
-            // else: !hasContent() && !error && !EOF -> no-op
         }
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("running has raw content");
+                LOG.debug("running has content");
             try
             {
                 _readListener.onDataAvailable();
@@ -511,244 +348,24 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    private void produceContent()
+    @Override
+    public String toString()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("produceContent {}", _contentProducer);
-        _channelState.getHttpChannel().produceContent();
+        return getClass().getSimpleName() + "@" + hashCode() +
+            " cs=" + _channelState +
+            " cp=" + _contentProducer +
+            " eof=" + _consumedEof;
     }
 
-    private void failContent(Throwable failure)
+    public interface Interceptor
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("failContent {} - " + failure, _contentProducer);
-        _channelState.getHttpChannel().failContent(failure);
-    }
-
-    private enum Eof
-    {
-        NOT_YET(false, false, false),
-        EOF(true, false, false),
-        CONSUMED_EOF(true, true, false),
-        EARLY_EOF(true, false, true),
-        ;
-
-        private final boolean _eof;
-        private final boolean _consumed;
-        private final boolean _early;
-
-        Eof(boolean eof, boolean consumed, boolean early)
-        {
-            _eof = eof;
-            _consumed = consumed;
-            _early = early;
-        }
-
-        boolean isEof()
-        {
-            return _eof;
-        }
-
-        boolean isConsumed()
-        {
-            return _consumed;
-        }
-
-        boolean isEarly()
-        {
-            return _early;
-        }
-    }
-
-    // All methods of this class have to be synchronized because a HTTP2 reset can call consumeTransformedContent()
-    // while nextNonEmptyContent() is executing, hence all accesses to _rawContent and _transformedContent must be
-    // mutually excluded.
-    // TODO: maybe the locking could be more fine grained, by only protecting the if (null|!null) blocks?
-    private static class ContentProducer
-    {
-        // Note: _rawContent can never be null for as long as _transformedContent is not null.
-        private Content _rawContent;
-        private Content _transformedContent;
-        private long _rawContentArrived;
-        private Interceptor _interceptor;
-        private Throwable _consumeFailure;
-
-        void recycle()
-        {
-            synchronized (this)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("recycle {}", this);
-                if (_transformedContent == _rawContent)
-                    _transformedContent = null;
-                if (_transformedContent != null)
-                    _transformedContent.failed(null);
-                _transformedContent = null;
-                if (_rawContent != null)
-                    _rawContent.failed(null);
-                _rawContent = null;
-                _rawContentArrived = 0L;
-                if (_interceptor instanceof Destroyable)
-                    ((Destroyable)_interceptor).destroy();
-                _interceptor = null;
-                _consumeFailure = null;
-            }
-        }
-
-        long getRawContentArrived()
-        {
-            synchronized (this)
-            {
-                return _rawContentArrived;
-            }
-        }
-
-        boolean hasRawContent()
-        {
-            synchronized (this)
-            {
-                return _rawContent != null;
-            }
-        }
-
-        Interceptor getInterceptor()
-        {
-            synchronized (this)
-            {
-                return _interceptor;
-            }
-        }
-
-        void setInterceptor(Interceptor interceptor)
-        {
-            synchronized (this)
-            {
-                this._interceptor = interceptor;
-            }
-        }
-
-        void addContent(Content content)
-        {
-            synchronized (this)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} addContent {}", this, content);
-                if (content == null)
-                    throw new AssertionError("Cannot add null content");
-                if (_consumeFailure != null)
-                {
-                    content.failed(_consumeFailure);
-                    return;
-                }
-                if (_rawContent != null)
-                    throw new AssertionError("Cannot add new content while current one hasn't been processed");
-
-                _rawContent = content;
-                _rawContentArrived += content.remaining();
-            }
-        }
-
-        void consumeTransformedContent(Consumer<Throwable> failRawContent, Throwable failure)
-        {
-            synchronized (this)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} consumeTransformedContent", this);
-                // start by depleting the current _transformedContent
-                if (_transformedContent != null)
-                {
-                    _transformedContent.skip(_transformedContent.remaining());
-                    if (_transformedContent != _rawContent)
-                        _transformedContent.failed(failure);
-                    _transformedContent = null;
-                }
-
-                // don't bother transforming content, directly deplete the raw one
-                if (_rawContent != null)
-                {
-                    _rawContent.skip(_rawContent.remaining());
-                    _rawContent.failed(failure);
-                    _rawContent = null;
-                }
-
-                // fail whatever other content the producer may have
-                _consumeFailure = failure;
-                failRawContent.accept(failure);
-            }
-        }
-
-        int available(Runnable rawContentProducer)
-        {
-            synchronized (this)
-            {
-                Content content = nextNonEmptyContent(rawContentProducer);
-                return content == null ? 0 : content.remaining();
-            }
-        }
-
-        int read(Runnable rawContentProducer, byte[] b, int off, int len)
-        {
-            synchronized (this)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} read", this);
-                Content content = nextNonEmptyContent(rawContentProducer);
-                return content == null ? 0 : content.get(b, off, len);
-            }
-        }
-
-        private Content nextNonEmptyContent(Runnable rawContentProducer)
-        {
-            if (_rawContent == null)
-            {
-                rawContentProducer.run();
-                if (_rawContent == null)
-                    return null;
-            }
-
-            if (_transformedContent != null && _transformedContent.isEmpty())
-            {
-                if (_transformedContent != _rawContent)
-                    _transformedContent.succeeded();
-                _transformedContent = null;
-            }
-
-            while (_transformedContent == null)
-            {
-                if (_interceptor != null)
-                    _transformedContent = _interceptor.readFrom(_rawContent);
-                else
-                    _transformedContent = _rawContent;
-
-                if (_transformedContent != null && _transformedContent.isEmpty())
-                {
-                    if (_transformedContent != _rawContent)
-                        _transformedContent.succeeded();
-                    _transformedContent = null;
-                }
-
-                if (_transformedContent == null)
-                {
-                    if (_rawContent.isEmpty())
-                    {
-                        _rawContent.succeeded();
-                        _rawContent = null;
-                        rawContentProducer.run();
-                        if (_rawContent == null)
-                            return null;
-                    }
-                }
-            }
-
-            return _transformedContent;
-        }
-
-        @Override
-        public String toString()
-        {
-            return getClass().getSimpleName() + "[i=" + _interceptor + ",b=" + _rawContentArrived +
-                ",r=" + _rawContent + ",t=" + _transformedContent + "]";
-        }
+        /**
+         * @param content The content to be intercepted.
+         * The content will be modified with any data the interceptor consumes, but there is no requirement
+         * that all the data is consumed by the interceptor.
+         * @return The intercepted content or null if interception is completed for that content.
+         */
+        Content readFrom(Content content);
     }
 
     /**
@@ -795,19 +412,22 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (_next instanceof Destroyable)
                 ((Destroyable)_next).destroy();
         }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + "@" + hashCode() + " [p=" + _prev + ",n=" + _next + "]";
+        }
     }
 
-    public interface Interceptor
-    {
-        /**
-         * @param content The content to be intercepted.
-         * The content will be modified with any data the interceptor consumes, but there is no requirement
-         * that all the data is consumed by the interceptor.
-         * @return The intercepted content or null if interception is completed for that content.
-         */
-        Content readFrom(Content content);
-    }
-
+    /**
+     * A content represents the production of a {@link HttpChannel} returned by {@link HttpChannel#produceContent()}.
+     * There are two fundamental types of content: special and non-special.
+     * Non-special content always wraps a byte buffer that can be consumed and must be recycled once it is empty, either
+     * via {@link #succeeded()} or {@link #failed(Throwable)}.
+     * Special content indicates a special event, like EOF or an error and never wraps a byte buffer. Calling
+     * {@link #succeeded()} or {@link #failed(Throwable)} on those have no effect.
+     */
     public static class Content implements Callback
     {
         protected final ByteBuffer _content;
@@ -817,6 +437,10 @@ public class HttpInput extends ServletInputStream implements Runnable
             _content = content;
         }
 
+        /**
+         * Get the wrapped byte buffer. Throws {@link IllegalStateException} if the content is special.
+         * @return the wrapped byte buffer.
+         */
         public ByteBuffer getByteBuffer()
         {
             return _content;
@@ -828,6 +452,13 @@ public class HttpInput extends ServletInputStream implements Runnable
             return InvocationType.NON_BLOCKING;
         }
 
+        /**
+         * Read the wrapped byte buffer. Throws {@link IllegalStateException} if the content is special.
+         * @param buffer The array into which bytes are to be written.
+         * @param offset The offset within the array of the first byte to be written.
+         * @param length The maximum number of bytes to be written to the given array.
+         * @return The amount of bytes read from the buffer.
+         */
         public int get(byte[] buffer, int offset, int length)
         {
             length = Math.min(_content.remaining(), length);
@@ -835,6 +466,11 @@ public class HttpInput extends ServletInputStream implements Runnable
             return length;
         }
 
+        /**
+         * Skip some bytes from the buffer. Has no effect on a special content.
+         * @param length How many bytes to skip.
+         * @return How many bytes were skipped.
+         */
         public int skip(int length)
         {
             length = Math.min(_content.remaining(), length);
@@ -842,26 +478,207 @@ public class HttpInput extends ServletInputStream implements Runnable
             return length;
         }
 
+        /**
+         * Check if there is at least one byte left in the buffer.
+         * Always false on a special content.
+         * @return true if there is at least one byte left in the buffer.
+         */
         public boolean hasContent()
         {
             return _content.hasRemaining();
         }
 
+        /**
+         * Get the number of bytes remaining in the buffer.
+         * Always 0 on a special content.
+         * @return the number of bytes remaining in the buffer.
+         */
         public int remaining()
         {
             return _content.remaining();
         }
 
+        /**
+         * Check if the buffer is empty.
+         * Always true on a special content.
+         * @return true if there is 0 byte left in the buffer.
+         */
         public boolean isEmpty()
         {
             return !_content.hasRemaining();
         }
 
+        /**
+         * Check if the content is special.
+         * @return true if the content is special, false otherwise.
+         */
+        public boolean isSpecial()
+        {
+            return false;
+        }
+
+        /**
+         * Check if EOF was reached. Both special and non-special content
+         * can have this flag set to true but in the case of non-special content,
+         * this can be interpreted as a hint as it is always going to be followed
+         * by another content that is both special and EOF.
+         * @return true if EOF was reached, false otherwise.
+         */
+        public boolean isEof()
+        {
+            return false;
+        }
+
+        /**
+         * Get the reported error. Only special contents can have an error.
+         * @return the error or null if there is none.
+         */
+        public Throwable getError()
+        {
+            return null;
+        }
+
         @Override
         public String toString()
         {
-            return String.format("Content@%x{%s}", hashCode(), BufferUtil.toDetailString(_content));
+            return String.format("%s@%x{%s,spc=%s,eof=%s,err=%s}", getClass().getSimpleName(), hashCode(),
+                BufferUtil.toDetailString(_content), isSpecial(), isEof(), getError());
         }
     }
 
+    /**
+     * Simple non-special content wrapper allow overriding the EOF flag.
+     */
+    public static class WrappingContent extends Content
+    {
+        private final Content _delegate;
+        private final boolean _eof;
+
+        public WrappingContent(Content delegate, boolean eof)
+        {
+            super(delegate.getByteBuffer());
+            _delegate = delegate;
+            _eof = eof;
+        }
+
+        @Override
+        public boolean isEof()
+        {
+            return _eof;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            _delegate.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            _delegate.failed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _delegate.getInvocationType();
+        }
+    }
+
+    /**
+     * Abstract class that implements the standard special content behavior.
+     */
+    public abstract static class SpecialContent extends Content
+    {
+        public SpecialContent()
+        {
+            super(null);
+        }
+
+        @Override
+        public final ByteBuffer getByteBuffer()
+        {
+            throw new IllegalStateException(this + " has no buffer");
+        }
+
+        @Override
+        public final int get(byte[] buffer, int offset, int length)
+        {
+            throw new IllegalStateException(this + " has no buffer");
+        }
+
+        @Override
+        public final int skip(int length)
+        {
+            return 0;
+        }
+
+        @Override
+        public final boolean hasContent()
+        {
+            return false;
+        }
+
+        @Override
+        public final int remaining()
+        {
+            return 0;
+        }
+
+        @Override
+        public final boolean isEmpty()
+        {
+            return true;
+        }
+
+        @Override
+        public final boolean isSpecial()
+        {
+            return true;
+        }
+    }
+
+    /**
+     * EOF special content.
+     */
+    public static final class EofContent extends SpecialContent
+    {
+        @Override
+        public boolean isEof()
+        {
+            return true;
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName();
+        }
+    }
+
+    /**
+     * Error special content.
+     */
+    public static final class ErrorContent extends SpecialContent
+    {
+        private final Throwable _error;
+
+        public ErrorContent(Throwable error)
+        {
+            _error = error;
+        }
+
+        @Override
+        public Throwable getError()
+        {
+            return _error;
+        }
+
+        @Override
+        public String toString()
+        {
+            return getClass().getSimpleName() + " [" + _error + "]";
+        }
+    }
 }
