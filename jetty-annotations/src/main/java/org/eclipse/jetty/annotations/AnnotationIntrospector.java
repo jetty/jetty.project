@@ -113,7 +113,7 @@ public class AnnotationIntrospector
      * According to servlet 4.0, these types of annotations should only be evaluated iff any
      * of the following are true:
      * <ol>
-     * <li>the object was created by the javax.servlet.ServletContext.createServlet/Filter/Listener method</li>
+     * <li>the object was created by the jakarta.servlet.ServletContext.createServlet/Filter/Listener method</li>
      * <li>the object comes either from a discovered annotation (WebServlet/Filter/Listener) or a declaration
      * in a descriptor AND web.xml is NOT metadata-complete AND any web-fragment.xml associated with the location of
      * the class is NOT metadata-complete</li>
@@ -154,7 +154,7 @@ public class AnnotationIntrospector
         switch (origin)
         {
             case EMBEDDED:
-            case JAVAX_API:
+            case JAKARTA_API:
             {
                 return true; //objects created from the jetty or servlet api are always introspectable
             }

@@ -55,7 +55,7 @@ public abstract class Holder<T> extends BaseHolder<T>
         super(source);
         switch (getSource().getOrigin())
         {
-            case JAVAX_API:
+            case JAKARTA_API:
             case DESCRIPTOR:
             case ANNOTATION:
                 _asyncSupported = false;

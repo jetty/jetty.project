@@ -26,11 +26,12 @@ package org.eclipse.jetty.servlet;
 public class Source
 {
     public static final Source EMBEDDED = new Source(Origin.EMBEDDED, null);
-    public static final Source JAVAX_API = new Source(Origin.JAVAX_API, null);
+    public static final Source JAVAX_API = new Source(Origin.JAKARTA_API, null);
 
     public enum Origin
     {
-        EMBEDDED, JAVAX_API, DESCRIPTOR, ANNOTATION
+        EMBEDDED,
+        JAKARTA_API, DESCRIPTOR, ANNOTATION
     }
 
     public Origin _origin;

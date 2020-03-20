@@ -198,7 +198,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
      */
     public class ServletContainerInitializerOrdering
     {
-        private Map<String, Integer> _indexMap = new HashMap<String, Integer>();
+        private Map<String, Integer> _indexMap = new HashMap<>();
         private Integer _star = null;
         private String _ordering = null;
 
