@@ -183,28 +183,32 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.glassfish.web</groupId>
-      <artifactId>jakarta.servlet.jsp.jstl</artifactId>
-      <version>1.2.6</version>
-      <exclusions>
-        <exclusion>
-          <groupId>jakarta.servlet.jsp.jstl</groupId>
-          <artifactId>jstl-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>jakarta.servlet</groupId>
-          <artifactId>servlet-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>jakarta.servlet.jsp</groupId>
-          <artifactId>jsp-api</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>javax.el</groupId>
-          <artifactId>el-api</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>jakarta.servlet.jsp.jstl</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
     </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.glassfish.web</groupId>-->
+<!--      <artifactId>jakarta.servlet.jsp.jstl</artifactId>-->
+<!--      <version>1.2.6</version>-->
+<!--      <exclusions>-->
+<!--        <exclusion>-->
+<!--          <groupId>jakarta.servlet.jsp.jstl</groupId>-->
+<!--          <artifactId>jstl-api</artifactId>-->
+<!--        </exclusion>-->
+<!--        <exclusion>-->
+<!--          <groupId>jakarta.servlet</groupId>-->
+<!--          <artifactId>servlet-api</artifactId>-->
+<!--        </exclusion>-->
+<!--        <exclusion>-->
+<!--          <groupId>jakarta.servlet.jsp</groupId>-->
+<!--          <artifactId>jsp-api</artifactId>-->
+<!--        </exclusion>-->
+<!--        <exclusion>-->
+<!--          <groupId>javax.el</groupId>-->
+<!--          <artifactId>el-api</artifactId>-->
+<!--        </exclusion>-->
+<!--      </exclusions>-->
+<!--    </dependency>-->
     <!--dependency TODO: fix this mess!>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>jakarta.servlet.jsp.jstl</artifactId>

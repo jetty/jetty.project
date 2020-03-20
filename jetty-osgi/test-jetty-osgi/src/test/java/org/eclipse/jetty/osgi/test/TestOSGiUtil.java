@@ -176,11 +176,12 @@ public class TestOSGiUtil
         List<Option> res = new ArrayList<>();
 
         //jetty jsp bundles  
-        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject());
+        //res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("apache-jsp").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.glassfish.web").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject().start());
+        res.add(mavenBundle().groupId("jakarta.servlet.jsp.jstl").artifactId("jakarta.servlet.jsp.jstl-api").versionAsInProject());
+        //res.add(mavenBundle().groupId("org.glassfish.web").artifactId("jakarta.servlet.jsp.jstl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
         return res;
