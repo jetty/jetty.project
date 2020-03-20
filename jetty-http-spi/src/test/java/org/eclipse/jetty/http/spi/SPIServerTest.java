@@ -44,6 +44,11 @@ import static org.hamcrest.Matchers.is;
 
 public class SPIServerTest
 {
+    static
+    {
+        LoggingUtil.init();
+    }
+
     String host = "localhost";
     HttpServer server;
     int port;

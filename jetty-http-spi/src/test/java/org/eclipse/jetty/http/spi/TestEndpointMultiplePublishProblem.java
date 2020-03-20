@@ -41,6 +41,10 @@ import org.junit.jupiter.api.Test;
 
 public class TestEndpointMultiplePublishProblem
 {
+    static
+    {
+        LoggingUtil.init();
+    }
 
     private static String default_impl = System.getProperty("com.sun.net.httpserver.HttpServerProvider");
 
