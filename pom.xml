@@ -133,8 +133,7 @@
     <module>jetty-distribution</module>
     <module>jetty-runner</module>
     <module>jetty-http-spi</module>
-    <!-- FIXME if possible... -->
-<!--    <module>jetty-osgi</module>-->
+    <module>jetty-osgi</module>
     <module>jetty-alpn</module>
     <module>jetty-home</module>
     <module>jetty-bom</module>
