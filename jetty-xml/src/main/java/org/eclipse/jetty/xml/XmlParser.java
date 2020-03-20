@@ -70,7 +70,7 @@ public class XmlParser
     public XmlParser()
     {
         SAXParserFactory factory = SAXParserFactory.newInstance();
-        boolean validatingDefault = factory.getClass().toString().startsWith("org.apache.xerces.");
+        boolean validatingDefault = factory.getClass().toString().contains("org.apache.xerces.");
         String validatingProp = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validatingDefault ? "true" : "false");
         boolean validating = Boolean.valueOf(validatingProp).booleanValue();
         setValidating(validating);
