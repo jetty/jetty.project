@@ -24,6 +24,7 @@ import java.security.MessageDigest;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -44,7 +45,9 @@ public abstract class Credential implements Serializable
 {
     private static final long serialVersionUID = -7760551052768181572L;
     private static final Logger LOG = LoggerFactory.getLogger(Credential.class);
-    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = TypeUtil.serviceStream(ServiceLoader.load(CredentialProvider.class)).collect(Collectors.toList());
+    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = TypeUtil.serviceProviderStream(ServiceLoader.load(CredentialProvider.class))
+        .flatMap(p -> Stream.of(p.get()))
+        .collect(Collectors.toList());
 
     /**
      * Check a credential

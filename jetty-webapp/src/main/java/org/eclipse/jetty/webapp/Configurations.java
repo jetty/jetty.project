@@ -75,17 +75,25 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     {
         if (__known.isEmpty())
         {
-            TypeUtil.serviceStream(ServiceLoader.load(Configuration.class)).forEach(configuration ->
+            TypeUtil.serviceProviderStream(ServiceLoader.load(Configuration.class)).forEach(provider ->
             {
-                if (!configuration.isAvailable())
+                try
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Configuration unavailable: " + configuration);
-                    __unavailable.add(configuration);
-                    return;
+                    Configuration configuration = provider.get();
+                    if (!configuration.isAvailable())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Configuration unavailable: " + configuration);
+                        __unavailable.add(configuration);
+                        return;
+                    }
+                    __known.add(configuration);
+                    __knownByClassName.add(configuration.getClass().getName());
                 }
-                __known.add(configuration);
-                __knownByClassName.add(configuration.getClass().getName());
+                catch (Throwable e)
+                {
+                    LOG.warn("Unable to get known Configuration", e);
+                }
             });
 
             sort(__known);

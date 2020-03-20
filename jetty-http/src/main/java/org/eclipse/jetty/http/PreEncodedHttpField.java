@@ -19,9 +19,9 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -43,9 +43,20 @@ public class PreEncodedHttpField extends HttpField
 
     static
     {
-        List<HttpFieldPreEncoder> encoders = TypeUtil.serviceStream(ServiceLoader.load(HttpFieldPreEncoder.class))
-            .filter(encoder -> index(encoder.getHttpVersion()) >= 0)
-            .collect(Collectors.toList());
+        List<HttpFieldPreEncoder> encoders = new ArrayList<>();
+        TypeUtil.serviceProviderStream(ServiceLoader.load(HttpFieldPreEncoder.class)).forEach(provider ->
+        {
+            try
+            {
+                HttpFieldPreEncoder encoder = provider.get();
+                if (index(encoder.getHttpVersion()) >= 0)
+                    encoders.add(encoder);
+            }
+            catch (Error | RuntimeException e)
+            {
+                LOG.debug("Unable to add HttpFieldPreEncoder", e);
+            }
+        });
 
         LOG.debug("HttpField encoders loaded: {}", encoders);
         int size = encoders.size();

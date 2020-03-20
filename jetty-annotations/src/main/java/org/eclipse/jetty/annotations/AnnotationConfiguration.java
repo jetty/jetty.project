@@ -39,6 +39,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
 
@@ -815,8 +816,23 @@ public class AnnotationConfiguration extends AbstractConfiguration
         long start = 0;
         if (LOG.isDebugEnabled())
             start = System.nanoTime();
-        List<ServletContainerInitializer> scis = TypeUtil.serviceStream(ServiceLoader.load(ServletContainerInitializer.class))
-            .collect(Collectors.toList());
+        List<ServletContainerInitializer> scis = TypeUtil.serviceProviderStream(ServiceLoader.load(ServletContainerInitializer.class)).flatMap(provider ->
+        {
+            try
+            {
+                return Stream.of(provider.get());
+            }
+            catch (Error e)
+            {
+                // Probably a SCI discovered on the system classpath that is hidden by the context classloader
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Error: {} for {}", e.getMessage(), context, e);
+                else
+                    LOG.info("Error: {} for {}", e.getMessage(), context);
+                return Stream.of();
+            }
+        }).collect(Collectors.toList());
+
         if (LOG.isDebugEnabled())
             LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime() - start), TimeUnit.NANOSECONDS)));
 
