@@ -427,7 +427,72 @@ public abstract class AbstractSessionDataStoreTest
             //expected exception
         }
     }
+    
+    
+    /**
+     * Test that a session containing no attributes can be stored and re-read
+     * @throws Exception
+     */
+    @Test
+    public void testEmptyLoadSession() throws Exception
+    {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+        store.start();
+        
+        //persist a session that has no attributes
+        long now = System.currentTimeMillis();
+        SessionData data = store.newSessionData("222", 100, now, now - 1, -1);
+        data.setLastNode(sessionContext.getWorkerName());
+        //persistSession(data);
+        store.store("222", data);
 
+        //test that we can retrieve it
+        SessionData savedSession = store.load("222");
+        assertEquals(0, savedSession.getAllAttributes().size());
+    }
+    
+    //Test that a session that had attributes can be modified to contain no
+    //attributes, and still read
+    @Test
+    public void testModifyEmptyLoadSession() throws Exception
+    {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+        store.start();
+        
+        //persist a session that has attributes
+        long now = System.currentTimeMillis();
+        SessionData data = store.newSessionData("222", 100, now, now - 1, -1);
+        data.setAttribute("foo", "bar");
+        data.setLastNode(sessionContext.getWorkerName());
+        store.store("222", data);
+
+        //test that we can retrieve it
+        SessionData savedSession = store.load("222");
+        assertEquals("bar", savedSession.getAttribute("foo"));
+        
+        //now modify so there are no attributes
+        savedSession.setAttribute("foo", null);
+        store.store("222", savedSession);
+        
+        //check its still readable
+        savedSession = store.load("222");
+        assertEquals(0, savedSession.getAllAttributes().size());
+    }
+    
     /**
      * Test that we can delete a persisted session.
      */
