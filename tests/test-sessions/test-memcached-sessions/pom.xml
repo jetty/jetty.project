@@ -36,26 +36,31 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-sessions-common</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.memcached</groupId>
       <artifactId>jetty-memcached-sessions</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -63,9 +68,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>1.7.9</version>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

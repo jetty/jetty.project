@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpConnection;
+import org.eclipse.jetty.client.HttpConversation;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpProxy;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
@@ -277,17 +279,35 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         protected void normalizeRequest(Request request)
         {
             super.normalizeRequest(request);
+
             if (request instanceof HttpProxy.TunnelRequest)
             {
                 long connectTimeout = getHttpClient().getConnectTimeout();
                 request.timeout(connectTimeout, TimeUnit.MILLISECONDS)
                         .idleTimeout(2 * connectTimeout, TimeUnit.MILLISECONDS);
             }
-            if (request instanceof HttpUpgrader.Factory)
+
+            HttpRequest httpRequest = (HttpRequest)request;
+            HttpConversation conversation = httpRequest.getConversation();
+            HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
+            if (upgrader == null)
             {
-                HttpUpgrader upgrader = ((HttpUpgrader.Factory)request).newHttpUpgrader(HttpVersion.HTTP_1_1);
-                ((HttpRequest)request).getConversation().setAttribute(HttpUpgrader.class.getName(), upgrader);
-                upgrader.prepare((HttpRequest)request);
+                if (request instanceof HttpUpgrader.Factory)
+                {
+                    upgrader = ((HttpUpgrader.Factory)request).newHttpUpgrader(HttpVersion.HTTP_1_1);
+                    conversation.setAttribute(HttpUpgrader.class.getName(), upgrader);
+                    upgrader.prepare(httpRequest);
+                }
+                else
+                {
+                    String protocol = request.getHeaders().get(HttpHeader.UPGRADE);
+                    if (protocol != null)
+                    {
+                        upgrader = new ProtocolHttpUpgrader(getHttpDestination(), protocol);
+                        conversation.setAttribute(HttpUpgrader.class.getName(), upgrader);
+                        upgrader.prepare(httpRequest);
+                    }
+                }
             }
         }
 

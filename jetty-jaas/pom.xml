@@ -42,13 +42,17 @@
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

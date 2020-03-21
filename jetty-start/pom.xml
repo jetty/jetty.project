@@ -77,10 +77,6 @@
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-api</artifactId>
         </exclusion>
-        <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-slf4j-impl</artifactId>
-        </exclusion>
       </exclusions>
     </dependency>
     <dependency>

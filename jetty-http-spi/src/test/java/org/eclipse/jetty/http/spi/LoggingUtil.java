@@ -16,11 +16,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.client.http;
+package org.eclipse.jetty.http.spi;
 
-import org.eclipse.jetty.client.HttpResponse;
-
-public interface HttpConnectionUpgrader
+public final class LoggingUtil
 {
-    public void upgrade(HttpResponse response, HttpConnectionOverHTTP connection);
+    /**
+     * It's easier to setup logging in code for this test project,
+     * then it is to setup the various system properties and files for every test
+     * execution (maven, CI, and IDE).
+     */
+    public static void init()
+    {
+        // Wire up java.util.logging (used by javax.xml.soap others) to slf4j.
+        org.slf4j.bridge.SLF4JBridgeHandler.removeHandlersForRootLogger();
+        org.slf4j.bridge.SLF4JBridgeHandler.install();
+    }
 }

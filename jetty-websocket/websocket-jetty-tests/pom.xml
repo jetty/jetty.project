@@ -16,6 +16,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-jetty-api</artifactId>
       <version>${project.version}</version>
@@ -63,11 +68,9 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -75,6 +78,14 @@
   <build>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <configuration>
+            <!-- No point deploying testing projects -->
+            <skip>true</skip>
+          </configuration>
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>

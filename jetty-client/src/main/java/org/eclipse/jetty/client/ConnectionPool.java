@@ -53,6 +53,14 @@ public interface ConnectionPool extends Closeable
     Connection acquire();
 
     /**
+     * <p>Accepts the given connection to be managed by this ConnectionPool.</p>
+     *
+     * @param connection the connection to accept
+     * @return whether the connection has been accepted
+     */
+    boolean accept(Connection connection);
+
+    /**
      * <p>Returns the given connection, previously obtained via {@link #acquire()},
      * back to this ConnectionPool.</p>
      *
