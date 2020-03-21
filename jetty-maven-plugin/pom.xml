@@ -101,9 +101,9 @@
           </setupIncludes>
           <pomExcludes>
             <!-- enable again when springboot is migrated to jakarta -->
-            <pomExclude>javax-annotation-api</pomExclude>
+            <pomExclude>javax-annotation-api/pom.xml</pomExclude>
             <!-- enable again when gwt is migrated to jakarta -->
-            <pomExclude>jetty-start-gwt-it</pomExclude>
+            <pomExclude>jetty-start-gwt-it/pom.xml</pomExclude>
           </pomExcludes>
           <scriptVariables>
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
