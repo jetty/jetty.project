@@ -15,6 +15,12 @@
       <artifactId>jetty-servlet</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
+      <version>@servlet.api.version@</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>test.jetty-start-mojo-multi-module-single-war-it</groupId>
       <artifactId>module-impl</artifactId>
     </dependency>
