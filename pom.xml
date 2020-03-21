@@ -174,12 +174,12 @@
                   </excludes>
                 </requireUpperBoundDeps>
                 <!-- olamy we should ban those dependencies as they contain bad module-info.java -->
-<!--                <bannedDependencies>-->
-<!--                  <excludes>-->
-<!--                    <exclude>jakarta.servlet:jakarta.servlet-api</exclude>-->
-<!--                    <exclude>javax.servlet:javax.servlet-api</exclude>-->
-<!--                  </excludes>-->
-<!--                </bannedDependencies>-->
+<!--                <bannedDependencies> -->
+<!--                  <excludes> -->
+<!--                    <exclude>jakarta.servlet:jakarta.servlet-api</exclude> -->
+<!--                    <exclude>javax.servlet:javax.servlet-api</exclude> -->
+<!--                  </excludes> -->
+<!--                </bannedDependencies> -->
               </rules>
             </configuration>
           </execution>
