@@ -458,16 +458,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 
     private MethodHandles.Lookup getMethodHandleLookup(Class<?> endpointClass) throws InvalidWebSocketException
     {
-        MethodHandles.Lookup lookup;
-        try
-        {
-            lookup = MethodHandles.privateLookupIn(endpointClass, MethodHandles.lookup());
-        }
-        catch (IllegalAccessException e)
-        {
-            throw new InvalidWebSocketException("Unable to obtain MethodHandle lookup for " + endpointClass, e);
-        }
-        return lookup;
+        return MethodHandles.publicLookup().in(endpointClass);
     }
 
     @Override

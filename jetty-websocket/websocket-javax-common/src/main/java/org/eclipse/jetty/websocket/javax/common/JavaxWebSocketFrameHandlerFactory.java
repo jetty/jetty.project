@@ -706,16 +706,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
     private MethodHandles.Lookup getMethodHandleLookup(Class<?> endpointClass) throws InvalidWebSocketException
     {
-        MethodHandles.Lookup lookup;
-        try
-        {
-            lookup = MethodHandles.privateLookupIn(endpointClass, MethodHandles.lookup());
-        }
-        catch (IllegalAccessException e)
-        {
-            throw new InvalidWebSocketException("Unable to obtain MethodHandle lookup for " + endpointClass, e);
-        }
-        return lookup;
+        return MethodHandles.publicLookup().in(endpointClass);
     }
 
     private static class DecodedArgs

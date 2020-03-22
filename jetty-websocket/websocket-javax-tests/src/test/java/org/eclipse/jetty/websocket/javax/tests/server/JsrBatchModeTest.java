@@ -89,15 +89,8 @@ public class JsrBatchModeTest
 
         URI uri = server.getWsUri();
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        EndpointAdapter endpoint = new EndpointAdapter()
-        {
-            @Override
-            public void onMessage(String message)
-            {
-                latch.countDown();
-            }
-        };
+        CountDownLatch latch = new CountDownLatch(1);
+        EndpointAdapter endpoint = new EndpointAdapter(latch);
 
         try (Session session = client.connectToServer(endpoint, config, uri))
         {
@@ -126,15 +119,8 @@ public class JsrBatchModeTest
 
         URI uri = server.getWsUri();
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        EndpointAdapter endpoint = new EndpointAdapter()
-        {
-            @Override
-            public void onMessage(String message)
-            {
-                latch.countDown();
-            }
-        };
+        CountDownLatch latch = new CountDownLatch(1);
+        EndpointAdapter endpoint = new EndpointAdapter(latch);
 
         try (Session session = client.connectToServer(endpoint, config, uri))
         {
@@ -157,15 +143,8 @@ public class JsrBatchModeTest
 
         URI uri = server.getWsUri();
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        EndpointAdapter endpoint = new EndpointAdapter()
-        {
-            @Override
-            public void onMessage(String message)
-            {
-                latch.countDown();
-            }
-        };
+        CountDownLatch latch = new CountDownLatch(1);
+        EndpointAdapter endpoint = new EndpointAdapter(latch);
 
         try (Session session = client.connectToServer(endpoint, config, uri))
         {
@@ -180,12 +159,25 @@ public class JsrBatchModeTest
         }
     }
 
-    public abstract static class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
+    public static class EndpointAdapter extends Endpoint implements MessageHandler.Whole<String>
     {
+        private final CountDownLatch latch;
+
+        public EndpointAdapter(CountDownLatch latch)
+        {
+            this.latch = latch;
+        }
+
         @Override
         public void onOpen(Session session, EndpointConfig config)
         {
             session.addMessageHandler(this);
+        }
+
+        @Override
+        public void onMessage(String message)
+        {
+            latch.countDown();
         }
     }
 }
