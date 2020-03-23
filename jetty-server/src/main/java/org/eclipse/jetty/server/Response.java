@@ -527,7 +527,7 @@ public class Response implements HttpServletResponse
         resetBuffer();
         setHeader(HttpHeader.LOCATION, location);
         setStatus(code);
-        completeOutput();
+        closeOutput();
     }
 
     @Override
@@ -819,7 +819,7 @@ public class Response implements HttpServletResponse
             {
                 try
                 {
-                    completeOutput();
+                    closeOutput();
                 }
                 catch (IOException e)
                 {
@@ -857,12 +857,23 @@ public class Response implements HttpServletResponse
         return (_contentLength < 0 || written >= _contentLength);
     }
 
-    public void completeOutput() throws IOException
+    public void closeOutput() throws IOException
     {
         if (_outputType == OutputType.WRITER)
             _writer.close();
         else
             _out.close();
+    }
+
+    /**
+     * close the output
+     *
+     * @deprecated Use {@link #closeOutput()}
+     */
+    @Deprecated
+    public void completeOutput() throws IOException
+    {
+        closeOutput();
     }
 
     public void completeOutput(Callback callback)
