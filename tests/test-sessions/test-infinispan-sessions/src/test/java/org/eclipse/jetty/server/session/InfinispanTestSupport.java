@@ -27,8 +27,8 @@ import org.eclipse.jetty.util.IO;
 import org.hibernate.search.cfg.Environment;
 import org.hibernate.search.cfg.SearchMapping;
 import org.infinispan.Cache;
-import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
+import org.infinispan.configuration.cache.ConfigurationChildBuilder;
 import org.infinispan.configuration.cache.Index;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.manager.DefaultCacheManager;
@@ -48,6 +48,7 @@ public class InfinispanTestSupport
     public ConfigurationBuilder _builder;
     private File _tmpdir;
     private boolean _useFileStore;
+    private boolean _serializeSessionData;
     private String _name;
     public static EmbeddedCacheManager _manager;
 
@@ -82,6 +83,11 @@ public class InfinispanTestSupport
         _useFileStore = useFileStore;
     }
 
+    public void setSerializeSessionData(boolean serializeSessionData)
+    {
+        _serializeSessionData = serializeSessionData;
+    }
+    
     public Cache getCache()
     {
         return _cache;
@@ -106,25 +112,33 @@ public class InfinispanTestSupport
             _tmpdir.delete();
             _tmpdir.mkdir();
 
-            Configuration config = _builder.indexing()
+            ConfigurationChildBuilder b = _builder.indexing()
                 .index(Index.ALL)
                 .addIndexedEntity(SessionData.class)
                 .withProperties(properties)
                 .persistence()
                 .addSingleFileStore()
-                .location(_tmpdir.getAbsolutePath())
-                .storeAsBinary()
-                .build();
-
-            _manager.defineConfiguration(_name, config);
+                .location(_tmpdir.getAbsolutePath());
+            if (_serializeSessionData)
+            {
+                b = b.storeAsBinary().enable();
+            }
+                
+            _manager.defineConfiguration(_name, b.build());
         }
         else
         {
-            _manager.defineConfiguration(_name, _builder.indexing()
+            ConfigurationChildBuilder b = _builder.indexing()
                 .withProperties(properties)
                 .index(Index.ALL)
-                .addIndexedEntity(SessionData.class)
-                .build());
+                .addIndexedEntity(SessionData.class);
+        
+            if (_serializeSessionData)
+            {
+                b = b.storeAsBinary().enable();
+            }
+                
+            _manager.defineConfiguration(_name, b.build());
         }
         _cache = _manager.getCache(_name);
     }
@@ -163,6 +177,13 @@ public class InfinispanTestSupport
     public boolean checkSessionPersisted(SessionData data)
         throws Exception
     {
+        
+        //evicts the object from memory. Forces the cache to fetch the data from file
+        if (_useFileStore)
+        {
+            _cache.evict(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
+        }
+        
         Object obj = _cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId());
         if (obj == null)
             return false;
