@@ -693,8 +693,16 @@ public class DetectorConnectionTest
         start(detector, http);
 
         String request = "AAAA".repeat(32768);
-        String response = getResponse(request);
 
-        assertThat(response, Matchers.nullValue());
+        try
+        {
+            String response = getResponse(request);
+            assertThat(response, Matchers.nullValue());
+        }
+        catch (SocketException expected)
+        {
+            // The test may fail writing the "request"
+            // bytes as the server sends back a TCP RST.
+        }
     }
 }

@@ -16,11 +16,24 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.client.http;
+package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.client.HttpResponse;
-
-public interface HttpConnectionUpgrader
+public final class LoggingUtil
 {
-    public void upgrade(HttpResponse response, HttpConnectionOverHTTP connection);
+    /**
+     * It's easier to setup logging in code for this test project,
+     * then it is to setup the various system properties and files for every test
+     * execution (maven, CI, and IDE).
+     */
+    public static void init()
+    {
+        // Wire up jboss logging (used by infinispan) to slf4j
+        System.setProperty("org.jboss.logging.provider", "slf4j");
+
+        // Wire up java.util.logging (used by hibernate, infinispan, and others) to slf4j.
+        if (!org.slf4j.bridge.SLF4JBridgeHandler.isInstalled())
+        {
+            org.slf4j.bridge.SLF4JBridgeHandler.install();
+        }
+    }
 }

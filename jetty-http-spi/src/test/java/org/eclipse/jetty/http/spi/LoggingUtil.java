@@ -16,21 +16,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.endpoints.annotated;
+package org.eclipse.jetty.http.spi;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-
-/**
- * (Test Case)
- * <p>
- * Intentionally not specifying the @WebSocket annotation here
- */
-public class NotASocket
+public final class LoggingUtil
 {
-    @OnWebSocketConnect
-    public void onConnect(Session session)
+    /**
+     * It's easier to setup logging in code for this test project,
+     * then it is to setup the various system properties and files for every test
+     * execution (maven, CI, and IDE).
+     */
+    public static void init()
     {
-        /* do nothing */
+        // Wire up java.util.logging (used by javax.xml.soap others) to slf4j.
+        org.slf4j.bridge.SLF4JBridgeHandler.removeHandlersForRootLogger();
+        org.slf4j.bridge.SLF4JBridgeHandler.install();
     }
 }

@@ -33,8 +33,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A {@link Request.Content} for files using JDK 7's {@code java.nio.file} APIs.</p>
@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class PathRequestContent extends AbstractRequestContent
 {
-    private static final Logger LOG = Log.getLogger(PathRequestContent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PathRequestContent.class);
 
     private final Path filePath;
     private final long fileSize;

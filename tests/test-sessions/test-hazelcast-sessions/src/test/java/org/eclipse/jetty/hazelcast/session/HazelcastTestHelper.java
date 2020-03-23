@@ -53,6 +53,15 @@ public class HazelcastTestHelper
 
     static
     {
+        // Wire up hazelcast logging to slf4j
+        System.setProperty("hazelcast.logging.class", "com.hazelcast.logging.Slf4jFactory");
+
+        // Wire up java.util.logging (used by hazelcast libs) to slf4j.
+        if (!org.slf4j.bridge.SLF4JBridgeHandler.isInstalled())
+        {
+            org.slf4j.bridge.SLF4JBridgeHandler.install();
+        }
+
         _serializerConfig = new SerializerConfig().setImplementation(new SessionDataSerializer()).setTypeClass(SessionData.class);
         Config config = new Config();
         config.setInstanceName(_hazelcastInstanceName);

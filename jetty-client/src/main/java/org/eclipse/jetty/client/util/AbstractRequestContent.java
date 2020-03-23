@@ -24,13 +24,13 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractRequestContent implements Request.Content
 {
-    private static final Logger LOG = Log.getLogger(AbstractRequestContent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractRequestContent.class);
 
     private final AutoLock lock = new AutoLock();
     private final String contentType;
@@ -223,7 +223,7 @@ public abstract class AbstractRequestContent implements Request.Content
             }
             catch (Exception x)
             {
-                LOG.ignore(x);
+                LOG.trace("Failure while notifying content failure {}", failure, x);
             }
         }
 

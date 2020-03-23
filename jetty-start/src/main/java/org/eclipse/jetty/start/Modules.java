@@ -92,8 +92,8 @@ public class Modules implements Iterable<Module>
         _modules.stream()
             .filter(m ->
             {
-                boolean included = all || m.getTags().stream().anyMatch(t -> include.contains(t));
-                boolean excluded = m.getTags().stream().anyMatch(t -> exclude.contains(t));
+                boolean included = all || m.getTags().stream().anyMatch(include::contains);
+                boolean excluded = m.getTags().stream().anyMatch(exclude::contains);
                 return included && !excluded;
             })
             .sorted()
@@ -274,7 +274,7 @@ public class Modules implements Iterable<Module>
 
     public List<Module> getEnabled()
     {
-        List<Module> enabled = _modules.stream().filter(m -> m.isEnabled()).collect(Collectors.toList());
+        List<Module> enabled = _modules.stream().filter(Module::isEnabled).collect(Collectors.toList());
 
         TopologicalSort<Module> sort = new TopologicalSort<>();
         for (Module module : enabled)
@@ -303,7 +303,7 @@ public class Modules implements Iterable<Module>
 
     public List<Module> getSortedAll()
     {
-        List<Module> all = new ArrayList(_modules);
+        List<Module> all = new ArrayList<>(_modules);
 
         TopologicalSort<Module> sort = new TopologicalSort<>();
         for (Module module : all)
@@ -569,17 +569,19 @@ public class Modules implements Iterable<Module>
         _modules.stream().filter(Module::isEnabled).forEach(m ->
         {
             // Check dependencies
-            m.getDepends().forEach(d ->
-            {
-                Set<Module> providers = getAvailableProviders(d);
-                if (providers.stream().filter(Module::isEnabled).count() == 0)
+            m.getDepends().stream()
+                .filter(Module::isRequiredDependency)
+                .forEach(d ->
                 {
-                    if (unsatisfied.length() > 0)
-                        unsatisfied.append(',');
-                    unsatisfied.append(m.getName());
-                    StartLog.error("Module [%s] requires a module providing [%s] from one of %s%n", m.getName(), d, providers);
-                }
-            });
+                    Set<Module> providers = getAvailableProviders(d);
+                    if (providers.stream().noneMatch(Module::isEnabled))
+                    {
+                        if (unsatisfied.length() > 0)
+                            unsatisfied.append(',');
+                        unsatisfied.append(m.getName());
+                        StartLog.error("Module [%s] requires a module providing [%s] from one of %s%n", m.getName(), d, providers);
+                    }
+                });
         });
 
         if (unsatisfied.length() > 0)

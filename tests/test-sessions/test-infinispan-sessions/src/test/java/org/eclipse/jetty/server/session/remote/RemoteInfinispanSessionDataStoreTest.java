@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.session.remote;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
+import org.eclipse.jetty.server.session.LoggingUtil;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
@@ -45,6 +46,10 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
+    static
+    {
+        LoggingUtil.init();
+    }
 
     public static RemoteInfinispanTestSupport __testSupport;
 

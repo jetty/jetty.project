@@ -28,6 +28,11 @@ import org.junit.jupiter.api.Test;
  */
 public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
+    static
+    {
+        LoggingUtil.init();
+    }
+
     public InfinispanTestSupport _testSupport;
 
     @BeforeEach

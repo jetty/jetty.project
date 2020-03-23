@@ -29,16 +29,16 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Implements the conversion from {@link ContentProvider} to {@link Request.Content}.</p>
  */
 public class RequestContentAdapter implements Request.Content, Request.Content.Subscription, AsyncContentProvider.Listener, Callback
 {
-    private static final Logger LOG = Log.getLogger(RequestContentAdapter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RequestContentAdapter.class);
 
     private final AutoLock lock = new AutoLock();
     private final ContentProvider provider;
@@ -310,7 +310,7 @@ public class RequestContentAdapter implements Request.Content, Request.Content.S
         }
         catch (Exception x)
         {
-            LOG.ignore(x);
+            LOG.trace("Failure while notifying content failure {}", failure, x);
         }
     }
 

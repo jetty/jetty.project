@@ -57,11 +57,11 @@ public class StdErrAppender implements JettyAppender
     /**
      * The stream to write logging events to.
      */
-    private PrintStream stderr;
+    private PrintStream stream;
 
     public StdErrAppender(JettyLoggerConfiguration config)
     {
-        this(config, System.err);
+        this(config, null);
     }
 
     public StdErrAppender(JettyLoggerConfiguration config, PrintStream stream)
@@ -72,7 +72,7 @@ public class StdErrAppender implements JettyAppender
     public StdErrAppender(JettyLoggerConfiguration config, PrintStream stream, TimeZone timeZone)
     {
         Objects.requireNonNull(config, "JettyLoggerConfiguration");
-        this.stderr = Objects.requireNonNull(stream, "PrintStream");
+        this.stream = stream;
 
         TimeZone tzone = timeZone;
         if (tzone == null)
@@ -96,7 +96,14 @@ public class StdErrAppender implements JettyAppender
     {
         StringBuilder builder = new StringBuilder(64);
         format(builder, logger, level, timestamp, threadName, throwable, message, argumentArray);
-        stderr.println(builder);
+        if (stream != null)
+        {
+            stream.println(builder);
+        }
+        else
+        {
+            System.err.println(builder);
+        }
     }
 
     public boolean isCondensedNames()
@@ -116,12 +123,12 @@ public class StdErrAppender implements JettyAppender
 
     public PrintStream getStream()
     {
-        return stderr;
+        return stream;
     }
 
     public void setStream(PrintStream stream)
     {
-        this.stderr = stream;
+        this.stream = stream;
     }
 
     private void format(StringBuilder builder, JettyLogger logger, Level level, long timestamp, String threadName, Throwable throwable, String message, Object... argumentArray)

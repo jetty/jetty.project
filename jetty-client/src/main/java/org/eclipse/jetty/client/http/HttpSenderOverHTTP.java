@@ -34,12 +34,12 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpSenderOverHTTP extends HttpSender
 {
-    private static final Logger LOG = Log.getLogger(HttpSenderOverHTTP.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpSenderOverHTTP.class);
 
     private final IteratingCallback headersCallback = new HeadersCallback();
     private final IteratingCallback contentCallback = new ContentCallback();

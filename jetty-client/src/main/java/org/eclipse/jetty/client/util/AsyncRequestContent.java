@@ -34,13 +34,13 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AsyncRequestContent implements Request.Content, Request.Content.Subscription, Closeable
 {
-    private static final Logger LOG = Log.getLogger(AsyncRequestContent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncRequestContent.class);
 
     private final AutoLock lock = new AutoLock();
     private final Condition flush = lock.newCondition();
@@ -287,7 +287,7 @@ public class AsyncRequestContent implements Request.Content, Request.Content.Sub
         }
         catch (Throwable x)
         {
-            LOG.ignore(x);
+            LOG.trace("Failure while notifying content failure {}", failure, x);
         }
     }
 

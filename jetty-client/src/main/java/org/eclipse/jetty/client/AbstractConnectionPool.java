@@ -146,6 +146,19 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         }
     }
 
+    @Override
+    public boolean accept(Connection connection)
+    {
+        while (true)
+        {
+            int count = connections.getLo();
+            if (count >= maxConnections)
+                return false;
+            if (connections.compareAndSetLo(count, count + 1))
+                return true;
+        }
+    }
+
     protected abstract void onCreated(Connection connection);
 
     protected void proceed()

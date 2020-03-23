@@ -61,9 +61,6 @@
           <systemPropertyVariables>
             <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
           </systemPropertyVariables>
-          <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-modules org.slf4j
-          </argLine>
         </configuration>
       </plugin>
     </plugins>
@@ -86,6 +83,7 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

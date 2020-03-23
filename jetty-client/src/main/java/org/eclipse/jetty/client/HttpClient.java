@@ -216,6 +216,7 @@ public class HttpClient extends ContainerLifeCycle
         handlers.put(new RedirectProtocolHandler(this));
         handlers.put(new WWWAuthenticationProtocolHandler(this));
         handlers.put(new ProxyAuthenticationProtocolHandler(this));
+        handlers.put(new UpgradeProtocolHandler());
 
         decoderFactories.add(new GZIPContentDecoder.Factory(byteBufferPool));
 
@@ -523,7 +524,7 @@ public class HttpClient extends ContainerLifeCycle
         return new Origin(scheme, host, port, request.getTag(), protocol);
     }
 
-    HttpDestination resolveDestination(Origin origin)
+    public HttpDestination resolveDestination(Origin origin)
     {
         return destinations.computeIfAbsent(origin, o ->
         {

@@ -34,8 +34,8 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A {@link Request.Content} for form uploads with the {@code "multipart/form-data"}
@@ -61,7 +61,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class MultiPartRequestContent extends AbstractRequestContent implements Closeable
 {
-    private static final Logger LOG = Log.getLogger(MultiPartRequestContent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MultiPartRequestContent.class);
     private static final byte[] COLON_SPACE_BYTES = new byte[]{':', ' '};
     private static final byte[] CR_LF_BYTES = new byte[]{'\r', '\n'};
 

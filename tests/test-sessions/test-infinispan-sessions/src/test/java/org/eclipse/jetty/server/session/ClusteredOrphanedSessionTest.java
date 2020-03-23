@@ -27,6 +27,11 @@ import org.junit.jupiter.api.BeforeAll;
  */
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
+    static
+    {
+        LoggingUtil.init();
+    }
+
     public static InfinispanTestSupport __testSupport;
 
     @BeforeAll

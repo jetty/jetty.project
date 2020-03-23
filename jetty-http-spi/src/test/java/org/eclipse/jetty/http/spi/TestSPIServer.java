@@ -42,6 +42,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TestSPIServer
 {
+    static
+    {
+        LoggingUtil.init();
+    }
 
     /**
      * Create a server that has a null InetSocketAddress, then

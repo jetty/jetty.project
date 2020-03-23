@@ -19,21 +19,6 @@
 package org.eclipse.jetty.websocket.common;
 
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryArraySocket;
-import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedBinaryStreamSocket;
-import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedTextSocket;
-import org.eclipse.jetty.websocket.common.endpoints.annotated.AnnotatedTextStreamSocket;
-import org.eclipse.jetty.websocket.common.endpoints.annotated.BadBinarySignatureSocket;
-import org.eclipse.jetty.websocket.common.endpoints.annotated.BadDuplicateBinarySocket;
-import org.eclipse.jetty.websocket.common.endpoints.annotated.BadDuplicateFrameSocket;
-import org.eclipse.jetty.websocket.common.endpoints.annotated.BadTextSignatureSocket;
-import org.eclipse.jetty.websocket.common.endpoints.annotated.FrameSocket;
-import org.eclipse.jetty.websocket.common.endpoints.annotated.MyEchoBinarySocket;
-import org.eclipse.jetty.websocket.common.endpoints.annotated.MyEchoSocket;
-import org.eclipse.jetty.websocket.common.endpoints.annotated.MyStatelessEchoSocket;
-import org.eclipse.jetty.websocket.common.endpoints.annotated.NoopSocket;
-import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerBasicSocket;
-import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerFrameSocket;
 import org.eclipse.jetty.websocket.util.DuplicateAnnotationException;
 import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.util.messages.ByteArrayMessageSink;
@@ -85,7 +70,7 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadDuplicateBinarySocket() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(InvalidWebSocketException.class, () -> createMetadata(BadDuplicateBinarySocket.class));
+        Exception e = assertThrows(InvalidWebSocketException.class, () -> createMetadata(EndPoints.BadDuplicateBinarySocket.class));
         assertThat(e.getMessage(), allOf(containsString("Cannot replace previously assigned"), containsString("BINARY Handler")));
     }
 
@@ -96,7 +81,7 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadDuplicateFrameSocket() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(DuplicateAnnotationException.class, () -> createMetadata(BadDuplicateFrameSocket.class));
+        Exception e = assertThrows(DuplicateAnnotationException.class, () -> createMetadata(EndPoints.BadDuplicateFrameSocket.class));
         assertThat(e.getMessage(), containsString("Duplicate @OnWebSocketFrame"));
     }
 
@@ -107,7 +92,7 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadSignatureNonVoidReturn() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(InvalidSignatureException.class, () -> createMetadata(BadBinarySignatureSocket.class));
+        Exception e = assertThrows(InvalidSignatureException.class, () -> createMetadata(EndPoints.BadBinarySignatureSocket.class));
         assertThat(e.getMessage(), containsString("must be void"));
     }
 
@@ -118,7 +103,7 @@ public class LocalEndpointMetadataTest
     public void testAnnotatedBadSignatureStatic() throws Exception
     {
         // Should toss exception
-        Exception e = assertThrows(InvalidSignatureException.class, () -> createMetadata(BadTextSignatureSocket.class));
+        Exception e = assertThrows(InvalidSignatureException.class, () -> createMetadata(EndPoints.BadTextSignatureSocket.class));
         assertThat(e.getMessage(), containsString("must not be static"));
     }
 
@@ -128,9 +113,9 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedBinaryArraySocket() throws Exception
     {
-        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(AnnotatedBinaryArraySocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(EndPoints.AnnotatedBinaryArraySocket.class);
 
-        String classId = AnnotatedBinaryArraySocket.class.getSimpleName();
+        String classId = EndPoints.AnnotatedBinaryArraySocket.class.getSimpleName();
 
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), EXISTS);
         assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(ByteArrayMessageSink.class));
@@ -153,9 +138,9 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedBinaryStreamSocket() throws Exception
     {
-        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(AnnotatedBinaryStreamSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(EndPoints.AnnotatedBinaryStreamSocket.class);
 
-        String classId = AnnotatedBinaryStreamSocket.class.getSimpleName();
+        String classId = EndPoints.AnnotatedBinaryStreamSocket.class.getSimpleName();
 
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), EXISTS);
         assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(InputStreamMessageSink.class));
@@ -178,9 +163,9 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedMyEchoBinarySocket() throws Exception
     {
-        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(MyEchoBinarySocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(EndPoints.MyEchoBinarySocket.class);
 
-        String classId = MyEchoBinarySocket.class.getSimpleName();
+        String classId = EndPoints.MyEchoBinarySocket.class.getSimpleName();
 
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), EXISTS);
         assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(ByteArrayMessageSink.class));
@@ -203,9 +188,9 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedMyEchoSocket() throws Exception
     {
-        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(MyEchoSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(EndPoints.MyEchoSocket.class);
 
-        String classId = MyEchoSocket.class.getSimpleName();
+        String classId = EndPoints.MyEchoSocket.class.getSimpleName();
 
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
         assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
@@ -228,9 +213,9 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedMyStatelessEchoSocket() throws Exception
     {
-        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(MyStatelessEchoSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(EndPoints.MyStatelessEchoSocket.class);
 
-        String classId = MyStatelessEchoSocket.class.getSimpleName();
+        String classId = EndPoints.MyStatelessEchoSocket.class.getSimpleName();
 
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
         assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
@@ -253,9 +238,9 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedNoop() throws Exception
     {
-        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(NoopSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(EndPoints.NoopSocket.class);
 
-        String classId = NoopSocket.class.getSimpleName();
+        String classId = EndPoints.NoopSocket.class.getSimpleName();
 
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
         assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
@@ -278,9 +263,9 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedOnFrame() throws Exception
     {
-        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(FrameSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(EndPoints.FrameSocket.class);
 
-        String classId = FrameSocket.class.getSimpleName();
+        String classId = EndPoints.FrameSocket.class.getSimpleName();
 
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
         assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
@@ -303,9 +288,9 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedTextSocket() throws Exception
     {
-        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(AnnotatedTextSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(EndPoints.AnnotatedTextSocket.class);
 
-        String classId = AnnotatedTextSocket.class.getSimpleName();
+        String classId = EndPoints.AnnotatedTextSocket.class.getSimpleName();
 
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
         assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
@@ -328,9 +313,9 @@ public class LocalEndpointMetadataTest
     @Test
     public void testAnnotatedTextStreamSocket() throws Exception
     {
-        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(AnnotatedTextStreamSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(EndPoints.AnnotatedTextStreamSocket.class);
 
-        String classId = AnnotatedTextStreamSocket.class.getSimpleName();
+        String classId = EndPoints.AnnotatedTextStreamSocket.class.getSimpleName();
 
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
         assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
@@ -353,9 +338,9 @@ public class LocalEndpointMetadataTest
     @Test
     public void testListenerBasicSocket()
     {
-        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(ListenerBasicSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(EndPoints.ListenerBasicSocket.class);
 
-        String classId = ListenerBasicSocket.class.getSimpleName();
+        String classId = EndPoints.ListenerBasicSocket.class.getSimpleName();
 
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), EXISTS);
         assertThat(classId + ".binarySink", metadata.getBinarySink(), equalTo(ByteArrayMessageSink.class));
@@ -378,9 +363,9 @@ public class LocalEndpointMetadataTest
     @Test
     public void testListenerFrameSocket() throws Exception
     {
-        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(ListenerFrameSocket.class);
+        JettyWebSocketFrameHandlerMetadata metadata = createMetadata(EndPoints.ListenerFrameSocket.class);
 
-        String classId = ListenerFrameSocket.class.getSimpleName();
+        String classId = EndPoints.ListenerFrameSocket.class.getSimpleName();
 
         assertThat(classId + ".binaryHandle", metadata.getBinaryHandle(), nullValue());
         assertThat(classId + ".binarySink", metadata.getBinarySink(), nullValue());
