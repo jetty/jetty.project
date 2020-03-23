@@ -1418,6 +1418,42 @@ public class ServletContextHandler extends ContextHandler
                 _sessionHandler.setMaxInactiveInterval((int)tmp);
             }
         }
+        
+        @Override
+        public <T extends Servlet> T createServlet(Class<T> clazz) throws ServletException
+        {
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            return super.createServlet(clazz);
+        }
+
+        @Override
+        public <T extends Filter> T createFilter(Class<T> clazz) throws ServletException
+        {
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            return super.createFilter(clazz);
+        }
+        
+        @Override
+        public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException
+        {
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            try
+            {
+                checkListener(clazz);
+            }
+            catch (IllegalArgumentException e)
+            {
+                //Bizarrely, according to the spec, it is NOT an error to create an instance of
+                //a ServletContextListener from inside a ServletContextListener, but it IS an error
+                //to call addListener with one!
+                if (!ServletContextListener.class.isAssignableFrom(clazz))
+                    throw e;
+            }
+            return super.createListener(clazz);
+        }
 
         @Override
         public void addListener(String className)
