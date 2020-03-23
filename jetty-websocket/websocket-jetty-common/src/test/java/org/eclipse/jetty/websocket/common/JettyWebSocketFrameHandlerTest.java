@@ -32,10 +32,6 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerBasicSocket;
-import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerFrameSocket;
-import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPartialSocket;
-import org.eclipse.jetty.websocket.common.endpoints.listeners.ListenerPingPongSocket;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -197,7 +193,7 @@ public class JettyWebSocketFrameHandlerTest
     public void testListenerPartialSocket() throws Exception
     {
         // Setup
-        ListenerPartialSocket socket = new ListenerPartialSocket();
+        EndPoints.ListenerPartialSocket socket = new EndPoints.ListenerPartialSocket();
         JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
         // Trigger Events
@@ -228,7 +224,7 @@ public class JettyWebSocketFrameHandlerTest
     public void testListenerBasicSocket() throws Exception
     {
         // Setup
-        ListenerBasicSocket socket = new ListenerBasicSocket();
+        EndPoints.ListenerBasicSocket socket = new EndPoints.ListenerBasicSocket();
         JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
         // Trigger Events
@@ -254,7 +250,7 @@ public class JettyWebSocketFrameHandlerTest
     public void testListenerBasicSocketError() throws Exception
     {
         // Setup
-        ListenerBasicSocket socket = new ListenerBasicSocket();
+        EndPoints.ListenerBasicSocket socket = new EndPoints.ListenerBasicSocket();
         JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
         // Trigger Events
@@ -274,7 +270,7 @@ public class JettyWebSocketFrameHandlerTest
     public void testListenerFrameSocket() throws Exception
     {
         // Setup
-        ListenerFrameSocket socket = new ListenerFrameSocket();
+        EndPoints.ListenerFrameSocket socket = new EndPoints.ListenerFrameSocket();
         JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
         // Trigger Events
@@ -304,7 +300,7 @@ public class JettyWebSocketFrameHandlerTest
     public void testListenerPingPongSocket() throws Exception
     {
         // Setup
-        ListenerPingPongSocket socket = new ListenerPingPongSocket();
+        EndPoints.ListenerPingPongSocket socket = new EndPoints.ListenerPingPongSocket();
         JettyWebSocketFrameHandler localEndpoint = newLocalFrameHandler(socket);
 
         // Trigger Events
