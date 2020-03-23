@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.javax.common.messages;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import javax.websocket.CloseReason;
@@ -28,6 +27,7 @@ import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.messages.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
@@ -44,7 +44,7 @@ public class DecodedBinaryMessageSink<T> extends DecodedMessageSink<Decoder.Bina
     @Override
     protected MethodHandle newRawMethodHandle() throws NoSuchMethodException, IllegalAccessException
     {
-        return MethodHandles.lookup().findVirtual(DecodedBinaryMessageSink.class,
+        return JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(DecodedBinaryMessageSink.class,
             "onWholeMessage", MethodType.methodType(void.class, ByteBuffer.class))
             .bindTo(this);
     }
