@@ -456,7 +456,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         throw new InvalidSignatureException(err.toString());
     }
 
-    private MethodHandles.Lookup getMethodHandleLookup(Class<?> endpointClass) throws InvalidWebSocketException
+    private MethodHandles.Lookup getMethodHandleLookup(Class<?> endpointClass)
     {
         return MethodHandles.publicLookup().in(endpointClass);
     }

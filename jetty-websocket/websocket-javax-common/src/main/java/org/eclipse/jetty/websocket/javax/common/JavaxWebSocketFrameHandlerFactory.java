@@ -704,7 +704,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         }
     }
 
-    private MethodHandles.Lookup getMethodHandleLookup(Class<?> endpointClass) throws InvalidWebSocketException
+    private MethodHandles.Lookup getMethodHandleLookup(Class<?> endpointClass)
     {
         return MethodHandles.publicLookup().in(endpointClass);
     }
