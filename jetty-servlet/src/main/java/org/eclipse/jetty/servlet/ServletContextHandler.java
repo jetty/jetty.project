@@ -1256,7 +1256,7 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
-        protected <T> T createInstance(Class<T> clazz) throws ServletException
+        public <T> T createInstance(Class<T> clazz) throws ServletException
         {
             return _objFactory.decorate(super.createInstance(clazz));
         }
