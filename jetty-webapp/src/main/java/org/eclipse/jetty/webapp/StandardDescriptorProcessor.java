@@ -660,8 +660,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (tNode != null)
         {
             long val = Long.parseLong(tNode.toString(false, true));
-            val = TimeUnit.MINUTES.toSeconds(val);
-            if (val > Integer.MAX_VALUE)
+            System.err.println("SESSION CONFIG TIMEOUT = " + val);
+            if (TimeUnit.MINUTES.toSeconds(val) > Integer.MAX_VALUE)
                 throw new IllegalStateException("Max session-timeout in minutes is " + TimeUnit.SECONDS.toMinutes(Integer.MAX_VALUE));
             context.getServletContext().setSessionTimeout((int)val);
         }

@@ -1386,6 +1386,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public int getSessionTimeout()
         {
+            System.err.println("CALLING GETSESSIONTIMEOUT");
             if (!isStarting())
                 throw new IllegalStateException();
             if (!_enabled)
@@ -1395,6 +1396,7 @@ public class ServletContextHandler extends ContextHandler
             if (_sessionHandler != null)
             {
                 timeout = _sessionHandler.getMaxInactiveInterval();
+                System.err.println("GETSESSIONTIMEOUT FROM SESSIONHANDLER = " + timeout);
             }
 
             return (int)TimeUnit.SECONDS.toMinutes(timeout);
@@ -1403,6 +1405,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public void setSessionTimeout(int sessionTimeout)
         {
+            System.err.println("CALLING SETSESSIONTIMEOUT = " + sessionTimeout);
             if (!isStarting())
                 throw new IllegalStateException();
             if (!_enabled)

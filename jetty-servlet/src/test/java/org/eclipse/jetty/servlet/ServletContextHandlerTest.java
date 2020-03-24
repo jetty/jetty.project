@@ -27,6 +27,7 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.DispatcherType;
@@ -136,6 +137,7 @@ public class ServletContextHandlerTest
             {
                 try
                 {
+                    ctx.setAttribute("MYSCI.startSessionTimeout", Integer.valueOf(ctx.getSessionTimeout()));
                     ctx.setSessionTimeout(timeout);
                     ctx.setAttribute("MYSCI.setSessionTimeout", Boolean.TRUE);
                     ctx.setAttribute("MYSCI.getSessionTimeout", Integer.valueOf(ctx.getSessionTimeout()));
@@ -503,11 +505,15 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
+        int startMin = 7;
         Integer timeout = Integer.valueOf(100);
         ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        root.getSessionHandler().setMaxInactiveInterval((int)TimeUnit.MINUTES.toSeconds(startMin));
         root.addBean(new MySCIStarter(root.getServletContext(), new MySCI(true, timeout.intValue())), true);
         _server.start();
         
+        //test starting value of setSessionTimeout
+        assertEquals(startMin, (Integer)root.getServletContext().getAttribute("MYSCI.startSessionTimeout"));
         //test can set session timeout from ServletContainerInitializer
         assertTrue((Boolean)root.getServletContext().getAttribute("MYSCI.setSessionTimeout"));
         //test can get session timeout from ServletContainerInitializer
