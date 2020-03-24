@@ -19,7 +19,6 @@
 package org.eclipse.jetty.alpn.client;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.NegotiatingClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.ALPNProcessor.Client;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,19 +54,19 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
         IllegalStateException failure = new IllegalStateException("No Client ALPNProcessors!");
 
         // Use a for loop on iterator so load exceptions can be caught and ignored
-        for (Iterator<Client> i = ServiceLoader.load(Client.class).iterator(); i.hasNext(); )
+        TypeUtil.serviceProviderStream(ServiceLoader.load(Client.class)).forEach(provider ->
         {
             Client processor;
             try
             {
-                processor = i.next();
+                processor = provider.get();
             }
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Unable to load client processor", x);
                 failure.addSuppressed(x);
-                continue;
+                return;
             }
 
             try
@@ -80,7 +80,7 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
                     LOG.debug("Could not initialize " + processor, x);
                 failure.addSuppressed(x);
             }
-        }
+        });
 
         if (LOG.isDebugEnabled())
         {

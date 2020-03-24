@@ -26,23 +26,17 @@ import java.util.Set;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class WebSocketExtensionRegistry implements Iterable<Class<? extends Extension>>
 {
-    private Map<String, Class<? extends Extension>> availableExtensions;
+    private Map<String, Class<? extends Extension>> availableExtensions = new HashMap<>();
 
     public WebSocketExtensionRegistry()
     {
-        // Load extensions from container loader
-        ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class, this.getClass().getClassLoader());
-        availableExtensions = new HashMap<>();
-        for (Extension ext : extensionLoader)
-        {
-            if (ext != null)
-            {
-                availableExtensions.put(ext.getName(), ext.getClass());
-            }
-        }
+        // Load extensions from container loader.
+        TypeUtil.serviceStream(ServiceLoader.load(Extension.class, this.getClass().getClassLoader()))
+            .forEach(ext -> availableExtensions.put(ext.getName(), ext.getClass()));
     }
 
     public Map<String, Class<? extends Extension>> getAvailableExtensions()

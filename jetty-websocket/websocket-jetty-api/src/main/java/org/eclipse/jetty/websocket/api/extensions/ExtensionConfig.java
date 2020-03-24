@@ -34,7 +34,7 @@ public interface ExtensionConfig
 
     private static ExtensionConfig.Parser getParser()
     {
-        return ServiceLoader.load(ExtensionConfig.Parser.class).findFirst().get();
+        return ServiceLoader.load(ExtensionConfig.Parser.class).iterator().next();
     }
 
     static ExtensionConfig parse(String parameterizedName)
