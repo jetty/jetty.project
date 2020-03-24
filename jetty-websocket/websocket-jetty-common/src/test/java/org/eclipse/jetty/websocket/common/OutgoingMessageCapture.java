@@ -52,7 +52,7 @@ public class OutgoingMessageCapture extends CoreSession.Empty implements CoreSes
 
     public OutgoingMessageCapture()
     {
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
+        MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getApplicationMethodHandleLookup(this.getClass());
         try
         {
             MethodHandle text = lookup.findVirtual(this.getClass(), "onWholeText", MethodType.methodType(Void.TYPE, String.class));
