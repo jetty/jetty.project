@@ -460,14 +460,14 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     /**
      * <p>
      * Gives a {@link MethodHandles.Lookup} instance to be used to find methods in server classes.
-     * For lookups on application classes use {@link #getApplicationMethodHandleLookup(Class)} ()} instead.
+     * For lookups on application classes use {@link #getApplicationMethodHandleLookup(Class)} instead.
      * </p>
      * <p>
      * This uses the caller sensitive {@link MethodHandles#lookup()}, this will allow MethodHandle access
      * to server classes we need to use and will give access permissions to private methods as well.
      * </p>
      *
-     * @return
+     * @return a lookup object to be used to find methods on server classes.
      */
     public static MethodHandles.Lookup getServerMethodHandleLookup()
     {
