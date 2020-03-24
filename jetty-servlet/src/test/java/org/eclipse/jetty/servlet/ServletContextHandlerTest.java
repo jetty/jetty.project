@@ -133,7 +133,7 @@ public class ServletContextHandlerTest
                 throw new IllegalStateException("MySCI already called");
             ctx.setAttribute("MySCI.startup", Boolean.TRUE);
             ctx.addListener(new MyContextListener(callSessionTimeouts, timeout));
-            
+
             //test that SCI can call the sessionmodes methods
             try
             {
@@ -142,7 +142,7 @@ public class ServletContextHandlerTest
             }
             catch (UnsupportedOperationException e)
             {
-               ctx.setAttribute("MySCI.defaultSessionTrackingModes", Boolean.FALSE);
+                ctx.setAttribute("MySCI.defaultSessionTrackingModes", Boolean.FALSE);
             }
             try
             {
@@ -151,7 +151,7 @@ public class ServletContextHandlerTest
             }
             catch (UnsupportedOperationException e)
             {
-               ctx.setAttribute("MySCI.effectiveSessionTrackingModes", Boolean.FALSE);
+                ctx.setAttribute("MySCI.effectiveSessionTrackingModes", Boolean.FALSE);
             }
             try
             {
@@ -160,9 +160,9 @@ public class ServletContextHandlerTest
             }
             catch (UnsupportedOperationException e)
             {
-               ctx.setAttribute("MySCI.setSessionTrackingModes", Boolean.FALSE);
+                ctx.setAttribute("MySCI.setSessionTrackingModes", Boolean.FALSE);
             }
-            
+
             if (callSessionTimeouts)
             {
                 try
