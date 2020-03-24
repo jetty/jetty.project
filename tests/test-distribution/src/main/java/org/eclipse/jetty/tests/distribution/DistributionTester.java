@@ -21,8 +21,6 @@ package org.eclipse.jetty.tests.distribution;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -167,7 +165,7 @@ public class DistributionTester
         pbCmd.directory(jettyBaseDir);
         Process process = pbCmd.start();
 
-        return new Run(process, config);
+        return new Run(process);
     }
 
     /**
@@ -417,17 +415,12 @@ public class DistributionTester
         private final Process process;
         private final List<ConsoleStreamer> consoleStreamers = new ArrayList<>();
         private final Queue<String> logs = new ConcurrentLinkedQueue<>();
-        private LogFileStreamer logFileStreamer;
 
-        private Run(Process process, DistributionTester.Config config)
+        private Run(Process process)
         {
             this.process = process;
             consoleStreamers.add(startPump("STDOUT", process.getInputStream()));
             consoleStreamers.add(startPump("STDERR", process.getErrorStream()));
-            if (config.logFile != null)
-            {
-                logFileStreamer = new LogFileStreamer(config.logFile);
-            }
         }
 
         private ConsoleStreamer startPump(String mode, InputStream stream)
@@ -450,7 +443,7 @@ public class DistributionTester
         {
             boolean result = process.waitFor(time, unit);
             if (result)
-                stopStreamers();
+                stopConsoleStreamers();
             return result;
         }
 
@@ -471,7 +464,7 @@ public class DistributionTester
         public void stop()
         {
             process.destroy();
-            stopStreamers();
+            stopConsoleStreamers();
         }
 
         /**
@@ -480,14 +473,12 @@ public class DistributionTester
         public void destroy()
         {
             process.destroyForcibly();
-            stopStreamers();
+            stopConsoleStreamers();
         }
 
-        private void stopStreamers()
+        private void stopConsoleStreamers()
         {
             consoleStreamers.forEach(ConsoleStreamer::stop);
-            if (logFileStreamer != null)
-                logFileStreamer.stop();
         }
 
         @Override
