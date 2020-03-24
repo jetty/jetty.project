@@ -21,10 +21,13 @@ package org.eclipse.jetty.tests.distribution;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.file.Files;
@@ -164,7 +167,7 @@ public class DistributionTester
         pbCmd.directory(jettyBaseDir);
         Process process = pbCmd.start();
 
-        return new Run(process);
+        return new Run(process, config);
     }
 
     /**
@@ -370,6 +373,7 @@ public class DistributionTester
         private String jettyVersion;
         private String mavenLocalRepository = System.getProperty("user.home") + "/.m2/repository";
         private Map<String, String> mavenRemoteRepositories = new HashMap<>();
+        private Path logFile;
 
         @Override
         public String toString()
@@ -413,12 +417,17 @@ public class DistributionTester
         private final Process process;
         private final List<ConsoleStreamer> consoleStreamers = new ArrayList<>();
         private final Queue<String> logs = new ConcurrentLinkedQueue<>();
+        private LogFileStreamer logFileStreamer;
 
-        private Run(Process process)
+        private Run(Process process, DistributionTester.Config config)
         {
             this.process = process;
             consoleStreamers.add(startPump("STDOUT", process.getInputStream()));
             consoleStreamers.add(startPump("STDERR", process.getErrorStream()));
+            if (config.logFile != null)
+            {
+                logFileStreamer = new LogFileStreamer(config.logFile);
+            }
         }
 
         private ConsoleStreamer startPump(String mode, InputStream stream)
@@ -441,7 +450,7 @@ public class DistributionTester
         {
             boolean result = process.waitFor(time, unit);
             if (result)
-                stopConsoleStreamers();
+                stopStreamers();
             return result;
         }
 
@@ -462,7 +471,7 @@ public class DistributionTester
         public void stop()
         {
             process.destroy();
-            stopConsoleStreamers();
+            stopStreamers();
         }
 
         /**
@@ -471,12 +480,14 @@ public class DistributionTester
         public void destroy()
         {
             process.destroyForcibly();
-            stopConsoleStreamers();
+            stopStreamers();
         }
 
-        private void stopConsoleStreamers()
+        private void stopStreamers()
         {
             consoleStreamers.forEach(ConsoleStreamer::stop);
+            if (logFileStreamer != null)
+                logFileStreamer.stop();
         }
 
         @Override
@@ -505,6 +516,38 @@ public class DistributionTester
                 Thread.sleep(250);
             }
             return false;
+        }
+
+        /**
+         * Awaits the logs file to contain the given text, for the given amount of time.
+         *
+         * @param logFile the log file to test
+         * @param txt the text that must be present in the console logs
+         * @param time the time to wait
+         * @param unit the unit of time
+         * @return true if the text was found, false if the timeout elapsed
+         * @throws InterruptedException if the wait is interrupted
+         */
+        public boolean awaitLogsFileFor(Path logFile, String txt, long time, TimeUnit unit) throws InterruptedException
+        {
+            LogFileStreamer logFileStreamer = new LogFileStreamer(logFile);
+            Thread thread = new Thread(logFileStreamer, "LogFileStreamer/" + logFile);
+            thread.start();
+            try
+            {
+                long end = System.nanoTime() + unit.toNanos(time);
+                while (System.nanoTime() < end)
+                {
+                    boolean result = logs.stream().anyMatch(s -> s.contains(txt));
+                    if (result) return true;
+                    Thread.sleep(250);
+                }
+                return false;
+            }
+            finally
+            {
+                logFileStreamer.stop();
+            }
         }
 
         /**
@@ -546,6 +589,52 @@ public class DistributionTester
             {
                 stop = true;
                 IO.close(reader);
+            }
+        }
+
+        private class LogFileStreamer implements Runnable
+        {
+            private RandomAccessFile inputFile;
+            private volatile boolean stop;
+            private final Path logFile;
+
+            public LogFileStreamer(Path logFile)
+            {
+                this.logFile = logFile;
+            }
+
+            @Override
+            public void run()
+            {
+                String currentLine;
+                long pos = 0;
+                while (!stop)
+                {
+                    try
+                    {
+                        inputFile = new RandomAccessFile(logFile.toFile(), "r");
+                        inputFile.seek(pos);
+                        if ((currentLine = inputFile.readLine()) != null)
+                        {
+                            logs.add(currentLine);
+                        }
+                        pos = inputFile.getFilePointer();
+                    }
+                    catch (IOException e)
+                    {
+                        //ignore
+                    }
+                    finally
+                    {
+                        IO.close(inputFile);
+                    }
+                }
+            }
+
+            public void stop()
+            {
+                stop = true;
+                IO.close(inputFile);
             }
         }
 
