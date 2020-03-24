@@ -62,6 +62,7 @@ public class PathMappingsTest
     {
         PathMappings<String> p = new PathMappings<>();
 
+        p.put(new ServletPathSpec(""), "root");
         p.put(new ServletPathSpec("/"), "default");
         p.put(new ServletPathSpec("/animal/bird/*"), "birds");
         p.put(new ServletPathSpec("/animal/fish/*"), "fishes");
@@ -75,7 +76,8 @@ public class PathMappingsTest
         assertMatch(p, "/animal/bird/eagle", "birds");
         assertMatch(p, "/animal/fish/bass/sea", "fishes");
         assertMatch(p, "/animal/peccary/javalina/evolution", "animals");
-        assertMatch(p, "/", "default");
+        assertMatch(p, "/", "root");
+        assertMatch(p, "/other", "default");
         assertMatch(p, "/animal/bird/eagle/chat", "animalChat");
         assertMatch(p, "/animal/bird/penguin/chat", "animalChat");
         assertMatch(p, "/animal/fish/trout/cam", "animalCam");

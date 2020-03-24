@@ -168,16 +168,19 @@ public class ServletPathSpec extends PathSpec
     public String getPathInfo(String path)
     {
         // Path Info only valid for PREFIX_GLOB types
-        if (group == PathSpecGroup.PREFIX_GLOB)
+        switch (group)
         {
-            if (path.length() == (specLength - 2))
-            {
-                return null;
-            }
-            return path.substring(specLength - 2);
-        }
+            case ROOT:
+                return path;
 
-        return null;
+            case PREFIX_GLOB:
+                if (path.length() == (specLength - 2))
+                    return null;
+                return path.substring(specLength - 2);
+
+            default:
+                return null;
+        }
     }
 
     @Override
@@ -185,35 +188,27 @@ public class ServletPathSpec extends PathSpec
     {
         switch (group)
         {
+            case ROOT:
+                return "";
+
             case EXACT:
                 if (pathSpec.equals(path))
-                {
                     return path;
-                }
-                else
-                {
-                    return null;
-                }
+                return null;
+
             case PREFIX_GLOB:
                 if (isWildcardMatch(path))
-                {
                     return path.substring(0, specLength - 2);
-                }
-                else
-                {
-                    return null;
-                }
+                return null;
+
             case SUFFIX_GLOB:
                 if (path.regionMatches(path.length() - (specLength - 1), pathSpec, 1, specLength - 1))
-                {
                     return path;
-                }
-                else
-                {
-                    return null;
-                }
+                return null;
+
             case DEFAULT:
                 return path;
+
             default:
                 return null;
         }
