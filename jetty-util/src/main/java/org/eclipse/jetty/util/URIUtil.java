@@ -1305,6 +1305,28 @@ public class URIUtil
         return URI.create(buf.toString());
     }
 
+    /**
+     * Combine two query strings into one. Each query string should not contain the beginning '?' character, but
+     * may contain multiple parameters separated by the '{@literal &}' character.
+     * @param query1 the first query string.
+     * @param query2 the second query string.
+     * @return the combination of the two query strings.
+     */
+    public static String combineQueryParams(String query1, String query2)
+    {
+        StringBuilder queryBuilder = new StringBuilder();
+        if (!StringUtil.isEmpty(query1))
+        {
+            queryBuilder.append(query1);
+            if (!StringUtil.isEmpty(query2))
+                queryBuilder.append("&");
+        }
+
+        if (!StringUtil.isEmpty(query2))
+            queryBuilder.append(query2);
+        return queryBuilder.toString();
+    }
+
     public static URI getJarSource(URI uri)
     {
         try

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.util.Objects;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -74,10 +75,12 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     public static final String J_METHOD = "org.eclipse.jetty.security.openid.METHOD";
     public static final String CSRF_TOKEN = "org.eclipse.jetty.security.openid.csrf_token";
     public static final String J_SECURITY_CHECK = "/j_security_check";
+    public static final String ERROR_PARAMETER = "error_description_jetty";
 
     private OpenIdConfiguration _configuration;
     private String _errorPage;
     private String _errorPath;
+    private String _errorQuery;
     private boolean _alwaysSaveUri;
 
     public OpenIdAuthenticator()
@@ -148,9 +151,14 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             }
             _errorPage = path;
             _errorPath = path;
+            _errorQuery = "";
 
-            if (_errorPath.indexOf('?') > 0)
-                _errorPath = _errorPath.substring(0, _errorPath.indexOf('?'));
+            int queryIndex = _errorPath.indexOf('?');
+            if (queryIndex > 0)
+            {
+                _errorPath = _errorPage.substring(0, queryIndex);
+                _errorQuery = _errorPage.substring(queryIndex + 1);
+            }
         }
     }
 
@@ -230,7 +238,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     {
         final HttpServletRequest request = (HttpServletRequest)req;
         final HttpServletResponse response = (HttpServletResponse)res;
-        final Request baseRequest = Request.getBaseRequest(request);
+        final Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
         final Response baseResponse = baseRequest.getResponse();
 
         String uri = request.getRequestURI();
@@ -246,12 +254,11 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
         try
         {
+            // Get the Session.
+            HttpSession session = request.getSession();
             if (request.isRequestedSessionIdFromURL())
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Session ID should be cookie for OpenID authentication to work");
-
-                baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), URIUtil.addPaths(request.getContextPath(), _errorPage));
+                sendError(request, response, "Session ID must be a cookie to support OpenID authentication");
                 return Authentication.SEND_FAILURE;
             }
 
@@ -263,19 +270,16 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 {
                     // Verify anti-forgery state token
                     String state = request.getParameter("state");
-                    String antiForgeryToken = (String)request.getSession().getAttribute(CSRF_TOKEN);
+                    String antiForgeryToken = (String)session.getAttribute(CSRF_TOKEN);
                     if (antiForgeryToken == null || !antiForgeryToken.equals(state))
                     {
-                        LOG.warn("auth failed 403: invalid state parameter");
-                        if (response != null)
-                            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                        sendError(request, response, "auth failed: invalid state parameter");
                         return Authentication.SEND_FAILURE;
                     }
 
                     // Attempt to login with the provided authCode
                     OpenIdCredentials credentials = new OpenIdCredentials(authCode, getRedirectUri(request), _configuration);
                     UserIdentity user = login(null, credentials, request);
-                    HttpSession session = request.getSession(false);
                     if (user != null)
                     {
                         // Redirect to original request
@@ -301,29 +305,13 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                     }
                 }
 
-                // not authenticated
-                if (LOG.isDebugEnabled())
-                    LOG.debug("OpenId authentication FAILED");
-                if (_errorPage == null)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("auth failed 403");
-                    if (response != null)
-                        response.sendError(HttpServletResponse.SC_FORBIDDEN);
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("auth failed {}", _errorPage);
-                    baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), URIUtil.addPaths(request.getContextPath(), _errorPage));
-                }
-
+                // Not authenticated.
+                sendError(request, response, null);
                 return Authentication.SEND_FAILURE;
             }
 
-            // Look for cached authentication
-            HttpSession session = request.getSession(false);
-            Authentication authentication = session == null ? null : (Authentication)session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
+            // Look for cached authentication in the Session.
+            Authentication authentication = (Authentication)session.getAttribute(SessionAuthentication.__J_AUTHENTICATED);
             if (authentication != null)
             {
                 // Has authentication been revoked?
@@ -371,16 +359,15 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 }
             }
 
-            // if we can't send challenge
+            // If we can't send challenge.
             if (DeferredAuthentication.isDeferred(response))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("auth deferred {}", session == null ? null : session.getId());
+                    LOG.debug("auth deferred {}", session.getId());
                 return Authentication.UNAUTHENTICATED;
             }
 
-            // remember the current URI
-            session = (session != null ? session : request.getSession(true));
+            // Remember the current URI.
             synchronized (session)
             {
                 // But only if it is not set already, or we save every uri that leads to a login redirect
@@ -401,7 +388,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 }
             }
 
-            // send the the challenge
+            // Send the the challenge.
             String challengeUri = getChallengeUri(request);
             if (LOG.isDebugEnabled())
                 LOG.debug("challenge {}->{}", session.getId(), challengeUri);
@@ -412,6 +399,47 @@ public class OpenIdAuthenticator extends LoginAuthenticator
         catch (IOException e)
         {
             throw new ServerAuthException(e);
+        }
+    }
+
+    /**
+     * Report an error case either by redirecting to the error page if it is defined, otherwise sending a 403 response.
+     * If the message parameter is not null, a query parameter with a key of {@link #ERROR_PARAMETER} and value of the error
+     * message will be logged and added to the error redirect URI if the error page is defined.
+     * @param request the request.
+     * @param response the response.
+     * @param message the reason for the error or null.
+     * @throws IOException if sending the error fails for any reason.
+     */
+    private void sendError(HttpServletRequest request, HttpServletResponse response, String message) throws IOException
+    {
+        final Request baseRequest = Request.getBaseRequest(request);
+        final Response baseResponse = Objects.requireNonNull(baseRequest).getResponse();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("OpenId authentication FAILED: {}", message);
+
+        if (_errorPage == null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("auth failed 403");
+            if (response != null)
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("auth failed {}", _errorPage);
+
+            String redirectUri = URIUtil.addPaths(request.getContextPath(), _errorPage);
+            if (message != null)
+            {
+                String query = URIUtil.combineQueryParams(ERROR_PARAMETER + "=" + UrlEncoded.encodeString(message), _errorQuery);
+                redirectUri = URIUtil.addPaths(request.getContextPath(), _errorPath) + "?" + query;
+                baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), redirectUri);
+            }
+
+            baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), redirectUri);
         }
     }
 
