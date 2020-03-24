@@ -15,7 +15,8 @@
         <Set name="hazelcastInstanceName" property="jetty.session.hazelcast.hazelcastInstanceName"/>
         <Set name="scavengeZombies" property="jetty.session.hazelcast.scavengeZombies"/>
         <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
-        <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
+        <Set name="savePeriodSec"><Property name="jetty.session.savePeriod.seconds" default="0" /></Set>
+        <Set name="configurationLocation"><Property name="jetty.session.hazelcast.configurationLocation" default="" /></Set>
       </New>
     </Arg>
   </Call>
