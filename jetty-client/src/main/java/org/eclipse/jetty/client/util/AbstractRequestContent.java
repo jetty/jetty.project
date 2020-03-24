@@ -28,6 +28,10 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>Partial implementation of {@link Request.Content}.</p>
+ * <p>Manages a single subscription at a time (multiple simultaneous subscriptions are not allowed).</p>
+ */
 public abstract class AbstractRequestContent implements Request.Content
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractRequestContent.class);
@@ -85,13 +89,19 @@ public abstract class AbstractRequestContent implements Request.Content
             subscription.fail(failure);
     }
 
+    /**
+     * <p>Partial implementation of {@code Subscription}.</p>
+     * <p>Implements the algorithm described in {@link Request.Content}.</p>
+     */
     public abstract class AbstractSubscription implements Subscription
     {
         private final Consumer consumer;
         private final boolean emitInitialContent;
         private Throwable failure;
         private int demand;
+        // Whether content production was stalled because there was no demand.
         private boolean stalled;
+        // Whether the first content has been produced.
         private boolean committed;
 
         public AbstractSubscription(Consumer consumer, boolean emitInitialContent, Throwable failure)
@@ -157,6 +167,32 @@ public abstract class AbstractRequestContent implements Request.Content
             }
         }
 
+        /**
+         * <p>Subclasses implement this method to produce content,
+         * without worrying about demand or exception handling.</p>
+         * <p>Typical implementation (pseudo code):</p>
+         * <pre>
+         * protected boolean produceContent(Producer producer) throws Exception
+         * {
+         *     // Step 1: try to produce content, exceptions may be thrown during production
+         *     //  (for example, producing content reading from an InputStream may throw).
+         *
+         *     // Step 2A: content could be produced.
+         *     ByteBuffer buffer = ...;
+         *     boolean last = ...;
+         *     Callback callback = ...;
+         *     return producer.produce(buffer, last, callback);
+         *
+         *     // Step 2B: content could not be produced.
+         *     //  (for example it is not available yet)
+         *     return false;
+         * }
+         * </pre>
+         *
+         * @param producer the producer to notify when content can be produced
+         * @return whether content production should continue
+         * @throws Exception when content production fails
+         */
         protected abstract boolean produceContent(Producer producer) throws Exception;
 
         @Override
@@ -232,14 +268,16 @@ public abstract class AbstractRequestContent implements Request.Content
         {
             int demand;
             boolean stalled;
+            boolean committed;
             try (AutoLock ignored = lock.lock())
             {
                 demand = this.demand;
                 stalled = this.stalled;
+                committed = this.committed;
             }
-            return String.format("%s.%s@%x[demand=%d,stalled=%b]",
+            return String.format("%s.%s@%x[demand=%d,stalled=%b,committed=%b,emitInitial=%b]",
                 getClass().getEnclosingClass().getSimpleName(),
-                getClass().getSimpleName(), hashCode(), demand, stalled);
+                getClass().getSimpleName(), hashCode(), demand, stalled, committed, emitInitialContent);
         }
     }
 

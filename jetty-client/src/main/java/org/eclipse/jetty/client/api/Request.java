@@ -641,6 +641,28 @@ public interface Request
      * and return a {@link Subscription} as the link between producer and consumer.</p>
      * <p>Content producers must notify content to the consumer only if there is demand.</p>
      * <p>Content consumers can generate demand for content by invoking {@link Subscription#demand()}.</p>
+     * <p>Content production must follow this algorithm:</p>
+     * <ul>
+     *   <li>the first time content is demanded
+     *   <ul>
+     *     <li>when the content is not available =&gt; produce an empty content</li>
+     *     <li>when the content is available:
+     *       <ul>
+     *         <li>when {@code emitInitialContent == false} =&gt; produce an empty content</li>
+     *         <li>when {@code emitInitialContent == true} =&gt; produce the content</li>
+     *       </ul>
+     *     </li>
+     *   </ul>
+     *   </li>
+     *   <li>the second and subsequent times content is demanded
+     *     <ul>
+     *       <li>when the content is not available =&gt; do not produce content</li>
+     *       <li>when the content is available =&gt; produce the content</li>
+     *     </ul>
+     *   </li>
+     * </ul>
+     *
+     * @see #subscribe(Consumer, boolean)
      */
     public interface Content
     {
