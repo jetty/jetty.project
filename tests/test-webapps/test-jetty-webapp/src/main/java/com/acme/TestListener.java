@@ -130,7 +130,6 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
     public void contextInitialized(ServletContextEvent sce)
     {
 
-        System.err.println("CONTEXT INITIALIZED, SESSION TIMEOUT = " + sce.getServletContext().getSessionTimeout());
         // System.err.println("contextInitialized "+sce);
         _called.put("contextInitialized", new Throwable());
 

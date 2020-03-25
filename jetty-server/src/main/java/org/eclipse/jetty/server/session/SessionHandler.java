@@ -834,7 +834,6 @@ public class SessionHandler extends ScopedHandler
     public void setMaxInactiveInterval(int seconds)
     {
         _dftMaxIdleSecs = seconds;
-        System.err.println("SETMAXINACTIVE = " + seconds);
         if (LOG.isDebugEnabled())
         {
             if (_dftMaxIdleSecs <= 0)

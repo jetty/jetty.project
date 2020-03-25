@@ -659,11 +659,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         XmlParser.Node tNode = node.get("session-timeout");
         if (tNode != null)
         {
-            long val = Long.parseLong(tNode.toString(false, true));
-            System.err.println("SESSION CONFIG TIMEOUT = " + val);
-            if (TimeUnit.MINUTES.toSeconds(val) > Integer.MAX_VALUE)
+            long mins = Long.parseLong(tNode.toString(false, true));
+            if (TimeUnit.MINUTES.toSeconds(mins) > Integer.MAX_VALUE)
                 throw new IllegalStateException("Max session-timeout in minutes is " + TimeUnit.SECONDS.toMinutes(Integer.MAX_VALUE));
-            context.getServletContext().setSessionTimeout((int)val);
+            context.getServletContext().setSessionTimeout((int)mins);
         }
 
         //Servlet Spec 3.0
