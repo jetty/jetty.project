@@ -49,6 +49,7 @@ import javax.servlet.ServletRequestAttributeListener;
 import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
 import javax.servlet.ServletResponse;
+import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -132,6 +133,36 @@ public class ServletContextHandlerTest
                 throw new IllegalStateException("MySCI already called");
             ctx.setAttribute("MySCI.startup", Boolean.TRUE);
             ctx.addListener(new MyContextListener(callSessionTimeouts, timeout));
+
+            //test that SCI can call the sessionmodes methods
+            try
+            {
+                ctx.getDefaultSessionTrackingModes();
+                ctx.setAttribute("MySCI.defaultSessionTrackingModes", Boolean.TRUE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                ctx.setAttribute("MySCI.defaultSessionTrackingModes", Boolean.FALSE);
+            }
+            try
+            {
+                ctx.getEffectiveSessionTrackingModes();
+                ctx.setAttribute("MySCI.effectiveSessionTrackingModes", Boolean.TRUE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                ctx.setAttribute("MySCI.effectiveSessionTrackingModes", Boolean.FALSE);
+            }
+            try
+            {
+                ctx.setSessionTrackingModes(EnumSet.of(SessionTrackingMode.URL));
+                ctx.setAttribute("MySCI.setSessionTrackingModes", Boolean.TRUE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                ctx.setAttribute("MySCI.setSessionTrackingModes", Boolean.FALSE);
+            }
+
             if (callSessionTimeouts)
             {
                 try
@@ -190,6 +221,42 @@ public class ServletContextHandlerTest
         {
             assertNull(sce.getServletContext().getAttribute("MyContextListener.contextInitialized"));
             sce.getServletContext().setAttribute("MyContextListener.contextInitialized", Boolean.TRUE);
+            
+            assertNull(sce.getServletContext().getAttribute("MyContextListener.defaultSessionTrackingModes"));
+            try
+            {
+                sce.getServletContext().getDefaultSessionTrackingModes();
+                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                //Should NOT be able to call getDefaultSessionTrackingModes from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.TRUE); 
+            }
+            
+            assertNull(sce.getServletContext().getAttribute("MyContextListener.effectiveSessionTrackingModes"));
+            try
+            {
+                sce.getServletContext().getEffectiveSessionTrackingModes();
+                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                //Should NOT be able to call getEffectiveSessionTrackingModes from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.TRUE); 
+            }
+            
+            assertNull(sce.getServletContext().getAttribute("MyContextListener.setSessionTrackingModes"));
+            try
+            {
+                sce.getServletContext().setSessionTrackingModes(EnumSet.of(SessionTrackingMode.URL));
+                sce.getServletContext().setAttribute("MyContextListener.setSessionTrackingModes", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                //Should NOT be able to call setSessionTrackingModes from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.setSessionTrackingModes", Boolean.TRUE); 
+            }
             
             if (callSessionTimeouts)
             {
@@ -547,7 +614,13 @@ public class ServletContextHandlerTest
         root.addBean(new MySCIStarter(root.getServletContext(), new MySCI()), true);
         _server.start();
         assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.startup"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.defaultSessionTrackingModes"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.effectiveSessionTrackingModes"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.setSessionTrackingModes"));
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.contextInitialized"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.defaultSessionTrackingModes"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.effectiveSessionTrackingModes"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.setSessionTrackingModes"));
     }
     
     @Test
@@ -1546,7 +1619,7 @@ public class ServletContextHandlerTest
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException
-        {
+        {            
             resp.setStatus(HttpServletResponse.SC_OK);
             PrintWriter writer = resp.getWriter();
             writer.write("Hello World");

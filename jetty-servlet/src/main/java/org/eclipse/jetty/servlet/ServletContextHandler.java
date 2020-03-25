@@ -1289,6 +1289,9 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
         {
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            
             if (_sessionHandler != null)
                 return _sessionHandler.getDefaultSessionTrackingModes();
             return null;
@@ -1297,6 +1300,9 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
         {
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            
             if (_sessionHandler != null)
                 return _sessionHandler.getEffectiveSessionTrackingModes();
             return null;
