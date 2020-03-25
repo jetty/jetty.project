@@ -464,6 +464,66 @@ public class ServletContextHandlerTest
         }
     }
     
+    /**
+     * ServletContextListener that is designed to be added programmatically,
+     * which should make all of the createListener, createServlet, createFilter
+     * methods fail with UnsupportedOperationException
+     *
+     */
+    public class CreatingSCL implements ServletContextListener
+    {
+        @Override
+        public void contextInitialized(ServletContextEvent sce)
+        {
+            try
+            {
+                sce.getServletContext().createFilter(MyFilter.class);
+                sce.getServletContext().setAttribute("CreatingSCL.filter", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                sce.getServletContext().setAttribute("CreatingSCL.filter", Boolean.TRUE);
+            }
+            catch (Exception e)
+            {
+                fail(e);
+            }
+            
+            try
+            {
+                sce.getServletContext().createServlet(HelloServlet.class);
+                sce.getServletContext().setAttribute("CreatingSCL.servlet", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                sce.getServletContext().setAttribute("CreatingSCL.servlet", Boolean.TRUE);
+            }
+            catch (Exception e)
+            {
+                fail(e);
+            }
+            
+            try
+            {
+                sce.getServletContext().createListener(MyContextListener.class);
+                sce.getServletContext().setAttribute("CreatingSCL.listener", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                sce.getServletContext().setAttribute("CreatingSCL.listener", Boolean.TRUE);
+            }
+            catch (Exception e)
+            {
+                fail(e);
+            }
+        }
+        
+        @Override
+        public void contextDestroyed(ServletContextEvent sce)
+        {      
+        }
+    }
+    
     public class InitialListener implements ServletContextListener
     {
         @Override
@@ -499,7 +559,7 @@ public class ServletContextHandlerTest
             {
                 MyContextListener contextListener = sce.getServletContext().createListener(MyContextListener.class);
                 sce.getServletContext().addListener(contextListener);
-                fail("Adding SCI from an SCI!");
+                fail("Adding SCL from an SCL!");
             }
             catch (IllegalArgumentException e)
             {
@@ -820,6 +880,76 @@ public class ServletContextHandlerTest
             else
                fail(e);
         }
+    }
+    
+    @Test
+    public void testCreateMethodsFromSCI() throws Exception
+    {
+        //A filter can be created by an SCI
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        class FilterCreatingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                try
+                {
+                    ctx.createFilter(MyFilter.class);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+
+                try
+                {
+                    ctx.createServlet(HelloServlet.class);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+
+                try
+                {
+                    ctx.createListener(MyContextListener.class);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        }
+        
+        root.addBean(new MySCIStarter(root.getServletContext(), new FilterCreatingSCI()), true);
+        _server.start();    
+    }
+    
+    @Test
+    public void testCreateMethodsFromSCL() throws Exception
+    {
+      //A filter can be created by an SCI
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        class ListenerCreatingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                ctx.addListener(new CreatingSCL());
+            }
+        }
+        
+        root.addBean(new MySCIStarter(root.getServletContext(), new ListenerCreatingSCI()), true);
+        _server.start();
+        assertTrue((Boolean)root.getServletContext().getAttribute("CreatingSCL.filter"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("CreatingSCL.servlet"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("CreatingSCL.listener"));
     }
 
     @Test
