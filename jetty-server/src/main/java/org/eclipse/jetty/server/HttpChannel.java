@@ -490,7 +490,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 break;
                         }
 
-                        // If an upgrade is attempted and failed with sendError call, then do not close here.
+                        // If send error is called we need to break.
                         if (checkAndPrepareUpgrade())
                             break;
 
@@ -527,6 +527,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return !suspended;
     }
 
+    /**
+     * @param message the error message.
+     * @return true if we have sent an error, false if we have aborted.
+     */
     public boolean sendErrorOrAbort(String message)
     {
         try

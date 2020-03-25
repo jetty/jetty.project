@@ -314,6 +314,9 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         return transportCallback.onIdleTimeout(failure);
     }
 
+    /**
+     * @return true if error sent, false if upgraded or aborted.
+     */
     boolean prepareUpgrade()
     {
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
