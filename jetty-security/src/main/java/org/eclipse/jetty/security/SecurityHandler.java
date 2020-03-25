@@ -24,8 +24,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.Set;
 import javax.servlet.ServletException;
@@ -76,9 +78,19 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     static
     {
-        for (Authenticator.Factory factory : ServiceLoader.load(Authenticator.Factory.class))
+        Iterator<Authenticator.Factory> serviceLoaderIterator = ServiceLoader.load(Authenticator.Factory.class).iterator();
+        while (true)
         {
-            __knownAuthenticatorFactories.add(factory);
+            try
+            {
+                if (!serviceLoaderIterator.hasNext())
+                    break;
+                __knownAuthenticatorFactories.add(serviceLoaderIterator.next());
+            }
+            catch (ServiceConfigurationError error)
+            {
+                LOG.warn("Error while loading AuthenticatorFactory with ServiceLoader", error);
+            }
         }
 
         __knownAuthenticatorFactories.add(new DefaultAuthenticatorFactory());
