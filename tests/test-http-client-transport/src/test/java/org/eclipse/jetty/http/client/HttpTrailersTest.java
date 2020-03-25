@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -165,6 +166,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
     private void testResponseTrailers(byte[] content) throws Exception
     {
+        final AtomicBoolean once = new AtomicBoolean(false);
         String trailerName = "Trailer";
         String trailerValue = "value";
         scenario.start(new AbstractHandler()
@@ -173,12 +175,15 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
             public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 jettyRequest.setHandled(true);
-
-                HttpFields trailers = new HttpFields();
-                trailers.put(trailerName, trailerValue);
-
                 Response jettyResponse = (Response)response;
-                jettyResponse.setTrailers(() -> trailers);
+
+                if (once.compareAndSet(false, true))
+                {
+                    HttpFields trailers = new HttpFields();
+                    trailers.put(trailerName, trailerValue);
+                    jettyResponse.setTrailers(() -> trailers);
+                }
+
                 if (content != null)
                     response.getOutputStream().write(content);
             }
@@ -194,6 +199,26 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
                     HttpFields trailers = httpResponse.getTrailers();
                     assertNotNull(trailers);
                     assertEquals(trailerValue, trailers.get(trailerName));
+                    failure.set(null);
+                }
+                catch (Throwable x)
+                {
+                    failure.set(x);
+                }
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertNull(failure.get());
+
+        // subsequent requests should not have trailers
+        response = scenario.client.newRequest(scenario.newURI())
+            .onResponseSuccess(r ->
+            {
+                try
+                {
+                    HttpResponse httpResponse = (HttpResponse)r;
+                    assertNull(httpResponse.getTrailers());
                     failure.set(null);
                 }
                 catch (Throwable x)

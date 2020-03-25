@@ -132,6 +132,7 @@ public class Response implements HttpServletResponse
         _out.recycle();
         _fields.clear();
         _encodingFrom = EncodingFrom.NOT_SET;
+        _trailers = null;
     }
 
     public HttpOutput getHttpOutput()
@@ -1080,6 +1081,7 @@ public class Response implements HttpServletResponse
         _mimeType = null;
         _characterEncoding = null;
         _encodingFrom = EncodingFrom.NOT_SET;
+        _trailers = null;
 
         // Clear all response headers
         _fields.clear();
