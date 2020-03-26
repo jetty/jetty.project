@@ -43,6 +43,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
@@ -60,6 +62,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -101,6 +104,7 @@ public class ErrorPageTest
         _context.addServlet(UnavailableServlet.class, "/unavailable/*");
         _context.addServlet(DeleteServlet.class, "/delete/*");
         _context.addServlet(ErrorAndStatusServlet.class, "/error-and-status/*");
+        _context.addServlet(ErrorContentTypeCharsetWriterInitializedServlet.class, "/error-mime-charset-writer/*");
 
         HandlerWrapper noopHandler = new HandlerWrapper()
         {
@@ -138,6 +142,36 @@ public class ErrorPageTest
         _stackless.close();
         _server.stop();
         _server.join();
+    }
+
+    @Test
+    public void testErrorOverridesMimeTypeAndCharset() throws Exception
+    {
+        StringBuilder rawRequest = new StringBuilder();
+        rawRequest.append("GET /error-mime-charset-writer/ HTTP/1.1\r\n");
+        rawRequest.append("Host: test\r\n");
+        rawRequest.append("Connection: close\r\n");
+        rawRequest.append("Accept: */*\r\n");
+        rawRequest.append("Accept-Charset: *\r\n");
+        rawRequest.append("\r\n");
+
+        String rawResponse = _connector.getResponse(rawRequest.toString());
+        System.out.println(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(595));
+        String actualContentType = response.get(HttpHeader.CONTENT_TYPE);
+        // should not expect to see charset line from servlet
+        assertThat(actualContentType, not(containsString("charset=US-ASCII")));
+        String body = response.getContent();
+
+        assertThat(body, containsString("ERROR_PAGE: /595"));
+        assertThat(body, containsString("ERROR_MESSAGE: 595"));
+        assertThat(body, containsString("ERROR_CODE: 595"));
+        assertThat(body, containsString("ERROR_EXCEPTION: null"));
+        assertThat(body, containsString("ERROR_EXCEPTION_TYPE: null"));
+        assertThat(body, containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$ErrorContentTypeCharsetWriterInitializedServlet-"));
+        assertThat(body, containsString("ERROR_REQUEST_URI: /error-mime-charset-writer/"));
     }
 
     @Test
@@ -609,6 +643,18 @@ public class ErrorPageTest
             {
                 LOG.trace("IGNORED", ignore);
             }
+        }
+    }
+
+    public static class ErrorContentTypeCharsetWriterInitializedServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            response.setContentType("text/html; charset=US-ASCII");
+            PrintWriter writer = response.getWriter();
+            writer.println("Intentionally using sendError(595)");
+            response.sendError(595);
         }
     }
 
