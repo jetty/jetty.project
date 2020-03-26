@@ -760,15 +760,15 @@ public class HttpURI
         _decodedPath = path;
     }
 
-    public void setPathQuery(String path)
+    public void setPathQuery(String pathQuery)
     {
         _uri = null;
         _path = null;
         _decodedPath = null;
         _param = null;
         _fragment = null;
-        if (path != null)
-            parse(State.PATH, path);
+        if (pathQuery != null)
+            parse(State.PATH, pathQuery);
     }
 
     public void setQuery(String query)
