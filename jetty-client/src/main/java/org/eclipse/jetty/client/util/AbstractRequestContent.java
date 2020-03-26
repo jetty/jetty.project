@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client.util;
 
-import java.io.EOFException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.client.api.Request;
@@ -38,7 +37,6 @@ public abstract class AbstractRequestContent implements Request.Content
 
     private final AutoLock lock = new AutoLock();
     private final String contentType;
-    private Subscription subscription;
     private Throwable failure;
 
     protected AbstractRequestContent(String contentType)
@@ -55,20 +53,15 @@ public abstract class AbstractRequestContent implements Request.Content
     @Override
     public Subscription subscribe(Consumer consumer, boolean emitInitialContent)
     {
-        Subscription oldSubscription;
-        Subscription newSubscription;
+        Throwable failure;
         try (AutoLock ignored = lock.lock())
         {
-            if (subscription != null && !isReproducible())
-                throw new IllegalStateException("Multiple subscriptions not supported on " + this);
-            oldSubscription = subscription;
-            newSubscription = subscription = newSubscription(consumer, emitInitialContent, failure);
+            failure = this.failure;
         }
-        if (oldSubscription != null)
-            oldSubscription.fail(new EOFException("Content replay"));
+        Subscription subscription = newSubscription(consumer, emitInitialContent, failure);
         if (LOG.isDebugEnabled())
-            LOG.debug("Content subscription for {}: {}", this, consumer);
-        return newSubscription;
+            LOG.debug("Content subscription for {}: {}", subscription, consumer);
+        return subscription;
     }
 
     protected abstract Subscription newSubscription(Consumer consumer, boolean emitInitialContent, Throwable failure);
@@ -76,17 +69,11 @@ public abstract class AbstractRequestContent implements Request.Content
     @Override
     public void fail(Throwable failure)
     {
-        Subscription subscription = null;
         try (AutoLock ignored = lock.lock())
         {
             if (this.failure == null)
-            {
                 this.failure = failure;
-                subscription = this.subscription;
-            }
         }
-        if (subscription != null)
-            subscription.fail(failure);
     }
 
     /**

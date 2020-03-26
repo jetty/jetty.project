@@ -824,11 +824,7 @@ public class HttpRequest implements Request
     public boolean abort(Throwable cause)
     {
         if (aborted.compareAndSet(null, Objects.requireNonNull(cause)))
-        {
-            if (content != null)
-                content.fail(cause);
             return conversation.abort(cause);
-        }
         return false;
     }
 

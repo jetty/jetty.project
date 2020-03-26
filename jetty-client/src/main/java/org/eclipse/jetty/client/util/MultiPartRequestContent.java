@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.IntStream;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpField;
@@ -115,7 +116,8 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
     @Override
     protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent, Throwable failure)
     {
-        length = calculateLength();
+        if (closed)
+            length = calculateLength();
         return new SubscriptionImpl(consumer, emitInitialContent, failure);
     }
 
@@ -367,7 +369,10 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
         @Override
         public void onFailure(Throwable failure)
         {
-            parts.stream()
+            if (subscription != null)
+                subscription.fail(failure);
+            IntStream.range(index, parts.size())
+                .mapToObj(parts::get)
                 .map(part -> part.content)
                 .forEach(content -> content.fail(failure));
         }

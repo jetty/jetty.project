@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -56,21 +57,23 @@ public class RequestContentBehaviorTest
     @BeforeAll
     public static void prepare() throws IOException
     {
-        emptyFile = MavenTestingUtils.getTargetTestingPath().resolve("empty.txt");
-        Files.newOutputStream(emptyFile, StandardOpenOption.CREATE).close();
-        smallFile = MavenTestingUtils.getTargetTestingPath().resolve("small.txt");
-        try (var s = Files.newOutputStream(smallFile, StandardOpenOption.CREATE))
-        {
-            byte[] bytes = new byte[64];
-            Arrays.fill(bytes, (byte)'#');
-            s.write(bytes);
-        }
+        Path testPath = MavenTestingUtils.getTargetTestingPath();
+        Files.createDirectories(testPath);
+        emptyFile = testPath.resolve("empty.txt");
+        Files.write(emptyFile, new byte[0]);
+        smallFile = testPath.resolve("small.txt");
+        byte[] bytes = new byte[64];
+        Arrays.fill(bytes, (byte)'#');
+        Files.write(smallFile, bytes);
     }
 
     @AfterAll
     public static void dispose() throws IOException
     {
-        Files.delete(emptyFile);
+        if (smallFile != null)
+            Files.delete(smallFile);
+        if (emptyFile != null)
+            Files.delete(emptyFile);
     }
 
     public static List<Request.Content> emptyContents() throws IOException
@@ -290,7 +293,7 @@ public class RequestContentBehaviorTest
 
         assertEquals(1, notified.get());
 
-        content.fail(testFailure);
+        subscription.fail(testFailure);
         subscription.demand();
 
         assertEquals(1, notified.get());
@@ -338,5 +341,35 @@ public class RequestContentBehaviorTest
         Throwable failure = failureRef.get();
         assertNotNull(failure);
         assertEquals(1, failure.getSuppressed().length);
+    }
+
+    @Test
+    public void testSameContentMultipleSubscriptions() throws Exception
+    {
+        byte[] bytes = new byte[64];
+        new Random().nextBytes(bytes);
+        Request.Content content = new BytesRequestContent(bytes);
+
+        CountDownLatch latch1 = new CountDownLatch(1);
+        Request.Content.Subscription subscription1 = content.subscribe((buffer, last, callback) ->
+        {
+            if (last)
+                latch1.countDown();
+        }, true);
+
+        CountDownLatch latch2 = new CountDownLatch(1);
+        Request.Content.Subscription subscription2 = content.subscribe((buffer, last, callback) ->
+        {
+            if (last)
+                latch2.countDown();
+        }, true);
+
+        // Initial demand.
+        subscription1.demand();
+        assertTrue(latch1.await(5, TimeUnit.SECONDS));
+
+        // Initial demand.
+        subscription2.demand();
+        assertTrue(latch2.await(5, TimeUnit.SECONDS));
     }
 }

@@ -52,9 +52,9 @@ public abstract class HttpSender
 
     private final ContentConsumer consumer = new ContentConsumer();
     private final AtomicReference<RequestState> requestState = new AtomicReference<>(RequestState.QUEUED);
+    private final AtomicReference<Throwable> failure = new AtomicReference<>();
     private final HttpChannel channel;
     private Request.Content.Subscription subscription;
-    private Throwable failure;
 
     protected HttpSender(HttpChannel channel)
     {
@@ -78,13 +78,6 @@ public abstract class HttpSender
 
     public void send(HttpExchange exchange)
     {
-        Request request = exchange.getRequest();
-        Request.Content body = request.getBody();
-
-        consumer.exchange = exchange;
-        consumer.expect100 = expects100Continue(request);
-        subscription = body.subscribe(consumer, !consumer.expect100);
-
         if (!queuedToBegin(exchange))
             return;
 
@@ -110,10 +103,16 @@ public abstract class HttpSender
         RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
         notifier.notifyBegin(request);
 
+        Request.Content body = request.getBody();
+
+        consumer.exchange = exchange;
+        consumer.expect100 = expects100Continue(request);
+        subscription = body.subscribe(consumer, !consumer.expect100);
+
         if (updateRequestState(RequestState.TRANSIENT, RequestState.BEGIN))
             return true;
 
-        terminateRequest(exchange);
+        abortRequest(exchange);
         return false;
     }
 
@@ -131,7 +130,7 @@ public abstract class HttpSender
         if (updateRequestState(RequestState.TRANSIENT, RequestState.HEADERS))
             return true;
 
-        terminateRequest(exchange);
+        abortRequest(exchange);
         return false;
     }
 
@@ -149,7 +148,7 @@ public abstract class HttpSender
         if (updateRequestState(RequestState.TRANSIENT, RequestState.COMMIT))
             return true;
 
-        terminateRequest(exchange);
+        abortRequest(exchange);
         return false;
     }
 
@@ -173,7 +172,7 @@ public abstract class HttpSender
                 if (updateRequestState(RequestState.TRANSIENT, RequestState.CONTENT))
                     return true;
 
-                terminateRequest(exchange);
+                abortRequest(exchange);
                 return false;
             }
             default:
@@ -264,13 +263,23 @@ public abstract class HttpSender
         }
     }
 
-    private void terminateRequest(HttpExchange exchange)
+    private void abortRequest(HttpExchange exchange)
     {
-        // In abort(), the state is updated before the failure is recorded
-        // to avoid to overwrite it, so here we may read a null failure.
-        Throwable failure = this.failure;
-        if (failure == null)
-            failure = new HttpRequestException("Concurrent failure", exchange.getRequest());
+        Throwable failure = this.failure.get();
+
+        if (subscription != null)
+            subscription.fail(failure);
+
+        dispose();
+
+        Request request = exchange.getRequest();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Request abort {} {} on {}: {}", request, exchange, getHttpChannel(), failure);
+        HttpDestination destination = getHttpChannel().getHttpDestination();
+        destination.getRequestNotifier().notifyFailure(request, failure);
+
+        // Mark atomically the request as terminated, with
+        // respect to concurrency between request and response.
         Result result = exchange.terminateRequest();
         terminateRequest(exchange, failure, result);
     }
@@ -353,8 +362,11 @@ public abstract class HttpSender
 
     public boolean abort(HttpExchange exchange, Throwable failure)
     {
+        // Store only the first failure.
+        this.failure.compareAndSet(null, failure);
+
         // Update the state to avoid more request processing.
-        boolean terminate;
+        boolean abort;
         while (true)
         {
             RequestState current = requestState.get();
@@ -366,28 +378,15 @@ public abstract class HttpSender
             {
                 if (updateRequestState(current, RequestState.FAILURE))
                 {
-                    terminate = current != RequestState.TRANSIENT;
+                    abort = current != RequestState.TRANSIENT;
                     break;
                 }
             }
         }
 
-        this.failure = failure;
-
-        dispose();
-
-        Request request = exchange.getRequest();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Request abort {} {} on {}: {}", request, exchange, getHttpChannel(), failure);
-        HttpDestination destination = getHttpChannel().getHttpDestination();
-        destination.getRequestNotifier().notifyFailure(request, failure);
-
-        if (terminate)
+        if (abort)
         {
-            // Mark atomically the request as terminated, with
-            // respect to concurrency between request and response.
-            Result result = exchange.terminateRequest();
-            terminateRequest(exchange, failure, result);
+            abortRequest(exchange);
             return true;
         }
         else
