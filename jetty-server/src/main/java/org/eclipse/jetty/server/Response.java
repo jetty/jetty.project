@@ -1030,11 +1030,10 @@ public class Response implements HttpServletResponse
                     case NOT_SET:
                         break;
                     case INFERRED:
-                    case SET_CONTENT_TYPE:
                         if (isWriting())
                         {
-                            _mimeType = null;
                             _contentType = _contentType + ";charset=" + _characterEncoding;
+                            _mimeType = MimeTypes.CACHE.get(_contentType);
                         }
                         else
                         {
@@ -1042,11 +1041,12 @@ public class Response implements HttpServletResponse
                             _characterEncoding = null;
                         }
                         break;
+                    case SET_CONTENT_TYPE:
                     case SET_LOCALE:
                     case SET_CHARACTER_ENCODING:
                     {
                         _contentType = contentType + ";charset=" + _characterEncoding;
-                        _mimeType = null;
+                        _mimeType = MimeTypes.CACHE.get(_contentType);
                         break;
                     }
                     default:
