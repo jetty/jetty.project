@@ -126,6 +126,7 @@ public class ResponseHeadersTest
             // The use of application/json is always assumed to be UTF-8
             // and should never have a `charset=` entry on the `Content-Type` response header
             response.setContentType("application/json");
+            // attempt to indicate that there is truly no charset meant to be used in the response header
             response.setCharacterEncoding(null);
 
             writer.println("{ \"what\": \"should this be?\" }");
