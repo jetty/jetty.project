@@ -16,11 +16,23 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.websocket.servlet
-{
-    exports org.eclipse.jetty.websocket.servlet;
+package org.eclipse.jetty.websocket.util.server;
 
-    requires transitive org.eclipse.jetty.servlet;
-    requires transitive org.eclipse.jetty.websocket.core;
-    requires org.slf4j;
+/**
+ * Abstract WebSocket creator interface.
+ * <p>
+ * Should you desire filtering of the WebSocket object creation due to criteria such as origin or sub-protocol, then you will be required to implement a custom
+ * WebSocketCreator implementation.
+ * </p>
+ */
+public interface WebSocketCreator
+{
+    /**
+     * Create a websocket from the incoming request.
+     *
+     * @param req the request details
+     * @param resp the response details
+     * @return a websocket object to use, or null if no websocket should be created from this request.
+     */
+    Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp);
 }

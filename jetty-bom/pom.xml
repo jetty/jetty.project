@@ -376,11 +376,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-servlet</artifactId>
-        <version>10.0.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-core</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>

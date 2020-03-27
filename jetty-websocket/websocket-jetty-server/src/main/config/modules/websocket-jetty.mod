@@ -12,7 +12,6 @@ annotations
 
 [lib]
 lib/websocket/websocket-core-${jetty.version}.jar
-lib/websocket/websocket-servlet-${jetty.version}.jar
 lib/websocket/websocket-util-${jetty.version}.jar
 lib/websocket/websocket-jetty-api-${jetty.version}.jar
 lib/websocket/websocket-jetty-common-${jetty.version}.jar

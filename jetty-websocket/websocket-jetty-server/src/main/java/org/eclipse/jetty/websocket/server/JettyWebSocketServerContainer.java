@@ -41,8 +41,8 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
-import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
+import org.eclipse.jetty.websocket.util.server.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.util.server.WebSocketMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

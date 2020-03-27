@@ -27,7 +27,6 @@ import javax.websocket.OnMessage;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Handler;
@@ -50,11 +49,6 @@ import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSessionListener;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketServerContainer;
-import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketServerFrameHandlerFactory;
-import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -256,28 +250,6 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     public void registerHttpService(String urlPattern, BiConsumer<HttpServletRequest, HttpServletResponse> serviceConsumer)
     {
         ServletHolder holder = new ServletHolder(new BiConsumerServiceServlet(serviceConsumer));
-        servletContextHandler.addServlet(holder, urlPattern);
-    }
-
-    public void registerWebSocket(String urlPattern, WebSocketCreator creator)
-    {
-        ServletHolder holder = new ServletHolder(new WebSocketServlet()
-        {
-            JavaxWebSocketServerFrameHandlerFactory factory = new JavaxWebSocketServerFrameHandlerFactory(JavaxWebSocketServerContainer.ensureContainer(getServletContext()));
-
-            @Override
-            public void configure(WebSocketServletFactory factory)
-            {
-                PathSpec pathSpec = factory.parsePathSpec("/");
-                factory.addMapping(pathSpec, creator);
-            }
-
-            @Override
-            protected FrameHandlerFactory getFactory()
-            {
-                return factory;
-            }
-        });
         servletContextHandler.addServlet(holder, urlPattern);
     }
 

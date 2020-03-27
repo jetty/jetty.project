@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.servlet;
+package org.eclipse.jetty.websocket.util.server;
 
 import org.eclipse.jetty.websocket.core.FrameHandler;
 

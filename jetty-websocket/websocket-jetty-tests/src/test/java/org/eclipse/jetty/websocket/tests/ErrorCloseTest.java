@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

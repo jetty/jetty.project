@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.servlet;
+package org.eclipse.jetty.websocket.util.server;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -123,7 +123,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         return holder;
     }
 
-    public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.servlet.WebSocketMapping.key";
+    public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.util.server.WebSocketMapping.key";
 
     private final Configuration.ConfigurationCustomizer defaultCustomizer = new Configuration.ConfigurationCustomizer();
     private WebSocketMapping mapping;

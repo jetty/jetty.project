@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.ServletUpgradeRequest;
 
 public class UpgradeRequestAdapter implements UpgradeRequest
 {

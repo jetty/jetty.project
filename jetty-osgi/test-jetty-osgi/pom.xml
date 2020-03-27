@@ -304,12 +304,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-servlet</artifactId>
-      <version>${project.version}</version>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-jetty-server</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>

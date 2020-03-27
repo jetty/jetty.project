@@ -27,9 +27,9 @@ import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientFrameHandlerFactory;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerMetadata;
-import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.util.server.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.util.server.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.ServletUpgradeResponse;
 
 public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketClientFrameHandlerFactory implements FrameHandlerFactory
 {

@@ -22,7 +22,7 @@ import java.net.URI;
 import java.security.Principal;
 
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.ServletUpgradeRequest;
 
 public class JavaxServerUpgradeRequest implements UpgradeRequest
 {

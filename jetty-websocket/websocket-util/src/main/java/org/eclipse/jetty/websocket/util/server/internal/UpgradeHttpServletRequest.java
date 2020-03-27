@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.servlet.internal;
+package org.eclipse.jetty.websocket.util.server.internal;
 
 import java.io.BufferedReader;
 import java.net.InetSocketAddress;

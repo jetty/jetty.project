@@ -107,12 +107,6 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-servlet</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-javax-server</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>

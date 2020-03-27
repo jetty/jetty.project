@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.servlet;
+package org.eclipse.jetty.websocket.util.server;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -136,7 +136,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         throw new IllegalArgumentException("Unrecognized path spec syntax [" + rawSpec + "]");
     }
 
-    public static final String DEFAULT_KEY = "org.eclipse.jetty.websocket.servlet.WebSocketMapping";
+    public static final String DEFAULT_KEY = "org.eclipse.jetty.websocket.util.server.WebSocketMapping";
 
     private final PathMappings<Negotiator> mappings = new PathMappings<>();
     private final WebSocketComponents components;
