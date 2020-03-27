@@ -408,6 +408,8 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         multiPart.addFieldPart("field", fieldContent, null);
         AsyncRequestContent fileContent = new AsyncRequestContent();
         multiPart.addFilePart("file", "fileName", fileContent, null);
+        multiPart.close();
+
         CountDownLatch responseLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
@@ -431,8 +433,6 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
 
         fieldContent.offer(encoding.encode(value));
         fieldContent.close();
-
-        multiPart.close();
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }

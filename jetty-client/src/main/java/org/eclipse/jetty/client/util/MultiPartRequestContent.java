@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.IntStream;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpField;
@@ -86,7 +85,8 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
     private final ByteBuffer onlyBoundary;
     private final ByteBuffer lastBoundary;
     private long length;
-    private volatile boolean closed;
+    private boolean closed;
+    private Subscription subscription;
 
     public MultiPartRequestContent()
     {
@@ -114,11 +114,22 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
     }
 
     @Override
-    protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent, Throwable failure)
+    protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent)
     {
-        if (closed)
-            length = calculateLength();
-        return new SubscriptionImpl(consumer, emitInitialContent, failure);
+        if (!closed)
+            throw new IllegalStateException("MultiPartRequestContent must be closed before sending the request");
+        if (subscription != null)
+            throw new IllegalStateException("Multiple subscriptions not supported on " + this);
+        length = calculateLength();
+        return subscription = new SubscriptionImpl(consumer, emitInitialContent);
+    }
+
+    @Override
+    public void fail(Throwable failure)
+    {
+        parts.stream()
+            .map(part -> part.content)
+            .forEach(content -> content.fail(failure));
     }
 
     /**
@@ -284,9 +295,9 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
         private int index;
         private Subscription subscription;
 
-        private SubscriptionImpl(Consumer consumer, boolean emitInitialContent, Throwable failure)
+        private SubscriptionImpl(Consumer consumer, boolean emitInitialContent)
         {
-            super(consumer, emitInitialContent, failure);
+            super(consumer, emitInitialContent);
         }
 
         @Override
@@ -371,10 +382,6 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
         {
             if (subscription != null)
                 subscription.fail(failure);
-            IntStream.range(index, parts.size())
-                .mapToObj(parts::get)
-                .map(part -> part.content)
-                .forEach(content -> content.fail(failure));
         }
     }
 

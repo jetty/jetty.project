@@ -42,6 +42,7 @@ public class InputStreamRequestContent extends AbstractRequestContent
 
     private final InputStream stream;
     private final int bufferSize;
+    private Subscription subscription;
 
     public InputStreamRequestContent(InputStream stream)
     {
@@ -66,9 +67,11 @@ public class InputStreamRequestContent extends AbstractRequestContent
     }
 
     @Override
-    protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent, Throwable failure)
+    protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent)
     {
-        return new SubscriptionImpl(consumer, emitInitialContent, failure);
+        if (subscription != null)
+            throw new IllegalStateException("Multiple subscriptions not supported on " + this);
+        return subscription = new SubscriptionImpl(consumer, emitInitialContent);
     }
 
     @Override
@@ -96,9 +99,9 @@ public class InputStreamRequestContent extends AbstractRequestContent
     {
         private boolean terminated;
 
-        private SubscriptionImpl(Consumer consumer, boolean emitInitialContent, Throwable failure)
+        private SubscriptionImpl(Consumer consumer, boolean emitInitialContent)
         {
-            super(consumer, emitInitialContent, failure);
+            super(consumer, emitInitialContent);
         }
 
         @Override

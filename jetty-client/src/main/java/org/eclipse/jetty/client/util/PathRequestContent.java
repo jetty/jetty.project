@@ -114,9 +114,9 @@ public class PathRequestContent extends AbstractRequestContent
     }
 
     @Override
-    protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent, Throwable failure)
+    protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent)
     {
-        return new SubscriptionImpl(consumer, emitInitialContent, failure);
+        return new SubscriptionImpl(consumer, emitInitialContent);
     }
 
     private class SubscriptionImpl extends AbstractSubscription
@@ -124,9 +124,9 @@ public class PathRequestContent extends AbstractRequestContent
         private ReadableByteChannel channel;
         private long readTotal;
 
-        private SubscriptionImpl(Consumer consumer, boolean emitInitialContent, Throwable failure)
+        private SubscriptionImpl(Consumer consumer, boolean emitInitialContent)
         {
-            super(consumer, emitInitialContent, failure);
+            super(consumer, emitInitialContent);
         }
 
         @Override
@@ -165,6 +165,13 @@ public class PathRequestContent extends AbstractRequestContent
         {
             if (bufferPool != null)
                 bufferPool.release(buffer);
+        }
+
+        @Override
+        public void fail(Throwable failure)
+        {
+            super.fail(failure);
+            IO.close(channel);
         }
     }
 }

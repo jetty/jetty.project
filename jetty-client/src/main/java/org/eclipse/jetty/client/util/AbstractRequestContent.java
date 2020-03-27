@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>Partial implementation of {@link Request.Content}.</p>
- * <p>Manages a single subscription at a time (multiple simultaneous subscriptions are not allowed).</p>
  */
 public abstract class AbstractRequestContent implements Request.Content
 {
@@ -37,7 +36,6 @@ public abstract class AbstractRequestContent implements Request.Content
 
     private final AutoLock lock = new AutoLock();
     private final String contentType;
-    private Throwable failure;
 
     protected AbstractRequestContent(String contentType)
     {
@@ -53,28 +51,13 @@ public abstract class AbstractRequestContent implements Request.Content
     @Override
     public Subscription subscribe(Consumer consumer, boolean emitInitialContent)
     {
-        Throwable failure;
-        try (AutoLock ignored = lock.lock())
-        {
-            failure = this.failure;
-        }
-        Subscription subscription = newSubscription(consumer, emitInitialContent, failure);
+        Subscription subscription = newSubscription(consumer, emitInitialContent);
         if (LOG.isDebugEnabled())
             LOG.debug("Content subscription for {}: {}", subscription, consumer);
         return subscription;
     }
 
-    protected abstract Subscription newSubscription(Consumer consumer, boolean emitInitialContent, Throwable failure);
-
-    @Override
-    public void fail(Throwable failure)
-    {
-        try (AutoLock ignored = lock.lock())
-        {
-            if (this.failure == null)
-                this.failure = failure;
-        }
-    }
+    protected abstract Subscription newSubscription(Consumer consumer, boolean emitInitialContent);
 
     /**
      * <p>Partial implementation of {@code Subscription}.</p>
@@ -91,11 +74,10 @@ public abstract class AbstractRequestContent implements Request.Content
         // Whether the first content has been produced.
         private boolean committed;
 
-        public AbstractSubscription(Consumer consumer, boolean emitInitialContent, Throwable failure)
+        public AbstractSubscription(Consumer consumer, boolean emitInitialContent)
         {
             this.consumer = consumer;
             this.emitInitialContent = emitInitialContent;
-            this.failure = failure;
             this.stalled = true;
         }
 

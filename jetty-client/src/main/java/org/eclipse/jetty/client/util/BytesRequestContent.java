@@ -60,18 +60,18 @@ public class BytesRequestContent extends AbstractRequestContent
     }
 
     @Override
-    protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent, Throwable failure)
+    protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent)
     {
-        return new SubscriptionImpl(consumer, emitInitialContent, failure);
+        return new SubscriptionImpl(consumer, emitInitialContent);
     }
 
     private class SubscriptionImpl extends AbstractSubscription
     {
         private int index;
 
-        private SubscriptionImpl(Consumer consumer, boolean emitInitialContent, Throwable failure)
+        private SubscriptionImpl(Consumer consumer, boolean emitInitialContent)
         {
-            super(consumer, emitInitialContent, failure);
+            super(consumer, emitInitialContent);
         }
 
         @Override

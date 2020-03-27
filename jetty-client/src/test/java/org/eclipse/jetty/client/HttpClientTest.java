@@ -631,9 +631,9 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .body(new AbstractRequestContent("application/octet-stream")
             {
                 @Override
-                protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent, Throwable failure)
+                protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent)
                 {
-                    return new AbstractSubscription(consumer, emitInitialContent, failure)
+                    return new AbstractSubscription(consumer, emitInitialContent)
                     {
                         private int count;
 

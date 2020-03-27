@@ -25,7 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,7 +38,6 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -48,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class RequestContentBehaviorTest
 {
@@ -171,6 +170,7 @@ public class RequestContentBehaviorTest
             {
                 {
                     addFieldPart("field", new StringRequestContent("*".repeat(64)), null);
+                    close();
                 }
             },
             new PathRequestContent(smallFile),
@@ -227,41 +227,6 @@ public class RequestContentBehaviorTest
         subscription.demand();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
-    }
-
-    @ParameterizedTest
-    @MethodSource("smallContents")
-    public void testSmallContentFailedBeforeSubscription(Request.Content content)
-    {
-        Throwable testFailure = new Throwable("test_failure");
-        content.fail(testFailure);
-
-        AtomicInteger notified = new AtomicInteger();
-        AtomicReference<Throwable> failureRef = new AtomicReference<>();
-        Request.Content.Subscription subscription = content.subscribe(new Request.Content.Consumer()
-        {
-            @Override
-            public void onContent(ByteBuffer buffer, boolean last, Callback callback)
-            {
-                notified.getAndIncrement();
-            }
-
-            @Override
-            public void onFailure(Throwable error)
-            {
-                testFailure.addSuppressed(new Throwable("suppressed"));
-                failureRef.compareAndSet(null, error);
-            }
-        }, true);
-
-        // Initial demand.
-        subscription.demand();
-
-        assertEquals(0, notified.get());
-        Throwable failure = failureRef.get();
-        assertNotNull(failure);
-        assertSame(testFailure, failure);
-        assertEquals(1, failure.getSuppressed().length);
     }
 
     @ParameterizedTest
@@ -343,12 +308,11 @@ public class RequestContentBehaviorTest
         assertEquals(1, failure.getSuppressed().length);
     }
 
-    @Test
-    public void testSameContentMultipleSubscriptions() throws Exception
+    @ParameterizedTest
+    @MethodSource("smallContents")
+    public void testReproducibleContentCanHaveMultipleSubscriptions(Request.Content content) throws Exception
     {
-        byte[] bytes = new byte[64];
-        new Random().nextBytes(bytes);
-        Request.Content content = new BytesRequestContent(bytes);
+        assumeTrue(content.isReproducible());
 
         CountDownLatch latch1 = new CountDownLatch(1);
         Request.Content.Subscription subscription1 = content.subscribe((buffer, last, callback) ->
