@@ -1017,11 +1017,9 @@ public class Response implements HttpServletResponse
             _contentType = contentType;
             _mimeType = MimeTypes.CACHE.get(contentType);
 
-            String charset;
-            if (_mimeType != null && _mimeType.getCharset() != null && !_mimeType.isCharsetAssumed())
+            String charset = MimeTypes.getCharsetFromContentType(contentType);
+            if (charset == null && _mimeType != null && _mimeType.isCharsetAssumed())
                 charset = _mimeType.getCharsetString();
-            else
-                charset = MimeTypes.getCharsetFromContentType(contentType);
 
             if (charset == null)
             {
@@ -1056,10 +1054,10 @@ public class Response implements HttpServletResponse
             else if (isWriting() && !charset.equalsIgnoreCase(_characterEncoding))
             {
                 // too late to change the character encoding;
-                _mimeType = null;
                 _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
-                if (_characterEncoding != null)
+                if (_characterEncoding != null  && (_mimeType == null || !_mimeType.isCharsetAssumed()))
                     _contentType = _contentType + ";charset=" + _characterEncoding;
+                _mimeType = MimeTypes.CACHE.get(_contentType);
             }
             else
             {

@@ -258,7 +258,7 @@ public class ResponseHeadersTest
     {
         HttpTester.Request request = new HttpTester.Request();
         request.setMethod("GET");
-        request.setURI("/charset/json-reset-null/");
+        request.setURI("/charset/json-change-null/");
         request.setVersion(HttpVersion.HTTP_1_1);
         request.setHeader("Connection", "close");
         request.setHeader("Host", "test");
