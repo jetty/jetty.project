@@ -21,7 +21,6 @@ By default, very little log info comes out of the tests. If you wish to see more
 logging information, you can control this from the command line.
 
 There are 2 sources of logging information: 1) the pax environment  and 2) jetty logs.
-By default, both are turned to WARN level.
 
 To set the logging level for the pax environment use the following system property:
 
@@ -29,9 +28,5 @@ To set the logging level for the pax environment use the following system proper
 
 INFO, WARN and TRACE are known to work.
 
-To set the logging level for the jetty logs use the normal jetty logging system property:
-
-   mvn -Dorg.eclipse.jetty.LEVEL=[log level]
-
-The usual jetty logging levels apply.
-
+To set the logging level for the jetty logs edit the src/test/resources/jetty-logging.properties
+to set the logging level you want and rerun your tests. The usual jetty logging levels apply.
