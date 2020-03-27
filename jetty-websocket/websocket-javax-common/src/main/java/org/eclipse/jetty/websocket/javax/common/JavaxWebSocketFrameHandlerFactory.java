@@ -124,7 +124,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
     {
         try
         {
-            FILTER_RETURN_TYPE_METHOD = MethodHandles.lookup()
+            FILTER_RETURN_TYPE_METHOD = getServerMethodHandleLookup()
                 .findVirtual(JavaxWebSocketSession.class, "filterReturnType", MethodType.methodType(void.class, Object.class));
         }
         catch (Throwable e)
@@ -322,16 +322,17 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
         try
         {
+            MethodHandles.Lookup lookup = getServerMethodHandleLookup();
             if (DecodedMessageSink.class.isAssignableFrom(msgMetadata.sinkClass))
             {
-                MethodHandle ctorHandle = MethodHandles.lookup().findConstructor(msgMetadata.sinkClass,
+                MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.sinkClass,
                     MethodType.methodType(void.class, CoreSession.class, msgMetadata.registeredDecoder.interfaceType, MethodHandle.class));
                 Decoder decoder = session.getDecoders().getInstanceOf(msgMetadata.registeredDecoder);
                 return (MessageSink)ctorHandle.invoke(session.getCoreSession(), decoder, msgMetadata.handle);
             }
             else
             {
-                MethodHandle ctorHandle = MethodHandles.lookup().findConstructor(msgMetadata.sinkClass,
+                MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.sinkClass,
                     MethodType.methodType(void.class, CoreSession.class, MethodHandle.class));
                 return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.handle);
             }
@@ -388,7 +389,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
     protected JavaxWebSocketFrameHandlerMetadata createEndpointMetadata(Class<? extends javax.websocket.Endpoint> endpointClass, EndpointConfig endpointConfig)
     {
         JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata(endpointConfig);
-        MethodHandles.Lookup lookup = getMethodHandleLookup(endpointClass);
+        MethodHandles.Lookup lookup = getApplicationMethodHandleLookup(endpointClass);
 
         Method openMethod = ReflectUtils.findMethod(endpointClass, "onOpen",
             javax.websocket.Session.class, javax.websocket.EndpointConfig.class);
@@ -410,7 +411,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
 
     protected JavaxWebSocketFrameHandlerMetadata discoverJavaxFrameHandlerMetadata(Class<?> endpointClass, JavaxWebSocketFrameHandlerMetadata metadata)
     {
-        MethodHandles.Lookup lookup = getMethodHandleLookup(endpointClass);
+        MethodHandles.Lookup lookup = getApplicationMethodHandleLookup(endpointClass);
         Method onmethod;
 
         // OnOpen [0..1]
@@ -704,9 +705,53 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         }
     }
 
-    private MethodHandles.Lookup getMethodHandleLookup(Class<?> endpointClass)
+    /**
+     * <p>
+     * Gives a {@link MethodHandles.Lookup} instance to be used to find methods in server classes.
+     * For lookups on application classes use {@link #getApplicationMethodHandleLookup(Class)} instead.
+     * </p>
+     * <p>
+     * This uses the caller sensitive {@link MethodHandles#lookup()}, this will allow MethodHandle access
+     * to server classes we need to use and will give access permissions to private methods as well.
+     * </p>
+     *
+     * @return a lookup object to be used to find methods on server classes.
+     */
+    public static MethodHandles.Lookup getServerMethodHandleLookup()
     {
-        return MethodHandles.publicLookup().in(endpointClass);
+        return MethodHandles.lookup();
+    }
+
+    /**
+     * <p>
+     * Gives a {@link MethodHandles.Lookup} instance to be used to find public methods in application classes.
+     * For lookups on server classes use {@link #getServerMethodHandleLookup()} instead.
+     * </p>
+     * <p>
+     * This uses {@link MethodHandles#publicLookup()} as we only need access to public method of the lookupClass.
+     * To look up a method on the lookupClass, it must be public and the class must be accessible from this
+     * module, so if the lookupClass is in a JPMS module it must be exported so that the public methods
+     * of the lookupClass are accessible outside of the module.
+     * </p>
+     * <p>
+     * The {@link java.lang.invoke.MethodHandles.Lookup#in(Class)} allows us to search specifically
+     * in the endpoint Class to avoid any potential linkage errors which could occur if the same
+     * class is present in multiple web apps. Unlike using {@link MethodHandles#publicLookup()}
+     * using {@link MethodHandles#lookup()} with {@link java.lang.invoke.MethodHandles.Lookup#in(Class)}
+     * will cause the lookup to lose its public access to the lookup class if they are in different modules.
+     * </p>
+     * <p>
+     * {@link MethodHandles#privateLookupIn(Class, MethodHandles.Lookup)} is also unsuitable because it
+     * requires the caller module to read the target module, and the target module to open reflective
+     * access to the lookupClasses private methods. This is possible but requires extra configuration
+     * to provide private access which is not necessary for the purpose of accessing the public methods.
+     * </p>
+     * @param lookupClass the desired lookup class for the new lookup object.
+     * @return a lookup object to be used to find methods on the lookupClass.
+     */
+    public static MethodHandles.Lookup getApplicationMethodHandleLookup(Class<?> lookupClass)
+    {
+        return MethodHandles.publicLookup().in(lookupClass);
     }
 
     private static class DecodedArgs

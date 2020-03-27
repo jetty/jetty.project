@@ -19,11 +19,11 @@
 package org.eclipse.jetty.websocket.javax.common.messages;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.websocket.javax.common.AbstractSessionTest;
+import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
 
 public abstract class AbstractMessageSinkTest extends AbstractSessionTest
 {
@@ -34,7 +34,7 @@ public abstract class AbstractMessageSinkTest extends AbstractSessionTest
             Class<?> refc = copy.getClass();
             String name = "accept";
             MethodType methodType = MethodType.methodType(void.class, type);
-            MethodHandle handle = MethodHandles.lookup().findVirtual(refc, name, methodType);
+            MethodHandle handle = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(refc, name, methodType);
             return handle.bindTo(copy);
         }
         catch (NoSuchMethodException | IllegalAccessException e)

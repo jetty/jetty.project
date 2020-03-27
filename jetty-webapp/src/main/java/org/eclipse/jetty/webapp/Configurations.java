@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TopologicalSort;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -74,27 +75,26 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
     {
         if (__known.isEmpty())
         {
-            ServiceLoader<Configuration> configs = ServiceLoader.load(Configuration.class);
-            for (Iterator<Configuration> i = configs.iterator(); i.hasNext(); )
+            TypeUtil.serviceProviderStream(ServiceLoader.load(Configuration.class)).forEach(provider ->
             {
-                Configuration configuration = i.next();
                 try
                 {
+                    Configuration configuration = provider.get();
                     if (!configuration.isAvailable())
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Configuration unavailable: " + configuration);
                         __unavailable.add(configuration);
-                        continue;
+                        return;
                     }
                     __known.add(configuration);
                     __knownByClassName.add(configuration.getClass().getName());
                 }
                 catch (Throwable e)
                 {
-                    LOG.warn("Unable to get known {}", configuration, e);
+                    LOG.warn("Unable to get known Configuration", e);
                 }
-            }
+            });
 
             sort(__known);
             if (LOG.isDebugEnabled())

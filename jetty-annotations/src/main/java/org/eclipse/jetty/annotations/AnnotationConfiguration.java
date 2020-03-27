@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -39,6 +38,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
 
@@ -815,22 +816,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
         long start = 0;
         if (LOG.isDebugEnabled())
             start = System.nanoTime();
-        ServiceLoader<ServletContainerInitializer> loader = ServiceLoader.load(ServletContainerInitializer.class);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime() - start), TimeUnit.NANOSECONDS)));
-
-        Map<ServletContainerInitializer, Resource> sciResourceMap = new HashMap<ServletContainerInitializer, Resource>();
-        ServletContainerInitializerOrdering initializerOrdering = getInitializerOrdering(context);
-
-        //Get initial set of SCIs that aren't from excluded jars or excluded by the containerExclusionPattern, or excluded
-        //because containerInitializerOrdering omits it
-        Iterator<ServletContainerInitializer> iter = loader.iterator();
-        while (iter.hasNext())
+        List<ServletContainerInitializer> scis = TypeUtil.serviceProviderStream(ServiceLoader.load(ServletContainerInitializer.class)).flatMap(provider ->
         {
-            ServletContainerInitializer sci;
             try
             {
-                sci = iter.next();
+                return Stream.of(provider.get());
             }
             catch (Error e)
             {
@@ -839,9 +829,20 @@ public class AnnotationConfiguration extends AbstractConfiguration
                     LOG.debug("Error: {} for {}", e.getMessage(), context, e);
                 else
                     LOG.info("Error: {} for {}", e.getMessage(), context);
-                continue;
+                return Stream.of();
             }
+        }).collect(Collectors.toList());
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime() - start), TimeUnit.NANOSECONDS)));
+
+        Map<ServletContainerInitializer, Resource> sciResourceMap = new HashMap<>();
+        ServletContainerInitializerOrdering initializerOrdering = getInitializerOrdering(context);
+
+        //Get initial set of SCIs that aren't from excluded jars or excluded by the containerExclusionPattern, or excluded
+        //because containerInitializerOrdering omits it
+        for (ServletContainerInitializer sci : scis)
+        {
             if (matchesExclusionPattern(sci))
             {
                 if (LOG.isDebugEnabled())

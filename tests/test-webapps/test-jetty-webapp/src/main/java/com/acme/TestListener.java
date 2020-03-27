@@ -129,6 +129,7 @@ public class TestListener implements HttpSessionListener, HttpSessionAttributeLi
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
+
         // System.err.println("contextInitialized "+sce);
         _called.put("contextInitialized", new Throwable());
 

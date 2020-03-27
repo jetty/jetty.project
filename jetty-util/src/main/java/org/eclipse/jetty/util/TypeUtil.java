@@ -42,6 +42,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -750,5 +755,54 @@ public class TypeUtil
                 return i1.hasNext() ? i1.next() : i2.next();
             }
         };
+    }
+
+    /**
+     * Used on a {@link ServiceLoader#stream()} with {@link Stream#flatMap(Function)},
+     * so that in the case a {@link ServiceConfigurationError} is thrown it warns and
+     * continues iterating through the service loader.
+     * <br>Usage Example:
+     * <p>{@code ServiceLoader.load(Service.class).stream().flatMap(TypeUtil::providerMap).collect(Collectors.toList());}</p>
+     * @param <T> The class of the service type.
+     * @param provider The service provider to instantiate.
+     * @return a stream of the loaded service providers.
+     */
+    private static <T> Stream<T> mapToService(ServiceLoader.Provider<T> provider)
+    {
+        try
+        {
+            return Stream.of(provider.get());
+        }
+        catch (ServiceConfigurationError error)
+        {
+            LOG.warn("Service Provider failed to load", error);
+            return Stream.empty();
+        }
+    }
+
+    /**
+     * Utility method to provide a stream of the service type from a {@link ServiceLoader}.
+     * Log warnings will be given for any {@link ServiceConfigurationError}s which occur when loading or
+     * instantiating the services.
+     * @param serviceLoader the ServiceLoader instance to use.
+     * @param <T> the type of the service to load.
+     * @return a stream of the service type which will not throw {@link ServiceConfigurationError}.
+     */
+    public static <T> Stream<T> serviceStream(ServiceLoader<T> serviceLoader)
+    {
+        return serviceProviderStream(serviceLoader).flatMap(TypeUtil::mapToService);
+    }
+
+    /**
+     * Utility to create a stream which provides the same functionality as {@link ServiceLoader#stream()}.
+     * However this also guards the case in which {@link Iterator#hasNext()} throws. Any exceptions
+     * from the underlying iterator will be cached until the {@link ServiceLoader.Provider#get()} is called.
+     * @param serviceLoader the ServiceLoader instance to use.
+     * @param <T> the type of the service to load.
+     * @return A stream that lazily loads providers for this loader's service
+     */
+    public static <T> Stream<ServiceLoader.Provider<T>> serviceProviderStream(ServiceLoader<T> serviceLoader)
+    {
+        return StreamSupport.stream(new ServiceLoaderSpliterator<>(serviceLoader), false);
     }
 }

@@ -27,6 +27,7 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.DispatcherType;
@@ -49,6 +50,7 @@ import javax.servlet.ServletRequestAttributeListener;
 import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
 import javax.servlet.ServletResponse;
+import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -132,10 +134,41 @@ public class ServletContextHandlerTest
                 throw new IllegalStateException("MySCI already called");
             ctx.setAttribute("MySCI.startup", Boolean.TRUE);
             ctx.addListener(new MyContextListener(callSessionTimeouts, timeout));
+
+            //test that SCI can call the sessionmodes methods
+            try
+            {
+                ctx.getDefaultSessionTrackingModes();
+                ctx.setAttribute("MySCI.defaultSessionTrackingModes", Boolean.TRUE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                ctx.setAttribute("MySCI.defaultSessionTrackingModes", Boolean.FALSE);
+            }
+            try
+            {
+                ctx.getEffectiveSessionTrackingModes();
+                ctx.setAttribute("MySCI.effectiveSessionTrackingModes", Boolean.TRUE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                ctx.setAttribute("MySCI.effectiveSessionTrackingModes", Boolean.FALSE);
+            }
+            try
+            {
+                ctx.setSessionTrackingModes(EnumSet.of(SessionTrackingMode.URL));
+                ctx.setAttribute("MySCI.setSessionTrackingModes", Boolean.TRUE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                ctx.setAttribute("MySCI.setSessionTrackingModes", Boolean.FALSE);
+            }
+
             if (callSessionTimeouts)
             {
                 try
                 {
+                    ctx.setAttribute("MYSCI.startSessionTimeout", Integer.valueOf(ctx.getSessionTimeout()));
                     ctx.setSessionTimeout(timeout);
                     ctx.setAttribute("MYSCI.setSessionTimeout", Boolean.TRUE);
                     ctx.setAttribute("MYSCI.getSessionTimeout", Integer.valueOf(ctx.getSessionTimeout()));
@@ -190,6 +223,42 @@ public class ServletContextHandlerTest
         {
             assertNull(sce.getServletContext().getAttribute("MyContextListener.contextInitialized"));
             sce.getServletContext().setAttribute("MyContextListener.contextInitialized", Boolean.TRUE);
+            
+            assertNull(sce.getServletContext().getAttribute("MyContextListener.defaultSessionTrackingModes"));
+            try
+            {
+                sce.getServletContext().getDefaultSessionTrackingModes();
+                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                //Should NOT be able to call getDefaultSessionTrackingModes from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.TRUE); 
+            }
+            
+            assertNull(sce.getServletContext().getAttribute("MyContextListener.effectiveSessionTrackingModes"));
+            try
+            {
+                sce.getServletContext().getEffectiveSessionTrackingModes();
+                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                //Should NOT be able to call getEffectiveSessionTrackingModes from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.TRUE); 
+            }
+            
+            assertNull(sce.getServletContext().getAttribute("MyContextListener.setSessionTrackingModes"));
+            try
+            {
+                sce.getServletContext().setSessionTrackingModes(EnumSet.of(SessionTrackingMode.URL));
+                sce.getServletContext().setAttribute("MyContextListener.setSessionTrackingModes", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                //Should NOT be able to call setSessionTrackingModes from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.setSessionTrackingModes", Boolean.TRUE); 
+            }
             
             if (callSessionTimeouts)
             {
@@ -397,6 +466,66 @@ public class ServletContextHandlerTest
         }
     }
     
+    /**
+     * ServletContextListener that is designed to be added programmatically,
+     * which should make all of the createListener, createServlet, createFilter
+     * methods fail with UnsupportedOperationException
+     *
+     */
+    public class CreatingSCL implements ServletContextListener
+    {
+        @Override
+        public void contextInitialized(ServletContextEvent sce)
+        {
+            try
+            {
+                sce.getServletContext().createFilter(MyFilter.class);
+                sce.getServletContext().setAttribute("CreatingSCL.filter", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                sce.getServletContext().setAttribute("CreatingSCL.filter", Boolean.TRUE);
+            }
+            catch (Exception e)
+            {
+                fail(e);
+            }
+            
+            try
+            {
+                sce.getServletContext().createServlet(HelloServlet.class);
+                sce.getServletContext().setAttribute("CreatingSCL.servlet", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                sce.getServletContext().setAttribute("CreatingSCL.servlet", Boolean.TRUE);
+            }
+            catch (Exception e)
+            {
+                fail(e);
+            }
+            
+            try
+            {
+                sce.getServletContext().createListener(MyContextListener.class);
+                sce.getServletContext().setAttribute("CreatingSCL.listener", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                sce.getServletContext().setAttribute("CreatingSCL.listener", Boolean.TRUE);
+            }
+            catch (Exception e)
+            {
+                fail(e);
+            }
+        }
+        
+        @Override
+        public void contextDestroyed(ServletContextEvent sce)
+        {      
+        }
+    }
+    
     public class InitialListener implements ServletContextListener
     {
         @Override
@@ -432,7 +561,7 @@ public class ServletContextHandlerTest
             {
                 MyContextListener contextListener = sce.getServletContext().createListener(MyContextListener.class);
                 sce.getServletContext().addListener(contextListener);
-                fail("Adding SCI from an SCI!");
+                fail("Adding SCL from an SCL!");
             }
             catch (IllegalArgumentException e)
             {
@@ -503,11 +632,15 @@ public class ServletContextHandlerTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         _server.setHandler(contexts);
 
+        int startMin = 7;
         Integer timeout = Integer.valueOf(100);
         ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        root.getSessionHandler().setMaxInactiveInterval((int)TimeUnit.MINUTES.toSeconds(startMin));
         root.addBean(new MySCIStarter(root.getServletContext(), new MySCI(true, timeout.intValue())), true);
         _server.start();
         
+        //test starting value of setSessionTimeout
+        assertEquals(startMin, (Integer)root.getServletContext().getAttribute("MYSCI.startSessionTimeout"));
         //test can set session timeout from ServletContainerInitializer
         assertTrue((Boolean)root.getServletContext().getAttribute("MYSCI.setSessionTimeout"));
         //test can get session timeout from ServletContainerInitializer
@@ -547,7 +680,13 @@ public class ServletContextHandlerTest
         root.addBean(new MySCIStarter(root.getServletContext(), new MySCI()), true);
         _server.start();
         assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.startup"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.defaultSessionTrackingModes"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.effectiveSessionTrackingModes"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.setSessionTrackingModes"));
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.contextInitialized"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.defaultSessionTrackingModes"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.effectiveSessionTrackingModes"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.setSessionTrackingModes"));
     }
     
     @Test
@@ -747,6 +886,76 @@ public class ServletContextHandlerTest
             else
                fail(e);
         }
+    }
+    
+    @Test
+    public void testCreateMethodsFromSCI() throws Exception
+    {
+        //A filter can be created by an SCI
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        class FilterCreatingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                try
+                {
+                    ctx.createFilter(MyFilter.class);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+
+                try
+                {
+                    ctx.createServlet(HelloServlet.class);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+
+                try
+                {
+                    ctx.createListener(MyContextListener.class);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        }
+        
+        root.addBean(new MySCIStarter(root.getServletContext(), new FilterCreatingSCI()), true);
+        _server.start();    
+    }
+    
+    @Test
+    public void testCreateMethodsFromSCL() throws Exception
+    {
+      //A filter can be created by an SCI
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        class ListenerCreatingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                ctx.addListener(new CreatingSCL());
+            }
+        }
+        
+        root.addBean(new MySCIStarter(root.getServletContext(), new ListenerCreatingSCI()), true);
+        _server.start();
+        assertTrue((Boolean)root.getServletContext().getAttribute("CreatingSCL.filter"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("CreatingSCL.servlet"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("CreatingSCL.listener"));
     }
 
     @Test
@@ -1546,7 +1755,7 @@ public class ServletContextHandlerTest
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException
-        {
+        {            
             resp.setStatus(HttpServletResponse.SC_OK);
             PrintWriter writer = resp.getWriter();
             writer.write("Hello World");

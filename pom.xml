@@ -479,6 +479,7 @@
             <compilerArgs>
               <compilerArg>-Xlint:exports</compilerArg>
             </compilerArgs>
+            <testCompilerArgument>-nowarn</testCompilerArgument>
           </configuration>
         </plugin>
         <plugin>

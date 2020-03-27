@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,11 +77,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     static
     {
-        for (Authenticator.Factory factory : ServiceLoader.load(Authenticator.Factory.class))
-        {
-            __knownAuthenticatorFactories.add(factory);
-        }
-
+        TypeUtil.serviceStream(ServiceLoader.load(Authenticator.Factory.class))
+            .forEach(__knownAuthenticatorFactories::add);
         __knownAuthenticatorFactories.add(new DefaultAuthenticatorFactory());
     }
 
