@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -26,7 +26,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -34,13 +33,18 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpServerTestFixture
-{    // Useful constants
+{
+    private static final Logger LOG = LoggerFactory.getLogger(HttpServerTestFixture.class);
+
+    // Useful constants
     protected static final long PAUSE = 10L;
     protected static final int LOOPS = 50;
 
@@ -113,7 +117,7 @@ public class HttpServerTestFixture
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            Log.getRootLogger().debug("handle " + target);
+            LOG.debug("handle " + target);
             baseRequest.setHandled(true);
 
             if (request.getContentType() != null)
@@ -155,7 +159,7 @@ public class HttpServerTestFixture
             if (reader.read() >= 0)
                 throw new IllegalStateException("Not closed");
 
-            Log.getRootLogger().debug("handled " + target);
+            LOG.debug("handled " + target);
         }
     }
 
@@ -185,7 +189,31 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class ReadExactHandler extends AbstractHandler.ErrorDispatchHandler
+    protected static class SendErrorHandler extends AbstractHandler
+    {
+        private final int code;
+        private final String message;
+
+        public SendErrorHandler()
+        {
+            this(500, null);
+        }
+
+        public SendErrorHandler(int code, String message)
+        {
+            this.code = code;
+            this.message = message;
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.sendError(code, message);
+        }
+    }
+
+    protected static class ReadExactHandler extends AbstractHandler
     {
         private int expected;
 
@@ -200,7 +228,7 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
             int len = expected < 0 ? request.getContentLength() : expected;
@@ -219,16 +247,6 @@ public class HttpServerTestFixture
             String reply = "Read " + offset + "\r\n";
             response.setContentLength(reply.length());
             response.getOutputStream().write(reply.getBytes(StandardCharsets.ISO_8859_1));
-        }
-
-        @Override
-        protected void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            System.err.println("ERROR: " + request.getAttribute(RequestDispatcher.ERROR_MESSAGE));
-            Throwable th = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-            if (th != null)
-                th.printStackTrace();
-            super.doError(target, baseRequest, request, response);
         }
     }
 

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.start;
@@ -36,6 +36,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 @ExtendWith(WorkDirExtension.class)
 public class ModulesTest
@@ -141,7 +143,7 @@ public class ModulesTest
     }
 
     @Test
-    public void testResolve_ServerHttp() throws IOException
+    public void testResolveServerHttp() throws IOException
     {
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
@@ -200,6 +202,152 @@ public class ModulesTest
 
         List<String> actualXmls = normalizeXmls(active);
         assertThat("Resolved XMLs: " + actualXmls, actualXmls, contains(expectedXmls.toArray()));
+    }
+
+    @Test
+    public void testResolveNotRequiredModuleNotFound() throws IOException
+    {
+        // Test Env
+        File homeDir = MavenTestingUtils.getTestResourceDir("non-required-deps");
+        File baseDir = testdir.getEmptyPathDir().toFile();
+        String[] cmdLine = new String[]{"bar.type=cannot-find-me"};
+
+        // Configuration
+        CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
+        ConfigSources config = new ConfigSources();
+        config.add(cmdLineSource);
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+
+        // Initialize
+        BaseHome basehome = new BaseHome(config);
+
+        StartArgs args = new StartArgs(basehome);
+        args.parse(config);
+
+        // Test Modules
+        Modules modules = new Modules(basehome, args);
+        modules.registerAll();
+
+        // Enable module
+        modules.enable("bar", TEST_SOURCE);
+
+        // Collect active module list
+        List<Module> active = modules.getEnabled();
+
+        // Assert names are correct, and in the right order
+        List<String> expectedNames = new ArrayList<>();
+        expectedNames.add("foo");
+        expectedNames.add("bar");
+
+        List<String> actualNames = new ArrayList<>();
+        for (Module actual : active)
+        {
+            actualNames.add(actual.getName());
+        }
+
+        assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
+
+        Props props = args.getProperties();
+        assertThat(props.getString("bar.name"), is(nullValue()));
+    }
+
+    @Test
+    public void testResolveNotRequiredModuleFound() throws IOException
+    {
+        // Test Env
+        File homeDir = MavenTestingUtils.getTestResourceDir("non-required-deps");
+        File baseDir = testdir.getEmptyPathDir().toFile();
+        String[] cmdLine = new String[]{"bar.type=dive"};
+
+        // Configuration
+        CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
+        ConfigSources config = new ConfigSources();
+        config.add(cmdLineSource);
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+
+        // Initialize
+        BaseHome basehome = new BaseHome(config);
+
+        StartArgs args = new StartArgs(basehome);
+        args.parse(config);
+
+        // Test Modules
+        Modules modules = new Modules(basehome, args);
+        modules.registerAll();
+
+        // Enable module
+        modules.enable("bar", TEST_SOURCE);
+
+        // Collect active module list
+        List<Module> active = modules.getEnabled();
+
+        // Assert names are correct, and in the right order
+        List<String> expectedNames = new ArrayList<>();
+        expectedNames.add("foo");
+        expectedNames.add("bar");
+        expectedNames.add("bar-dive");
+
+        List<String> actualNames = new ArrayList<>();
+        for (Module actual : active)
+        {
+            actualNames.add(actual.getName());
+        }
+
+        assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
+
+        Props props = args.getProperties();
+        assertThat(props.getString("bar.name"), is("dive"));
+    }
+
+    @Test
+    public void testResolveNotRequiredModuleFoundDynamic() throws IOException
+    {
+        // Test Env
+        File homeDir = MavenTestingUtils.getTestResourceDir("non-required-deps");
+        File baseDir = testdir.getEmptyPathDir().toFile();
+        String[] cmdLine = new String[]{"bar.type=dynamic"};
+
+        // Configuration
+        CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
+        ConfigSources config = new ConfigSources();
+        config.add(cmdLineSource);
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+
+        // Initialize
+        BaseHome basehome = new BaseHome(config);
+
+        StartArgs args = new StartArgs(basehome);
+        args.parse(config);
+
+        // Test Modules
+        Modules modules = new Modules(basehome, args);
+        modules.registerAll();
+
+        // Enable module
+        modules.enable("bar", TEST_SOURCE);
+
+        // Collect active module list
+        List<Module> active = modules.getEnabled();
+
+        // Assert names are correct, and in the right order
+        List<String> expectedNames = new ArrayList<>();
+        expectedNames.add("foo");
+        expectedNames.add("bar");
+        expectedNames.add("impls/bar-dynamic");
+
+        List<String> actualNames = new ArrayList<>();
+        for (Module actual : active)
+        {
+            actualNames.add(actual.getName());
+        }
+
+        assertThat("Resolved Names: " + actualNames, actualNames, contains(expectedNames.toArray()));
+
+        Props props = args.getProperties();
+        assertThat(props.getString("bar.name"), is("dynamic"));
     }
 
     private List<String> normalizeLibs(List<Module> active)

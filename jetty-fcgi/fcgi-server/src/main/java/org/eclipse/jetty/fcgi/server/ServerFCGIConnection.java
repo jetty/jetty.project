@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.fcgi.server;
@@ -34,12 +34,12 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServerFCGIConnection extends AbstractConnection
 {
-    private static final Logger LOG = Log.getLogger(ServerFCGIConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServerFCGIConnection.class);
 
     private final ConcurrentMap<Integer, HttpChannelOverFCGI> channels = new ConcurrentHashMap<>();
     private final Connector connector;
@@ -47,6 +47,8 @@ public class ServerFCGIConnection extends AbstractConnection
     private final Flusher flusher;
     private final HttpConfiguration configuration;
     private final ServerParser parser;
+    private boolean useInputDirectByteBuffers;
+    private boolean useOutputDirectByteBuffers;
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
@@ -56,6 +58,26 @@ public class ServerFCGIConnection extends AbstractConnection
         this.configuration = configuration;
         this.sendStatus200 = sendStatus200;
         this.parser = new ServerParser(new ServerListener());
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return useInputDirectByteBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return useOutputDirectByteBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
     @Override
@@ -70,7 +92,7 @@ public class ServerFCGIConnection extends AbstractConnection
     {
         EndPoint endPoint = getEndPoint();
         ByteBufferPool bufferPool = connector.getByteBufferPool();
-        ByteBuffer buffer = bufferPool.acquire(configuration.getResponseHeaderSize(), true);
+        ByteBuffer buffer = bufferPool.acquire(configuration.getResponseHeaderSize(), isUseInputDirectByteBuffers());
         try
         {
             while (true)
@@ -99,10 +121,18 @@ public class ServerFCGIConnection extends AbstractConnection
         catch (Exception x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("Unable to fill endpoint", x);
             bufferPool.release(buffer);
             // TODO: fail and close ?
         }
+    }
+
+    @Override
+    protected boolean onReadTimeout(Throwable timeout)
+    {
+        return channels.values().stream()
+            .mapToInt(channel -> channel.onIdleTimeout(timeout) ? 0 : 1)
+            .sum() == 0;
     }
 
     private void parse(ByteBuffer buffer)
@@ -125,7 +155,7 @@ public class ServerFCGIConnection extends AbstractConnection
         {
             // TODO: handle flags
             HttpChannelOverFCGI channel = new HttpChannelOverFCGI(connector, configuration, getEndPoint(),
-                new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200));
+                new HttpTransportOverFCGI(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200, flusher, request));
             HttpChannelOverFCGI existing = channels.putIfAbsent(request, channel);
             if (existing != null)
                 throw new IllegalStateException();
@@ -144,7 +174,7 @@ public class ServerFCGIConnection extends AbstractConnection
         }
 
         @Override
-        public void onHeaders(int request)
+        public boolean onHeaders(int request)
         {
             HttpChannelOverFCGI channel = channels.get(request);
             if (LOG.isDebugEnabled())
@@ -154,6 +184,7 @@ public class ServerFCGIConnection extends AbstractConnection
                 channel.onRequest();
                 channel.dispatch();
             }
+            return false;
         }
 
         @Override

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.server;
@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -33,37 +34,32 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpTransport;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpTransportOverHTTP2 implements HttpTransport
 {
-    private static final Logger LOG = Log.getLogger(HttpTransportOverHTTP2.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpTransportOverHTTP2.class);
 
     private final AtomicBoolean commit = new AtomicBoolean();
     private final TransportCallback transportCallback = new TransportCallback();
     private final Connector connector;
     private final HTTP2ServerConnection connection;
     private IStream stream;
-    private MetaData metaData;
+    private MetaData.Response metaData;
 
     public HttpTransportOverHTTP2(Connector connector, HTTP2ServerConnection connection)
     {
         this.connector = connector;
         this.connection = connection;
-    }
-
-    @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        // Because sent buffers are passed directly to the endpoint without
-        // copying we can defer to the endpoint
-        return connection.getEndPoint().isOptimizedForDirectBuffers();
     }
 
     public IStream getStream()
@@ -85,13 +81,14 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     }
 
     @Override
-    public void send(MetaData.Response info, boolean isHeadRequest, ByteBuffer content, boolean lastContent, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
+        boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        if (info != null)
+        if (response != null)
         {
-            metaData = info;
-            int status = info.getStatus();
+            metaData = response;
+            int status = response.getStatus();
             boolean interimResponse = status == HttpStatus.CONTINUE_100 || status == HttpStatus.PROCESSING_102;
             if (interimResponse)
             {
@@ -103,7 +100,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 else
                 {
                     if (transportCallback.start(callback, false))
-                        sendHeadersFrame(info, false, transportCallback);
+                        sendHeadersFrame(response, false, transportCallback);
                 }
             }
             else
@@ -139,28 +136,36 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                             }
                         };
                         if (transportCallback.start(commitCallback, true))
-                            sendHeadersFrame(info, false, transportCallback);
+                            sendHeadersFrame(response, false, transportCallback);
                     }
                     else
                     {
                         if (lastContent)
                         {
-                            HttpFields trailers = retrieveTrailers();
-                            if (trailers != null)
+                            if (isTunnel(request, response))
                             {
-                                if (transportCallback.start(new SendTrailers(callback, trailers), true))
-                                    sendHeadersFrame(info, false, transportCallback);
+                                if (transportCallback.start(callback, true))
+                                    sendHeadersFrame(response, false, transportCallback);
                             }
                             else
                             {
-                                if (transportCallback.start(callback, true))
-                                    sendHeadersFrame(info, true, transportCallback);
+                                HttpFields trailers = retrieveTrailers();
+                                if (trailers != null)
+                                {
+                                    if (transportCallback.start(new SendTrailers(callback, trailers), true))
+                                        sendHeadersFrame(response, false, transportCallback);
+                                }
+                                else
+                                {
+                                    if (transportCallback.start(callback, true))
+                                        sendHeadersFrame(response, true, transportCallback);
+                                }
                             }
                         }
                         else
                         {
                             if (transportCallback.start(callback, true))
-                                sendHeadersFrame(info, false, transportCallback);
+                                sendHeadersFrame(response, false, transportCallback);
                         }
                     }
                 }
@@ -172,7 +177,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         }
         else
         {
-            if (hasContent || lastContent)
+            if (hasContent || (lastContent && !isTunnel(request, metaData)))
             {
                 if (lastContent)
                 {
@@ -220,6 +225,11 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         return trailers.size() == 0 ? null : trailers;
     }
 
+    private boolean isTunnel(MetaData.Request request, MetaData.Response response)
+    {
+        return HttpMethod.CONNECT.is(request.getMethod()) && response.getStatus() == HttpStatus.OK_200;
+    }
+
     @Override
     public boolean isPushSupported()
     {
@@ -239,7 +249,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP/2 Push {}", request);
 
-        stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Promise<Stream>()
+        stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Promise<>()
         {
             @Override
             public void succeeded(Stream pushStream)
@@ -304,23 +314,53 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         return transportCallback.onIdleTimeout(failure);
     }
 
+    /**
+     * @return true if error sent, false if upgraded or aborted.
+     */
+    boolean prepareUpgrade()
+    {
+        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
+        Request request = channel.getRequest();
+        if (request.getHttpInput().hasContent())
+            return channel.sendErrorOrAbort("Unexpected content in CONNECT request");
+
+        Connection connection = (Connection)request.getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
+        if (connection == null)
+            return channel.sendErrorOrAbort("No UPGRADE_CONNECTION_ATTRIBUTE available");
+
+        EndPoint endPoint = connection.getEndPoint();
+        endPoint.upgrade(connection);
+        stream.setAttachment(endPoint);
+
+        // Only now that we have switched the attachment, we can demand DATA frames to process them.
+        stream.demand(1);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Upgrading to {}", connection);
+
+        return false;
+    }
+
     @Override
     public void onCompleted()
     {
-        // If the stream is not closed, it is still reading the request content.
-        // Send a reset to the other end so that it stops sending data.
-        if (!stream.isClosed())
+        Object attachment = stream.getAttachment();
+        if (attachment instanceof HttpChannelOverHTTP2)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("HTTP2 Response #{}: unconsumed request content, resetting stream", stream.getId());
-            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
-        }
+            // If the stream is not closed, it is still reading the request content.
+            // Send a reset to the other end so that it stops sending data.
+            if (!stream.isClosed())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("HTTP2 Response #{}: unconsumed request content, resetting stream", stream.getId());
+                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+            }
 
-        // Consume the existing queued data frames to
-        // avoid stalling the session flow control.
-        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
-        if (channel != null)
+            // Consume the existing queued data frames to
+            // avoid stalling the session flow control.
+            HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)attachment;
             channel.consumeInput();
+        }
     }
 
     @Override
@@ -331,7 +371,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             LOG.debug("HTTP2 Response #{}/{} aborted", stream == null ? -1 : stream.getId(),
                 stream == null ? -1 : Integer.toHexString(stream.getSession().hashCode()));
         if (stream != null)
-            stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP);
+            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
     }
 
     private class TransportCallback implements Callback
@@ -392,35 +432,20 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         public void failed(Throwable failure)
         {
             boolean commit;
-            Callback callback = null;
-            synchronized (this)
-            {
-                commit = this.commit;
-                // Only fail pending writes, as we
-                // may need to write an error page.
-                if (state == State.WRITING)
-                {
-                    this.state = State.FAILED;
-                    callback = this.callback;
-                    this.callback = null;
-                    this.failure = failure;
-                }
-            }
-            if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HTTP2 Response #%d/%h %s %s", stream.getId(), stream.getSession(), commit ? "commit" : "flush", callback == null ? "ignored" : "failed"), failure);
-            if (callback != null)
-                callback.failed(failure);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
             Callback callback;
             synchronized (this)
             {
+                commit = this.commit;
+                this.state = State.FAILED;
                 callback = this.callback;
+                this.callback = null;
+                this.failure = failure;
             }
-            return callback != null ? callback.getInvocationType() : Callback.super.getInvocationType();
+            if (LOG.isDebugEnabled())
+                LOG.debug(String.format("HTTP2 Response #%d/%h %s %s", stream.getId(), stream.getSession(),
+                    commit ? "commit" : "flush", callback == null ? "ignored" : "failed"), failure);
+            if (callback != null)
+                callback.failed(failure);
         }
 
         private boolean onIdleTimeout(Throwable failure)
@@ -445,6 +470,17 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             if (result)
                 callback.failed(failure);
             return result;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            Callback callback;
+            synchronized (this)
+            {
+                callback = this.callback;
+            }
+            return callback != null ? callback.getInvocationType() : Callback.super.getInvocationType();
         }
     }
 

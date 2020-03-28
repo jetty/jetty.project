@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.client.http;
@@ -62,7 +62,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     }
 
     @SuppressWarnings("unchecked")
-    private Promise<Connection> connectionPromise()
+    private Promise<Connection> httpConnectionPromise()
     {
         return (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
     }
@@ -77,6 +77,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
             if (destination instanceof HttpDestination.Multiplexed)
                 ((HttpDestination.Multiplexed)destination).setMaxRequestsPerConnection(settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS));
         }
+        // The first SETTINGS frame is the server preface reply.
         if (!connection.isMarked())
             onServerPreface(session);
     }
@@ -85,7 +86,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     {
         HttpConnectionOverHTTP2 connection = newHttpConnection(destination(), session);
         if (this.connection.compareAndSet(null, connection, false, true))
-            connectionPromise().succeeded(connection);
+            httpConnectionPromise().succeeded(connection);
     }
 
     protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
@@ -105,6 +106,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
 
     void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
     {
+        connection.close();
     }
 
     @Override
@@ -133,7 +135,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     {
         boolean result = connection.compareAndSet(null, null, false, true);
         if (result)
-            connectionPromise().failed(failure);
+            httpConnectionPromise().failed(failure);
         return result;
     }
 }

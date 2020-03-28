@@ -1,24 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,12 +28,12 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SettingsBodyParser extends BodyParser
 {
-    private static final Logger LOG = Log.getLogger(SettingsBodyParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SettingsBodyParser.class);
 
     private final int maxKeys;
     private State state = State.PREPARE;
@@ -72,11 +73,21 @@ public class SettingsBodyParser extends BodyParser
     @Override
     protected void emptyBody(ByteBuffer buffer)
     {
-        onSettings(buffer, new HashMap<>());
+        boolean isReply = hasFlag(Flags.ACK);
+        SettingsFrame frame = new SettingsFrame(Collections.emptyMap(), isReply);
+        if (!isReply && !rateControlOnEvent(frame))
+            connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_settings_frame_rate");
+        else
+            onSettings(frame);
     }
 
     @Override
     public boolean parse(ByteBuffer buffer)
+    {
+        return parse(buffer, getStreamId(), getBodyLength());
+    }
+
+    private boolean parse(ByteBuffer buffer, int streamId, int bodyLength)
     {
         while (buffer.hasRemaining())
         {
@@ -85,9 +96,9 @@ public class SettingsBodyParser extends BodyParser
                 case PREPARE:
                 {
                     // SPEC: wrong streamId is treated as connection error.
-                    if (getStreamId() != 0)
+                    if (streamId != 0)
                         return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_frame");
-                    length = getBodyLength();
+                    length = bodyLength;
                     settings = new HashMap<>();
                     state = State.SETTING_ID;
                     break;
@@ -200,47 +211,44 @@ public class SettingsBodyParser extends BodyParser
             return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_max_frame_size");
 
         SettingsFrame frame = new SettingsFrame(settings, hasFlag(Flags.ACK));
+        return onSettings(frame);
+    }
+
+    private boolean onSettings(SettingsFrame frame)
+    {
         reset();
         notifySettings(frame);
         return true;
     }
 
+    /**
+     * <p>Parses the given buffer containing the whole body of a {@code SETTINGS} frame
+     * (without header bytes), typically from the {@code HTTP2-Settings} header.</p>
+     *
+     * @param buffer the buffer containing the body of {@code SETTINGS} frame
+     * @return the {@code SETTINGS} frame from the parsed body bytes
+     */
     public static SettingsFrame parseBody(final ByteBuffer buffer)
     {
-        final int bodyLength = buffer.remaining();
-        final AtomicReference<SettingsFrame> frameRef = new AtomicReference<>();
-        SettingsBodyParser parser = new SettingsBodyParser(null, null)
+        AtomicReference<SettingsFrame> frameRef = new AtomicReference<>();
+        SettingsBodyParser parser = new SettingsBodyParser(new HeaderParser(RateControl.NO_RATE_CONTROL), new Parser.Listener.Adapter()
         {
             @Override
-            protected int getStreamId()
+            public void onSettings(SettingsFrame frame)
             {
-                return 0;
+                frameRef.set(frame);
             }
 
             @Override
-            protected int getBodyLength()
-            {
-                return bodyLength;
-            }
-
-            @Override
-            protected boolean onSettings(ByteBuffer buffer, Map<Integer, Integer> settings)
-            {
-                frameRef.set(new SettingsFrame(settings, false));
-                return true;
-            }
-
-            @Override
-            protected boolean connectionFailure(ByteBuffer buffer, int error, String reason)
+            public void onConnectionFailure(int error, String reason)
             {
                 frameRef.set(null);
-                return false;
             }
-        };
-        if (bodyLength == 0)
-            parser.emptyBody(buffer);
+        });
+        if (buffer.hasRemaining())
+            parser.parse(buffer, 0, buffer.remaining());
         else
-            parser.parse(buffer);
+            parser.emptyBody(buffer);
         return frameRef.get();
     }
 

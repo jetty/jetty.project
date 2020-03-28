@@ -1,26 +1,24 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package com.acme.test;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Collection;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -63,17 +61,13 @@ public class MultiPartTest extends HttpServlet
             out.println("<p>");
 
             Collection<Part> parts = request.getParts();
-            out.println("<b>Parts:</b>&nbsp;" + parts.size());
+            out.println("<b>Parts:</b>&nbsp;" + parts.size() + "<br>");
             for (Part p : parts)
             {
-                out.println("<h3>" + p.getName() + "</h3>");
-                out.println("<b>Size:</b>&nbsp;" + p.getSize());
-                if (p.getContentType() == null || p.getContentType().startsWith("text/plain"))
-                {
-                    out.println("<p>");
-                    copy(p.getInputStream(), out);
-                    out.println("</p>");
-                }
+                out.println("<br><b>PartName:</b>&nbsp;" + sanitizeXmlString(p.getName()));
+                out.println("<br><b>Size:</b>&nbsp;" + p.getSize());
+                String contentType = p.getContentType();
+                out.println("<br><b>ContentType:</b>&nbsp;" + contentType);
             }
             out.println("</body>");
             out.println("</html>");
@@ -109,20 +103,67 @@ public class MultiPartTest extends HttpServlet
         }
     }
 
-    // TODO remove inline once 9.4.19 is released with a fix for #3726
-    public static void copy(InputStream in,
-                            OutputStream out)
-        throws IOException
+    public static String sanitizeXmlString(String html)
     {
-        int bufferSize = 8192;
-        byte[] buffer = new byte[bufferSize];
+        if (html == null)
+            return null;
 
-        while (true)
+        int i = 0;
+
+        // Are there any characters that need sanitizing?
+        loop:
+        for (; i < html.length(); i++)
         {
-            int len = in.read(buffer, 0, bufferSize);
-            if (len < 0)
-                break;
-            out.write(buffer, 0, len);
+            char c = html.charAt(i);
+            switch (c)
+            {
+                case '&':
+                case '<':
+                case '>':
+                case '\'':
+                case '"':
+                    break loop;
+                default:
+                    if (Character.isISOControl(c) && !Character.isWhitespace(c))
+                        break loop;
+            }
         }
+        // No characters need sanitizing, so return original string
+        if (i == html.length())
+            return html;
+
+        // Create builder with OK content so far
+        StringBuilder out = new StringBuilder(html.length() * 4 / 3);
+        out.append(html, 0, i);
+
+        // sanitize remaining content
+        for (; i < html.length(); i++)
+        {
+            char c = html.charAt(i);
+            switch (c)
+            {
+                case '&':
+                    out.append("&amp;");
+                    break;
+                case '<':
+                    out.append("&lt;");
+                    break;
+                case '>':
+                    out.append("&gt;");
+                    break;
+                case '\'':
+                    out.append("&apos;");
+                    break;
+                case '"':
+                    out.append("&quot;");
+                    break;
+                default:
+                    if (Character.isISOControl(c) && !Character.isWhitespace(c))
+                        out.append('?');
+                    else
+                        out.append(c);
+            }
+        }
+        return out.toString();
     }
 }

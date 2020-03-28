@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http.client;
@@ -189,14 +189,13 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         long timeout = 1000;
         scenario.start(new TimeoutHandler(2 * timeout));
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        Destination destination = scenario.client.getDestination(scenario.getScheme(), "localhost", scenario.getNetworkConnectorLocalPortInt().get());
+        Request request = scenario.client.newRequest(scenario.newURI()).timeout(timeout, TimeUnit.MILLISECONDS);
+        CountDownLatch latch = new CountDownLatch(1);
+        Destination destination = scenario.client.resolveDestination(request);
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
-            Request request = scenario.client.newRequest(scenario.newURI())
-                .timeout(timeout, TimeUnit.MILLISECONDS);
             connection.send(request, result ->
             {
                 assertTrue(result.isFailed());
@@ -217,14 +216,13 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         long timeout = 1000;
         scenario.start(new TimeoutHandler(timeout));
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        Destination destination = scenario.client.getDestination(scenario.getScheme(), "localhost", scenario.getNetworkConnectorLocalPortInt().get());
+        Request request = scenario.client.newRequest(scenario.newURI()).timeout(2 * timeout, TimeUnit.MILLISECONDS);
+        CountDownLatch latch = new CountDownLatch(1);
+        Destination destination = scenario.client.resolveDestination(request);
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
         destination.newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
-            Request request = scenario.client.newRequest(scenario.newURI())
-                .timeout(2 * timeout, TimeUnit.MILLISECONDS);
             connection.send(request, result ->
             {
                 Response response = result.getResponse();
@@ -254,9 +252,11 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         scenario.client = new HttpClient(scenario.provideClientTransport(transport, sslContextFactory))
         {
             @Override
-            public ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
+            public ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
             {
-                return new SslClientConnectionFactory(getSslContextFactory(), getByteBufferPool(), getExecutor(), connectionFactory)
+                if (sslContextFactory == null)
+                    sslContextFactory = getSslContextFactory();
+                return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory)
                 {
                     @Override
                     protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
@@ -510,10 +510,9 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
             // Abort the test if we can connect.
             fail("Error: Should not have been able to connect to " + host + ":" + port);
         }
-        catch (SocketTimeoutException x)
+        catch (SocketTimeoutException ignored)
         {
             // Expected timeout during connect, continue the test.
-            return;
         }
         catch (Throwable x)
         {

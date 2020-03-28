@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.session;
@@ -29,11 +29,10 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -81,7 +80,7 @@ public class SaveOptimizeTest
         _server1.start();
         int port1 = _server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(SaveOptimizeTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             try
@@ -124,12 +123,14 @@ public class SaveOptimizeTest
         _servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         _server1.start();
         int port1 = _server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(SaveOptimizeTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             try
@@ -138,11 +139,16 @@ public class SaveOptimizeTest
                 String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=create&check=true";
 
                 //make a request to set up a session on the server
+                CountDownLatch synchronizer = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(synchronizer);
                 ContentResponse response = client.GET(url);
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
                 String sessionId = TestServer.extractSessionId(sessionCookie);
+                
+                //ensure request has finished being handled
+                synchronizer.await(5, TimeUnit.SECONDS);
 
                 SessionData data = contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().load(sessionId);
                 assertNotNull(data);
@@ -151,9 +157,14 @@ public class SaveOptimizeTest
                 int initialNumSaves = getNumSaves();
                 for (int i = 0; i < 5; i++)
                 {
-                    // Perform a request to contextB with the same session cookie
+                    // Perform a request with the same session cookie
+                    synchronizer = new CountDownLatch(1);
+                    scopeListener.setExitSynchronizer(synchronizer);
                     client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=noop").send();
 
+                    //ensure request has finished being handled
+                    synchronizer.await(5, TimeUnit.SECONDS);
+                    
                     //check session is unchanged
                     SessionData d = contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().load(sessionId);
                     assertNotNull(d);
@@ -195,12 +206,14 @@ public class SaveOptimizeTest
         _servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         _server1.start();
         int port1 = _server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(SaveOptimizeTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             try
@@ -209,19 +222,29 @@ public class SaveOptimizeTest
                 String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=create&check=true";
 
                 //make a request to set up a session on the server
+                CountDownLatch synchronizer = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(synchronizer);
                 ContentResponse response = client.GET(url);
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
                 String sessionId = TestServer.extractSessionId(sessionCookie);
 
+                //ensure request has finished being handled
+                synchronizer.await(5, TimeUnit.SECONDS);
+                
                 SessionData data = contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().load(sessionId);
                 assertNotNull(data);
 
                 // Perform a request to do nothing with the same session cookie
                 int numSavesBefore = getNumSaves();
+                synchronizer = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(synchronizer);
                 client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=noop").send();
-
+                
+                //ensure request has finished being handled
+                synchronizer.await(5, TimeUnit.SECONDS);
+                
                 //check session not saved
                 SessionData d = contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().load(sessionId);
                 assertNotNull(d);
@@ -229,8 +252,13 @@ public class SaveOptimizeTest
 
                 // Perform a request to mutate the session
                 numSavesBefore = getNumSaves();
+                synchronizer = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(synchronizer);
                 client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=mutate").send();
 
+                //ensure request has finished being handled
+                synchronizer.await(5, TimeUnit.SECONDS);
+                
                 //check session is saved
                 d = contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().load(sessionId);
                 assertNotNull(d);
@@ -268,12 +296,14 @@ public class SaveOptimizeTest
         _servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         _server1.start();
         int port1 = _server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(SaveOptimizeTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             try
@@ -282,12 +312,17 @@ public class SaveOptimizeTest
                 String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=create&check=true";
 
                 //make a request to set up a session on the server
+                CountDownLatch synchronizer = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(synchronizer);
                 ContentResponse response = client.GET(url);
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
                 String sessionId = TestServer.extractSessionId(sessionCookie);
 
+                //ensure request has finished being handled
+                synchronizer.await(5, TimeUnit.SECONDS);
+                
                 SessionData data = contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().load(sessionId);
                 assertNotNull(data);
                 long lastSaved = data.getLastSaved();
@@ -295,8 +330,13 @@ public class SaveOptimizeTest
                 //make another request, session should not change
 
                 // Perform a request to do nothing with the same session cookie
+                synchronizer = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(synchronizer);
                 client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=noop").send();
-
+               
+                //ensure request has finished being handled
+                synchronizer.await(5, TimeUnit.SECONDS);
+                
                 //check session not saved
                 SessionData d = contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().load(sessionId);
                 assertNotNull(d);
@@ -306,8 +346,13 @@ public class SaveOptimizeTest
                 Thread.sleep(1000 * savePeriod);
 
                 // Perform a request to do nothing with the same session cookie
+                synchronizer = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(synchronizer);
                 client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=noop").send();
-
+                
+                //ensure request has finished being handled
+                synchronizer.await(5, TimeUnit.SECONDS);
+                
                 //check session is saved
                 d = contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().load(sessionId);
                 assertNotNull(d);
@@ -346,12 +391,14 @@ public class SaveOptimizeTest
         _servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         _server1.start();
         int port1 = _server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(SaveOptimizeTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             try
@@ -360,11 +407,16 @@ public class SaveOptimizeTest
                 String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=create&check=true";
 
                 //make a request to set up a session on the server
+                CountDownLatch synchronizer = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(synchronizer);
                 ContentResponse response = client.GET(url);
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
                 String sessionId = TestServer.extractSessionId(sessionCookie);
+                
+                //ensure request has finished being handled
+                synchronizer.await(5, TimeUnit.SECONDS);
 
                 SessionData data = contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().load(sessionId);
                 assertNotNull(data);
@@ -372,8 +424,13 @@ public class SaveOptimizeTest
                 assertTrue(lastSaved > 0); //check session created was saved
 
                 // Perform a request to do nothing with the same session cookie, check the session object is different
+                synchronizer = new CountDownLatch(1);
+                scopeListener.setExitSynchronizer(synchronizer);
                 client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=noop&check=diff").send();
 
+                //ensure request has finished being handled
+                synchronizer.await(5, TimeUnit.SECONDS);
+                
                 //check session not saved
                 SessionData d = contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().load(sessionId);
                 assertNotNull(d);
@@ -413,14 +470,14 @@ public class SaveOptimizeTest
         _servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        contextHandler.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        _server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         _servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         _server1.start();
         int port1 = _server1.getPort();
 
-        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        try (StacklessLogging stackless = new StacklessLogging(SaveOptimizeTest.class.getPackage()))
         {
             HttpClient client = new HttpClient();
             try

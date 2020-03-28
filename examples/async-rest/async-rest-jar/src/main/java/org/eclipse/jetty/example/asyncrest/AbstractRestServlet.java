@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.example.asyncrest;
@@ -101,19 +101,19 @@ public class AbstractRestServlet extends HttpServlet
         }
     }
 
-    protected String generateThumbs(Queue<Map<String, String>> results)
+    protected String generateThumbs(Queue<Map<String, Object>> results)
     {
         StringBuilder thumbs = new StringBuilder();
-        for (Map<String, String> m : results)
+        for (Map<String, Object> m : results)
         {
             if (!m.containsKey("GalleryURL"))
                 continue;
 
-            thumbs.append("<a href=\"" + m.get("ViewItemURLForNaturalSearch") + "\">");
-            thumbs.append("<img class='thumb' border='1px' height='25px'" +
-                " src='" + m.get("GalleryURL") + "'" +
-                " title='" + m.get("Title") + "'" +
-                "/>");
+            thumbs.append("<a href=\"").append(m.get("ViewItemURLForNaturalSearch")).append("\">");
+            thumbs.append("<img class='thumb' border='1px' height='25px' src='")
+                .append(m.get("GalleryURL")).append("'")
+                .append(" title='").append(m.get("Title")).append("'")
+                .append("/>");
             thumbs.append("</a>&nbsp;");
         }
         return thumbs.toString();

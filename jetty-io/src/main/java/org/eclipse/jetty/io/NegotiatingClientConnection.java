@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io;
@@ -24,12 +24,12 @@ import java.util.concurrent.Executor;
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class NegotiatingClientConnection extends AbstractConnection
 {
-    private static final Logger LOG = Log.getLogger(NegotiatingClientConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NegotiatingClientConnection.class);
 
     private final SSLEngine engine;
     private final ClientConnectionFactory connectionFactory;
@@ -108,7 +108,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
         }
         catch (IOException x)
         {
-            LOG.debug(x);
+            LOG.debug("Unable to fill from endpoint", x);
             close();
             return -1;
         }
@@ -123,7 +123,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
         }
         catch (Throwable x)
         {
-            LOG.debug(x);
+            LOG.debug("Unable to replace connection", x);
             close();
         }
     }

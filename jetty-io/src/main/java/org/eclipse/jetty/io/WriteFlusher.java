@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io;
@@ -31,10 +31,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Utility class to help implement {@link EndPoint#write(Callback, ByteBuffer...)} by calling
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.thread.Invocable.InvocationType;
  */
 public abstract class WriteFlusher
 {
-    private static final Logger LOG = Log.getLogger(WriteFlusher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WriteFlusher.class);
     private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
     private static final ByteBuffer[] EMPTY_BUFFERS = new ByteBuffer[]{BufferUtil.EMPTY_BUFFER};
     private static final EnumMap<StateType, Set<StateType>> __stateTransitions = new EnumMap<>(StateType.class);
@@ -258,7 +258,7 @@ public abstract class WriteFlusher
      */
     public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
-        callback = Objects.requireNonNull(callback);
+        Objects.requireNonNull(callback);
 
         if (isFailed())
         {
@@ -325,7 +325,7 @@ public abstract class WriteFlusher
                 case IDLE:
                     for (Throwable t : suppressed)
                     {
-                        LOG.warn(t);
+                        LOG.warn("Failed Write Cause", t);
                     }
                     return;
 
@@ -489,7 +489,7 @@ public abstract class WriteFlusher
                     if (DEBUG)
                     {
                         LOG.debug("ignored: {} {}", cause, this);
-                        LOG.ignore(cause);
+                        LOG.trace("IGNORED", cause);
                     }
                     return false;
 
@@ -521,17 +521,35 @@ public abstract class WriteFlusher
 
     public void onClose()
     {
-        onFail(new ClosedChannelException());
+        switch (_state.get().getType())
+        {
+            case IDLE:
+            case FAILED:
+                return;
+
+            default:
+                onFail(new ClosedChannelException());
+        }
     }
 
     boolean isFailed()
     {
-        return _state.get().getType() == StateType.FAILED;
+        return isState(StateType.FAILED);
     }
 
     boolean isIdle()
     {
-        return _state.get().getType() == StateType.IDLE;
+        return isState(StateType.IDLE);
+    }
+
+    public boolean isPending()
+    {
+        return isState(StateType.PENDING);
+    }
+
+    private boolean isState(StateType type)
+    {
+        return _state.get().getType() == type;
     }
 
     public String toStateString()
@@ -561,7 +579,8 @@ public abstract class WriteFlusher
     }
 
     /**
-     * <p>A listener of {@link WriteFlusher} events.</p>
+     * <p>A listener of {@link WriteFlusher} events.
+     * If implemented by a Connection class, the {@link #onFlushed(long)} event will be delivered to it.</p>
      */
     public interface Listener
     {

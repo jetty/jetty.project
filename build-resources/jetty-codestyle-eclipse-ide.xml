@@ -347,7 +347,7 @@
         <setting id="org.eclipse.jdt.core.formatter.insert_space_before_comma_in_multiple_field_declarations" value="do not insert"/>
         <setting id="org.eclipse.jdt.core.formatter.wrap_before_string_concatenation" value="false"/>
         <setting id="org.eclipse.jdt.core.formatter.blank_lines_between_import_groups" value="1"/>
-        <setting id="org.eclipse.jdt.core.formatter.lineSplit" value="128"/>
+        <setting id="org.eclipse.jdt.core.formatter.lineSplit" value="512"/>
         <setting id="org.eclipse.jdt.core.formatter.insert_space_after_opening_paren_in_annotation" value="do not insert"/>
         <setting id="org.eclipse.jdt.core.formatter.insert_space_before_opening_paren_in_switch" value="insert"/>
     </profile>

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
@@ -34,12 +34,12 @@ import javax.servlet.ServletException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FilterHolder extends Holder<Filter>
 {
-    private static final Logger LOG = Log.getLogger(FilterHolder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FilterHolder.class);
 
     private transient Filter _filter;
     private transient Config _config;
@@ -91,11 +91,10 @@ public class FilterHolder extends Holder<Filter>
     {
         super.doStart();
 
-        if (!javax.servlet.Filter.class
-            .isAssignableFrom(_class))
+        if (!javax.servlet.Filter.class.isAssignableFrom(getHeldClass()))
         {
-            String msg = _class + " is not a javax.servlet.Filter";
-            super.stop();
+            String msg = getHeldClass() + " is not a javax.servlet.Filter";
+            doStop();
             throw new IllegalStateException(msg);
         }
     }
@@ -103,18 +102,18 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public void initialize() throws Exception
     {
-        if (!_initialized)
+        synchronized (this)
         {
-            super.initialize();
+            if (_filter != null)
+                return;
 
+            super.initialize();
+            _filter = getInstance();
             if (_filter == null)
             {
                 try
                 {
-                    ServletContext context = _servletHandler.getServletContext();
-                    _filter = (context instanceof ServletContextHandler.Context)
-                        ? context.createFilter(getHeldClass())
-                        : getHeldClass().getDeclaredConstructor().newInstance();
+                    _filter = createInstance();
                 }
                 catch (ServletException ex)
                 {
@@ -126,37 +125,43 @@ public class FilterHolder extends Holder<Filter>
                     throw ex;
                 }
             }
-
             _config = new Config();
             if (LOG.isDebugEnabled())
                 LOG.debug("Filter.init {}", _filter);
             _filter.init(_config);
         }
+    }
 
-        _initialized = true;
+    @Override
+    protected synchronized Filter createInstance() throws Exception
+    {
+        Filter filter = super.createInstance();
+        if (filter == null)
+        {
+            ServletContext context = getServletContext();
+            if (context != null)
+                filter = context.createFilter(getHeldClass());
+        }
+        return filter;
     }
 
     @Override
     public void doStop()
         throws Exception
     {
+        super.doStop();
+        _config = null;
         if (_filter != null)
         {
             try
             {
                 destroyInstance(_filter);
             }
-            catch (Exception e)
+            finally
             {
-                LOG.warn(e);
+                _filter = null;
             }
         }
-        if (!_extInstance)
-            _filter = null;
-
-        _config = null;
-        _initialized = false;
-        super.doStop();
     }
 
     @Override
@@ -172,11 +177,7 @@ public class FilterHolder extends Holder<Filter>
 
     public synchronized void setFilter(Filter filter)
     {
-        _filter = filter;
-        _extInstance = true;
-        setHeldClass(filter.getClass());
-        if (getName() == null)
-            setName(filter.getClass().getName());
+        setInstance(filter);
     }
 
     public Filter getFilter()
@@ -187,19 +188,19 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        if (_initParams.isEmpty())
+        if (getInitParameters().isEmpty())
             Dumpable.dumpObjects(out, indent, this,
                 _filter == null ? getHeldClass() : _filter);
         else
             Dumpable.dumpObjects(out, indent, this,
                 _filter == null ? getHeldClass() : _filter,
-                new DumpableCollection("initParams", _initParams.entrySet()));
+                new DumpableCollection("initParams", getInitParameters().entrySet()));
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x==%s,inst=%b,async=%b", _name, hashCode(), _className, _filter != null, isAsyncSupported());
+        return String.format("%s@%x==%s,inst=%b,async=%b", getName(), hashCode(), getClassName(), _filter != null, isAsyncSupported());
     }
 
     public FilterRegistration.Dynamic getRegistration()
@@ -220,9 +221,9 @@ public class FilterHolder extends Holder<Filter>
             mapping.setServletNames(servletNames);
             mapping.setDispatcherTypes(dispatcherTypes);
             if (isMatchAfter)
-                _servletHandler.addFilterMapping(mapping);
+                getServletHandler().addFilterMapping(mapping);
             else
-                _servletHandler.prependFilterMapping(mapping);
+                getServletHandler().prependFilterMapping(mapping);
         }
 
         @Override
@@ -234,16 +235,16 @@ public class FilterHolder extends Holder<Filter>
             mapping.setPathSpecs(urlPatterns);
             mapping.setDispatcherTypes(dispatcherTypes);
             if (isMatchAfter)
-                _servletHandler.addFilterMapping(mapping);
+                getServletHandler().addFilterMapping(mapping);
             else
-                _servletHandler.prependFilterMapping(mapping);
+                getServletHandler().prependFilterMapping(mapping);
         }
 
         @Override
         public Collection<String> getServletNameMappings()
         {
-            FilterMapping[] mappings = _servletHandler.getFilterMappings();
-            List<String> names = new ArrayList<String>();
+            FilterMapping[] mappings = getServletHandler().getFilterMappings();
+            List<String> names = new ArrayList<>();
             for (FilterMapping mapping : mappings)
             {
                 if (mapping.getFilterHolder() != FilterHolder.this)
@@ -258,8 +259,8 @@ public class FilterHolder extends Holder<Filter>
         @Override
         public Collection<String> getUrlPatternMappings()
         {
-            FilterMapping[] mappings = _servletHandler.getFilterMappings();
-            List<String> patterns = new ArrayList<String>();
+            FilterMapping[] mappings = getServletHandler().getFilterMappings();
+            List<String> patterns = new ArrayList<>();
             for (FilterMapping mapping : mappings)
             {
                 if (mapping.getFilterHolder() != FilterHolder.this)
@@ -277,7 +278,7 @@ public class FilterHolder extends Holder<Filter>
         @Override
         public String getFilterName()
         {
-            return _name;
+            return getName();
         }
     }
 }

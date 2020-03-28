@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.fcgi.server;
@@ -25,41 +25,39 @@ import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpTransportOverFCGI implements HttpTransport
 {
-    private static final Logger LOG = Log.getLogger(HttpTransportOverFCGI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpTransportOverFCGI.class);
     private final ServerGenerator generator;
     private final Flusher flusher;
     private final int request;
     private volatile boolean shutdown;
     private volatile boolean aborted;
 
-    public HttpTransportOverFCGI(ByteBufferPool byteBufferPool, Flusher flusher, int request, boolean sendStatus200)
+    public HttpTransportOverFCGI(ByteBufferPool byteBufferPool, boolean useDirectByteBuffers, boolean sendStatus200, Flusher flusher, int request)
     {
-        this.generator = new ServerGenerator(byteBufferPool, sendStatus200);
+        this.generator = new ServerGenerator(byteBufferPool, useDirectByteBuffers, sendStatus200);
         this.flusher = flusher;
         this.request = request;
     }
 
     @Override
-    public boolean isOptimizedForDirectBuffers()
+    public void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        return false;
-    }
-
-    @Override
-    public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
-    {
-        if (info != null)
-            commit(info, head, content, lastContent, callback);
+        boolean head = HttpMethod.HEAD.is(request.getMethod());
+        if (response != null)
+        {
+            commit(response, head, content, lastContent, callback);
+        }
         else
         {
             if (head)

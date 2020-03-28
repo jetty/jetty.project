@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.webapp;
@@ -48,6 +48,8 @@ import org.eclipse.jetty.client.util.MultiPartContentProvider;
 import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -166,7 +168,8 @@ public class HugeResourceTest
     public void startServer() throws Exception
     {
         server = new Server();
-        ServerConnector connector = new ServerConnector(server);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
         connector.setPort(0);
         server.addConnector(connector);
 
@@ -258,7 +261,7 @@ public class HugeResourceTest
 
     @ParameterizedTest
     @MethodSource("staticFiles")
-    public void testUpload_Multipart(String filename, long expectedSize) throws Exception
+    public void testUploadMultipart(String filename, long expectedSize) throws Exception
     {
         MultiPartContentProvider multipart = new MultiPartContentProvider();
         Path inputFile = staticBase.resolve(filename);
@@ -266,6 +269,7 @@ public class HugeResourceTest
         multipart.addFilePart(name, filename, new PathContentProvider(inputFile), null);
 
         URI destUri = server.getURI().resolve("/multipart");
+        client.setIdleTimeout(90_000);
         Request request = client.newRequest(destUri).method(HttpMethod.POST).content(multipart);
         ContentResponse response = request.send();
         assertThat("HTTP Response Code", response.getStatus(), is(200));

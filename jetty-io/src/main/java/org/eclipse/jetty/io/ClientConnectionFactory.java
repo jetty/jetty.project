@@ -1,24 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
 
@@ -43,8 +44,25 @@ public interface ClientConnectionFactory
     {
         ContainerLifeCycle client = (ContainerLifeCycle)context.get(CLIENT_CONTEXT_KEY);
         if (client != null)
-            client.getBeans(Connection.Listener.class).forEach(connection::addListener);
+            client.getBeans(EventListener.class).forEach(connection::addEventListener);
         return connection;
+    }
+
+    /**
+     * <p>Wraps another ClientConnectionFactory.</p>
+     * <p>This is typically done by protocols that send "preface" bytes with some metadata
+     * before other protocols. The metadata could be, for example, proxying information
+     * or authentication information.</p>
+     */
+    interface Decorator
+    {
+        /**
+         * <p>Wraps the given {@code factory}.</p>
+         *
+         * @param factory the ClientConnectionFactory to wrap
+         * @return the wrapping ClientConnectionFactory
+         */
+        ClientConnectionFactory apply(ClientConnectionFactory factory);
     }
 
     /**
@@ -52,7 +70,7 @@ public interface ClientConnectionFactory
      * (for example {@code ["h2", "h2-17", "h2-16"]}) and a {@link ClientConnectionFactory}
      * that creates connections that speak that network protocol.</p>
      */
-    public static class Info
+    public static class Info extends ContainerLifeCycle
     {
         private final List<String> protocols;
         private final ClientConnectionFactory factory;
@@ -61,6 +79,7 @@ public interface ClientConnectionFactory
         {
             this.protocols = protocols;
             this.factory = factory;
+            addBean(factory);
         }
 
         public List<String> getProtocols()
@@ -81,7 +100,18 @@ public interface ClientConnectionFactory
          */
         public boolean matches(List<String> candidates)
         {
-            return protocols.stream().anyMatch(candidates::contains);
+            return protocols.stream().anyMatch(p -> candidates.stream().anyMatch(c -> c.equalsIgnoreCase(p)));
+        }
+
+        public void upgrade(EndPoint endPoint, Map<String, Object> context)
+        {
+            throw new UnsupportedOperationException(this + " does not support upgrade to another protocol");
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x%s", getClass().getSimpleName(), hashCode(), protocols);
         }
     }
 }

@@ -1,29 +1,29 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -32,17 +32,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
- * <p>Provides the common handling for {@link ConnectionFactory} implementations including:</p>
- * <ul>
- * <li>Protocol identification</li>
- * <li>Configuration of new Connections:
- * <ul>
- * <li>Setting inputbuffer size</li>
- * <li>Calling {@link Connection#addListener(Connection.Listener)} for all
- * Connection.Listener instances found as beans on the {@link Connector}
- * and this {@link ConnectionFactory}</li>
- * </ul>
- * </ul>
+ * <p>Provides the common handling for {@link ConnectionFactory} implementations.</p>
  */
 @ManagedObject
 public abstract class AbstractConnectionFactory extends ContainerLifeCycle implements ConnectionFactory
@@ -87,24 +77,35 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
         _inputbufferSize = size;
     }
 
+    protected String findNextProtocol(Connector connector)
+    {
+        return findNextProtocol(connector, getProtocol());
+    }
+
+    protected static String findNextProtocol(Connector connector, String currentProtocol)
+    {
+        String nextProtocol = null;
+        for (Iterator<String> it = connector.getProtocols().iterator(); it.hasNext(); )
+        {
+            String protocol = it.next();
+            if (currentProtocol.equalsIgnoreCase(protocol))
+            {
+                nextProtocol = it.hasNext() ? it.next() : null;
+                break;
+            }
+        }
+        return nextProtocol;
+    }
+
     protected AbstractConnection configure(AbstractConnection connection, Connector connector, EndPoint endPoint)
     {
         connection.setInputBufferSize(getInputBufferSize());
 
         // Add Connection.Listeners from Connector
-        if (connector instanceof ContainerLifeCycle)
-        {
-            ContainerLifeCycle aggregate = (ContainerLifeCycle)connector;
-            for (Connection.Listener listener : aggregate.getBeans(Connection.Listener.class))
-            {
-                connection.addListener(listener);
-            }
-        }
+        connector.getEventListeners().forEach(connection::addEventListener);
+
         // Add Connection.Listeners from this factory
-        for (Connection.Listener listener : getBeans(Connection.Listener.class))
-        {
-            connection.addListener(listener);
-        }
+        getEventListeners().forEach(connection::addEventListener);
 
         return connection;
     }

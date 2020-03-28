@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io;
@@ -34,17 +34,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Locker;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ByteArrayEndPoint.
  */
 public class ByteArrayEndPoint extends AbstractEndPoint
 {
-    static final Logger LOG = Log.getLogger(ByteArrayEndPoint.class);
+    static final Logger LOG = LoggerFactory.getLogger(ByteArrayEndPoint.class);
     static final InetAddress NOIP;
     static final InetSocketAddress NOIPPORT;
 
@@ -57,7 +57,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         }
         catch (UnknownHostException e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to get IPv4 no-ip reference for 0.0.0.0", e);
         }
         finally
         {
@@ -68,24 +68,13 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     private static final ByteBuffer EOF = BufferUtil.allocate(0);
 
-    private final Runnable _runFillable = new Runnable()
-    {
-        @Override
-        public void run()
-        {
-            getFillInterest().fillable();
-        }
-    };
-
-    private final Locker _locker = new Locker();
-    private final Condition _hasOutput = _locker.newCondition();
+    private final Runnable _runFillable = () -> getFillInterest().fillable();
+    private final AutoLock _lock = new AutoLock();
+    private final Condition _hasOutput = _lock.newCondition();
     private final Queue<ByteBuffer> _inQ = new ArrayDeque<>();
     private ByteBuffer _out;
     private boolean _growOutput;
 
-    /**
-     *
-     */
     public ByteArrayEndPoint()
     {
         this(null, 0, null, null);
@@ -138,7 +127,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void doShutdownOutput()
     {
         super.doShutdownOutput();
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             _hasOutput.signalAll();
         }
@@ -148,7 +137,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void doClose()
     {
         super.doClose();
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             _hasOutput.signalAll();
         }
@@ -180,7 +169,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     @Override
     protected void needsFillInterest() throws IOException
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             if (!isOpen())
                 throw new ClosedChannelException();
@@ -205,7 +194,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void addInput(ByteBuffer in)
     {
         boolean fillable = false;
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             if (isEOF(_inQ.peek()))
                 throw new RuntimeIOException(new EOFException());
@@ -238,7 +227,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void addInputAndExecute(ByteBuffer in)
     {
         boolean fillable = false;
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             if (isEOF(_inQ.peek()))
                 throw new RuntimeIOException(new EOFException());
@@ -263,7 +252,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public ByteBuffer getOutput()
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             return _out;
         }
@@ -293,7 +282,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         ByteBuffer b;
 
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             b = _out;
             _out = BufferUtil.allocate(b.capacity());
@@ -314,7 +303,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         ByteBuffer b;
 
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             while (BufferUtil.isEmpty(_out) && !isOutputShutdown())
             {
@@ -351,7 +340,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
      */
     public void setOutput(ByteBuffer out)
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             _out = out;
         }
@@ -359,21 +348,18 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     }
 
     /**
-     * @return <code>true</code> if there are bytes remaining to be read from the encoded input
+     * @return {@code true} if there are bytes remaining to be read from the encoded input
      */
     public boolean hasMore()
     {
         return getOutput().position() > 0;
     }
 
-    /*
-     * @see org.eclipse.io.EndPoint#fill(org.eclipse.io.Buffer)
-     */
     @Override
     public int fill(ByteBuffer buffer) throws IOException
     {
         int filled = 0;
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             while (true)
             {
@@ -411,14 +397,11 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return filled;
     }
 
-    /*
-     * @see org.eclipse.io.EndPoint#flush(org.eclipse.io.Buffer, org.eclipse.io.Buffer, org.eclipse.io.Buffer)
-     */
     @Override
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
         boolean flushed = true;
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             if (!isOpen())
                 throw new IOException("CLOSED");
@@ -461,13 +444,10 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         return flushed;
     }
 
-    /**
-     *
-     */
     @Override
     public void reset()
     {
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             _inQ.clear();
             _hasOutput.signalAll();
@@ -476,9 +456,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         super.reset();
     }
 
-    /*
-     * @see org.eclipse.io.EndPoint#getConnection()
-     */
     @Override
     public Object getTransport()
     {
@@ -507,7 +484,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         int q;
         ByteBuffer b;
         String o;
-        try (Locker.Lock lock = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             q = _inQ.size();
             b = _inQ.peek();

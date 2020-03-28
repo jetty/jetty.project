@@ -26,13 +26,22 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-api</artifactId>
+      <artifactId>websocket-jetty-api</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
@@ -65,7 +74,7 @@
               <rules>
                 <bannedDependencies>
                   <includes>
-                    <include>org.eclipse.jetty.websocket:jetty-websocket-api</include>
+                    <include>org.eclipse.jetty.websocket:websocket-jetty-api</include>
                     <include>javax.websocket</include>
                   </includes>
                 </bannedDependencies>

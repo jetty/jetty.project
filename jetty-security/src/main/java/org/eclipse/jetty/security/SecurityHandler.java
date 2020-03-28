@@ -1,29 +1,32 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.security;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -38,8 +41,10 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.component.DumpableCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Abstract SecurityHandler.
@@ -57,21 +62,29 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.AuthConfiguration
 {
-    private static final Logger LOG = Log.getLogger(SecurityHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SecurityHandler.class);
+    private static final List<Authenticator.Factory> __knownAuthenticatorFactories = new ArrayList<>();
 
     private boolean _checkWelcomeFiles = false;
     private Authenticator _authenticator;
-    private Authenticator.Factory _authenticatorFactory = new DefaultAuthenticatorFactory();
+    private Authenticator.Factory _authenticatorFactory;
     private String _realmName;
     private String _authMethod;
-    private final Map<String, String> _initParameters = new HashMap<String, String>();
+    private final Map<String, String> _initParameters = new HashMap<>();
     private LoginService _loginService;
     private IdentityService _identityService;
     private boolean _renewSession = true;
 
+    static
+    {
+        TypeUtil.serviceStream(ServiceLoader.load(Authenticator.Factory.class))
+            .forEach(__knownAuthenticatorFactories::add);
+        __knownAuthenticatorFactories.add(new DefaultAuthenticatorFactory());
+    }
+
     protected SecurityHandler()
     {
-        addBean(_authenticatorFactory);
+        addBean(new DumpableCollection("knownAuthenticatorFactories", __knownAuthenticatorFactories));
     }
 
     /**
@@ -164,6 +177,14 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
 
     /**
+     * @return the list of discovered authenticatorFactories
+     */
+    public List<Authenticator.Factory> getKnownAuthenticatorFactories()
+    {
+        return __knownAuthenticatorFactories;
+    }
+
+    /**
      * @return the realmName
      */
     @Override
@@ -241,12 +262,12 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
      * @param key the init key
      * @param value the init value
      * @return previous value
-     * @throws IllegalStateException if the SecurityHandler is running
+     * @throws IllegalStateException if the SecurityHandler is started
      */
     public String setInitParameter(String key, String value)
     {
-        if (isRunning())
-            throw new IllegalStateException("running");
+        if (isStarted())
+            throw new IllegalStateException("started");
         return _initParameters.put(key, value);
     }
 
@@ -336,9 +357,40 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 throw new IllegalStateException("LoginService has different IdentityService to " + this);
         }
 
-        Authenticator.Factory authenticatorFactory = getAuthenticatorFactory();
-        if (_authenticator == null && authenticatorFactory != null && _identityService != null)
-            setAuthenticator(authenticatorFactory.getAuthenticator(getServer(), ContextHandler.getCurrentContext(), this, _identityService, _loginService));
+        if (_authenticator == null && _identityService != null)
+        {
+            // If someone has set an authenticator factory only use that, otherwise try the list of discovered factories.
+            if (_authenticatorFactory != null)
+            {
+                Authenticator authenticator = _authenticatorFactory.getAuthenticator(getServer(), ContextHandler.getCurrentContext(),
+                    this, _identityService, _loginService);
+
+                if (authenticator != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Created authenticator {} with {}", authenticator, _authenticatorFactory);
+
+                    setAuthenticator(authenticator);
+                }
+            }
+            else
+            {
+                for (Authenticator.Factory factory : getKnownAuthenticatorFactories())
+                {
+                    Authenticator authenticator = factory.getAuthenticator(getServer(), ContextHandler.getCurrentContext(),
+                        this, _identityService, _loginService);
+
+                    if (authenticator != null)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Created authenticator {} with {}", authenticator, factory);
+
+                        setAuthenticator(authenticator);
+                        break;
+                    }
+                }
+            }
+        }
 
         if (_authenticator != null)
             _authenticator.setConfiguration(this);
@@ -390,9 +442,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
-     */
     @Override
     public boolean isSessionRenewedOnAuthentication()
     {

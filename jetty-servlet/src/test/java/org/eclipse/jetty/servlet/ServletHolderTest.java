@@ -1,38 +1,75 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
 
+import java.util.Collections;
+import java.util.Set;
+import javax.servlet.Servlet;
+import javax.servlet.ServletRegistration;
 import javax.servlet.UnavailableException;
+import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class ServletHolderTest
 {
+    public static class FakeServlet extends HttpServlet
+    {
+    }
+
+    @Test
+    public void testInitParams() throws Exception
+    {
+        ServletHolder holder = new ServletHolder(Source.JAVAX_API);
+        ServletRegistration reg = holder.getRegistration();
+
+        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameter(null, "foo"));
+
+        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameter("foo", null));
+
+        reg.setInitParameter("foo", "bar");
+        assertFalse(reg.setInitParameter("foo", "foo"));
+
+        Set<String> clash = reg.setInitParameters(Collections.singletonMap("foo", "bax"));
+        assertTrue(clash != null && clash.size() == 1, "should be one clash");
+
+        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameters(Collections.singletonMap((String)null, "bax")));
+        assertThrows(IllegalArgumentException.class, () -> reg.setInitParameters(Collections.singletonMap("foo", (String)null)));
+
+        Set<String> clash2 = reg.setInitParameters(Collections.singletonMap("FOO", "bax"));
+        assertTrue(clash2.isEmpty(), "should be no clash");
+        assertEquals(2, reg.getInitParameters().size(), "setInitParameters should not replace existing non-clashing init parameters");
+    }
 
     @Test
     public void testTransitiveCompareTo() throws Exception
@@ -67,27 +104,41 @@ public class ServletHolderTest
         ServletHolder h = new ServletHolder();
         h.setName("test");
 
-        assertEquals(null, h.getClassNameForJsp(null));
-
-        assertEquals(null, h.getClassNameForJsp(""));
-
-        assertEquals(null, h.getClassNameForJsp("/blah/"));
-
-        assertEquals(null, h.getClassNameForJsp("//blah///"));
-
-        assertEquals(null, h.getClassNameForJsp("/a/b/c/blah/"));
-
+        assertNull(h.getClassNameForJsp(null));
+        assertNull(h.getClassNameForJsp(""));
+        assertNull(h.getClassNameForJsp("/blah/"));
+        assertNull(h.getClassNameForJsp("//blah///"));
+        assertNull(h.getClassNameForJsp("/a/b/c/blah/"));
         assertEquals("org.apache.jsp.a.b.c.blah", h.getClassNameForJsp("/a/b/c/blah"));
-
         assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("/blah.jsp"));
-
         assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("//blah.jsp"));
-
         assertEquals("org.apache.jsp.blah_jsp", h.getClassNameForJsp("blah.jsp"));
-
         assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("/a/b/c/blah.jsp"));
-
         assertEquals("org.apache.jsp.a.b.c.blah_jsp", h.getClassNameForJsp("a/b/c/blah.jsp"));
+    }
+
+    @Test
+    public void testCreateInstance() throws Exception
+    {
+        try (StacklessLogging ignore = new StacklessLogging(ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        {
+            //test without a ServletContextHandler or current ContextHandler
+            ServletHolder holder = new ServletHolder();
+            holder.setName("foo");
+            holder.setHeldClass(FakeServlet.class);
+            Servlet servlet = holder.createInstance();
+            assertNotNull(servlet);
+
+            //test with a ServletContextHandler
+            Server server = new Server();
+            ServletContextHandler context = new ServletContextHandler();
+            server.setHandler(context);
+            ServletHandler handler = context.getServletHandler();
+            handler.addServlet(holder);
+            holder.setServletHandler(handler);
+            context.start();
+            assertNotNull(holder.getServlet());
+        }
     }
 
     @Test
@@ -108,9 +159,45 @@ public class ServletHolderTest
         {
             assertThat(e.getMessage(), containsString("foo"));
         }
-        catch (MultiException m)
+        catch (MultiException e)
         {
-            assertThat(m.getCause().getMessage(), containsString("foo"));
+            assertThat(e.getCause().getMessage(), containsString("foo"));
+        }
+    }
+
+    @Test
+    public void testWithClass() throws Exception
+    {
+        //Test adding servlet by class
+        try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        {
+            ServletContextHandler context = new ServletContextHandler();
+            ServletHandler handler = context.getServletHandler();
+            ServletHolder holder = new ServletHolder();
+            holder.setName("foo");
+            holder.setHeldClass(FakeServlet.class);
+            handler.addServlet(holder);
+            handler.start();
+            assertTrue(holder.isAvailable());
+            assertTrue(holder.isStarted());
+        }
+    }
+
+    @Test
+    public void testWithClassName() throws Exception
+    {
+        //Test adding servlet by classname
+        try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
+        {
+            ServletContextHandler context = new ServletContextHandler();
+            ServletHandler handler = context.getServletHandler();
+            ServletHolder holder = new ServletHolder();
+            holder.setName("foo");
+            holder.setClassName("org.eclipse.jetty.servlet.ServletHolderTest$FakeServlet");
+            handler.addServlet(holder);
+            handler.start();
+            assertTrue(holder.isAvailable());
+            assertTrue(holder.isStarted());
         }
     }
 
@@ -132,9 +219,9 @@ public class ServletHolderTest
         {
             assertThat(e.getMessage(), containsString("foo"));
         }
-        catch (MultiException m)
+        catch (MultiException e)
         {
-            assertThat(m.getCause().getMessage(), containsString("foo"));
+            assertThat(e.getCause().getMessage(), containsString("foo"));
         }
     }
 }

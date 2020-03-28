@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -21,6 +21,8 @@ package org.eclipse.jetty.util;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.eclipse.jetty.util.resource.Resource;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnJre;
@@ -160,20 +162,19 @@ public class TypeUtilTest
     }
 
     @Test
-    public void testGetLocationOfClass_FromMavenRepo()
+    public void testGetLocationOfClassFromMavenRepo() throws Exception
     {
         String mavenRepoPathProperty = System.getProperty("mavenRepoPath");
         assumeTrue(mavenRepoPathProperty != null);
         Path mavenRepoPath = Paths.get(mavenRepoPathProperty);
 
-        String mavenRepo = mavenRepoPath.toFile().getPath().replaceAll("\\\\", "/");
-
         // Classes from maven dependencies
-        assertThat(TypeUtil.getLocationOfClass(org.junit.jupiter.api.Assertions.class).toASCIIString(), containsString(mavenRepo));
+        Resource resource = Resource.newResource(TypeUtil.getLocationOfClass(org.junit.jupiter.api.Assertions.class).toASCIIString());
+        assertThat(resource.getFile().getCanonicalPath(), Matchers.startsWith(mavenRepoPath.toFile().getCanonicalPath()));
     }
 
     @Test
-    public void getLocationOfClass_ClassDirectory()
+    public void getLocationOfClassClassDirectory()
     {
         // Class from project dependencies
         assertThat(TypeUtil.getLocationOfClass(TypeUtil.class).toASCIIString(), containsString("/classes/"));
@@ -181,7 +182,7 @@ public class TypeUtilTest
 
     @Test
     @DisabledOnJre(JRE.JAVA_8)
-    public void testGetLocation_JvmCore_JPMS()
+    public void testGetLocationJvmCoreJPMS()
     {
         // Class from JVM core
         String expectedJavaBase = "/java.base";
@@ -190,7 +191,7 @@ public class TypeUtilTest
 
     @Test
     @DisabledOnJre(JRE.JAVA_8)
-    public void testGetLocation_JavaLangThreadDeath_JPMS()
+    public void testGetLocationJavaLangThreadDeathJPMS()
     {
         // Class from JVM core
         String expectedJavaBase = "/java.base";
@@ -199,7 +200,7 @@ public class TypeUtilTest
 
     @Test
     @EnabledOnJre(JRE.JAVA_8)
-    public void testGetLocation_JvmCore_Java8RT()
+    public void testGetLocationJvmCoreJava8RT()
     {
         // Class from JVM core
         String expectedJavaBase = "/rt.jar";
@@ -208,7 +209,7 @@ public class TypeUtilTest
 
     @Test
     @EnabledOnJre(JRE.JAVA_8)
-    public void testGetLocation_JavaLangThreadDeath_Java8RT()
+    public void testGetLocationJavaLangThreadDeathJava8RT()
     {
         // Class from JVM core
         String expectedJavaBase = "/rt.jar";

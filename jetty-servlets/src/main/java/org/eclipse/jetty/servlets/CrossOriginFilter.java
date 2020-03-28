@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlets;
@@ -23,8 +23,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
-import java.util.regex.Matcher;
+import java.util.Set;
 import java.util.regex.Pattern;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -36,8 +37,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the
@@ -123,7 +124,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class CrossOriginFilter implements Filter
 {
-    private static final Logger LOG = Log.getLogger(CrossOriginFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CrossOriginFilter.class);
 
     // Request headers
     private static final String ORIGIN_HEADER = "Origin";
@@ -157,8 +158,10 @@ public class CrossOriginFilter implements Filter
     private boolean anyOriginAllowed;
     private boolean anyTimingOriginAllowed;
     private boolean anyHeadersAllowed;
-    private List<String> allowedOrigins = new ArrayList<String>();
-    private List<String> allowedTimingOrigins = new ArrayList<String>();
+    private Set<String> allowedOrigins = new HashSet<String>();
+    private List<Pattern> allowedOriginPatterns = new ArrayList<Pattern>();
+    private Set<String> allowedTimingOrigins = new HashSet<String>();
+    private List<Pattern> allowedTimingOriginPatterns = new ArrayList<Pattern>();
     private List<String> allowedMethods = new ArrayList<String>();
     private List<String> allowedHeaders = new ArrayList<String>();
     private List<String> exposedHeaders = new ArrayList<String>();
@@ -172,8 +175,8 @@ public class CrossOriginFilter implements Filter
         String allowedOriginsConfig = config.getInitParameter(ALLOWED_ORIGINS_PARAM);
         String allowedTimingOriginsConfig = config.getInitParameter(ALLOWED_TIMING_ORIGINS_PARAM);
 
-        anyOriginAllowed = generateAllowedOrigins(allowedOrigins, allowedOriginsConfig, DEFAULT_ALLOWED_ORIGINS);
-        anyTimingOriginAllowed = generateAllowedOrigins(allowedTimingOrigins, allowedTimingOriginsConfig, DEFAULT_ALLOWED_TIMING_ORIGINS);
+        anyOriginAllowed = generateAllowedOrigins(allowedOrigins, allowedOriginPatterns, allowedOriginsConfig, DEFAULT_ALLOWED_ORIGINS);
+        anyTimingOriginAllowed = generateAllowedOrigins(allowedTimingOrigins, allowedTimingOriginPatterns, allowedTimingOriginsConfig, DEFAULT_ALLOWED_TIMING_ORIGINS);
 
         String allowedMethodsConfig = config.getInitParameter(ALLOWED_METHODS_PARAM);
         if (allowedMethodsConfig == null)
@@ -235,7 +238,7 @@ public class CrossOriginFilter implements Filter
         }
     }
 
-    private boolean generateAllowedOrigins(List<String> allowedOriginStore, String allowedOriginsConfig, String defaultOrigin)
+    private boolean generateAllowedOrigins(Set<String> allowedOriginStore, List<Pattern> allowedOriginPatternStore, String allowedOriginsConfig, String defaultOrigin)
     {
         if (allowedOriginsConfig == null)
             allowedOriginsConfig = defaultOrigin;
@@ -247,7 +250,12 @@ public class CrossOriginFilter implements Filter
                 if (ANY_ORIGIN.equals(allowedOrigin))
                 {
                     allowedOriginStore.clear();
+                    allowedOriginPatternStore.clear();
                     return true;
+                }
+                else if (allowedOrigin.contains("*"))
+                {
+                    allowedOriginPatternStore.add(Pattern.compile(parseAllowedWildcardOriginToRegex(allowedOrigin)));
                 }
                 else
                 {
@@ -270,7 +278,7 @@ public class CrossOriginFilter implements Filter
         // Is it a cross origin request ?
         if (origin != null && isEnabled(request))
         {
-            if (anyOriginAllowed || originMatches(allowedOrigins, origin))
+            if (anyOriginAllowed || originMatches(allowedOrigins, allowedOriginPatterns, origin))
             {
                 if (isSimpleRequest(request))
                 {
@@ -292,7 +300,7 @@ public class CrossOriginFilter implements Filter
                     handleSimpleResponse(request, response, origin);
                 }
 
-                if (anyTimingOriginAllowed || originMatches(allowedTimingOrigins, origin))
+                if (anyTimingOriginAllowed || originMatches(allowedTimingOrigins, allowedTimingOriginPatterns, origin))
                 {
                     response.setHeader(TIMING_ALLOW_ORIGIN_HEADER, origin);
                 }
@@ -330,7 +338,7 @@ public class CrossOriginFilter implements Filter
         return true;
     }
 
-    private boolean originMatches(List<String> allowedOrigins, String originList)
+    private boolean originMatches(Set<String> allowedOrigins, List<Pattern> allowedOriginPatterns, String originList)
     {
         if (originList.trim().length() == 0)
             return false;
@@ -341,28 +349,16 @@ public class CrossOriginFilter implements Filter
             if (origin.trim().length() == 0)
                 continue;
 
-            for (String allowedOrigin : allowedOrigins)
+            if (allowedOrigins.contains(origin))
+                return true;
+
+            for (Pattern allowedOrigin : allowedOriginPatterns)
             {
-                if (allowedOrigin.contains("*"))
-                {
-                    Matcher matcher = createMatcher(origin, allowedOrigin);
-                    if (matcher.matches())
-                        return true;
-                }
-                else if (allowedOrigin.equals(origin))
-                {
+                if (allowedOrigin.matcher(origin).matches())
                     return true;
-                }
             }
         }
         return false;
-    }
-
-    private Matcher createMatcher(String origin, String allowedOrigin)
-    {
-        String regex = parseAllowedWildcardOriginToRegex(allowedOrigin);
-        Pattern pattern = Pattern.compile(regex);
-        return pattern.matcher(origin);
     }
 
     private String parseAllowedWildcardOriginToRegex(String allowedOrigin)
@@ -507,7 +503,11 @@ public class CrossOriginFilter implements Filter
     public void destroy()
     {
         anyOriginAllowed = false;
+        anyTimingOriginAllowed = false;
         allowedOrigins.clear();
+        allowedOriginPatterns.clear();
+        allowedTimingOrigins.clear();
+        allowedTimingOriginPatterns.clear();
         allowedMethods.clear();
         allowedHeaders.clear();
         preflightMaxAge = 0;

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.handler.gzip;
@@ -25,7 +25,6 @@ import java.util.ListIterator;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -34,6 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -48,8 +48,8 @@ import org.eclipse.jetty.util.RegexSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.compression.DeflaterPool;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Handler that can dynamically GZIP uncompress requests, and compress responses.
@@ -91,8 +91,7 @@ import org.eclipse.jetty.util.log.Logger;
  * </li>
  * <li>
  * Is the Response {@code Content-Length} header present, and does its
- * value meet the minimum gzip size requirements?
- * <br> (Default: 16 bytes. see {@link GzipHandler#DEFAULT_MIN_GZIP_SIZE})
+ * value meet the minimum gzip size requirements (default 32 bytes)?
  * </li>
  * <li>
  * Is the Request {@code Accept} header present and does it contain the
@@ -154,9 +153,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 {
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
-    public static final int DEFAULT_MIN_GZIP_SIZE = 2048;
-    public static final int COMPRESSION_LEVEL = Deflater.DEFAULT_COMPRESSION;
-    private static final Logger LOG = Log.getLogger(GzipHandler.class);
+    public static final int DEFAULT_MIN_GZIP_SIZE = 32;
+    public static final int BREAK_EVEN_GZIP_SIZE = 23;
+    private static final Logger LOG = LoggerFactory.getLogger(GzipHandler.class);
     private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding", "gzip");
     private static final HttpField TE_CHUNKED = new PreEncodedHttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED.asString());
     private static final Pattern COMMA_GZIP = Pattern.compile(".*, *gzip");
@@ -422,7 +421,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Override
     public Deflater getDeflater(Request request, long contentLength)
     {
-        String ua = request.getHttpFields().get(HttpHeader.USER_AGENT);
+        HttpFields httpFields = request.getHttpFields();
+        String ua = httpFields.get(HttpHeader.USER_AGENT);
         if (ua != null && !isAgentGzipable(ua))
         {
             LOG.debug("{} excluded user agent {}", this, request);
@@ -436,16 +436,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // check the accept encoding header
-        HttpField accept = request.getHttpFields().getField(HttpHeader.ACCEPT_ENCODING);
-
-        if (accept == null)
-        {
-            LOG.debug("{} excluded !accept {}", this, request);
-            return null;
-        }
-        boolean gzip = accept.contains("gzip");
-
-        if (!gzip)
+        if (!httpFields.contains(HttpHeader.ACCEPT_ENCODING, "gzip"))
         {
             LOG.debug("{} excluded not gzip accept {}", this, request);
             return null;
@@ -633,6 +624,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
             if (inflate)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} inflate {}", this, request);
+
                 baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(), _inflateBufferSize));
 
                 for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext(); )
@@ -881,13 +875,19 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
-     * Set the minimum response size to trigger dynamic compression
+     * Set the minimum response size to trigger dynamic compression.
+     * <p>
+     *     Sizes below {@link #BREAK_EVEN_GZIP_SIZE} will result a compressed response that is larger than the
+     *     original data.
+     * </p>
      *
-     * @param minGzipSize minimum response size in bytes
+     * @param minGzipSize minimum response size in bytes (not allowed to be lower then {@link #BREAK_EVEN_GZIP_SIZE})
      */
     public void setMinGzipSize(int minGzipSize)
     {
-        _minGzipSize = minGzipSize;
+        if (minGzipSize < BREAK_EVEN_GZIP_SIZE)
+            LOG.warn("minGzipSize of {} is inefficient for short content, break even is size {}", minGzipSize, BREAK_EVEN_GZIP_SIZE);
+        _minGzipSize = Math.max(0, minGzipSize);
     }
 
     /**
@@ -958,5 +958,11 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     protected DeflaterPool newDeflaterPool(int capacity)
     {
         return new DeflaterPool(capacity, Deflater.DEFAULT_COMPRESSION, true);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%s,min=%s,inflate=%s}", getClass().getSimpleName(), hashCode(), getState(), _minGzipSize, _inflateBufferSize);
     }
 }

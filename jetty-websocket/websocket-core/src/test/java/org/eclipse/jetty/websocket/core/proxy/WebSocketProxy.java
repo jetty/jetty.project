@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core.proxy;
@@ -26,17 +26,18 @@ import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class WebSocketProxy
 {
-    protected static final Logger LOG = Log.getLogger(WebSocketProxy.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(WebSocketProxy.class);
 
     enum State
     {
@@ -188,7 +189,7 @@ class WebSocketProxy
                             // the callback is saved until a close response comes in sendFrame from Server2Proxy
                             // if the callback was completed here then core would send its own close response
                             closeCallback = callback;
-                            sendCallback = Callback.from(()->{}, callback::failed);
+                            sendCallback = Callback.from(() -> {}, callback::failed);
                         }
                         break;
 
@@ -383,7 +384,7 @@ class WebSocketProxy
                         try
                         {
                             state = State.CONNECTING;
-                            client.connect(this, serverUri).whenComplete((s,t)->
+                            client.connect(this, serverUri).whenComplete((s,t) ->
                             {
                                 if (t != null)
                                     onConnectFailure(t, callback);
@@ -526,7 +527,7 @@ class WebSocketProxy
                         {
                             state = State.ISHUT;
                             closeCallback = callback;
-                            sendCallback = Callback.from(()->{}, callback::failed);
+                            sendCallback = Callback.from(() -> {}, callback::failed);
                         }
                         break;
 
@@ -627,6 +628,7 @@ class WebSocketProxy
                         state = State.FAILED;
                         Callback doubleCallback = Callback.from(callback, closeCallback);
                         sendCallback =  Callback.from(doubleCallback, failure);
+                        break;
 
                     default:
                         state = State.FAILED;

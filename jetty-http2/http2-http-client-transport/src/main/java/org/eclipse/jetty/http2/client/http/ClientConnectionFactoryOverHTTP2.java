@@ -1,34 +1,41 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.HTTP2ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
+import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-public class ClientConnectionFactoryOverHTTP2 implements ClientConnectionFactory
+public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle implements ClientConnectionFactory
 {
     private final ClientConnectionFactory factory = new HTTP2ClientConnectionFactory();
     private final HTTP2Client client;
@@ -36,10 +43,11 @@ public class ClientConnectionFactoryOverHTTP2 implements ClientConnectionFactory
     public ClientConnectionFactoryOverHTTP2(HTTP2Client client)
     {
         this.client = client;
+        addBean(client);
     }
 
     @Override
-    public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         HTTPSessionListenerPromise listenerPromise = new HTTPSessionListenerPromise(context);
         context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, client);
@@ -61,6 +69,55 @@ public class ClientConnectionFactoryOverHTTP2 implements ClientConnectionFactory
         public H2C(HTTP2Client client)
         {
             super(List.of("h2c"), new ClientConnectionFactoryOverHTTP2(client));
+        }
+
+        @Override
+        public void upgrade(EndPoint endPoint, Map<String, Object> context)
+        {
+            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            @SuppressWarnings("unchecked")
+            Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+            context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise<HttpConnectionOverHTTP2>()
+            {
+                @Override
+                public void succeeded(HttpConnectionOverHTTP2 connection)
+                {
+                    // This code is run when the client receives the server preface reply.
+                    // Upgrade the connection to setup HTTP/2 frame listeners that will
+                    // handle the HTTP/2 response to the upgrade request.
+                    promise.succeeded(connection);
+                    connection.upgrade(context);
+                    // The connection can be used only after the upgrade that
+                    // creates stream #1 corresponding to the HTTP/1.1 upgrade
+                    // request, otherwise other requests can steal id #1.
+                    destination.accept(connection);
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    promise.failed(x);
+                }
+            });
+            upgrade(destination.getClientConnectionFactory(), endPoint, context);
+        }
+
+        private void upgrade(ClientConnectionFactory factory, EndPoint endPoint, Map<String, Object> context)
+        {
+            try
+            {
+                // Avoid double TLS wrapping. We want to keep the existing
+                // SslConnection that has already performed the TLS handshake,
+                // and just upgrade the nested connection.
+                if (factory instanceof SslClientConnectionFactory && endPoint instanceof SslConnection.DecryptedEndPoint)
+                    factory = ((SslClientConnectionFactory)factory).getClientConnectionFactory();
+                var newConnection = factory.newConnection(endPoint, context);
+                endPoint.upgrade(newConnection);
+            }
+            catch (IOException x)
+            {
+                throw new UncheckedIOException(x);
+            }
         }
     }
 }

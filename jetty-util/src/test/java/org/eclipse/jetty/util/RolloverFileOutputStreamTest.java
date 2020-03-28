@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -86,7 +86,7 @@ public class RolloverFileOutputStreamTest
      * <a href="Issue #1507">https://github.com/eclipse/jetty.project/issues/1507</a>
      */
     @Test
-    public void testMidnightRolloverCalc_PDT_Issue1507()
+    public void testMidnightRolloverCalcPDTIssue1507()
     {
         ZoneId zone = toZoneId("PST");
         ZonedDateTime initialDate = toDateTime("2017.04.26-08:00:00.0 PM PDT", zone);
@@ -94,7 +94,7 @@ public class RolloverFileOutputStreamTest
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2017.04.27-12:00:00.0 AM PDT"));
 
-        Object expected[][] = {
+        Object[][] expected = {
             {"2017.04.27-12:00:00.0 AM PDT", 14_400_000L},
             {"2017.04.28-12:00:00.0 AM PDT", 86_400_000L},
             {"2017.04.29-12:00:00.0 AM PDT", 86_400_000L},
@@ -107,7 +107,7 @@ public class RolloverFileOutputStreamTest
     }
 
     @Test
-    public void testMidnightRolloverCalc_PST_DST_Start()
+    public void testMidnightRolloverCalcPSTDSTStart()
     {
         ZoneId zone = toZoneId("PST");
         ZonedDateTime initialDate = toDateTime("2016.03.10-01:23:45.0 PM PST", zone);
@@ -115,7 +115,7 @@ public class RolloverFileOutputStreamTest
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2016.03.11-12:00:00.0 AM PST"));
 
-        Object expected[][] = {
+        Object[][] expected = {
             {"2016.03.12-12:00:00.0 AM PST", 86_400_000L},
             {"2016.03.13-12:00:00.0 AM PST", 86_400_000L},
             {"2016.03.14-12:00:00.0 AM PDT", 82_800_000L}, // the short day
@@ -127,7 +127,7 @@ public class RolloverFileOutputStreamTest
     }
 
     @Test
-    public void testMidnightRolloverCalc_PST_DST_End()
+    public void testMidnightRolloverCalcPSTDSTEnd()
     {
         ZoneId zone = toZoneId("PST");
         ZonedDateTime initialDate = toDateTime("2016.11.03-11:22:33.0 AM PDT", zone);
@@ -135,7 +135,7 @@ public class RolloverFileOutputStreamTest
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2016.11.04-12:00:00.0 AM PDT"));
 
-        Object expected[][] = {
+        Object[][] expected = {
             {"2016.11.05-12:00:00.0 AM PDT", 86_400_000L},
             {"2016.11.06-12:00:00.0 AM PDT", 86_400_000L},
             {"2016.11.07-12:00:00.0 AM PST", 90_000_000L}, // the long day
@@ -147,7 +147,7 @@ public class RolloverFileOutputStreamTest
     }
 
     @Test
-    public void testMidnightRolloverCalc_Sydney_DST_Start()
+    public void testMidnightRolloverCalcSydneyDSTStart()
     {
         ZoneId zone = toZoneId("Australia/Sydney");
         ZonedDateTime initialDate = toDateTime("2016.09.31-01:23:45.0 PM AEST", zone);
@@ -155,7 +155,7 @@ public class RolloverFileOutputStreamTest
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2016.10.01-12:00:00.0 AM AEST"));
 
-        Object expected[][] = {
+        Object[][] expected = {
             {"2016.10.02-12:00:00.0 AM AEST", 86_400_000L},
             {"2016.10.03-12:00:00.0 AM AEDT", 82_800_000L}, // the short day
             {"2016.10.04-12:00:00.0 AM AEDT", 86_400_000L},
@@ -167,7 +167,7 @@ public class RolloverFileOutputStreamTest
     }
 
     @Test
-    public void testMidnightRolloverCalc_Sydney_DST_End()
+    public void testMidnightRolloverCalcSydneyDSTEnd()
     {
         ZoneId zone = toZoneId("Australia/Sydney");
         ZonedDateTime initialDate = toDateTime("2016.04.01-11:22:33.0 AM AEDT", zone);
@@ -175,7 +175,7 @@ public class RolloverFileOutputStreamTest
         ZonedDateTime midnight = RolloverFileOutputStream.toMidnight(initialDate);
         assertThat("Midnight", toString(midnight), is("2016.04.02-12:00:00.0 AM AEDT"));
 
-        Object expected[][] = {
+        Object[][] expected = {
             {"2016.04.03-12:00:00.0 AM AEDT", 86_400_000L},
             {"2016.04.04-12:00:00.0 AM AEST", 90_000_000L}, // The long day
             {"2016.04.05-12:00:00.0 AM AEST", 86_400_000L},

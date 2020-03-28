@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core.proxy;
@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -37,12 +38,11 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.EchoFrameHandler;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.FrameHandler.CoreSession;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestAsyncFrameHandler;
 import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
@@ -64,12 +64,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketProxyTest
 {
+    // Port chosen to (hopefully) not conflict with existing servers on your test machine.
+    // So don't choose ports like 8080, 9090, 8888, etc.
+    private static final int PROXY_PORT = 49999;
     private Server _server;
     private WebSocketCoreClient _client;
     private WebSocketProxy proxy;
     private EchoFrameHandler serverFrameHandler;
     private TestHandler testHandler;
-    FrameHandler.ConfigurationCustomizer defaultCustomizer;
+    Configuration.ConfigurationCustomizer defaultCustomizer;
 
     private class TestHandler extends AbstractHandler
     {
@@ -99,14 +102,14 @@ public class WebSocketProxyTest
     {
         _server = new Server();
         ServerConnector connector = new ServerConnector(_server);
-        connector.setPort(8080);
+        connector.setPort(PROXY_PORT);
         _server.addConnector(connector);
 
         HandlerList handlers = new HandlerList();
         testHandler = new TestHandler();
         handlers.addHandler(testHandler);
 
-        defaultCustomizer = new FrameHandler.ConfigurationCustomizer();
+        defaultCustomizer = new Configuration.ConfigurationCustomizer();
         defaultCustomizer.setIdleTimeout(Duration.ofSeconds(3));
 
         ContextHandler serverContext = new ContextHandler("/server");
@@ -118,7 +121,7 @@ public class WebSocketProxyTest
 
         _client = new WebSocketCoreClient();
         _client.start();
-        URI uri = new URI("ws://localhost:8080/server/");
+        URI uri = new URI("ws://localhost:" + PROXY_PORT + "/server/");
 
         ContextHandler proxyContext = new ContextHandler("/proxy");
         proxy = new WebSocketProxy(_client, uri);
@@ -158,7 +161,7 @@ public class WebSocketProxyTest
         WebSocketProxy.Client2Proxy proxyClientSide = proxy.client2Proxy;
         WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientFrameHandler);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
         upgradeRequest.setConfiguration(defaultCustomizer);
         CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
 
@@ -198,7 +201,7 @@ public class WebSocketProxyTest
         TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT");
         try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketCoreSession.class))
         {
-            ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientFrameHandler);
+            ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
             upgradeRequest.setConfiguration(defaultCustomizer);
             CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
             response.get(5, TimeUnit.SECONDS);
@@ -218,9 +221,8 @@ public class WebSocketProxyTest
 
         CloseStatus closeStatus = CloseStatus.getCloseStatus(clientFrameHandler.receivedFrames.poll());
         assertThat(closeStatus.getCode(), is(CloseStatus.SERVER_ERROR));
-        assertThat(closeStatus.getReason(), containsString("Failed to upgrade to websocket: Unexpected HTTP Response Status Code:"));
+        assertThat(closeStatus.getReason(), containsString("Failed to upgrade to websocket: Unexpected HTTP Response"));
     }
-
 
     @Test
     public void testClientError() throws Exception
@@ -238,10 +240,10 @@ public class WebSocketProxyTest
 
         try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketCoreSession.class))
         {
-            ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientFrameHandler);
+            ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
             upgradeRequest.setConfiguration(defaultCustomizer);
             CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
-            Exception e = assertThrows(ExecutionException.class, ()->response.get(5, TimeUnit.SECONDS));
+            Exception e = assertThrows(ExecutionException.class, () -> response.get(5, TimeUnit.SECONDS));
             assertThat(e.getMessage(), containsString("simulated client onOpen error"));
             assertTrue(clientFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
             assertTrue(serverFrameHandler.closeLatch.await(5, TimeUnit.SECONDS));
@@ -269,7 +271,7 @@ public class WebSocketProxyTest
         WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
 
         TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT");
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientFrameHandler);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
         upgradeRequest.setConfiguration(defaultCustomizer);
         CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
 
@@ -333,7 +335,7 @@ public class WebSocketProxyTest
             }
         };
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:8080/proxy/"), clientFrameHandler);
+        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
         upgradeRequest.setConfiguration(defaultCustomizer);
         CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
         response.get(5, TimeUnit.SECONDS);

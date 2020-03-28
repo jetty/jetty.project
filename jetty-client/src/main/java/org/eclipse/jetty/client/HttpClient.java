@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -74,13 +74,13 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>HttpClient provides an efficient, asynchronous, non-blocking implementation
@@ -122,9 +122,9 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 public class HttpClient extends ContainerLifeCycle
 {
     public static final String USER_AGENT = "Jetty/" + Jetty.VERSION;
-    private static final Logger LOG = Log.getLogger(HttpClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpClient.class);
 
-    private final ConcurrentMap<HttpDestination.Key, HttpDestination> destinations = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
     private final ProtocolHandlers handlers = new ProtocolHandlers();
     private final List<Request.Listener> requestListeners = new ArrayList<>();
     private final Set<ContentDecoder.Factory> decoderFactories = new ContentDecoderFactorySet();
@@ -150,6 +150,8 @@ public class HttpClient extends ContainerLifeCycle
     private String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
     private HttpCompliance httpCompliance = HttpCompliance.RFC7230;
     private String defaultRequestContentType = "application/octet-stream";
+    private boolean useInputDirectByteBuffers = true;
+    private boolean useOutputDirectByteBuffers = true;
 
     /**
      * Creates a HttpClient instance that can perform HTTP/1.1 requests to non-TLS and TLS destinations.
@@ -214,6 +216,7 @@ public class HttpClient extends ContainerLifeCycle
         handlers.put(new RedirectProtocolHandler(this));
         handlers.put(new WWWAuthenticationProtocolHandler(this));
         handlers.put(new ProxyAuthenticationProtocolHandler(this));
+        handlers.put(new UpgradeProtocolHandler());
 
         decoderFactories.add(new GZIPContentDecoder.Factory(byteBufferPool));
 
@@ -497,65 +500,47 @@ public class HttpClient extends ContainerLifeCycle
         return uri;
     }
 
-    /**
-     * Returns a {@link Destination} for the given scheme, host and port.
-     * Applications may use {@link Destination}s to create {@link Connection}s
-     * that will be outside HttpClient's pooling mechanism, to explicitly
-     * control the connection lifecycle (in particular their termination with
-     * {@link Connection#close()}).
-     *
-     * @param scheme the destination scheme
-     * @param host the destination host
-     * @param port the destination port
-     * @return the destination
-     * @see #getDestinations()
-     */
-    public Destination getDestination(String scheme, String host, int port)
+    public Destination resolveDestination(Request request)
     {
-        Origin origin = createOrigin(scheme, host, port);
-        return resolveDestination(new HttpDestination.Key(origin, null));
+        HttpClientTransport transport = getTransport();
+        Origin origin = transport.newOrigin((HttpRequest)request);
+        HttpDestination destination = resolveDestination(origin);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Resolved {} for {}", destination, request);
+        return destination;
     }
 
-    private Origin createOrigin(String scheme, String host, int port)
+    public Origin createOrigin(HttpRequest request, Origin.Protocol protocol)
     {
+        String scheme = request.getScheme();
         if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme) &&
             !HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
-
         scheme = scheme.toLowerCase(Locale.ENGLISH);
+        String host = request.getHost();
         host = host.toLowerCase(Locale.ENGLISH);
+        int port = request.getPort();
         port = normalizePort(scheme, port);
-
-        return new Origin(scheme, host, port);
+        return new Origin(scheme, host, port, request.getTag(), protocol);
     }
 
-    private HttpDestination resolveDestination(HttpDestination.Key key)
+    public HttpDestination resolveDestination(Origin origin)
     {
-        HttpDestination destination = destinations.get(key);
-        if (destination == null)
+        return destinations.computeIfAbsent(origin, o ->
         {
-            destination = getTransport().newHttpDestination(key);
+            HttpDestination destination = getTransport().newHttpDestination(o);
             // Start the destination before it's published to other threads.
             addManaged(destination);
-            HttpDestination existing = destinations.putIfAbsent(key, destination);
-            if (existing != null)
-            {
-                removeBean(destination);
-                destination = existing;
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Created {}", destination);
-            }
-        }
-        return destination;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Created {}", destination);
+            return destination;
+        });
     }
 
     protected boolean removeDestination(HttpDestination destination)
     {
         removeBean(destination);
-        return destinations.remove(destination.getKey(), destination);
+        return destinations.remove(destination.getOrigin(), destination);
     }
 
     /**
@@ -568,16 +553,7 @@ public class HttpClient extends ContainerLifeCycle
 
     protected void send(final HttpRequest request, List<Response.ResponseListener> listeners)
     {
-        Origin origin = createOrigin(request.getScheme(), request.getHost(), request.getPort());
-        HttpClientTransport transport = getTransport();
-        HttpDestination.Key destinationKey = null;
-        if (transport instanceof HttpClientTransport.Dynamic)
-            destinationKey = ((HttpClientTransport.Dynamic)transport).newDestinationKey(request, origin);
-        if (destinationKey == null)
-            destinationKey = new HttpDestination.Key(origin, null);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Selected {} for {}", destinationKey, request);
-        HttpDestination destination = resolveDestination(destinationKey);
+        HttpDestination destination = (HttpDestination)resolveDestination(request);
         destination.send(request, listeners);
     }
 
@@ -1091,6 +1067,40 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
+     * @return whether to use direct ByteBuffers for reading
+     */
+    @ManagedAttribute("Whether to use direct ByteBuffers for reading")
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return useInputDirectByteBuffers;
+    }
+
+    /**
+     * @param useInputDirectByteBuffers whether to use direct ByteBuffers for reading
+     */
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    /**
+     * @return whether to use direct ByteBuffers for writing
+     */
+    @ManagedAttribute("Whether to use direct ByteBuffers for writing")
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return useOutputDirectByteBuffers;
+    }
+
+    /**
+     * @param useOutputDirectByteBuffers whether to use direct ByteBuffers for writing
+     */
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
+    /**
      * @return the forward proxy configuration
      */
     public ProxyConfiguration getProxyConfiguration()
@@ -1128,14 +1138,16 @@ public class HttpClient extends ContainerLifeCycle
             return port == 80;
     }
 
-    static boolean isSchemeSecure(String scheme)
+    public static boolean isSchemeSecure(String scheme)
     {
         return HttpScheme.HTTPS.is(scheme) || HttpScheme.WSS.is(scheme);
     }
 
-    protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
+    protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
     {
-        return new SslClientConnectionFactory(getSslContextFactory(), getByteBufferPool(), getExecutor(), connectionFactory);
+        if (sslContextFactory == null)
+            sslContextFactory = getSslContextFactory();
+        return new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), connectionFactory);
     }
 
     private class ContentDecoderFactorySet implements Set<ContentDecoder.Factory>

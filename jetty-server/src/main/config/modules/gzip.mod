@@ -15,7 +15,7 @@ etc/jetty-gzip.xml
 
 [ini-template]
 ## Minimum content length after which gzip is enabled
-# jetty.gzip.minGzipSize=2048
+# jetty.gzip.minGzipSize=32
 
 ## Check whether a file with *.gz extension exists
 # jetty.gzip.checkGzExists=false

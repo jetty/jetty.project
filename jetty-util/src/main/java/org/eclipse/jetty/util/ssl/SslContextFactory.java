@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.ssl;
@@ -26,6 +26,8 @@ import java.net.Socket;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.Principal;
+import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.CRL;
@@ -63,6 +65,7 @@ import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
@@ -83,12 +86,12 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Password;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>SslContextFactory is used to configure SSL parameters
@@ -99,69 +102,24 @@ import org.eclipse.jetty.util.security.Password;
 @ManagedObject
 public abstract class SslContextFactory extends AbstractLifeCycle implements Dumpable
 {
-    public static final TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{
-        new X509ExtendedTrustManager()
-        {
-            @Override
-            public X509Certificate[] getAcceptedIssuers()
-            {
-                return new X509Certificate[0];
-            }
-
-            @Override
-            public void checkClientTrusted(X509Certificate[] certs, String authType)
-            {
-            }
-
-            @Override
-            public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket)
-            {
-            }
-
-            @Override
-            public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
-            {
-            }
-
-            @Override
-            public void checkServerTrusted(X509Certificate[] certs, String authType)
-            {
-            }
-
-            @Override
-            public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket)
-            {
-            }
-
-            @Override
-            public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
-            {
-            }
-        }
-    };
-
-    private static final Logger LOG = Log.getLogger(SslContextFactory.class);
-    private static final Logger LOG_CONFIG = LOG.getLogger("SslContextFactoryConfig");
-
+    public static final TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{new X509ExtendedTrustManagerWrapper(null)};
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM = KeyManagerFactory.getDefaultAlgorithm();
-
     public static final String DEFAULT_TRUSTMANAGERFACTORY_ALGORITHM = TrustManagerFactory.getDefaultAlgorithm();
-
     /**
      * String name of key password property.
      */
     public static final String KEYPASSWORD_PROPERTY = "org.eclipse.jetty.ssl.keypassword";
-
     /**
      * String name of keystore password property.
      */
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
 
+    private static final Logger LOG = LoggerFactory.getLogger(SslContextFactory.class);
+    private static final Logger LOG_CONFIG = LoggerFactory.getLogger(LOG.getName() + ".config");
     /**
      * Default Excluded Protocols List
      */
     private static final String[] DEFAULT_EXCLUDED_PROTOCOLS = {"SSL", "SSLv2", "SSLv2Hello", "SSLv3"};
-
     /**
      * Default Excluded Cipher Suite List
      */
@@ -183,16 +141,16 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     private final Set<String> _includeProtocols = new LinkedHashSet<>();
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
     private final List<String> _includeCipherSuites = new ArrayList<>();
-    private final Map<String, X509> _aliasX509 = new HashMap<>();
-    private final Map<String, X509> _certHosts = new HashMap<>();
-    private final Map<String, X509> _certWilds = new HashMap<>();
+    protected final Map<String, X509> _aliasX509 = new HashMap<>();
+    protected final Map<String, X509> _certHosts = new HashMap<>();
+    protected final Map<String, X509> _certWilds = new HashMap<>();
     private String[] _selectedProtocols;
     private boolean _useCipherSuitesOrder = true;
     private Comparator<String> _cipherComparator;
     private String[] _selectedCipherSuites;
     private Resource _keyStoreResource;
     private String _keyStoreProvider;
-    private String _keyStoreType = "JKS";
+    private String _keyStoreType = "PKCS12";
     private String _certAlias;
     private Resource _trustStoreResource;
     private String _trustStoreProvider;
@@ -444,7 +402,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
         catch (NoSuchAlgorithmException x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
         }
     }
 
@@ -682,7 +640,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
-     * @return The type of the key store (default "JKS")
+     * @return The type of the key store (default "PKCS12")
      */
     @ManagedAttribute("The keyStore type")
     public String getKeyStoreType()
@@ -691,7 +649,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     }
 
     /**
-     * @param keyStoreType The type of the key store (default "JKS")
+     * @param keyStoreType The type of the key store
      */
     public void setKeyStoreType(String keyStoreType)
     {
@@ -1091,7 +1049,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     /**
      * When set to "HTTPS" hostname verification will be enabled.
-     * Deployments can be vulnerable to a man-in-the-middle attack if a EndpointIndentificationAlgorithm
+     * Deployments can be vulnerable to a man-in-the-middle attack if a EndpointIdentificationAlgorithm
      * is not set.
      *
      * @param endpointIdentificationAlgorithm Set the endpointIdentificationAlgorithm
@@ -1180,16 +1138,6 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
                     {
                         if (managers[idx] instanceof X509ExtendedKeyManager)
                             managers[idx] = new AliasedX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx], alias);
-                    }
-                }
-
-                // Is SNI needed to select a certificate?
-                if (!_certWilds.isEmpty() || _certHosts.size() > 1 || (_certHosts.size() == 1 && _aliasX509.size() > 1))
-                {
-                    for (int idx = 0; idx < managers.length; idx++)
-                    {
-                        if (managers[idx] instanceof X509ExtendedKeyManager)
-                            managers[idx] = new SniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
                     }
                 }
             }
@@ -1673,9 +1621,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
         catch (Throwable cause)
         {
-            LOG.info("Unable to get CertificateFactory instance for type [{}] on provider [{}], using default", type, provider);
+            String msg = String.format("Unable to get CertificateFactory instance for type [%s] on provider [%s], using default", type, provider);
             if (LOG.isDebugEnabled())
-                LOG.debug(cause);
+                LOG.debug(msg, cause);
+            else
+                LOG.info(msg);
         }
 
         return CertificateFactory.getInstance(type);
@@ -1695,9 +1645,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
         catch (Throwable cause)
         {
-            LOG.info("Unable to get CertStore instance for type [{}] on provider [{}], using default", type, provider);
+            String msg = String.format("Unable to get CertStore instance for type [%s] on provider [%s], using default", type, provider);
             if (LOG.isDebugEnabled())
-                LOG.debug(cause);
+                LOG.debug(msg, cause);
+            else
+                LOG.info(msg);
         }
 
         return CertStore.getInstance(type, new CollectionCertStoreParameters(crls));
@@ -1718,9 +1670,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         catch (Throwable cause)
         {
             // fall back to non-provider option
-            LOG.info("Unable to get KeyManagerFactory instance for algorithm [{}] on provider [{}], using default", algorithm, provider);
+            String msg = String.format("Unable to get KeyManagerFactory instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
             if (LOG.isDebugEnabled())
-                LOG.debug(cause);
+                LOG.debug(msg, cause);
+            else
+                LOG.info(msg);
         }
 
         return KeyManagerFactory.getInstance(algorithm);
@@ -1743,9 +1697,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             }
             catch (Throwable cause)
             {
-                LOG.info("Unable to get SecureRandom instance for algorithm [{}] on provider [{}], using default", algorithm, provider);
+                String msg = String.format("Unable to get SecureRandom instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
                 if (LOG.isDebugEnabled())
-                    LOG.debug(cause);
+                    LOG.debug(msg, cause);
+                else
+                    LOG.info(msg);
             }
 
             return SecureRandom.getInstance(algorithm);
@@ -1768,9 +1724,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
         catch (Throwable cause)
         {
-            LOG.info("Unable to get SSLContext instance for protocol [{}] on provider [{}], using default", protocol, provider);
+            String msg = String.format("Unable to get SSLContext instance for protocol [%s] on provider [%s], using default", protocol, provider);
             if (LOG.isDebugEnabled())
-                LOG.debug(cause);
+                LOG.debug(msg, cause);
+            else
+                LOG.info(msg);
         }
 
         return SSLContext.getInstance(protocol);
@@ -1789,11 +1747,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
         catch (Throwable cause)
         {
-            LOG.info("Unable to get TrustManagerFactory instance for algorithm [{}] on provider [{}], using default", algorithm, provider);
+            String msg = String.format("Unable to get TrustManagerFactory instance for algorithm [%s] on provider [%s], using default", algorithm, provider);
             if (LOG.isDebugEnabled())
-            {
-                LOG.debug(cause);
-            }
+                LOG.debug(msg, cause);
+            else
+                LOG.info(msg);
         }
 
         return TrustManagerFactory.getInstance(algorithm);
@@ -1970,7 +1928,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
         catch (Exception e)
         {
-            LOG.warn(Log.EXCEPTION, e);
+            LOG.warn("Unable to get X509CertChain", e);
             return null;
         }
     }
@@ -2037,15 +1995,14 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             _trustStoreResource);
     }
 
-    class Factory
+    private static class Factory
     {
         private final KeyStore _keyStore;
         private final KeyStore _trustStore;
         private final SSLContext _context;
 
-        Factory(KeyStore keyStore, KeyStore trustStore, SSLContext context)
+        private Factory(KeyStore keyStore, KeyStore trustStore, SSLContext context)
         {
-            super();
             _keyStore = keyStore;
             _trustStore = trustStore;
             _context = context;
@@ -2055,7 +2012,6 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     class AliasSNIMatcher extends SNIMatcher
     {
         private String _host;
-        private X509 _x509;
 
         AliasSNIMatcher()
         {
@@ -2070,36 +2026,14 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
             if (serverName instanceof SNIHostName)
             {
-                String host = _host = ((SNIHostName)serverName).getAsciiName();
-                host = StringUtil.asciiToLowerCase(host);
-
-                // Try an exact match
-                _x509 = _certHosts.get(host);
-
-                // Else try an exact wild match
-                if (_x509 == null)
-                {
-                    _x509 = _certWilds.get(host);
-
-                    // Else try an 1 deep wild match
-                    if (_x509 == null)
-                    {
-                        int dot = host.indexOf('.');
-                        if (dot >= 0)
-                        {
-                            String domain = host.substring(dot + 1);
-                            _x509 = _certWilds.get(domain);
-                        }
-                    }
-                }
-
+                _host = StringUtil.asciiToLowerCase(((SNIHostName)serverName).getAsciiName());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("SNI matched {}->{}", host, _x509);
+                    LOG.debug("SNI host name {}", _host);
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("SNI no match for {}", serverName);
+                    LOG.debug("No SNI host name for {}", serverName);
             }
 
             // Return true and allow the KeyManager to accept or reject when choosing a certificate.
@@ -2111,11 +2045,6 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         public String getHost()
         {
             return _host;
-        }
-
-        public X509 getX509()
-        {
-            return _x509;
         }
     }
 
@@ -2140,10 +2069,13 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
     }
 
-    public static class Server extends SslContextFactory
+    @ManagedObject
+    public static class Server extends SslContextFactory implements SniX509ExtendedKeyManager.SniSelector
     {
         private boolean _needClientAuth;
         private boolean _wantClientAuth;
+        private boolean _sniRequired;
+        private SniX509ExtendedKeyManager.SniSelector _sniSelector;
 
         public Server()
         {
@@ -2186,6 +2118,227 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         public void setWantClientAuth(boolean wantClientAuth)
         {
             _wantClientAuth = wantClientAuth;
+        }
+
+        /**
+         * Does the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
+         * require an SNI match?  Note that if a non SNI handshake is accepted, requests may still be rejected
+         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
+         *
+         * @return true if no SNI match is handled as no certificate match, false if no SNI match is handled by
+         * delegation to the non SNI matching methods.
+         */
+        @ManagedAttribute("Whether the TLS handshake is rejected if there is no SNI host match")
+        public boolean isSniRequired()
+        {
+            return _sniRequired;
+        }
+
+        /**
+         * Set if the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
+         * require an SNI match? Note that if a non SNI handshake is accepted, requests may still be rejected
+         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
+         * This setting may have no effect if {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} is
+         * overridden or a non null function is passed to {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.
+         *
+         * @param sniRequired true if no SNI match is handled as no certificate match, false if no SNI match is handled by
+         * delegation to the non SNI matching methods.
+         */
+        public void setSniRequired(boolean sniRequired)
+        {
+            _sniRequired = sniRequired;
+        }
+
+        @Override
+        protected KeyManager[] getKeyManagers(KeyStore keyStore) throws Exception
+        {
+            KeyManager[] managers = super.getKeyManagers(keyStore);
+
+            boolean hasSniX509ExtendedKeyManager = false;
+
+            // Is SNI needed to select a certificate?
+            if (!_certWilds.isEmpty() || _certHosts.size() > 1 || (_certHosts.size() == 1 && _aliasX509.size() > 1))
+            {
+                for (int idx = 0; idx < managers.length; idx++)
+                {
+                    if (managers[idx] instanceof X509ExtendedKeyManager)
+                    {
+                        managers[idx] = newSniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
+                        hasSniX509ExtendedKeyManager = true;
+                    }
+                }
+            }
+
+            if (isSniRequired())
+            {
+                if (managers == null || !hasSniX509ExtendedKeyManager)
+                    throw new IllegalStateException("No SNI Key managers when SNI is required");
+            }
+            return managers;
+        }
+
+        /**
+         * @return the custom function to select certificates based on SNI information
+         */
+        public SniX509ExtendedKeyManager.SniSelector getSNISelector()
+        {
+            return _sniSelector;
+        }
+
+        /**
+         * <p>Sets a custom function to select certificates based on SNI information.</p>
+         *
+         * @param sniSelector the selection function
+         */
+        public void setSNISelector(SniX509ExtendedKeyManager.SniSelector sniSelector)
+        {
+            _sniSelector = sniSelector;
+        }
+
+        @Override
+        public String sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates) throws SSLHandshakeException
+        {
+            if (sniHost == null)
+            {
+                // No SNI, so reject or delegate.
+                return _sniRequired ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+            }
+            else
+            {
+                // Match the SNI host, or let the JDK decide unless unmatched SNIs are rejected.
+                return certificates.stream()
+                    .filter(x509 -> x509.matches(sniHost))
+                    .findFirst()
+                    .map(X509::getAlias)
+                    .orElse(_sniRequired ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE);
+            }
+        }
+
+        protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
+        {
+            return new SniX509ExtendedKeyManager(keyManager, this);
+        }
+    }
+
+    /**
+     * <p>A wrapper that delegates to another (if not {@code null}) X509ExtendedKeyManager.</p>
+     */
+    public static class X509ExtendedKeyManagerWrapper extends X509ExtendedKeyManager
+    {
+        private final X509ExtendedKeyManager keyManager;
+
+        public X509ExtendedKeyManagerWrapper(X509ExtendedKeyManager keyManager)
+        {
+            this.keyManager = keyManager;
+        }
+
+        @Override
+        public String[] getClientAliases(String keyType, Principal[] issuers)
+        {
+            return keyManager == null ? null : keyManager.getClientAliases(keyType, issuers);
+        }
+
+        @Override
+        public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket)
+        {
+            return keyManager == null ? null : keyManager.chooseClientAlias(keyType, issuers, socket);
+        }
+
+        @Override
+        public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine)
+        {
+            return keyManager == null ? null : keyManager.chooseEngineClientAlias(keyType, issuers, engine);
+        }
+
+        @Override
+        public String[] getServerAliases(String keyType, Principal[] issuers)
+        {
+            return keyManager == null ? null : keyManager.getServerAliases(keyType, issuers);
+        }
+
+        @Override
+        public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
+        {
+            return keyManager == null ? null : keyManager.chooseServerAlias(keyType, issuers, socket);
+        }
+
+        @Override
+        public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine)
+        {
+            return keyManager == null ? null : keyManager.chooseEngineServerAlias(keyType, issuers, engine);
+        }
+
+        @Override
+        public X509Certificate[] getCertificateChain(String alias)
+        {
+            return keyManager == null ? null : keyManager.getCertificateChain(alias);
+        }
+
+        @Override
+        public PrivateKey getPrivateKey(String alias)
+        {
+            return keyManager == null ? null : keyManager.getPrivateKey(alias);
+        }
+    }
+
+    /**
+     * <p>A wrapper that delegates to another (if not {@code null}) X509ExtendedTrustManager.</p>
+     */
+    public static class X509ExtendedTrustManagerWrapper extends X509ExtendedTrustManager
+    {
+        private final X509ExtendedTrustManager trustManager;
+
+        public X509ExtendedTrustManagerWrapper(X509ExtendedTrustManager trustManager)
+        {
+            this.trustManager = trustManager;
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers()
+        {
+            return trustManager == null ? new X509Certificate[0] : trustManager.getAcceptedIssuers();
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] certs, String authType) throws CertificateException
+        {
+            if (trustManager != null)
+                trustManager.checkClientTrusted(certs, authType);
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException
+        {
+            if (trustManager != null)
+                trustManager.checkClientTrusted(chain, authType, socket);
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException
+        {
+            if (trustManager != null)
+                trustManager.checkClientTrusted(chain, authType, engine);
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] certs, String authType) throws CertificateException
+        {
+            if (trustManager != null)
+                trustManager.checkServerTrusted(certs, authType);
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException
+        {
+            if (trustManager != null)
+                trustManager.checkServerTrusted(chain, authType, socket);
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException
+        {
+            if (trustManager != null)
+                trustManager.checkServerTrusted(chain, authType, engine);
         }
     }
 }

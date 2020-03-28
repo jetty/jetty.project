@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http;
@@ -29,8 +29,8 @@ import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 
@@ -44,7 +44,7 @@ import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
  */
 public class HttpGenerator
 {
-    private static final Logger LOG = Log.getLogger(HttpGenerator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpGenerator.class);
 
     public static final boolean __STRICT = Boolean.getBoolean("org.eclipse.jetty.http.HttpGenerator.STRICT");
 
@@ -74,11 +74,12 @@ public class HttpGenerator
         NEED_CHUNK,             // Need a small chunk buffer of CHUNK_SIZE
         NEED_INFO,              // Need the request/response metadata info 
         NEED_HEADER,            // Need a buffer to build HTTP headers into
+        HEADER_OVERFLOW,        // The header buffer overflowed
         NEED_CHUNK_TRAILER,     // Need a large chunk buffer for last chunk and trailers
         FLUSH,                  // The buffers previously generated should be flushed 
         CONTINUE,               // Continue generating the message
         SHUTDOWN_OUT,           // Need EOF to be signaled
-        DONE                    // Message generation complete
+        DONE                    // The current phase of generation is complete
     }
 
     // other statics
@@ -250,7 +251,8 @@ public class HttpGenerator
                 }
                 catch (BufferOverflowException e)
                 {
-                    throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Request header too large", e);
+                    LOG.trace("IGNORED", e);
+                    return Result.HEADER_OVERFLOW;
                 }
                 catch (Exception e)
                 {
@@ -427,7 +429,8 @@ public class HttpGenerator
                 }
                 catch (BufferOverflowException e)
                 {
-                    throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Response header too large", e);
+                    LOG.trace("IGNORED", e);
+                    return Result.HEADER_OVERFLOW;
                 }
                 catch (Exception e)
                 {
@@ -686,17 +689,24 @@ public class HttpGenerator
             _endOfContent = EndOfContent.NO_CONTENT;
 
             // But it is an error if there actually is content
-            if (_contentPrepared > 0 || contentLength > 0)
+            if (_contentPrepared > 0)
+                throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
+
+            if (contentLengthField)
             {
-                if (_contentPrepared == 0 && last)
+                if (response != null && response.getStatus() == HttpStatus.NOT_MODIFIED_304)
+                    putContentLength(header, contentLength);
+                else if (contentLength > 0)
                 {
-                    // TODO discard content for backward compatibility with 9.3 releases
-                    // TODO review if it is still needed in 9.4 or can we just throw.
-                    content.clear();
-                    contentLength = 0;
+                    if (_contentPrepared == 0 && last)
+                    {
+                        // TODO discard content for backward compatibility with 9.3 releases
+                        // TODO review if it is still needed in 9.4 or can we just throw.
+                        content.clear();
+                    }
+                    else
+                        throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
                 }
-                else
-                    throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
             }
         }
         // Else if we are HTTP/1.1 and the content length is unknown and we are either persistent

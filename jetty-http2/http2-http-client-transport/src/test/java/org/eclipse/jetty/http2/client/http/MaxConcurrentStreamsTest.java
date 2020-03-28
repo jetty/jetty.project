@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.client.http;
@@ -159,7 +159,6 @@ public class MaxConcurrentStreamsTest extends AbstractTest
             }
         });
 
-        String scheme = "http";
         String host = "localhost";
         int port = connector.getLocalPort();
 
@@ -212,15 +211,15 @@ public class MaxConcurrentStreamsTest extends AbstractTest
 
         // This request will be queued and establish the connection,
         // which will trigger the send of the second request.
-        ContentResponse response1 = client.newRequest(host, port)
-            .path("/1")
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+        var request = client.newRequest(host, port)
+                .path("/1")
+                .timeout(5, TimeUnit.SECONDS);
+        ContentResponse response = request.send();
 
-        assertEquals(HttpStatus.OK_200, response1.getStatus());
+        assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS), failures.toString());
         assertEquals(2, connections.get());
-        HttpDestination destination = (HttpDestination)client.getDestination(scheme, host, port);
+        HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
         assertEquals(2, connectionPool.getConnectionCount());
     }
@@ -253,16 +252,15 @@ public class MaxConcurrentStreamsTest extends AbstractTest
         // Send the request in excess.
         CountDownLatch latch = new CountDownLatch(1);
         String path = "/excess";
-        client.newRequest("localhost", connector.getLocalPort())
-            .path(path)
-            .send(result ->
-            {
-                if (result.getResponse().getStatus() == HttpStatus.OK_200)
-                    latch.countDown();
-            });
+        var request = client.newRequest("localhost", connector.getLocalPort()).path(path);
+        request.send(result ->
+        {
+            if (result.getResponse().getStatus() == HttpStatus.OK_200)
+                latch.countDown();
+        });
 
         // The last exchange should remain in the queue.
-        HttpDestination destination = (HttpDestination)client.getDestination("http", "localhost", connector.getLocalPort());
+        HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         assertEquals(1, destination.getHttpExchanges().size());
         assertEquals(path, destination.getHttpExchanges().peek().getRequest().getPath());
 

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.session;
@@ -65,8 +65,8 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
         TestServer server1 = new TestServer(0, maxInactiveInterval, scavengeInterval, cacheFactory1, storeFactory1);
         ServletContextHandler context = server1.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
-        TestContextScopeListener scopeListener = new TestContextScopeListener();
-        context.addEventListener(scopeListener);
+        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
+        server1.getServerConnector().addBean(scopeListener);
 
         try
         {
@@ -103,8 +103,6 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
-                    // Mangle the cookie, replacing Path with $Path, etc.
-                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
                     //ensure request is fully finished processing
                     latch.await(5, TimeUnit.SECONDS);
@@ -113,7 +111,6 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
                     latch = new CountDownLatch(1);
                     scopeListener.setExitSynchronizer(latch);
                     Request request2 = client.newRequest(urls[1] + "?action=increment");
-                    request2.header("Cookie", sessionCookie);
                     ContentResponse response2 = request2.send();
                     assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
 
@@ -153,6 +150,8 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
 
     public static class TestServlet extends HttpServlet
     {
+        private static final long serialVersionUID = 1L;
+
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {

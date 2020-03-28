@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -69,8 +70,8 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Servlet HttpHandler.
@@ -88,7 +89,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Servlet Handler")
 public class ServletHandler extends ScopedHandler
 {
-    private static final Logger LOG = Log.getLogger(ServletHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServletHandler.class);
 
     public static final String __DEFAULT_SERVLET = "default";
 
@@ -115,6 +116,7 @@ public class ServletHandler extends ScopedHandler
     private PathMappings<ServletHolder> _servletPathMap;
 
     private ListenerHolder[] _listeners = new ListenerHolder[0];
+    private boolean _initialized = false;
 
     @SuppressWarnings("unchecked")
     protected final ConcurrentMap<String, FilterChain>[] _chainCache = new ConcurrentMap[FilterMapping.ALL];
@@ -230,29 +232,30 @@ public class ServletHandler extends ScopedHandler
         {
             for (int i = _filters.length; i-- > 0; )
             {
+                FilterHolder filter = _filters[i];
                 try
                 {
-                    _filters[i].stop();
+                    filter.stop();
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(Log.EXCEPTION, e);
+                    LOG.warn("Unable to stop filter {}", filter, e);
                 }
-                if (_filters[i].getSource() != Source.EMBEDDED)
+                if (filter.getSource() != Source.EMBEDDED)
                 {
                     //remove all of the mappings that were for non-embedded filters
-                    _filterNameMap.remove(_filters[i].getName());
+                    _filterNameMap.remove(filter.getName());
                     //remove any mappings associated with this filter
                     ListIterator<FilterMapping> fmitor = filterMappings.listIterator();
                     while (fmitor.hasNext())
                     {
                         FilterMapping fm = fmitor.next();
-                        if (fm.getFilterName().equals(_filters[i].getName()))
+                        if (fm.getFilterName().equals(filter.getName()))
                             fmitor.remove();
                     }
                 }
                 else
-                    filterHolders.add(_filters[i]); //only retain embedded
+                    filterHolders.add(filter); //only retain embedded
             }
         }
 
@@ -272,30 +275,31 @@ public class ServletHandler extends ScopedHandler
         {
             for (int i = _servlets.length; i-- > 0; )
             {
+                ServletHolder servlet = _servlets[i];
                 try
                 {
-                    _servlets[i].stop();
+                    servlet.stop();
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(Log.EXCEPTION, e);
+                    LOG.warn("Unable to stop servlet {}", servlet, e);
                 }
 
-                if (_servlets[i].getSource() != Source.EMBEDDED)
+                if (servlet.getSource() != Source.EMBEDDED)
                 {
                     //remove from servlet name map
-                    _servletNameMap.remove(_servlets[i].getName());
+                    _servletNameMap.remove(servlet.getName());
                     //remove any mappings associated with this servlet
                     ListIterator<ServletMapping> smitor = servletMappings.listIterator();
                     while (smitor.hasNext())
                     {
                         ServletMapping sm = smitor.next();
-                        if (sm.getServletName().equals(_servlets[i].getName()))
+                        if (sm.getServletName().equals(servlet.getName()))
                             smitor.remove();
                     }
                 }
                 else
-                    servletHolders.add(_servlets[i]); //only retain embedded 
+                    servletHolders.add(servlet); //only retain embedded
             }
         }
 
@@ -311,16 +315,17 @@ public class ServletHandler extends ScopedHandler
         {
             for (int i = _listeners.length; i-- > 0; )
             {
+                ListenerHolder listener = _listeners[i];
                 try
                 {
-                    _listeners[i].stop();
+                    listener.stop();
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(Log.EXCEPTION, e);
+                    LOG.warn("Unable to stop listener {}", listener, e);
                 }
-                if (_listeners[i].getSource() == Source.EMBEDDED)
-                    listenerHolders.add(_listeners[i]);
+                if (listener.getSource() == Source.EMBEDDED)
+                    listenerHolders.add(listener);
             }
         }
         ListenerHolder[] listeners = (ListenerHolder[])LazyList.toArray(listenerHolders, ListenerHolder.class);
@@ -330,6 +335,7 @@ public class ServletHandler extends ScopedHandler
         _filterPathMappings = null;
         _filterNameMappings = null;
         _servletPathMap = null;
+        _initialized = false;
     }
 
     protected IdentityService getIdentityService()
@@ -446,6 +452,7 @@ public class ServletHandler extends ScopedHandler
                 {
                     baseRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, servletPath);
                     baseRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, pathInfo);
+                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, Request.getServletMapping(pathSpec, servletPath, servletHolder.getName()));
                 }
                 else
                 {
@@ -717,6 +724,8 @@ public class ServletHandler extends ScopedHandler
     public void initialize()
         throws Exception
     {
+        _initialized = true;
+        
         MultiException mx = new MultiException();
 
         Stream.concat(Stream.concat(
@@ -735,12 +744,20 @@ public class ServletHandler extends ScopedHandler
                 }
                 catch (Throwable e)
                 {
-                    LOG.debug(Log.EXCEPTION, e);
+                    LOG.debug("Unable to start {}", h, e);
                     mx.add(e);
                 }
             });
 
         mx.ifExceptionThrow();
+    }
+    
+    /**
+     * @return true if initialized has been called, false otherwise
+     */
+    public boolean isInitialized()
+    {
+        return _initialized;
     }
 
     /**
@@ -1692,6 +1709,12 @@ public class ServletHandler extends ScopedHandler
     {
         if (_contextHandler != null)
             _contextHandler.destroyFilter(filter);
+    }
+
+    void destroyListener(EventListener listener)
+    {
+        if (_contextHandler != null)
+            _contextHandler.destroyListener(listener);
     }
 
     @SuppressWarnings("serial")

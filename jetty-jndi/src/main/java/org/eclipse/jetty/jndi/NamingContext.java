@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.jndi;
@@ -46,8 +46,8 @@ import javax.naming.Referenceable;
 import javax.naming.spi.NamingManager;
 
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * NamingContext
@@ -60,7 +60,7 @@ import org.eclipse.jetty.util.log.Logger;
 @SuppressWarnings("unchecked")
 public class NamingContext implements Context, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(NamingContext.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NamingContext.class);
     private static final List<Binding> __empty = Collections.emptyList();
     public static final String DEEP_BINDING = "org.eclipse.jetty.jndi.deepBinding";
     public static final String LOCK_PROPERTY = "org.eclipse.jetty.jndi.lock";

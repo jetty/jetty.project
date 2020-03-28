@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -35,11 +35,11 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.ssl.X509;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Customizer that extracts the attribute from an {@link SSLContext}
@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.ssl.X509;
  */
 public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
-    private static final Logger LOG = Log.getLogger(SecureRequestCustomizer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SecureRequestCustomizer.class);
 
     /**
      * The name of the SSLSession attribute that will contain any cached information.
@@ -57,6 +57,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
     private String sslSessionAttribute = "org.eclipse.jetty.servlet.request.ssl_session";
 
+    private boolean _sniRequired;
     private boolean _sniHostCheck;
     private long _stsMaxAge = -1;
     private boolean _stsIncludeSubDomains;
@@ -82,6 +83,22 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         @Name("stsMaxAgeSeconds") long stsMaxAgeSeconds,
         @Name("stsIncludeSubdomains") boolean stsIncludeSubdomains)
     {
+        this(false, sniHostCheck, stsMaxAgeSeconds, stsIncludeSubdomains);
+    }
+
+    /**
+     * @param sniRequired True if a SNI certificate is required.
+     * @param sniHostCheck True if the SNI Host name must match.
+     * @param stsMaxAgeSeconds The max age in seconds for a Strict-Transport-Security response header. If set less than zero then no header is sent.
+     * @param stsIncludeSubdomains If true, a include subdomain property is sent with any Strict-Transport-Security header
+     */
+    public SecureRequestCustomizer(
+        @Name("sniRequired") boolean sniRequired,
+        @Name("sniHostCheck") boolean sniHostCheck,
+        @Name("stsMaxAgeSeconds") long stsMaxAgeSeconds,
+        @Name("stsIncludeSubdomains") boolean stsIncludeSubdomains)
+    {
+        _sniRequired = sniRequired;
         _sniHostCheck = sniHostCheck;
         _stsMaxAge = stsMaxAgeSeconds;
         _stsIncludeSubDomains = stsIncludeSubdomains;
@@ -89,7 +106,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
-     * @return True if the SNI Host name must match.
+     * @return True if the SNI Host name must match when there is an SNI certificate.
      */
     public boolean isSniHostCheck()
     {
@@ -97,11 +114,29 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
-     * @param sniHostCheck True if the SNI Host name must match.
+     * @param sniHostCheck True if the SNI Host name must match when there is an SNI certificate.
      */
     public void setSniHostCheck(boolean sniHostCheck)
     {
         _sniHostCheck = sniHostCheck;
+    }
+
+    /**
+     * @return True if SNI is required, else requests will be rejected with 400 response.
+     * @see SslContextFactory.Server#isSniRequired()
+     */
+    public boolean isSniRequired()
+    {
+        return _sniRequired;
+    }
+
+    /**
+     * @param sniRequired True if SNI is required, else requests will be rejected with 400 response.
+     * @see SslContextFactory.Server#setSniRequired(boolean)
+     */
+    public void setSniRequired(boolean sniRequired)
+    {
+        _sniRequired = sniRequired;
     }
 
     /**
@@ -208,19 +243,23 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     {
         SSLSession sslSession = sslEngine.getSession();
 
-        if (_sniHostCheck)
+        if (_sniHostCheck || _sniRequired)
         {
             String name = request.getServerName();
             X509 x509 = (X509)sslSession.getValue(SniX509ExtendedKeyManager.SNI_X509);
 
-            if (x509 != null && !x509.matches(name))
+            if (LOG.isDebugEnabled())
+                LOG.debug("Host {} with SNI {}", name, x509);
+
+            if (x509 == null)
             {
-                LOG.warn("Host {} does not match SNI {}", name, x509);
+                if (_sniRequired)
+                    throw new BadMessageException(400, "SNI required");
+            }
+            else if (_sniHostCheck && !x509.matches(name))
+            {
                 throw new BadMessageException(400, "Host does not match SNI");
             }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("Host {} matched SNI {}", name, x509);
         }
 
         try
@@ -259,7 +298,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         }
         catch (Exception e)
         {
-            LOG.warn(Log.EXCEPTION, e);
+            LOG.warn("Unable to customize request with encryption details", e);
         }
     }
 

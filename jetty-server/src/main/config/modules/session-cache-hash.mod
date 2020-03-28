@@ -1,10 +1,9 @@
 DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable first level session cache in ConcurrentHashMap.
-If not enabled, sessions will use a HashSessionCache by default, so enabling
-via this module is only needed if the configuration properties need to be
-changed.
+Enable first level session cache. If this module is not enabled, sessions will
+use the DefaultSessionCache by default, so enabling via this module is only needed
+if the configuration properties need to be changed from their defaults.
 
 [tags]
 session
@@ -23,3 +22,4 @@ etc/sessions/session-cache-hash.xml
 #jetty.session.saveOnInactiveEvict=false
 #jetty.session.saveOnCreate=false
 #jetty.session.removeUnloadableSessions=false
+#jetty.session.flushOnResponseCommit=false

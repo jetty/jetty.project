@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.resource;
@@ -21,10 +21,16 @@ package org.eclipse.jetty.server.resource;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -32,6 +38,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -43,6 +50,16 @@ import static org.hamcrest.Matchers.is;
 public class RangeWriterTest
 {
     public static final String DATA = "01234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZYZ!@#$%^&*()_+/.,[]";
+    private static FileSystem zipfs;
+
+    @AfterAll
+    public static void closeZipFs() throws IOException
+    {
+        if (zipfs != null)
+        {
+            zipfs.close();
+        }
+    }
 
     public static Path initDataFile() throws IOException
     {
@@ -59,21 +76,47 @@ public class RangeWriterTest
         return dataFile;
     }
 
-    public static Stream<Arguments> impls() throws IOException
+    private static Path initZipFsDataFile() throws URISyntaxException, IOException
     {
-        Resource resource = new PathResource(initDataFile());
+        Path exampleJar = MavenTestingUtils.getTestResourcePathFile("example.jar");
+
+        URI uri = new URI("jar", exampleJar.toUri().toASCIIString(), null);
+
+        Map<String, Object> env = new HashMap<>();
+        env.put("multi-release", "runtime");
+
+        if (zipfs != null)
+        {
+            // close prior one
+            zipfs.close();
+        }
+
+        zipfs = FileSystems.newFileSystem(uri, env);
+        Path rootPath = zipfs.getRootDirectories().iterator().next();
+        return rootPath.resolve("data.dat");
+    }
+
+    public static Stream<Arguments> impls() throws IOException, URISyntaxException
+    {
+        Resource realFileSystemResource = new PathResource(initDataFile());
+        Resource nonDefaultFileSystemResource = new PathResource(initZipFsDataFile());
 
         return Stream.of(
-            Arguments.of(new ByteBufferRangeWriter(BufferUtil.toBuffer(resource, true))),
-            Arguments.of(new ByteBufferRangeWriter(BufferUtil.toBuffer(resource, false))),
-            Arguments.of(new SeekableByteChannelRangeWriter((SeekableByteChannel)resource.getReadableByteChannel())),
-            Arguments.of(new InputStreamRangeWriter(() -> resource.getInputStream()))
+            Arguments.of("Traditional / Direct Buffer", new ByteBufferRangeWriter(BufferUtil.toBuffer(realFileSystemResource, true))),
+            Arguments.of("Traditional / Indirect Buffer", new ByteBufferRangeWriter(BufferUtil.toBuffer(realFileSystemResource, false))),
+            Arguments.of("Traditional / SeekableByteChannel", new SeekableByteChannelRangeWriter(() -> (SeekableByteChannel)realFileSystemResource.getReadableByteChannel())),
+            Arguments.of("Traditional / InputStream", new InputStreamRangeWriter(() -> realFileSystemResource.getInputStream())),
+
+            Arguments.of("Non-Default FS / Direct Buffer", new ByteBufferRangeWriter(BufferUtil.toBuffer(nonDefaultFileSystemResource, true))),
+            Arguments.of("Non-Default FS / Indirect Buffer", new ByteBufferRangeWriter(BufferUtil.toBuffer(nonDefaultFileSystemResource, false))),
+            Arguments.of("Non-Default FS / SeekableByteChannel", new SeekableByteChannelRangeWriter(() -> (SeekableByteChannel)nonDefaultFileSystemResource.getReadableByteChannel())),
+            Arguments.of("Non-Default FS / InputStream", new InputStreamRangeWriter(() -> nonDefaultFileSystemResource.getInputStream()))
         );
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("impls")
-    public void testSimpleRange(RangeWriter rangeWriter) throws IOException
+    public void testSimpleRange(String description, RangeWriter rangeWriter) throws IOException
     {
         ByteArrayOutputStream outputStream;
 
@@ -82,9 +125,9 @@ public class RangeWriterTest
         assertThat("Range: 10 (len=50)", new String(outputStream.toByteArray(), UTF_8), is(DATA.substring(10, 60)));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("impls")
-    public void testSameRange_MultipleTimes(RangeWriter rangeWriter) throws IOException
+    public void testSameRangeMultipleTimes(String description, RangeWriter rangeWriter) throws IOException
     {
         ByteArrayOutputStream outputStream;
 
@@ -97,9 +140,9 @@ public class RangeWriterTest
         assertThat("Range(b): 10 (len=50)", new String(outputStream.toByteArray(), UTF_8), is(DATA.substring(10, 60)));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("impls")
-    public void testMultipleRanges_Ordered(RangeWriter rangeWriter) throws IOException
+    public void testMultipleRangesOrdered(String description, RangeWriter rangeWriter) throws IOException
     {
         ByteArrayOutputStream outputStream;
 
@@ -116,9 +159,9 @@ public class RangeWriterTest
         assertThat("Range(b): 55 (len=10)", new String(outputStream.toByteArray(), UTF_8), is(DATA.substring(55, 55 + 10)));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("impls")
-    public void testMultipleRanges_Overlapping(RangeWriter rangeWriter) throws IOException
+    public void testMultipleRangesOverlapping(String description, RangeWriter rangeWriter) throws IOException
     {
         ByteArrayOutputStream outputStream;
 
@@ -135,9 +178,9 @@ public class RangeWriterTest
         assertThat("Range(b): 20 (len=20)", new String(outputStream.toByteArray(), UTF_8), is(DATA.substring(20, 20 + 20)));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("impls")
-    public void testMultipleRanges_ReverseOrder(RangeWriter rangeWriter) throws IOException
+    public void testMultipleRangesReverseOrder(String description, RangeWriter rangeWriter) throws IOException
     {
         ByteArrayOutputStream outputStream;
 

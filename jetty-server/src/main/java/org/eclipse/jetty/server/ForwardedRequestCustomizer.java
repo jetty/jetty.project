@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -24,6 +24,7 @@ import java.lang.invoke.MethodType;
 import java.net.InetSocketAddress;
 import javax.servlet.ServletRequest;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -35,8 +36,6 @@ import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 import static java.lang.invoke.MethodType.methodType;
 
@@ -63,8 +62,6 @@ import static java.lang.invoke.MethodType.methodType;
  */
 public class ForwardedRequestCustomizer implements Customizer
 {
-    private static final Logger LOG = Log.getLogger(ForwardedRequestCustomizer.class);
-
     private HostPortHttpField _forcedHost;
     private boolean _proxyAsAuthority = false;
     private boolean _forwardedPortAsAuthority = true;
@@ -236,7 +233,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
     public String getForwardedPortHeader()
     {
-        return _forwardedHostHeader;
+        return _forwardedPortHeader;
     }
 
     /**
@@ -244,9 +241,9 @@ public class ForwardedRequestCustomizer implements Customizer
      */
     public void setForwardedPortHeader(String forwardedPortHeader)
     {
-        if (_forwardedHostHeader == null || !_forwardedHostHeader.equalsIgnoreCase(forwardedPortHeader))
+        if (_forwardedPortHeader == null || !_forwardedPortHeader.equalsIgnoreCase(forwardedPortHeader))
         {
-            _forwardedHostHeader = forwardedPortHeader;
+            _forwardedPortHeader = forwardedPortHeader;
             updateHandles();
         }
     }
@@ -356,7 +353,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @return true if the presence of a SSL session or certificate header is sufficient
+     * @return true if the presence of an SSL session or certificate header is sufficient
      * to indicate a secure request (default is true)
      */
     public boolean isSslIsSecure()
@@ -365,7 +362,7 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     /**
-     * @param sslIsSecure true if the presence of a SSL session or certificate header is sufficient
+     * @param sslIsSecure true if the presence of an SSL session or certificate header is sufficient
      * to indicate a secure request (default is true)
      */
     public void setSslIsSecure(boolean sslIsSecure)
@@ -380,18 +377,18 @@ public class ForwardedRequestCustomizer implements Customizer
 
         // Do a single pass through the header fields as it is a more efficient single iteration.
         Forwarded forwarded = new Forwarded(request, config);
-        try
+        for (HttpField field : httpFields)
         {
-            for (HttpField field : httpFields)
+            try
             {
                 MethodHandle handle = _handles.get(field.getName());
                 if (handle != null)
                     handle.invoke(forwarded, field);
             }
-        }
-        catch (Throwable e)
-        {
-            throw new RuntimeException(e);
+            catch (Throwable t)
+            {
+                onError(field, t);
+            }
         }
 
         if (forwarded._proto != null)
@@ -401,10 +398,20 @@ public class ForwardedRequestCustomizer implements Customizer
                 request.setSecure(true);
         }
 
-        if (forwarded._host != null)
+        if (forwarded._server != null && forwarded._host instanceof PortSetHostPort)
+        {
+            httpFields.put(new HostPortHttpField(forwarded._server, forwarded._host.getPort()));
+            request.setAuthority(forwarded._server, forwarded._host.getPort());
+        }
+        else if (forwarded._host != null)
         {
             httpFields.put(new HostPortHttpField(forwarded._host));
             request.setAuthority(forwarded._host.getHost(), forwarded._host.getPort());
+        }
+        else if (forwarded._server != null)
+        {
+            httpFields.put(new HostPortHttpField(forwarded._server));
+            request.setAuthority(forwarded._server, 0);
         }
 
         if (forwarded._for != null)
@@ -412,6 +419,11 @@ public class ForwardedRequestCustomizer implements Customizer
             int port = forwarded._for.getPort() > 0 ? forwarded._for.getPort() : request.getRemotePort();
             request.setRemoteAddr(InetSocketAddress.createUnresolved(forwarded._for.getHost(), port));
         }
+    }
+
+    protected void onError(HttpField field, Throwable t)
+    {
+        throw new BadMessageException("Bad header value for " + field.getName(), t);
     }
 
     protected String getLeftMost(String headerValue)
@@ -456,32 +468,32 @@ public class ForwardedRequestCustomizer implements Customizer
     {
         int size = 0;
         MethodHandles.Lookup lookup = MethodHandles.lookup();
-        MethodType type = methodType(Void.TYPE, HttpField.class);
 
+        // Loop to grow capacity of ArrayTrie for all headers
         while (true)
         {
             try
             {
-                size += 128;
+                size += 128; // experimented good baseline size
                 _handles = new ArrayTrie<>(size);
 
-                if (_forwardedCipherSuiteHeader != null && !_handles.put(_forwardedCipherSuiteHeader, lookup.findVirtual(Forwarded.class, "handleCipherSuite", type)))
+                if (updateForwardedHandle(lookup, getForwardedCipherSuiteHeader(), "handleCipherSuite"))
                     continue;
-                if (_forwardedSslSessionIdHeader != null && !_handles.put(_forwardedSslSessionIdHeader, lookup.findVirtual(Forwarded.class, "handleSslSessionId", type)))
+                if (updateForwardedHandle(lookup, getForwardedSslSessionIdHeader(), "handleSslSessionId"))
                     continue;
-                if (_forwardedHeader != null && !_handles.put(_forwardedHeader, lookup.findVirtual(Forwarded.class, "handleRFC7239", type)))
+                if (updateForwardedHandle(lookup, getForwardedHeader(), "handleRFC7239"))
                     continue;
-                if (_forwardedForHeader != null && !_handles.put(_forwardedForHeader, lookup.findVirtual(Forwarded.class, "handleFor", type)))
+                if (updateForwardedHandle(lookup, getForwardedForHeader(), "handleFor"))
                     continue;
-                if (_forwardedPortHeader != null && !_handles.put(_forwardedPortHeader, lookup.findVirtual(Forwarded.class, "handlePort", type)))
+                if (updateForwardedHandle(lookup, getForwardedPortHeader(), "handlePort"))
                     continue;
-                if (_forwardedHostHeader != null && !_handles.put(_forwardedHostHeader, lookup.findVirtual(Forwarded.class, "handleHost", type)))
+                if (updateForwardedHandle(lookup, getForwardedHostHeader(), "handleHost"))
                     continue;
-                if (_forwardedProtoHeader != null && !_handles.put(_forwardedProtoHeader, lookup.findVirtual(Forwarded.class, "handleProto", type)))
+                if (updateForwardedHandle(lookup, getForwardedProtoHeader(), "handleProto"))
                     continue;
-                if (_forwardedHttpsHeader != null && !_handles.put(_forwardedHttpsHeader, lookup.findVirtual(Forwarded.class, "handleHttps", type)))
+                if (updateForwardedHandle(lookup, getForwardedHttpsHeader(), "handleHttps"))
                     continue;
-                if (_forwardedServerHeader != null && !_handles.put(_forwardedServerHeader, lookup.findVirtual(Forwarded.class, "handleServer", type)))
+                if (updateForwardedHandle(lookup, getForwardedServerHeader(), "handleServer"))
                     continue;
                 break;
             }
@@ -490,6 +502,16 @@ public class ForwardedRequestCustomizer implements Customizer
                 throw new IllegalStateException(e);
             }
         }
+    }
+
+    private boolean updateForwardedHandle(MethodHandles.Lookup lookup, String headerName, String forwardedMethodName) throws NoSuchMethodException, IllegalAccessException
+    {
+        final MethodType type = methodType(void.class, HttpField.class);
+
+        if (StringUtil.isBlank(headerName))
+            return false;
+
+        return !_handles.put(headerName, lookup.findVirtual(Forwarded.class, forwardedMethodName, type));
     }
 
     private static class ForcedHostPort extends HostPort
@@ -538,6 +560,7 @@ public class ForwardedRequestCustomizer implements Customizer
         String _proto;
         HostPort _for;
         HostPort _host;
+        String _server;
 
         public Forwarded(Request request, HttpConfiguration config)
         {
@@ -548,6 +571,7 @@ public class ForwardedRequestCustomizer implements Customizer
                 _host = _forcedHost.getHostPort();
         }
 
+        @SuppressWarnings("unused")
         public void handleCipherSuite(HttpField field)
         {
             _request.setAttribute("javax.servlet.request.cipher_suite", field.getValue());
@@ -558,6 +582,7 @@ public class ForwardedRequestCustomizer implements Customizer
             }
         }
 
+        @SuppressWarnings("unused")
         public void handleSslSessionId(HttpField field)
         {
             _request.setAttribute("javax.servlet.request.ssl_session_id", field.getValue());
@@ -568,13 +593,14 @@ public class ForwardedRequestCustomizer implements Customizer
             }
         }
 
+        @SuppressWarnings("unused")
         public void handleHost(HttpField field)
         {
-            if (_forwardedPortAsAuthority && !StringUtil.isEmpty(_forwardedPortHeader))
+            if (getForwardedPortAsAuthority() && !StringUtil.isEmpty(getForwardedPortHeader()))
             {
                 if (_host == null)
                     _host = new PossiblyPartialHostPort(getLeftMost(field.getValue()));
-                else if (_for instanceof PortSetHostPort)
+                else if (_host instanceof PortSetHostPort)
                     _host = new HostPort(HostPort.normalizeHost(getLeftMost(field.getValue())), _host.getPort());
             }
             else if (_host == null)
@@ -583,58 +609,66 @@ public class ForwardedRequestCustomizer implements Customizer
             }
         }
 
+        @SuppressWarnings("unused")
         public void handleServer(HttpField field)
         {
-            if (_proxyAsAuthority)
+            if (getProxyAsAuthority())
                 return;
-            handleHost(field);
+            _server = getLeftMost(field.getValue());
         }
 
+        @SuppressWarnings("unused")
         public void handleProto(HttpField field)
         {
             if (_proto == null)
                 _proto = getLeftMost(field.getValue());
         }
 
+        @SuppressWarnings("unused")
         public void handleFor(HttpField field)
         {
-            if (!_forwardedPortAsAuthority && !StringUtil.isEmpty(_forwardedPortHeader))
+            String authority = getLeftMost(field.getValue());
+            if (!getForwardedPortAsAuthority() && !StringUtil.isEmpty(getForwardedPortHeader()))
             {
                 if (_for == null)
-                    _for = new PossiblyPartialHostPort(getLeftMost(field.getValue()));
+                    _for = new PossiblyPartialHostPort(authority);
                 else if (_for instanceof PortSetHostPort)
-                    _for = new HostPort(HostPort.normalizeHost(getLeftMost(field.getValue())), _for.getPort());
+                    _for = new HostPort(HostPort.normalizeHost(authority), _for.getPort());
             }
             else if (_for == null)
             {
-                _for = new HostPort(getLeftMost(field.getValue()));
+                _for = new HostPort(authority);
             }
         }
 
+        @SuppressWarnings("unused")
         public void handlePort(HttpField field)
         {
-            if (!_forwardedPortAsAuthority)
+            int port = HostPort.parsePort(getLeftMost(field.getValue()));
+            if (!getForwardedPortAsAuthority())
             {
                 if (_for == null)
-                    _for = new PortSetHostPort(_request.getRemoteHost(), field.getIntValue());
+                    _for = new PortSetHostPort(_request.getRemoteHost(), port);
                 else if (_for instanceof PossiblyPartialHostPort && _for.getPort() <= 0)
-                    _for = new HostPort(HostPort.normalizeHost(_for.getHost()), field.getIntValue());
+                    _for = new HostPort(HostPort.normalizeHost(_for.getHost()), port);
             }
             else
             {
                 if (_host == null)
-                    _host = new PortSetHostPort(_request.getServerName(), field.getIntValue());
+                    _host = new PortSetHostPort(_request.getServerName(), port);
                 else if (_host instanceof PossiblyPartialHostPort && _host.getPort() <= 0)
-                    _host = new HostPort(HostPort.normalizeHost(_host.getHost()), field.getIntValue());
+                    _host = new HostPort(HostPort.normalizeHost(_host.getHost()), port);
             }
         }
 
+        @SuppressWarnings("unused")
         public void handleHttps(HttpField field)
         {
             if (_proto == null && ("on".equalsIgnoreCase(field.getValue()) || "true".equalsIgnoreCase(field.getValue())))
                 _proto = HttpScheme.HTTPS.asString();
         }
 
+        @SuppressWarnings("unused")
         public void handleRFC7239(HttpField field)
         {
             addValue(field.getValue());
@@ -650,11 +684,11 @@ public class ForwardedRequestCustomizer implements Customizer
                 switch (name)
                 {
                     case "by":
-                        if (!_proxyAsAuthority)
+                        if (!getProxyAsAuthority())
                             break;
                         if (value.startsWith("_") || "unknown".equals(value))
                             break;
-                        if (_proxyAsAuthority && (_host == null || !(_host instanceof Rfc7239HostPort)))
+                        if (_host == null || !(_host instanceof Rfc7239HostPort))
                             _host = new Rfc7239HostPort(value);
                         break;
                     case "for":

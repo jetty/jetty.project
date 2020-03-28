@@ -43,6 +43,12 @@ etc/jetty-ssl-context.xml
 ## Connect Timeout in milliseconds
 # jetty.ssl.connectTimeout=15000
 
+## Whether SNI is required for all secure connections. Rejections are in TLS handshakes.
+# jetty.sslContext.sniRequired=false
+
+## Whether SNI is required for all secure connections. Rejections are in HTTP 400 response.
+# jetty.ssl.sniRequired=false
+
 ## Whether request host names are checked to match any SNI names
 # jetty.ssl.sniHostCheck=true
 
@@ -73,7 +79,7 @@ etc/jetty-ssl-context.xml
 # jetty.sslContext.keyStorePassword=
 
 ## Keystore type and provider
-# jetty.sslContext.keyStoreType=JKS
+# jetty.sslContext.keyStoreType=PKCS12
 # jetty.sslContext.keyStoreProvider=
 
 ## KeyManager password
@@ -83,7 +89,7 @@ etc/jetty-ssl-context.xml
 # jetty.sslContext.trustStorePassword=
 
 ## Truststore type and provider
-# jetty.sslContext.trustStoreType=JKS
+# jetty.sslContext.trustStoreType=PKCS12
 # jetty.sslContext.trustStoreProvider=
 
 ## whether client certificate authentication is required

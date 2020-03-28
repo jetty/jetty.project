@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.parser;
@@ -36,8 +36,8 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The HTTP/2 protocol parser.</p>
@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Parser
 {
-    private static final Logger LOG = Log.getLogger(Parser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
     private final ByteBufferPool byteBufferPool;
     private final Listener listener;
@@ -54,18 +54,22 @@ public class Parser
     private final HpackDecoder hpackDecoder;
     private final BodyParser[] bodyParsers;
     private UnknownBodyParser unknownBodyParser;
-    private int maxFrameLength;
+    private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private boolean continuation;
     private State state = State.HEADER;
 
     public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
     {
+        this(byteBufferPool, listener, maxDynamicTableSize, maxHeaderSize, RateControl.NO_RATE_CONTROL);
+    }
+
+    public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize, RateControl rateControl)
+    {
         this.byteBufferPool = byteBufferPool;
         this.listener = listener;
-        this.headerParser = new HeaderParser();
+        this.headerParser = new HeaderParser(rateControl == null ? RateControl.NO_RATE_CONTROL : rateControl);
         this.hpackDecoder = new HpackDecoder(maxDynamicTableSize, maxHeaderSize);
-        this.maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
         this.bodyParsers = new BodyParser[FrameType.values().length];
     }
 
@@ -74,7 +78,7 @@ public class Parser
         Listener listener = wrapper.apply(this.listener);
         unknownBodyParser = new UnknownBodyParser(headerParser, listener);
         HeaderBlockParser headerBlockParser = new HeaderBlockParser(headerParser, byteBufferPool, hpackDecoder, unknownBodyParser);
-        HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments();
+        HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments(byteBufferPool);
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
         bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);
@@ -134,7 +138,7 @@ public class Parser
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("Parse failed", x);
             connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR, "parser_error");
         }
     }

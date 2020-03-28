@@ -36,9 +36,9 @@
           </Arg>
         </Call> -->
 
-        <Call id="webappprovider" name="addAppProvider">
+        <Call name="addAppProvider">
           <Arg>
-            <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+            <New id="webappprovider" class="org.eclipse.jetty.deploy.providers.WebAppProvider">
               <Set name="monitoredDirName">
                 <Property>
                   <Name>jetty.deploy.monitoredPath</Name>

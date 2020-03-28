@@ -1,52 +1,69 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.ajax;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.util.ajax.JSON.Output;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Converts POJOs to JSON and vice versa.
- * The key difference:
- * - returns the actual object from Convertor.fromJSON (JSONObjectConverter returns a Map)
- * - the getters/setters are resolved at initialization (JSONObjectConverter resolves it at runtime)
- * - correctly sets the number fields
+ * <p>Converts POJOs to JSON and vice versa.</p>
+ * <p>The key differences with respect to {@link JSONObjectConvertor} are:</p>
+ * <ul>
+ * <li>returns the actual object from Convertor.fromJSON (JSONObjectConverter returns a Map)</li>
+ * <li>the getters/setters are resolved at initialization (JSONObjectConverter resolves it at runtime)</li>
+ * <li>correctly sets the number fields</li>
+ * </ul>
  */
 public class JSONPojoConvertor implements JSON.Convertor
 {
-    private static final Logger LOG = Log.getLogger(JSONPojoConvertor.class);
-    public static final Object[] GETTER_ARG = new Object[]{};
-    public static final Object[] NULL_ARG = new Object[]{null};
+    private static final Logger LOG = LoggerFactory.getLogger(JSONPojoConvertor.class);
     private static final Map<Class<?>, NumberType> __numberTypes = new HashMap<>();
+    private static final NumberType SHORT = Number::shortValue;
+    private static final NumberType INTEGER = Number::intValue;
+    private static final NumberType FLOAT = Number::floatValue;
+    private static final NumberType LONG = Number::longValue;
+    private static final NumberType DOUBLE = Number::doubleValue;
+
+    static
+    {
+        __numberTypes.put(Short.class, SHORT);
+        __numberTypes.put(Short.TYPE, SHORT);
+        __numberTypes.put(Integer.class, INTEGER);
+        __numberTypes.put(Integer.TYPE, INTEGER);
+        __numberTypes.put(Long.class, LONG);
+        __numberTypes.put(Long.TYPE, LONG);
+        __numberTypes.put(Float.class, FLOAT);
+        __numberTypes.put(Float.TYPE, FLOAT);
+        __numberTypes.put(Double.class, DOUBLE);
+        __numberTypes.put(Double.TYPE, DOUBLE);
+    }
 
     public static NumberType getNumberType(Class<?> clazz)
     {
@@ -55,8 +72,8 @@ public class JSONPojoConvertor implements JSON.Convertor
 
     protected boolean _fromJSON;
     protected Class<?> _pojoClass;
-    protected Map<String, Method> _getters = new HashMap<String, Method>();
-    protected Map<String, Setter> _setters = new HashMap<String, Setter>();
+    protected Map<String, Method> _getters = new HashMap<>();
+    protected Map<String, Setter> _setters = new HashMap<>();
     protected Set<String> _excluded;
 
     /**
@@ -64,7 +81,16 @@ public class JSONPojoConvertor implements JSON.Convertor
      */
     public JSONPojoConvertor(Class<?> pojoClass)
     {
-        this(pojoClass, (Set<String>)null, true);
+        this(pojoClass, null, true);
+    }
+
+    /**
+     * @param pojoClass The class to convert
+     * @param fromJSON If true, add a class field to the JSON
+     */
+    public JSONPojoConvertor(Class<?> pojoClass, boolean fromJSON)
+    {
+        this(pojoClass, null, fromJSON);
     }
 
     /**
@@ -73,7 +99,7 @@ public class JSONPojoConvertor implements JSON.Convertor
      */
     public JSONPojoConvertor(Class<?> pojoClass, String[] excluded)
     {
-        this(pojoClass, new HashSet<String>(Arrays.asList(excluded)), true);
+        this(pojoClass, new HashSet<>(Arrays.asList(excluded)));
     }
 
     /**
@@ -98,21 +124,11 @@ public class JSONPojoConvertor implements JSON.Convertor
         init();
     }
 
-    /**
-     * @param pojoClass The class to convert
-     * @param fromJSON If true, add a class field to the JSON
-     */
-    public JSONPojoConvertor(Class<?> pojoClass, boolean fromJSON)
-    {
-        this(pojoClass, (Set<String>)null, fromJSON);
-    }
-
     protected void init()
     {
         Method[] methods = _pojoClass.getMethods();
-        for (int i = 0; i < methods.length; i++)
+        for (Method m : methods)
         {
-            Method m = methods[i];
             if (!Modifier.isStatic(m.getModifiers()) && m.getDeclaringClass() != Object.class)
             {
                 String name = m.getName();
@@ -167,53 +183,45 @@ public class JSONPojoConvertor implements JSON.Convertor
         return _excluded == null || !_excluded.contains(name);
     }
 
-    protected int getExcludedCount()
-    {
-        return _excluded == null ? 0 : _excluded.size();
-    }
-
     @Override
-    public Object fromJSON(Map object)
+    public Object fromJSON(Map<String, Object> object)
     {
-        Object obj = null;
         try
         {
-            obj = _pojoClass.getDeclaredConstructor().newInstance();
+            Object obj = _pojoClass.getConstructor().newInstance();
+            setProps(obj, object);
+            return obj;
         }
         catch (Exception e)
         {
             // TODO return Map instead?
             throw new RuntimeException(e);
         }
-
-        setProps(obj, object);
-        return obj;
     }
 
-    public int setProps(Object obj, Map<?, ?> props)
+    private void setProps(Object obj, Map<String, Object> props)
     {
-        int count = 0;
-        for (Iterator<?> iterator = props.entrySet().iterator(); iterator.hasNext(); )
+        for (Map.Entry<String, Object> entry : props.entrySet())
         {
-            Map.Entry<?, ?> entry = (Map.Entry<?, ?>)iterator.next();
-            Setter setter = getSetter((String)entry.getKey());
+            Setter setter = getSetter(entry.getKey());
             if (setter != null)
             {
                 try
                 {
                     setter.invoke(obj, entry.getValue());
-                    count++;
                 }
                 catch (Exception e)
                 {
                     // TODO throw exception?
-                    LOG.warn(_pojoClass.getName() + "#" + setter.getPropertyName() + " not set from " +
-                        (entry.getValue().getClass().getName()) + "=" + entry.getValue().toString());
-                    log(e);
+                    LOG.warn("{}#{} not set from value {}={}: {}",
+                        _pojoClass.getName(),
+                        setter.getPropertyName(),
+                        setter.getType().getName(),
+                        entry.getValue(),
+                        e.toString());
                 }
             }
         }
-        return count;
     }
 
     @Override
@@ -225,21 +233,17 @@ public class JSONPojoConvertor implements JSON.Convertor
         {
             try
             {
-                out.add(entry.getKey(), entry.getValue().invoke(obj, GETTER_ARG));
+                out.add(entry.getKey(), entry.getValue().invoke(obj));
             }
             catch (Exception e)
             {
                 // TODO throw exception?
-                LOG.warn("{} property '{}' excluded. (errors)", _pojoClass.getName(),
-                    entry.getKey());
-                log(e);
+                LOG.warn("{}#{} excluded: {}",
+                    _pojoClass.getName(),
+                    entry.getKey(),
+                    e.toString());
             }
         }
-    }
-
-    protected void log(Throwable t)
-    {
-        LOG.ignore(t);
     }
 
     public static class Setter
@@ -255,11 +259,11 @@ public class JSONPojoConvertor implements JSON.Convertor
             _propertyName = propertyName;
             _setter = method;
             _type = method.getParameterTypes()[0];
-            _numberType = __numberTypes.get(_type);
+            _numberType = JSONPojoConvertor.getNumberType(_type);
             if (_numberType == null && _type.isArray())
             {
                 _componentType = _type.getComponentType();
-                _numberType = __numberTypes.get(_componentType);
+                _numberType = JSONPojoConvertor.getNumberType(_componentType);
             }
         }
 
@@ -290,143 +294,89 @@ public class JSONPojoConvertor implements JSON.Convertor
 
         public boolean isPropertyNumber()
         {
-            return _numberType != null;
+            return getNumberType() != null;
         }
 
-        public void invoke(Object obj, Object value) throws IllegalArgumentException,
-            IllegalAccessException, InvocationTargetException
+        public void invoke(Object obj, Object value) throws Exception
         {
             if (value == null)
-                _setter.invoke(obj, NULL_ARG);
+                _setter.invoke(obj, value);
             else
                 invokeObject(obj, value);
         }
 
-        protected void invokeObject(Object obj, Object value) throws IllegalArgumentException,
-            IllegalAccessException, InvocationTargetException
+        protected void invokeObject(Object obj, Object value) throws Exception
         {
-
             if (_type.isEnum())
             {
                 if (value instanceof Enum)
-                    _setter.invoke(obj, new Object[]{value});
+                {
+                    _setter.invoke(obj, value);
+                }
                 else
-                    _setter.invoke(obj, new Object[]{Enum.valueOf((Class<? extends Enum>)_type, value.toString())});
+                {
+                    @SuppressWarnings({"rawtypes", "unchecked"})
+                    Class<? extends Enum> enumType = (Class<? extends Enum>)_type;
+                    @SuppressWarnings("unchecked")
+                    Enum<?> enumValue = Enum.valueOf(enumType, value.toString());
+                    _setter.invoke(obj, enumValue);
+                }
             }
-            else if (_numberType != null && value instanceof Number)
+            else if (isPropertyNumber() && value instanceof Number)
             {
-                _setter.invoke(obj, new Object[]{_numberType.getActualValue((Number)value)});
+                _setter.invoke(obj, _numberType.getActualValue((Number)value));
             }
             else if (Character.TYPE.equals(_type) || Character.class.equals(_type))
             {
-                _setter.invoke(obj, new Object[]{String.valueOf(value).charAt(0)});
+                _setter.invoke(obj, String.valueOf(value).charAt(0));
             }
             else if (_componentType != null && value.getClass().isArray())
             {
                 if (_numberType == null)
                 {
                     int len = Array.getLength(value);
-                    Object array = Array.newInstance(_componentType, len);
+                    Object array = Array.newInstance(getComponentType(), len);
                     try
                     {
                         System.arraycopy(value, 0, array, 0, len);
+                        _setter.invoke(obj, array);
                     }
                     catch (Exception e)
                     {
-                        // unusual array with multiple types
-                        LOG.ignore(e);
-                        _setter.invoke(obj, new Object[]{value});
-                        return;
+                        // Unusual array with multiple types.
+                        LOG.trace("IGNORED", e);
+                        _setter.invoke(obj, value);
                     }
-                    _setter.invoke(obj, new Object[]{array});
                 }
                 else
                 {
                     Object[] old = (Object[])value;
-                    Object array = Array.newInstance(_componentType, old.length);
+                    Object array = Array.newInstance(getComponentType(), old.length);
                     try
                     {
                         for (int i = 0; i < old.length; i++)
                         {
                             Array.set(array, i, _numberType.getActualValue((Number)old[i]));
                         }
+                        _setter.invoke(obj, array);
                     }
                     catch (Exception e)
                     {
                         // unusual array with multiple types
-                        LOG.ignore(e);
-                        _setter.invoke(obj, new Object[]{value});
-                        return;
+                        LOG.trace("IGNORED", e);
+                        _setter.invoke(obj, value);
                     }
-                    _setter.invoke(obj, new Object[]{array});
                 }
             }
             else
-                _setter.invoke(obj, new Object[]{value});
+            {
+                _setter.invoke(obj, value);
+            }
         }
     }
 
     public interface NumberType
     {
         public Object getActualValue(Number number);
-    }
-
-    public static final NumberType SHORT = new NumberType()
-    {
-        @Override
-        public Object getActualValue(Number number)
-        {
-            return number.shortValue();
-        }
-    };
-
-    public static final NumberType INTEGER = new NumberType()
-    {
-        @Override
-        public Object getActualValue(Number number)
-        {
-            return number.intValue();
-        }
-    };
-
-    public static final NumberType FLOAT = new NumberType()
-    {
-        @Override
-        public Object getActualValue(Number number)
-        {
-            return number.floatValue();
-        }
-    };
-
-    public static final NumberType LONG = new NumberType()
-    {
-        @Override
-        public Object getActualValue(Number number)
-        {
-            return number instanceof Long ? number : (Long)number.longValue();
-        }
-    };
-
-    public static final NumberType DOUBLE = new NumberType()
-    {
-        @Override
-        public Object getActualValue(Number number)
-        {
-            return number instanceof Double ? number : (Double)number.doubleValue();
-        }
-    };
-
-    static
-    {
-        __numberTypes.put(Short.class, SHORT);
-        __numberTypes.put(Short.TYPE, SHORT);
-        __numberTypes.put(Integer.class, INTEGER);
-        __numberTypes.put(Integer.TYPE, INTEGER);
-        __numberTypes.put(Long.class, LONG);
-        __numberTypes.put(Long.TYPE, LONG);
-        __numberTypes.put(Float.class, FLOAT);
-        __numberTypes.put(Float.TYPE, FLOAT);
-        __numberTypes.put(Double.class, DOUBLE);
-        __numberTypes.put(Double.TYPE, DOUBLE);
     }
 }

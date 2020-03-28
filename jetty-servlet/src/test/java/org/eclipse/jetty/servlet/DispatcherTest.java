@@ -1,24 +1,26 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -32,16 +34,20 @@ import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletResponseWrapper;
+import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -53,11 +59,11 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -69,6 +75,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DispatcherTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DispatcherTest.class);
+
     private Server _server;
     private LocalConnector _connector;
     private ContextHandlerCollection _contextCollection;
@@ -115,8 +123,9 @@ public class DispatcherTest
         String expected =
             "HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/html\r\n" +
-                "Content-Length: 0\r\n" +
-                "\r\n";
+                "Content-Length: 7\r\n" +
+                "\r\n" +
+                "FORWARD";
 
         String responses = _connector.getResponse("GET /context/ForwardServlet?do=assertforward&do=more&test=1 HTTP/1.0\n\n");
 
@@ -132,8 +141,9 @@ public class DispatcherTest
         String expected =
             "HTTP/1.1 200 OK\r\n" +
                 "Content-Type: text/html\r\n" +
-                "Content-Length: 0\r\n" +
-                "\r\n";
+                "Content-Length: 7\r\n" +
+                "\r\n" +
+                "FORWARD";
         String responses = _connector.getResponse("GET /context/ForwardServlet?do=assertforward&foreign=%d2%e5%ec%ef%e5%f0%e0%f2%f3%f0%e0&test=1 HTTP/1.0\n\n");
 
         assertEquals(expected, responses);
@@ -163,9 +173,9 @@ public class DispatcherTest
     @Test
     public void testForwardWithBadParams() throws Exception
     {
-        try (StacklessLogging nostack = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
-            Log.getLogger(ServletHandler.class).info("Expect Not valid UTF8 warnings...");
+            LOG.info("Expect Not valid UTF8 warnings...");
             _contextHandler.addServlet(AlwaysForwardServlet.class, "/forward/*");
             _contextHandler.addServlet(EchoServlet.class, "/echo/*");
 
@@ -202,7 +212,9 @@ public class DispatcherTest
 
         String expected =
             "HTTP/1.1 200 OK\r\n" +
-                "\r\n";
+                "Content-Length: 7\r\n" +
+                "\r\n" +
+                "INCLUDE";
 
         String responses = _connector.getResponse("GET /context/IncludeServlet?do=assertinclude&do=more&test=1 HTTP/1.0\n\n");
 
@@ -218,7 +230,9 @@ public class DispatcherTest
 
         String expected =
             "HTTP/1.1 200 OK\r\n" +
-                "\r\n";
+                "Content-Length: 7\r\n" +
+                "\r\n" +
+                "INCLUDE";
 
         String responses = _connector.getResponse("GET /context/ForwardServlet/forwardpath?do=include HTTP/1.0\n\n");
 
@@ -234,7 +248,9 @@ public class DispatcherTest
 
         String expected =
             "HTTP/1.1 200 OK\r\n" +
-                "\r\n";
+                "Content-Length: 7\r\n" +
+                "\r\n" +
+                "FORWARD";
 
         String responses = _connector.getResponse("GET /context/IncludeServlet/includepath?do=forward HTTP/1.0\n\n");
 
@@ -372,6 +388,88 @@ public class DispatcherTest
         assertThat(rogerResponse, containsString("Roger That!"));
         assertThat(echoResponse, containsString("echoText"));
         assertThat(rechoResponse, containsString("txeTohce"));
+    }
+
+    @Test
+    public void testWrappedForwardCloseIntercepted() throws Exception
+    {
+        // Add filter that wraps response, intercepts close and writes after doChain
+        _contextHandler.addFilter(WrappingFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+        testForward();
+    }
+
+    public static class WrappingFilter implements Filter
+    {
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+        }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            ResponseWrapper wrapper = new ResponseWrapper((HttpServletResponse)response);
+            chain.doFilter(request, wrapper);
+            wrapper.sendResponse(response.getOutputStream());
+        }
+
+        @Override
+        public void destroy()
+        {
+        }
+    }
+
+    public static class ResponseWrapper extends HttpServletResponseWrapper
+    {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+        public ResponseWrapper(HttpServletResponse response)
+        {
+            super(response);
+        }
+
+        @Override
+        public ServletOutputStream getOutputStream() throws IOException
+        {
+            return new ServletOutputStream()
+            {
+                @Override
+                public boolean isReady()
+                {
+                    return true;
+                }
+
+                @Override
+                public void setWriteListener(WriteListener writeListener)
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void write(int b) throws IOException
+                {
+                    buffer.write(b);
+                }
+
+                @Override
+                public void write(byte[] b, int off, int len) throws IOException
+                {
+                    buffer.write(b, off, len);
+                }
+
+                @Override
+                public void close() throws IOException
+                {
+                    buffer.close();
+                }
+            };
+        }
+
+        public void sendResponse(OutputStream out) throws IOException
+        {
+            out.write(buffer.toByteArray());
+            out.close();
+        }
     }
 
     public static class ForwardServlet extends HttpServlet implements Servlet
@@ -634,9 +732,12 @@ public class DispatcherTest
             assertEquals("/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
             assertEquals(null, request.getAttribute(Dispatcher.FORWARD_PATH_INFO));
             assertEquals("do=assertforward&do=more&test=1", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
+            HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
+            assertNotNull(fwdMapping);
+            assertEquals("/ForwardServlet", fwdMapping.getMatchValue());
 
             List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH,
-                Dispatcher.FORWARD_SERVLET_PATH, Dispatcher.FORWARD_QUERY_STRING);
+                Dispatcher.FORWARD_SERVLET_PATH, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING);
             List<String> requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
@@ -649,6 +750,7 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().print(request.getDispatcherType().toString());
         }
     }
 
@@ -657,17 +759,20 @@ public class DispatcherTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
-            byte[] cp1251_bytes = TypeUtil.fromHexString("d2e5ecefe5f0e0f2f3f0e0");
-            String expectedCP1251String = new String(cp1251_bytes, "cp1251");
+            byte[] cp1251Bytes = TypeUtil.fromHexString("d2e5ecefe5f0e0f2f3f0e0");
+            String expectedCP1251String = new String(cp1251Bytes, "cp1251");
 
             assertEquals("/context/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_REQUEST_URI));
             assertEquals("/context", request.getAttribute(Dispatcher.FORWARD_CONTEXT_PATH));
             assertEquals("/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
             assertEquals(null, request.getAttribute(Dispatcher.FORWARD_PATH_INFO));
             assertEquals("do=assertforward&foreign=%d2%e5%ec%ef%e5%f0%e0%f2%f3%f0%e0&test=1", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
+            HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
+            assertNotNull(fwdMapping);
+            assertEquals("/ForwardServlet", fwdMapping.getMatchValue());
 
             List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH,
-                Dispatcher.FORWARD_SERVLET_PATH, Dispatcher.FORWARD_QUERY_STRING);
+                Dispatcher.FORWARD_SERVLET_PATH, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING);
             List<String> requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
@@ -697,6 +802,7 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().print(request.getDispatcherType().toString());
         }
     }
 
@@ -710,9 +816,12 @@ public class DispatcherTest
             assertEquals("/AssertIncludeServlet", request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH));
             assertEquals(null, request.getAttribute(Dispatcher.INCLUDE_PATH_INFO));
             assertEquals("do=end&do=the", request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING));
+            HttpServletMapping incMapping = (HttpServletMapping)request.getAttribute(Dispatcher.INCLUDE_MAPPING);
+            assertNotNull(incMapping);
+            assertEquals("/AssertIncludeServlet", incMapping.getMatchValue());
 
             List expectedAttributeNames = Arrays.asList(Dispatcher.INCLUDE_REQUEST_URI, Dispatcher.INCLUDE_CONTEXT_PATH,
-                Dispatcher.INCLUDE_SERVLET_PATH, Dispatcher.INCLUDE_QUERY_STRING);
+                Dispatcher.INCLUDE_SERVLET_PATH, Dispatcher.INCLUDE_QUERY_STRING, Dispatcher.INCLUDE_MAPPING);
             List requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
@@ -725,6 +834,7 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().print(request.getDispatcherType().toString());
         }
     }
 
@@ -739,17 +849,23 @@ public class DispatcherTest
             assertEquals("/ForwardServlet", request.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
             assertEquals("/forwardpath", request.getAttribute(Dispatcher.FORWARD_PATH_INFO));
             assertEquals("do=include", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
+            HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
+            assertNotNull(fwdMapping);
+            assertEquals("/ForwardServlet", fwdMapping.getMatchValue());
 
             assertEquals("/context/AssertForwardIncludeServlet/assertpath", request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI));
             assertEquals("/context", request.getAttribute(Dispatcher.INCLUDE_CONTEXT_PATH));
             assertEquals("/AssertForwardIncludeServlet", request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH));
             assertEquals("/assertpath", request.getAttribute(Dispatcher.INCLUDE_PATH_INFO));
             assertEquals("do=end", request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING));
+            HttpServletMapping incMapping = (HttpServletMapping)request.getAttribute(Dispatcher.INCLUDE_MAPPING);
+            assertNotNull(incMapping);
+            assertEquals("/AssertForwardIncludeServlet", incMapping.getMatchValue());
 
             List expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH,
-                Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING,
+                Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING,
                 Dispatcher.INCLUDE_REQUEST_URI, Dispatcher.INCLUDE_CONTEXT_PATH, Dispatcher.INCLUDE_SERVLET_PATH,
-                Dispatcher.INCLUDE_PATH_INFO, Dispatcher.INCLUDE_QUERY_STRING);
+                Dispatcher.INCLUDE_PATH_INFO, Dispatcher.INCLUDE_QUERY_STRING, Dispatcher.INCLUDE_MAPPING);
             List requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
@@ -762,6 +878,7 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().print(request.getDispatcherType().toString());
         }
     }
 
@@ -776,15 +893,19 @@ public class DispatcherTest
             assertEquals(null, request.getAttribute(Dispatcher.INCLUDE_SERVLET_PATH));
             assertEquals(null, request.getAttribute(Dispatcher.INCLUDE_PATH_INFO));
             assertEquals(null, request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING));
+            assertEquals(null, request.getAttribute(Dispatcher.INCLUDE_MAPPING));
 
             assertEquals("/context/IncludeServlet/includepath", request.getAttribute(Dispatcher.FORWARD_REQUEST_URI));
             assertEquals("/context", request.getAttribute(Dispatcher.FORWARD_CONTEXT_PATH));
             assertEquals("/IncludeServlet", request.getAttribute(Dispatcher.FORWARD_SERVLET_PATH));
             assertEquals("/includepath", request.getAttribute(Dispatcher.FORWARD_PATH_INFO));
             assertEquals("do=forward", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
+            HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
+            assertNotNull(fwdMapping);
+            assertEquals("/IncludeServlet", fwdMapping.getMatchValue());
 
             List expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH,
-                Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING);
+                Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING);
             List requestAttributeNames = Collections.list(request.getAttributeNames());
             assertTrue(requestAttributeNames.containsAll(expectedAttributeNames));
 
@@ -797,6 +918,7 @@ public class DispatcherTest
 
             response.setContentType("text/html");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.getOutputStream().print(request.getDispatcherType().toString());
         }
     }
 }

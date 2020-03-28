@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core.server;
@@ -24,13 +24,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.RawFrameBuilder;
@@ -40,11 +38,11 @@ import org.eclipse.jetty.websocket.core.WebSocketTester;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -55,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class WebSocketServerTest extends WebSocketTester
 {
-    private static Logger LOG = Log.getLogger(WebSocketServerTest.class);
+    private static Logger LOG = LoggerFactory.getLogger(WebSocketServerTest.class);
 
     private WebSocketServer server;
 
@@ -207,29 +205,6 @@ public class WebSocketServerTest extends WebSocketTester
             }
             assertThat(serverHandler.receivedFrames.size(), is(5));
             assertThat(receivedCallbacks.size(), is(5));
-
-            byte[] first = serverHandler.receivedFrames.poll().getPayload().array();
-            assertThat(serverHandler.receivedFrames.poll().getPayload().array(), sameInstance(first));
-            assertThat(serverHandler.receivedFrames.poll().getPayload().array(), sameInstance(first));
-            byte[] second = serverHandler.receivedFrames.poll().getPayload().array();
-            assertThat(serverHandler.receivedFrames.poll().getPayload().array(), sameInstance(second));
-            assertThat(first, not(sameInstance(second)));
-
-            ByteBufferPool pool = server.getServer().getConnectors()[0].getByteBufferPool();
-
-            assertThat(pool.acquire(first.length, false).array(), not(sameInstance(first)));
-            receivedCallbacks.poll().succeeded();
-            assertThat(pool.acquire(first.length, false).array(), not(sameInstance(first)));
-            receivedCallbacks.poll().succeeded();
-            assertThat(pool.acquire(first.length, false).array(), not(sameInstance(first)));
-            receivedCallbacks.poll().succeeded();
-            assertThat(pool.acquire(first.length, false).array(), sameInstance(first));
-
-            assertThat(pool.acquire(second.length, false).array(), not(sameInstance(second)));
-            receivedCallbacks.poll().succeeded();
-            assertThat(pool.acquire(second.length, false).array(), not(sameInstance(second)));
-            receivedCallbacks.poll().succeeded();
-            assertThat(pool.acquire(second.length, false).array(), sameInstance(second));
         }
     }
 

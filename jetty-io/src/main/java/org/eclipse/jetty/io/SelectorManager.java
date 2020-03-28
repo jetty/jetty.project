@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io;
@@ -38,13 +38,14 @@ import java.util.function.IntUnaryOperator;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPoolBudget;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>{@link SelectorManager} manages a number of {@link ManagedSelector}s that
@@ -57,7 +58,7 @@ import org.eclipse.jetty.util.thread.ThreadPoolBudget;
 public abstract class SelectorManager extends ContainerLifeCycle implements Dumpable
 {
     public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
-    protected static final Logger LOG = Log.getLogger(SelectorManager.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(SelectorManager.class);
 
     private final Executor executor;
     private final Scheduler scheduler;
@@ -389,31 +390,37 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public abstract Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException;
 
-    public void addEventListener(EventListener listener)
+    /**
+     * @param listener An EventListener
+     * @see AcceptListener
+     * @see Container#addEventListener(EventListener)
+     */
+    @Override
+    public boolean addEventListener(EventListener listener)
     {
         if (isRunning())
             throw new IllegalStateException(this.toString());
-        if (listener instanceof AcceptListener)
-            addAcceptListener(AcceptListener.class.cast(listener));
+        if (super.addEventListener(listener))
+        {
+            if (listener instanceof AcceptListener)
+                _acceptListeners.add((AcceptListener)listener);
+            return true;
+        }
+        return false;
     }
 
-    public void removeEventListener(EventListener listener)
+    @Override
+    public boolean removeEventListener(EventListener listener)
     {
         if (isRunning())
             throw new IllegalStateException(this.toString());
-        if (listener instanceof AcceptListener)
-            removeAcceptListener(AcceptListener.class.cast(listener));
-    }
-
-    public void addAcceptListener(AcceptListener listener)
-    {
-        if (!_acceptListeners.contains(listener))
-            _acceptListeners.add(listener);
-    }
-
-    public void removeAcceptListener(AcceptListener listener)
-    {
-        _acceptListeners.remove(listener);
+        if (super.removeEventListener(listener))
+        {
+            if (listener instanceof AcceptListener)
+                _acceptListeners.remove(listener);
+            return true;
+        }
+        return false;
     }
 
     protected void onAccepting(SelectableChannel channel)
@@ -426,7 +433,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
             }
             catch (Throwable x)
             {
-                LOG.warn(x);
+                LOG.warn("Failed to notify onAccepting on listener {}", l, x);
             }
         }
     }
@@ -441,7 +448,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
             }
             catch (Throwable x)
             {
-                LOG.warn(x);
+                LOG.warn("Failed to notify onAcceptFailed on listener {}", l, x);
             }
         }
     }
@@ -456,9 +463,13 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
             }
             catch (Throwable x)
             {
-                LOG.warn(x);
+                LOG.warn("Failed to notify onAccepted on listener {}", l, x);
             }
         }
+    }
+
+    public interface SelectorManagerListener extends EventListener
+    {
     }
 
     /**
@@ -466,7 +477,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * <p>This listener is called from either the selector or acceptor thread
      * and implementations must be non blocking and fast.</p>
      */
-    public interface AcceptListener extends EventListener
+    public interface AcceptListener extends SelectorManagerListener
     {
         /**
          * Called immediately after a new SelectableChannel is accepted, but

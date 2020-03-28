@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http;
@@ -109,10 +109,6 @@ public class MetaData implements Iterable<HttpField>
         return _contentLength;
     }
 
-    /**
-     * @return an iterator over the HTTP fields
-     * @see #getFields()
-     */
     @Override
     public Iterator<HttpField> iterator()
     {
@@ -155,25 +151,19 @@ public class MetaData implements Iterable<HttpField>
 
         public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields)
         {
-            this(method, new HttpURI(scheme == null ? null : scheme.asString(),
-                hostPort == null ? null : hostPort.getHost(),
-                hostPort == null ? -1 : hostPort.getPort(),
-                uri), version, fields);
+            this(method, scheme, hostPort, uri, version, fields, Long.MIN_VALUE);
         }
 
         public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields, long contentLength)
         {
-            this(method, new HttpURI(scheme == null ? null : scheme.asString(),
-                hostPort == null ? null : hostPort.getHost(),
-                hostPort == null ? -1 : hostPort.getPort(),
-                uri), version, fields, contentLength);
+            this(method, scheme == null ? null : scheme.asString(), hostPort, uri, version, fields, contentLength);
         }
 
         public Request(String method, String scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields, long contentLength)
         {
             this(method, new HttpURI(scheme,
-                hostPort == null ? null : hostPort.getHost(),
-                hostPort == null ? -1 : hostPort.getPort(),
+                    hostPort == null ? null : hostPort.getHost(),
+                    hostPort == null ? -1 : hostPort.getPort(),
                 uri), version, fields, contentLength);
         }
 
@@ -222,14 +212,6 @@ public class MetaData implements Iterable<HttpField>
         }
 
         /**
-         * @return the HTTP URI in string form
-         */
-        public String getURIString()
-        {
-            return _uri == null ? null : _uri.toString();
-        }
-
-        /**
          * @param uri the HTTP URI to set
          */
         public void setURI(HttpURI uri)
@@ -237,12 +219,54 @@ public class MetaData implements Iterable<HttpField>
             _uri = uri;
         }
 
+        /**
+         * @return the HTTP URI in string form
+         */
+        public String getURIString()
+        {
+            return _uri == null ? null : _uri.toString();
+        }
+
+        public String getProtocol()
+        {
+            return null;
+        }
+
         @Override
         public String toString()
         {
             HttpFields fields = getFields();
-            return String.format("%s{u=%s,%s,h=%d,cl=%d}",
-                getMethod(), getURI(), getHttpVersion(), fields == null ? -1 : fields.size(), getContentLength());
+            return String.format("%s{u=%s,%s,h=%d,cl=%d,p=%s}",
+                    getMethod(), getURI(), getHttpVersion(), fields == null ? -1 : fields.size(), getContentLength(), getProtocol());
+        }
+    }
+
+    public static class ConnectRequest extends Request
+    {
+        private String _protocol;
+
+        public ConnectRequest(HttpScheme scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
+        {
+            this(scheme == null ? null : scheme.asString(), authority, path, fields, protocol);
+        }
+
+        public ConnectRequest(String scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
+        {
+            super(HttpMethod.CONNECT.asString(), scheme, authority, path, HttpVersion.HTTP_2, fields, Long.MIN_VALUE);
+            _protocol = protocol;
+        }
+
+        @Override
+        public String getProtocol()
+        {
+            return _protocol;
+        }
+
+        @Override
+        public void recycle()
+        {
+            super.recycle();
+            _protocol = null;
         }
     }
 

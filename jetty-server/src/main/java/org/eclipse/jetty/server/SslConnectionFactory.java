@@ -1,23 +1,24 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
 
+import java.nio.ByteBuffer;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
@@ -31,8 +32,12 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class SslConnectionFactory extends AbstractConnectionFactory
+public class SslConnectionFactory extends AbstractConnectionFactory implements ConnectionFactory.Detecting
 {
+    private static final int TLS_ALERT_FRAME_TYPE = 0x15;
+    private static final int TLS_HANDSHAKE_FRAME_TYPE = 0x16;
+    private static final int TLS_MAJOR_VERSION = 3;
+
     private final SslContextFactory.Server _sslContextFactory;
     private final String _nextProtocol;
     private boolean _directBuffersForEncryption = false;
@@ -97,6 +102,17 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 
         if (session.getPacketBufferSize() > getInputBufferSize())
             setInputBufferSize(session.getPacketBufferSize());
+    }
+
+    @Override
+    public Detection detect(ByteBuffer buffer)
+    {
+        if (buffer.remaining() < 2)
+            return Detection.NEED_MORE_BYTES;
+        int tlsFrameType = buffer.get(0) & 0xFF;
+        int tlsMajorVersion = buffer.get(1) & 0xFF;
+        boolean seemsSsl = (tlsFrameType == TLS_HANDSHAKE_FRAME_TYPE || tlsFrameType == TLS_ALERT_FRAME_TYPE) && tlsMajorVersion == TLS_MAJOR_VERSION;
+        return seemsSsl ? Detection.RECOGNIZED : Detection.NOT_RECOGNIZED;
     }
 
     @Override

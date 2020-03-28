@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -30,8 +30,8 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class FutureCallbackTest
 {
@@ -49,14 +49,7 @@ public class FutureCallbackTest
         FutureCallback fcb = new FutureCallback();
 
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        try
-        {
-            fcb.get(500, TimeUnit.MILLISECONDS);
-            fail("Expected a TimeoutException");
-        }
-        catch (TimeoutException e)
-        {
-        }
+        assertThrows(TimeoutException.class, () -> fcb.get(500, TimeUnit.MILLISECONDS));
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.greaterThan(50L));
     }
 
@@ -79,22 +72,18 @@ public class FutureCallbackTest
         final FutureCallback fcb = new FutureCallback();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        new Thread(new Runnable()
+        new Thread(() ->
         {
-            @Override
-            public void run()
+            latch.countDown();
+            try
             {
-                latch.countDown();
-                try
-                {
-                    TimeUnit.MILLISECONDS.sleep(100);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-                fcb.succeeded();
+                TimeUnit.MILLISECONDS.sleep(100);
             }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+            fcb.succeeded();
         }).start();
 
         latch.await();
@@ -117,15 +106,9 @@ public class FutureCallbackTest
         assertFalse(fcb.isCancelled());
 
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        try
-        {
-            fcb.get();
-            fail("Expected an ExecutionException");
-        }
-        catch (ExecutionException ee)
-        {
-            assertEquals(ex, ee.getCause());
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, () -> fcb.get());
+        assertEquals(ex, e.getCause());
+
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.lessThan(100L));
     }
 
@@ -136,35 +119,24 @@ public class FutureCallbackTest
         final Exception ex = new Exception("FAILED");
         final CountDownLatch latch = new CountDownLatch(1);
 
-        new Thread(new Runnable()
+        new Thread(() ->
         {
-            @Override
-            public void run()
+            latch.countDown();
+            try
             {
-                latch.countDown();
-                try
-                {
-                    TimeUnit.MILLISECONDS.sleep(100);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-                fcb.failed(ex);
+                TimeUnit.MILLISECONDS.sleep(100);
             }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+            fcb.failed(ex);
         }).start();
 
         latch.await();
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        try
-        {
-            fcb.get(10000, TimeUnit.MILLISECONDS);
-            fail("Expected an ExecutionException");
-        }
-        catch (ExecutionException ee)
-        {
-            assertEquals(ex, ee.getCause());
-        }
+        ExecutionException e = assertThrows(ExecutionException.class, () -> fcb.get(10000, TimeUnit.MILLISECONDS));
+        assertEquals(ex, e.getCause());
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.greaterThan(10L));
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.lessThan(5000L));
 
@@ -181,15 +153,8 @@ public class FutureCallbackTest
         assertTrue(fcb.isCancelled());
 
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        try
-        {
-            fcb.get();
-            fail("Expected a CancellationException");
-        }
-        catch (CancellationException e)
-        {
-            assertThat(e.getCause(), Matchers.instanceOf(CancellationException.class));
-        }
+        CancellationException e = assertThrows(CancellationException.class, () -> fcb.get());
+        assertThat(e.getCause(), Matchers.instanceOf(CancellationException.class));
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.lessThan(100L));
     }
 
@@ -199,35 +164,25 @@ public class FutureCallbackTest
         final FutureCallback fcb = new FutureCallback();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        new Thread(new Runnable()
+        new Thread(() ->
         {
-            @Override
-            public void run()
+            latch.countDown();
+            try
             {
-                latch.countDown();
-                try
-                {
-                    TimeUnit.MILLISECONDS.sleep(100);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-                fcb.cancel(true);
+                TimeUnit.MILLISECONDS.sleep(100);
             }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+            fcb.cancel(true);
         }).start();
 
         latch.await();
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        try
-        {
-            fcb.get(10000, TimeUnit.MILLISECONDS);
-            fail("Expected a CancellationException");
-        }
-        catch (CancellationException e)
-        {
-            assertThat(e.getCause(), Matchers.instanceOf(CancellationException.class));
-        }
+        CancellationException e = assertThrows(CancellationException.class,() -> fcb.get(10000, TimeUnit.MILLISECONDS));
+        assertThat(e.getCause(), Matchers.instanceOf(CancellationException.class));
+
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.greaterThan(10L));
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, Matchers.lessThan(1000L));
 

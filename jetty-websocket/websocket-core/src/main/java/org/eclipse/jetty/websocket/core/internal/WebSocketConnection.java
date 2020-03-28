@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core.internal;
@@ -34,19 +34,19 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides the implementation of {@link org.eclipse.jetty.io.Connection} that is suitable for WebSocket
  */
 public class WebSocketConnection extends AbstractConnection implements Connection.UpgradeTo, Dumpable, Runnable
 {
-    private static final Logger LOG = Log.getLogger(WebSocketConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketConnection.class);
 
     /**
      * Minimum size of a buffer is the determined to be what would be the maximum framing header size (not including payload)
@@ -68,6 +68,8 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     // Read / Parse variables
     private RetainableByteBuffer networkBuffer;
+    private boolean useInputDirectByteBuffers;
+    private boolean useOutputDirectByteBuffers;
 
     /**
      * Create a WSConnection.
@@ -93,7 +95,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
         this.coreSession = coreSession;
 
-        this.generator = new Generator(bufferPool);
+        this.generator = new Generator();
         this.parser = new Parser(bufferPool, coreSession);
         this.flusher = new Flusher(scheduler, coreSession.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(coreSession.getInputBufferSize());
@@ -130,6 +132,26 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     public InetSocketAddress getRemoteAddress()
     {
         return getEndPoint().getRemoteAddress();
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return useInputDirectByteBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return useOutputDirectByteBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
     /**
@@ -222,7 +244,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         synchronized (this)
         {
             if (networkBuffer == null)
-                networkBuffer = new RetainableByteBuffer(bufferPool, getInputBufferSize());
+                networkBuffer = newNetworkBuffer(getInputBufferSize());
         }
     }
 
@@ -237,8 +259,13 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                 throw new IllegalStateException();
 
             networkBuffer.release();
-            networkBuffer = new RetainableByteBuffer(bufferPool, getInputBufferSize());
+            networkBuffer = newNetworkBuffer(getInputBufferSize());
         }
+    }
+
+    private RetainableByteBuffer newNetworkBuffer(int capacity)
+    {
+        return new RetainableByteBuffer(bufferPool, capacity, isUseInputDirectByteBuffers());
     }
 
     private void releaseNetworkBuffer()
@@ -445,7 +472,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         {
             synchronized (this)
             {
-                networkBuffer = new RetainableByteBuffer(bufferPool, prefilled.remaining());
+                networkBuffer = newNetworkBuffer(prefilled.remaining());
             }
             ByteBuffer buffer = networkBuffer.getBuffer();
             BufferUtil.clearToFill(buffer);
@@ -572,6 +599,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         private Flusher(Scheduler scheduler, int bufferSize, Generator generator, EndPoint endpoint)
         {
             super(bufferPool, scheduler, generator, endpoint, bufferSize, 8);
+            setUseDirectByteBuffers(isUseOutputDirectByteBuffers());
         }
 
         @Override

@@ -1,32 +1,33 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.session;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DefaultSessionCache
@@ -36,7 +37,7 @@ import org.eclipse.jetty.util.statistic.CounterStatistic;
 @ManagedObject
 public class DefaultSessionCache extends AbstractSessionCache
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultSessionCache.class);
 
     /**
      * The cache of sessions in a hashmap
@@ -80,18 +81,12 @@ public class DefaultSessionCache extends AbstractSessionCache
         return _stats.getTotal();
     }
 
-    /**
-     *
-     */
     @ManagedOperation(value = "reset statistics", impact = "ACTION")
     public void resetStats()
     {
         _stats.reset();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doGet(java.lang.String)
-     */
     @Override
     public Session doGet(String id)
     {
@@ -103,26 +98,32 @@ public class DefaultSessionCache extends AbstractSessionCache
         return session;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doPutIfAbsent(java.lang.String, org.eclipse.jetty.server.session.Session)
-     */
     @Override
     public Session doPutIfAbsent(String id, Session session)
     {
         Session s = _sessions.putIfAbsent(id, session);
-        if (s == null && !(session instanceof PlaceHolderSession))
+        if (s == null)
             _stats.increment();
         return s;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doDelete(java.lang.String)
-     */
+    @Override
+    protected Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction)
+    {
+        return _sessions.computeIfAbsent(id, k ->
+        {
+            Session s = mappingFunction.apply(k);
+            if (s != null)
+                _stats.increment();
+            return s;
+        });
+    }
+
     @Override
     public Session doDelete(String id)
     {
         Session s = _sessions.remove(id);
-        if (s != null && !(s instanceof PlaceHolderSession))
+        if (s != null)
             _stats.decrement();
         return s;
     }
@@ -147,7 +148,7 @@ public class DefaultSessionCache extends AbstractSessionCache
                     }
                     catch (Exception e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Unable to store {}", session, e);
                     }
                     doDelete(session.getId()); //remove from memory
                     session.setResident(false);
@@ -161,16 +162,13 @@ public class DefaultSessionCache extends AbstractSessionCache
                     }
                     catch (Exception e)
                     {
-                        LOG.ignore(e);
+                        LOG.trace("IGNORED", e);
                     }
                 }
             }
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(javax.servlet.http.HttpServletRequest, org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public Session newSession(HttpServletRequest request, SessionData data)
     {
@@ -178,9 +176,6 @@ public class DefaultSessionCache extends AbstractSessionCache
         return s;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public Session newSession(SessionData data)
     {
@@ -188,15 +183,10 @@ public class DefaultSessionCache extends AbstractSessionCache
         return s;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doReplace(java.lang.String, org.eclipse.jetty.server.session.Session, org.eclipse.jetty.server.session.Session)
-     */
     @Override
     public boolean doReplace(String id, Session oldValue, Session newValue)
     {
         boolean result = _sessions.replace(id, oldValue, newValue);
-        if (result && (oldValue instanceof PlaceHolderSession))
-            _stats.increment();
         return result;
     }
 }

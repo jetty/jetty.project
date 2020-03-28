@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlets;
@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Locale;
@@ -40,8 +41,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * CGI Servlet.
@@ -71,7 +72,7 @@ public class CGI extends HttpServlet
 {
     private static final long serialVersionUID = -6182088932884791074L;
 
-    private static final Logger LOG = Log.getLogger(CGI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CGI.class);
 
     private boolean _ok;
     private File _docRoot;
@@ -251,7 +252,11 @@ public class CGI extends HttpServlet
                 String parameterName = names.nextElement();
                 parameterMap.addValues(parameterName, req.getParameterValues(parameterName));
             }
-            bodyFormEncoded = UrlEncoded.encode(parameterMap, Charset.forName(req.getCharacterEncoding()), true);
+
+            String characterEncoding = req.getCharacterEncoding();
+            Charset charset = characterEncoding != null
+                ? Charset.forName(characterEncoding) : StandardCharsets.UTF_8;
+            bodyFormEncoded = UrlEncoded.encode(parameterMap, charset, true);
         }
 
         EnvList env = new EnvList(_env);
@@ -373,7 +378,7 @@ public class CGI extends HttpServlet
                     }
                     catch (IOException e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Unable to copy error stream", e);
                     }
                 }
             });
@@ -440,17 +445,7 @@ public class CGI extends HttpServlet
         }
         finally
         {
-            if (os != null)
-            {
-                try
-                {
-                    os.close();
-                }
-                catch (Exception e)
-                {
-                    LOG.debug(e);
-                }
-            }
+            IO.close(os);
             p.destroy();
             // LOG.debug("CGI: terminated!");
             async.complete();
@@ -473,7 +468,7 @@ public class CGI extends HttpServlet
                 }
                 catch (IOException e)
                 {
-                    LOG.debug(e);
+                    LOG.debug("Unable to write out to CGI", e);
                 }
             }
         }).start();
@@ -491,13 +486,14 @@ public class CGI extends HttpServlet
             {
                 try
                 {
-                    OutputStream outToCgi = p.getOutputStream();
-                    IO.copy(input, outToCgi, len);
-                    outToCgi.close();
+                    try (OutputStream outToCgi = p.getOutputStream())
+                    {
+                        IO.copy(input, outToCgi, len);
+                    }
                 }
                 catch (IOException e)
                 {
-                    LOG.debug(e);
+                    LOG.debug("Unable to write out to CGI", e);
                 }
             }
         }).start();

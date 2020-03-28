@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.handler;
@@ -33,9 +33,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -43,7 +45,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -51,12 +52,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
 public class NcsaRequestLogTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(NcsaRequestLogTest.class);
+
     RequestLog _log;
     Server _server;
     LocalConnector _connector;
@@ -387,7 +392,7 @@ public class NcsaRequestLogTest
             data.add(new Object[]{logType, new IOExceptionPartialHandler(), "/ioex", "\"GET /ioex HTTP/1.0\" 200"});
             data.add(new Object[]{logType, new RuntimeExceptionHandler(), "/rtex", "\"GET /rtex HTTP/1.0\" 500"});
             data.add(new Object[]{logType, new BadMessageHandler(), "/bad", "\"GET /bad HTTP/1.0\" 499"});
-            data.add(new Object[]{logType, new AbortHandler(), "/bad", "\"GET /bad HTTP/1.0\" 488"});
+            data.add(new Object[]{logType, new AbortHandler(), "/bad", "\"GET /bad HTTP/1.0\" 500"});
             data.add(new Object[]{logType, new AbortPartialHandler(), "/bad", "\"GET /bad HTTP/1.0\" 200"});
         });
 
@@ -463,10 +468,10 @@ public class NcsaRequestLogTest
     {
         setup(logType);
         _server.setRequestLog(_log);
-        AbstractHandler.ErrorDispatchHandler wrapper = new AbstractHandler.ErrorDispatchHandler()
+        AbstractHandler wrapper = new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
                 testHandler.handle(target, baseRequest, request, response);
@@ -479,10 +484,11 @@ public class NcsaRequestLogTest
         ErrorHandler errorHandler = new ErrorHandler()
         {
             @Override
-            public void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
             {
                 errors.add(baseRequest.getRequestURI());
-                super.doError(target, baseRequest, request, response);
+                super.handle(target, baseRequest, request, response);
             }
         };
         _server.addBean(errorHandler);
@@ -497,10 +503,10 @@ public class NcsaRequestLogTest
     {
         setup(logType);
         _server.setRequestLog(_log);
-        AbstractHandler.ErrorDispatchHandler wrapper = new AbstractHandler.ErrorDispatchHandler()
+        AbstractHandler wrapper = new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 throws IOException, ServletException
             {
                 testHandler.handle(target, baseRequest, request, response);
@@ -514,7 +520,9 @@ public class NcsaRequestLogTest
         startServer();
         makeRequest(requestPath);
 
-        expectedLogEntry = "\"GET " + requestPath + " HTTP/1.0\" 200";
+        // If we abort, we can't write a 200 error page
+        if (!(testHandler instanceof AbortHandler))
+            expectedLogEntry = expectedLogEntry.replaceFirst(" [1-9][0-9][0-9]", " 200");
         assertRequestLog(expectedLogEntry, _log);
     }
 
@@ -574,6 +582,10 @@ public class NcsaRequestLogTest
                         {
                             try
                             {
+                                while (baseRequest.getHttpChannel().getState().getState() != HttpChannelState.State.WAITING)
+                                {
+                                    Thread.sleep(10);
+                                }
                                 baseRequest.setHandled(false);
                                 testHandler.handle(target, baseRequest, request, response);
                                 if (!baseRequest.isHandled())
@@ -581,18 +593,21 @@ public class NcsaRequestLogTest
                             }
                             catch (BadMessageException bad)
                             {
-                                response.sendError(bad.getCode());
+                                response.sendError(bad.getCode(), bad.getReason());
                             }
                             catch (Exception e)
                             {
-                                response.sendError(500);
+                                response.sendError(500, e.toString());
                             }
                         }
-                        catch (Throwable th)
+                        catch (IOException | IllegalStateException th)
                         {
-                            throw new RuntimeException(th);
+                            LOG.trace("IGNORED", th);
                         }
-                        ac.complete();
+                        finally
+                        {
+                            ac.complete();
+                        }
                     });
                 }
             }

@@ -64,10 +64,16 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <includes>
+            <include>IntegrationTest*.java</include>
+          </includes>
           <systemPropertyVariables>
             <jetty.port.file>${jetty.port.file}</jetty.port.file>
+            <context.path>/setbycontextxml</context.path>
             <pingServlet>true</pingServlet>
             <helloServlet>true</helloServlet>
+            <contentCheck>Counter accessed 1 times.</contentCheck>
+            <pathToCheck>/jsp/bean1.jsp</pathToCheck>
             <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
           </systemPropertyVariables>
           <dependenciesToScan>
@@ -86,13 +92,14 @@
               <goal>start</goal>
             </goals>
             <configuration>
+              <contextXml>${basedir}/src/config/context.xml</contextXml>
               <systemProperties>
-                <systemProperty>
-                  <name>jetty.port.file</name>
-                  <value>${jetty.port.file}</value>
-                </systemProperty>
+                  <jetty.port.file>${jetty.port.file}</jetty.port.file>
+                  <jetty.deployMode>EMBED</jetty.deployMode>
               </systemProperties>
-              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              <jettyXmls>
+                  <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              </jettyXmls>
             </configuration>
           </execution>
         </executions>

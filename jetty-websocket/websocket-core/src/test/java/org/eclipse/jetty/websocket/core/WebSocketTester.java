@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core;
@@ -47,6 +47,7 @@ public class WebSocketTester
     private static String NON_RANDOM_KEY = Base64.getEncoder().encodeToString("0123456701234567".getBytes());
     private static SslContextFactory.Client sslContextFactory;
     protected ByteBufferPool bufferPool;
+    protected ByteBuffer buffer;
     protected Parser parser;
 
     @BeforeAll
@@ -159,33 +160,34 @@ public class WebSocketTester
 
     protected Parser.ParsedFrame receiveFrame(InputStream in) throws IOException
     {
-        ByteBuffer buffer = bufferPool.acquire(4096, false);
+        if (buffer == null)
+            buffer = bufferPool.acquire(4096, false);
+
         while (true)
         {
+            Parser.ParsedFrame frame = parser.parse(buffer);
+            if (!buffer.hasRemaining())
+                BufferUtil.clear(buffer);
+            if (frame != null)
+                return frame;
+
             int p = BufferUtil.flipToFill(buffer);
             int len = in.read(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
             if (len < 0)
                 return null;
             buffer.position(buffer.position() + len);
             BufferUtil.flipToFlush(buffer, p);
-
-            Parser.ParsedFrame frame = parser.parse(buffer);
-            if (frame != null)
-                return frame;
         }
     }
 
     protected void receiveEof(InputStream in) throws IOException
     {
         ByteBuffer buffer = bufferPool.acquire(4096, false);
-        while (true)
-        {
-            BufferUtil.flipToFill(buffer);
-            int len = in.read(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
-            if (len < 0)
-                return;
+        BufferUtil.clearToFill(buffer);
+        int len = in.read(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        if (len < 0)
+            return;
 
-            throw new IllegalStateException("unexpected content");
-        }
+        throw new IllegalStateException("unexpected content");
     }
 }

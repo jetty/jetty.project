@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.jndi.java;
@@ -41,10 +41,10 @@ import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class TestJNDI
 {
-    private static final Logger LOG = Log.getLogger(TestJNDI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TestJNDI.class);
 
     static
     {
@@ -472,9 +472,9 @@ public class TestJNDI
                 ((Context)zzz.lookup("java:comp")).bind("crud2", "xxx2");
                 fail("Should not be able to write to locked context");
             }
-            catch (NamingException ne)
+            catch (NamingException e)
             {
-                assertThat(ne.getMessage(), Matchers.containsString("immutable"));
+                assertThat(e.getMessage(), Matchers.containsString("immutable"));
             }
             finally
             {
@@ -492,9 +492,9 @@ public class TestJNDI
                 ((Context)zzz.lookup("java:comp")).bind("foo", "bar");
                 fail("Should not be able to write to locked context");
             }
-            catch (NamingException ne)
+            catch (NamingException e)
             {
-                assertThat(ne.getMessage(), Matchers.containsString("immutable"));
+                assertThat(e.getMessage(), Matchers.containsString("immutable"));
             }
             finally
             {

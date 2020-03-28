@@ -1,7 +1,7 @@
 DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Adds a HTTP2C connetion factory to the Unix Domain Socket Connector
+Adds an HTTP2C connetion factory to the Unix Domain Socket Connector
 It can be used when either the proxy forwards direct
 HTTP/2C (unecrypted) or decrypted HTTP/2 traffic.
 

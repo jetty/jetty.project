@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http;
@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpParser.State;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,9 +43,12 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpParserTest
 {
     /**
@@ -67,16 +70,16 @@ public class HttpParserTest
         int remaining = buffer.remaining();
         while (!parser.isState(State.END) && remaining > 0)
         {
-            int was_remaining = remaining;
+            int wasRemaining = remaining;
             parser.parseNext(buffer);
             remaining = buffer.remaining();
-            if (remaining == was_remaining)
+            if (remaining == wasRemaining)
                 break;
         }
     }
 
     @Test
-    public void HttpMethodTest()
+    public void testHttpMethod()
     {
         assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("Wibble ")));
         assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("GET")));
@@ -94,7 +97,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testLineParse_Mock_IP() throws Exception
+    public void testLineParseMockIP()
     {
         ByteBuffer buffer = BufferUtil.toBuffer("POST /mock/127.0.0.1 HTTP/1.1\r\n" + "\r\n");
 
@@ -108,7 +111,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testLineParse0() throws Exception
+    public void testLineParse0()
     {
         ByteBuffer buffer = BufferUtil.toBuffer("POST /foo HTTP/1.0\r\n" + "\r\n");
 
@@ -122,7 +125,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testLineParse1_RFC2616() throws Exception
+    public void testLineParse1RFC2616()
     {
         ByteBuffer buffer = BufferUtil.toBuffer("GET /999\r\n");
 
@@ -139,7 +142,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testLineParse1() throws Exception
+    public void testLineParse1()
     {
         ByteBuffer buffer = BufferUtil.toBuffer("GET /999\r\n");
 
@@ -151,7 +154,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testLineParse2_RFC2616() throws Exception
+    public void testLineParse2RFC2616()
     {
         ByteBuffer buffer = BufferUtil.toBuffer("POST /222  \r\n");
 
@@ -168,7 +171,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testLineParse2() throws Exception
+    public void testLineParse2()
     {
         ByteBuffer buffer = BufferUtil.toBuffer("POST /222  \r\n");
 
@@ -181,7 +184,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testLineParse3() throws Exception
+    public void testLineParse3()
     {
         ByteBuffer buffer = BufferUtil.toBuffer("POST /fo\u0690 HTTP/1.0\r\n" + "\r\n", StandardCharsets.UTF_8);
 
@@ -195,7 +198,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testLineParse4() throws Exception
+    public void testLineParse4()
     {
         ByteBuffer buffer = BufferUtil.toBuffer("POST /foo?param=\u0690 HTTP/1.0\r\n" + "\r\n", StandardCharsets.UTF_8);
 
@@ -209,7 +212,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testLongURLParse() throws Exception
+    public void testLongURLParse()
     {
         ByteBuffer buffer = BufferUtil.toBuffer("POST /123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/123456789abcdef/ HTTP/1.0\r\n" + "\r\n");
 
@@ -223,7 +226,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testAllowedLinePreamble() throws Exception
+    public void testAllowedLinePreamble()
     {
         ByteBuffer buffer = BufferUtil.toBuffer("\r\n\r\nGET / HTTP/1.0\r\n");
 
@@ -237,7 +240,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testDisallowedLinePreamble() throws Exception
+    public void testDisallowedLinePreamble()
     {
         ByteBuffer buffer = BufferUtil.toBuffer("\r\n \r\nGET / HTTP/1.0\r\n");
 
@@ -248,7 +251,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testConnect() throws Exception
+    public void testConnect()
     {
         ByteBuffer buffer = BufferUtil.toBuffer("CONNECT 192.168.1.2:80 HTTP/1.1\r\n" + "\r\n");
         HttpParser.RequestHandler handler = new Handler();
@@ -261,7 +264,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testSimple() throws Exception
+    public void testSimple()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.0\r\n" +
@@ -286,7 +289,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testFoldedField2616() throws Exception
+    public void testFoldedField2616()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.0\r\n" +
@@ -313,7 +316,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testFoldedField7230() throws Exception
+    public void testFoldedField7230()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.0\r\n" +
@@ -332,7 +335,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testWhiteSpaceInName() throws Exception
+    public void testWhiteSpaceInName()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.0\r\n" +
@@ -349,7 +352,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testWhiteSpaceAfterName() throws Exception
+    public void testWhiteSpaceAfterName()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.0\r\n" +
@@ -373,7 +376,7 @@ public class HttpParserTest
                 HttpCompliance.RFC7230, HttpCompliance.RFC2616
             };
 
-        String whitespaces[][] = new String[][]
+        String[][] whitespaces = new String[][]
             {
                 {" ", "Illegal character SPACE"},
                 {"\t", "Illegal character HTAB"},
@@ -390,10 +393,8 @@ public class HttpParserTest
                 {" \r \t \r\n\r\n\r\n", "Illegal character SPACE"}
             };
 
-        for (int i = 0; i < compliances.length; i++)
+        for (HttpCompliance compliance : compliances)
         {
-            HttpCompliance compliance = compliances[i];
-
             for (int j = 0; j < whitespaces.length; j++)
             {
                 String request =
@@ -421,7 +422,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testNoValue() throws Exception
+    public void testNoValue()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.0\r\n" +
@@ -449,7 +450,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testTrailingSpacesInHeaderNameNoCustom0() throws Exception
+    public void testTrailingSpacesInHeaderNameNoCustom0()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "HTTP/1.1 204 No Content\r\n" +
@@ -468,7 +469,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testNoColon7230() throws Exception
+    public void testNoColon7230()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.0\r\n" +
@@ -484,7 +485,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testHeaderParseDirect() throws Exception
+    public void testHeaderParseDirect()
     {
         ByteBuffer b0 = BufferUtil.toBuffer(
             "GET / HTTP/1.0\r\n" +
@@ -535,7 +536,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testHeaderParseCRLF() throws Exception
+    public void testHeaderParseCRLF()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.0\r\n" +
@@ -581,7 +582,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testHeaderParseLF() throws Exception
+    public void testHeaderParseLF()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.0\n" +
@@ -627,7 +628,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testQuoted() throws Exception
+    public void testQuoted()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.0\n" +
@@ -652,7 +653,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testEncodedHeader() throws Exception
+    public void testEncodedHeader()
     {
         ByteBuffer buffer = BufferUtil.allocate(4096);
         BufferUtil.flipToFill(buffer);
@@ -678,11 +679,11 @@ public class HttpParserTest
         assertEquals("Header2", _hdr[1]);
         assertEquals("" + (char)255, _val[1]);
         assertEquals(1, _headers);
-        assertEquals(null, _bad);
+        assertNull(_bad);
     }
 
     @Test
-    public void testResponseBufferUpgradeFrom() throws Exception
+    public void testResponseBufferUpgradeFrom()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "HTTP/1.1 101 Upgrade\r\n" +
@@ -704,7 +705,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testBadMethodEncoding() throws Exception
+    public void testBadMethodEncoding()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "G\u00e6T / HTTP/1.0\r\nHeader0: value0\r\n\n\n");
@@ -716,7 +717,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testBadVersionEncoding() throws Exception
+    public void testBadVersionEncoding()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / H\u00e6P/1.0\r\nHeader0: value0\r\n\n\n");
@@ -728,12 +729,12 @@ public class HttpParserTest
     }
 
     @Test
-    public void testBadHeaderEncoding() throws Exception
+    public void testBadHeaderEncoding()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0\r\n"
-                + "H\u00e6der0: value0\r\n"
-                + "\n\n");
+            "GET / HTTP/1.0\r\n" +
+                "H\u00e6der0: value0\r\n" +
+                "\n\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -742,7 +743,7 @@ public class HttpParserTest
     }
 
     @Test // TODO: Parameterize Test
-    public void testBadHeaderNames() throws Exception
+    public void testBadHeaderNames()
     {
         String[] bad = new String[]
             {
@@ -760,23 +761,23 @@ public class HttpParserTest
                 "Foo\"Bar: value\r\n",
                 "Foo/Bar: value\r\n",
                 "Foo]Bar: value\r\n",
-                "Foo[Bar: value\r\n",
-                };
+                "Foo[Bar: value\r\n"
+            };
 
-        for (int i = 0; i < bad.length; i++)
+        for (String s : bad)
         {
             ByteBuffer buffer = BufferUtil.toBuffer(
-                "GET / HTTP/1.0\r\n" + bad[i] + "\r\n");
+                "GET / HTTP/1.0\r\n" + s + "\r\n");
 
             HttpParser.RequestHandler handler = new Handler();
             HttpParser parser = new HttpParser(handler);
             parseAll(parser, buffer);
-            assertThat(bad[i], _bad, Matchers.notNullValue());
+            assertThat(s, _bad, Matchers.notNullValue());
         }
     }
 
     @Test
-    public void testHeaderTab() throws Exception
+    public void testHeaderTab()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.1\r\n" +
@@ -798,7 +799,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testCaseSensitiveMethod() throws Exception
+    public void testCaseSensitiveMethod()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "gEt / http/1.0\r\n" +
@@ -814,7 +815,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testCaseSensitiveMethodLegacy() throws Exception
+    public void testCaseSensitiveMethodLegacy()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "gEt / http/1.0\r\n" +
@@ -830,7 +831,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testCaseInsensitiveHeader() throws Exception
+    public void testCaseInsensitiveHeader()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / http/1.0\r\n" +
@@ -853,15 +854,16 @@ public class HttpParserTest
     }
 
     @Test
-    public void testCaseInSensitiveHeaderLegacy() throws Exception
+    public void testCaseInSensitiveHeaderLegacy()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / http/1.0\r\n" +
                 "HOST: localhost\r\n" +
                 "cOnNeCtIoN: ClOsE\r\n" +
                 "\r\n");
-        HttpParser.RequestHandler handler = new Handler(true);
+        HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, -1, HttpCompliance.LEGACY);
+        parser.setHeaderCacheCaseSensitive(true);
         parseAll(parser, buffer);
         assertNull(_bad);
         assertEquals("GET", _methodOrVersion);
@@ -876,7 +878,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testSplitHeaderParse() throws Exception
+    public void testSplitHeaderParse()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "XXXXSPLIT / HTTP/1.0\r\n" +
@@ -929,19 +931,19 @@ public class HttpParserTest
     }
 
     @Test
-    public void testChunkParse() throws Exception
+    public void testChunkParse()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0\r\n"
-                + "Header1: value1\r\n"
-                + "Transfer-Encoding: chunked\r\n"
-                + "\r\n"
-                + "a;\r\n"
-                + "0123456789\r\n"
-                + "1a\r\n"
-                + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
-                + "0\r\n"
-                + "\r\n");
+            "GET /chunk HTTP/1.0\r\n" +
+                "Header1: value1\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "a;\r\n" +
+                "0123456789\r\n" +
+                "1a\r\n" +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n" +
+                "0\r\n" +
+                "\r\n");
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
@@ -959,19 +961,19 @@ public class HttpParserTest
     }
 
     @Test
-    public void testBadChunkParse() throws Exception
+    public void testBadChunkParse()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0\r\n"
-                + "Header1: value1\r\n"
-                + "Transfer-Encoding: chunked, identity\r\n"
-                + "\r\n"
-                + "a;\r\n"
-                + "0123456789\r\n"
-                + "1a\r\n"
-                + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
-                + "0\r\n"
-                + "\r\n");
+            "GET /chunk HTTP/1.0\r\n" +
+                "Header1: value1\r\n" +
+                "Transfer-Encoding: chunked, identity\r\n" +
+                "\r\n" +
+                "a;\r\n" +
+                "0123456789\r\n" +
+                "1a\r\n" +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n" +
+                "0\r\n" +
+                "\r\n");
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
@@ -979,24 +981,24 @@ public class HttpParserTest
         assertEquals("GET", _methodOrVersion);
         assertEquals("/chunk", _uriOrStatus);
         assertEquals("HTTP/1.0", _versionOrReason);
-        assertThat(_bad, containsString("Bad chunking"));
+        assertThat(_bad, containsString("Bad Transfer-Encoding"));
     }
 
     @Test
-    public void testChunkParseTrailer() throws Exception
+    public void testChunkParseTrailer()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0\r\n"
-                + "Header1: value1\r\n"
-                + "Transfer-Encoding: chunked\r\n"
-                + "\r\n"
-                + "a;\r\n"
-                + "0123456789\r\n"
-                + "1a\r\n"
-                + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
-                + "0\r\n"
-                + "Trailer: value\r\n"
-                + "\r\n");
+            "GET /chunk HTTP/1.0\r\n" +
+                "Header1: value1\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "a;\r\n" +
+                "0123456789\r\n" +
+                "1a\r\n" +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n" +
+                "0\r\n" +
+                "Trailer: value\r\n" +
+                "\r\n");
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
@@ -1018,20 +1020,20 @@ public class HttpParserTest
     }
 
     @Test
-    public void testChunkParseTrailers() throws Exception
+    public void testChunkParseTrailers()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0\r\n"
-                + "Transfer-Encoding: chunked\r\n"
-                + "\r\n"
-                + "a;\r\n"
-                + "0123456789\r\n"
-                + "1a\r\n"
-                + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
-                + "0\r\n"
-                + "Trailer: value\r\n"
-                + "Foo: bar\r\n"
-                + "\r\n");
+            "GET /chunk HTTP/1.0\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "a;\r\n" +
+                "0123456789\r\n" +
+                "1a\r\n" +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n" +
+                "0\r\n" +
+                "Trailer: value\r\n" +
+                "Foo: bar\r\n" +
+                "\r\n");
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
@@ -1056,19 +1058,19 @@ public class HttpParserTest
     }
 
     @Test
-    public void testChunkParseBadTrailer() throws Exception
+    public void testChunkParseBadTrailer()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0\r\n"
-                + "Header1: value1\r\n"
-                + "Transfer-Encoding: chunked\r\n"
-                + "\r\n"
-                + "a;\r\n"
-                + "0123456789\r\n"
-                + "1a\r\n"
-                + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
-                + "0\r\n"
-                + "Trailer: value");
+            "GET /chunk HTTP/1.0\r\n" +
+                "Header1: value1\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "a;\r\n" +
+                "0123456789\r\n" +
+                "1a\r\n" +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n" +
+                "0\r\n" +
+                "Trailer: value");
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
@@ -1088,18 +1090,18 @@ public class HttpParserTest
     }
 
     @Test
-    public void testChunkParseNoTrailer() throws Exception
+    public void testChunkParseNoTrailer()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0\r\n"
-                + "Header1: value1\r\n"
-                + "Transfer-Encoding: chunked\r\n"
-                + "\r\n"
-                + "a;\r\n"
-                + "0123456789\r\n"
-                + "1a\r\n"
-                + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
-                + "0\r\n");
+            "GET /chunk HTTP/1.0\r\n" +
+                "Header1: value1\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "a;\r\n" +
+                "0123456789\r\n" +
+                "1a\r\n" +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n" +
+                "0\r\n");
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parseAll(parser, buffer);
@@ -1119,7 +1121,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testStartEOF() throws Exception
+    public void testStartEOF()
     {
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1127,17 +1129,17 @@ public class HttpParserTest
         parser.parseNext(BufferUtil.EMPTY_BUFFER);
 
         assertTrue(_early);
-        assertEquals(null, _bad);
+        assertNull(_bad);
     }
 
     @Test
-    public void testEarlyEOF() throws Exception
+    public void testEarlyEOF()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /uri HTTP/1.0\r\n"
-                + "Content-Length: 20\r\n"
-                + "\r\n"
-                + "0123456789");
+            "GET /uri HTTP/1.0\r\n" +
+                "Content-Length: 20\r\n" +
+                "\r\n" +
+                "0123456789");
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parser.atEOF();
@@ -1152,15 +1154,15 @@ public class HttpParserTest
     }
 
     @Test
-    public void testChunkEarlyEOF() throws Exception
+    public void testChunkEarlyEOF()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /chunk HTTP/1.0\r\n"
-                + "Header1: value1\r\n"
-                + "Transfer-Encoding: chunked\r\n"
-                + "\r\n"
-                + "a;\r\n"
-                + "0123456789\r\n");
+            "GET /chunk HTTP/1.0\r\n" +
+                "Header1: value1\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "a;\r\n" +
+                "0123456789\r\n");
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parser.atEOF();
@@ -1178,34 +1180,34 @@ public class HttpParserTest
     }
 
     @Test
-    public void testMultiParse() throws Exception
+    public void testMultiParse()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET /mp HTTP/1.0\r\n"
-                + "Connection: Keep-Alive\r\n"
-                + "Header1: value1\r\n"
-                + "Transfer-Encoding: chunked\r\n"
-                + "\r\n"
-                + "a;\r\n"
-                + "0123456789\r\n"
-                + "1a\r\n"
-                + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
-                + "0\r\n"
+            "GET /mp HTTP/1.0\r\n" +
+                "Connection: Keep-Alive\r\n" +
+                "Header1: value1\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "a;\r\n" +
+                "0123456789\r\n" +
+                "1a\r\n" +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n" +
+                "0\r\n" +
 
-                + "\r\n"
+                "\r\n" +
 
-                + "POST /foo HTTP/1.0\r\n"
-                + "Connection: Keep-Alive\r\n"
-                + "Header2: value2\r\n"
-                + "Content-Length: 0\r\n"
-                + "\r\n"
+                "POST /foo HTTP/1.0\r\n" +
+                "Connection: Keep-Alive\r\n" +
+                "Header2: value2\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n" +
 
-                + "PUT /doodle HTTP/1.0\r\n"
-                + "Connection: close\r\n"
-                + "Header3: value3\r\n"
-                + "Content-Length: 10\r\n"
-                + "\r\n"
-                + "0123456789\r\n");
+                "PUT /doodle HTTP/1.0\r\n" +
+                "Connection: close\r\n" +
+                "Header3: value3\r\n" +
+                "Content-Length: 10\r\n" +
+                "\r\n" +
+                "0123456789\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1227,7 +1229,7 @@ public class HttpParserTest
         assertEquals(2, _headers);
         assertEquals("Header2", _hdr[1]);
         assertEquals("value2", _val[1]);
-        assertEquals(null, _content);
+        assertNull(_content);
 
         parser.reset();
         init();
@@ -1243,35 +1245,34 @@ public class HttpParserTest
     }
 
     @Test
-    public void testMultiParseEarlyEOF() throws Exception
+    public void testMultiParseEarlyEOF()
     {
         ByteBuffer buffer0 = BufferUtil.toBuffer(
-            "GET /mp HTTP/1.0\r\n"
-                + "Connection: Keep-Alive\r\n");
+            "GET /mp HTTP/1.0\r\n" +
+                "Connection: Keep-Alive\r\n");
 
-        ByteBuffer buffer1 = BufferUtil.toBuffer("Header1: value1\r\n"
-            + "Transfer-Encoding: chunked\r\n"
-            + "\r\n"
-            + "a;\r\n"
-            + "0123456789\r\n"
-            + "1a\r\n"
-            + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n"
-            + "0\r\n"
+        ByteBuffer buffer1 = BufferUtil.toBuffer("Header1: value1\r\n" +
+            "Transfer-Encoding: chunked\r\n" +
+            "\r\n" +
+            "a;\r\n" +
+            "0123456789\r\n" +
+            "1a\r\n" +
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ\r\n" +
+            "0\r\n" +
 
-            + "\r\n"
+            "\r\n" +
 
-            + "POST /foo HTTP/1.0\r\n"
-            + "Connection: Keep-Alive\r\n"
-            + "Header2: value2\r\n"
-            + "Content-Length: 0\r\n"
-            + "\r\n"
+            "POST /foo HTTP/1.0\r\n" +
+            "Connection: Keep-Alive\r\n" +
+            "Header2: value2\r\n" +
+            "Content-Length: 0\r\n" +
+            "\r\n" +
 
-            + "PUT /doodle HTTP/1.0\r\n"
-            + "Connection: close\r\n"
-            + "Header3: value3\r\n"
-            + "Content-Length: 10\r\n"
-            + "\r\n"
-            + "0123456789\r\n");
+            "PUT /doodle HTTP/1.0\r\n" +
+            "Connection: close\r\n" + "Header3: value3\r\n" +
+            "Content-Length: 10\r\n" +
+            "\r\n" +
+            "0123456789\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1295,7 +1296,7 @@ public class HttpParserTest
         assertEquals(2, _headers);
         assertEquals("Header2", _hdr[1]);
         assertEquals("value2", _val[1]);
-        assertEquals(null, _content);
+        assertNull(_content);
 
         parser.reset();
         init();
@@ -1310,14 +1311,14 @@ public class HttpParserTest
     }
 
     @Test
-    public void testResponseParse0() throws Exception
+    public void testResponseParse0()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 Correct\r\n"
-                + "Content-Length: 10\r\n"
-                + "Content-Type: text/plain\r\n"
-                + "\r\n"
-                + "0123456789\r\n");
+            "HTTP/1.1 200 Correct\r\n" +
+                "Content-Length: 10\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "\r\n" +
+                "0123456789\r\n");
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1331,12 +1332,12 @@ public class HttpParserTest
     }
 
     @Test
-    public void testResponseParse1() throws Exception
+    public void testResponseParse1()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 304 Not-Modified\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "HTTP/1.1 304 Not-Modified\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1349,18 +1350,18 @@ public class HttpParserTest
     }
 
     @Test
-    public void testResponseParse2() throws Exception
+    public void testResponseParse2()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 204 No-Content\r\n"
-                + "Header: value\r\n"
-                + "\r\n"
+            "HTTP/1.1 204 No-Content\r\n" +
+                "Header: value\r\n" +
+                "\r\n" +
 
-                + "HTTP/1.1 200 Correct\r\n"
-                + "Content-Length: 10\r\n"
-                + "Content-Type: text/plain\r\n"
-                + "\r\n"
-                + "0123456789\r\n");
+                "HTTP/1.1 200 Correct\r\n" +
+                "Content-Length: 10\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "\r\n" +
+                "0123456789\r\n");
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1385,55 +1386,55 @@ public class HttpParserTest
     }
 
     @Test
-    public void testResponseParse3() throws Exception
+    public void testResponseParse3()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200\r\n"
-                + "Content-Length: 10\r\n"
-                + "Content-Type: text/plain\r\n"
-                + "\r\n"
-                + "0123456789\r\n");
+            "HTTP/1.1 200\r\n" +
+                "Content-Length: 10\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "\r\n" +
+                "0123456789\r\n");
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("200", _uriOrStatus);
-        assertEquals(null, _versionOrReason);
+        assertNull(_versionOrReason);
         assertEquals(_content.length(), 10);
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
     }
 
     @Test
-    public void testResponseParse4() throws Exception
+    public void testResponseParse4()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 \r\n"
-                + "Content-Length: 10\r\n"
-                + "Content-Type: text/plain\r\n"
-                + "\r\n"
-                + "0123456789\r\n");
+            "HTTP/1.1 200 \r\n" +
+                "Content-Length: 10\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "\r\n" +
+                "0123456789\r\n");
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("200", _uriOrStatus);
-        assertEquals(null, _versionOrReason);
+        assertNull(_versionOrReason);
         assertEquals(_content.length(), 10);
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
     }
 
     @Test
-    public void testResponseEOFContent() throws Exception
+    public void testResponseEOFContent()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 \r\n"
-                + "Content-Type: text/plain\r\n"
-                + "\r\n"
-                + "0123456789\r\n");
+            "HTTP/1.1 200 \r\n" +
+                "Content-Type: text/plain\r\n" +
+                "\r\n" +
+                "0123456789\r\n");
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1442,7 +1443,7 @@ public class HttpParserTest
 
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("200", _uriOrStatus);
-        assertEquals(null, _versionOrReason);
+        assertNull(_versionOrReason);
         assertEquals(12, _content.length());
         assertEquals("0123456789\r\n", _content);
         assertTrue(_headerCompleted);
@@ -1450,12 +1451,12 @@ public class HttpParserTest
     }
 
     @Test
-    public void testResponse304WithContentLength() throws Exception
+    public void testResponse304WithContentLength()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 304 found\r\n"
-                + "Content-Length: 10\r\n"
-                + "\r\n");
+            "HTTP/1.1 304 found\r\n" +
+                "Content-Length: 10\r\n" +
+                "\r\n");
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1463,18 +1464,18 @@ public class HttpParserTest
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("304", _uriOrStatus);
         assertEquals("found", _versionOrReason);
-        assertEquals(null, _content);
+        assertNull(_content);
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
     }
 
     @Test
-    public void testResponse101WithTransferEncoding() throws Exception
+    public void testResponse101WithTransferEncoding()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 101 switching protocols\r\n"
-                + "Transfer-Encoding: chunked\r\n"
-                + "\r\n");
+            "HTTP/1.1 101 switching protocols\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n");
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1482,18 +1483,18 @@ public class HttpParserTest
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("101", _uriOrStatus);
         assertEquals("switching protocols", _versionOrReason);
-        assertEquals(null, _content);
+        assertNull(_content);
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
     }
 
     @Test
-    public void testResponseReasonIso8859_1() throws Exception
+    public void testResponseReasonIso88591()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 302 déplacé temporairement\r\n"
-                + "Content-Length: 0\r\n"
-                + "\r\n", StandardCharsets.ISO_8859_1);
+            "HTTP/1.1 302 déplacé temporairement\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n", StandardCharsets.ISO_8859_1);
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1504,15 +1505,15 @@ public class HttpParserTest
     }
 
     @Test
-    public void testSeekEOF() throws Exception
+    public void testSeekEOF()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 200 OK\r\n"
-                + "Content-Length: 0\r\n"
-                + "Connection: close\r\n"
-                + "\r\n"
-                + "\r\n" // extra CRLF ignored
-                + "HTTP/1.1 400 OK\r\n");  // extra data causes close ??
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                "\r\n" + // extra CRLF ignored
+                "HTTP/1.1 400 OK\r\n");  // extra data causes close ??
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1521,7 +1522,7 @@ public class HttpParserTest
         assertEquals("HTTP/1.1", _methodOrVersion);
         assertEquals("200", _uriOrStatus);
         assertEquals("OK", _versionOrReason);
-        assertEquals(null, _content);
+        assertNull(_content);
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
 
@@ -1536,19 +1537,19 @@ public class HttpParserTest
     }
 
     @Test
-    public void testNoURI() throws Exception
+    public void testNoURI()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET\r\n"
-                + "Content-Length: 0\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET\r\n" +
+                "Content-Length: 0\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
 
         parser.parseNext(buffer);
-        assertEquals(null, _methodOrVersion);
+        assertNull(_methodOrVersion);
         assertEquals("No URI", _bad);
         assertFalse(buffer.hasRemaining());
         assertEquals(HttpParser.State.CLOSE, parser.getState());
@@ -1558,19 +1559,19 @@ public class HttpParserTest
     }
 
     @Test
-    public void testNoURI2() throws Exception
+    public void testNoURI2()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET \r\n"
-                + "Content-Length: 0\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET \r\n" +
+                "Content-Length: 0\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
 
         parser.parseNext(buffer);
-        assertEquals(null, _methodOrVersion);
+        assertNull(_methodOrVersion);
         assertEquals("No URI", _bad);
         assertFalse(buffer.hasRemaining());
         assertEquals(HttpParser.State.CLOSE, parser.getState());
@@ -1580,19 +1581,19 @@ public class HttpParserTest
     }
 
     @Test
-    public void testUnknownReponseVersion() throws Exception
+    public void testUnknownReponseVersion()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HPPT/7.7 200 OK\r\n"
-                + "Content-Length: 0\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "HPPT/7.7 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
 
         parser.parseNext(buffer);
-        assertEquals(null, _methodOrVersion);
+        assertNull(_methodOrVersion);
         assertEquals("Unknown Version", _bad);
         assertFalse(buffer.hasRemaining());
         assertEquals(HttpParser.State.CLOSE, parser.getState());
@@ -1602,19 +1603,19 @@ public class HttpParserTest
     }
 
     @Test
-    public void testNoStatus() throws Exception
+    public void testNoStatus()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1\r\n"
-                + "Content-Length: 0\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "HTTP/1.1\r\n" +
+                "Content-Length: 0\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
 
         parser.parseNext(buffer);
-        assertEquals(null, _methodOrVersion);
+        assertNull(_methodOrVersion);
         assertEquals("No Status", _bad);
         assertFalse(buffer.hasRemaining());
         assertEquals(HttpParser.State.CLOSE, parser.getState());
@@ -1624,19 +1625,19 @@ public class HttpParserTest
     }
 
     @Test
-    public void testNoStatus2() throws Exception
+    public void testNoStatus2()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "HTTP/1.1 \r\n"
-                + "Content-Length: 0\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "HTTP/1.1 \r\n" +
+                "Content-Length: 0\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.ResponseHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
 
         parser.parseNext(buffer);
-        assertEquals(null, _methodOrVersion);
+        assertNull(_methodOrVersion);
         assertEquals("No Status", _bad);
         assertFalse(buffer.hasRemaining());
         assertEquals(HttpParser.State.CLOSE, parser.getState());
@@ -1646,19 +1647,19 @@ public class HttpParserTest
     }
 
     @Test
-    public void testBadRequestVersion() throws Exception
+    public void testBadRequestVersion()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HPPT/7.7\r\n"
-                + "Content-Length: 0\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HPPT/7.7\r\n" +
+                "Content-Length: 0\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
 
         parser.parseNext(buffer);
-        assertEquals(null, _methodOrVersion);
+        assertNull(_methodOrVersion);
         assertEquals("Unknown Version", _bad);
         assertFalse(buffer.hasRemaining());
         assertEquals(HttpParser.State.CLOSE, parser.getState());
@@ -1667,16 +1668,16 @@ public class HttpParserTest
         assertEquals(HttpParser.State.CLOSED, parser.getState());
 
         buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.01\r\n"
-                + "Content-Length: 0\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HTTP/1.01\r\n" +
+                "Content-Length: 0\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         handler = new Handler();
         parser = new HttpParser(handler);
 
         parser.parseNext(buffer);
-        assertEquals(null, _methodOrVersion);
+        assertNull(_methodOrVersion);
         assertEquals("Unknown Version", _bad);
         assertFalse(buffer.hasRemaining());
         assertEquals(HttpParser.State.CLOSE, parser.getState());
@@ -1686,13 +1687,13 @@ public class HttpParserTest
     }
 
     @Test
-    public void testBadCR() throws Exception
+    public void testBadCR()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0\r\n"
-                + "Content-Length: 0\r"
-                + "Connection: close\r"
-                + "\r");
+            "GET / HTTP/1.0\r\n" +
+                "Content-Length: 0\r" +
+                "Connection: close\r" +
+                "\r");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1706,10 +1707,10 @@ public class HttpParserTest
         assertEquals(HttpParser.State.CLOSED, parser.getState());
 
         buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0\r"
-                + "Content-Length: 0\r"
-                + "Connection: close\r"
-                + "\r");
+            "GET / HTTP/1.0\r" +
+                "Content-Length: 0\r" +
+                "Connection: close\r" +
+                "\r");
 
         handler = new Handler();
         parser = new HttpParser(handler);
@@ -1724,13 +1725,13 @@ public class HttpParserTest
     }
 
     @Test
-    public void testBadContentLength0() throws Exception
+    public void testBadContentLength0()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0\r\n"
-                + "Content-Length: abc\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HTTP/1.0\r\n" +
+                "Content-Length: abc\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1746,13 +1747,13 @@ public class HttpParserTest
     }
 
     @Test
-    public void testBadContentLength1() throws Exception
+    public void testBadContentLength1()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0\r\n"
-                + "Content-Length: 9999999999999999999999999999999999999999999999\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HTTP/1.0\r\n" +
+                "Content-Length: 9999999999999999999999999999999999999999999999\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1768,13 +1769,13 @@ public class HttpParserTest
     }
 
     @Test
-    public void testBadContentLength2() throws Exception
+    public void testBadContentLength2()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.0\r\n"
-                + "Content-Length: 1.5\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HTTP/1.0\r\n" +
+                "Content-Length: 1.5\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1793,12 +1794,12 @@ public class HttpParserTest
     public void testMultipleContentLengthWithLargerThenCorrectValue()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "POST / HTTP/1.1\r\n"
-                + "Content-Length: 2\r\n"
-                + "Content-Length: 1\r\n"
-                + "Connection: close\r\n"
-                + "\r\n"
-                + "X");
+            "POST / HTTP/1.1\r\n" +
+                "Content-Length: 2\r\n" +
+                "Content-Length: 1\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                "X");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1817,12 +1818,12 @@ public class HttpParserTest
     public void testMultipleContentLengthWithCorrectThenLargerValue()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "POST / HTTP/1.1\r\n"
-                + "Content-Length: 1\r\n"
-                + "Content-Length: 2\r\n"
-                + "Connection: close\r\n"
-                + "\r\n"
-                + "X");
+            "POST / HTTP/1.1\r\n" +
+                "Content-Length: 1\r\n" +
+                "Content-Length: 2\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                "X");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1841,15 +1842,15 @@ public class HttpParserTest
     public void testTransferEncodingChunkedThenContentLength()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "POST /chunk HTTP/1.1\r\n"
-                + "Host: localhost\r\n"
-                + "Transfer-Encoding: chunked\r\n"
-                + "Content-Length: 1\r\n"
-                + "\r\n"
-                + "1\r\n"
-                + "X\r\n"
-                + "0\r\n"
-                + "\r\n");
+            "POST /chunk HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "Content-Length: 1\r\n" +
+                "\r\n" +
+                "1\r\n" +
+                "X\r\n" +
+                "0\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
@@ -1870,15 +1871,15 @@ public class HttpParserTest
     public void testContentLengthThenTransferEncodingChunked()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "POST /chunk HTTP/1.1\r\n"
-                + "Host: localhost\r\n"
-                + "Content-Length: 1\r\n"
-                + "Transfer-Encoding: chunked\r\n"
-                + "\r\n"
-                + "1\r\n"
-                + "X\r\n"
-                + "0\r\n"
-                + "\r\n");
+            "POST /chunk HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Length: 1\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "1\r\n" +
+                "X\r\n" +
+                "0\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
@@ -1896,13 +1897,13 @@ public class HttpParserTest
     }
 
     @Test
-    public void testHost() throws Exception
+    public void testHost()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1\r\n"
-                + "Host: host\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HTTP/1.1\r\n" +
+                "Host: host\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1912,12 +1913,12 @@ public class HttpParserTest
     }
 
     @Test
-    public void testUriHost11() throws Exception
+    public void testUriHost11()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET http://host/ HTTP/1.1\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET http://host/ HTTP/1.1\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1928,11 +1929,11 @@ public class HttpParserTest
     }
 
     @Test
-    public void testUriHost10() throws Exception
+    public void testUriHost10()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET http://host/ HTTP/1.0\r\n"
-                + "\r\n");
+            "GET http://host/ HTTP/1.0\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1943,12 +1944,12 @@ public class HttpParserTest
     }
 
     @Test
-    public void testNoHost() throws Exception
+    public void testNoHost()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HTTP/1.1\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1957,13 +1958,13 @@ public class HttpParserTest
     }
 
     @Test
-    public void testIPHost() throws Exception
+    public void testIPHost()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1\r\n"
-                + "Host: 192.168.0.1\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HTTP/1.1\r\n" +
+                "Host: 192.168.0.1\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1973,14 +1974,14 @@ public class HttpParserTest
     }
 
     @Test
-    public void testIPv6Host() throws Exception
+    public void testIPv6Host()
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1\r\n"
-                + "Host: [::1]\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HTTP/1.1\r\n" +
+                "Host: [::1]\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -1990,15 +1991,15 @@ public class HttpParserTest
     }
 
     @Test
-    public void testBadIPv6Host() throws Exception
+    public void testBadIPv6Host()
     {
         try (StacklessLogging s = new StacklessLogging(HttpParser.class))
         {
             ByteBuffer buffer = BufferUtil.toBuffer(
-                "GET / HTTP/1.1\r\n"
-                    + "Host: [::1\r\n"
-                    + "Connection: close\r\n"
-                    + "\r\n");
+                "GET / HTTP/1.1\r\n" +
+                    "Host: [::1\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n");
 
             HttpParser.RequestHandler handler = new Handler();
             HttpParser parser = new HttpParser(handler);
@@ -2008,13 +2009,13 @@ public class HttpParserTest
     }
 
     @Test
-    public void testHostPort() throws Exception
+    public void testHostPort()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1\r\n"
-                + "Host: myhost:8888\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HTTP/1.1\r\n" +
+                "Host: myhost:8888\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -2024,13 +2025,13 @@ public class HttpParserTest
     }
 
     @Test
-    public void testHostBadPort() throws Exception
+    public void testHostBadPort()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1\r\n"
-                + "Host: myhost:testBadPort\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HTTP/1.1\r\n" +
+                "Host: myhost:testBadPort\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -2039,13 +2040,13 @@ public class HttpParserTest
     }
 
     @Test
-    public void testIPHostPort() throws Exception
+    public void testIPHostPort()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1\r\n"
-                + "Host: 192.168.0.1:8888\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HTTP/1.1\r\n" +
+                "Host: 192.168.0.1:8888\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -2055,14 +2056,14 @@ public class HttpParserTest
     }
 
     @Test
-    public void testIPv6HostPort() throws Exception
+    public void testIPv6HostPort()
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1\r\n"
-                + "Host: [::1]:8888\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HTTP/1.1\r\n" +
+                "Host: [::1]:8888\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
@@ -2072,24 +2073,24 @@ public class HttpParserTest
     }
 
     @Test
-    public void testEmptyHostPort() throws Exception
+    public void testEmptyHostPort()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
-            "GET / HTTP/1.1\r\n"
-                + "Host:\r\n"
-                + "Connection: close\r\n"
-                + "\r\n");
+            "GET / HTTP/1.1\r\n" +
+                "Host:\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
 
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
-        assertEquals(null, _host);
-        assertEquals(null, _bad);
+        assertNull(_host);
+        assertNull(_bad);
     }
 
     @Test
     @SuppressWarnings("ReferenceEquality")
-    public void testCachedField() throws Exception
+    public void testCachedField()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.1\r\n" +
@@ -2104,11 +2105,11 @@ public class HttpParserTest
 
         buffer.position(0);
         parseAll(parser, buffer);
-        assertTrue(field == _fields.get(0));
+        assertSame(field, _fields.get(0));
     }
 
     @Test
-    public void testParseRequest() throws Exception
+    public void testParseRequest()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "GET / HTTP/1.1\r\n" +
@@ -2137,7 +2138,7 @@ public class HttpParserTest
     }
 
     @Test
-    public void testHTTP2Preface() throws Exception
+    public void testHTTP2Preface()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
             "PRI * HTTP/2.0\r\n" +
@@ -2155,7 +2156,663 @@ public class HttpParserTest
         assertEquals("*", _uriOrStatus);
         assertEquals("HTTP/2.0", _versionOrReason);
         assertEquals(-1, _headers);
-        assertEquals(null, _bad);
+        assertNull(_bad);
+    }
+
+    @Test
+    public void testForHTTP09HeaderCompleteTrueDoesNotEmitContentComplete()
+    {
+        HttpParser.RequestHandler handler = new Handler()
+        {
+            @Override
+            public boolean headerComplete()
+            {
+                super.headerComplete();
+                return true;
+            }
+        };
+
+        HttpParser parser = new HttpParser(handler, HttpCompliance.RFC2616_LEGACY);
+        ByteBuffer buffer = BufferUtil.toBuffer("GET /path\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/path", _uriOrStatus);
+        assertEquals("HTTP/0.9", _versionOrReason);
+        assertEquals(-1, _headers);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testForContentLengthZeroHeaderCompleteTrueDoesNotEmitContentComplete()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean headerComplete()
+            {
+                super.headerComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testForEmptyChunkedContentHeaderCompleteTrueDoesNotEmitContentComplete()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean headerComplete()
+            {
+                super.headerComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testForContentLengthZeroContentCompleteTrueDoesNotEmitMessageComplete()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testForEmptyChunkedContentContentCompleteTrueDoesNotEmitMessageComplete()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n" +
+                "0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testHeaderAfterContentLengthZeroContentCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        String header = "Header: Foobar\r\n";
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n" +
+                header);
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals(header, BufferUtil.toString(buffer));
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals(header, BufferUtil.toString(buffer));
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testSmallContentLengthContentCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        String header = "Header: Foobar\r\n";
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 1\r\n" +
+                "\r\n" +
+                "0" +
+                header);
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals(header, BufferUtil.toString(buffer));
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals(header, BufferUtil.toString(buffer));
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testHeaderAfterSmallContentLengthContentCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 1\r\n" +
+                "\r\n" +
+                "0");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testEOFContentContentCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "\r\n" +
+                "0");
+        boolean handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertFalse(buffer.hasRemaining());
+        assertEquals("0", _content);
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        parser.atEOF();
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testHEADRequestHeaderCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean headerComplete()
+            {
+                super.headerComplete();
+                return true;
+            }
+
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+        parser.setHeadResponse(true);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testNoContentHeaderCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean headerComplete()
+            {
+                super.headerComplete();
+                return true;
+            }
+
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        // HTTP 304 does not have a body.
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 304 Not Modified\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testCRLFAfterResponseHeaderCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean headerComplete()
+            {
+                super.headerComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 304 Not Modified\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "HTTP/1.1 303 See Other\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("304", _uriOrStatus);
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("200", _uriOrStatus);
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertEquals("303", _uriOrStatus);
+        assertFalse(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testCRLFAfterResponseContentCompleteTrue()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean contentComplete()
+            {
+                super.contentComplete();
+                return true;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 304 Not Modified\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "HTTP/1.1 303 See Other\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("304", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("200", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertTrue(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertEquals("303", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertFalse(_messageCompleted);
+
+        // Need to parse more to advance the parser.
+        handle = parser.parseNext(buffer);
+        assertTrue(handle);
+        assertFalse(buffer.hasRemaining());
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testCRLFAfterResponseMessageCompleteFalse()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean messageComplete()
+            {
+                super.messageComplete();
+                return false;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 304 Not Modified\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "\r\n" +
+                "HTTP/1.1 303 See Other\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("304", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("200", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertFalse(buffer.hasRemaining());
+        assertEquals("303", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+    }
+
+    @Test
+    public void testSPAfterResponseMessageCompleteFalse()
+    {
+        HttpParser.ResponseHandler handler = new Handler()
+        {
+            @Override
+            public boolean messageComplete()
+            {
+                super.messageComplete();
+                return false;
+            }
+        };
+        HttpParser parser = new HttpParser(handler);
+
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 304 Not Modified\r\n" +
+                "\r\n" +
+                " " + // Single SP.
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        boolean handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("304", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertFalse(buffer.hasRemaining());
+        assertNotNull(_bad);
+
+        buffer = BufferUtil.toBuffer(
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n" +
+                " " + // Single SP.
+                "HTTP/1.1 303 See Other\r\n" +
+                "Content-Length: 0\r\n" +
+                "\r\n");
+        parser = new HttpParser(handler);
+        handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertTrue(buffer.hasRemaining());
+        assertEquals("200", _uriOrStatus);
+        assertTrue(_contentCompleted);
+        assertTrue(_messageCompleted);
+
+        // Parse next response.
+        parser.reset();
+        init();
+        handle = parser.parseNext(buffer);
+        assertFalse(handle);
+        assertFalse(buffer.hasRemaining());
+        assertNotNull(_bad);
     }
 
     @BeforeEach
@@ -2170,6 +2827,7 @@ public class HttpParserTest
         _val = null;
         _headers = 0;
         _headerCompleted = false;
+        _contentCompleted = false;
         _messageCompleted = false;
         _complianceViolation.clear();
     }
@@ -2188,23 +2846,12 @@ public class HttpParserTest
     private int _headers;
     private boolean _early;
     private boolean _headerCompleted;
+    private boolean _contentCompleted;
     private boolean _messageCompleted;
     private final List<ComplianceViolation> _complianceViolation = new ArrayList<>();
 
     private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler, ComplianceViolation.Listener
     {
-        private boolean _headerCacheCaseSensitive;
-
-        public Handler()
-        {
-            this(false);
-        }
-
-        public Handler(boolean headerCacheCaseSensitive)
-        {
-            _headerCacheCaseSensitive = headerCacheCaseSensitive;
-        }
-
         @Override
         public boolean content(ByteBuffer ref)
         {
@@ -2217,7 +2864,7 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean startRequest(String method, String uri, HttpVersion version)
+        public void startRequest(String method, String uri, HttpVersion version)
         {
             _fields.clear();
             _trailers.clear();
@@ -2230,7 +2877,6 @@ public class HttpParserTest
             _messageCompleted = false;
             _headerCompleted = false;
             _early = false;
-            return false;
         }
 
         @Override
@@ -2265,6 +2911,7 @@ public class HttpParserTest
         @Override
         public boolean contentComplete()
         {
+            _contentCompleted = true;
             return false;
         }
 
@@ -2283,7 +2930,7 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean startResponse(HttpVersion version, int status, String reason)
+        public void startResponse(HttpVersion version, int status, String reason)
         {
             _fields.clear();
             _trailers.clear();
@@ -2295,25 +2942,12 @@ public class HttpParserTest
             _val = new String[10];
             _messageCompleted = false;
             _headerCompleted = false;
-            return false;
         }
 
         @Override
         public void earlyEOF()
         {
             _early = true;
-        }
-
-        @Override
-        public int getHeaderCacheSize()
-        {
-            return 4096;
-        }
-
-        @Override
-        public boolean isHeaderCacheCaseSensitive()
-        {
-            return _headerCacheCaseSensitive;
         }
 
         @Override

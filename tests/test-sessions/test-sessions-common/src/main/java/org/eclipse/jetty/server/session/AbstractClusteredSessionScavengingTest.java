@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.session;
@@ -61,13 +61,14 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
     @Test
     public void testClusteredScavenge() throws Exception
     {
-        final String contextPath = "/";
-        final String servletMapping = "/server";
-        final int maxInactivePeriod = 5; //session will timeout after 5 seconds
-        final int scavengePeriod = 1; //scavenging occurs every 1 seconds
+        String contextPath = "/";
+        String servletMapping = "/server";
+        int maxInactivePeriod = 5; //session will timeout after 5 seconds
+        int scavengePeriod = 1; //scavenging occurs every 1 seconds
 
         DefaultSessionCacheFactory cacheFactory1 = new DefaultSessionCacheFactory();
         cacheFactory1.setEvictionPolicy(SessionCache.NEVER_EVICT); //don't evict sessions
+        cacheFactory1.setFlushOnResponseCommit(true);
         SessionDataStoreFactory storeFactory1 = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory1).setGracePeriodSec(scavengePeriod);
         ((AbstractSessionDataStoreFactory)storeFactory1).setSavePeriodSec(0); //always save when the session exits
@@ -88,6 +89,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
 
             DefaultSessionCacheFactory cacheFactory2 = new DefaultSessionCacheFactory();
             cacheFactory2.setEvictionPolicy(SessionCache.NEVER_EVICT); //don't evict sessions
+            cacheFactory2.setFlushOnResponseCommit(true);
             SessionDataStoreFactory storeFactory2 = createSessionDataStoreFactory();
             ((AbstractSessionDataStoreFactory)storeFactory2).setGracePeriodSec(scavengePeriod);
             ((AbstractSessionDataStoreFactory)storeFactory2).setSavePeriodSec(0); //always save when the session exits
@@ -107,16 +109,17 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
                     // Perform one request to server1 to create a session
                     ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping.substring(1) + "?action=init");
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
-                    assertEquals("test", response1.getContentAsString());
+                    assertTrue(response1.getContentAsString().startsWith("init"));
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
+                    String id = TestServer.extractSessionId(sessionCookie);
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsCurrent());
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsMax());
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsTotal());
-                    // Mangle the cookie, replacing Path with $Path, etc.
-                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-                    String id = TestServer.extractSessionId(sessionCookie);
-                    Session s1 = ((DefaultSessionCache)m1.getSessionCache()).get(id);
+
+                    
+                    //Peek at the contents of the cache without doing all the reference counting etc
+                    Session s1 = ((AbstractSessionCache)m1.getSessionCache()).doGet(id);
                     assertNotNull(s1);
                     long expiry = s1.getSessionData().getExpiry();
 
@@ -129,10 +132,9 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
                     while (time < end)
                     {
                         Request request = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping.substring(1));
-                        request.header("Cookie", sessionCookie); //use existing session
                         ContentResponse response2 = request.send();
                         assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
-                        assertEquals("test", response2.getContentAsString());
+                        assertTrue(response2.getContentAsString().startsWith("test"));
                         Thread.sleep(requestInterval);
                         assertSessionCounts(1, 1, 1, m2);
                         time = System.currentTimeMillis();
@@ -208,20 +210,22 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
             if ("init".equals(action))
             {
                 HttpSession session = request.getSession(true);
-                session.setAttribute("test", "test");
+                session.setAttribute("test", "init");
                 sendResult(session, httpServletResponse.getWriter());
             }
             else
             {
                 HttpSession session = request.getSession(false);
 
-                // if we node hopped we should get the session and test should already be present
-                sendResult(session, httpServletResponse.getWriter());
 
                 if (session != null)
                 {
                     session.setAttribute("test", "test");
                 }
+                
+                // if we node hopped we should get the session and test should already be present
+                sendResult(session, httpServletResponse.getWriter());
+
             }
         }
 
@@ -229,11 +233,11 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
         {
             if (session != null)
             {
-                writer.print(session.getAttribute("test"));
+                writer.println(session.getAttribute("test"));
             }
             else
             {
-                writer.print("null");
+                writer.println("null");
             }
         }
     }

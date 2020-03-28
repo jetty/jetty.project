@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core;
@@ -24,25 +24,24 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject("Abstract Extension")
-public abstract class AbstractExtension implements Extension
+public class AbstractExtension implements Extension
 {
     private final Logger log;
     private ByteBufferPool bufferPool;
     private ExtensionConfig config;
     private OutgoingFrames nextOutgoing;
     private IncomingFrames nextIncoming;
-    private WebSocketCoreSession coreSession;
+    private Configuration configuration;
     private DeflaterPool deflaterPool;
     private InflaterPool inflaterPool;
 
     public AbstractExtension()
     {
-        log = Log.getLogger(this.getClass());
+        log = LoggerFactory.getLogger(this.getClass());
     }
 
     @Override
@@ -52,6 +51,18 @@ public abstract class AbstractExtension implements Extension
         this.bufferPool = components.getBufferPool();
         this.deflaterPool = components.getDeflaterPool();
         this.inflaterPool = components.getInflaterPool();
+    }
+
+    @Override
+    public void onFrame(Frame frame, Callback callback)
+    {
+        nextIncomingFrame(frame, callback);
+    }
+
+    @Override
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    {
+        nextOutgoingFrame(frame, callback, batch);
     }
 
     public ByteBufferPool getBufferPool()
@@ -157,14 +168,14 @@ public abstract class AbstractExtension implements Extension
     }
 
     @Override
-    public void setWebSocketCoreSession(WebSocketCoreSession coreSession)
+    public void setCoreSession(CoreSession coreSession)
     {
-        this.coreSession = coreSession;
+        this.configuration = coreSession;
     }
 
-    protected WebSocketCoreSession getWebSocketCoreSession()
+    protected Configuration getConfiguration()
     {
-        return coreSession;
+        return configuration;
     }
 
     @Override

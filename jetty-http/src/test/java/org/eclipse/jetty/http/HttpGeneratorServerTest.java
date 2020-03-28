@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http;
@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class HttpGeneratorServerTest
 {
     @Test
-    public void test_0_9() throws Exception
+    public void test09() throws Exception
     {
         ByteBuffer header = BufferUtil.allocate(8096);
         ByteBuffer content = BufferUtil.toBuffer("0123456789");
@@ -108,6 +108,38 @@ public class HttpGeneratorServerTest
         assertThat(response, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(response, containsString("Content-Length: 10"));
         assertThat(response, containsString("\r\n0123456789"));
+    }
+
+    @Test
+    public void testHeaderOverflow() throws Exception
+    {
+        HttpGenerator gen = new HttpGenerator();
+
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 302, null, new HttpFields(), 0);
+        info.getFields().add("Location", "http://somewhere/else");
+
+        HttpGenerator.Result result = gen.generateResponse(info, false, null, null, null, true);
+        assertEquals(HttpGenerator.Result.NEED_HEADER, result);
+
+        ByteBuffer header = BufferUtil.allocate(16);
+        result = gen.generateResponse(info, false, header, null, null, true);
+        assertEquals(HttpGenerator.Result.HEADER_OVERFLOW, result);
+
+        header = BufferUtil.allocate(8096);
+        result = gen.generateResponse(info, false, header, null, null, true);
+        assertEquals(HttpGenerator.Result.FLUSH, result);
+        assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
+        String response = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+
+        result = gen.generateResponse(null, false, null, null, null, false);
+        assertEquals(HttpGenerator.Result.DONE, result);
+        assertEquals(HttpGenerator.State.END, gen.getState());
+
+        assertEquals(0, gen.getContentPrepared());
+
+        assertThat(response, containsString("HTTP/1.1 302 Found"));
+        assertThat(response, containsString("Location: http://somewhere/else"));
     }
 
     @Test

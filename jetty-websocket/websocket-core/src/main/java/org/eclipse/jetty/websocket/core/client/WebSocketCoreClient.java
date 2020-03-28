@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core.client;
@@ -26,19 +26,19 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.ShutdownThread;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebSocketCoreClient extends ContainerLifeCycle
 {
     public static final String WEBSOCKET_CORECLIENT_ATTRIBUTE = WebSocketCoreClient.class.getName();
 
-    private static final Logger LOG = Log.getLogger(WebSocketCoreClient.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketCoreClient.class);
     private final HttpClient httpClient;
     private WebSocketComponents components;
 
@@ -69,13 +69,13 @@ public class WebSocketCoreClient extends ContainerLifeCycle
         addBean(httpClient);
     }
 
-    public CompletableFuture<FrameHandler.CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
+    public CompletableFuture<CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
     {
         ClientUpgradeRequest request = ClientUpgradeRequest.from(this, wsUri, frameHandler);
         return connect(request);
     }
 
-    public CompletableFuture<FrameHandler.CoreSession> connect(ClientUpgradeRequest request) throws IOException
+    public CompletableFuture<CoreSession> connect(ClientUpgradeRequest request) throws IOException
     {
         if (!isStarted())
             throw new IllegalStateException(WebSocketCoreClient.class.getSimpleName() + "@" + this.hashCode() + " is not started");
@@ -92,18 +92,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("connect to websocket {}", request.getURI());
 
-        init();
-
         return request.sendAsync();
-    }
-
-    // TODO: review need for this.
-    private synchronized void init() throws IOException
-    {
-        if (!ShutdownThread.isRegistered(this))
-        {
-            ShutdownThread.register(this);
-        }
     }
 
     public WebSocketExtensionRegistry getExtensionRegistry()

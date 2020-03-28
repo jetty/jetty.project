@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io;
@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 
@@ -53,7 +54,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class IOTest
 {
@@ -93,14 +93,8 @@ public class IOTest
             assertEquals(-1, server.getInputStream().read());
 
             // but cannot write
-            try
-            {
-                client.getOutputStream().write(1);
-                fail("exception expected");
-            }
-            catch (SocketException expected)
-            {
-            }
+            Assertions.assertThrows(SocketException.class, () -> client.getOutputStream().write(1));
+
 
             // but can still write in opposite direction.
             server.getOutputStream().write(1);
@@ -110,14 +104,7 @@ public class IOTest
             server.shutdownInput();
 
             // now we EOF instead of reading -1
-            try
-            {
-                server.getInputStream().read();
-                fail("exception expected");
-            }
-            catch (SocketException expected)
-            {
-            }
+            Assertions.assertThrows(SocketException.class, () -> server.getInputStream().read());
 
             // but can still write in opposite direction.
             server.getOutputStream().write(1);
@@ -127,14 +114,7 @@ public class IOTest
             client.shutdownInput();
 
             // now we EOF instead of reading -1
-            try
-            {
-                client.getInputStream().read();
-                fail("exception expected");
-            }
-            catch (SocketException expected)
-            {
-            }
+            Assertions.assertThrows(SocketException.class, () -> client.getInputStream().read());
 
             // But we can still write at the server (data which will never be read)
             server.getOutputStream().write(1);
@@ -146,14 +126,7 @@ public class IOTest
             server.shutdownOutput();
 
             // and now we can't write
-            try
-            {
-                server.getOutputStream().write(1);
-                fail("exception expected");
-            }
-            catch (SocketException expected)
-            {
-            }
+            Assertions.assertThrows(SocketException.class, () -> server.getOutputStream().write(1));
 
             // but the sockets are still open
             assertFalse(client.isClosed());

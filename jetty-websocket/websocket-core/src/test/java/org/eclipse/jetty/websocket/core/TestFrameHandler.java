@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core;
@@ -24,15 +24,16 @@ import java.util.concurrent.CountDownLatch;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestFrameHandler implements SynchronousFrameHandler
 {
-    private static Logger LOG = Log.getLogger(TestFrameHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TestFrameHandler.class);
 
     protected CoreSession coreSession;
     public BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
+    protected CloseStatus closeStatus;
     protected Throwable failure;
 
     public CountDownLatch open = new CountDownLatch(1);
@@ -57,7 +58,8 @@ public class TestFrameHandler implements SynchronousFrameHandler
     @Override
     public void onOpen(CoreSession coreSession)
     {
-        LOG.info("onOpen {}", coreSession);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onOpen {}", coreSession);
         this.coreSession = coreSession;
         open.countDown();
     }
@@ -65,41 +67,53 @@ public class TestFrameHandler implements SynchronousFrameHandler
     @Override
     public void onFrame(Frame frame)
     {
-        LOG.info("onFrame: " + OpCode.name(frame.getOpCode()) + ":" + BufferUtil.toDetailString(frame.getPayload()));
+        if (LOG.isDebugEnabled())
+            LOG.debug("onFrame: " + OpCode.name(frame.getOpCode()) + ":" + BufferUtil.toDetailString(frame.getPayload()));
         receivedFrames.offer(Frame.copy(frame));
     }
 
     @Override
     public void onClosed(CloseStatus closeStatus)
     {
-        LOG.info("onClosed {}", closeStatus);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onClosed {}", closeStatus);
+        this.closeStatus = closeStatus;
         closed.countDown();
     }
 
     @Override
     public void onError(Throwable cause)
     {
-        LOG.info("onError {} ", cause == null ? null : cause.toString());
+        if (LOG.isDebugEnabled())
+            LOG.debug("onError ", cause);
         failure = cause;
         error.countDown();
     }
 
     public void sendText(String text)
     {
-        LOG.info("sendText {} ", text);
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendText {} ", text);
         Frame frame = new Frame(OpCode.TEXT, text);
         getCoreSession().sendFrame(frame, Callback.NOOP, false);
     }
 
     public void sendFrame(Frame frame)
     {
-        LOG.info("sendFrame {} ", frame);
-        getCoreSession().sendFrame(frame, Callback.NOOP, false);
+        sendFrame(frame, Callback.NOOP, false);
+    }
+
+    public void sendFrame(Frame frame, Callback callback, boolean batch)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendFrame {} ", frame);
+        getCoreSession().sendFrame(frame, callback, batch);
     }
 
     public void sendClose()
     {
-        LOG.info("sendClose");
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendClose");
         Frame frame = new Frame(OpCode.CLOSE);
         getCoreSession().sendFrame(frame, Callback.NOOP, false);
     }

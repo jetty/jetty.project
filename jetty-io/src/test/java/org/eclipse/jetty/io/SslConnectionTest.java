@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io;
@@ -42,7 +42,6 @@ import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -50,6 +49,8 @@ import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -60,6 +61,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SslConnectionTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(SslConnectionTest.class);
+
     private static final int TIMEOUT = 1000000;
     private static ByteBufferPool __byteBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
@@ -141,10 +144,9 @@ public class SslConnectionTest
     @BeforeEach
     public void initSSL() throws Exception
     {
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         _sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
         _sslCtxFactory.setKeyStorePassword("storepwd");
-        _sslCtxFactory.setKeyManagerPassword("keypwd");
         _sslCtxFactory.setRenegotiationAllowed(true);
         _sslCtxFactory.setRenegotiationLimit(-1);
         startManager();
@@ -251,11 +253,11 @@ public class SslConnectionTest
             }
             catch (InterruptedException | EofException e)
             {
-                Log.getRootLogger().ignore(e);
+                LOG.trace("IGNORED", e);
             }
             catch (Exception e)
             {
-                Log.getRootLogger().warn(e);
+                LOG.warn("During onFillable", e);
             }
             finally
             {
@@ -460,6 +462,7 @@ public class SslConnectionTest
                 }
                 catch (SocketTimeoutException e)
                 {
+                    // no op
                 }
 
                 assertTrue(__onIncompleteFlush.get());
@@ -483,9 +486,6 @@ public class SslConnectionTest
                 server.configureBlocking(false);
                 _manager.accept(server);
 
-                //__startBlocking.set(5);
-                //__blockFor.set(3);
-
                 client.getOutputStream().write("Short".getBytes(StandardCharsets.UTF_8));
                 byte[] buffer = new byte[1024];
                 int len = client.getInputStream().read(buffer);
@@ -506,13 +506,14 @@ public class SslConnectionTest
                 }
                 catch (SocketTimeoutException e)
                 {
+                    // no op
                 }
 
                 __blockFor.set(0);
                 assertTrue(__onIncompleteFlush.get());
                 ((TestEP)_lastEndp).getWriteFlusher().completeWrite();
                 len = client.getInputStream().read(buffer);
-                assertThat(len, is(len));
+                assertThat(len, is(-1));
             }
         }
     }

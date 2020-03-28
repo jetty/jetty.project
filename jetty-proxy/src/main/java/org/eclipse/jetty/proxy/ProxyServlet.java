@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.proxy;
@@ -55,9 +55,9 @@ public class ProxyServlet extends AbstractProxyServlet
     private static final String CONTINUE_ACTION_ATTRIBUTE = ProxyServlet.class.getName() + ".continueAction";
 
     @Override
-    protected void service(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        final int requestId = getRequestId(request);
+        int requestId = getRequestId(request);
 
         String rewrittenTarget = rewriteTarget(request);
 
@@ -76,7 +76,7 @@ public class ProxyServlet extends AbstractProxyServlet
             return;
         }
 
-        final Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
+        Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
             .method(request.getMethod())
             .version(HttpVersion.fromString(request.getProtocol()));
 
@@ -84,7 +84,7 @@ public class ProxyServlet extends AbstractProxyServlet
 
         addProxyHeaders(request, proxyRequest);
 
-        final AsyncContext asyncContext = request.startAsync();
+        AsyncContext asyncContext = request.startAsync();
         // We do not timeout the continuation, but the proxy request
         asyncContext.setTimeout(0);
         proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
@@ -200,7 +200,7 @@ public class ProxyServlet extends AbstractProxyServlet
         }
 
         @Override
-        public void onContent(final Response proxyResponse, ByteBuffer content, final Callback callback)
+        public void onContent(Response proxyResponse, ByteBuffer content, Callback callback)
         {
             byte[] buffer;
             int offset;
@@ -332,7 +332,7 @@ public class ProxyServlet extends AbstractProxyServlet
             }
             catch (Throwable x)
             {
-                _log.ignore(x);
+                _log.trace("IGNORED", x);
             }
         }
 

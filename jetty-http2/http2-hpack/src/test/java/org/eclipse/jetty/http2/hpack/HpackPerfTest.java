@@ -1,26 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.hpack;
 
 import java.io.File;
 import java.io.FileReader;
-import java.io.FilenameFilter;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -33,6 +32,8 @@ import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class HpackPerfTest
 {
@@ -56,28 +57,25 @@ public class HpackPerfTest
     @Test
     public void simpleTest() throws Exception
     {
-        runStories(_maxDynamicTableSize);
+        runStories();
     }
 
-    private void runStories(int maxDynamicTableSize) throws Exception
+    private void runStories() throws Exception
     {
         // Find files
         File data = MavenTestingUtils.getTestResourceDir("data");
-        String[] files = data.list(new FilenameFilter()
-        {
-            @Override
-            public boolean accept(File dir, String name)
-            {
-                return name.startsWith("story_");
-            }
-        });
+        String[] files = data.list((dir, name) -> name.startsWith("story_"));
+        assertNotNull(files);
 
         // Parse JSON
+        @SuppressWarnings("unchecked")
         Map<String, Object>[] stories = new Map[files.length];
         int i = 0;
-        for (String story : files)
+        for (String file : files)
         {
-            stories[i++] = (Map<String, Object>)JSON.parse(new FileReader(new File(data, story)));
+            @SuppressWarnings("unchecked")
+            var story = (Map<String, Object>)new JSON().fromJSON(new FileReader(new File(data, file)));
+            stories[i++] = story;
         }
 
         ByteBuffer buffer = BufferUtil.allocate(256 * 1024);
@@ -100,18 +98,20 @@ public class HpackPerfTest
             if (type.equals(story.get("context")))
             {
                 HpackEncoder encoder = new HpackEncoder(_maxDynamicTableSize, _maxDynamicTableSize);
+                encoder.setValidateEncoding(false);
 
-                // System.err.println(story);
                 Object[] cases = (Object[])story.get("cases");
                 for (Object c : cases)
                 {
-                    // System.err.println("  "+c);
-                    Object[] headers = (Object[])((Map<String, Object>)c).get("headers");
+                    @SuppressWarnings("unchecked")
+                    var kase = (Map<String, Object>)c;
+                    Object[] headers = (Object[])kase.get("headers");
                     // System.err.println("    "+headers);
                     HttpFields fields = new HttpFields();
                     for (Object header : headers)
                     {
-                        Map<String, String> h = (Map<String, String>)header;
+                        @SuppressWarnings("unchecked")
+                        var h = (Map<String, String>)header;
                         Map.Entry<String, String> e = h.entrySet().iterator().next();
                         fields.add(e.getKey(), e.getValue());
                         _unencodedSize += e.getKey().length() + e.getValue().length();

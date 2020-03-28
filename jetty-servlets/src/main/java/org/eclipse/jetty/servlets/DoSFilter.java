@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlets;
@@ -57,10 +57,10 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Denial of Service filter
@@ -121,13 +121,13 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * </dl>
  * <p>
  * This filter should be configured for {@link DispatcherType#REQUEST} and {@link DispatcherType#ASYNC} and with
- * <code>&lt;async-supported&gt;true&lt;/async-supported&gt;</code>.
+ * {@code <async-supported>true</async-supported>}.
  * </p>
  */
 @ManagedObject("limits exposure to abuse from request flooding, whether malicious, or as a result of a misconfigured client")
 public class DoSFilter implements Filter
 {
-    private static final Logger LOG = Log.getLogger(DoSFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DoSFilter.class);
 
     private static final String IPv4_GROUP = "(\\d{1,3})";
     private static final Pattern IPv4_PATTERN = Pattern.compile(IPv4_GROUP + "\\." + IPv4_GROUP + "\\." + IPv4_GROUP + "\\." + IPv4_GROUP);
@@ -146,7 +146,6 @@ public class DoSFilter implements Filter
     private static final long __DEFAULT_MAX_REQUEST_MS_INIT_PARAM = 30000L;
     private static final long __DEFAULT_MAX_IDLE_TRACKER_MS_INIT_PARAM = 30000L;
 
-    static final String NAME = "name";
     static final String MANAGED_ATTR_INIT_PARAM = "managedAttr";
     static final String MAX_REQUESTS_PER_S_INIT_PARAM = "maxRequestsPerSec";
     static final String DELAY_MS_INIT_PARAM = "delayMs";
@@ -384,14 +383,13 @@ public class DoSFilter implements Filter
                 long throttleMs = getThrottleMs();
                 if (!Boolean.TRUE.equals(throttled) && throttleMs > 0)
                 {
-                    final int priority = getPriority(request, tracker);
+                    int priority = getPriority(request, tracker);
                     request.setAttribute(__THROTTLED, Boolean.TRUE);
                     if (isInsertHeaders())
                         response.addHeader("DoSFilter", "throttled");
                     AsyncContext asyncContext = request.startAsync();
                     request.setAttribute(_suspended, Boolean.TRUE);
-                    if (throttleMs > 0)
-                        asyncContext.setTimeout(throttleMs);
+                    asyncContext.setTimeout(throttleMs);
                     asyncContext.addListener(_listeners[priority]);
                     _queues[priority].add(asyncContext);
                     if (LOG.isDebugEnabled())
@@ -428,7 +426,7 @@ public class DoSFilter implements Filter
         }
         catch (InterruptedException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             response.sendError(getTooManyCode());
         }
         finally
@@ -467,14 +465,7 @@ public class DoSFilter implements Filter
     protected void doFilterChain(FilterChain chain, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
     {
         final Thread thread = Thread.currentThread();
-        Runnable requestTimeout = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                onRequestTimeout(request, response, thread);
-            }
-        };
+        Runnable requestTimeout = () -> onRequestTimeout(request, response, thread);
         Scheduler.Task task = _scheduler.schedule(requestTimeout, getMaxRequestMs(), TimeUnit.MILLISECONDS);
         try
         {
@@ -489,7 +480,7 @@ public class DoSFilter implements Filter
     /**
      * Invoked when the request handling exceeds {@link #getMaxRequestMs()}.
      * <p>
-     * By default, a HTTP 503 response is returned and the handling thread is interrupted.
+     * By default, an HTTP 503 response is returned and the handling thread is interrupted.
      *
      * @param request the current request
      * @param response the current response
@@ -501,11 +492,20 @@ public class DoSFilter implements Filter
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Timing out {}", request);
-            response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+            try
+            {
+                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+            }
+            catch (IllegalStateException ise)
+            {
+                LOG.trace("IGNORED", ise);
+                // abort instead
+                response.sendError(-1);
+            }
         }
         catch (Throwable x)
         {
-            LOG.info(x);
+            LOG.info("Failed to sendError", x);
         }
 
         handlingThread.interrupt();
@@ -518,7 +518,7 @@ public class DoSFilter implements Filter
      * @param tracker the rate tracker for this request
      * @return the priority for this request
      */
-    protected int getPriority(HttpServletRequest request, RateTracker tracker)
+    private int getPriority(HttpServletRequest request, RateTracker tracker)
     {
         if (extractUserId(request) != null)
             return USER_AUTH;
@@ -535,7 +535,7 @@ public class DoSFilter implements Filter
         return USER_AUTH;
     }
 
-    public void schedule(RateTracker tracker)
+    private void schedule(RateTracker tracker)
     {
         _scheduler.schedule(tracker, getMaxIdleTrackerMs(), TimeUnit.MILLISECONDS);
     }
@@ -556,7 +556,7 @@ public class DoSFilter implements Filter
      * @param request the current request
      * @return the request rate tracker for the current connection
      */
-    public RateTracker getRateTracker(ServletRequest request)
+    RateTracker getRateTracker(ServletRequest request)
     {
         HttpSession session = ((HttpServletRequest)request).getSession(false);
 
@@ -608,7 +608,7 @@ public class DoSFilter implements Filter
         return tracker;
     }
 
-    public void addToRateTracker(RateTracker tracker)
+    private void addToRateTracker(RateTracker tracker)
     {
         _rateTrackers.put(tracker.getId(), tracker);
     }
@@ -691,7 +691,7 @@ public class DoSFilter implements Filter
             byte[] result = new byte[4];
             for (int i = 0; i < result.length; ++i)
             {
-                result[i] = ((Integer)Integer.parseInt(ipv4Matcher.group(i + 1))).byteValue();
+                result[i] = Integer.valueOf(ipv4Matcher.group(i + 1)).byteValue();
             }
             return result;
         }
@@ -749,7 +749,7 @@ public class DoSFilter implements Filter
         }
         catch (Exception x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
         }
     }
 
@@ -1228,7 +1228,7 @@ public class DoSFilter implements Filter
                 LOG.debug("Tracker removed: {}", getId());
         }
 
-        protected void addToRateTrackers(DoSFilter filter, RateTracker tracker)
+        private void addToRateTrackers(DoSFilter filter, RateTracker tracker)
         {
             if (filter == null)
                 return;
@@ -1268,7 +1268,7 @@ public class DoSFilter implements Filter
         }
     }
 
-    class FixedRateTracker extends RateTracker
+    private static class FixedRateTracker extends RateTracker
     {
         public FixedRateTracker(ServletContext context, String filterName, String id, int type, int numRecentRequestsTracked)
         {
@@ -1297,15 +1297,15 @@ public class DoSFilter implements Filter
         }
     }
 
-    private class DoSTimeoutAsyncListener implements AsyncListener
+    private static class DoSTimeoutAsyncListener implements AsyncListener
     {
         @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
+        public void onStartAsync(AsyncEvent event)
         {
         }
 
         @Override
-        public void onComplete(AsyncEvent event) throws IOException
+        public void onComplete(AsyncEvent event)
         {
         }
 
@@ -1316,7 +1316,7 @@ public class DoSFilter implements Filter
         }
 
         @Override
-        public void onError(AsyncEvent event) throws IOException
+        public void onError(AsyncEvent event)
         {
         }
     }

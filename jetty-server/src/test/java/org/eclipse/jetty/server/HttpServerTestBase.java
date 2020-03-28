@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -28,10 +28,13 @@ import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -41,16 +44,18 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.AbstractLogger;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -60,17 +65,29 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class HttpServerTestBase extends HttpServerTestFixture
 {
-    private static final String REQUEST1_HEADER = "POST / HTTP/1.0\n" + "Host: localhost\n" + "Content-Type: text/xml; charset=utf-8\n" + "Connection: close\n" + "Content-Length: ";
-    private static final String REQUEST1_CONTENT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" + "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n"
-        + "</nimbus>";
+    private static final Logger LOG = LoggerFactory.getLogger(HttpServerTestBase.class);
+
+    private static final String REQUEST1_HEADER = "POST / HTTP/1.0\n" +
+        "Host: localhost\n" +
+        "Content-Type: text/xml; charset=utf-8\n" +
+        "Connection: close\n" +
+        "Content-Length: ";
+    private static final String REQUEST1_CONTENT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+        "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+        "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n" +
+        "</nimbus>";
     private static final String REQUEST1 = REQUEST1_HEADER + REQUEST1_CONTENT.getBytes().length + "\n\n" + REQUEST1_CONTENT;
 
-    private static final String RESPONSE1 = "HTTP/1.1 200 OK\n" + "Content-Length: 13\n" + "Server: Jetty(" + Server.getVersion() + ")\n" + "\n" + "Hello world\n";
+    private static final String RESPONSE1 = "HTTP/1.1 200 OK\n" +
+        "Content-Length: 13\n" +
+        "Server: Jetty(" + Server.getVersion() + ")\n" +
+        "\n" +
+        "Hello world\n";
 
     // Break the request up into three pieces, splitting the header.
     private static final String FRAGMENT1 = REQUEST1.substring(0, 16);
@@ -102,8 +119,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             "        <getJobDetails>\n" +
             "            <jobId>73</jobId>\n" +
             "        </getJobDetails>\n" +
-            "    </request>\n"
-            + "</nimbus>\n";
+            "    </request>\n" +
+            "</nimbus>\n";
     protected static final String RESPONSE2 =
         "HTTP/1.1 200 OK\n" +
             "Content-Type: text/xml;charset=iso-8859-1\n" +
@@ -141,10 +158,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             OutputStream os = client.getOutputStream();
 
-            os.write(("OPTIONS * HTTP/1.1\r\n"
-                + "Host: " + _serverURI.getHost() + "\r\n"
-                + "Connection: close\r\n"
-                + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.write(("OPTIONS * HTTP/1.1\r\n" +
+                "Host: " + _serverURI.getHost() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 
             // Read the response.
@@ -153,15 +170,20 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
             assertThat(response, Matchers.containsString("Allow: GET"));
         }
+    }
 
+    @Test
+    public void testGETStar() throws Exception
+    {
+        configureServer(new OptionsHandler());
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
-            os.write(("GET * HTTP/1.1\r\n"
-                + "Host: " + _serverURI.getHost() + "\r\n"
-                + "Connection: close\r\n"
-                + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.write(("GET * HTTP/1.1\r\n" +
+                "Host: " + _serverURI.getHost() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 
             // Read the response.
@@ -181,10 +203,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new HelloWorldHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
-             StacklessLogging stackless = new StacklessLogging(HttpConnection.class))
+             StacklessLogging ignored = new StacklessLogging(HttpConnection.class))
         {
             client.setSoTimeout(10000);
-            ((AbstractLogger)Log.getLogger(HttpConnection.class)).info("expect request is too large, then ISE extra data ...");
+            LOG.info("expect request is too large, then ISE extra data ...");
             OutputStream os = client.getOutputStream();
 
             byte[] buffer = new byte[64 * 1024];
@@ -212,9 +234,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         _httpConfiguration.setRequestHeaderSize(maxHeaderSize);
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
-             StacklessLogging stackless = new StacklessLogging(HttpConnection.class))
+             StacklessLogging ignored = new StacklessLogging(HttpConnection.class))
         {
-            Log.getLogger(HttpConnection.class).info("expect URI is too large");
+            LOG.info("expect URI is too large");
             OutputStream os = client.getOutputStream();
 
             // Take into account the initial bytes for the HTTP method.
@@ -237,6 +259,25 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     @Test
+    public void testBadURI() throws Exception
+    {
+        configureServer(new HelloWorldHandler());
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            os.write("GET /%xx HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
+        }
+    }
+
+    @Test
     public void testExceptionThrownInHandlerLoop() throws Exception
     {
         configureServer(new AbstractHandler()
@@ -254,9 +295,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         OutputStream os = client.getOutputStream();
 
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
-            Log.getLogger(HttpChannel.class).info("Expecting ServletException: TEST handler exception...");
+            LOG.info("Expecting ServletException: TEST handler exception...");
             os.write(request.toString().getBytes());
             os.flush();
 
@@ -268,10 +309,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testExceptionThrownInHandler() throws Exception
     {
-        configureServer(new AbstractHandler.ErrorDispatchHandler()
+        configureServer(new AbstractHandler()
         {
             @Override
-            public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 throw new QuietServletException("TEST handler exception");
             }
@@ -283,9 +324,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         OutputStream os = client.getOutputStream();
 
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
-            Log.getLogger(HttpChannel.class).info("Expecting ServletException: TEST handler exception...");
+            LOG.info("Expecting ServletException: TEST handler exception...");
             os.write(request.toString().getBytes());
             os.flush();
 
@@ -299,10 +340,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         final AtomicBoolean fourBytesRead = new AtomicBoolean(false);
         final AtomicBoolean earlyEOFException = new AtomicBoolean(false);
-        configureServer(new AbstractHandler.ErrorDispatchHandler()
+        configureServer(new AbstractHandler()
         {
             @Override
-            public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 int contentLength = request.getContentLength();
@@ -353,9 +394,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new HelloWorldHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
-             StacklessLogging stackless = new StacklessLogging(HttpConnection.class))
+             StacklessLogging ignored = new StacklessLogging(HttpConnection.class))
         {
-            Log.getLogger(HttpConnection.class).info("expect header is too large ...");
+            LOG.info("expect header is too large ...");
             OutputStream os = client.getOutputStream();
 
             byte[] buffer = new byte[64 * 1024];
@@ -396,7 +437,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
             catch (Exception e)
             {
-                Log.getLogger(HttpServerTestBase.class).warn("TODO Early close???");
+                LOG.warn("TODO Early close???");
                 // TODO #1832 evaluate why we sometimes get an early close on this test
             }
         }
@@ -465,7 +506,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
-
+            //@checkstyle-disable-check : IllegalTokenText
             os.write(("GET /R2 HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Content-Length: 5\r\n" +
@@ -474,6 +515,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 "\r\n" +
                 "ABCDE\r\n" +
                 "\r\n"
+                //@checkstyle-enable-check : IllegalTokenText
             ).getBytes());
             os.flush();
 
@@ -892,7 +934,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 if (line.length() == 0)
                     break;
                 int len = line.length();
-                assertEquals(Integer.parseInt(chunk, 16), len);
+                assertEquals(Integer.valueOf(chunk, 16).intValue(), len);
                 if (max < len)
                     max = len;
             }
@@ -939,7 +981,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
 
             // check close
-            assertTrue(in.readLine() == null);
+            assertNull(in.readLine());
         }
     }
 
@@ -982,13 +1024,22 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testPipeline() throws Exception
     {
-        configureServer(new HelloWorldHandler());
+        AtomicInteger served = new AtomicInteger();
+        configureServer(new HelloWorldHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                served.incrementAndGet();
+                super.handle(target, baseRequest, request, response);
+            }
+        });
 
-        //for (int pipeline=1;pipeline<32;pipeline++)
-        for (int pipeline = 1; pipeline < 32; pipeline++)
+        int pipeline = 64;
         {
             try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
             {
+                served.set(0);
                 client.setSoTimeout(5000);
                 OutputStream os = client.getOutputStream();
 
@@ -1027,6 +1078,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                         count++;
                     line = in.readLine();
                 }
+                assertEquals(pipeline, served.get());
                 assertEquals(pipeline, count);
             }
         }
@@ -1127,6 +1179,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 
+            //@checkstyle-disable-check : IllegalTokenText
             os.write((
                 "POST /R1 HTTP/1.1\r\n" +
                     "Host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
@@ -1149,7 +1202,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "Connection: close\r\n" +
                     "\r\n" +
                     "abcdefghi\n"
-
+                //@checkstyle-enable-check : IllegalTokenText
             ).getBytes(StandardCharsets.ISO_8859_1));
 
             String in = IO.toString(is);
@@ -1255,9 +1308,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(handler);
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
-             StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+             StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
-            ((AbstractLogger)Log.getLogger(HttpChannel.class)).info("Expecting exception after commit then could not send 500....");
+            LOG.info("Expecting exception after commit then could not send 500....");
             OutputStream os = client.getOutputStream();
             InputStream is = client.getInputStream();
 
@@ -1281,7 +1334,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             client.close();
             Thread.sleep(200);
 
-            assertTrue(!handler._endp.isOpen());
+            assertFalse(handler._endp.isOpen());
         }
     }
 
@@ -1545,12 +1598,11 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             {
                 try
                 {
-                    byte[] bytes = (
-                        "GET / HTTP/1.1\r\n" +
-                            "Host: localhost\r\n"
-                            + "Content-Length: " + cl + "\r\n" +
-                            "\r\n" +
-                            content).getBytes(StandardCharsets.ISO_8859_1);
+                    byte[] bytes = ("GET / HTTP/1.1\r\n" +
+                        "Host: localhost\r\n" +
+                        "Content-Length: " + cl + "\r\n" +
+                        "\r\n" +
+                        content).getBytes(StandardCharsets.ISO_8859_1);
 
                     for (int i = 0; i < REQS; i++)
                     {
@@ -1780,6 +1832,55 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             // Read the close
             assertThat(client.getInputStream().read(), is(-1));
+        }
+    }
+
+    @Test
+    public void testSendAsyncContent() throws Exception
+    {
+        int size = 64 * 1024;
+        configureServer(new SendAsyncContentHandler(size));
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+            os.write(("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getContentBytes().length, is(size));
+
+            // Try again to check previous request completed OK
+            os.write(("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+            response = HttpTester.parseResponse(client.getInputStream());
+            assertThat(response.getStatus(), is(200));
+            assertThat(response.getContentBytes().length, is(size));
+        }
+    }
+
+    private class SendAsyncContentHandler extends AbstractHandler
+    {
+        final ByteBuffer content;
+
+        public SendAsyncContentHandler(int size)
+        {
+            content = BufferUtil.allocate(size);
+            Arrays.fill(content.array(), 0, size, (byte)'X');
+            content.position(0);
+            content.limit(size);
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setStatus(200);
+            response.setContentType("application/unknown");
+            response.setContentLength(content.remaining());
+            AsyncContext async = request.startAsync();
+            ((HttpOutput)response.getOutputStream()).sendContent(content.slice(), Callback.from(async::complete));
         }
     }
 }

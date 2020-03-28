@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.resource;
@@ -28,7 +28,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -42,8 +44,8 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -56,7 +58,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public abstract class Resource implements ResourceFactory, Closeable
 {
-    private static final Logger LOG = Log.getLogger(Resource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Resource.class);
     public static boolean __defaultUseCaches = true;
     volatile Object _associate;
 
@@ -122,7 +124,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             catch (Exception e)
             {
                 LOG.warn(e.toString());
-                LOG.debug(Log.EXCEPTION, e);
+                LOG.debug("Bad PathResource: " + url, e);
                 return new BadResource(url, e.toString());
             }
         }
@@ -237,7 +239,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             }
             catch (IllegalArgumentException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 // Catches scenario where a bad Windows path like "C:\dev" is
                 // improperly escaped, which various downstream classloaders
                 // tend to have a problem with
@@ -440,7 +442,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         }
         catch (Exception e)
         {
-            LOG.debug(e);
+            LOG.debug("Unable to addPath", e);
             return null;
         }
     }
@@ -482,6 +484,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @param parent True if the parent directory should be included
      * @param query query params
      * @return String of HTML
+     * @throws IOException on failure to generate a list.
      */
     public String getListHTML(String base, boolean parent, String query) throws IOException
     {
@@ -818,25 +821,6 @@ public abstract class Resource implements ResourceFactory, Closeable
     }
 
     /**
-     * @param out the output stream to write to
-     * @param start First byte to write
-     * @param count Bytes to write or -1 for all of them.
-     * @throws IOException if unable to copy the Resource to the output
-     */
-    public void writeTo(OutputStream out, long start, long count)
-        throws IOException
-    {
-        try (InputStream in = getInputStream())
-        {
-            in.skip(start);
-            if (count < 0)
-                IO.copy(in, out);
-            else
-                IO.copy(in, out, count);
-        }
-    }
-
-    /**
      * Copy the Resource to the new destination file.
      * <p>
      * Will not replace existing destination file.
@@ -850,9 +834,20 @@ public abstract class Resource implements ResourceFactory, Closeable
         if (destination.exists())
             throw new IllegalArgumentException(destination + " exists");
 
-        try (OutputStream out = new FileOutputStream(destination))
+        // attempt simple file copy
+        File src = getFile();
+        if (src != null)
         {
-            writeTo(out, 0, -1);
+            Files.copy(src.toPath(), destination.toPath(),
+                StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+            return;
+        }
+
+        // use old school stream based copy
+        try (InputStream in = getInputStream();
+             OutputStream out = new FileOutputStream(destination))
+        {
+            IO.copy(in, out);
         }
     }
 

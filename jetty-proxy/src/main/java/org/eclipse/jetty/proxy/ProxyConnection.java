@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.proxy;
@@ -29,7 +29,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
 
 public abstract class ProxyConnection extends AbstractConnection
 {
@@ -37,7 +37,7 @@ public abstract class ProxyConnection extends AbstractConnection
     private final IteratingCallback pipe = new ProxyIteratingCallback();
     private final ByteBufferPool bufferPool;
     private final ConcurrentMap<String, Object> context;
-    private Connection connection;
+    private ProxyConnection connection;
 
     protected ProxyConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
     {
@@ -61,7 +61,7 @@ public abstract class ProxyConnection extends AbstractConnection
         return connection;
     }
 
-    public void setConnection(Connection connection)
+    public void setConnection(ProxyConnection connection)
     {
         this.connection = connection;
     }
@@ -75,6 +75,11 @@ public abstract class ProxyConnection extends AbstractConnection
     protected abstract int read(EndPoint endPoint, ByteBuffer buffer) throws IOException;
 
     protected abstract void write(EndPoint endPoint, ByteBuffer buffer, Callback callback);
+
+    protected void close(Throwable failure)
+    {
+        getEndPoint().close(failure);
+    }
 
     @Override
     public String toConnectionString()
@@ -92,7 +97,7 @@ public abstract class ProxyConnection extends AbstractConnection
         private int filled;
 
         @Override
-        protected Action process() throws Exception
+        protected Action process()
         {
             buffer = bufferPool.acquire(getInputBufferSize(), true);
             try
@@ -123,7 +128,7 @@ public abstract class ProxyConnection extends AbstractConnection
                 if (LOG.isDebugEnabled())
                     LOG.debug(ProxyConnection.this + " could not fill", x);
                 bufferPool.release(buffer);
-                disconnect();
+                disconnect(x);
                 return Action.SUCCEEDED;
             }
         }
@@ -147,14 +152,14 @@ public abstract class ProxyConnection extends AbstractConnection
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(ProxyConnection.this + " failed to write " + filled + " bytes", x);
-            disconnect();
+            bufferPool.release(buffer);
+            disconnect(x);
         }
 
-        private void disconnect()
+        private void disconnect(Throwable x)
         {
-            bufferPool.release(buffer);
-            ProxyConnection.this.close();
-            connection.close();
+            ProxyConnection.this.close(x);
+            connection.close(x);
         }
     }
 }

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -59,10 +59,9 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         final CountDownLatch latch = new CountDownLatch(requestCount);
 
         configureServer(new HelloWorldHandler());
-
         URI uri = _server.getURI();
-        Socket client = newSocket(uri.getHost(), uri.getPort());
-        try
+
+        try (Socket client = newSocket(uri.getHost(), uri.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
@@ -119,10 +118,6 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             reader.setDone();
             runner.join();
         }
-        finally
-        {
-            client.close();
-        }
     }
 
     private int iterations(int cnt)
@@ -136,8 +131,8 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         configureServer(new EchoHandler());
 
         URI uri = _server.getURI();
-        Socket client = newSocket(uri.getHost(), uri.getPort());
-        try
+
+        try (Socket client = newSocket(uri.getHost(), uri.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
@@ -181,10 +176,6 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             String in = reader.getResponse().toString();
             assertTrue(in.indexOf(__content.substring(__length - 64)) > 0);
         }
-        finally
-        {
-            client.close();
-        }
     }
 
     public class ResponseReader implements Runnable
@@ -212,9 +203,6 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
             return _response;
         }
 
-        /**
-         * @see java.lang.Runnable#run()
-         */
         @Override
         public void run()
         {
@@ -226,11 +214,9 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                     count = doRead();
                 }
             }
-            catch (IOException ex)
+            catch (IOException | InterruptedException e)
             {
-            }
-            catch (InterruptedException ex)
-            {
+                // ignore
             }
             finally
             {
@@ -240,6 +226,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
                 }
                 catch (IOException e)
                 {
+                    // ignore
                 }
             }
         }

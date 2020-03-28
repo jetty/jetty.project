@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package com.acme.test;
@@ -186,6 +186,17 @@ public class AnnotationTest extends HttpServlet
             out.println("<body>");
             out.println("<h1>Results</h1>");
 
+            out.println("<h2>Context Defaults</h2>");
+            out.println("<p><b>default-context-path: " +
+                (request.getServletContext().getAttribute("default-context-path") != null ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") +
+                "</span></p>");
+            out.println("<p><b>request-character-encoding: " +
+                ("utf-8".equals(request.getServletContext().getAttribute("request-character-encoding")) ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") +
+                "</span></p>");
+            out.println("<p><b>response-character-encoding: " +
+                ("utf-8".equals(request.getServletContext().getAttribute("response-character-encoding")) ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") +
+                "</span></p>");
+
             out.println("<h2>Init Params from Annotation</h2>");
             out.println("<pre>");
             out.println("initParams={@WebInitParam(name=\"fromAnnotation\", value=\"xyz\")}");
@@ -251,7 +262,11 @@ public class AnnotationTest extends HttpServlet
             out.println("<h2>ServletContextListener Registration Prevented from ServletContextListener</h2>");
             Boolean webListenerPrevention = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclFromSclRegoTest");
             out.println("<p><b>Result: " + (webListenerPrevention.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
-
+            
+            out.println("<h2>Add Jsp File Registration</h2>");
+            complete = (Boolean)config.getServletContext().getAttribute("com.acme.jsp.file");
+            out.println("<p><b>Result: " + (complete.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
+            
             out.println("<h2>ServletContextListener In web.xml Injected</h2>");
             Boolean listenerInject = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclInjectTest");
             out.println("<p><b>Result: " + (listenerInject.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
@@ -260,6 +275,12 @@ public class AnnotationTest extends HttpServlet
             Boolean annotatedListenerInject = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclInjectWebListenerTest");
             out.println("<p><b>Result: " + (annotatedListenerInject.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
 
+            out.println("<h2>ServletContextListener as @WebListener Get/Set Session Timeout</h2>");
+            out.println("<p><b>getSessionTimeout Result: " + 
+                ((Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclGetSessionTimeout") ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
+            out.println("<p><b>setSessionTimeout Result: " + 
+                ((Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.sclSetSessionTimeout") ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
+            
             out.println("<h2>Programmatic Listener Injected</h2>");
             Boolean programListenerInject = (Boolean)config.getServletContext().getAttribute("com.acme.AnnotationTest.programListenerInjectTest");
             out.println("<p><b>Result: " + (programListenerInject.booleanValue() ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span></b></p>");
@@ -295,19 +316,19 @@ public class AnnotationTest extends HttpServlet
             out.println("private Double minAmount;");
             out.println("</pre>");
             if (maxAmount == null)
-                out.println("<p><b>Result: " + envResult + ":  <span class=\"fail\">FAIL");
+                out.println("<p><b>Result: " + envResult + ":  <span class=\"fail\">FAIL</span>");
             else
                 out.println("<p><b>Result: " + envResult + ": " + (maxAmount.compareTo(55D) == 0 ? " <span class=\"pass\">PASS" : " <span class=\"fail\">FAIL") + "</span></b>");
             out.println("<br/><b>JNDI Lookup Result: " + envLookupResult + "</b>");
 
             if (minAmount == null)
-                out.println("<p><b>Result: " + envResult2 + ":  <span class=\"fail\">FAIL");
+                out.println("<p><b>Result: " + envResult2 + ":  <span class=\"fail\">FAIL</span>");
             else
                 out.println("<br/><b>Result: " + envResult2 + ": " + (minAmount.compareTo(0.99D) == 0 ? " <span class=\"pass\">PASS" : " <span class=\"fail\">FAIL") + "</span></b>");
             out.println("<br/><b>JNDI Lookup Result: " + envLookupResult2 + "</b>");
 
             if (avgAmount == null)
-                out.println("<p><b>Result: " + envResult3 + ":  <span class=\"fail\">FAIL");
+                out.println("<p><b>Result: " + envResult3 + ":  <span class=\"fail\">FAIL</span>");
             else
                 out.println("<br/><b>Result: " + envResult3 + ": " + (avgAmount.compareTo(1.25D) == 0 ? " <span class=\"pass\">PASS" : " <span class=\"fail\">FAIL") + "</span></b>");
             out.println("<br/><b>JNDI Lookup Result: " + envLookupResult3 + "</b></p>");

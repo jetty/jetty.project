@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -34,13 +34,11 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * HTTP Configuration.
  * <p>This class is a holder of HTTP configuration for use by the
- * {@link HttpChannel} class.  Typically a HTTPConfiguration instance
+ * {@link HttpChannel} class.  Typically an HTTPConfiguration instance
  * is instantiated and passed to a {@link ConnectionFactory} that can
  * create HTTP channels (e.g. HTTP, AJP or FCGI).</p>
  * <p>The configuration held by this class is not for the wire protocol,
@@ -51,8 +49,6 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("HTTP Configuration")
 public class HttpConfiguration implements Dumpable
 {
-    private static final Logger LOG = Log.getLogger(HttpConfiguration.class);
-
     public static final String SERVER_VERSION = "Jetty(" + Jetty.VERSION + ")";
     private final List<Customizer> _customizers = new CopyOnWriteArrayList<>();
     private final Trie<Boolean> _formEncodedMethods = new TreeTrie<>();
@@ -60,7 +56,7 @@ public class HttpConfiguration implements Dumpable
     private int _outputAggregationSize = _outputBufferSize / 4;
     private int _requestHeaderSize = 8 * 1024;
     private int _responseHeaderSize = 8 * 1024;
-    private int _headerCacheSize = 4 * 1024;
+    private int _headerCacheSize = 1024;
     private boolean _headerCacheCaseSensitive = false;
     private int _securePort;
     private long _idleTimeout = -1;
@@ -71,7 +67,8 @@ public class HttpConfiguration implements Dumpable
     private boolean _delayDispatchUntilContent = true;
     private boolean _persistentConnectionsEnabled = true;
     private int _maxErrorDispatches = 10;
-    private boolean _useDirectByteBuffers = false;
+    private boolean _useInputDirectByteBuffers = true;
+    private boolean _useOutputDirectByteBuffers = true;
     private long _minRequestDataRate;
     private long _minResponseDataRate;
     private HttpCompliance _httpCompliance = HttpCompliance.RFC7230;
@@ -128,6 +125,7 @@ public class HttpConfiguration implements Dumpable
         _requestHeaderSize = config._requestHeaderSize;
         _responseHeaderSize = config._responseHeaderSize;
         _headerCacheSize = config._headerCacheSize;
+        _headerCacheCaseSensitive = config._headerCacheCaseSensitive;
         _secureScheme = config._secureScheme;
         _securePort = config._securePort;
         _idleTimeout = config._idleTimeout;
@@ -137,9 +135,11 @@ public class HttpConfiguration implements Dumpable
         _delayDispatchUntilContent = config._delayDispatchUntilContent;
         _persistentConnectionsEnabled = config._persistentConnectionsEnabled;
         _maxErrorDispatches = config._maxErrorDispatches;
-        _useDirectByteBuffers = config._useDirectByteBuffers;
+        _useInputDirectByteBuffers = config._useInputDirectByteBuffers;
+        _useOutputDirectByteBuffers = config._useOutputDirectByteBuffers;
         _minRequestDataRate = config._minRequestDataRate;
         _minResponseDataRate = config._minResponseDataRate;
+        _httpCompliance = config._httpCompliance;
         _requestCookieCompliance = config._requestCookieCompliance;
         _responseCookieCompliance = config._responseCookieCompliance;
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
@@ -185,19 +185,19 @@ public class HttpConfiguration implements Dumpable
         return _outputAggregationSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for a HTTP request header")
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP request header")
     public int getRequestHeaderSize()
     {
         return _requestHeaderSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for a HTTP response header")
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP response header")
     public int getResponseHeaderSize()
     {
         return _responseHeaderSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for a HTTP header field cache")
+    @ManagedAttribute("The maximum allowed size in bytes for an HTTP header field cache")
     public int getHeaderCacheSize()
     {
         return _headerCacheSize;
@@ -228,20 +228,20 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * <p>The max idle time is applied to a HTTP request for IO operations and
+     * <p>The max idle time is applied to an HTTP request for IO operations and
      * delayed dispatch.</p>
      *
      * @return the max idle time in ms or if == 0 implies an infinite timeout, &lt;0
      * implies no HTTP channel timeout and the connection timeout is used instead.
      */
-    @ManagedAttribute("The idle timeout in ms for I/O operations during the handling of a HTTP request")
+    @ManagedAttribute("The idle timeout in ms for I/O operations during the handling of an HTTP request")
     public long getIdleTimeout()
     {
         return _idleTimeout;
     }
 
     /**
-     * <p>The max idle time is applied to a HTTP request for IO operations and
+     * <p>The max idle time is applied to an HTTP request for IO operations and
      * delayed dispatch.</p>
      *
      * @param timeoutMs the max idle time in ms or if == 0 implies an infinite timeout, &lt;0
@@ -315,7 +315,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param delay if true, delay the application dispatch until content is available (default false)
+     * @param delay if true, delays the application dispatch until content is available (defaults to true)
      */
     public void setDelayDispatchUntilContent(boolean delay)
     {
@@ -329,17 +329,31 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param useDirectByteBuffers if true, use direct byte buffers for requests
+     * @param useInputDirectByteBuffers whether to use direct ByteBuffers for reading
      */
-    public void setUseDirectByteBuffers(boolean useDirectByteBuffers)
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
     {
-        _useDirectByteBuffers = useDirectByteBuffers;
+        _useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
-    @ManagedAttribute("Whether to use direct byte buffers for requests")
-    public boolean isUseDirectByteBuffers()
+    @ManagedAttribute("Whether to use direct ByteBuffers for reading")
+    public boolean isUseInputDirectByteBuffers()
     {
-        return _useDirectByteBuffers;
+        return _useInputDirectByteBuffers;
+    }
+
+    /**
+     * @param useOutputDirectByteBuffers whether to use direct ByteBuffers for writing
+     */
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
+    @ManagedAttribute("Whether to use direct ByteBuffers for writing")
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _useOutputDirectByteBuffers;
     }
 
     /**
@@ -557,7 +571,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @return The CookieCompliance used for parsing request <code>Cookie</code> headers.
+     * @return The CookieCompliance used for parsing request {@code Cookie} headers.
      * @see #getResponseCookieCompliance()
      */
     public CookieCompliance getRequestCookieCompliance()
@@ -566,7 +580,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @return The CookieCompliance used for generating response <code>Set-Cookie</code> headers
+     * @return The CookieCompliance used for generating response {@code Set-Cookie} headers
      * @see #getRequestCookieCompliance()
      */
     public CookieCompliance getResponseCookieCompliance()
@@ -575,8 +589,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param cookieCompliance The CookieCompliance to use for parsing request <code>Cookie</code> headers.
-     * @see #setRequestCookieCompliance(CookieCompliance)
+     * @param cookieCompliance The CookieCompliance to use for parsing request {@code Cookie} headers.
      */
     public void setRequestCookieCompliance(CookieCompliance cookieCompliance)
     {
@@ -584,8 +597,7 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * @param cookieCompliance The CookieCompliance to use for generating response <code>Set-Cookie</code> headers
-     * @see #setResponseCookieCompliance(CookieCompliance)
+     * @param cookieCompliance The CookieCompliance to use for generating response {@code Set-Cookie} headers
      */
     public void setResponseCookieCompliance(CookieCompliance cookieCompliance)
     {

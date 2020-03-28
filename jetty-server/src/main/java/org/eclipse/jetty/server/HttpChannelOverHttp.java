@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -40,15 +40,15 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * A HttpChannel customized to be transported over the HTTP/1 protocol
+ * An HttpChannel customized to be transported over the HTTP/1 protocol
  */
 public class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, ComplianceViolation.Listener
 {
-    private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverHttp.class);
     private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
     private final HttpFields _fields = new HttpFields();
     private final MetaData.Request _metadata = new MetaData.Request(_fields);
@@ -67,6 +67,12 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         super(connector, config, endPoint, transport);
         _httpConnection = httpConnection;
         _metadata.setURI(new HttpURI());
+    }
+
+    @Override
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _httpConnection.isUseOutputDirectByteBuffers();
     }
 
     @Override
@@ -102,7 +108,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public boolean startRequest(String method, String uri, HttpVersion version)
+    public void startRequest(String method, String uri, HttpVersion version)
     {
         _metadata.setMethod(method);
         _metadata.getURI().parseRequestTarget(method, uri);
@@ -110,7 +116,6 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         _unknownExpectation = false;
         _expect100Continue = false;
         _expect102Processing = false;
-        return false;
     }
 
     @Override
@@ -229,7 +234,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         if (_metadata.getMethod() == null)
             _httpConnection.close();
         else if (onEarlyEOF() || _delayedForContent)
-        {
+        { 
             _delayedForContent = false;
             handle();
         }
@@ -274,7 +279,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
 
         onBadMessage(failure);
@@ -283,6 +288,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean headerComplete()
     {
+        onRequest(_metadata);
+
         if (_complianceViolations != null && !_complianceViolations.isEmpty())
         {
             this.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
@@ -363,9 +370,9 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                 _upgrade = PREAMBLE_UPGRADE_H2C;
 
                 if (HttpMethod.PRI.is(_metadata.getMethod()) &&
-                    "*".equals(_metadata.getURI().toString()) &&
-                    _fields.size() == 0 &&
-                    upgrade())
+                        "*".equals(_metadata.getURI().getPath()) &&
+                        _fields.size() == 0 &&
+                        upgrade())
                     return true;
 
                 badMessage(new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426));
@@ -381,8 +388,6 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
         if (!persistent)
             _httpConnection.getGenerator().setPersistent(false);
-
-        onRequest(_metadata);
 
         // Should we delay dispatch until we have some content?
         // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
@@ -407,8 +412,15 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         return true;
     }
 
+    @Override
+    protected boolean checkAndPrepareUpgrade()
+    {
+        // TODO: move the code from HttpConnection.upgrade() here?
+        return false;
+    }
+
     /**
-     * <p>Attempts to perform a HTTP/1.1 upgrade.</p>
+     * <p>Attempts to perform an HTTP/1.1 upgrade.</p>
      * <p>The upgrade looks up a {@link ConnectionFactory.Upgrading} from the connector
      * matching the protocol specified in the {@code Upgrade} header.</p>
      * <p>The upgrade may succeed, be ignored (which can allow a later handler to implement)
@@ -429,18 +441,12 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
 
         // Find the upgrade factory
-        ConnectionFactory.Upgrading factory = null;
-        for (ConnectionFactory f : getConnector().getConnectionFactories())
-        {
-            if (f instanceof ConnectionFactory.Upgrading)
-            {
-                if (f.getProtocols().contains(_upgrade.getValue()))
-                {
-                    factory = (ConnectionFactory.Upgrading)f;
-                    break;
-                }
-            }
-        }
+        ConnectionFactory.Upgrading factory = getConnector().getConnectionFactories().stream()
+            .filter(f -> f instanceof ConnectionFactory.Upgrading)
+            .map(ConnectionFactory.Upgrading.class::cast)
+            .filter(f -> f.getProtocols().contains(_upgrade.getValue()))
+            .findAny()
+            .orElse(null);
 
         if (factory == null)
         {
@@ -472,8 +478,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
         if (LOG.isDebugEnabled())
             LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgradeConnection);
-        getRequest().setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, upgradeConnection);
-        getResponse().setStatus(101);
+        getRequest().setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, upgradeConnection);
         getHttpTransport().onCompleted();
         return true;
     }
@@ -509,18 +514,6 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public int getHeaderCacheSize()
-    {
-        return getHttpConfiguration().getHeaderCacheSize();
-    }
-
-    @Override
-    public boolean isHeaderCacheCaseSensitive()
-    {
-        return getHttpConfiguration().isHeaderCacheCaseSensitive();
-    }
-
-    @Override
     public void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
     {
         if (_httpConnection.isRecordHttpComplianceViolations())
@@ -530,10 +523,22 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                 _complianceViolations = new ArrayList<>();
             }
             String record = String.format("%s (see %s) in mode %s for %s in %s",
-                violation.getDescription(), violation.getURL(), mode, details, getHttpTransport());
+                    violation.getDescription(), violation.getURL(), mode, details, getHttpTransport());
             _complianceViolations.add(record);
             if (LOG.isDebugEnabled())
                 LOG.debug(record);
         }
+    }
+
+    @Override
+    public boolean isTunnellingSupported()
+    {
+        return true;
+    }
+
+    @Override
+    public EndPoint getTunnellingEndPoint()
+    {
+        return getEndPoint();
     }
 }

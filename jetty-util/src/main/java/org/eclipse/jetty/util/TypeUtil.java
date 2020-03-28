@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -42,9 +42,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.invoke.MethodType.methodType;
 
@@ -57,7 +62,7 @@ import static java.lang.invoke.MethodType.methodType;
  */
 public class TypeUtil
 {
-    private static final Logger LOG = Log.getLogger(TypeUtil.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TypeUtil.class);
     public static final Class<?>[] NO_ARGS = new Class[]{};
     public static final int CR = '\r';
     public static final int LF = '\n';
@@ -309,13 +314,13 @@ public class TypeUtil
         }
         catch (NoSuchMethodException | IllegalAccessException | InstantiationException x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
         }
         catch (InvocationTargetException x)
         {
             if (x.getTargetException() instanceof Error)
                 throw (Error)x.getTargetException();
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
         }
         return null;
     }
@@ -750,5 +755,54 @@ public class TypeUtil
                 return i1.hasNext() ? i1.next() : i2.next();
             }
         };
+    }
+
+    /**
+     * Used on a {@link ServiceLoader#stream()} with {@link Stream#flatMap(Function)},
+     * so that in the case a {@link ServiceConfigurationError} is thrown it warns and
+     * continues iterating through the service loader.
+     * <br>Usage Example:
+     * <p>{@code ServiceLoader.load(Service.class).stream().flatMap(TypeUtil::providerMap).collect(Collectors.toList());}</p>
+     * @param <T> The class of the service type.
+     * @param provider The service provider to instantiate.
+     * @return a stream of the loaded service providers.
+     */
+    private static <T> Stream<T> mapToService(ServiceLoader.Provider<T> provider)
+    {
+        try
+        {
+            return Stream.of(provider.get());
+        }
+        catch (ServiceConfigurationError error)
+        {
+            LOG.warn("Service Provider failed to load", error);
+            return Stream.empty();
+        }
+    }
+
+    /**
+     * Utility method to provide a stream of the service type from a {@link ServiceLoader}.
+     * Log warnings will be given for any {@link ServiceConfigurationError}s which occur when loading or
+     * instantiating the services.
+     * @param serviceLoader the ServiceLoader instance to use.
+     * @param <T> the type of the service to load.
+     * @return a stream of the service type which will not throw {@link ServiceConfigurationError}.
+     */
+    public static <T> Stream<T> serviceStream(ServiceLoader<T> serviceLoader)
+    {
+        return serviceProviderStream(serviceLoader).flatMap(TypeUtil::mapToService);
+    }
+
+    /**
+     * Utility to create a stream which provides the same functionality as {@link ServiceLoader#stream()}.
+     * However this also guards the case in which {@link Iterator#hasNext()} throws. Any exceptions
+     * from the underlying iterator will be cached until the {@link ServiceLoader.Provider#get()} is called.
+     * @param serviceLoader the ServiceLoader instance to use.
+     * @param <T> the type of the service to load.
+     * @return A stream that lazily loads providers for this loader's service
+     */
+    public static <T> Stream<ServiceLoader.Provider<T>> serviceProviderStream(ServiceLoader<T> serviceLoader)
+    {
+        return StreamSupport.stream(new ServiceLoaderSpliterator<>(serviceLoader), false);
     }
 }

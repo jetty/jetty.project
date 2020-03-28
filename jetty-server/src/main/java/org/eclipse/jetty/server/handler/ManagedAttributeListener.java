@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.handler;
@@ -26,15 +26,15 @@ import javax.servlet.ServletContextAttributeListener;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Enable Jetty style JMX MBeans from within a Context
  */
 public class ManagedAttributeListener implements ServletContextListener, ServletContextAttributeListener
 {
-    private static final Logger LOG = Log.getLogger(ManagedAttributeListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ManagedAttributeListener.class);
 
     final Set<String> _managedAttributes = new HashSet<>();
     final ContextHandler _context;
@@ -100,7 +100,6 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
 
     protected void updateBean(String name, Object oldBean, Object newBean)
     {
-        LOG.info("update {} {}->{} on {}", name, oldBean, newBean, _context);
         if (LOG.isDebugEnabled())
             LOG.debug("update {} {}->{} on {}", name, oldBean, newBean, _context);
         _context.updateBean(oldBean, newBean, false);

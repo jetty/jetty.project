@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io;
@@ -25,13 +25,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 {
-    private static final Logger LOG = Log.getLogger(AbstractEndPoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractEndPoint.class);
 
     private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
     private final long _created = System.currentTimeMillis();
@@ -327,12 +327,6 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         _connection = connection;
     }
 
-    @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        return false;
-    }
-
     protected void reset()
     {
         _state.set(State.OPEN);
@@ -406,7 +400,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         return _fillInterest;
     }
 
-    protected WriteFlusher getWriteFlusher()
+    public WriteFlusher getWriteFlusher()
     {
         return _writeFlusher;
     }

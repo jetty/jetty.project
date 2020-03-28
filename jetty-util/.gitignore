@@ -1,7 +1,0 @@
-.project
-.classpath
-.settings/
-.pmd
-target/
-*.swp
-*.log

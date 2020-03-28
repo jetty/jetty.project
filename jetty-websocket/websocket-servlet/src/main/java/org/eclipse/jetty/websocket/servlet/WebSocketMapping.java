@@ -1,24 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -33,30 +34,32 @@ import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
 
 /**
  * Mapping of pathSpec to a tupple of {@link WebSocketCreator}, {@link FrameHandlerFactory} and
- * {@link org.eclipse.jetty.websocket.core.FrameHandler.Customizer}.
+ * {@link Configuration.Customizer}.
  * <p>
- * When the {@link #upgrade(HttpServletRequest, HttpServletResponse, FrameHandler.Customizer)}
+ * When the {@link #upgrade(HttpServletRequest, HttpServletResponse, Configuration.Customizer)}
  * method is called, a match for the pathSpec is looked for. If one is found then the
  * creator is used to create a POJO for the WebSocket endpoint, the factory is used to
  * wrap that POJO with a {@link FrameHandler} and the customizer is used to configure the resulting
- * {@link FrameHandler.CoreSession}.</p>
+ * {@link CoreSession}.</p>
  */
 public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 {
-    private static final Logger LOG = Log.getLogger(WebSocketMapping.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketMapping.class);
 
     public static WebSocketMapping getMapping(ServletContext servletContext, String mappingKey)
     {
@@ -186,7 +189,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
      * @param factory the factory to use to create a FrameHandler for the websocket
      * @param customizer the customizer to use to customize the WebSocket session.
      */
-    public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer) throws WebSocketException
+    public void addMapping(PathSpec pathSpec, WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer) throws WebSocketException
     {
         mappings.put(pathSpec, new Negotiator(creator, factory, customizer));
     }
@@ -213,7 +216,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         return mapping.getResource();
     }
 
-    public boolean upgrade(HttpServletRequest request, HttpServletResponse response, FrameHandler.Customizer defaultCustomizer) throws IOException
+    public boolean upgrade(HttpServletRequest request, HttpServletResponse response, Configuration.Customizer defaultCustomizer) throws IOException
     {
         // Since this may be a filter, we need to be smart about determining the target path.
         // We should rely on the Container for stripping path parameters and its ilk before
@@ -244,7 +247,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         private final WebSocketCreator creator;
         private final FrameHandlerFactory factory;
 
-        public Negotiator(WebSocketCreator creator, FrameHandlerFactory factory, FrameHandler.Customizer customizer)
+        public Negotiator(WebSocketCreator creator, FrameHandlerFactory factory, Configuration.Customizer customizer)
         {
             super(components, customizer);
             this.creator = creator;
@@ -263,39 +266,26 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
             if (servletContext == null)
                 throw new IllegalStateException("null servletContext from request");
 
-            ClassLoader loader = servletContext.getClassLoader();
-            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            ServletUpgradeRequest upgradeRequest = new ServletUpgradeRequest(negotiation);
+            ServletUpgradeResponse upgradeResponse = new ServletUpgradeResponse(negotiation);
 
-            try
+            AtomicReference<Object> result = new AtomicReference<>();
+            ((ContextHandler.Context)servletContext).getContextHandler().handle(() ->
+                result.set(creator.createWebSocket(upgradeRequest, upgradeResponse)));
+            Object websocketPojo = result.get();
+
+            // Handling for response forbidden (and similar paths)
+            if (upgradeResponse.isCommitted())
+                return null;
+
+            if (websocketPojo == null)
             {
-                Thread.currentThread().setContextClassLoader(loader);
-
-                ServletUpgradeRequest upgradeRequest = new ServletUpgradeRequest(negotiation);
-                ServletUpgradeResponse upgradeResponse = new ServletUpgradeResponse(negotiation);
-
-                Object websocketPojo = creator.createWebSocket(upgradeRequest, upgradeResponse);
-
-                // Handling for response forbidden (and similar paths)
-                if (upgradeResponse.isCommitted())
-                    return null;
-
-                if (websocketPojo == null)
-                {
-                    // no creation, sorry
-                    upgradeResponse.sendError(SC_SERVICE_UNAVAILABLE, "WebSocket Endpoint Creation Refused");
-                    return null;
-                }
-
-                FrameHandler frameHandler = factory.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse);
-                if (frameHandler != null)
-                    return frameHandler;
-
+                // no creation, sorry
+                upgradeResponse.sendError(SC_SERVICE_UNAVAILABLE, "WebSocket Endpoint Creation Refused");
                 return null;
             }
-            finally
-            {
-                Thread.currentThread().setContextClassLoader(old);
-            }
+
+            return factory.newFrameHandler(websocketPojo, upgradeRequest, upgradeResponse);
         }
 
         @Override

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -24,8 +24,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * URI Utility methods.
@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class URIUtil
     implements Cloneable
 {
-    private static final Logger LOG = Log.getLogger(URIUtil.class);
+    private static final Logger LOG = LoggerFactory.getLogger(URIUtil.class);
     public static final String SLASH = "/";
     public static final String HTTP = "http";
     public static final String HTTPS = "https";
@@ -475,12 +475,9 @@ public class URIUtil
                             char u = path.charAt(i + 1);
                             if (u == 'u')
                             {
-                                int codepoint = 0xffff & TypeUtil.parseInt(path, i + 2, 4, 16);
-                                char[] chars = Character.toChars(codepoint);
-                                for (char ch : chars)
-                                {
-                                    builder.append(ch);
-                                }
+                                // TODO remove %u support in jetty-10
+                                // this is wrong. This is a codepoint not a char
+                                builder.append((char)(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16)));
                                 i += 5;
                             }
                             else
@@ -529,10 +526,18 @@ public class URIUtil
         }
         catch (NotUtf8Exception e)
         {
-            LOG.warn(path.substring(offset, offset + length) + " " + e);
-            LOG.debug(e);
+            LOG.debug(path.substring(offset, offset + length) + " " + e);
             return decodeISO88591Path(path, offset, length);
         }
+        catch (IllegalArgumentException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new IllegalArgumentException("cannot decode URI", e);
+        }
+
     }
 
     /* Decode a URI path and strip parameters of ISO-8859-1 path
@@ -557,13 +562,14 @@ public class URIUtil
                         char u = path.charAt(i + 1);
                         if (u == 'u')
                         {
-                            // TODO this is wrong. This is a codepoint not a char
+                            // TODO remove %u encoding support in jetty-10
+                            // This is wrong. This is a codepoint not a char
                             builder.append((char)(0xffff & TypeUtil.parseInt(path, i + 2, 4, 16)));
                             i += 5;
                         }
                         else
                         {
-                            builder.append((byte)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2)))));
+                            builder.append((char)(0xff & (TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2)))));
                             i += 2;
                         }
                     }
@@ -706,6 +712,42 @@ public class URIUtil
         buf.append(p2);
 
         return buf.toString();
+    }
+
+    /**
+     * Given a URI, attempt to get the last segment.
+     * <p>
+     * If this is a {@code jar:file://} style URI, then
+     * the JAR filename is returned (not the deep {@code !/path} location)
+     * </p>
+     *
+     * @param uri the URI to look in
+     * @return the last segment.
+     */
+    public static String getUriLastPathSegment(URI uri)
+    {
+        String ssp = uri.getSchemeSpecificPart();
+        // strip off deep jar:file: reference information
+        int idx = ssp.indexOf("!/");
+        if (idx != -1)
+        {
+            ssp = ssp.substring(0, idx);
+        }
+
+        // Strip off trailing '/' if present
+        if (ssp.endsWith("/"))
+        {
+            ssp = ssp.substring(0, ssp.length() - 1);
+        }
+
+        // Only interested in last segment
+        idx = ssp.lastIndexOf('/');
+        if (idx != -1)
+        {
+            ssp = ssp.substring(idx + 1);
+        }
+
+        return ssp;
     }
 
     /**
@@ -1161,20 +1203,56 @@ public class URIUtil
             int oa = uriA.charAt(a++);
             int ca = oa;
             if (ca == '%')
-                ca = TypeUtil.convertHexDigit(uriA.charAt(a++)) * 16 + TypeUtil.convertHexDigit(uriA.charAt(a++));
+            {
+                ca = lenientPercentDecode(uriA, a);
+                if (ca == (-1))
+                {
+                    ca = '%';
+                }
+                else
+                {
+                    a += 2;
+                }
+            }
 
             int ob = uriB.charAt(b++);
             int cb = ob;
             if (cb == '%')
-                cb = TypeUtil.convertHexDigit(uriB.charAt(b++)) * 16 + TypeUtil.convertHexDigit(uriB.charAt(b++));
+            {
+                cb = lenientPercentDecode(uriB, b);
+                if (cb == (-1))
+                {
+                    cb = '%';
+                }
+                else
+                {
+                    b += 2;
+                }
+            }
 
+            // Don't match on encoded slash
             if (ca == '/' && oa != ob)
                 return false;
 
             if (ca != cb)
-                return URIUtil.decodePath(uriA).equals(URIUtil.decodePath(uriB));
+                return false;
         }
         return a == lenA && b == lenB;
+    }
+
+    private static int lenientPercentDecode(String str, int offset)
+    {
+        if (offset >= str.length())
+            return -1;
+
+        if (StringUtil.isHex(str, offset, 2))
+        {
+            return TypeUtil.parseInt(str, offset, 2, 16);
+        }
+        else
+        {
+            return -1;
+        }
     }
 
     public static boolean equalsIgnoreEncodings(URI uriA, URI uriB)

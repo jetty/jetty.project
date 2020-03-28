@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.jaas.spi;
@@ -46,9 +46,9 @@ import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Credential;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A LdapLoginModule for use with JAAS setups
@@ -84,7 +84,7 @@ import org.eclipse.jetty.util.security.Credential;
  */
 public class LdapLoginModule extends AbstractLoginModule
 {
-    private static final Logger LOG = Log.getLogger(LdapLoginModule.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LdapLoginModule.class);
 
     /**
      * hostname of the ldap server
@@ -450,17 +450,13 @@ public class LdapLoginModule extends AbstractLoginModule
         catch (IOException e)
         {
             if (_debug)
-            {
-                LOG.info(e);
-            }
+                LOG.info("Login failure", e);
             throw new LoginException("IO Error performing login.");
         }
         catch (AuthenticationException e)
         {
             if (_debug)
-            {
-                LOG.info(e);
-            }
+                LOG.info("Login failure", e);
             return false;
         }
         catch (LoginException e)
@@ -470,7 +466,7 @@ public class LdapLoginModule extends AbstractLoginModule
         catch (Exception e)
         {
             if (_debug)
-                LOG.info(e);
+                LOG.info("Login failure", e);
             throw new LoginException("Error obtaining user info");
         }
     }

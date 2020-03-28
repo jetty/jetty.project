@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
@@ -24,7 +24,6 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -50,17 +49,19 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.tools.HttpTester;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
+import org.eclipse.jetty.server.SameFileAliasChecker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
@@ -73,6 +74,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeader;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -270,7 +272,7 @@ public class DefaultServletTest
      * This test ensures that this behavior will not arise again.
      */
     @Test
-    public void testListingFilenamesOnly_UrlResource() throws Exception
+    public void testListingFilenamesOnlyUrlResource() throws Exception
     {
         URL extraResource = context.getClassLoader().getResource("rez/one");
         assertNotNull(extraResource, "Must have extra jar resource in classloader");
@@ -871,7 +873,7 @@ public class DefaultServletTest
      * Ensure that oddball directory names are served with proper escaping
      */
     @Test
-    public void testWelcomeRedirect_DirWithQuestion() throws Exception
+    public void testWelcomeRedirectDirWithQuestion() throws Exception
     {
         FS.ensureDirExists(docRoot);
         context.setBaseResource(new PathResource(docRoot));
@@ -905,7 +907,7 @@ public class DefaultServletTest
      * Ensure that oddball directory names are served with proper escaping
      */
     @Test
-    public void testWelcomeRedirect_DirWithSemicolon() throws Exception
+    public void testWelcomeRedirectDirWithSemicolon() throws Exception
     {
         FS.ensureDirExists(docRoot);
         context.setBaseResource(new PathResource(docRoot));
@@ -1497,7 +1499,7 @@ public class DefaultServletTest
         body = response.getContent();
         assertThat(body, containsString("Hello Text 0"));
         String etag = response.get(HttpHeader.ETAG);
-        String etag_gzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--gzip\"");
+        String etagGzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--gzip\"");
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
@@ -1506,7 +1508,7 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
         assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip"));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag_gzip));
+        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
@@ -1517,7 +1519,7 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/gzip"));
         assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etag_gzip)));
+        assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagGzip)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
@@ -1529,30 +1531,30 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/gzip"));
         assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etag_gzip)));
+        assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagGzip)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
-        String bad_etag_gzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2X--gzip\"");
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + bad_etag_gzip + "\r\n\r\n");
+        String badEtagGzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2X--gzip\"");
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + badEtagGzip + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(not(HttpStatus.NOT_MODIFIED_304)));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etag_gzip + "\r\n\r\n");
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etagGzip + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag_gzip));
+        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etag_gzip + "\r\n\r\n");
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etagGzip + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag_gzip));
+        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
@@ -1596,7 +1598,7 @@ public class DefaultServletTest
         assertThat(body, containsString("Hello Text 0"));
 
         String etag = response.get(HttpHeader.ETAG);
-        String etag_gzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--gzip\"");
+        String etagGzip = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--gzip\"");
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
@@ -1605,7 +1607,7 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
         assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip"));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag_gzip));
+        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
@@ -1616,25 +1618,25 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/gzip"));
         assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etag_gzip)));
+        assertThat("Should not contain gzip variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagGzip)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etag_gzip + "\r\n\r\n");
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etagGzip + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag_gzip));
+        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: " + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etag_gzip + "\r\n\r\n");
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etagGzip + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag_gzip));
+        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagGzip));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\nIf-None-Match: W/\"foobar\"," + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
@@ -1671,7 +1673,7 @@ public class DefaultServletTest
         assertThat(body, containsString("Hello Text 0"));
 
         String etag = response.get(HttpHeader.ETAG);
-        String etag_br = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--br\"");
+        String etagBr = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--br\"");
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip;q=0.9,br\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
@@ -1680,7 +1682,7 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
         assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "br"));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag_br));
+        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
         body = response.getContent();
         assertThat(body, containsString("fake br"));
 
@@ -1691,7 +1693,7 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/brotli"));
         assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etag_br)));
+        assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagBr)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
         body = response.getContent();
         assertThat(body, containsString("fake br"));
@@ -1703,25 +1705,25 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/brotli"));
         assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etag_br)));
+        assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagBr)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
         body = response.getContent();
         assertThat(body, containsString("fake br"));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etag_br + "\r\n\r\n");
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etagBr + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag_br));
+        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etag_br + "\r\n\r\n");
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etagBr + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag_br));
+        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
@@ -1762,7 +1764,7 @@ public class DefaultServletTest
         assertThat(body, containsString("Hello Text 0"));
 
         String etag = response.get(HttpHeader.ETAG);
-        String etag_br = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--br\"");
+        String etagBr = etag.replaceFirst("([^\"]*)\"(.*)\"", "$1\"$2--br\"");
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
@@ -1771,7 +1773,7 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
         assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "br"));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag_br));
+        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
         body = response.getContent();
         assertThat(body, containsString("fake brotli"));
 
@@ -1782,25 +1784,25 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "application/brotli"));
         assertThat(response, not(containsHeader(HttpHeader.VARY)));
         assertThat(response, not(containsHeader(HttpHeader.CONTENT_ENCODING)));
-        assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etag_br)));
+        assertThat("Should not contain br variant", response, not(containsHeaderValue(HttpHeader.ETAG, etagBr)));
         assertThat("Should have a different ETag", response, containsHeader(HttpHeader.ETAG));
         body = response.getContent();
         assertThat(body, containsString("fake brotli"));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etag_br + "\r\n\r\n");
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etagBr + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag_br));
+        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: " + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag));
 
-        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etag_br + "\r\n\r\n");
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etagBr + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
-        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etag_br));
+        assertThat(response, containsHeaderValue(HttpHeader.ETAG, etagBr));
 
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nIf-None-Match: W/\"foobar\"," + etag + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
@@ -1928,9 +1930,9 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response, containsHeader(HttpHeader.LAST_MODIFIED));
 
-        String last_modified = response.get(HttpHeader.LAST_MODIFIED);
+        String lastModified = response.get(HttpHeader.LAST_MODIFIED);
 
-        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: " + last_modified + "\r\n\r\n");
+        rawResponse = connector.getResponse("GET /context/file.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\nIf-Modified-Since: " + lastModified + "\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
 
@@ -2010,6 +2012,76 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.PRECONDITION_FAILED_412));
     }
 
+    @Test
+    public void testGetUtf8NfcFile() throws Exception
+    {
+        FS.ensureEmpty(docRoot);
+
+        context.addServlet(DefaultServlet.class, "/");
+        context.addAliasCheck(new SameFileAliasChecker());
+
+        // UTF-8 NFC format
+        String filename = "swedish-" + new String(TypeUtil.fromHexString("C3A5"), UTF_8) + ".txt";
+        createFile(docRoot.resolve(filename), "hi a-with-circle");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        // Request as UTF-8 NFC
+        rawResponse = connector.getResponse("GET /context/swedish-%C3%A5.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), is("hi a-with-circle"));
+
+        // Request as UTF-8 NFD
+        rawResponse = connector.getResponse("GET /context/swedish-a%CC%8A.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        if (OS.MAC.isCurrentOs())
+        {
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.getContent(), is("hi a-with-circle"));
+        }
+        else
+        {
+            assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        }
+    }
+
+    @Test
+    public void testGetUtf8NfdFile() throws Exception
+    {
+        FS.ensureEmpty(docRoot);
+
+        context.addServlet(DefaultServlet.class, "/");
+        context.addAliasCheck(new SameFileAliasChecker());
+
+        // UTF-8 NFD format
+        String filename = "swedish-" + new String(TypeUtil.fromHexString("61CC8A"), UTF_8) + ".txt";
+        createFile(docRoot.resolve(filename), "hi a-with-circle");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        // Request as UTF-8 NFD
+        rawResponse = connector.getResponse("GET /context/swedish-a%CC%8A.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), is("hi a-with-circle"));
+
+        // Request as UTF-8 NFC
+        rawResponse = connector.getResponse("GET /context/swedish-%C3%A5.txt HTTP/1.1\r\nHost:test\r\nConnection:close\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        if (OS.MAC.isCurrentOs())
+        {
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response.getContent(), is("hi a-with-circle"));
+        }
+        else
+        {
+            assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
+        }
+    }
+
     public static class OutputFilter implements Filter
     {
         @Override
@@ -2055,7 +2127,7 @@ public class DefaultServletTest
     {
         try (OutputStream out = Files.newOutputStream(path))
         {
-            out.write(str.getBytes(StandardCharsets.UTF_8));
+            out.write(str.getBytes(UTF_8));
             out.flush();
         }
     }
@@ -2120,6 +2192,7 @@ public class DefaultServletTest
         }
         catch (InvalidPathException | IOException ignore)
         {
+            // ignore
         }
 
         assumeTrue(ret != null, "Directory creation not supported on OS: " + path + File.separator + subpath);

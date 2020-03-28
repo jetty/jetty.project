@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core.internal;
@@ -24,16 +24,15 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.core.FrameHandler.Configuration;
-import org.eclipse.jetty.websocket.core.FrameHandler.ConfigurationHolder;
-import org.eclipse.jetty.websocket.core.MessageTooLargeException;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.ProtocolException;
-import org.eclipse.jetty.websocket.core.WebSocketException;
+import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Parsing of a frames in WebSocket land.
@@ -51,7 +50,7 @@ public class Parser
         FRAGMENT
     }
 
-    private static final Logger LOG = Log.getLogger(Parser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
     private final ByteBufferPool bufferPool;
     private final Configuration configuration;
 
@@ -65,7 +64,7 @@ public class Parser
 
     public Parser(ByteBufferPool bufferPool)
     {
-        this(bufferPool, new ConfigurationHolder());
+        this(bufferPool, new Configuration.ConfigurationCustomizer());
     }
 
     public Parser(ByteBufferPool bufferPool, Configuration configuration)
@@ -256,12 +255,17 @@ public class Parser
 
     protected void checkFrameSize(byte opcode, int payloadLength) throws MessageTooLargeException, ProtocolException
     {
-        if (OpCode.isControlFrame(opcode) && payloadLength > Frame.MAX_CONTROL_PAYLOAD)
-            throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
-
-        long maxFrameSize = configuration.getMaxFrameSize();
-        if (!configuration.isAutoFragment() && maxFrameSize > 0 && payloadLength > maxFrameSize)
-            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
+        if (OpCode.isControlFrame(opcode))
+        {
+            if (payloadLength > Frame.MAX_CONTROL_PAYLOAD)
+                throw new ProtocolException("Invalid control frame payload length, [" + payloadLength + "] cannot exceed [" + Frame.MAX_CONTROL_PAYLOAD + "]");
+        }
+        else
+        {
+            long maxFrameSize = configuration.getMaxFrameSize();
+            if (!configuration.isAutoFragment() && maxFrameSize > 0 && payloadLength > maxFrameSize)
+                throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
+        }
     }
 
     protected ParsedFrame newFrame(byte firstByte, byte[] mask, ByteBuffer payload, boolean releaseable)
@@ -279,6 +283,32 @@ public class Parser
         return new ParsedFrame(firstByte, mask, payload, releaseable);
     }
 
+    private ParsedFrame autoFragment(ByteBuffer buffer, int fragmentSize)
+    {
+        payloadLength -= fragmentSize;
+
+        byte[] nextMask = null;
+        if (mask != null)
+        {
+            int shift = fragmentSize % 4;
+            nextMask = new byte[4];
+            nextMask[0] = mask[(0 + shift) % 4];
+            nextMask[1] = mask[(1 + shift) % 4];
+            nextMask[2] = mask[(2 + shift) % 4];
+            nextMask[3] = mask[(3 + shift) % 4];
+        }
+
+        ByteBuffer content = buffer.slice();
+        content.limit(fragmentSize);
+        buffer.position(buffer.position() + fragmentSize);
+
+        final ParsedFrame frame = newFrame((byte)(firstByte & 0x7F), mask, content, false);
+        mask = nextMask;
+        firstByte = (byte)((firstByte & 0x80) | OpCode.CONTINUATION);
+        state = State.FRAGMENT;
+        return frame;
+    }
+
     private ParsedFrame parsePayload(ByteBuffer buffer)
     {
         if (payloadLength == 0)
@@ -288,35 +318,21 @@ public class Parser
             return null;
 
         int available = buffer.remaining();
+        boolean isDataFrame = OpCode.isDataFrame(OpCode.getOpCode(firstByte));
+
+        // Always autoFragment data frames if payloadLength is greater than maxFrameSize.
+        long maxFrameSize = configuration.getMaxFrameSize();
+        if (maxFrameSize > 0 && isDataFrame && payloadLength > maxFrameSize)
+            return autoFragment(buffer, (int)Math.min(available, maxFrameSize));
 
         if (aggregate == null)
         {
             if (available < payloadLength)
             {
-                // not enough to complete this frame 
-
+                // not enough to complete this frame
                 // Can we auto-fragment
-                if (configuration.isAutoFragment() && OpCode.isDataFrame(OpCode.getOpCode(firstByte)))
-                {
-                    payloadLength -= available;
-
-                    byte[] nextMask = null;
-                    if (mask != null)
-                    {
-                        int shift = available % 4;
-                        nextMask = new byte[4];
-                        nextMask[0] = mask[(0 + shift) % 4];
-                        nextMask[1] = mask[(1 + shift) % 4];
-                        nextMask[2] = mask[(2 + shift) % 4];
-                        nextMask[3] = mask[(3 + shift) % 4];
-                    }
-                    final ParsedFrame frame = newFrame((byte)(firstByte & 0x7F), mask, buffer.slice(), false);
-                    buffer.position(buffer.limit());
-                    mask = nextMask;
-                    firstByte = (byte)((firstByte & 0x80) | OpCode.CONTINUATION);
-                    state = State.FRAGMENT;
-                    return frame;
-                }
+                if (configuration.isAutoFragment() && isDataFrame)
+                    return autoFragment(buffer, available);
 
                 // No space in the buffer, so we have to copy the partial payload
                 aggregate = bufferPool.acquire(payloadLength, false);

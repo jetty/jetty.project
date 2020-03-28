@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package com.acme;
@@ -41,7 +41,7 @@ public class SessionDump extends HttpServlet
     /**
      * Simple object attribute to test serialization
      */
-    public class ObjectAttributeValue implements java.io.Serializable
+    public static class ObjectAttributeValue implements java.io.Serializable
     {
         long l;
 
@@ -58,8 +58,6 @@ public class SessionDump extends HttpServlet
 
     int redirectCount = 0;
 
-    String pageType;
-
     @Override
     public void init(ServletConfig config)
         throws ServletException
@@ -67,8 +65,7 @@ public class SessionDump extends HttpServlet
         super.init(config);
     }
 
-    protected void handleForm(HttpServletRequest request,
-                              HttpServletResponse response)
+    protected void handleForm(HttpServletRequest request)
     {
         HttpSession session = request.getSession(false);
         String action = request.getParameter("Action");
@@ -99,9 +96,9 @@ public class SessionDump extends HttpServlet
     @Override
     public void doPost(HttpServletRequest request,
                        HttpServletResponse response)
-        throws ServletException, IOException
+        throws IOException
     {
-        handleForm(request, response);
+        handleForm(request);
         String nextUrl = getURI(request) + "?R=" + redirectCount++;
         String encodedUrl = response.encodeRedirectURL(nextUrl);
         response.sendRedirect(encodedUrl);
@@ -110,9 +107,9 @@ public class SessionDump extends HttpServlet
     @Override
     public void doGet(HttpServletRequest request,
                       HttpServletResponse response)
-        throws ServletException, IOException
+        throws IOException
     {
-        handleForm(request, response);
+        handleForm(request);
 
         response.setContentType("text/html");
 
@@ -124,6 +121,7 @@ public class SessionDump extends HttpServlet
         }
         catch (IllegalStateException e)
         {
+            log("Session already invalidated", e);
             session = null;
         }
 

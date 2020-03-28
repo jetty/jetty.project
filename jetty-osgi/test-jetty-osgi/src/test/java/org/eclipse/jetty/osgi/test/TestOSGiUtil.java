@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.osgi.test;
@@ -37,7 +37,6 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
@@ -116,15 +115,14 @@ public class TestOSGiUtil
         if (!StringUtil.isBlank(mavenRepoPath))
         {
             res.add(systemProperty("org.ops4j.pax.url.mvn.localRepository").value(mavenRepoPath));
-            res.add( systemProperty( "org.ops4j.pax.url.mvn.localRepository" ).value( mavenRepoPath ) );
-            res.add( systemProperty( "org.ops4j.pax.url.mvn.defaultRepositories" ).value( "file://" + mavenRepoPath + "@id=local.repo") );
-            res.add( systemProperty( "org.ops4j.pax.url.mvn.useFallbackRepositories").value( Boolean.FALSE.toString() ) );
-            res.add( systemProperty( "org.ops4j.pax.url.mvn.repositories").value( "+https://repo1.maven.org/maven2@id=maven.central.repo" ) );
+            res.add(systemProperty("org.ops4j.pax.url.mvn.defaultRepositories").value("file://" + mavenRepoPath + "@id=local.repo"));
+            res.add(systemProperty("org.ops4j.pax.url.mvn.useFallbackRepositories").value(Boolean.FALSE.toString()));
+            res.add(systemProperty("org.ops4j.pax.url.mvn.repositories").value("+https://repo1.maven.org/maven2@id=maven.central.repo"));
         }
         String settingsFilePath = System.getProperty("settingsFilePath");
         if (!StringUtil.isBlank(settingsFilePath))
         {
-            res.add( systemProperty( "org.ops4j.pax.url.mvn.settings" ).value( System.getProperty( "settingsFilePath" ) ) );
+            res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
         res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-servlet-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
@@ -133,6 +131,8 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.apache.aries.spifly").artifactId("org.apache.aries.spifly.dynamic.bundle").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.apache.geronimo.specs").artifactId("geronimo-jta_1.1_spec").version("1.1.1").start());
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-log4j12").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-deploy").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-server").versionAsInProject().start());
@@ -148,16 +148,17 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-plus").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-annotations").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-core").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("jetty-websocket-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("jetty-websocket-common").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-servlet").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("jetty-websocket-server").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("jetty-websocket-client").versionAsInProject().start());
-
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-common").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-client").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("javax-websocket-server").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-util").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jetty-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jetty-server").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jetty-client").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jetty-common").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-javax-websocket-api").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-javax-server").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-javax-client").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-javax-common").versionAsInProject().noStart());
+
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot").versionAsInProject().start());
         return res;
     }
@@ -195,18 +196,18 @@ public class TestOSGiUtil
 
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)
     {
-        Map<String, Bundle> _bundles = new HashMap<>();
+        Map<String, Bundle> bundles = new HashMap<>();
         for (Bundle b : bundleContext.getBundles())
         {
-            Bundle prevBundle = _bundles.put(b.getSymbolicName(), b);
-            String err = prevBundle != null ? "2 versions of the bundle " + b.getSymbolicName()
-                + " "
-                + b.getHeaders().get("Bundle-Version")
-                + " and "
-                + prevBundle.getHeaders().get("Bundle-Version") : "";
+            Bundle prevBundle = bundles.put(b.getSymbolicName(), b);
+            String err = prevBundle != null ? "2 versions of the bundle " + b.getSymbolicName() +
+                    " " +
+                    b.getHeaders().get("Bundle-Version") +
+                    " and " +
+                    prevBundle.getHeaders().get("Bundle-Version") : "";
             assertNull(err, prevBundle);
         }
-        return _bundles.get(symbolicName);
+        return bundles.get(symbolicName);
     }
 
     protected static void assertActiveBundle(BundleContext bundleContext, String symbolicName) throws Exception
@@ -234,16 +235,16 @@ public class TestOSGiUtil
             {
                 diagnoseNonActiveOrNonResolvedBundle(b);
             }
-            assertTrue("Bundle: " + b
-                + " (state should be "
-                + "ACTIVE["
-                + Bundle.ACTIVE
-                + "] or RESOLVED["
-                + Bundle.RESOLVED
-                + "]"
-                + ", but was ["
-                + b.getState()
-                + "])", (b.getState() == Bundle.ACTIVE) || (b.getState() == Bundle.RESOLVED));
+            assertTrue("Bundle: " + b +
+                    " (state should be " +
+                    "ACTIVE[" +
+                    Bundle.ACTIVE +
+                    "] or RESOLVED[" +
+                    Bundle.RESOLVED +
+                    "]" +
+                    ", but was [" +
+                    b.getState() +
+                    "])", (b.getState() == Bundle.ACTIVE) || (b.getState() == Bundle.RESOLVED));
         }
     }
 
@@ -304,9 +305,7 @@ public class TestOSGiUtil
         options.add(mavenBundle().groupId("org.slf4j").artifactId("jul-to-slf4j").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-log4j12").versionAsInProject().start());
         options.add(mavenBundle().groupId("log4j").artifactId("log4j").versionAsInProject().start());
-        options.add(systemProperty("org.eclipse.jetty.util.log.class").value(Slf4jLog.class.getName()));
          */
-        options.add(systemProperty("org.eclipse.jetty.util.log.class").value(StdErrLog.class.getName()));
         options.add(systemProperty("org.eclipse.jetty.LEVEL").value("INFO"));
         return options;
     }

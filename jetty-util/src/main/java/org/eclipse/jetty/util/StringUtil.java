@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -22,9 +22,6 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Fast String Utilities.
@@ -36,8 +33,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class StringUtil
 {
-    private static final Logger LOG = Log.getLogger(StringUtil.class);
-
     private static final Trie<String> CHARSETS = new ArrayTrie<>(256);
 
     public static final String ALL_INTERFACES = "0.0.0.0";
@@ -444,6 +439,22 @@ public class StringUtil
     }
 
     /**
+     * Generate a string from another string repeated n times.
+     *
+     * @param s the string to use
+     * @param n the number of times this string should be appended
+     */
+    public static String stringFrom(String s, int n)
+    {
+        StringBuilder stringBuilder = new StringBuilder(s.length() * n);
+        for (int i = 0; i < n; i++)
+        {
+            stringBuilder.append(s);
+        }
+        return stringBuilder.toString();
+    }
+
+    /**
      * Return a non null string.
      *
      * @param s String
@@ -481,7 +492,6 @@ public class StringUtil
         }
         catch (UnsupportedEncodingException e)
         {
-            LOG.warn(e);
             throw new IllegalArgumentException(e);
         }
     }
@@ -635,6 +645,26 @@ public class StringUtil
         return __UTF8.equalsIgnoreCase(charset) || __UTF8.equalsIgnoreCase(normalizeCharset(charset));
     }
 
+    public static boolean isHex(String str, int offset, int length)
+    {
+        if (offset + length > str.length())
+        {
+            return false;
+        }
+
+        for (int i = offset; i < (offset + length); i++)
+        {
+            char c = str.charAt(i);
+            if (!(((c >= 'a') && (c <= 'f')) ||
+                ((c >= 'A') && (c <= 'F')) ||
+                ((c >= '0') && (c <= '9'))))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static String printable(String name)
     {
         if (name == null)
@@ -679,7 +709,6 @@ public class StringUtil
         }
         catch (Exception e)
         {
-            LOG.warn(e);
             return s.getBytes();
         }
     }

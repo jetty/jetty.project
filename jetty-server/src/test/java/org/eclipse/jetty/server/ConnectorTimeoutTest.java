@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -34,16 +34,18 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -61,7 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
-    protected static final Logger LOG = Log.getLogger(ConnectorTimeoutTest.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(ConnectorTimeoutTest.class);
 
     protected static final int MAX_IDLE_TIME = 2000;
     private int sleepTime = MAX_IDLE_TIME + MAX_IDLE_TIME / 5;
@@ -342,6 +344,62 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     @Test
     @Tag("Unstable")
     @Disabled // TODO make more stable
+    public void testBlockingTimeoutRead() throws Exception
+    {
+        configureServer(new EchoHandler());
+        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
+        client.setSoTimeout(10000);
+        InputStream is = client.getInputStream();
+        assertFalse(client.isClosed());
+
+        OutputStream os = client.getOutputStream();
+
+        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        os.write(("GET / HTTP/1.1\r\n" +
+            "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
+            "Transfer-Encoding: chunked\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Connection: close\r\n" +
+            "\r\n" +
+            "5\r\n" +
+            "LMNOP\r\n")
+            .getBytes("utf-8"));
+        os.flush();
+
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        {
+            Thread.sleep(300);
+            os.write("1".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(300);
+            os.write("0".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(300);
+            os.write("\r".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(300);
+            os.write("\n".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(300);
+            os.write("0123456789ABCDEF\r\n".getBytes("utf-8"));
+            os.write("0\r\n".getBytes("utf-8"));
+            os.write("\r\n".getBytes("utf-8"));
+            os.flush();
+        }
+
+        long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
+        assertThat(duration, greaterThan(500L));
+
+        // read the response
+        String response = IO.toString(is);
+        assertThat(response, startsWith("HTTP/1.1 500 "));
+        assertThat(response, containsString("InterruptedIOException"));
+
+    }
+
+    @Test
+    @Tag("Unstable")
+    @Disabled // TODO make more stable
     public void testNoBlockingTimeoutWrite() throws Exception
     {
         configureServer(new HugeResponseHandler());
@@ -380,6 +438,56 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             assertThat(line, notNullValue());
             assertEquals(1022, line.length());
         }
+    }
+
+    @Test
+    @Tag("Unstable")
+    @Disabled // TODO make more stable
+    public void testBlockingTimeoutWrite() throws Exception
+    {
+        configureServer(new HugeResponseHandler());
+        Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
+        client.setSoTimeout(10000);
+
+        assertFalse(client.isClosed());
+
+        OutputStream os = client.getOutputStream();
+        BufferedReader is = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.ISO_8859_1), 2048);
+
+        os.write((
+            "GET / HTTP/1.0\r\n" +
+                "host: " + _serverURI.getHost() + ":" + _serverURI.getPort() + "\r\n" +
+                "connection: keep-alive\r\n" +
+                "Connection: close\r\n" +
+                "\r\n").getBytes("utf-8"));
+        os.flush();
+
+        // read the header
+        String line = is.readLine();
+        assertThat(line, startsWith("HTTP/1.1 200 OK"));
+        while (line.length() != 0)
+        {
+            line = is.readLine();
+        }
+
+        long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class, AbstractConnection.class))
+        {
+            for (int i = 0; i < (128 * 1024); i++)
+            {
+                if (i % 1028 == 0)
+                {
+                    Thread.sleep(20);
+                    // System.err.println("read "+TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+                }
+                line = is.readLine();
+                if (line == null)
+                    break;
+            }
+        }
+        long end = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        long duration = end - start;
+        assertThat(duration, lessThan(20L * 128L));
     }
 
     @Test
@@ -432,9 +540,9 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 assertThat(response, is(""));
                 assertEquals(-1, is.read());
             }
-            catch (Exception e)
+            catch (IOException e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to read stream", e);
             }
         });
         assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start < maximumTestRuntime);

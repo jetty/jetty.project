@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.resource;
@@ -29,14 +29,13 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JarFileResource extends JarResource
 {
-    private static final Logger LOG = Log.getLogger(JarFileResource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JarFileResource.class);
     private JarFile _jarFile;
     private File _file;
     private String[] _list;
@@ -72,7 +71,7 @@ public class JarFileResource extends JarResource
                 }
                 catch (IOException ioe)
                 {
-                    LOG.ignore(ioe);
+                    LOG.trace("IGNORED", ioe);
                 }
             }
         }
@@ -111,6 +110,7 @@ public class JarFileResource extends JarResource
         _jarFile = null;
         _list = null;
 
+        // Work with encoded URL path (_urlString is assumed to be encoded)
         int sep = _urlString.lastIndexOf("!/");
         _jarUrl = _urlString.substring(0, sep + 2);
         _path = URIUtil.decodePath(_urlString.substring(sep + 2));
@@ -124,7 +124,6 @@ public class JarFileResource extends JarResource
      * Returns true if the represented resource exists.
      */
     @Override
-
     public boolean exists()
     {
         if (_exists)
@@ -139,7 +138,7 @@ public class JarFileResource extends JarResource
             }
             catch (Exception e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 return false;
             }
         }
@@ -173,7 +172,7 @@ public class JarFileResource extends JarResource
                 }
                 catch (Exception e)
                 {
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
                 }
             }
 
@@ -218,7 +217,7 @@ public class JarFileResource extends JarResource
                 }
                 catch (IOException ioe)
                 {
-                    LOG.ignore(ioe);
+                    LOG.trace("IGNORED", ioe);
                 }
             }
         }
@@ -272,7 +271,7 @@ public class JarFileResource extends JarResource
                 //by other code.
                 //So, do one retry to drop a connection and get a fresh JarFile
                 LOG.warn("Retrying list:" + e);
-                LOG.debug(e);
+                LOG.debug("JarFile list failure", e);
                 close();
                 list = listEntries();
             }
@@ -304,18 +303,19 @@ public class JarFileResource extends JarResource
             {
 
                 e.printStackTrace();
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
             if (jarFile == null)
                 throw new IllegalStateException();
         }
 
         Enumeration<JarEntry> e = jarFile.entries();
-        String dir = _urlString.substring(_urlString.lastIndexOf("!/") + 2);
+        String encodedDir = _urlString.substring(_urlString.lastIndexOf("!/") + 2);
+        String dir = URIUtil.decodePath(encodedDir);
         while (e.hasMoreElements())
         {
             JarEntry entry = e.nextElement();
-            String name = StringUtil.replace(entry.getName(), '\\', '/');
+            String name = entry.getName();
             if (!name.startsWith(dir) || name.length() == dir.length())
             {
                 continue;
@@ -380,5 +380,12 @@ public class JarFileResource extends JarResource
             string = string.substring(4);
         URL url = new URL(string);
         return url.sameFile(resource.getURI().toURL());
+    }
+
+    public File getJarFile()
+    {
+        if (_file != null)
+            return _file;
+        return null;
     }
 }

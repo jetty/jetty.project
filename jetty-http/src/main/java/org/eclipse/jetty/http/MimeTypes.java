@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http;
@@ -36,8 +36,8 @@ import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MIME Type enum and utilities
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class MimeTypes
 {
 
-    private static final Logger LOG = Log.getLogger(MimeTypes.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MimeTypes.class);
     private static final Trie<ByteBuffer> TYPES = new ArrayTrie<ByteBuffer>(512);
     private static final Map<String, String> __dftMimeMap = new HashMap<String, String>();
     private static final Map<String, String> __inferredEncodings = new HashMap<String, String>();
@@ -218,15 +218,19 @@ public class MimeTypes
                 }
                 catch (IOException e)
                 {
-                    LOG.warn(e.toString());
-                    LOG.debug(e);
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Unable to read mime-type resource: {}", resourceName, e);
+                    else
+                        LOG.warn("Unable to read mime-type resource: {} - {}", resourceName, e.toString());
                 }
             }
         }
         catch (IOException e)
         {
-            LOG.warn(e.toString());
-            LOG.debug(e);
+            if (LOG.isDebugEnabled())
+                LOG.warn("Unable to load mime-type resource: {}", resourceName, e);
+            else
+                LOG.warn("Unable to load mime-type resource: {} - {}", resourceName, e.toString());
         }
 
         resourceName = "encoding.properties";
@@ -262,15 +266,19 @@ public class MimeTypes
                 }
                 catch (IOException e)
                 {
-                    LOG.warn(e.toString());
-                    LOG.debug(e);
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("Unable to read encoding resource: {}", resourceName, e);
+                    else
+                        LOG.warn("Unable to read encoding resource: {} - {}", resourceName, e.toString());
                 }
             }
         }
         catch (IOException e)
         {
-            LOG.warn(e.toString());
-            LOG.debug(e);
+            if (LOG.isDebugEnabled())
+                LOG.warn("Unable to load encoding resource: {}", resourceName, e);
+            else
+                LOG.warn("Unable to load encoding resource: {} - {}", resourceName, e.toString());
         }
     }
 

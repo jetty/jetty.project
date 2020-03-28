@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
@@ -42,10 +42,10 @@ import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The default servlet.
@@ -129,7 +129,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
 {
     public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
 
-    private static final Logger LOG = Log.getLogger(DefaultServlet.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
 
     private static final long serialVersionUID = 4930458713846881193L;
 
@@ -204,7 +204,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             }
             catch (Exception e)
             {
-                LOG.warn(Log.EXCEPTION, e);
+                LOG.warn("Unable to create resourceBase from {}", rb, e);
                 throw new UnavailableException(e.toString());
             }
         }
@@ -228,8 +228,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         }
         catch (Exception e)
         {
-            LOG.warn(e.toString());
-            LOG.debug(e);
+            LOG.warn("Unable to use stylesheet: {} - {}", css, e.toString());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to use stylesheet: {}", css, e);
         }
 
         int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);
@@ -269,7 +270,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         }
         catch (Exception e)
         {
-            LOG.warn(Log.EXCEPTION, e);
+            LOG.warn("Unable to setup CachedContentFactory", e);
             throw new UnavailableException(e.toString());
         }
 
@@ -438,7 +439,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
 
         if ((r == null || !r.exists()) && pathInContext.endsWith("/jetty-dir.css"))
@@ -462,9 +463,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         doGet(request, response);
     }
 
-    /* (non-Javadoc)
-     * @see javax.servlet.http.HttpServlet#doTrace(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
     @Override
     protected void doTrace(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
@@ -478,9 +476,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         resp.setHeader("Allow", "GET,HEAD,POST,OPTIONS");
     }
 
-    /*
-     * @see javax.servlet.Servlet#destroy()
-     */
     @Override
     public void destroy()
     {

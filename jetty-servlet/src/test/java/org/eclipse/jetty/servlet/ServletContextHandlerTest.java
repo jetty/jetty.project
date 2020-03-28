@@ -1,45 +1,40 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.FilterRegistration;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
@@ -48,10 +43,14 @@ import javax.servlet.ServletContextAttributeListener;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
+import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestAttributeEvent;
 import javax.servlet.ServletRequestAttributeListener;
 import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
+import javax.servlet.ServletResponse;
+import javax.servlet.SessionTrackingMode;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -62,11 +61,16 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.security.RoleInfo;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -83,6 +87,21 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ServletContextHandlerTest
 {
@@ -93,6 +112,20 @@ public class ServletContextHandlerTest
 
     public static class MySCI implements ServletContainerInitializer
     {
+        boolean callSessionTimeouts;
+        int timeout;
+        
+        public MySCI(boolean callSessionTimeouts, int timeout)
+        {
+            this.callSessionTimeouts = callSessionTimeouts;
+            this.timeout = timeout;
+        }
+        
+        public MySCI()
+        {
+            this(false, -1);
+        }
+        
         @Override
         public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
         {
@@ -100,18 +133,63 @@ public class ServletContextHandlerTest
             if (ctx.getAttribute("MySCI.startup") != null)
                 throw new IllegalStateException("MySCI already called");
             ctx.setAttribute("MySCI.startup", Boolean.TRUE);
-            ctx.addListener(new MyContextListener());
+            ctx.addListener(new MyContextListener(callSessionTimeouts, timeout));
+
+            //test that SCI can call the sessionmodes methods
+            try
+            {
+                ctx.getDefaultSessionTrackingModes();
+                ctx.setAttribute("MySCI.defaultSessionTrackingModes", Boolean.TRUE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                ctx.setAttribute("MySCI.defaultSessionTrackingModes", Boolean.FALSE);
+            }
+            try
+            {
+                ctx.getEffectiveSessionTrackingModes();
+                ctx.setAttribute("MySCI.effectiveSessionTrackingModes", Boolean.TRUE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                ctx.setAttribute("MySCI.effectiveSessionTrackingModes", Boolean.FALSE);
+            }
+            try
+            {
+                ctx.setSessionTrackingModes(EnumSet.of(SessionTrackingMode.URL));
+                ctx.setAttribute("MySCI.setSessionTrackingModes", Boolean.TRUE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                ctx.setAttribute("MySCI.setSessionTrackingModes", Boolean.FALSE);
+            }
+
+            if (callSessionTimeouts)
+            {
+                try
+                {
+                    ctx.setAttribute("MYSCI.startSessionTimeout", Integer.valueOf(ctx.getSessionTimeout()));
+                    ctx.setSessionTimeout(timeout);
+                    ctx.setAttribute("MYSCI.setSessionTimeout", Boolean.TRUE);
+                    ctx.setAttribute("MYSCI.getSessionTimeout", Integer.valueOf(ctx.getSessionTimeout()));
+                }
+                catch (Exception e)
+                {
+                    ctx.setAttribute("MYSCI.sessionTimeoutFailure", e);
+                }
+            }
         }
     }
 
     public static class MySCIStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
     {
-        MySCI _sci = new MySCI();
+        ServletContainerInitializer _sci = null;
         ContextHandler.Context _ctx;
 
-        MySCIStarter(ContextHandler.Context ctx)
+        MySCIStarter(ContextHandler.Context ctx, ServletContainerInitializer sci)
         {
             _ctx = ctx;
+            _sci = sci;
         }
 
         @Override
@@ -119,26 +197,93 @@ public class ServletContextHandlerTest
         {
             super.doStart();
             //call the SCI
-            try
-            {
-                _ctx.setExtendedListenerTypes(true);
-                _sci.onStartup(Collections.emptySet(), _ctx);
-            }
-            finally
-            {
-
-            }
+            _ctx.setExtendedListenerTypes(true);
+            _sci.onStartup(Collections.emptySet(), _ctx);
         }
     }
 
     public static class MyContextListener implements ServletContextListener
     {
-
+        boolean callSessionTimeouts;
+        int timeout;
+        
+        public MyContextListener(boolean callSessionTimeouts, int timeout)
+        {
+            this.callSessionTimeouts = callSessionTimeouts;
+            this.timeout = timeout;
+        }
+        
+        public MyContextListener()
+        {
+            this(false, -1);
+        }
+        
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {
             assertNull(sce.getServletContext().getAttribute("MyContextListener.contextInitialized"));
             sce.getServletContext().setAttribute("MyContextListener.contextInitialized", Boolean.TRUE);
+            
+            assertNull(sce.getServletContext().getAttribute("MyContextListener.defaultSessionTrackingModes"));
+            try
+            {
+                sce.getServletContext().getDefaultSessionTrackingModes();
+                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                //Should NOT be able to call getDefaultSessionTrackingModes from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.defaultSessionTrackingModes", Boolean.TRUE); 
+            }
+            
+            assertNull(sce.getServletContext().getAttribute("MyContextListener.effectiveSessionTrackingModes"));
+            try
+            {
+                sce.getServletContext().getEffectiveSessionTrackingModes();
+                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                //Should NOT be able to call getEffectiveSessionTrackingModes from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.effectiveSessionTrackingModes", Boolean.TRUE); 
+            }
+            
+            assertNull(sce.getServletContext().getAttribute("MyContextListener.setSessionTrackingModes"));
+            try
+            {
+                sce.getServletContext().setSessionTrackingModes(EnumSet.of(SessionTrackingMode.URL));
+                sce.getServletContext().setAttribute("MyContextListener.setSessionTrackingModes", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                //Should NOT be able to call setSessionTrackingModes from programmatic SCL
+                sce.getServletContext().setAttribute("MyContextListener.setSessionTrackingModes", Boolean.TRUE); 
+            }
+            
+            if (callSessionTimeouts)
+            {
+                try
+                {
+                    sce.getServletContext().setSessionTimeout(timeout);
+                    sce.getServletContext().setAttribute("MyContextListener.setSessionTimeout", Boolean.FALSE);
+                }
+                catch (UnsupportedOperationException e)
+                {
+                    //Should NOT be able to call setSessionTimeout from this SCL
+                    sce.getServletContext().setAttribute("MyContextListener.setSessionTimeout", Boolean.TRUE); 
+                }
+                
+                try
+                {
+                    sce.getServletContext().getSessionTimeout();
+                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.FALSE);
+                }
+                catch (UnsupportedOperationException e)
+                {
+                    //Should NOT be able to call getSessionTimeout from this SCL
+                    sce.getServletContext().setAttribute("MyContextListener.getSessionTimeout", Boolean.TRUE); 
+                }
+            }
         }
 
         @Override
@@ -268,8 +413,8 @@ public class ServletContextHandlerTest
     
     public static class MySListener implements HttpSessionListener
     {
-       public static int creates = 0;
-       public static int destroys = 0;
+        public static int creates = 0;
+        public static int destroys = 0;
 
         @Override
         public void sessionCreated(HttpSessionEvent se)
@@ -309,8 +454,7 @@ public class ServletContextHandlerTest
             ++replaces;
         }   
     }
-    
-    
+
     public static class MySIListener implements HttpSessionIdListener
     {
         public static int changes = 0;
@@ -319,6 +463,66 @@ public class ServletContextHandlerTest
         public void sessionIdChanged(HttpSessionEvent event, String oldSessionId)
         {
             ++changes;
+        }
+    }
+    
+    /**
+     * ServletContextListener that is designed to be added programmatically,
+     * which should make all of the createListener, createServlet, createFilter
+     * methods fail with UnsupportedOperationException
+     *
+     */
+    public class CreatingSCL implements ServletContextListener
+    {
+        @Override
+        public void contextInitialized(ServletContextEvent sce)
+        {
+            try
+            {
+                sce.getServletContext().createFilter(MyFilter.class);
+                sce.getServletContext().setAttribute("CreatingSCL.filter", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                sce.getServletContext().setAttribute("CreatingSCL.filter", Boolean.TRUE);
+            }
+            catch (Exception e)
+            {
+                fail(e);
+            }
+            
+            try
+            {
+                sce.getServletContext().createServlet(HelloServlet.class);
+                sce.getServletContext().setAttribute("CreatingSCL.servlet", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                sce.getServletContext().setAttribute("CreatingSCL.servlet", Boolean.TRUE);
+            }
+            catch (Exception e)
+            {
+                fail(e);
+            }
+            
+            try
+            {
+                sce.getServletContext().createListener(MyContextListener.class);
+                sce.getServletContext().setAttribute("CreatingSCL.listener", Boolean.FALSE);
+            }
+            catch (UnsupportedOperationException e)
+            {
+                sce.getServletContext().setAttribute("CreatingSCL.listener", Boolean.TRUE);
+            }
+            catch (Exception e)
+            {
+                fail(e);
+            }
+        }
+        
+        @Override
+        public void contextDestroyed(ServletContextEvent sce)
+        {      
         }
     }
     
@@ -357,7 +561,7 @@ public class ServletContextHandlerTest
             {
                 MyContextListener contextListener = sce.getServletContext().createListener(MyContextListener.class);
                 sce.getServletContext().addListener(contextListener);
-                fail("Adding SCI from an SCI!");
+                fail("Adding SCL from an SCL!");
             }
             catch (IllegalArgumentException e)
             {
@@ -395,6 +599,58 @@ public class ServletContextHandlerTest
         _server.stop();
         _server.join();
     }
+    
+    @Test
+    public void testInitParams() throws Exception
+    {
+        //Test get/setInitParam with null throws NPE
+        ServletContextHandler root = new ServletContextHandler(_server, "/", ServletContextHandler.SESSIONS);
+        _server.setHandler(root);
+        ListenerHolder initialListener = new ListenerHolder();
+        initialListener.setListener(new ServletContextListener()
+        {
+            public void contextInitialized(ServletContextEvent sce)
+            {
+                sce.getServletContext().setInitParameter("foo", "bar");
+                assertEquals("bar", sce.getServletContext().getInitParameter("foo"));
+                assertThrows(NullPointerException.class, 
+                    () ->  sce.getServletContext().setInitParameter(null, "bad")
+                );
+                assertThrows(NullPointerException.class,
+                    () -> sce.getServletContext().getInitParameter(null)
+                );
+            }
+        });
+        
+        root.getServletHandler().addListener(initialListener);
+        _server.start();
+    }
+    
+    @Test
+    public void testGetSetSessionTimeout() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        int startMin = 7;
+        Integer timeout = Integer.valueOf(100);
+        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        root.getSessionHandler().setMaxInactiveInterval((int)TimeUnit.MINUTES.toSeconds(startMin));
+        root.addBean(new MySCIStarter(root.getServletContext(), new MySCI(true, timeout.intValue())), true);
+        _server.start();
+        
+        //test starting value of setSessionTimeout
+        assertEquals(startMin, (Integer)root.getServletContext().getAttribute("MYSCI.startSessionTimeout"));
+        //test can set session timeout from ServletContainerInitializer
+        assertTrue((Boolean)root.getServletContext().getAttribute("MYSCI.setSessionTimeout"));
+        //test can get session timeout from ServletContainerInitializer
+        assertEquals(timeout, (Integer)root.getServletContext().getAttribute("MYSCI.getSessionTimeout"));
+        assertNull(root.getAttribute("MYSCI.sessionTimeoutFailure"));
+        //test can't get session timeout from ContextListener that is not from annotation or web.xml
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.getSessionTimeout"));
+        //test can't set session timeout from ContextListener that is not from annotation or web.xml
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.setSessionTimeout"));
+    }
 
     @Test
     public void testAddSessionListener() throws Exception
@@ -421,10 +677,16 @@ public class ServletContextHandlerTest
         _server.setHandler(contexts);
 
         ServletContextHandler root = new ServletContextHandler(contexts, "/");
-        root.addBean(new MySCIStarter(root.getServletContext()), true);
+        root.addBean(new MySCIStarter(root.getServletContext(), new MySCI()), true);
         _server.start();
         assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.startup"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.defaultSessionTrackingModes"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.effectiveSessionTrackingModes"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.setSessionTrackingModes"));
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.contextInitialized"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.defaultSessionTrackingModes"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.effectiveSessionTrackingModes"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.setSessionTrackingModes"));
     }
     
     @Test
@@ -453,11 +715,9 @@ public class ServletContextHandlerTest
                 assertTrue(root.isProgrammaticListener(l.getListener()));
             }
         }
-        
-        EventListener[] listeners = root.getEventListeners();
-        assertNotNull(listeners);
+
         List<String> listenerClassNames = new ArrayList<>();
-        for (EventListener l : listeners)
+        for (EventListener l : root.getEventListeners())
             listenerClassNames.add(l.getClass().getName());
  
         assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySCAListener"));
@@ -485,7 +745,7 @@ public class ServletContextHandlerTest
         StringBuffer request = new StringBuffer();
         request.append("GET /test?session=replace HTTP/1.0\n");
         request.append("Host: localhost\n");
-        request.append("Cookie: "+sessionid+"\n");
+        request.append("Cookie: " + sessionid + "\n");
         request.append("\n");
         response = _connector.getResponse(request.toString());
         assertThat(response, Matchers.containsString("200 OK"));
@@ -496,7 +756,7 @@ public class ServletContextHandlerTest
         request = new StringBuffer();
         request.append("GET /test?session=remove HTTP/1.0\n");
         request.append("Host: localhost\n");
-        request.append("Cookie: "+sessionid+"\n");
+        request.append("Cookie: " + sessionid + "\n");
         request.append("\n");
         response = _connector.getResponse(request.toString());
         assertThat(response, Matchers.containsString("200 OK"));
@@ -509,7 +769,7 @@ public class ServletContextHandlerTest
         request = new StringBuffer();
         request.append("GET /test?session=change HTTP/1.0\n");
         request.append("Host: localhost\n");
-        request.append("Cookie: "+sessionid+"\n");
+        request.append("Cookie: " + sessionid + "\n");
         request.append("\n");
         response = _connector.getResponse(request.toString());
         assertThat(response, Matchers.containsString("200 OK"));
@@ -520,7 +780,7 @@ public class ServletContextHandlerTest
         request = new StringBuffer();
         request.append("GET /test?session=delete HTTP/1.0\n");
         request.append("Host: localhost\n");
-        request.append("Cookie: "+sessionid+"\n");
+        request.append("Cookie: " + sessionid + "\n");
         request.append("\n");
         response = _connector.getResponse(request.toString());
         assertThat(response, Matchers.containsString("200 OK"));
@@ -600,6 +860,469 @@ public class ServletContextHandlerTest
     }
 
     @Test
+    public void testAddServletFromServlet() throws Exception
+    {
+        //A servlet cannot be added by another servlet
+        Logger logger = LoggerFactory.getLogger(ContextHandler.class.getName() + "ROOT");
+
+        try (StacklessLogging stackless = new StacklessLogging(logger))
+        {
+            ServletContextHandler context = new ServletContextHandler();
+            context.setLogger(logger);
+            ServletHolder holder = context.addServlet(ServletAddingServlet.class, "/start");
+            context.getServletHandler().setStartWithUnavailable(false);
+            holder.setInitOrder(0);
+            context.setContextPath("/");
+            _server.setHandler(context);
+            _server.start();
+            fail("Servlet can only be added from SCI or SCL");
+        }
+        catch (Exception e)
+        {
+            if (e instanceof ServletException)
+            {
+                assertTrue(e.getCause() instanceof IllegalStateException);
+            }
+            else
+               fail(e);
+        }
+    }
+    
+    @Test
+    public void testCreateMethodsFromSCI() throws Exception
+    {
+        //A filter can be created by an SCI
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        class FilterCreatingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                try
+                {
+                    ctx.createFilter(MyFilter.class);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+
+                try
+                {
+                    ctx.createServlet(HelloServlet.class);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+
+                try
+                {
+                    ctx.createListener(MyContextListener.class);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        }
+        
+        root.addBean(new MySCIStarter(root.getServletContext(), new FilterCreatingSCI()), true);
+        _server.start();    
+    }
+    
+    @Test
+    public void testCreateMethodsFromSCL() throws Exception
+    {
+      //A filter can be created by an SCI
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        class ListenerCreatingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                ctx.addListener(new CreatingSCL());
+            }
+        }
+        
+        root.addBean(new MySCIStarter(root.getServletContext(), new ListenerCreatingSCI()), true);
+        _server.start();
+        assertTrue((Boolean)root.getServletContext().getAttribute("CreatingSCL.filter"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("CreatingSCL.servlet"));
+        assertTrue((Boolean)root.getServletContext().getAttribute("CreatingSCL.listener"));
+    }
+
+    @Test
+    public void testAddFilterFromServlet() throws Exception
+    {
+        //A filter cannot be added from a servlet
+        Logger logger = LoggerFactory.getLogger(ContextHandler.class.getName() + "ROOT");
+
+        try (StacklessLogging stackless = new StacklessLogging(logger))
+        {
+            ServletContextHandler context = new ServletContextHandler();
+            context.setLogger(logger);
+            ServletHolder holder = context.addServlet(FilterAddingServlet.class, "/filter");
+            context.getServletHandler().setStartWithUnavailable(false);
+            holder.setInitOrder(0);
+            context.setContextPath("/");
+            _server.setHandler(context);
+            _server.start();
+            fail("Filter can only be added from SCI or SCL");
+        }
+        catch (Exception e)
+        {
+            if (e instanceof ServletException)
+            {
+                assertTrue(e.getCause() instanceof IllegalStateException);
+            }
+            else
+                fail(e);
+        }
+    }
+
+    @Test
+    public void testAddServletByClassFromFilter() throws Exception
+    {
+        //A servlet cannot be added from a Filter
+        Logger logger = LoggerFactory.getLogger(ContextHandler.class.getName() + "ROOT");
+
+        try (StacklessLogging stackless = new StacklessLogging(logger))
+        {
+            ServletContextHandler context = new ServletContextHandler();
+            context.setLogger(logger);
+            FilterHolder holder = new FilterHolder(new Filter()
+            {
+                @Override
+                public void init(FilterConfig filterConfig) throws ServletException
+                {
+                    ServletRegistration rego = filterConfig.getServletContext().addServlet("hello", HelloServlet.class);
+                    rego.addMapping("/hello/*");
+                }
+
+                @Override
+                public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                    throws IOException, ServletException
+                {
+                }
+
+                @Override
+                public void destroy()
+                { 
+                }
+
+            });
+            context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
+            context.getServletHandler().setStartWithUnavailable(false);
+            context.setContextPath("/");
+            _server.setHandler(context);
+            _server.start();
+            fail("Servlet can only be added from SCI or SCL");
+        }
+        catch (Exception e)
+        {
+            if (!(e instanceof IllegalStateException))
+            {
+                if (e instanceof ServletException)
+                {
+                    assertTrue(e.getCause() instanceof IllegalStateException);
+                }
+                else
+                    fail(e);
+            }
+        }
+    }
+
+    @Test
+    public void testAddServletByInstanceFromFilter() throws Exception
+    {
+        //A servlet cannot be added from a Filter
+        Logger logger = LoggerFactory.getLogger(ContextHandler.class.getName() + "ROOT");
+
+        try (StacklessLogging stackless = new StacklessLogging(logger))
+        {
+            ServletContextHandler context = new ServletContextHandler();
+            context.setLogger(logger);
+            FilterHolder holder = new FilterHolder(new Filter()
+            {
+                @Override
+                public void init(FilterConfig filterConfig) throws ServletException
+                {
+                    ServletRegistration rego = filterConfig.getServletContext().addServlet("hello", new HelloServlet());
+                    rego.addMapping("/hello/*");
+                }
+
+                @Override
+                public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                    throws IOException, ServletException
+                {
+                }
+
+                @Override
+                public void destroy()
+                { 
+                }
+
+            });
+            context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
+            context.getServletHandler().setStartWithUnavailable(false);
+            context.setContextPath("/");
+            _server.setHandler(context);
+            _server.start();
+            fail("Servlet can only be added from SCI or SCL");
+        }
+        catch (Exception e)
+        {
+            if (!(e instanceof IllegalStateException))
+            {
+                if (e instanceof ServletException)
+                {
+                    assertTrue(e.getCause() instanceof IllegalStateException);
+                }
+                else
+                    fail(e);
+            }
+        }
+    }
+
+    @Test
+    public void testAddServletByClassNameFromFilter() throws Exception
+    {
+        //A servlet cannot be added from a Filter
+        Logger logger = LoggerFactory.getLogger(ContextHandler.class.getName() + "ROOT");
+
+        try (StacklessLogging stackless = new StacklessLogging(logger))
+        {
+            ServletContextHandler context = new ServletContextHandler();
+            context.setLogger(logger);
+            FilterHolder holder = new FilterHolder(new Filter()
+            {
+                @Override
+                public void init(FilterConfig filterConfig) throws ServletException
+                {
+                    ServletRegistration rego = filterConfig.getServletContext().addServlet("hello", HelloServlet.class.getName());
+                    rego.addMapping("/hello/*");
+                }
+
+                @Override
+                public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                    throws IOException, ServletException
+                {
+                }
+
+                @Override
+                public void destroy()
+                { 
+                }
+
+            });
+            context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
+            context.getServletHandler().setStartWithUnavailable(false);
+            context.setContextPath("/");
+            _server.setHandler(context);
+            _server.start();
+            fail("Servlet can only be added from SCI or SCL");
+        }
+        catch (Exception e)
+        {
+            if (!(e instanceof IllegalStateException))
+            {
+                if (e instanceof ServletException)
+                {
+                    assertTrue(e.getCause() instanceof IllegalStateException);
+                }
+                else
+                    fail(e);
+            }
+        }
+    }    
+
+    @Test
+    public void testAddServletFromSCL() throws Exception
+    {
+        //A servlet can be added from a ServletContextListener
+        ServletContextHandler context = new ServletContextHandler();
+        context.getServletHandler().setStartWithUnavailable(false);
+        context.setContextPath("/");
+        context.addEventListener(new ServletContextListener()
+        {
+
+            @Override
+            public void contextInitialized(ServletContextEvent sce)
+            {
+                ServletRegistration rego = sce.getServletContext().addServlet("hello", HelloServlet.class);
+                rego.addMapping("/hello/*");
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent sce)
+            { 
+            }
+
+        });
+        _server.setHandler(context);
+        _server.start();
+
+        StringBuffer request = new StringBuffer();
+        request.append("GET /hello HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponse(request.toString());
+        assertThat("Response", response, containsString("Hello World"));
+    }
+
+    @Test
+    public void testAddServletFromSCI() throws Exception
+    {
+        //A servlet can be added from a ServletContainerInitializer
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        class ServletAddingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                ServletRegistration rego = ctx.addServlet("hello", HelloServlet.class);
+                rego.addMapping("/hello/*");
+            }
+        }
+        
+        root.addBean(new MySCIStarter(root.getServletContext(), new ServletAddingSCI()), true);
+        _server.start();
+       
+        StringBuffer request = new StringBuffer();
+        request.append("GET /hello HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponse(request.toString());
+        assertThat("Response", response, containsString("Hello World"));
+    }
+
+    @Test
+    public void testAddJspFile() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletHolder jspServlet = new ServletHolder();
+        jspServlet.setName("jsp");
+        jspServlet.setHeldClass(FakeJspServlet.class);
+        root.addServlet(jspServlet, "*.jsp");
+        class JSPAddingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                try
+                {
+                    ServletRegistration rego = ctx.addJspFile("some.jsp", "/path/to/some.jsp");
+                    rego.addMapping("/somejsp/*");
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        }
+
+        assertThrows(IllegalArgumentException.class, () ->  root.getServletContext().addJspFile(null, "/path/to/some.jsp"));
+        assertThrows(IllegalArgumentException.class, () ->  root.getServletContext().addJspFile("", "/path/to/some.jsp"));
+
+        root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
+        _server.start();
+        MappedResource<ServletHolder> mappedServlet = root.getServletHandler().getMappedServlet("/somejsp/xxx");
+        assertNotNull(mappedServlet.getResource());
+        assertEquals("some.jsp", mappedServlet.getResource().getName());
+    }
+
+    @Test
+    public void testAddJspFileWithExistingRegistration() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletHolder jspServlet = new ServletHolder();
+        jspServlet.setName("jsp");
+        jspServlet.setHeldClass(FakeJspServlet.class);
+        root.addServlet(jspServlet, "*.jsp");
+        //add a full registration so that the addJspFile will fail
+        ServletHolder barServlet = new ServletHolder();
+        barServlet.setName("some.jsp");
+        barServlet.setHeldClass(HelloServlet.class);
+        root.addServlet(barServlet, "/bar/*");
+        class JSPAddingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                try
+                {
+                    ServletRegistration rego = ctx.addJspFile("some.jsp", "/path/to/some.jsp");
+                    assertNull(rego);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        }
+
+        root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
+        _server.start();
+    }
+
+    @Test
+    public void testAddJspFileWithPartialRegistration() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        ServletHolder jspServlet = new ServletHolder();
+        jspServlet.setName("jsp");
+        jspServlet.setHeldClass(FakeJspServlet.class);
+        root.addServlet(jspServlet, "*.jsp");
+        //add a preliminary registration so that the addJspFile will complete it
+        ServletHolder barServlet = new ServletHolder();
+        barServlet.setName("some.jsp");
+        root.addServlet(barServlet, "/bar/*");
+        class JSPAddingSCI implements ServletContainerInitializer
+        {
+            @Override
+            public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException
+            {
+                try
+                {
+                    ServletRegistration rego = ctx.addJspFile("some.jsp", "/path/to/some.jsp");
+                    assertNotNull(rego);
+                }
+                catch (Exception e)
+                {
+                    fail(e);
+                }
+            }
+        }
+
+        root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
+        _server.start();
+        MappedResource<ServletHolder> mappedServlet = root.getServletHandler().getMappedServlet("/bar/xxx");
+        assertNotNull(mappedServlet.getResource());
+        assertEquals("some.jsp", mappedServlet.getResource().getName());
+    }
+    
+    @Test
     public void testAddServletAfterStart() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
@@ -614,7 +1337,6 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         String response = _connector.getResponse(request.toString());
-        int result;
         assertThat("Response", response, containsString("Test"));
 
         context.addServlet(HelloServlet.class, "/hello");
@@ -627,7 +1349,126 @@ public class ServletContextHandlerTest
         response = _connector.getResponse(request.toString());
         assertThat("Response", response, containsString("Hello World"));
     }
+    
+    @Test
+    public void testServletRegistrationByClass() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class);
+        reg.addMapping("/test");
 
+        _server.setHandler(context);
+        _server.start();
+
+        StringBuffer request = new StringBuffer();
+        request.append("GET /test HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponse(request.toString());
+        assertThat("Response", response, containsString("Test"));
+    }
+
+    @Test
+    public void testServletRegistrationByClassName() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class.getName());
+        reg.addMapping("/test");
+
+        _server.setHandler(context);
+        _server.start();
+
+        StringBuffer request = new StringBuffer();
+        request.append("GET /test HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponse(request.toString());
+        assertThat("Response", response, containsString("Test"));
+    }
+    
+    @Test
+    public void testPartialServletRegistrationByName() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        ServletHolder partial = new ServletHolder();
+        partial.setName("test");
+        context.addServlet(partial, "/test");
+        
+        //complete partial servlet registration by providing name of the servlet class
+        ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class.getName());
+        assertNotNull(reg);
+        assertEquals(TestServlet.class.getName(), partial.getClassName());
+
+        _server.setHandler(context);
+        _server.start();
+
+        StringBuffer request = new StringBuffer();
+        request.append("GET /test HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponse(request.toString());
+        assertThat("Response", response, containsString("Test"));
+    }
+    
+    @Test
+    public void testPartialServletRegistrationByClass() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        ServletHolder partial = new ServletHolder();
+        partial.setName("test");
+        context.addServlet(partial, "/test");
+        
+        //complete partial servlet registration by providing the servlet class
+        ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class);
+        assertNotNull(reg);
+        assertEquals(TestServlet.class.getName(), partial.getClassName());
+        assertSame(TestServlet.class, partial.getHeldClass());
+
+        _server.setHandler(context);
+        _server.start();
+
+        StringBuffer request = new StringBuffer();
+        request.append("GET /test HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponse(request.toString());
+        assertThat("Response", response, containsString("Test"));
+    }
+    
+    @Test
+    public void testNullServletRegistration() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setContextPath("/");
+        ServletHolder full = new ServletHolder();
+        full.setName("test");
+        full.setHeldClass(TestServlet.class);
+        context.addServlet(full, "/test");
+        
+        //Must return null if the servlet has been fully defined previously
+        ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class);
+        assertNull(reg);
+
+        _server.setHandler(context);
+        _server.start();
+
+        StringBuffer request = new StringBuffer();
+        request.append("GET /test HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponse(request.toString());
+        assertThat("Response", response, containsString("Test"));
+    }
+    
     @Test
     public void testHandlerBeforeServletHandler() throws Exception
     {
@@ -648,7 +1489,6 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         String response = _connector.getResponse(request.toString());
-        int result;
         assertThat("Response", response, containsString("Test"));
 
         assertEquals(extra, context.getSessionHandler().getHandler());
@@ -693,7 +1533,6 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         String response = _connector.getResponse(request.toString());
-        int result;
         assertThat("Response", response, containsString("Test"));
 
         context.stop();
@@ -712,6 +1551,72 @@ public class ServletContextHandlerTest
     }
 
     @Test
+    public void testSetSecurityHandler() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY | ServletContextHandler.GZIP);
+        assertNotNull(context.getSessionHandler());
+        SessionHandler sessionHandler = context.getSessionHandler();
+        assertNotNull(context.getSecurityHandler());
+        SecurityHandler securityHandler = context.getSecurityHandler();
+        assertNotNull(context.getGzipHandler());
+        GzipHandler gzipHandler = context.getGzipHandler();
+        
+        //check the handler linking order
+        HandlerWrapper h = (HandlerWrapper)context.getHandler();
+        assertSame(h, sessionHandler);
+
+        h = (HandlerWrapper)h.getHandler();
+        assertSame(h, securityHandler);
+
+        h = (HandlerWrapper)h.getHandler();
+        assertSame(h, gzipHandler);
+
+        //replace the security handler
+        SecurityHandler myHandler = new SecurityHandler()
+        {
+            @Override
+            protected RoleInfo prepareConstraintInfo(String pathInContext, Request request)
+            {
+                return null;
+            }
+
+            @Override
+            protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response,
+                                                       RoleInfo constraintInfo) throws IOException
+            {
+                return false;
+            }
+
+            @Override
+            protected boolean isAuthMandatory(Request baseRequest, Response baseResponse, Object constraintInfo)
+            {
+                return false;
+            }
+
+            @Override
+            protected boolean checkWebResourcePermissions(String pathInContext, Request request, Response response,
+                                                          Object constraintInfo, UserIdentity userIdentity)
+                                                              throws IOException
+            {
+                return false;
+            }
+        };
+        
+        //check the linking order
+        context.setSecurityHandler(myHandler);
+        assertSame(myHandler, context.getSecurityHandler());
+        
+        h = (HandlerWrapper)context.getHandler();
+        assertSame(h, sessionHandler);
+
+        h = (HandlerWrapper)h.getHandler();
+        assertSame(h, myHandler);
+
+        h = (HandlerWrapper)h.getHandler();
+        assertSame(h, gzipHandler);
+    }
+ 
+    @Test
     public void testReplaceServletHandlerWithoutServlet() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
@@ -726,7 +1631,6 @@ public class ServletContextHandlerTest
         request.append("\n");
 
         String response = _connector.getResponse(request.toString());
-        int result;
         assertThat("Response", response, containsString("Test"));
 
         context.stop();
@@ -851,10 +1755,32 @@ public class ServletContextHandlerTest
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException
-        {
+        {            
             resp.setStatus(HttpServletResponse.SC_OK);
             PrintWriter writer = resp.getWriter();
             writer.write("Hello World");
+        }
+    }
+    
+    public static class MyFilter implements Filter
+    {
+
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+        }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException,
+            ServletException
+        {
+            request.getServletContext().setAttribute("filter", "filter");
+            chain.doFilter(request, response);
+        }
+
+        @Override
+        public void destroy()
+        {
         }
     }
 
@@ -901,6 +1827,55 @@ public class ServletContextHandlerTest
             {
                 out.printf("Object is NOT a DecoratedObjectFactory%n");
             }
+        }
+    }
+    
+    public static class FakeJspServlet extends HttpServlet
+    {
+        
+    }
+
+    public static class ServletAddingServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.getWriter().write("Start");
+            resp.getWriter().close();
+        }
+
+        @Override
+        public void init() throws ServletException
+        {
+            ServletRegistration dynamic = getServletContext().addServlet("added", AddedServlet.class);
+            dynamic.addMapping("/added/*");
+        }
+    }
+    
+    public static class FilterAddingServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.getWriter().write("Filter");
+            resp.getWriter().close();
+        }
+
+        @Override
+        public void init() throws ServletException
+        {
+            FilterRegistration dynamic = getServletContext().addFilter("filter", new MyFilter());
+            dynamic.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), false, "/*");
+        }
+    }
+
+    public static class AddedServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.getWriter().write("Added");
+            resp.getWriter().close();
         }
     }
 
@@ -982,8 +1957,6 @@ public class ServletContextHandlerTest
                 //change and remove context attribute
                 req.getServletContext().setAttribute("foo", "foo");
                 req.getServletContext().removeAttribute("foo");
-                
-                return;
             }
         }
     }

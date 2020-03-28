@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.thread;
@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -39,15 +40,14 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject("A thread pool")
-public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadPool, Dumpable, TryExecutor
+public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactory, SizedThreadPool, Dumpable, TryExecutor
 {
-    private static final Logger LOG = Log.getLogger(QueuedThreadPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QueuedThreadPool.class);
     private static Runnable NOOP = () ->
     {
     };
@@ -55,8 +55,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     /**
      * Encodes thread counts:
      * <dl>
-     * <dt>Hi</dt><dd>Total thread count or Integer.MIN_VALUE if stopping</dd>
-     * <dt>Lo</dt><dd>Net idle threads == idle threads - job queue size</dd>
+     * <dt>Hi</dt><dd>Total thread count or Integer.MIN_VALUE if the pool is stopping</dd>
+     * <dt>Lo</dt><dd>Net idle threads == idle threads - job queue size.  Essentially if positive,
+     * this represents the effective number of idle threads, and if negative it represents the
+     * demand for more threads</dd>
      * </dl>
      */
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
@@ -65,6 +67,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     private final Object _joinLock = new Object();
     private final BlockingQueue<Runnable> _jobs;
     private final ThreadGroup _threadGroup;
+    private final ThreadFactory _threadFactory;
     private String _name = "qtp" + hashCode();
     private int _idleTimeout;
     private int _maxThreads;
@@ -76,6 +79,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     private boolean _detailedDump = false;
     private int _lowThreadsThreshold = 1;
     private ThreadPoolBudget _budget;
+    private long _stopTimeout;
 
     public QueuedThreadPool()
     {
@@ -112,7 +116,17 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         this(maxThreads, minThreads, idleTimeout, -1, queue, threadGroup);
     }
 
-    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("reservedThreads") int reservedThreads, @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
+    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads,
+                            @Name("idleTimeout") int idleTimeout, @Name("reservedThreads") int reservedThreads,
+                            @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
+    {
+        this(maxThreads, minThreads, idleTimeout, reservedThreads, queue, threadGroup, null);
+    }
+
+    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads,
+                            @Name("idleTimeout") int idleTimeout, @Name("reservedThreads") int reservedThreads,
+                            @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup,
+                            @Name("threadFactory") ThreadFactory threadFactory)
     {
         if (maxThreads < minThreads)
             throw new IllegalArgumentException("max threads (" + maxThreads + ") less than min threads (" + minThreads + ")");
@@ -129,6 +143,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         _jobs = queue;
         _threadGroup = threadGroup;
         setThreadPoolBudget(new ThreadPoolBudget(this));
+        _threadFactory = threadFactory == null ? this : threadFactory;
     }
 
     @Override
@@ -142,6 +157,16 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         if (budget != null && budget.getSizedThreadPool() != this)
             throw new IllegalArgumentException();
         _budget = budget;
+    }
+
+    public void setStopTimeout(long stopTimeout)
+    {
+        _stopTimeout = stopTimeout;
+    }
+
+    public long getStopTimeout()
+    {
+        return _stopTimeout;
     }
 
     @Override
@@ -159,6 +184,8 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         }
         addBean(_tryExecutor);
 
+        _lastShrink.set(System.nanoTime());
+
         super.doStart();
         // The threads count set to MIN_VALUE is used to signal to Runners that the pool is stopped.
         _counts.set(0, 0); // threads, idle
@@ -171,10 +198,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}", this);
 
+        super.doStop();
+
         removeBean(_tryExecutor);
         _tryExecutor = TryExecutor.NO_TRY;
-
-        super.doStop();
 
         // Signal the Runner threads that we are stopping
         int threads = _counts.getAndSetHi(Integer.MIN_VALUE);
@@ -240,7 +267,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 }
                 catch (Throwable t)
                 {
-                    LOG.warn(t);
+                    LOG.warn("Unable to close job: " + job, t);
                 }
             }
             else if (job != NOOP)
@@ -290,6 +317,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     public void setIdleTimeout(int idleTimeout)
     {
         _idleTimeout = idleTimeout;
+        ReservedThreadExecutor reserved = getBean(ReservedThreadExecutor.class);
+        if (reserved != null)
+            reserved.setIdleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -443,7 +473,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     @ManagedAttribute("size of the job queue")
     public int getQueueSize()
     {
-        return _jobs.size();
+        // The idle counter encodes demand, which is the effective queue size
+        int idle = _counts.getLo();
+        return Math.max(0, -idle);
     }
 
     /**
@@ -482,7 +514,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     public void execute(Runnable job)
     {
         // Determine if we need to start a thread, use and idle thread or just queue this job
-        boolean startThread;
+        int startThread;
         while (true)
         {
             // Get the atomic counts
@@ -500,10 +532,10 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
 
             // Start a thread if we have insufficient idle threads to meet demand
             // and we are not at max threads.
-            startThread = (idle <= 0 && threads < _maxThreads);
+            startThread = (idle <= 0 && threads < _maxThreads) ? 1 : 0;
 
             // The job will be run by an idle thread when available
-            if (!_counts.compareAndSet(counts, threads + (startThread ? 1 : 0), idle - 1))
+            if (!_counts.compareAndSet(counts, threads + startThread, idle + startThread - 1))
                 continue;
 
             break;
@@ -512,7 +544,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         if (!_jobs.offer(job))
         {
             // reverse our changes to _counts.
-            if (addCounts(startThread ? -1 : 0, 1))
+            if (addCounts(-startThread, 1 - startThread))
                 LOG.warn("{} rejected {}", this, job);
             throw new RejectedExecutionException(job.toString());
         }
@@ -521,7 +553,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             LOG.debug("queue {} startThread={}", job, startThread);
 
         // Start a thread if one was needed
-        if (startThread)
+        while (startThread-- > 0)
             startThread();
     }
 
@@ -533,7 +565,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
     }
 
     /**
-     * Blocks until the thread pool is {@link LifeCycle#stop stopped}.
+     * Blocks until the thread pool is {@link org.eclipse.jetty.util.component.LifeCycle} stopped.
      */
     @Override
     public void join() throws InterruptedException
@@ -616,7 +648,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             if (threads < _minThreads || (idle < 0 && threads < _maxThreads))
             {
                 // Then try to start a thread.
-                if (_counts.compareAndSet(counts, threads + 1, idle))
+                if (_counts.compareAndSet(counts, threads + 1, idle + 1))
                     startThread();
                 // Otherwise continue to check state again.
                 continue;
@@ -630,10 +662,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         boolean started = false;
         try
         {
-            Thread thread = newThread(_runnable);
-            thread.setDaemon(isDaemon());
-            thread.setPriority(getThreadsPriority());
-            thread.setName(_name + "-" + thread.getId());
+            Thread thread = _threadFactory.newThread(_runnable);
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting {}", thread);
             _threads.add(thread);
@@ -644,7 +673,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
         finally
         {
             if (!started)
-                addCounts(-1, 0); // threads, idle
+                addCounts(-1, -1); // threads, idle
         }
     }
 
@@ -656,16 +685,28 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             int threads = AtomicBiInteger.getHi(encoded);
             int idle = AtomicBiInteger.getLo(encoded);
             if (threads == Integer.MIN_VALUE) // This is a marker that the pool is stopped.
-                return false;
-            long update = AtomicBiInteger.encode(threads + deltaThreads, idle + deltaIdle);
-            if (_counts.compareAndSet(encoded, update))
-                return true;
+            {
+                long update = AtomicBiInteger.encode(threads, idle + deltaIdle);
+                if (_counts.compareAndSet(encoded, update))
+                    return false;
+            }
+            else
+            {
+                long update = AtomicBiInteger.encode(threads + deltaThreads, idle + deltaIdle);
+                if (_counts.compareAndSet(encoded, update))
+                    return true;
+            }
         }
     }
 
-    protected Thread newThread(Runnable runnable)
+    @Override
+    public Thread newThread(Runnable runnable)
     {
-        return new Thread(_threadGroup, runnable);
+        Thread thread = new Thread(_threadGroup, runnable);
+        thread.setDaemon(isDaemon());
+        thread.setPriority(getThreadsPriority());
+        thread.setName(_name + "-" + thread.getId());
+        return thread;
     }
 
     protected void removeThread(Thread thread)
@@ -847,19 +888,17 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
             if (LOG.isDebugEnabled())
                 LOG.debug("Runner started for {}", QueuedThreadPool.this);
 
-            Runnable job = null;
-
+            boolean idle = true;
             try
             {
-                // All threads start idle (not yet taken a job)
-                if (!addCounts(0, 1))
-                    return;
-
+                Runnable job = null;
                 while (true)
                 {
-                    // If we had a job, signal that we are idle again
+                    // If we had a job,
                     if (job != null)
                     {
+                        idle = true;
+                        // signal that we are idle again
                         if (!addCounts(0, 1))
                             break;
                     }
@@ -875,32 +914,30 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                         job = _jobs.poll();
                         if (job == null)
                         {
-                            // Wait for a job
+                            // No job immediately available maybe we should shrink?
                             long idleTimeout = getIdleTimeout();
+                            if (idleTimeout > 0 && getThreads() > _minThreads)
+                            {
+                                long last = _lastShrink.get();
+                                long now = System.nanoTime();
+                                if ((now - last) > TimeUnit.MILLISECONDS.toNanos(idleTimeout) && _lastShrink.compareAndSet(last, now))
+                                {
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("shrinking {}", QueuedThreadPool.this);
+                                    break;
+                                }
+                            }
+
+                            // Wait for a job, only after we have checked if we should shrink
                             job = idleJobPoll(idleTimeout);
 
                             // If still no job?
                             if (job == null)
-                            {
-                                // maybe we should shrink
-                                if (getThreads() > _minThreads && idleTimeout > 0)
-                                {
-                                    long last = _lastShrink.get();
-                                    long now = System.nanoTime();
-                                    if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(idleTimeout))
-                                    {
-                                        if (_lastShrink.compareAndSet(last, now))
-                                        {
-                                            if (LOG.isDebugEnabled())
-                                                LOG.debug("shrinking {}", QueuedThreadPool.this);
-                                            break;
-                                        }
-                                    }
-                                }
                                 // continue to try again
                                 continue;
-                            }
                         }
+
+                        idle = false;
 
                         // run job
                         if (LOG.isDebugEnabled())
@@ -908,19 +945,21 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                         runJob(job);
                         if (LOG.isDebugEnabled())
                             LOG.debug("ran {} in {}", job, QueuedThreadPool.this);
-
-                        // Clear any interrupted status
-                        Thread.interrupted();
                     }
                     catch (InterruptedException e)
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("interrupted {} in {}", job, QueuedThreadPool.this);
-                        LOG.ignore(e);
+                        LOG.trace("IGNORED", e);
                     }
                     catch (Throwable e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Job failed", e);
+                    }
+                    finally
+                    {
+                        // Clear any interrupted status
+                        Thread.interrupted();
                     }
                 }
             }
@@ -930,7 +969,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements SizedThreadP
                 removeThread(thread);
 
                 // Decrement the total thread count and the idle count if we had no job
-                addCounts(-1, job == null ? -1 : 0);
+                addCounts(-1, idle ? -1 : 0);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} exited for {}", thread, QueuedThreadPool.this);
 

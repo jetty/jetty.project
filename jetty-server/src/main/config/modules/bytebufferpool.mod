@@ -3,6 +3,9 @@ DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-m
 [description]
 Configures the ByteBufferPool used by ServerConnectors.
 
+[depends]
+logging
+
 [xml]
 etc/jetty-bytebufferpool.xml
 

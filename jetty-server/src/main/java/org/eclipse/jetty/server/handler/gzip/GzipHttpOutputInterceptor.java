@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.handler.gzip;
@@ -36,14 +36,14 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.CompressedContentFormat.GZIP;
 
 public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 {
-    public static Logger LOG = Log.getLogger(GzipHttpOutputInterceptor.class);
+    public static Logger LOG = LoggerFactory.getLogger(GzipHttpOutputInterceptor.class);
     private static final byte[] GZIP_HEADER = new byte[]{(byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0};
 
     public static final HttpField VARY_ACCEPT_ENCODING_USER_AGENT = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING + ", " + HttpHeader.USER_AGENT);
@@ -94,12 +94,6 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
     }
 
     @Override
-    public boolean isOptimizedForDirectBuffers()
-    {
-        return false; // No point as deflator is in user space.
-    }
-
-    @Override
     public void write(ByteBuffer content, boolean complete, Callback callback)
     {
         switch (_state.get())
@@ -128,20 +122,8 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 
     private void addTrailer()
     {
-        int i = _buffer.limit();
-        _buffer.limit(i + 8);
-
-        int v = (int)_crc.getValue();
-        _buffer.put(i++, (byte)(v & 0xFF));
-        _buffer.put(i++, (byte)((v >>> 8) & 0xFF));
-        _buffer.put(i++, (byte)((v >>> 16) & 0xFF));
-        _buffer.put(i++, (byte)((v >>> 24) & 0xFF));
-
-        v = _deflater.getTotalIn();
-        _buffer.put(i++, (byte)(v & 0xFF));
-        _buffer.put(i++, (byte)((v >>> 8) & 0xFF));
-        _buffer.put(i++, (byte)((v >>> 16) & 0xFF));
-        _buffer.put(i++, (byte)((v >>> 24) & 0xFF));
+        BufferUtil.putIntLittleEndian(_buffer, (int)_crc.getValue());
+        BufferUtil.putIntLittleEndian(_buffer, _deflater.getTotalIn());
     }
 
     private void gzip(ByteBuffer content, boolean complete, final Callback callback)
@@ -231,8 +213,6 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 
             fields.put(GZIP._contentEncoding);
             _crc.reset();
-            _buffer = _channel.getByteBufferPool().acquire(_bufferSize, false);
-            BufferUtil.fill(_buffer, GZIP_HEADER, 0, GZIP_HEADER.length);
 
             // Adjust headers
             response.setContentLength(-1);
@@ -325,82 +305,115 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         @Override
         protected Action process() throws Exception
         {
+            // If we have no deflator
             if (_deflater == null)
-                return Action.SUCCEEDED;
-
-            if (_deflater.needsInput())
             {
-                if (BufferUtil.isEmpty(_content))
+                // then the trailer has been generated and written below.
+                // we have finished compressing the entire content, so
+                // cleanup and succeed.
+                if (_buffer != null)
                 {
-                    if (_deflater.finished())
-                    {
-                        _factory.recycle(_deflater);
-                        _deflater = null;
-                        _channel.getByteBufferPool().release(_buffer);
-                        _buffer = null;
-                        if (_copy != null)
-                        {
-                            _channel.getByteBufferPool().release(_copy);
-                            _copy = null;
-                        }
-                        return Action.SUCCEEDED;
-                    }
-
-                    if (!_last)
-                    {
-                        return Action.SUCCEEDED;
-                    }
-
-                    _deflater.finish();
+                    _channel.getByteBufferPool().release(_buffer);
+                    _buffer = null;
                 }
-                else if (_content.hasArray())
+                if (_copy != null)
                 {
-                    byte[] array = _content.array();
-                    int off = _content.arrayOffset() + _content.position();
-                    int len = _content.remaining();
-                    BufferUtil.clear(_content);
-
-                    _crc.update(array, off, len);
-                    _deflater.setInput(array, off, len);
-                    if (_last)
-                        _deflater.finish();
+                    _channel.getByteBufferPool().release(_copy);
+                    _copy = null;
                 }
-                else
-                {
-                    if (_copy == null)
-                        _copy = _channel.getByteBufferPool().acquire(_bufferSize, false);
-                    BufferUtil.clearToFill(_copy);
-                    int took = BufferUtil.put(_content, _copy);
-                    BufferUtil.flipToFlush(_copy, 0);
-                    if (took == 0)
-                        throw new IllegalStateException();
-
-                    byte[] array = _copy.array();
-                    int off = _copy.arrayOffset() + _copy.position();
-                    int len = _copy.remaining();
-
-                    _crc.update(array, off, len);
-                    _deflater.setInput(array, off, len);
-                    if (_last && BufferUtil.isEmpty(_content))
-                        _deflater.finish();
-                }
+                return Action.SUCCEEDED;
             }
 
-            BufferUtil.compact(_buffer);
-            int off = _buffer.arrayOffset() + _buffer.limit();
-            int len = _buffer.capacity() - _buffer.limit() - (_last ? 8 : 0);
-            if (len > 0)
+            // If we have no buffer
+            if (_buffer == null)
             {
+                // allocate a buffer and add the gzip header
+                _buffer = _channel.getByteBufferPool().acquire(_bufferSize, false);
+                BufferUtil.fill(_buffer, GZIP_HEADER, 0, GZIP_HEADER.length);
+            }
+            else
+            {
+                // otherwise clear the buffer as previous writes will always fully consume.
+                BufferUtil.clear(_buffer);
+            }
+
+            // If the deflator is not finished, then compress more data
+            if (!_deflater.finished())
+            {
+                if (_deflater.needsInput())
+                {
+                    // if there is no more content available to compress
+                    // then we are either finished all content or just the current write.
+                    if (BufferUtil.isEmpty(_content))
+                    {
+                        if (_last)
+                            _deflater.finish();
+                        else
+                            return Action.SUCCEEDED;
+                    }
+                    else
+                    {
+                        // If there is more content available to compress, we have to make sure
+                        // it is available in an array for the current deflator API, maybe slicing
+                        // of content.
+                        ByteBuffer slice;
+                        if (_content.hasArray())
+                            slice = _content;
+                        else
+                        {
+                            if (_copy == null)
+                                _copy = _channel.getByteBufferPool().acquire(_bufferSize, false);
+                            else
+                                BufferUtil.clear(_copy);
+                            slice = _copy;
+                            BufferUtil.append(_copy, _content);
+                        }
+
+                        // transfer the data from the slice to the the deflator
+                        byte[] array = slice.array();
+                        int off = slice.arrayOffset() + slice.position();
+                        int len = slice.remaining();
+                        _crc.update(array, off, len);
+                        _deflater.setInput(array, off, len);  // TODO use ByteBuffer API in Jetty-10
+                        slice.position(slice.position() + len);
+                        if (_last && BufferUtil.isEmpty(_content))
+                            _deflater.finish();
+                    }
+                }
+
+                // deflate the content into the available space in the buffer
+                int off = _buffer.arrayOffset() + _buffer.limit();
+                int len = BufferUtil.space(_buffer);
                 int produced = _deflater.deflate(_buffer.array(), off, len, _syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH);
                 _buffer.limit(_buffer.limit() + produced);
             }
-            boolean finished = _deflater.finished();
 
-            if (finished)
+            // If we have finished deflation and there is room for the trailer.
+            if (_deflater.finished() && BufferUtil.space(_buffer) >= 8)
+            {
+                // add the trailer and recycle the deflator to flag that we will have had completeSuccess when
+                // the write below completes.
                 addTrailer();
+                _factory.recycle(_deflater);
+                _deflater = null;
+            }
 
-            _interceptor.write(_buffer, finished, this);
+            // write the compressed buffer.
+            _interceptor.write(_buffer, _deflater == null, this);
             return Action.SCHEDULED;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s[content=%s last=%b copy=%s buffer=%s deflate=%s",
+                super.toString(),
+                BufferUtil.toDetailString(_content),
+                _last,
+                BufferUtil.toDetailString(_copy),
+                BufferUtil.toDetailString(_buffer),
+                _deflater,
+                _deflater != null && _deflater.finished() ? "(finished)" : "");
         }
     }
 }

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.session;
@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractSessionDataStore
@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public abstract class AbstractSessionDataStore extends ContainerLifeCycle implements SessionDataStore
 {
-    static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractSessionDataStore.class);
 
     protected SessionContext _context; //context associated with this session data store
     protected int _gracePeriodSec = 60 * 60; //default of 1hr 
@@ -80,22 +80,21 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public SessionData load(String id) throws Exception
     {
+        if (!isStarted())
+            throw new IllegalStateException("Not started");
+
         final AtomicReference<SessionData> reference = new AtomicReference<SessionData>();
         final AtomicReference<Exception> exception = new AtomicReference<Exception>();
 
-        Runnable r = new Runnable()
+        Runnable r = () ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    reference.set(doLoad(id));
-                }
-                catch (Exception e)
-                {
-                    exception.set(e);
-                }
+                reference.set(doLoad(id));
+            }
+            catch (Exception e)
+            {
+                exception.set(e);
             }
         };
 
@@ -109,6 +108,9 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public void store(String id, SessionData data) throws Exception
     {
+        if (!isStarted())
+            throw new IllegalStateException("Not started");
+        
         if (data == null)
             return;
 
@@ -123,10 +125,14 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
                 long savePeriodMs = (_savePeriodSec <= 0 ? 0 : TimeUnit.SECONDS.toMillis(_savePeriodSec));
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Store: id={}, dirty={}, lsave={}, period={}, elapsed={}", id, data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis() - lastSave));
+                {
+                    LOG.debug("Store: id={}, mdirty={}, dirty={}, lsave={}, period={}, elapsed={}", id, data.isMetaDataDirty(),
+                        data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis() - lastSave));
+                }
 
-                //save session if attribute changed or never been saved or time between saves exceeds threshold
-                if (data.isDirty() || (lastSave <= 0) || ((System.currentTimeMillis() - lastSave) > savePeriodMs))
+                //save session if attribute changed, never been saved or metadata changed (eg expiry time) and save interval exceeded
+                if (data.isDirty() || (lastSave <= 0) ||
+                    (data.isMetaDataDirty() && ((System.currentTimeMillis() - lastSave) >= savePeriodMs)))
                 {
                     //set the last saved time to now
                     data.setLastSaved(System.currentTimeMillis());
@@ -134,7 +140,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
                     {
                         //call the specific store method, passing in previous save time
                         doStore(id, data, lastSave);
-                        data.setDirty(false); //only undo the dirty setting if we saved it
+                        data.clean(); //unset all dirty flags
                     }
                     catch (Exception e)
                     {
@@ -156,6 +162,9 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public Set<String> getExpired(Set<String> candidates)
     {
+        if (!isStarted())
+            throw new IllegalStateException("Not started");
+        
         try
         {
             return doGetExpired(candidates);

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.tests.distribution;
@@ -65,8 +65,8 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Helper class to test the Jetty Distribution</p>.
@@ -97,7 +97,7 @@ import org.eclipse.jetty.util.log.Logger;
  *         // Wait for Jetty to be fully started.
  *         assertTrue(run1.awaitConsoleLogsFor("Started @", 20, TimeUnit.SECONDS));
  *
- *         // Make a HTTP request to the web application.
+ *         // Make an HTTP request to the web application.
  *         HttpClient client = new HttpClient();
  *         client.start();
  *         ContentResponse response = client.GET("http://localhost:" + port + "/test/index.jsp");
@@ -108,7 +108,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class DistributionTester
 {
-    private static final Logger LOGGER = Log.getLogger(DistributionTester.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DistributionTester.class);
 
     private Config config;
 
@@ -125,6 +125,16 @@ public class DistributionTester
     public DistributionTester.Run start(String... args) throws Exception
     {
         return start(Arrays.asList(args));
+    }
+
+    public Path getJettyBase()
+    {
+        return config.jettyBase;
+    }
+
+    public Path getJettyHome()
+    {
+        return config.jettyHome;
     }
 
     /**
@@ -469,9 +479,6 @@ public class DistributionTester
             consoleStreamers.forEach(ConsoleStreamer::stop);
         }
 
-        /**
-         * @see #destroy()
-         */
         @Override
         public void close()
         {
@@ -521,7 +528,7 @@ public class DistributionTester
                     String line;
                     while ((line = reader.readLine()) != null && !stop)
                     {
-                        LOGGER.info("{}", line);
+                        LOGGER.info(line);
                         logs.add(line);
                     }
                 }
@@ -540,6 +547,11 @@ public class DistributionTester
                 stop = true;
                 IO.close(reader);
             }
+        }
+
+        public Queue<String> getLogs()
+        {
+            return logs;
         }
     }
 

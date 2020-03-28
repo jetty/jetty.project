@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.parser;
@@ -27,14 +27,14 @@ import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HeaderBlockParser
 {
     public static final MetaData STREAM_FAILURE = new MetaData(HttpVersion.HTTP_2, null);
     public static final MetaData SESSION_FAILURE = new MetaData(HttpVersion.HTTP_2, null);
-    private static final Logger LOG = Log.getLogger(HeaderBlockParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HeaderBlockParser.class);
 
     private final HeaderParser headerParser;
     private final ByteBufferPool byteBufferPool;
@@ -73,7 +73,7 @@ public class HeaderBlockParser
         {
             if (blockBuffer == null)
             {
-                blockBuffer = byteBufferPool.acquire(blockLength, false);
+                blockBuffer = byteBufferPool.acquire(blockLength, buffer.isDirect());
                 BufferUtil.clearToFill(blockBuffer);
             }
             blockBuffer.put(buffer);
@@ -102,21 +102,21 @@ public class HeaderBlockParser
             catch (HpackException.StreamException x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug("Stream error, stream={}", headerParser.getStreamId(), x);
                 notifier.streamFailure(headerParser.getStreamId(), ErrorCode.PROTOCOL_ERROR.code, "invalid_hpack_block");
                 return STREAM_FAILURE;
             }
             catch (HpackException.CompressionException x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug("Compression error, buffer={}", BufferUtil.toDetailString(buffer), x);
                 notifier.connectionFailure(buffer, ErrorCode.COMPRESSION_ERROR.code, "invalid_hpack_block");
                 return SESSION_FAILURE;
             }
             catch (HpackException.SessionException x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug("Session error, buffer={}", BufferUtil.toDetailString(buffer), x);
                 notifier.connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_hpack_block");
                 return SESSION_FAILURE;
             }

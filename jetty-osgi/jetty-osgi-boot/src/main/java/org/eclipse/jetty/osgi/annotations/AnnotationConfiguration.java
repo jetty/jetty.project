@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.osgi.annotations;
@@ -28,13 +28,13 @@ import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Extend the AnnotationConfiguration to support OSGi:
@@ -43,7 +43,7 @@ import org.osgi.framework.Constants;
  */
 public class AnnotationConfiguration extends org.eclipse.jetty.annotations.AnnotationConfiguration
 {
-    private static final Logger LOG = Log.getLogger(org.eclipse.jetty.annotations.AnnotationConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(org.eclipse.jetty.annotations.AnnotationConfiguration.class);
 
     public class BundleParserTask extends ParserTask
     {
@@ -126,9 +126,9 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
                     continue;
 
                 Resource bundleRes = oparser.indexBundle(bundle);
-                if (!context.getMetaData().getWebInfJars().contains(bundleRes))
+                if (!context.getMetaData().getWebInfResources(false).contains(bundleRes))
                 {
-                    context.getMetaData().addWebInfJar(bundleRes);
+                    context.getMetaData().addWebInfResource(bundleRes);
                 }
 
                 if (bundle.getHeaders().get(Constants.FRAGMENT_HOST) != null)
@@ -194,9 +194,6 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
         parseBundle(context, parser, webbundle, webbundle);
     }
 
-    /**
-     * @see org.eclipse.jetty.annotations.AnnotationConfiguration#parseWebInfClasses(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.annotations.AnnotationParser)
-     */
     @Override
     public void parseWebInfClasses(WebAppContext context, org.eclipse.jetty.annotations.AnnotationParser parser)
         throws Exception

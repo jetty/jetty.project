@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.osgi.boot.internal.serverfactory;
@@ -26,6 +26,7 @@ import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
@@ -34,12 +35,12 @@ import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.osgi.boot.utils.OSGiClassLoader;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DefaultJettyAtJettyHomeHelper
@@ -53,7 +54,7 @@ import org.osgi.framework.BundleContext;
  */
 public class DefaultJettyAtJettyHomeHelper
 {
-    private static final Logger LOG = Log.getLogger(DefaultJettyAtJettyHomeHelper.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultJettyAtJettyHomeHelper.class);
 
     /**
      * contains a comma separated list of paths to the etc/jetty-*.xml files
@@ -148,9 +149,8 @@ public class DefaultJettyAtJettyHomeHelper
             LOG.warn("No default jetty created.");
             return null;
         }
-
-        //configure the server here rather than letting the JettyServerServiceTracker do it, because we want to be able to
-        //configure the ThreadPool, which can only be done via the constructor, ie from within the xml configuration processing
+        
+        //resolve the jetty xml config files
         List<URL> configURLs = jettyHomeDir != null ? getJettyConfigurationURLs(jettyHomeDir) : getJettyConfigurationURLs(jettyHomeBundle, properties);
 
         LOG.info("Configuring the default jetty server with {}", configURLs);
@@ -174,14 +174,36 @@ public class DefaultJettyAtJettyHomeHelper
             }
             Thread.currentThread().setContextClassLoader(cl);
 
-            // these properties usually are the ones passed to this type of
-            // configuration.
+            //the default server name
             properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME);
-            Util.setProperty(properties, OSGiServerConstants.JETTY_HOST, System.getProperty(OSGiServerConstants.JETTY_HOST, System.getProperty("jetty.host")));
-            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT, System.getProperty(OSGiServerConstants.JETTY_PORT, System.getProperty("jetty.port")));
-            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL, System.getProperty("ssl.port")));
+            
+            //Always set home and base
             Util.setProperty(properties, OSGiServerConstants.JETTY_HOME, home);
             Util.setProperty(properties, OSGiServerConstants.JETTY_BASE, base);
+            
+            // copy all system properties starting with "jetty." to service properties for the jetty server service.
+            // these will be used as xml configuration properties.
+            for (Map.Entry<Object, Object> prop : System.getProperties().entrySet())
+            {
+                if (prop.getKey() instanceof String)
+                {
+                    String skey = (String)prop.getKey();
+                    //never copy the jetty xml config files into the properties as we pass them explicitly into
+                    //the call to configure, also we set home and base explicitly
+                    if (OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS.equals(skey) ||
+                        OSGiServerConstants.JETTY_HOME.equals(skey) ||
+                        OSGiServerConstants.JETTY_BASE.equals(skey))
+                        continue;
+                    
+                    if (skey.startsWith("jetty."))
+                    {
+                        Util.setProperty(properties, skey, prop.getValue());
+                    }
+                }
+            }
+
+            //configure the server here rather than letting the JettyServerServiceTracker do it, because we want to be able to
+            //configure the ThreadPool, which can only be done via the constructor, ie from within the xml configuration processing
             Server server = ServerInstanceWrapper.configure(null, configURLs, properties);
 
             //Register the default Server instance as an OSGi service.
@@ -192,7 +214,7 @@ public class DefaultJettyAtJettyHomeHelper
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Failed to start Jetty at Jetty Home", e);
             throw e;
         }
         finally

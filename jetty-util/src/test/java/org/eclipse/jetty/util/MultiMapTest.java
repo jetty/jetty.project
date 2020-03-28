@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class MultiMapTest
 {
     /**
-     * Tests {@link MultiMap#put(Object, Object)}
+     * Tests {@link MultiMap#put(String, Object)}
      */
     @Test
     public void testPut()
@@ -51,10 +51,10 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#put(Object, Object)}
+     * Tests {@link MultiMap#put(String, Object)}
      */
     @Test
-    public void testPut_Null_String()
+    public void testPutNullString()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -67,10 +67,10 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#put(Object, Object)}
+     * Tests {@link MultiMap#put(String, Object)}
      */
     @Test
-    public void testPut_Null_List()
+    public void testPutNullList()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -83,10 +83,10 @@ public class MultiMapTest
     }
 
     /**
-     * Tests {@link MultiMap#put(Object, Object)}
+     * Tests {@link MultiMap#put(String, Object)}
      */
     @Test
-    public void testPut_Replace()
+    public void testPutReplace()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -110,7 +110,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#putValues(String, List)}
      */
     @Test
-    public void testPutValues_List()
+    public void testPutValuesList()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -130,7 +130,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#putValues(String, Object[])}
      */
     @Test
-    public void testPutValues_StringArray()
+    public void testPutValuesStringArray()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -146,7 +146,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#putValues(String, List)}
      */
     @Test
-    public void testPutValues_VarArgs()
+    public void testPutValuesVarArgs()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -184,7 +184,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#addValues(String, List)}
      */
     @Test
-    public void testAddValues_List()
+    public void testAddValuesList()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -210,7 +210,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#addValues(String, List)}
      */
     @Test
-    public void testAddValues_List_Empty()
+    public void testAddValuesListEmpty()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -233,7 +233,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#addValues(String, Object[])}
      */
     @Test
-    public void testAddValues_StringArray()
+    public void testAddValuesStringArray()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -256,7 +256,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#addValues(String, Object[])}
      */
     @Test
-    public void testAddValues_StringArray_Empty()
+    public void testAddValuesStringArrayEmpty()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -300,7 +300,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#removeValue(String, Object)}
      */
     @Test
-    public void testRemoveValue_InvalidItem()
+    public void testRemoveValueInvalidItem()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -321,7 +321,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#removeValue(String, Object)}
      */
     @Test
-    public void testRemoveValue_AllItems()
+    public void testRemoveValueAllItems()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -351,7 +351,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#removeValue(String, Object)}
      */
     @Test
-    public void testRemoveValue_FromEmpty()
+    public void testRemoveValueFromEmpty()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -372,7 +372,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#putAll(java.util.Map)}
      */
     @Test
-    public void testPutAll_Map()
+    public void testPutAllMap()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -395,7 +395,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#putAll(java.util.Map)}
      */
     @Test
-    public void testPutAll_MultiMap_Simple()
+    public void testPutAllMultiMapSimple()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -418,7 +418,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#putAll(java.util.Map)}
      */
     @Test
-    public void testPutAll_MultiMapComplex()
+    public void testPutAllMultiMapComplex()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -471,7 +471,10 @@ public class MultiMapTest
 
         mm.putValues("food", "apple", "cherry", "raspberry");
 
-        assertEquals("{color=red, food=[apple, cherry, raspberry]}", mm.toString());
+        String expected1 = "{color=red, food=[apple, cherry, raspberry]}";
+        String expected2 = "{food=[apple, cherry, raspberry], color=red}";
+        String actual = mm.toString();
+        assertTrue(actual.equals(expected1) || actual.equals(expected2));
     }
 
     /**
@@ -545,7 +548,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#containsValue(Object)}
      */
     @Test
-    public void testContainsValue_LazyList()
+    public void testContainsValueLazyList()
     {
         MultiMap<String> mm = new MultiMap<>();
         mm.putValues("food", "apple", "cherry", "raspberry");

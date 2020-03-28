@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -98,6 +98,8 @@ public class LocalConnector extends AbstractConnector
     {
         if (!isStarted())
             throw new IllegalStateException("!STARTED");
+        if (isShutdown())
+            throw new IllegalStateException("Shutdown");
         LocalEndPoint endp = new LocalEndPoint();
         endp.addInput(rawRequest);
         _connects.add(endp);
@@ -276,7 +278,7 @@ public class LocalConnector extends AbstractConnector
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Close wait failed", e);
                 }
             }
         }
@@ -302,7 +304,7 @@ public class LocalConnector extends AbstractConnector
                 }
                 catch (Exception e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Close wait failed", e);
                 }
             }
         }
@@ -382,18 +384,6 @@ public class LocalConnector extends AbstractConnector
                 }
 
                 @Override
-                public int getHeaderCacheSize()
-                {
-                    return 0;
-                }
-
-                @Override
-                public boolean isHeaderCacheCaseSensitive()
-                {
-                    return false;
-                }
-
-                @Override
                 public void earlyEOF()
                 {
                 }
@@ -405,9 +395,8 @@ public class LocalConnector extends AbstractConnector
                 }
 
                 @Override
-                public boolean startResponse(HttpVersion version, int status, String reason)
+                public void startResponse(HttpVersion version, int status, String reason)
                 {
-                    return false;
                 }
             };
 
@@ -425,7 +414,7 @@ public class LocalConnector extends AbstractConnector
                     else
                     {
                         chunk = waitForOutput(time, unit);
-                        if (BufferUtil.isEmpty(chunk) && (!isOpen() || isOutputShutdown()))
+                        if (BufferUtil.isEmpty(chunk) && (!isOpen() || isOutputShutdown() || isShutdown()))
                         {
                             parser.atEOF();
                             parser.parseNext(BufferUtil.EMPTY_BUFFER);

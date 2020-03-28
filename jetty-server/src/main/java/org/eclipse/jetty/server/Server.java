@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -44,7 +44,6 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
@@ -54,13 +53,14 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AttributeContainerMap;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Locker;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Jetty HTTP Servlet Server.
@@ -72,20 +72,21 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 @ManagedObject(value = "Jetty HTTP Servlet server")
 public class Server extends HandlerWrapper implements Attributes
 {
-    private static final Logger LOG = Log.getLogger(Server.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
     private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private SessionIdManager _sessionIdManager;
     private boolean _stopAtShutdown;
-    private boolean _dumpAfterStart = false;
-    private boolean _dumpBeforeStop = false;
+    private boolean _dumpAfterStart;
+    private boolean _dumpBeforeStop;
     private ErrorHandler _errorHandler;
     private RequestLog _requestLog;
-
-    private final Locker _dateLocker = new Locker();
+    private boolean _dryRun;
+    private final AutoLock _dateLock = new AutoLock();
     private volatile DateField _dateField;
+    private long _stopTimeout;
 
     public Server()
     {
@@ -131,6 +132,16 @@ public class Server extends HandlerWrapper implements Attributes
         setServer(this);
     }
 
+    public boolean isDryRun()
+    {
+        return _dryRun;
+    }
+
+    public void setDryRun(boolean dryRun)
+    {
+        _dryRun = dryRun;
+    }
+
     public RequestLog getRequestLog()
     {
         return _requestLog;
@@ -163,22 +174,19 @@ public class Server extends HandlerWrapper implements Attributes
         return Jetty.VERSION;
     }
 
+    public void setStopTimeout(long stopTimeout)
+    {
+        _stopTimeout = stopTimeout;
+    }
+
+    public long getStopTimeout()
+    {
+        return _stopTimeout;
+    }
+
     public boolean getStopAtShutdown()
     {
         return _stopAtShutdown;
-    }
-
-    /**
-     * Set a graceful stop time.
-     * The {@link StatisticsHandler} must be configured so that open connections can
-     * be tracked for a graceful shutdown.
-     *
-     * @see org.eclipse.jetty.util.component.ContainerLifeCycle#setStopTimeout(long)
-     */
-    @Override
-    public void setStopTimeout(long stopTimeout)
-    {
-        super.setStopTimeout(stopTimeout);
     }
 
     /**
@@ -315,7 +323,7 @@ public class Server extends HandlerWrapper implements Attributes
 
         if (df == null || df._seconds != seconds)
         {
-            try (Locker.Lock lock = _dateLocker.lock())
+            try (AutoLock lock = _dateLock.lock())
             {
                 df = _dateField;
                 if (df == null || df._seconds != seconds)
@@ -367,24 +375,32 @@ public class Server extends HandlerWrapper implements Attributes
             MultiException mex = new MultiException();
 
             // Open network connector to ensure ports are available
-            _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(connector ->
+            if (!_dryRun)
             {
-                try
+                _connectors.stream().filter(NetworkConnector.class::isInstance).map(NetworkConnector.class::cast).forEach(connector ->
                 {
-                    connector.open();
-                }
-                catch (Throwable th)
-                {
-                    mex.add(th);
-                }
-            });
-
-            // Throw now if verified start sequence and there was an open exception
-            mex.ifExceptionThrow();
+                    try
+                    {
+                        connector.open();
+                    }
+                    catch (Throwable th)
+                    {
+                        mex.add(th);
+                    }
+                });
+                // Throw now if verified start sequence and there was an open exception
+                mex.ifExceptionThrow();
+            }
 
             // Start the server and components, but not connectors!
             // #start(LifeCycle) is overridden so that connectors are not started
             super.doStart();
+
+            if (_dryRun)
+            {
+                LOG.info(String.format("Started(dry run) %s @%dms", this, Uptime.getUptime()));
+                throw new StopException();
+            }
 
             // start connectors
             for (Connector connector : _connectors)
@@ -402,7 +418,7 @@ public class Server extends HandlerWrapper implements Attributes
             }
 
             mex.ifExceptionThrow();
-            LOG.info(String.format("Started @%dms", Uptime.getUptime()));
+            LOG.info(String.format("Started %s @%dms", this, Uptime.getUptime()));
         }
         catch (Throwable th)
         {
@@ -423,7 +439,7 @@ public class Server extends HandlerWrapper implements Attributes
         }
         finally
         {
-            if (isDumpAfterStart())
+            if (isDumpAfterStart() && !(_dryRun && isDumpBeforeStop()))
                 dumpStdErr();
         }
     }
@@ -442,26 +458,26 @@ public class Server extends HandlerWrapper implements Attributes
         if (isDumpBeforeStop())
             dumpStdErr();
 
+        LOG.info(String.format("Stopped %s", this));
         if (LOG.isDebugEnabled())
             LOG.debug("doStop {}", this);
 
         MultiException mex = new MultiException();
 
-        try
+        if (getStopTimeout() > 0)
         {
-            // list if graceful futures
-            List<Future<Void>> futures = new ArrayList<>();
-            // First shutdown the network connectors to stop accepting new connections
-            for (Connector connector : _connectors)
+            long end = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(getStopTimeout());
+            try
             {
-                futures.add(connector.shutdown());
+                Graceful.shutdown(this).get(getStopTimeout(), TimeUnit.MILLISECONDS);
             }
-            // then shutdown all graceful handlers 
-            doShutdown(futures);
-        }
-        catch (Throwable e)
-        {
-            mex.add(e);
+            catch (Throwable e)
+            {
+                mex.add(e);
+            }
+            QueuedThreadPool qtp = getBean(QueuedThreadPool.class);
+            if (qtp != null)
+                qtp.setStopTimeout(Math.max(1000L, TimeUnit.NANOSECONDS.toMillis(end - System.nanoTime())));
         }
 
         // Now stop the connectors (this will close existing connections)
@@ -514,10 +530,16 @@ public class Server extends HandlerWrapper implements Attributes
         if (HttpMethod.OPTIONS.is(request.getMethod()) || "*".equals(target))
         {
             if (!HttpMethod.OPTIONS.is(request.getMethod()))
+            {
+                request.setHandled(true);
                 response.sendError(HttpStatus.BAD_REQUEST_400);
-            handleOptions(request, response);
-            if (!request.isHandled())
-                handle(target, request, request, response);
+            }
+            else
+            {
+                handleOptions(request, response);
+                if (!request.isHandled())
+                    handle(target, request, request, response);
+            }
         }
         else
             handle(target, request, request, response);
@@ -558,8 +580,8 @@ public class Server extends HandlerWrapper implements Attributes
         }
 
         final String target = baseRequest.getPathInfo();
-        final HttpServletRequest request = (HttpServletRequest)event.getSuppliedRequest();
-        final HttpServletResponse response = (HttpServletResponse)event.getSuppliedResponse();
+        final HttpServletRequest request = Request.unwrap(event.getSuppliedRequest());
+        final HttpServletResponse response = Response.unwrap(event.getSuppliedResponse());
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} {} on {}", request.getDispatcherType(), request.getMethod(), target, channel);
@@ -590,45 +612,30 @@ public class Server extends HandlerWrapper implements Attributes
         _sessionIdManager = sessionIdManager;
     }
 
-    /*
-     * @see org.eclipse.util.AttributesMap#clearAttributes()
-     */
     @Override
     public void clearAttributes()
     {
         _attributes.clearAttributes();
     }
 
-    /*
-     * @see org.eclipse.util.AttributesMap#getAttribute(java.lang.String)
-     */
     @Override
     public Object getAttribute(String name)
     {
         return _attributes.getAttribute(name);
     }
 
-    /*
-     * @see org.eclipse.util.AttributesMap#getAttributeNames()
-     */
     @Override
     public Enumeration<String> getAttributeNames()
     {
         return _attributes.getAttributeNames();
     }
 
-    /*
-     * @see org.eclipse.util.AttributesMap#removeAttribute(java.lang.String)
-     */
     @Override
     public void removeAttribute(String name)
     {
         _attributes.removeAttribute(name);
     }
 
-    /*
-     * @see org.eclipse.util.AttributesMap#setAttribute(java.lang.String, java.lang.Object)
-     */
     @Override
     public void setAttribute(String name, Object attribute)
     {
@@ -675,7 +682,7 @@ public class Server extends HandlerWrapper implements Attributes
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to build server URI", e);
             return null;
         }
     }
@@ -683,7 +690,7 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     public String toString()
     {
-        return String.format("%s[%s]", super.toString(), getVersion());
+        return String.format("%s[%s,sto=%d]", super.toString(), getVersion(), getStopTimeout());
     }
 
     @Override

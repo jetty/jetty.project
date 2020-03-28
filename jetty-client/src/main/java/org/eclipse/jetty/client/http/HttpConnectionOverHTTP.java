@@ -1,58 +1,82 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.http;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpConnection;
+import org.eclipse.jetty.client.HttpConversation;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.IConnection;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpConnectionOverHTTP extends AbstractConnection implements IConnection, org.eclipse.jetty.io.Connection.UpgradeFrom, Sweeper.Sweepable
 {
-    private static final Logger LOG = Log.getLogger(HttpConnectionOverHTTP.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverHTTP.class);
 
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicInteger sweeps = new AtomicInteger();
     private final Promise<Connection> promise;
     private final Delegate delegate;
     private final HttpChannelOverHTTP channel;
-    private long idleTimeout;
-
     private final LongAdder bytesIn = new LongAdder();
     private final LongAdder bytesOut = new LongAdder();
+    private long idleTimeout;
+
+    public HttpConnectionOverHTTP(EndPoint endPoint, Map<String, Object> context)
+    {
+        this(endPoint, destinationFrom(context), promiseFrom(context));
+    }
+
+    private static HttpDestination destinationFrom(Map<String, Object> context)
+    {
+        return (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Promise<Connection> promiseFrom(Map<String, Object> context)
+    {
+        return (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+    }
 
     public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
@@ -141,26 +165,21 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     public boolean onIdleExpired()
     {
         long idleTimeout = getEndPoint().getIdleTimeout();
-        boolean close = delegate.onIdleTimeout(idleTimeout);
+        boolean close = onIdleTimeout(idleTimeout);
         if (close)
             close(new TimeoutException("Idle timeout " + idleTimeout + " ms"));
         return false;
     }
 
+    protected boolean onIdleTimeout(long idleTimeout)
+    {
+        return delegate.onIdleTimeout(idleTimeout);
+    }
+
     @Override
     public void onFillable()
     {
-        HttpExchange exchange = channel.getHttpExchange();
-        if (exchange != null)
-        {
-            channel.receive();
-        }
-        else
-        {
-            // If there is no exchange, then could be either a remote close,
-            // or garbage bytes; in both cases we close the connection
-            close();
-        }
+        channel.receive();
     }
 
     @Override
@@ -254,6 +273,42 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
 
             // One channel per connection, just delegate the send.
             return send(channel, exchange);
+        }
+
+        @Override
+        protected void normalizeRequest(Request request)
+        {
+            super.normalizeRequest(request);
+
+            if (request instanceof HttpProxy.TunnelRequest)
+            {
+                long connectTimeout = getHttpClient().getConnectTimeout();
+                request.timeout(connectTimeout, TimeUnit.MILLISECONDS)
+                        .idleTimeout(2 * connectTimeout, TimeUnit.MILLISECONDS);
+            }
+
+            HttpRequest httpRequest = (HttpRequest)request;
+            HttpConversation conversation = httpRequest.getConversation();
+            HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
+            if (upgrader == null)
+            {
+                if (request instanceof HttpUpgrader.Factory)
+                {
+                    upgrader = ((HttpUpgrader.Factory)request).newHttpUpgrader(HttpVersion.HTTP_1_1);
+                    conversation.setAttribute(HttpUpgrader.class.getName(), upgrader);
+                    upgrader.prepare(httpRequest);
+                }
+                else
+                {
+                    String protocol = request.getHeaders().get(HttpHeader.UPGRADE);
+                    if (protocol != null)
+                    {
+                        upgrader = new ProtocolHttpUpgrader(getHttpDestination(), protocol);
+                        conversation.setAttribute(HttpUpgrader.class.getName(), upgrader);
+                        upgrader.prepare(httpRequest);
+                    }
+                }
+            }
         }
 
         @Override

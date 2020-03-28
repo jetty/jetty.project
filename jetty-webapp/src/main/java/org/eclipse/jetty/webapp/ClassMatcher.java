@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.webapp;
@@ -43,9 +43,9 @@ import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A matcher for classes based on package and/or location and/or module/
@@ -70,9 +70,9 @@ import org.eclipse.jetty.util.resource.Resource;
 
 public class ClassMatcher extends AbstractSet<String>
 {
-    private static final Logger LOG = Log.getLogger(ClassMatcher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ClassMatcher.class);
 
-    private static class Entry
+    public static class Entry
     {
         private final String _pattern;
         private final String _name;
@@ -723,7 +723,7 @@ public class ClassMatcher extends AbstractSet<String>
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to match against {}", clazz, e);
         }
         return false;
     }
@@ -745,26 +745,49 @@ public class ClassMatcher extends AbstractSet<String>
             }
             catch (URISyntaxException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 return null;
             }
         });
     }
-
-    private static boolean combine(IncludeExcludeSet<Entry, String> names, String name, IncludeExcludeSet<Entry, URI> locations, Supplier<URI> location)
+    
+    /**
+     * Match a class against inclusions and exclusions by name and location.
+     * Name based checks are performed before location checks. For a class to match,
+     * it must not be excluded by either name or location, and must either be explicitly
+     * included, or for there to be no inclusions. In the case where the location
+     * of the class is null, it will match if it is included by name, or
+     * if there are no location exclusions.
+     * 
+     * @param names configured inclusions and exclusions by name
+     * @param name the name to check
+     * @param locations configured inclusions and exclusions by location
+     * @param location the location of the class (can be null)
+     * @return true if the class is not excluded but is included, or there are
+     * no inclusions. False otherwise.
+     */
+    static boolean combine(IncludeExcludeSet<Entry, String> names, String name, IncludeExcludeSet<Entry, URI> locations, Supplier<URI> location)
     {
+        // check the name set
         Boolean byName = names.isIncludedAndNotExcluded(name);
+
+        // If we excluded by name, then no match
         if (Boolean.FALSE == byName)
             return false;
 
+        // check the location set
         URI uri = location.get();
-        if (uri == null)
-            return locations.isEmpty() || locations.hasExcludes() && !locations.hasIncludes();
+        Boolean byLocation = uri == null ? null : locations.isIncludedAndNotExcluded(uri);
 
-        Boolean byLocation = locations.isIncludedAndNotExcluded(uri);
-        if (Boolean.FALSE == byLocation)
+        // If we excluded by location or couldn't check location exclusion, then no match
+        if (Boolean.FALSE == byLocation || (locations.hasExcludes() && uri == null))
             return false;
 
-        return Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation) || !(names.hasIncludes() || locations.hasIncludes());
+        // If there are includes, then we must be included to match.
+        if (names.hasIncludes() || locations.hasIncludes())
+            return byName == Boolean.TRUE || byLocation == Boolean.TRUE;
+
+        // Otherwise there are no includes and it was not excluded, so match
+        return true;
     }
 }

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.webapp;
@@ -88,7 +88,7 @@ public class MetaInfConfigurationTest
         MetaInfConfiguration meta25 = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
             Arrays.asList(MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES));
         WebAppContext context25 = new WebAppContext();
-        context25.getMetaData().setWebXml(Resource.newResource(web25));
+        context25.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
         context25.getServletContext().setEffectiveMajorVersion(2);
         context25.getServletContext().setEffectiveMinorVersion(5);
         meta25.preConfigure(context25);
@@ -98,7 +98,7 @@ public class MetaInfConfigurationTest
             MetaInfConfiguration.__allScanTypes);
         WebAppContext context25b = new WebAppContext();
         context25b.setConfigurationDiscovered(true);
-        context25b.getMetaData().setWebXml(Resource.newResource(web25));
+        context25b.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
         context25b.getServletContext().setEffectiveMajorVersion(2);
         context25b.getServletContext().setEffectiveMinorVersion(5);
         meta25b.preConfigure(context25b);
@@ -107,7 +107,7 @@ public class MetaInfConfigurationTest
         MetaInfConfiguration meta31 = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
             Arrays.asList(MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES));
         WebAppContext context31 = new WebAppContext();
-        context31.getMetaData().setWebXml(Resource.newResource(web31));
+        context31.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31)));
         context31.getServletContext().setEffectiveMajorVersion(3);
         context31.getServletContext().setEffectiveMinorVersion(1);
         meta31.preConfigure(context31);
@@ -117,7 +117,7 @@ public class MetaInfConfigurationTest
             MetaInfConfiguration.__allScanTypes);
         WebAppContext context31false = new WebAppContext();
         context31false.setConfigurationDiscovered(true);
-        context31false.getMetaData().setWebXml(Resource.newResource(web31false));
+        context31false.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31false)));
         context31false.getServletContext().setEffectiveMajorVersion(3);
         context31false.getServletContext().setEffectiveMinorVersion(1);
         meta31false.preConfigure(context31false);

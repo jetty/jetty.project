@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io;
@@ -36,6 +36,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -43,14 +44,15 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>{@link ManagedSelector} wraps a {@link Selector} simplifying non-blocking operations on channels.</p>
@@ -60,7 +62,7 @@ import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
  */
 public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 {
-    private static final Logger LOG = Log.getLogger(ManagedSelector.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ManagedSelector.class);
     private static final boolean FORCE_SELECT_NOW;
 
     static
@@ -94,7 +96,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         Executor executor = selectorManager.getExecutor();
         _strategy = new EatWhatYouKill(producer, executor);
         addBean(_strategy, true);
-        setStopTimeout(5000);
     }
 
     public Selector getSelector()
@@ -122,12 +123,20 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         start._started.await();
     }
 
+    protected void onSelectFailed(Throwable cause)
+    {
+        // override to change behavior
+    }
+
     public int size()
     {
         Selector s = _selector;
         if (s == null)
             return 0;
-        return s.keys().size();
+        Set<SelectionKey> keys = s.keys();
+        if (keys == null)
+            return 0;
+        return keys.size();
     }
 
     @Override
@@ -135,7 +144,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
     {
         // doStop might be called for a failed managedSelector,
         // We do not want to wait twice, so we only stop once for each start
-        if (_started.compareAndSet(true, false))
+        if (_started.compareAndSet(true, false) && _selector != null)
         {
             // Close connections, but only wait a single selector cycle for it to take effect
             CloseConnections closeConnections = new CloseConnections();
@@ -210,7 +219,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         catch (RejectedExecutionException x)
         {
             if (task instanceof Closeable)
-                closeNoExceptions((Closeable)task);
+                IO.close((Closeable)task);
         }
     }
 
@@ -246,17 +255,14 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    private static void closeNoExceptions(Closeable closeable)
+    protected void endPointOpened(EndPoint endPoint)
     {
-        try
-        {
-            if (closeable != null)
-                closeable.close();
-        }
-        catch (Throwable x)
-        {
-            LOG.ignore(x);
-        }
+        _selectorManager.endPointOpened(endPoint);
+    }
+
+    protected void endPointClosed(EndPoint endPoint)
+    {
+        _selectorManager.endPointClosed(endPoint);
     }
 
     private void createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
@@ -266,7 +272,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         endPoint.setConnection(connection);
         selectionKey.attach(endPoint);
         endPoint.onOpen();
-        _selectorManager.endPointOpened(endPoint);
+        endPointOpened(endPoint);
         _selectorManager.connectionOpened(connection);
         if (LOG.isDebugEnabled())
             LOG.debug("Created {}", endPoint);
@@ -297,7 +303,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
         catch (Throwable x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
             return -1;
         }
     }
@@ -310,7 +316,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
         catch (Throwable x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
             return -1;
         }
     }
@@ -429,7 +435,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 }
                 catch (Throwable th)
                 {
-                    LOG.warn(th);
+                    LOG.warn("Cannot update selector {}", _selector, th);
                 }
             }
             _updateable.clear();
@@ -496,15 +502,19 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (Throwable x)
             {
+                IO.close(_selector);
                 _selector = null;
+
                 if (isRunning())
-                    LOG.warn(x);
+                {
+                    LOG.warn("Fatal select() failure", x);
+                    onSelectFailed(x);
+                }
                 else
                 {
                     LOG.warn(x.toString());
-                    LOG.debug(x);
+                    LOG.debug("select() failure", x);
                 }
-                closeNoExceptions(_selector);
             }
             return false;
         }
@@ -541,13 +551,13 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     {
                         LOG.debug("Ignoring cancelled key for channel {}", key.channel());
                         if (attachment instanceof EndPoint)
-                            closeNoExceptions((EndPoint)attachment);
+                            IO.close((EndPoint)attachment);
                     }
                     catch (Throwable x)
                     {
                         LOG.warn("Could not process key for channel " + key.channel(), x);
                         if (attachment instanceof EndPoint)
-                            closeNoExceptions((EndPoint)attachment);
+                            IO.close((EndPoint)attachment);
                     }
                 }
                 else
@@ -556,7 +566,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                         LOG.debug("Selector loop ignoring invalid key for channel {}", key.channel());
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
-                        closeNoExceptions((EndPoint)attachment);
+                        IO.close((EndPoint)attachment);
                 }
             }
             return null;
@@ -630,7 +640,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (InterruptedException x)
             {
-                LOG.ignore(x);
+                LOG.trace("IGNORED", x);
             }
             return keys;
         }
@@ -661,8 +671,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (Throwable x)
             {
-                closeNoExceptions(_channel);
-                LOG.warn(x);
+                IO.close(_channel);
+                LOG.warn("Unable to register OP_ACCEPT on selector", x);
             }
         }
 
@@ -683,7 +693,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (Throwable x)
             {
-                closeNoExceptions(channel);
+                IO.close(channel);
                 LOG.warn("Accept failed for channel " + channel, x);
             }
 
@@ -722,7 +732,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         public void close()
         {
             LOG.debug("closed accept of {}", channel);
-            closeNoExceptions(channel);
+            IO.close(channel);
         }
 
         @Override
@@ -735,9 +745,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (Throwable x)
             {
-                closeNoExceptions(channel);
+                IO.close(channel);
                 _selectorManager.onAcceptFailed(channel, x);
-                LOG.debug(x);
+                LOG.debug("Unable to register update for accept", x);
             }
         }
 
@@ -751,16 +761,16 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (Throwable x)
             {
-                LOG.debug(x);
+                LOG.debug("Unable to accept", x);
                 failed(x);
             }
         }
 
         protected void failed(Throwable failure)
         {
-            closeNoExceptions(channel);
-            LOG.warn(String.valueOf(failure));
-            LOG.debug(failure);
+            IO.close(channel);
+            LOG.warn("ManagedSelector#Accept failure : {}", Objects.toString(failure));
+            LOG.debug("ManagedSelector#Accept failure", failure);
             _selectorManager.onAcceptFailed(channel, failure);
         }
     }
@@ -808,7 +818,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             if (failed.compareAndSet(false, true))
             {
                 timeout.cancel();
-                closeNoExceptions(channel);
+                IO.close(channel);
                 ManagedSelector.this._selectorManager.connectionFailed(channel, failure, attachment);
             }
         }
@@ -864,12 +874,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     {
                         if (_closed == null)
                         {
-                            closeNoExceptions(closeable);
+                            IO.close(closeable);
                         }
                         else if (!_closed.contains(closeable))
                         {
                             _closed.add(closeable);
-                            closeNoExceptions(closeable);
+                            IO.close(closeable);
                         }
                     }
                 }
@@ -894,12 +904,12 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 {
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
-                        closeNoExceptions((EndPoint)attachment);
+                        IO.close((EndPoint)attachment);
                 }
             }
 
             _selector = null;
-            closeNoExceptions(selector);
+            IO.close(selector);
             _stopped.countDown();
         }
     }
@@ -924,9 +934,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             }
             catch (Throwable failure)
             {
-                closeNoExceptions(_connect.channel);
-                LOG.warn(String.valueOf(failure));
-                LOG.debug(failure);
+                IO.close(_connect.channel);
+                LOG.warn("ManagedSelector#CreateEndpoint failure : {}", Objects.toString(failure));
+                LOG.debug("ManagedSelector#CreateEndpoint failure", failure);
                 _connect.failed(failure);
             }
         }
@@ -957,7 +967,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             Connection connection = endPoint.getConnection();
             if (connection != null)
                 _selectorManager.connectionClosed(connection, cause);
-            _selectorManager.endPointClosed(endPoint);
+            ManagedSelector.this.endPointClosed(endPoint);
         }
 
         @Override

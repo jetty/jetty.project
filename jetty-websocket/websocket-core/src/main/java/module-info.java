@@ -1,43 +1,39 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.internal.FragmentExtension;
 import org.eclipse.jetty.websocket.core.internal.IdentityExtension;
+import org.eclipse.jetty.websocket.core.internal.PerMessageDeflateExtension;
 import org.eclipse.jetty.websocket.core.internal.ValidationExtension;
-import org.eclipse.jetty.websocket.core.internal.compress.DeflateFrameExtension;
-import org.eclipse.jetty.websocket.core.internal.compress.PerMessageDeflateExtension;
-import org.eclipse.jetty.websocket.core.internal.compress.XWebkitDeflateFrameExtension;
 
 module org.eclipse.jetty.websocket.core
 {
     exports org.eclipse.jetty.websocket.core;
     exports org.eclipse.jetty.websocket.core.client;
     exports org.eclipse.jetty.websocket.core.server;
+    exports org.eclipse.jetty.websocket.core.exception;
     exports org.eclipse.jetty.websocket.core.internal to org.eclipse.jetty.util;
-    exports org.eclipse.jetty.websocket.core.internal.compress to org.eclipse.jetty.util;
 
     requires jetty.servlet.api;
-    requires org.eclipse.jetty.client;
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.http;
-    requires org.eclipse.jetty.server;
-    requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.client;
+    requires transitive org.eclipse.jetty.server;
+    requires org.slf4j;
 
     // Only required if using XmlHttpClientProvider.
     requires static org.eclipse.jetty.xml;
@@ -45,10 +41,8 @@ module org.eclipse.jetty.websocket.core
     uses Extension;
 
     provides Extension with
-        DeflateFrameExtension,
         FragmentExtension,
         IdentityExtension,
         PerMessageDeflateExtension,
-        ValidationExtension,
-        XWebkitDeflateFrameExtension;
+        ValidationExtension;
 }

@@ -1,33 +1,36 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.MultiplexHttpDestination;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.api.Session;
@@ -92,6 +95,8 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
             client.setConnectTimeout(httpClient.getConnectTimeout());
             client.setIdleTimeout(httpClient.getIdleTimeout());
             client.setInputBufferSize(httpClient.getResponseBufferSize());
+            client.setUseInputDirectByteBuffers(httpClient.isUseInputDirectByteBuffers());
+            client.setUseOutputDirectByteBuffers(httpClient.isUseOutputDirectByteBuffers());
         }
         addBean(client);
         super.doStart();
@@ -105,9 +110,16 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
     }
 
     @Override
-    public HttpDestination newHttpDestination(HttpDestination.Key key)
+    public Origin newOrigin(HttpRequest request)
     {
-        return new MultiplexHttpDestination(getHttpClient(), key);
+        String protocol = HttpScheme.HTTPS.is(request.getScheme()) ? "h2" : "h2c";
+        return getHttpClient().createOrigin(request, new Origin.Protocol(List.of(protocol), false));
+    }
+
+    @Override
+    public HttpDestination newHttpDestination(Origin origin)
+    {
+        return new MultiplexHttpDestination(getHttpClient(), origin);
     }
 
     @Override

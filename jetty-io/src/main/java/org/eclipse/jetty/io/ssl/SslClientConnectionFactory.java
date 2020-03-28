@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io.ssl;
@@ -46,7 +46,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
     private final ClientConnectionFactory connectionFactory;
     private boolean _directBuffersForEncryption = true;
     private boolean _directBuffersForDecryption = true;
-    private boolean allowMissingCloseMessage = true;
+    private boolean _requireCloseMessage;
 
     public SslClientConnectionFactory(SslContextFactory sslContextFactory, ByteBufferPool byteBufferPool, Executor executor, ClientConnectionFactory connectionFactory)
     {
@@ -54,6 +54,11 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         this.byteBufferPool = byteBufferPool;
         this.executor = executor;
         this.connectionFactory = connectionFactory;
+    }
+
+    public ClientConnectionFactory getClientConnectionFactory()
+    {
+        return connectionFactory;
     }
 
     public void setDirectBuffersForEncryption(boolean useDirectBuffers)
@@ -76,14 +81,22 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         return _directBuffersForEncryption;
     }
 
-    public boolean isAllowMissingCloseMessage()
+    /**
+     * @return whether peers must send the TLS {@code close_notify} message
+     * @see SslConnection#isRequireCloseMessage()
+     */
+    public boolean isRequireCloseMessage()
     {
-        return allowMissingCloseMessage;
+        return _requireCloseMessage;
     }
 
-    public void setAllowMissingCloseMessage(boolean allowMissingCloseMessage)
+    /**
+     * @param requireCloseMessage whether peers must send the TLS {@code close_notify} message
+     * @see SslConnection#setRequireCloseMessage(boolean)
+     */
+    public void setRequireCloseMessage(boolean requireCloseMessage)
     {
-        this.allowMissingCloseMessage = allowMissingCloseMessage;
+        _requireCloseMessage = requireCloseMessage;
     }
 
     @Override
@@ -95,7 +108,6 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
         context.put(SSL_ENGINE_CONTEXT_KEY, engine);
 
         SslConnection sslConnection = newSslConnection(byteBufferPool, executor, endPoint, engine);
-        endPoint.setConnection(sslConnection);
 
         EndPoint appEndPoint = sslConnection.getDecryptedEndPoint();
         appEndPoint.setConnection(connectionFactory.newConnection(appEndPoint, context));
@@ -119,7 +131,7 @@ public class SslClientConnectionFactory implements ClientConnectionFactory
             SslConnection sslConnection = (SslConnection)connection;
             sslConnection.setRenegotiationAllowed(sslContextFactory.isRenegotiationAllowed());
             sslConnection.setRenegotiationLimit(sslContextFactory.getRenegotiationLimit());
-            sslConnection.setAllowMissingCloseMessage(isAllowMissingCloseMessage());
+            sslConnection.setRequireCloseMessage(isRequireCloseMessage());
             ContainerLifeCycle client = (ContainerLifeCycle)context.get(ClientConnectionFactory.CLIENT_CONTEXT_KEY);
             if (client != null)
                 client.getBeans(SslHandshakeListener.class).forEach(sslConnection::addHandshakeListener);

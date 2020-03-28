@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.client;
@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -298,7 +299,34 @@ public class TrailersTest extends AbstractTest
     }
 
     @Test
-    public void testRequestTrailerInvalidHpack() throws Exception
+    public void testRequestTrailerInvalidHpackSent() throws Exception
+    {
+        start(new EmptyHttpServlet());
+
+        Session session = newClient(new Session.Listener.Adapter());
+        MetaData.Request request = newRequest("POST", new HttpFields());
+        HeadersFrame requestFrame = new HeadersFrame(request, null, false);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        session.newStream(requestFrame, promise, new Stream.Listener.Adapter());
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        ByteBuffer data = ByteBuffer.wrap(StringUtil.getUtf8Bytes("hello"));
+        Callback.Completable completable = new Callback.Completable();
+        stream.data(new DataFrame(stream.getId(), data, false), completable);
+        CountDownLatch failureLatch = new CountDownLatch(1);
+        completable.thenRun(() ->
+        {
+            // Invalid trailer: cannot contain pseudo headers.
+            HttpFields trailerFields = new HttpFields();
+            trailerFields.put(HttpHeader.C_METHOD, "GET");
+            MetaData trailer = new MetaData(HttpVersion.HTTP_2, trailerFields);
+            HeadersFrame trailerFrame = new HeadersFrame(stream.getId(), trailer, null, true);
+            stream.headers(trailerFrame, Callback.from(Callback.NOOP::succeeded, x -> failureLatch.countDown()));
+        });
+        assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testRequestTrailerInvalidHpackReceived() throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
         start(new HttpServlet()
@@ -344,6 +372,8 @@ public class TrailersTest extends AbstractTest
         stream.data(new DataFrame(stream.getId(), data, false), completable);
         completable.thenRun(() ->
         {
+            // Disable checks for invalid headers.
+            ((HTTP2Session)session).getGenerator().setValidateHpackEncoding(false);
             // Invalid trailer: cannot contain pseudo headers.
             HttpFields trailerFields = new HttpFields();
             trailerFields.put(HttpHeader.C_METHOD, "GET");

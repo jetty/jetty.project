@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -26,8 +26,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides a reusable {@link Callback} that can block the thread
@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SharedBlockingCallback
 {
-    private static final Logger LOG = Log.getLogger(SharedBlockingCallback.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SharedBlockingCallback.class);
 
     private static Throwable IDLE = new ConstantThrowable("IDLE");
     private static Throwable SUCCEEDED = new ConstantThrowable("SUCCEEDED");
@@ -85,7 +85,7 @@ public class SharedBlockingCallback
     {
         LOG.warn("Blocker not complete {}", blocker);
         if (LOG.isDebugEnabled())
-            LOG.debug(new Throwable());
+            LOG.debug("Blocker not complete stacktrace", new Throwable());
     }
 
     /**
@@ -124,7 +124,7 @@ public class SharedBlockingCallback
                 {
                     LOG.warn("Succeeded after {}", _state.toString());
                     if (LOG.isDebugEnabled())
-                        LOG.debug(_state);
+                        LOG.debug("State", _state);
                 }
             }
             finally
@@ -157,11 +157,12 @@ public class SharedBlockingCallback
                 }
                 else
                 {
-                    LOG.warn("Failed after {}: {}", _state, cause);
+                    String msg = String.format("Failed after %s: %s", _state, cause);
+                    LOG.warn(msg);
                     if (LOG.isDebugEnabled())
                     {
-                        LOG.debug(_state);
-                        LOG.debug(cause);
+                        LOG.debug(msg, _state);
+                        LOG.debug(msg, cause);
                     }
                 }
             }

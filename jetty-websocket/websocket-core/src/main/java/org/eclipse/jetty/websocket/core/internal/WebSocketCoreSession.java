@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core.internal;
@@ -23,52 +23,54 @@ import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.time.Duration;
-import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.core.Behavior;
-import org.eclipse.jetty.websocket.core.CloseException;
 import org.eclipse.jetty.websocket.core.CloseStatus;
+import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.IncomingFrames;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.OutgoingFrames;
-import org.eclipse.jetty.websocket.core.ProtocolException;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.core.WebSocketTimeoutException;
-import org.eclipse.jetty.websocket.core.WebSocketWriteTimeoutException;
+import org.eclipse.jetty.websocket.core.exception.CloseException;
+import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketWriteTimeoutException;
 import org.eclipse.jetty.websocket.core.internal.Parser.ParsedFrame;
-import org.eclipse.jetty.websocket.core.internal.compress.DeflateFrameExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.util.Callback.NOOP;
 
 /**
  * The Core WebSocket Session.
  */
-public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSession, Dumpable
+public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpable
 {
-    private static final Logger LOG = Log.getLogger(WebSocketCoreSession.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketCoreSession.class);
     private static final CloseStatus NO_CODE = new CloseStatus(CloseStatus.NO_CODE);
 
+    private final WebSocketComponents components;
     private final Behavior behavior;
     private final WebSocketSessionState sessionState = new WebSocketSessionState();
     private final FrameHandler handler;
     private final Negotiated negotiated;
     private final boolean demanding;
-    private final Flusher flusher = new Flusher();
+    private final Flusher flusher = new Flusher(this);
 
     private WebSocketConnection connection;
     private boolean autoFragment = WebSocketConstants.DEFAULT_AUTO_FRAGMENT;
@@ -79,14 +81,35 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     private long maxTextMessageSize = WebSocketConstants.DEFAULT_MAX_TEXT_MESSAGE_SIZE;
     private Duration idleTimeout = WebSocketConstants.DEFAULT_IDLE_TIMEOUT;
     private Duration writeTimeout = WebSocketConstants.DEFAULT_WRITE_TIMEOUT;
+    private final ContextHandler contextHandler;
 
-    public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated)
+    public WebSocketCoreSession(FrameHandler handler, Behavior behavior, Negotiated negotiated, WebSocketComponents components)
     {
+        this.components = components;
         this.handler = handler;
         this.behavior = behavior;
         this.negotiated = negotiated;
         this.demanding = handler.isDemanding();
+
+        if (behavior == Behavior.SERVER)
+        {
+            ContextHandler.Context context = ContextHandler.getCurrentContext();
+            this.contextHandler = (context != null) ? context.getContextHandler() : null;
+        }
+        else
+        {
+            this.contextHandler = null;
+        }
+
         negotiated.getExtensions().initialize(new IncomingAdaptor(), new OutgoingAdaptor(), this);
+    }
+
+    private void handle(Runnable runnable)
+    {
+        if (contextHandler != null)
+            contextHandler.handle(runnable);
+        else
+            runnable.run();
     }
 
     /**
@@ -100,6 +123,10 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     public void assertValidIncoming(Frame frame)
     {
         assertValidFrame(frame);
+
+        // Validate frame size.
+        if (maxFrameSize > 0 && frame.getPayloadLength() > maxFrameSize)
+            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
 
         // Assert Incoming Frame Behavior Required by RFC-6455 / Section 5.1
         switch (behavior)
@@ -133,6 +160,10 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     {
         assertValidFrame(frame);
 
+        // Validate frame size (allowed to be over max frame size if autoFragment is true).
+        if (!autoFragment && maxFrameSize > 0 && frame.getPayloadLength() > maxFrameSize)
+            throw new MessageTooLargeException("Cannot handle payload lengths larger than " + maxFrameSize);
+
         /*
          * RFC 6455 Section 5.5.1
          * close frame payload is specially formatted which is checked in CloseStatus
@@ -147,7 +178,6 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                     throw new ProtocolException("Frame has non-transmittable status code");
                 }
             }
-
         }
     }
 
@@ -156,7 +186,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         if (!OpCode.isKnown(frame.getOpCode()))
             throw new ProtocolException("Unknown opcode: " + frame.getOpCode());
 
-        int payloadLength = (frame.getPayload() == null) ? 0 : frame.getPayload().remaining();
+        int payloadLength = frame.getPayloadLength();
         if (frame.isControlFrame())
         {
             if (!frame.isFin())
@@ -311,9 +341,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         if (LOG.isDebugEnabled())
             LOG.debug("closeConnection() {} {} {}", closeStatus, this);
 
-        connection.cancelDemand();
-        if (connection.getEndPoint().isOpen())
-            connection.close();
+        abort();
 
         // Forward Errors to Local WebSocket EndPoint
         if (closeStatus.isAbnormal() && closeStatus.getCause() != null)
@@ -322,11 +350,11 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             {
                 try
                 {
-                    handler.onClosed(closeStatus, callback);
+                    handle(() -> handler.onClosed(closeStatus, callback));
                 }
                 catch (Throwable e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Failure from onClosed on handler {}", handler, e);
                     callback.failed(e);
                 }
             });
@@ -334,13 +362,13 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             Throwable cause = closeStatus.getCause();
             try
             {
-                handler.onError(cause, errorCallback);
+                handle(() -> handler.onError(cause, errorCallback));
             }
             catch (Throwable e)
             {
                 if (e != cause)
                     cause.addSuppressed(e);
-                LOG.warn(cause);
+                LOG.warn("Failure from onError on handler {}", handler, cause);
                 errorCallback.failed(cause);
             }
         }
@@ -348,11 +376,11 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         {
             try
             {
-                handler.onClosed(closeStatus, callback);
+                handle(() -> handler.onClosed(closeStatus, callback));
             }
             catch (Throwable e)
             {
-                LOG.warn(e);
+                LOG.warn("Failure from onClosed on handler {}", handler, e);
                 callback.failed(e);
             }
         }
@@ -451,7 +479,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         try
         {
             // Open connection and handler
-            handler.onOpen(this, openCallback);
+            handle(() -> handler.onOpen(this, openCallback));
         }
         catch (Throwable t)
         {
@@ -470,7 +498,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
         if (!demanding)
             throw new IllegalStateException("FrameHandler is not demanding: " + this);
         if (!sessionState.isInputOpen())
-            throw new IllegalStateException("FrameHandler input not open: " + this); // TODO Perhaps this is a NOOP?
+            throw new IllegalStateException("FrameHandler input not open: " + this);
         connection.demand(n);
     }
 
@@ -521,26 +549,22 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
 
         try
         {
-            synchronized (flusher)
+            if (LOG.isDebugEnabled())
+                LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
+
+            boolean closeConnection = sessionState.onOutgoingFrame(frame);
+            if (closeConnection)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("sendFrame({}, {}, {})", frame, callback, batch);
+                Callback closeConnectionCallback = Callback.from(
+                    () -> closeConnection(sessionState.getCloseStatus(), callback),
+                    t -> closeConnection(sessionState.getCloseStatus(), Callback.from(callback, t)));
 
-                boolean closeConnection = sessionState.onOutgoingFrame(frame);
-                if (closeConnection)
-                {
-                    Callback closeConnectionCallback = Callback.from(
-                        () -> closeConnection(sessionState.getCloseStatus(), callback),
-                        t -> closeConnection(sessionState.getCloseStatus(), Callback.from(callback, t)));
-
-                    flusher.queue.offer(new FrameEntry(frame, closeConnectionCallback, false));
-                }
-                else
-                {
-                    flusher.queue.offer(new FrameEntry(frame, callback, batch));
-                }
+                flusher.sendFrame(frame, closeConnectionCallback, false);
             }
-            flusher.iterate();
+            else
+            {
+                flusher.sendFrame(frame, callback, batch);
+            }
         }
         catch (Throwable t)
         {
@@ -563,11 +587,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     @Override
     public void flush(Callback callback)
     {
-        synchronized (flusher)
-        {
-            flusher.queue.offer(new FrameEntry(FrameFlusher.FLUSH_FRAME, callback, false));
-        }
-        flusher.iterate();
+        flusher.sendFrame(FrameFlusher.FLUSH_FRAME, callback, false);
     }
 
     @Override
@@ -589,9 +609,6 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     @Override
     public void setAutoFragment(boolean autoFragment)
     {
-        // TODO: consider adding extensible/generic mechanism for extensions to validate configuration changes if more examples occur
-        if (autoFragment && getExtensionStack().getRsv1User() instanceof DeflateFrameExtension)
-            LOG.warn("Frame auto-fragmentation must not be used with DeflateFrameExtension");
         this.autoFragment = autoFragment;
     }
 
@@ -672,7 +689,7 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
                 // Handle inbound frame
                 if (frame.getOpCode() != OpCode.CLOSE)
                 {
-                    handler.onFrame(frame, callback);
+                    handle(() -> handler.onFrame(frame, callback));
                     return;
                 }
 
@@ -781,6 +798,12 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
     }
 
     @Override
+    public WebSocketComponents getWebSocketComponents()
+    {
+        return components;
+    }
+
+    @Override
     public String toString()
     {
         return String.format("WSCoreSession@%x{%s,%s,%s,af=%b,i/o=%d/%d,fs=%d}->%s",
@@ -795,57 +818,17 @@ public class WebSocketCoreSession implements IncomingFrames, FrameHandler.CoreSe
             handler);
     }
 
-    private class Flusher extends IteratingCallback
+    private class Flusher extends FragmentingFlusher
     {
-        private final Queue<FrameEntry> queue = new ArrayDeque<>();
-        FrameEntry entry;
-
-        @Override
-        protected Action process() throws Throwable
+        public Flusher(Configuration configuration)
         {
-            synchronized (this)
-            {
-                entry = queue.poll();
-            }
-            if (entry == null)
-                return Action.IDLE;
-
-            negotiated.getExtensions().sendFrame(entry.frame, this, entry.batch);
-            return Action.SCHEDULED;
+            super(configuration);
         }
 
         @Override
-        public void succeeded()
+        void forwardFrame(Frame frame, Callback callback, boolean batch)
         {
-            entry.callback.succeeded();
-            super.succeeded();
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable cause)
-        {
-            entry.callback.failed(cause);
-            Queue<FrameEntry> entries;
-            synchronized (this)
-            {
-                entries = new ArrayDeque<>(queue);
-                queue.clear();
-            }
-            entries.forEach(e -> failEntry(cause, e));
-        }
-
-        private void failEntry(Throwable cause, FrameEntry e)
-        {
-            try
-            {
-                e.callback.failed(cause);
-            }
-            catch (Throwable x)
-            {
-                if (cause != x)
-                    cause.addSuppressed(x);
-                LOG.warn(cause);
-            }
+            negotiated.getExtensions().sendFrame(frame, callback, batch);
         }
     }
 }

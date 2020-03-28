@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -24,8 +24,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * The configuration of the forward proxy to use with {@link org.eclipse.jetty.client.HttpClient}.
@@ -59,16 +61,26 @@ public class ProxyConfiguration
 
     public abstract static class Proxy
     {
-        // TO use IPAddress Map
+        // TODO use InetAddressSet? Or IncludeExcludeSet?
         private final Set<String> included = new HashSet<>();
         private final Set<String> excluded = new HashSet<>();
-        private final Origin.Address address;
-        private final boolean secure;
+        private final Origin origin;
+        private final SslContextFactory.Client sslContextFactory;
 
-        protected Proxy(Origin.Address address, boolean secure)
+        protected Proxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory, Origin.Protocol protocol)
         {
-            this.address = address;
-            this.secure = secure;
+            this(new Origin(secure ? HttpScheme.HTTPS.asString() : HttpScheme.HTTP.asString(), address, null, protocol), sslContextFactory);
+        }
+
+        protected Proxy(Origin origin, SslContextFactory.Client sslContextFactory)
+        {
+            this.origin = origin;
+            this.sslContextFactory = sslContextFactory;
+        }
+
+        public Origin getOrigin()
+        {
+            return origin;
         }
 
         /**
@@ -76,7 +88,7 @@ public class ProxyConfiguration
          */
         public Origin.Address getAddress()
         {
-            return address;
+            return origin.getAddress();
         }
 
         /**
@@ -84,7 +96,23 @@ public class ProxyConfiguration
          */
         public boolean isSecure()
         {
-            return secure;
+            return HttpScheme.HTTPS.is(origin.getScheme());
+        }
+
+        /**
+         * @return the optional SslContextFactory to use when connecting to proxies
+         */
+        public SslContextFactory.Client getSslContextFactory()
+        {
+            return sslContextFactory;
+        }
+
+        /**
+         * @return the protocol spoken by this proxy
+         */
+        public Origin.Protocol getProtocol()
+        {
+            return origin.getProtocol();
         }
 
         /**
@@ -159,14 +187,14 @@ public class ProxyConfiguration
 
         /**
          * @param connectionFactory the nested {@link ClientConnectionFactory}
-         * @return a new {@link ClientConnectionFactory} for this {@link Proxy}
+         * @return a new {@link ClientConnectionFactory} for this Proxy
          */
         public abstract ClientConnectionFactory newClientConnectionFactory(ClientConnectionFactory connectionFactory);
 
         @Override
         public String toString()
         {
-            return address.toString();
+            return origin.toString();
         }
     }
 }

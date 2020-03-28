@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.hpack;
@@ -22,6 +22,7 @@ import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -36,6 +37,7 @@ public class MetaDataBuilder
     private HttpScheme _scheme;
     private HostPortHttpField _authority;
     private String _path;
+    private String _protocol;
     private long _contentLength = Long.MIN_VALUE;
     private HttpFields _fields = new HttpFields();
     private HpackException.StreamException _streamException;
@@ -74,11 +76,13 @@ public class MetaDataBuilder
     {
         HttpHeader header = field.getHeader();
         String name = field.getName();
+        if (name == null || name.length() == 0)
+            throw new HpackException.SessionException("Header size 0");
         String value = field.getValue();
         int fieldSize = name.length() + (value == null ? 0 : value.length());
         _size += fieldSize + 32;
         if (_size > _maxSize)
-            throw new HpackException.SessionException("Header Size %d > %d", _size, _maxSize);
+            throw new HpackException.SessionException("Header size %d > %d", _size, _maxSize);
 
         if (field instanceof StaticTableHttpField)
         {
@@ -140,6 +144,23 @@ public class MetaDataBuilder
                     _request = true;
                     break;
 
+                case C_PATH:
+                    if (checkPseudoHeader(header, _path))
+                    {
+                        if (value != null && value.length() > 0)
+                            _path = value;
+                        else
+                            streamException("No Path");
+                    }
+                    _request = true;
+                    break;
+
+                case C_PROTOCOL:
+                    if (checkPseudoHeader(header, _protocol))
+                        _protocol = value;
+                    _request = true;
+                    break;
+
                 case HOST:
                     // :authority fields must come first.  If we have one, ignore the host header as far as authority goes.
                     if (_authority == null)
@@ -150,17 +171,6 @@ public class MetaDataBuilder
                             _authority = new AuthorityHttpField(value);
                     }
                     _fields.add(field);
-                    break;
-
-                case C_PATH:
-                    if (checkPseudoHeader(header, _path))
-                    {
-                        if (value != null && value.length() > 0)
-                            _path = value;
-                        else
-                            streamException("No Path");
-                    }
-                    _request = true;
                     break;
 
                 case CONTENT_LENGTH:
@@ -239,11 +249,18 @@ public class MetaDataBuilder
             {
                 if (_method == null)
                     throw new HpackException.StreamException("No Method");
-                if (_scheme == null)
-                    throw new HpackException.StreamException("No Scheme");
-                if (_path == null)
-                    throw new HpackException.StreamException("No Path");
-                return new MetaData.Request(_method, _scheme, _authority, _path, HttpVersion.HTTP_2, fields, _contentLength);
+                boolean isConnect = HttpMethod.CONNECT.is(_method);
+                if (!isConnect || _protocol != null)
+                {
+                    if (_scheme == null)
+                        throw new HpackException.StreamException("No Scheme");
+                    if (_path == null)
+                        throw new HpackException.StreamException("No Path");
+                }
+                if (isConnect)
+                    return new MetaData.ConnectRequest(_scheme, _authority, _path, fields, _protocol);
+                else
+                    return new MetaData.Request(_method, _scheme, _authority, _path, HttpVersion.HTTP_2, fields, _contentLength);
             }
             if (_response)
             {
@@ -264,6 +281,7 @@ public class MetaDataBuilder
             _scheme = null;
             _authority = null;
             _path = null;
+            _protocol = null;
             _size = 0;
             _contentLength = Long.MIN_VALUE;
         }

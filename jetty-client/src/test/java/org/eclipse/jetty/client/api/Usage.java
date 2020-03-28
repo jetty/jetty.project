@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.api;
@@ -49,10 +49,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Disabled
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class Usage
 {
     @Test
-    public void testGETBlocking_ShortAPI() throws Exception
+    public void testGETBlockingShortAPI() throws Exception
     {
         HttpClient client = new HttpClient();
         client.start();
@@ -120,7 +121,7 @@ public class Usage
     }
 
     @Test
-    public void testPOSTWithParams_ShortAPI() throws Exception
+    public void testPOSTWithParamsShortAPI() throws Exception
     {
         HttpClient client = new HttpClient();
         client.start();
@@ -153,13 +154,13 @@ public class Usage
         HttpClient client = new HttpClient();
         client.start();
 
+        Request request = client.newRequest("localhost", 8080);
+
         // Create an explicit connection, and use try-with-resources to manage it
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
-        client.getDestination("http", "localhost", 8080).newConnection(futureConnection);
+        client.resolveDestination(request).newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
-            Request request = client.newRequest("localhost", 8080);
-
             // Asynchronous send but using FutureResponseListener
             FutureResponseListener listener = new FutureResponseListener(request);
             connection.send(request, listener);
@@ -293,15 +294,8 @@ public class Usage
         try (OutputStream output = content.getOutputStream())
         {
             client.newRequest("localhost", 8080)
-                .content(content)
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        assertEquals(200, result.getResponse().getStatus());
-                    }
-                });
+                    .content(content)
+                    .send(result -> assertEquals(200, result.getResponse().getStatus()));
 
             output.write(new byte[1024]);
             output.write(new byte[512]);

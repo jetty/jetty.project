@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
@@ -39,8 +39,8 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Dynamic Servlet Invoker.
@@ -67,7 +67,7 @@ import org.eclipse.jetty.util.log.Logger;
 @SuppressWarnings("serial")
 public class Invoker extends HttpServlet
 {
-    private static final Logger LOG = Log.getLogger(Invoker.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Invoker.class);
 
     private ContextHandler _contextHandler;
     private ServletHandler _servletHandler;
@@ -194,7 +194,7 @@ public class Invoker extends HttpServlet
                     }
                     catch (Exception e)
                     {
-                        LOG.debug(e);
+                        LOG.debug("Unable to start {}", holder, e);
                         throw new UnavailableException(e.toString());
                     }
 
@@ -212,7 +212,7 @@ public class Invoker extends HttpServlet
                             }
                             catch (Exception e)
                             {
-                                LOG.ignore(e);
+                                LOG.trace("IGNORED", e);
                             }
 
                             LOG.warn("Dynamic servlet " + s +

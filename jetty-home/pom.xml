@@ -171,6 +171,33 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-lib-logging-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty,org.slf4j</includeGroupIds>
+              <includeArtifactIds>jetty-slf4j-impl,slf4j-api</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/logging</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-logging-src-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty,org.slf4j</includeGroupIds>
+              <includeArtifactIds>jetty-slf4j-impl,slf4j-api</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <classifier>sources</classifier>
+              <outputDirectory>${source-assembly-directory}/lib/logging</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-lib-websocket-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -605,6 +632,11 @@
     <!-- jetty deps -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-deploy</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -636,12 +668,12 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-server</artifactId>
+      <artifactId>websocket-jetty-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-server</artifactId>
+      <artifactId>websocket-javax-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -689,8 +721,8 @@
       <artifactId>jboss-logging</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.cdi</groupId>
-      <artifactId>cdi-2</artifactId>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-cdi</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -721,6 +753,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-java-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-openid</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -25,10 +25,10 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -45,7 +45,7 @@ public class BufferUtilTest
     @Test
     public void testToInt() throws Exception
     {
-        ByteBuffer buf[] =
+        ByteBuffer[] buf =
             {
                 BufferUtil.toBuffer("0"),
                 BufferUtil.toBuffer(" 42 "),
@@ -54,9 +54,9 @@ public class BufferUtilTest
                 BufferUtil.toBuffer(" - 45;"),
                 BufferUtil.toBuffer("-2147483648"),
                 BufferUtil.toBuffer("2147483647"),
-                };
+            };
 
-        int val[] =
+        int[] val =
             {
                 0, 42, 43, -44, -45, -2147483648, 2147483647
             };
@@ -70,12 +70,12 @@ public class BufferUtilTest
     @Test
     public void testPutInt() throws Exception
     {
-        int val[] =
+        int[] val =
             {
                 0, 42, 43, -44, -45, Integer.MIN_VALUE, Integer.MAX_VALUE
             };
 
-        String str[] =
+        String[] str =
             {
                 "0", "42", "43", "-44", "-45", "" + Integer.MIN_VALUE, "" + Integer.MAX_VALUE
             };
@@ -94,12 +94,12 @@ public class BufferUtilTest
     @Test
     public void testPutLong() throws Exception
     {
-        long val[] =
+        long[] val =
             {
                 0L, 42L, 43L, -44L, -45L, Long.MIN_VALUE, Long.MAX_VALUE
             };
 
-        String str[] =
+        String[] str =
             {
                 "0", "42", "43", "-44", "-45", "" + Long.MIN_VALUE, "" + Long.MAX_VALUE
             };
@@ -118,12 +118,12 @@ public class BufferUtilTest
     @Test
     public void testPutHexInt() throws Exception
     {
-        int val[] =
+        int[] val =
             {
                 0, 42, 43, -44, -45, -2147483648, 2147483647
             };
 
-        String str[] =
+        String[] str =
             {
                 "0", "2A", "2B", "-2C", "-2D", "-80000000", "7FFFFFFF"
             };
@@ -195,7 +195,7 @@ public class BufferUtilTest
     }
 
     @Test
-    public void testToBuffer_Array()
+    public void testToBufferArray()
     {
         byte[] arr = new byte[128];
         Arrays.fill(arr, (byte)0x44);
@@ -213,7 +213,7 @@ public class BufferUtilTest
     }
 
     @Test
-    public void testToBuffer_ArrayOffsetLength()
+    public void testToBufferArrayOffsetLength()
     {
         byte[] arr = new byte[128];
         Arrays.fill(arr, (byte)0xFF); // fill whole thing with FF
@@ -233,7 +233,7 @@ public class BufferUtilTest
         assertEquals(length, count, "Count of bytes");
     }
 
-    private static final Logger LOG = Log.getLogger(BufferUtilTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BufferUtilTest.class);
 
     @Test
     @Disabled("Very simple microbenchmark to compare different writeTo implementations. Only for development thus " +
@@ -322,7 +322,7 @@ public class BufferUtilTest
     }
 
     @Test
-    public void testToDetail_WithDEL()
+    public void testToDetailWithDEL()
     {
         ByteBuffer b = ByteBuffer.allocate(40);
         b.putChar('a').putChar('b').putChar('c');

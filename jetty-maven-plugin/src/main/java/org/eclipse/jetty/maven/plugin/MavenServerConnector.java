@@ -1,27 +1,27 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.maven.plugin;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -121,7 +121,7 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     }
 
     @Override
-    public Future<Void> shutdown()
+    public CompletableFuture<Void> shutdown()
     {
         return checkDelegate().shutdown();
     }
@@ -144,72 +144,48 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getExecutor();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getScheduler()
-     */
     @Override
     public Scheduler getScheduler()
     {
         return checkDelegate().getScheduler();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getByteBufferPool()
-     */
     @Override
     public ByteBufferPool getByteBufferPool()
     {
         return checkDelegate().getByteBufferPool();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getConnectionFactory(java.lang.String)
-     */
     @Override
     public ConnectionFactory getConnectionFactory(String nextProtocol)
     {
         return checkDelegate().getConnectionFactory(nextProtocol);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getConnectionFactory(java.lang.Class)
-     */
     @Override
     public <T> T getConnectionFactory(Class<T> factoryType)
     {
         return checkDelegate().getConnectionFactory(factoryType);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getDefaultConnectionFactory()
-     */
     @Override
     public ConnectionFactory getDefaultConnectionFactory()
     {
         return checkDelegate().getDefaultConnectionFactory();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getConnectionFactories()
-     */
     @Override
     public Collection<ConnectionFactory> getConnectionFactories()
     {
         return checkDelegate().getConnectionFactories();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getProtocols()
-     */
     @Override
     public List<String> getProtocols()
     {
         return checkDelegate().getProtocols();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getIdleTimeout()
-     */
     @Override
     @ManagedAttribute("maximum time a connection can be idle before being closed (in ms)")
     public long getIdleTimeout()
@@ -217,27 +193,18 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
         return checkDelegate().getIdleTimeout();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getTransport()
-     */
     @Override
     public Object getTransport()
     {
         return checkDelegate().getTransport();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getConnectedEndPoints()
-     */
     @Override
     public Collection<EndPoint> getConnectedEndPoints()
     {
         return checkDelegate().getConnectedEndPoints();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.Connector#getName()
-     */
     @Override
     public String getName()
     {

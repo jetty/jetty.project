@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.proxy;
@@ -42,17 +42,18 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.HttpCookieStore;
-import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Abstract base class for proxy servlets.</p>
@@ -150,7 +151,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         catch (Exception x)
         {
             if (_log.isDebugEnabled())
-                _log.debug(x);
+                _log.debug("Failed to stop client", x);
         }
     }
 
@@ -207,7 +208,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         {
             servletName = getClass().getName() + "." + servletName;
         }
-        return Log.getLogger(servletName);
+        return LoggerFactory.getLogger(servletName);
     }
 
     /**
@@ -350,11 +351,23 @@ public abstract class AbstractProxyServlet extends HttpServlet
      */
     protected HttpClient newHttpClient()
     {
-        int selectors = Math.max(1, ProcessorUtils.availableProcessors() / 2);
+        int selectors = 1;
         String value = getServletConfig().getInitParameter("selectors");
         if (value != null)
             selectors = Integer.parseInt(value);
-        return new HttpClient(new HttpClientTransportOverHTTP(selectors));
+        ClientConnector clientConnector = newClientConnector();
+        clientConnector.setSelectors(selectors);
+        return newHttpClient(clientConnector);
+    }
+
+    protected HttpClient newHttpClient(ClientConnector clientConnector)
+    {
+        return new HttpClient(new HttpClientTransportDynamic(clientConnector));
+    }
+
+    protected ClientConnector newClientConnector()
+    {
+        return new ClientConnector();
     }
 
     protected HttpClient getHttpClient()
@@ -411,8 +424,14 @@ public abstract class AbstractProxyServlet extends HttpServlet
     {
         if (!validateDestination(clientRequest.getServerName(), clientRequest.getServerPort()))
             return null;
-
+        // If the proxy is secure, we will likely get a proxied URI
+        // with the "https" scheme, but the upstream server needs
+        // to be called with the "http" scheme (the ConnectHandler
+        // is used to call upstream servers with the "https" scheme).
         StringBuffer target = clientRequest.getRequestURL();
+        // Change "https" to "http".
+        if (HttpScheme.HTTPS.is(target.substring(0, 5)))
+            target.replace(4, 5, "");
         String query = clientRequest.getQueryString();
         if (query != null)
             target.append("?").append(query);
@@ -673,7 +692,15 @@ public abstract class AbstractProxyServlet extends HttpServlet
         }
         catch (Exception e)
         {
-            _log.ignore(e);
+            _log.trace("IGNORED", e);
+            try
+            {
+                proxyResponse.sendError(-1);
+            }
+            catch (Exception e2)
+            {
+                _log.trace("IGNORED", e2);
+            }
         }
         finally
         {

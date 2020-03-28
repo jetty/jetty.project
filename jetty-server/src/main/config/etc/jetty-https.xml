@@ -2,7 +2,7 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <!-- ============================================================= -->
-<!-- Configure a HTTPS connector.                                  -->
+<!-- Configure an HTTPS connector.                                  -->
 <!-- This configuration must be used in conjunction with jetty.xml -->
 <!-- and jetty-ssl.xml.                                            -->
 <!-- ============================================================= -->

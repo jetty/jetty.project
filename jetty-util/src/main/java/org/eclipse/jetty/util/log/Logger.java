@@ -1,32 +1,35 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.log;
 
 /**
- * A simple logging facade that is intended simply to capture the style of logging as used by Jetty.
+ * Legacy Bridge API to Slf4j
+ *
+ * @deprecated
  */
+@Deprecated
 public interface Logger
 {
     /**
      * @return the name of this logger
      */
-    public String getName();
+    String getName();
 
     /**
      * Formats and logs at warn level.
@@ -34,14 +37,14 @@ public interface Logger
      * @param msg the formatting string
      * @param args the optional arguments
      */
-    public void warn(String msg, Object... args);
+    void warn(String msg, Object... args);
 
     /**
      * Logs the given Throwable information at warn level
      *
      * @param thrown the Throwable to log
      */
-    public void warn(Throwable thrown);
+    void warn(Throwable thrown);
 
     /**
      * Logs the given message at warn level, with Throwable information.
@@ -49,7 +52,7 @@ public interface Logger
      * @param msg the message to log
      * @param thrown the Throwable to log
      */
-    public void warn(String msg, Throwable thrown);
+    void warn(String msg, Throwable thrown);
 
     /**
      * Formats and logs at info level.
@@ -57,14 +60,14 @@ public interface Logger
      * @param msg the formatting string
      * @param args the optional arguments
      */
-    public void info(String msg, Object... args);
+    void info(String msg, Object... args);
 
     /**
      * Logs the given Throwable information at info level
      *
      * @param thrown the Throwable to log
      */
-    public void info(Throwable thrown);
+    void info(Throwable thrown);
 
     /**
      * Logs the given message at info level, with Throwable information.
@@ -72,19 +75,19 @@ public interface Logger
      * @param msg the message to log
      * @param thrown the Throwable to log
      */
-    public void info(String msg, Throwable thrown);
+    void info(String msg, Throwable thrown);
 
     /**
      * @return whether the debug level is enabled
      */
-    public boolean isDebugEnabled();
+    boolean isDebugEnabled();
 
     /**
      * Mutator used to turn debug on programmatically.
      *
      * @param enabled whether to enable the debug level
      */
-    public void setDebugEnabled(boolean enabled);
+    void setDebugEnabled(boolean enabled);
 
     /**
      * Formats and logs at debug level.
@@ -92,7 +95,7 @@ public interface Logger
      * @param msg the formatting string
      * @param args the optional arguments
      */
-    public void debug(String msg, Object... args);
+    void debug(String msg, Object... args);
 
     /**
      * Formats and logs at debug level.
@@ -101,14 +104,14 @@ public interface Logger
      * @param msg the formatting string
      * @param value long value
      */
-    public void debug(String msg, long value);
+    void debug(String msg, long value);
 
     /**
      * Logs the given Throwable information at debug level
      *
      * @param thrown the Throwable to log
      */
-    public void debug(Throwable thrown);
+    void debug(Throwable thrown);
 
     /**
      * Logs the given message at debug level, with Throwable information.
@@ -116,13 +119,13 @@ public interface Logger
      * @param msg the message to log
      * @param thrown the Throwable to log
      */
-    public void debug(String msg, Throwable thrown);
+    void debug(String msg, Throwable thrown);
 
     /**
      * @param name the name of the logger
      * @return a logger with the given name
      */
-    public Logger getLogger(String name);
+    Logger getLogger(String name);
 
     /**
      * Ignore an exception.
@@ -130,5 +133,5 @@ public interface Logger
      *
      * @param ignored the throwable to log as ignored
      */
-    public void ignore(Throwable ignored);
+    void ignore(Throwable ignored);
 }

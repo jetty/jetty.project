@@ -1,25 +1,26 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -46,14 +47,16 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.resource.HttpContentRangeWriter;
+import org.eclipse.jetty.server.resource.InputStreamRangeWriter;
 import org.eclipse.jetty.server.resource.RangeWriter;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiPartOutputStream;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
@@ -64,7 +67,7 @@ import static org.eclipse.jetty.http.HttpHeaderValue.IDENTITY;
  */
 public class ResourceService
 {
-    private static final Logger LOG = Log.getLogger(ResourceService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResourceService.class);
 
     private static final PreEncodedHttpField ACCEPT_RANGES = new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes");
 
@@ -294,7 +297,7 @@ public class ResourceService
         }
         catch (IllegalArgumentException e)
         {
-            LOG.warn(Log.EXCEPTION, e);
+            LOG.warn("Failed to serve resource: {}", pathInContext, e);
             if (!response.isCommitted())
                 response.sendError(500, e.getMessage());
         }
@@ -669,18 +672,14 @@ public class ResourceService
             if (include)
             {
                 // write without headers
-                content.getResource().writeTo(out, 0, content_length);
+                writeContent(content, out, 0, content_length);
             }
             // else if we can't do a bypass write because of wrapping
             else if (written || !(out instanceof HttpOutput))
             {
                 // write normally
                 putHeaders(response, content, written ? -1 : 0);
-                ByteBuffer buffer = content.getIndirectBuffer();
-                if (buffer != null)
-                    BufferUtil.writeTo(buffer, out);
-                else
-                    content.getResource().writeTo(out, 0, content_length);
+                writeContent(content, out, 0, content_length);
             }
             // else do a bypass write
             else
@@ -706,10 +705,11 @@ public class ResourceService
                         @Override
                         public void failed(Throwable x)
                         {
+                            String msg = "Failed to send content";
                             if (x instanceof IOException)
-                                LOG.debug(x);
+                                LOG.debug(msg, x);
                             else
-                                LOG.warn(x);
+                                LOG.warn(msg, x);
                             context.complete();
                             content.release();
                         }
@@ -753,7 +753,7 @@ public class ResourceService
                     response.addDateHeader(HttpHeader.DATE.asString(), System.currentTimeMillis());
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     singleSatisfiableRange.toHeaderRangeString(content_length));
-                content.getResource().writeTo(out, singleSatisfiableRange.getFirst(), singleLength);
+                writeContent(content, out, singleSatisfiableRange.getFirst(), singleLength);
                 return true;
             }
 
@@ -813,6 +813,33 @@ public class ResourceService
             multi.close();
         }
         return true;
+    }
+
+    private static void writeContent(HttpContent content, OutputStream out, long start, long contentLength) throws IOException
+    {
+        // Is the write for the whole content?
+        if (start == 0 && content.getResource().length() == contentLength)
+        {
+            // attempt efficient ByteBuffer based write for whole content
+            ByteBuffer buffer = content.getIndirectBuffer();
+            if (buffer != null)
+            {
+                BufferUtil.writeTo(buffer, out);
+                return;
+            }
+
+            try (InputStream input = content.getResource().getInputStream())
+            {
+                IO.copy(input, out);
+                return;
+            }
+        }
+
+        // Use a ranged writer
+        try (InputStreamRangeWriter rangeWriter = new InputStreamRangeWriter(() -> content.getInputStream()))
+        {
+            rangeWriter.writeTo(out, start, contentLength);
+        }
     }
 
     protected void putHeaders(HttpServletResponse response, HttpContent content, long contentLength)

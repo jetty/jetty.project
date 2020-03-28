@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.session;
@@ -28,8 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.ClassVisibilityChecker;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SessionData
@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SessionData implements Serializable
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(SessionData.class);
 
     private static final long serialVersionUID = 1L;
 
@@ -58,6 +58,7 @@ public class SessionData implements Serializable
     protected Map<String, Object> _attributes;
     protected boolean _dirty;
     protected long _lastSaved; //time in msec since last save
+    protected boolean _metaDataDirty; //non-attribute data has changed
 
     /**
      * Serialize the attribute map of the session.
@@ -155,17 +156,12 @@ public class SessionData implements Serializable
             LOG.info("Legacy serialization detected for {}", data.getId());
             //legacy serialization was used, we have just deserialized the 
             //entire attribute map
-            data._attributes = new ConcurrentHashMap<String, Object>();
+            data._attributes = new ConcurrentHashMap<>();
             data.putAllAttributes((Map<String, Object>)o);
         }
     }
 
     public SessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
-    {
-        this(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs, new ConcurrentHashMap<String, Object>());
-    }
-
-    public SessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs, Map<String, Object> attributes)
     {
         _id = id;
         setContextPath(cpath);
@@ -175,7 +171,13 @@ public class SessionData implements Serializable
         _lastAccessed = lastAccessed;
         _maxInactiveMs = maxInactiveMs;
         calcAndSetExpiry();
-        _attributes = attributes;
+        _attributes = new ConcurrentHashMap<>();
+    }
+
+    public SessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs, Map<String, Object> attributes)
+    {
+        this(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
+        putAllAttributes(attributes);
     }
 
     /**
@@ -240,6 +242,22 @@ public class SessionData implements Serializable
     }
 
     /**
+     * @return the metaDataDirty
+     */
+    public boolean isMetaDataDirty()
+    {
+        return _metaDataDirty;
+    }
+
+    /**
+     * @param metaDataDirty true means non-attribute data has changed
+     */
+    public void setMetaDataDirty(boolean metaDataDirty)
+    {
+        _metaDataDirty = metaDataDirty;
+    }
+
+    /**
      * @param name the name of the attribute
      * @return the value of the attribute named
      */
@@ -264,6 +282,15 @@ public class SessionData implements Serializable
 
         setDirty(name);
         return old;
+    }
+
+    /**
+     * Clear all dirty flags.
+     */
+    public void clean()
+    {
+        setDirty(false);
+        setMetaDataDirty(false);
     }
 
     public void putAllAttributes(Map<String, Object> attributes)
@@ -365,11 +392,13 @@ public class SessionData implements Serializable
     public void calcAndSetExpiry(long time)
     {
         setExpiry(calcExpiry(time));
+        setMetaDataDirty(true);
     }
 
     public void calcAndSetExpiry()
     {
         setExpiry(calcExpiry());
+        setMetaDataDirty(true);
     }
 
     public long getCreated()

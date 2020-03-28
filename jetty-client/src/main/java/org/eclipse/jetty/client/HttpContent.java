@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -26,13 +26,14 @@ import java.util.Iterator;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.IO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link HttpContent} is a stateful, linear representation of the request content provided
  * by a {@link ContentProvider} that can be traversed one-way to obtain content buffers to
- * send to a HTTP server.
+ * send to an HTTP server.
  * <p>
  * {@link HttpContent} offers the notion of a one-way cursor to traverse the content.
  * The cursor starts in a virtual "before" position and can be advanced using {@link #advance()}
@@ -65,7 +66,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpContent implements Callback, Closeable
 {
-    private static final Logger LOG = Log.getLogger(HttpContent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpContent.class);
     private static final ByteBuffer AFTER = ByteBuffer.allocate(0);
     private static final ByteBuffer CLOSE = ByteBuffer.allocate(0);
 
@@ -218,15 +219,8 @@ public class HttpContent implements Callback, Closeable
     @Override
     public void close()
     {
-        try
-        {
-            if (iterator instanceof Closeable)
-                ((Closeable)iterator).close();
-        }
-        catch (Throwable x)
-        {
-            LOG.ignore(x);
-        }
+        if (iterator instanceof Closeable)
+            IO.close((Closeable)iterator);
     }
 
     @Override

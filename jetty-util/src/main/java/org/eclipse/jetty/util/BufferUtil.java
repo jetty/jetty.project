@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -33,8 +33,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Buffer utility methods.
@@ -93,15 +94,17 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class BufferUtil
 {
+    private static final Logger LOG = LoggerFactory.getLogger(BufferUtil.class);
+
     static final int TEMP_BUFFER_SIZE = 4096;
     static final byte SPACE = 0x20;
     static final byte MINUS = '-';
     static final byte[] DIGIT =
-    {
-        (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
-        (byte)'A', (byte)'B', (byte)'C', (byte)'D',
-        (byte)'E', (byte)'F'
-    };
+        {
+            (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
+            (byte)'A', (byte)'B', (byte)'C', (byte)'D',
+            (byte)'E', (byte)'F'
+        };
 
     public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
 
@@ -133,6 +136,20 @@ public class BufferUtil
         ByteBuffer buf = ByteBuffer.allocateDirect(capacity);
         buf.limit(0);
         return buf;
+    }
+
+    /**
+     * Allocates a ByteBuffer in flush mode.
+     * The position and limit will both be zero, indicating that the buffer is
+     * empty and must be flipped before any data is put to it.
+     *
+     * @param capacity capacity of the allocated ByteBuffer
+     * @param direct whether the ByteBuffer is direct
+     * @return the newly allocated ByteBuffer
+     */
+    public static ByteBuffer allocate(int capacity, boolean direct)
+    {
+        return direct ? allocateDirect(capacity) : allocate(capacity);
     }
 
     /**
@@ -235,6 +252,20 @@ public class BufferUtil
     {
         buffer.limit(buffer.position());
         buffer.position(position);
+    }
+
+    /** Put an integer little endian
+     * @param buffer The buffer to put to
+     * @param value The value to put.
+     */
+    public static void putIntLittleEndian(ByteBuffer buffer, int value)
+    {
+        int p = flipToFill(buffer);
+        buffer.put((byte)(value & 0xFF));
+        buffer.put((byte)((value >>> 8) & 0xFF));
+        buffer.put((byte)((value >>> 16) & 0xFF));
+        buffer.put((byte)((value >>> 24) & 0xFF));
+        flipToFlush(buffer, p);
     }
 
     /**
@@ -470,6 +501,7 @@ public class BufferUtil
      *
      * @param to Buffer is flush mode
      * @param b byte to append
+     * @throws BufferOverflowException if unable to append buffer due to space limits
      */
     public static void append(ByteBuffer to, byte b)
     {
@@ -1114,20 +1146,20 @@ public class BufferUtil
             for (int i = 0; i < buffer.position(); i++)
             {
                 appendContentChar(buf, buffer.get(i));
-                if (i == 16 && buffer.position() > 32)
+                if (i == 8 && buffer.position() > 16)
                 {
                     buf.append("...");
-                    i = buffer.position() - 16;
+                    i = buffer.position() - 8;
                 }
             }
             buf.append("<<<");
             for (int i = buffer.position(); i < buffer.limit(); i++)
             {
                 appendContentChar(buf, buffer.get(i));
-                if (i == buffer.position() + 16 && buffer.limit() > buffer.position() + 32)
+                if (i == buffer.position() + 24 && buffer.limit() > buffer.position() + 48)
                 {
                     buf.append("...");
-                    i = buffer.limit() - 16;
+                    i = buffer.limit() - 24;
                 }
             }
             buf.append(">>>");
@@ -1136,17 +1168,17 @@ public class BufferUtil
             for (int i = limit; i < buffer.capacity(); i++)
             {
                 appendContentChar(buf, buffer.get(i));
-                if (i == limit + 16 && buffer.capacity() > limit + 32)
+                if (i == limit + 8 && buffer.capacity() > limit + 16)
                 {
                     buf.append("...");
-                    i = buffer.capacity() - 16;
+                    i = buffer.capacity() - 8;
                 }
             }
             buffer.limit(limit);
         }
         catch (Throwable x)
         {
-            Log.getRootLogger().ignore(x);
+            LOG.trace("IGNORED", x);
             buf.append("!!concurrent mod!!");
         }
     }

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.rewrite.handler;
@@ -43,7 +43,7 @@ public class HeaderRegexRuleTest extends AbstractRuleTestCase
     public void testHeaderWithTextValues() throws IOException
     {
         // different keys
-        String headers[][] =
+        String[][] headers =
             {
                 {"hnum#1", "test1"},
                 {"hnum#2", "2test2"},
@@ -55,7 +55,7 @@ public class HeaderRegexRuleTest extends AbstractRuleTestCase
     @Test
     public void testHeaderWithNumberValues() throws IOException
     {
-        String headers[][] =
+        String[][] headers =
             {
                 {"hello", "1"},
                 {"hello", "-1"},
@@ -72,7 +72,7 @@ public class HeaderRegexRuleTest extends AbstractRuleTestCase
     @Test
     public void testHeaderOverwriteValues() throws IOException
     {
-        String headers[][] =
+        String[][] headers =
             {
                 {"size", "100"},
                 {"size", "200"},
@@ -122,7 +122,7 @@ public class HeaderRegexRuleTest extends AbstractRuleTestCase
         assertEquals(null, _response.getHeader("cache-control"));
     }
 
-    private void assertHeaders(String headers[][]) throws IOException
+    private void assertHeaders(String[][] headers) throws IOException
     {
         for (String[] header : headers)
         {

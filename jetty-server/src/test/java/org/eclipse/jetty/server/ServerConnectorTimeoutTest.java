@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -31,10 +31,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -70,14 +70,14 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     public void testIdleTimeoutAfterSuspend() throws Exception
     {
         _server.stop();
-        SuspendHandler _handler = new SuspendHandler();
+        SuspendHandler handler = new SuspendHandler();
         SessionHandler session = new SessionHandler();
-        session.setHandler(_handler);
+        session.setHandler(handler);
         _server.setHandler(session);
         _server.start();
 
-        _handler.setSuspendFor(100);
-        _handler.setResumeAfter(25);
+        handler.setSuspendFor(100);
+        handler.setResumeAfter(25);
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             String process = process(null).toUpperCase(Locale.ENGLISH);
@@ -88,14 +88,14 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     @Test
     public void testIdleTimeoutAfterTimeout() throws Exception
     {
-        SuspendHandler _handler = new SuspendHandler();
+        SuspendHandler handler = new SuspendHandler();
         _server.stop();
         SessionHandler session = new SessionHandler();
-        session.setHandler(_handler);
+        session.setHandler(handler);
         _server.setHandler(session);
         _server.start();
 
-        _handler.setSuspendFor(50);
+        handler.setSuspendFor(50);
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             String process = process(null).toUpperCase(Locale.ENGLISH);
@@ -106,15 +106,15 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     @Test
     public void testIdleTimeoutAfterComplete() throws Exception
     {
-        SuspendHandler _handler = new SuspendHandler();
+        SuspendHandler handler = new SuspendHandler();
         _server.stop();
         SessionHandler session = new SessionHandler();
-        session.setHandler(_handler);
+        session.setHandler(handler);
         _server.setHandler(session);
         _server.start();
 
-        _handler.setSuspendFor(100);
-        _handler.setCompleteAfter(25);
+        handler.setSuspendFor(100);
+        handler.setCompleteAfter(25);
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             String process = process(null).toUpperCase(Locale.ENGLISH);
@@ -152,10 +152,10 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
     public void testHttpWriteIdleTimeout() throws Exception
     {
         _httpConfiguration.setIdleTimeout(500);
-        configureServer(new AbstractHandler.ErrorDispatchHandler()
+        configureServer(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), response.getOutputStream());

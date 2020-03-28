@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
@@ -61,55 +61,81 @@ public class ListenerHolder extends BaseHolder<EventListener>
      * just like ServletHolder and FilterHolder,
      * the listener will not be introspected for
      * annotations like Resource etc.
+     * @param listener The listener instance
      */
     public void setListener(EventListener listener)
     {
-        _listener = listener;
-        _extInstance = true;
-        setHeldClass(_listener.getClass());
+        setInstance(listener);
     }
 
     @Override
     public void doStart() throws Exception
     {
         super.doStart();
-        if (!java.util.EventListener.class.isAssignableFrom(_class))
+        if (!java.util.EventListener.class.isAssignableFrom(getHeldClass()))
         {
-            String msg = _class + " is not a java.util.EventListener";
+            String msg = getHeldClass() + " is not a java.util.EventListener";
             super.stop();
             throw new IllegalStateException(msg);
         }
-        
+
         ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
-        if (_listener == null)
+        if (contextHandler != null)
         {
-            //create an instance of the listener and decorate it
-            try
+            _listener = getInstance();
+            if (_listener == null)
             {
-                ServletContext scontext = contextHandler.getServletContext();
-                _listener = (scontext instanceof ServletContextHandler.Context)
-                    ? scontext.createListener(getHeldClass())
-                    : getHeldClass().getDeclaredConstructor().newInstance();
+                //create an instance of the listener and decorate it
+                try
+                {
+                    _listener = createInstance();
+                }
+                catch (ServletException ex)
+                {
+                    Throwable cause = ex.getRootCause();
+                    if (cause instanceof InstantiationException)
+                        throw (InstantiationException)cause;
+                    if (cause instanceof IllegalAccessException)
+                        throw (IllegalAccessException)cause;
+                    throw ex;
+                }
             }
-            catch (ServletException ex)
-            {
-                Throwable cause = ex.getRootCause();
-                if (cause instanceof InstantiationException)
-                    throw (InstantiationException)cause;
-                if (cause instanceof IllegalAccessException)
-                    throw (IllegalAccessException)cause;
-                throw ex;
-            }
+            contextHandler.addEventListener(_listener);
         }
-        contextHandler.addEventListener(_listener);
+    }
+
+    @Override
+    protected synchronized EventListener createInstance() throws Exception
+    {
+
+        EventListener listener = super.createInstance();
+        if (listener == null)
+        {
+            ServletContext ctx = getServletContext();
+            if (ctx != null)
+                listener = ctx.createListener(getHeldClass());
+        }
+        return listener;
     }
 
     @Override
     public void doStop() throws Exception
     {
         super.doStop();
-        if (!_extInstance)
-            _listener = null;
+        if (_listener != null)
+        {
+            try
+            {
+                ContextHandler contextHandler = ContextHandler.getCurrentContext().getContextHandler();
+                if (contextHandler != null)
+                    contextHandler.removeEventListener(_listener);
+                getServletHandler().destroyListener(_listener);
+            }
+            finally
+            {
+                _listener = null;
+            }
+        }
     }
 
     @Override

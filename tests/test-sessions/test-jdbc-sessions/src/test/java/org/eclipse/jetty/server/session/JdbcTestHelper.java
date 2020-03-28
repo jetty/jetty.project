@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.session;
@@ -173,9 +173,10 @@ public class JdbcTestHelper
         ResultSet result = null;
         try (Connection con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);)
         {
-            statement = con.prepareStatement("select * from " + TABLE +
-                " where " + ID_COL + " = ? and " + CONTEXT_COL +
-                " = ? and virtualHost = ?");
+            statement = con.prepareStatement(
+                "select * from " + TABLE +
+                    " where " + ID_COL + " = ? and " + CONTEXT_COL +
+                    " = ? and virtualHost = ?");
             statement.setString(1, data.getId());
             statement.setString(2, data.getContextPath());
             statement.setString(3, data.getVhost());
@@ -199,16 +200,19 @@ public class JdbcTestHelper
 
             Blob blob = result.getBlob(MAP_COL);
 
-            SessionData tmp = new SessionData(data.getId(), data.getContextPath(), data.getVhost(), result.getLong(CREATE_COL),
-                result.getLong(ACCESS_COL), result.getLong(LAST_ACCESS_COL), result.getLong(MAX_IDLE_COL));
+            SessionData tmp =
+                new SessionData(data.getId(), data.getContextPath(), data.getVhost(), result.getLong(CREATE_COL),
+                    result.getLong(ACCESS_COL), result.getLong(LAST_ACCESS_COL),
+                    result.getLong(MAX_IDLE_COL));
 
-            try (InputStream is = blob.getBinaryStream();
-                 ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
+            if (blob.length() > 0)
             {
-
-                SessionData.deserializeAttributes(tmp, ois);
+                try (InputStream is = blob.getBinaryStream();
+                     ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
+                {
+                    SessionData.deserializeAttributes(tmp, ois);
+                }
             }
-
             //same number of attributes
             assertEquals(data.getAllAttributes().size(), tmp.getAllAttributes().size());
             //same keys

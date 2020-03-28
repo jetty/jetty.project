@@ -15,13 +15,13 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
@@ -50,6 +50,11 @@
 
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-distribution</artifactId>
       <version>${project.version}</version>
       <type>zip</type>
@@ -76,7 +81,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-cdi2-webapp</artifactId>
+      <artifactId>test-weld-cdi-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
@@ -111,6 +116,13 @@
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-felix-webapp</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+      <type>war</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-bad-websocket-webapp</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
       <type>war</type>

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.server;
@@ -24,17 +24,22 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
+import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.parser.ServerParser;
+import org.eclipse.jetty.http2.parser.WindowRateControl;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
@@ -44,6 +49,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 @ManagedObject
@@ -58,8 +64,12 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxHeaderBlockFragment = 0;
     private int maxFrameLength = Frame.DEFAULT_MAX_LENGTH;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
+    private boolean connectProtocolEnabled = true;
+    private RateControl.Factory rateControlFactory = new WindowRateControl.Factory(20);
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
     private long streamIdleTimeout;
+    private boolean useInputDirectByteBuffers;
+    private boolean useOutputDirectByteBuffers;
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -78,6 +88,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
         addBean(httpConfiguration);
         setInputBufferSize(Frame.DEFAULT_MAX_LENGTH + Frame.HEADER_LENGTH);
+        setUseInputDirectByteBuffers(httpConfiguration.isUseInputDirectByteBuffers());
+        setUseOutputDirectByteBuffers(httpConfiguration.isUseOutputDirectByteBuffers());
     }
 
     @ManagedAttribute("The HPACK dynamic table maximum size")
@@ -178,6 +190,57 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.maxSettingsKeys = maxSettingsKeys;
     }
 
+    @ManagedAttribute("Whether CONNECT requests supports a protocol")
+    public boolean isConnectProtocolEnabled()
+    {
+        return connectProtocolEnabled;
+    }
+
+    public void setConnectProtocolEnabled(boolean connectProtocolEnabled)
+    {
+        this.connectProtocolEnabled = connectProtocolEnabled;
+    }
+
+    /**
+     * @return the factory that creates RateControl objects
+     */
+    public RateControl.Factory getRateControlFactory()
+    {
+        return rateControlFactory;
+    }
+
+    /**
+     * <p>Sets the factory that creates a per-connection RateControl object.</p>
+     *
+     * @param rateControlFactory the factory that creates RateControl objects
+     */
+    public void setRateControlFactory(RateControl.Factory rateControlFactory)
+    {
+        this.rateControlFactory = Objects.requireNonNull(rateControlFactory);
+    }
+
+    @ManagedAttribute("Whether to use direct ByteBuffers for reading")
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return useInputDirectByteBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    @ManagedAttribute("Whether to use direct ByteBuffers for writing")
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return useOutputDirectByteBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
     public HttpConfiguration getHttpConfiguration()
     {
         return httpConfiguration;
@@ -192,6 +255,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         if (maxConcurrentStreams >= 0)
             settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, maxConcurrentStreams);
         settings.put(SettingsFrame.MAX_HEADER_LIST_SIZE, getHttpConfiguration().getRequestHeaderSize());
+        settings.put(SettingsFrame.ENABLE_CONNECT_PROTOCOL, isConnectProtocolEnabled() ? 1 : 0);
         return settings;
     }
 
@@ -200,7 +264,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     {
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
-        Generator generator = new Generator(connector.getByteBufferPool(), getMaxDynamicTableSize(), getMaxHeaderBlockFragment());
+        Generator generator = new Generator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), getMaxDynamicTableSize(), getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = getFlowControlStrategyFactory().newFlowControlStrategy();
         HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener, flowControl);
         session.setMaxLocalStreams(getMaxConcurrentStreams());
@@ -210,46 +274,51 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         // the typical case is that the connection will be busier and the
         // stream idle timeout will expire earlier than the connection's.
         long streamIdleTimeout = getStreamIdleTimeout();
-        if (streamIdleTimeout <= 0)
-            streamIdleTimeout = endPoint.getIdleTimeout();
-        session.setStreamIdleTimeout(streamIdleTimeout);
+        if (streamIdleTimeout > 0)
+            session.setStreamIdleTimeout(streamIdleTimeout);
         session.setInitialSessionRecvWindow(getInitialSessionRecvWindow());
         session.setWriteThreshold(getHttpConfiguration().getOutputBufferSize());
+        session.setConnectProtocolEnabled(isConnectProtocolEnabled());
 
-        ServerParser parser = newServerParser(connector, session);
+        ServerParser parser = newServerParser(connector, session, getRateControlFactory().newRateControl(endPoint));
         parser.setMaxFrameLength(getMaxFrameLength());
         parser.setMaxSettingsKeys(getMaxSettingsKeys());
 
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
             endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
-        connection.addListener(sessionContainer);
+        connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+        connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
+        connection.addEventListener(sessionContainer);
         return configure(connection, connector, endPoint);
     }
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);
 
-    protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener)
+    protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener, RateControl rateControl)
     {
-        return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize());
+        return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize(), rateControl);
     }
 
     @ManagedObject("The container of HTTP/2 sessions")
-    public static class HTTP2SessionContainer implements Connection.Listener, Dumpable
+    public static class HTTP2SessionContainer implements Connection.Listener, Graceful, Dumpable
     {
-        private final Set<Session> sessions = ConcurrentHashMap.newKeySet();
+        private final Set<ISession> sessions = ConcurrentHashMap.newKeySet();
+        private final AtomicReference<CompletableFuture<Void>> shutdown = new AtomicReference<>();
 
         @Override
         public void onOpened(Connection connection)
         {
-            Session session = ((HTTP2Connection)connection).getSession();
+            ISession session = ((HTTP2Connection)connection).getSession();
             sessions.add(session);
             LifeCycle.start(session);
+            if (isShutdown())
+                shutdown(session);
         }
 
         @Override
         public void onClosed(Connection connection)
         {
-            Session session = ((HTTP2Connection)connection).getSession();
+            ISession session = ((HTTP2Connection)connection).getSession();
             if (sessions.remove(session))
                 LifeCycle.stop(session);
         }
@@ -263,6 +332,39 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         public int getSize()
         {
             return sessions.size();
+        }
+
+        @Override
+        public CompletableFuture<Void> shutdown()
+        {
+            CompletableFuture<Void> result = new CompletableFuture<>();
+            if (shutdown.compareAndSet(null, result))
+            {
+                CompletableFuture.allOf(sessions.stream().map(this::shutdown).toArray(CompletableFuture[]::new))
+                    .whenComplete((v, x) ->
+                    {
+                        if (x == null)
+                            result.complete(v);
+                        else
+                            result.completeExceptionally(x);
+                    });
+                return result;
+            }
+            else
+            {
+                return shutdown.get();
+            }
+        }
+
+        @Override
+        public boolean isShutdown()
+        {
+            return shutdown.get() != null;
+        }
+
+        private CompletableFuture<Void> shutdown(ISession session)
+        {
+            return session.shutdown();
         }
 
         @Override

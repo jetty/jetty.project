@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http;
@@ -23,7 +23,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
-import org.eclipse.jetty.util.log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.Integer.MIN_VALUE;
 
@@ -39,6 +40,8 @@ import static java.lang.Integer.MIN_VALUE;
  */
 public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
 {
+    private static final Logger LOG = LoggerFactory.getLogger(QuotedQualityCSV.class);
+
     /**
      * Lambda to apply a most specific MIME encoding secondary ordering.
      *
@@ -129,7 +132,7 @@ public class QuotedQualityCSV extends QuotedCSV implements Iterable<String>
             }
             catch (Exception e)
             {
-                Log.getLogger(QuotedQualityCSV.class).ignore(e);
+                LOG.trace("IGNORED", e);
                 q = 0.0D;
             }
             buffer.setLength(Math.max(0, paramName - 1));

@@ -1,31 +1,32 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core.extensions;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
+import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.ByteBufferAssert;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Extension;
@@ -76,7 +77,7 @@ public class ExtensionTool
         {
             this.ext = components.getExtensionRegistry().newInstance(extConfig, components);
             this.ext.setNextIncomingFrames(capture);
-            this.ext.setWebSocketCoreSession(newWebSocketCoreSession());
+            this.ext.setCoreSession(newWebSocketCoreSession());
         }
 
         public void parseIncomingHex(String... rawhex)
@@ -95,9 +96,23 @@ public class ExtensionTool
                     Frame frame = parser.parse(buffer);
                     if (frame == null)
                         break;
-                    ext.onFrame(frame, Callback.from(() ->
+
+                    FutureCallback callback = new FutureCallback();
+                    ext.onFrame(frame, callback);
+
+                    // Throw if callback fails.
+                    try
                     {
-                    }, Assertions::fail));
+                        callback.get();
+                    }
+                    catch (ExecutionException e)
+                    {
+                        throw new RuntimeException(e.getCause());
+                    }
+                    catch (Throwable t)
+                    {
+                        Assertions.fail(t);
+                    }
                 }
             }
         }
@@ -151,7 +166,7 @@ public class ExtensionTool
     {
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
         exStack.negotiate(new LinkedList<>(), new LinkedList<>());
-        WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack));
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
         return coreSession;
     }
 }

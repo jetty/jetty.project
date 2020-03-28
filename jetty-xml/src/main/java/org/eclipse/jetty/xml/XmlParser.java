@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.xml;
@@ -34,9 +34,9 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.eclipse.jetty.util.LazyList;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.InputSource;
@@ -54,7 +54,7 @@ import org.xml.sax.helpers.DefaultHandler;
  */
 public class XmlParser
 {
-    private static final Logger LOG = Log.getLogger(XmlParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(XmlParser.class);
 
     private Map<String, URL> _redirectMap = new HashMap<String, URL>();
     private SAXParser _parser;
@@ -70,7 +70,7 @@ public class XmlParser
     public XmlParser()
     {
         SAXParserFactory factory = SAXParserFactory.newInstance();
-        boolean validatingDefault = factory.getClass().toString().startsWith("org.apache.xerces.");
+        boolean validatingDefault = factory.getClass().toString().contains("org.apache.xerces.");
         String validatingProp = System.getProperty("org.eclipse.jetty.xml.XmlParser.Validating", validatingDefault ? "true" : "false");
         boolean validating = Boolean.valueOf(validatingProp).booleanValue();
         setValidating(validating);
@@ -99,7 +99,7 @@ public class XmlParser
                 if (validating)
                     LOG.warn("Schema validation may not be supported: ", e);
                 else
-                    LOG.ignore(e);
+                    LOG.trace("IGNORED", e);
             }
 
             _parser.getXMLReader().setFeature("http://xml.org/sax/features/validation", validating);
@@ -117,7 +117,7 @@ public class XmlParser
         }
         catch (Exception e)
         {
-            LOG.warn(Log.EXCEPTION, e);
+            LOG.warn("Unable to set validating on XML Parser", e);
             throw new Error(e.toString());
         }
     }
@@ -286,7 +286,7 @@ public class XmlParser
             }
             catch (IOException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
             }
         }
         return null;
@@ -425,7 +425,7 @@ public class XmlParser
         @Override
         public void warning(SAXParseException ex)
         {
-            LOG.debug(Log.EXCEPTION, ex);
+            LOG.debug("SAX Parse Issue", ex);
             LOG.warn("WARNING@" + getLocationString(ex) + " : " + ex.toString());
         }
 
@@ -435,16 +435,16 @@ public class XmlParser
             // Save error and continue to report other errors
             if (_error == null)
                 _error = ex;
-            LOG.debug(Log.EXCEPTION, ex);
-            LOG.warn("ERROR@" + getLocationString(ex) + " : " + ex.toString());
+            LOG.debug("SAX Parse Issue", ex);
+            LOG.error("ERROR@" + getLocationString(ex) + " : " + ex.toString());
         }
 
         @Override
         public void fatalError(SAXParseException ex) throws SAXException
         {
             _error = ex;
-            LOG.debug(Log.EXCEPTION, ex);
-            LOG.warn("FATAL@" + getLocationString(ex) + " : " + ex.toString());
+            LOG.debug("SAX Parse Issue", ex);
+            LOG.error("FATAL@" + getLocationString(ex) + " : " + ex.toString());
             throw ex;
         }
 

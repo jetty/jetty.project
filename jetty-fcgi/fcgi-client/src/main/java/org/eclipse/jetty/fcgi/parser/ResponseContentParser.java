@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.fcgi.parser;
@@ -32,8 +32,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The parser for STDOUT type frame bodies.</p>
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ResponseContentParser extends StreamContentParser
 {
-    private static final Logger LOG = Log.getLogger(ResponseContentParser.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResponseContentParser.class);
 
     private final Map<Integer, ResponseParser> parsers = new ConcurrentHashMap<>();
     private final ClientParser.Listener listener;
@@ -82,7 +82,7 @@ public class ResponseContentParser extends StreamContentParser
         parsers.remove(request);
     }
 
-    private class ResponseParser implements HttpParser.ResponseHandler
+    private static class ResponseParser implements HttpParser.ResponseHandler
     {
         private final HttpFields fields = new HttpFields();
         private ClientParser.Listener listener;
@@ -90,6 +90,7 @@ public class ResponseContentParser extends StreamContentParser
         private final FCGIHttpParser httpParser;
         private State state = State.HEADERS;
         private boolean seenResponseCode;
+        private boolean stalled;
 
         private ResponseParser(ClientParser.Listener listener, int request)
         {
@@ -111,7 +112,11 @@ public class ResponseContentParser extends StreamContentParser
                     case HEADERS:
                     {
                         if (httpParser.parseNext(buffer))
+                        {
                             state = State.CONTENT_MODE;
+                            if (stalled)
+                                return true;
+                        }
                         remaining = buffer.remaining();
                         break;
                     }
@@ -151,21 +156,7 @@ public class ResponseContentParser extends StreamContentParser
         }
 
         @Override
-        public int getHeaderCacheSize()
-        {
-            // TODO: configure this
-            return 4096;
-        }
-
-        @Override
-        public boolean isHeaderCacheCaseSensitive()
-        {
-            // TODO get from configuration
-            return false;
-        }
-
-        @Override
-        public boolean startResponse(HttpVersion version, int status, String reason)
+        public void startResponse(HttpVersion version, int status, String reason)
         {
             // The HTTP request line does not exist in FCGI responses
             throw new IllegalStateException();
@@ -247,16 +238,17 @@ public class ResponseContentParser extends StreamContentParser
             }
         }
 
-        private void notifyHeaders()
+        private boolean notifyHeaders()
         {
             try
             {
-                listener.onHeaders(request);
+                return listener.onHeaders(request);
             }
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Exception while invoking listener " + listener, x);
+                return false;
             }
         }
 
@@ -269,8 +261,10 @@ public class ResponseContentParser extends StreamContentParser
                 notifyBegin(200, "OK");
                 notifyHeaders(fields);
             }
-            notifyHeaders();
-            // Return from HTTP parsing so that we can parse the content.
+            // Remember whether we have demand.
+            stalled = notifyHeaders();
+            // Always return from HTTP parsing so that we
+            // can parse the content with the FCGI parser.
             return true;
         }
 

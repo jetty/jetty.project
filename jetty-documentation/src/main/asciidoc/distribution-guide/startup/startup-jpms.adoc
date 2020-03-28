@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ========================================================================
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 [[startup-jpms]]
@@ -69,11 +69,11 @@ This will give an output looking something like this (broken in sections for cla
 [source, screen, subs="{sub-order}"]
 ....
 /opt/openjdk-11+28/bin/java
---module-path /opt/jetty/lib/jetty-servlet-api-4.0.2.jar:/opt/jetty/lib/jetty-http-9.4.13-SNAPSHOT.jar:...
+--module-path /opt/jetty/lib/jetty-servlet-api-4.0.2.jar:/opt/jetty/lib/jetty-http-{VERSION}.jar:...
 --module org.eclipse.jetty.xml/org.eclipse.jetty.xml.XmlConfiguration /opt/jetty/etc/jetty-threadpool.xml /opt/jetty/etc/jetty.xml ...
 ....
 
-The `--module-path` option specifies the list of Jetty jars. 
+The `--module-path` option specifies the list of Jetty jars.
 This list depends on the Jetty modules that have been enabled via the link:#startup-modules[`--add-to-start`] command.
 
 The `--module` option tells the JVM to run main class `XmlConfiguration` from the `org.eclipse.jetty.xml` module, with the given XML files as program arguments.

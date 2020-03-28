@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.requestlog.jmh;
@@ -87,10 +87,11 @@ public class RequestLogBenchmark
         {
             MethodType logType = methodType(Void.TYPE, StringBuilder.class, String.class);
 
-            MethodHandle append = MethodHandles.lookup().findStatic(RequestLogBenchmark.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
-            MethodHandle logURI = MethodHandles.lookup().findStatic(RequestLogBenchmark.class, "logURI", logType);
-            MethodHandle logAddr = MethodHandles.lookup().findStatic(RequestLogBenchmark.class, "logAddr", logType);
-            MethodHandle logLength = MethodHandles.lookup().findStatic(RequestLogBenchmark.class, "logLength", logType);
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            MethodHandle append = lookup.findStatic(RequestLogBenchmark.class, "append", methodType(Void.TYPE, String.class, StringBuilder.class));
+            MethodHandle logURI = lookup.findStatic(RequestLogBenchmark.class, "logURI", logType);
+            MethodHandle logAddr = lookup.findStatic(RequestLogBenchmark.class, "logAddr", logType);
+            MethodHandle logLength = lookup.findStatic(RequestLogBenchmark.class, "logLength", logType);
 
             // setup iteration
             iteratedLog = new Object[]

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core;
@@ -25,11 +25,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.websocket.core.exception.MessageTooLargeException;
+import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 import org.eclipse.jetty.websocket.core.internal.Parser;
 import org.hamcrest.Matchers;
@@ -50,6 +51,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ParserTest
 {
     private static final int MAX_ALLOWED_FRAME_SIZE = 4 * 1024 * 1024;
+    private static final byte[] mask = {0x00, (byte)0xF0, 0x0F, (byte)0xFF};
+
+    public static void putPayload(ByteBuffer buffer, byte[] payload)
+    {
+        int len = payload.length;
+        for (int i = 0; i < len; i++)
+        {
+            buffer.put((byte)(payload[i] ^ mask[i % 4]));
+        }
+    }
 
     private ParserCapture parse(Behavior behavior, int maxAllowedFrameSize, ByteBuffer buffer)
     {
@@ -83,8 +94,8 @@ public class ParserTest
         buffer.put(b);
         if (masked)
         {
-            Generator.putMask(buffer);
-            Generator.putPayload(buffer, messageBytes);
+            buffer.put(mask);
+            putPayload(buffer, messageBytes);
         }
         else
         {
@@ -98,7 +109,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.2.2
      */
     @Test
-    public void testParse_Binary_125BytePayload() throws InterruptedException
+    public void testParseBinary125BytePayload() throws InterruptedException
     {
         int length = 125;
 
@@ -128,7 +139,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.2.3
      */
     @Test
-    public void testParse_Binary_126BytePayload() throws InterruptedException
+    public void testParseBinary126BytePayload() throws InterruptedException
     {
         int length = 126;
 
@@ -161,7 +172,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.2.4
      */
     @Test
-    public void testParse_Binary_127BytePayload() throws InterruptedException
+    public void testParseBinary127BytePayload() throws InterruptedException
     {
         int length = 127;
 
@@ -193,7 +204,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.2.5
      */
     @Test
-    public void testParse_Binary_128BytePayload() throws InterruptedException
+    public void testParseBinary128BytePayload() throws InterruptedException
     {
         int length = 128;
 
@@ -225,7 +236,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.2.6
      */
     @Test
-    public void testParse_Binary_65535BytePayload() throws InterruptedException
+    public void testParseBinary65535BytePayload() throws InterruptedException
     {
         int length = 65535;
 
@@ -257,7 +268,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.2.7
      */
     @Test
-    public void testParse_Binary_65536BytePayload() throws InterruptedException
+    public void testParseBinary65536BytePayload() throws InterruptedException
     {
         int length = 65536;
 
@@ -289,7 +300,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.2.1
      */
     @Test
-    public void testParse_Binary_Empty() throws InterruptedException
+    public void testParseBinaryEmpty() throws InterruptedException
     {
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -309,7 +320,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 7.3.2
      */
     @Test
-    public void testParse_Close_1BytePayload()
+    public void testParseClose1BytePayload()
     {
         ByteBuffer expected = Hex.asByteBuffer("880100");
 
@@ -321,7 +332,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 7.3.1
      */
     @Test
-    public void testParse_Close_Empty() throws InterruptedException
+    public void testParseCloseEmpty() throws InterruptedException
     {
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -342,7 +353,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 7.4.6
      */
     @Test
-    public void testParse_Close_WithInvalidStatusReason()
+    public void testParseCloseWithInvalidStatusReason()
     {
         byte[] messageBytes = new byte[124];
         Arrays.fill(messageBytes, (byte)'*');
@@ -380,7 +391,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 7.3.3
      */
     @Test
-    public void testParse_Close_WithStatus() throws InterruptedException
+    public void testParseCloseWithStatus() throws InterruptedException
     {
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -401,7 +412,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 7.3.5
      */
     @Test
-    public void testParse_Close_WithStatusMaxReason() throws InterruptedException
+    public void testParseCloseWithStatusMaxReason() throws InterruptedException
     {
         StringBuilder message = new StringBuilder();
         for (int i = 0; i < 123; ++i)
@@ -436,7 +447,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 7.3.4
      */
     @Test
-    public void testParse_Close_WithStatusReason() throws InterruptedException
+    public void testParseCloseWithStatusReason() throws InterruptedException
     {
         String message = "bad cough";
         byte[] messageBytes = message.getBytes();
@@ -467,8 +478,9 @@ public class ParserTest
      * </p>
      */
     @Test
-    public void testParse_Continuation_ManySmall()
+    public void testParseContinuationManySmall()
     {
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         String utf8 = "Hello-\uC2B5@\uC39F\uC3A4\uC3BC\uC3A0\uC3A1-UTF-8!!";
         byte[] msg = StringUtil.getUtf8Bytes(utf8);
 
@@ -515,7 +527,7 @@ public class ParserTest
      * </p>
      */
     @Test
-    public void testParse_Interleaved_PingFrames()
+    public void testParseInterleavedPingFrames()
     {
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.TEXT).setPayload("f1").setFin(false));
@@ -538,7 +550,7 @@ public class ParserTest
     }
 
     @Test
-    public void testParse_Nothing()
+    public void testParseNothing()
     {
         ByteBuffer buf = ByteBuffer.allocate(16);
         // Put nothing in the buffer.
@@ -553,7 +565,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 4.2.1
      */
     @Test
-    public void testParse_OpCode11() throws Exception
+    public void testParseOpCode11() throws Exception
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -569,7 +581,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 4.2.2
      */
     @Test
-    public void testParse_OpCode12() throws Exception
+    public void testParseOpCode12() throws Exception
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -585,7 +597,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 4.1.1
      */
     @Test
-    public void testParse_OpCode3() throws Exception
+    public void testParseOpCode3() throws Exception
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -601,7 +613,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 4.1.2
      */
     @Test
-    public void testParse_OpCode4() throws Exception
+    public void testParseOpCode4() throws Exception
     {
         ByteBuffer expected = ByteBuffer.allocate(32);
 
@@ -617,7 +629,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 2.4
      */
     @Test
-    public void testParse_Ping_125BytePayload() throws InterruptedException
+    public void testParsePing125BytePayload() throws InterruptedException
     {
         byte[] bytes = new byte[125];
 
@@ -648,7 +660,7 @@ public class ParserTest
     }
 
     @Test
-    public void testParse_Ping_Basic() throws InterruptedException
+    public void testParsePingBasic() throws InterruptedException
     {
         ByteBuffer buf = ByteBuffer.allocate(16);
         BufferUtil.clearToFill(buf);
@@ -669,7 +681,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 2.3
      */
     @Test
-    public void testParse_Ping_BinaryPayload() throws InterruptedException
+    public void testParsePingBinaryPayload() throws InterruptedException
     {
         byte[] bytes = new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 
@@ -698,7 +710,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 2.1
      */
     @Test
-    public void testParse_Ping_Empty() throws InterruptedException
+    public void testParsePingEmpty() throws InterruptedException
     {
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -720,7 +732,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 2.2
      */
     @Test
-    public void testParse_Ping_HelloPayload() throws InterruptedException
+    public void testParsePingHelloPayload() throws InterruptedException
     {
         String message = "Hello, world!";
         byte[] messageBytes = message.getBytes();
@@ -750,7 +762,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 2.5
      */
     @Test
-    public void testParse_Ping_OverSizedPayload()
+    public void testParsePingOverSizedPayload()
     {
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte)0x00);
@@ -789,7 +801,7 @@ public class ParserTest
      * </p>
      */
     @Test
-    public void testParse_PongTextClose()
+    public void testParsePongTextClose()
     {
         List<Frame> send = new ArrayList<>();
         send.add(new Frame(OpCode.PONG).setPayload("ping"));
@@ -809,7 +821,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 2.5
      */
     @Test
-    public void testParse_Pong_OverSizedPayload()
+    public void testParsePongOverSizedPayload()
     {
         byte[] bytes = new byte[126];
         Arrays.fill(bytes, (byte)0x00);
@@ -848,7 +860,7 @@ public class ParserTest
      * </p>
      */
     @Test
-    public void testParse_RFC6455_FragmentedUnmaskedTextMessage() throws InterruptedException
+    public void testParseRFC6455FragmentedUnmaskedTextMessage() throws InterruptedException
     {
         ParserCapture capture = new ParserCapture();
 
@@ -891,7 +903,7 @@ public class ParserTest
      * </p>
      */
     @Test
-    public void testParse_RFC6455_SingleMaskedPongRequest() throws InterruptedException
+    public void testParseRFC6455SingleMaskedPongRequest() throws InterruptedException
     {
         ByteBuffer buf = ByteBuffer.allocate(16);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -916,7 +928,7 @@ public class ParserTest
      * </p>
      */
     @Test
-    public void testParse_RFC6455_SingleMaskedTextMessage() throws InterruptedException
+    public void testParseRFC6455SingleMaskedTextMessage() throws InterruptedException
     {
         ByteBuffer buf = ByteBuffer.allocate(16);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -941,7 +953,7 @@ public class ParserTest
      * </p>
      */
     @Test
-    public void testParse_RFC6455_SingleUnmasked256ByteBinaryMessage() throws InterruptedException
+    public void testParseRFC6455SingleUnmasked256ByteBinaryMessage() throws InterruptedException
     {
         int dataSize = 256;
 
@@ -981,7 +993,7 @@ public class ParserTest
      * </p>
      */
     @Test
-    public void testParse_RFC6455_SingleUnmasked64KByteBinaryMessage() throws InterruptedException
+    public void testParseRFC6455SingleUnmasked64KByteBinaryMessage() throws InterruptedException
     {
         int dataSize = 1024 * 64;
 
@@ -1021,7 +1033,7 @@ public class ParserTest
      * </p>
      */
     @Test
-    public void testParse_RFC6455_SingleUnmaskedPingRequest() throws InterruptedException
+    public void testParseRFC6455SingleUnmaskedPingRequest() throws InterruptedException
     {
         ByteBuffer buf = ByteBuffer.allocate(16);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -1046,7 +1058,7 @@ public class ParserTest
      * </p>
      */
     @Test
-    public void testParse_RFC6455_SingleUnmaskedTextMessage() throws InterruptedException
+    public void testParseRFC6455SingleUnmaskedTextMessage() throws InterruptedException
     {
         ByteBuffer buf = ByteBuffer.allocate(16);
         // Raw bytes as found in RFC 6455, Section 5.7 - Examples
@@ -1068,7 +1080,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.1.2
      */
     @Test
-    public void testParse_Text_125BytePayload() throws InterruptedException
+    public void testParseText125BytePayload() throws InterruptedException
     {
         int length = 125;
 
@@ -1100,7 +1112,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.1.3
      */
     @Test
-    public void testParse_Text_126BytePayload() throws InterruptedException
+    public void testParseText126BytePayload() throws InterruptedException
     {
         int length = 126;
 
@@ -1133,7 +1145,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.1.4
      */
     @Test
-    public void testParse_Text_127BytePayload() throws InterruptedException
+    public void testParseText127BytePayload() throws InterruptedException
     {
         int length = 127;
 
@@ -1166,7 +1178,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.1.5
      */
     @Test
-    public void testParse_Text_128BytePayload() throws InterruptedException
+    public void testParseText128BytePayload() throws InterruptedException
     {
         int length = 128;
 
@@ -1199,7 +1211,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.1.6
      */
     @Test
-    public void testParse_Text_65535BytePayload() throws InterruptedException
+    public void testParseText65535BytePayload() throws InterruptedException
     {
         int length = 65535;
 
@@ -1231,7 +1243,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.1.7
      */
     @Test
-    public void testParse_Text_65536BytePayload() throws InterruptedException
+    public void testParseText65536BytePayload() throws InterruptedException
     {
         int length = 65536;
 
@@ -1264,7 +1276,7 @@ public class ParserTest
      * From Autobahn WebSocket Server Testcase 1.1.1
      */
     @Test
-    public void testParse_Text_Empty() throws InterruptedException
+    public void testParseTextEmpty() throws InterruptedException
     {
         ByteBuffer expected = ByteBuffer.allocate(5);
 
@@ -1282,7 +1294,7 @@ public class ParserTest
     }
 
     @Test
-    public void testParse_Text_FrameTooLargeDueToPolicy() throws Exception
+    public void testParseTextFrameTooLargeDueToPolicy() throws Exception
     {
         // Artificially small buffer/payload
         final int maxAllowedFrameSize = 1024;
@@ -1296,8 +1308,8 @@ public class ParserTest
         buf.put((byte)0x81); // text frame, fin = true
         buf.put((byte)(0x80 | 0x7E)); // 0x7E == 126 (a 2 byte payload length)
         buf.putShort((short)utf.length);
-        Generator.putMask(buf);
-        Generator.putPayload(buf, utf);
+        buf.put(mask);
+        putPayload(buf, utf);
         buf.flip();
 
         ParserCapture capture = new ParserCapture(true, Behavior.SERVER);
@@ -1307,9 +1319,10 @@ public class ParserTest
     }
 
     @Test
-    public void testParse_Text_LongMasked() throws Exception
+    public void testParseTextLongMasked() throws Exception
     {
         StringBuilder sb = new StringBuilder();
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         for (int i = 0; i < 3500; i++)
         {
             sb.append("Hell\uFF4f Big W\uFF4Frld ");
@@ -1325,8 +1338,8 @@ public class ParserTest
         buf.put((byte)0x81); // text frame, fin = true
         buf.put((byte)(0x80 | 0x7F)); // 0x7F == 127 (a 8 byte payload length)
         buf.putLong(utf.length);
-        Generator.putMask(buf);
-        Generator.putPayload(buf, utf);
+        buf.put(mask);
+        putPayload(buf, utf);
         buf.flip();
 
         ParserCapture capture = parse(Behavior.SERVER, 100000, buf, true);
@@ -1337,7 +1350,7 @@ public class ParserTest
     }
 
     @Test
-    public void testParse_Text_ManySmallBuffers_NoAutoFragmentation() throws InterruptedException
+    public void testParseTextManySmallBuffersNoAutoFragmentation() throws InterruptedException
     {
         // Create frames
         byte[] payload = new byte[65536];
@@ -1379,9 +1392,10 @@ public class ParserTest
     }
 
     @Test
-    public void testParse_Text_MediumMasked() throws Exception
+    public void testParseTextMediumMasked() throws Exception
     {
         StringBuilder sb = new StringBuilder();
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         for (int i = 0; i < 14; i++)
         {
             sb.append("Hell\uFF4f Medium W\uFF4Frld ");
@@ -1397,8 +1411,8 @@ public class ParserTest
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | 0x7E)); // 0x7E == 126 (a 2 byte payload length)
         buf.putShort((short)utf.length);
-        Generator.putMask(buf);
-        Generator.putPayload(buf, utf);
+        buf.put(mask);
+        putPayload(buf, utf);
         buf.flip();
 
         ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -1409,7 +1423,7 @@ public class ParserTest
     }
 
     @Test
-    public void testParse_Text_ShortMasked() throws Exception
+    public void testParseTextShortMasked() throws Exception
     {
         String expectedText = "Hello World";
         byte[] utf = expectedText.getBytes(StandardCharsets.UTF_8);
@@ -1417,8 +1431,8 @@ public class ParserTest
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | utf.length));
-        Generator.putMask(buf);
-        Generator.putPayload(buf, utf);
+        buf.put(mask);
+        putPayload(buf, utf);
         buf.flip();
 
         ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -1429,27 +1443,27 @@ public class ParserTest
     }
 
     @Test
-    public void testParse_Text_ShortMaskedFragmented() throws Exception
+    public void testParseTextShortMaskedFragmented() throws Exception
     {
         String part1 = "Hello ";
         String part2 = "World";
 
-        byte b1[] = part1.getBytes(StandardCharsets.UTF_8);
-        byte b2[] = part2.getBytes(StandardCharsets.UTF_8);
+        byte[] b1 = part1.getBytes(StandardCharsets.UTF_8);
+        byte[] b2 = part2.getBytes(StandardCharsets.UTF_8);
 
         ByteBuffer buf = ByteBuffer.allocate(32);
 
         // part 1
         buf.put((byte)0x01); // no fin + text
         buf.put((byte)(0x80 | b1.length));
-        Generator.putMask(buf);
-        Generator.putPayload(buf, b1);
+        buf.put(mask);
+        putPayload(buf, b1);
 
         // part 2
         buf.put((byte)0x80); // fin + continuation
         buf.put((byte)(0x80 | b2.length));
-        Generator.putMask(buf);
-        Generator.putPayload(buf, b2);
+        buf.put(mask);
+        putPayload(buf, b2);
 
         buf.flip();
 
@@ -1464,8 +1478,9 @@ public class ParserTest
     }
 
     @Test
-    public void testParse_Text_ShortMaskedUtf8() throws Exception
+    public void testParseTextShortMaskedUtf8() throws Exception
     {
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         String expectedText = "Hell\uFF4f W\uFF4Frld";
 
         byte[] utf = expectedText.getBytes(StandardCharsets.UTF_8);
@@ -1473,8 +1488,8 @@ public class ParserTest
         ByteBuffer buf = ByteBuffer.allocate(24);
         buf.put((byte)0x81);
         buf.put((byte)(0x80 | utf.length));
-        Generator.putMask(buf);
-        Generator.putPayload(buf, utf);
+        buf.put(mask);
+        putPayload(buf, utf);
         buf.flip();
 
         ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -1485,7 +1500,7 @@ public class ParserTest
     }
 
     @Test
-    public void testParse_Autobahn_7_9_3() throws Exception
+    public void testParseAutobahn793() throws Exception
     {
         ByteBuffer buf = BufferUtil.toBuffer(TypeUtil.fromHexString("8882c2887e61c164"));
         Exception e = assertThrows(ProtocolException.class, () -> parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true));
@@ -1493,7 +1508,7 @@ public class ParserTest
     }
 
     @Test
-    public void testParse_Autobahn_7_9_6() throws Exception
+    public void testParseAutobahn796() throws Exception
     {
         ByteBuffer buf = BufferUtil.toBuffer(TypeUtil.fromHexString("88824c49cb474fbf"));
         ParserCapture capture = parse(Behavior.SERVER, MAX_ALLOWED_FRAME_SIZE, buf, true);
@@ -1542,6 +1557,7 @@ public class ParserTest
         ByteBuffer buffer = BufferUtil.allocate(32);
 
         ParserCapture capture = new ParserCapture(false, Behavior.SERVER);
+        capture.getCoreSession().setAutoFragment(true);
 
         data.limit(6 + 5);
         BufferUtil.append(buffer, data);
@@ -1649,13 +1665,12 @@ public class ParserTest
 
     private ByteBuffer generate(Behavior behavior, List<Frame> frames)
     {
-        Generator generator = new Generator(new MappedByteBufferPool());
+        Generator generator = new Generator();
         int length = frames.stream().mapToInt(frame -> frame.getPayloadLength() + Generator.MAX_HEADER_LENGTH).sum();
-        ByteBuffer buffer = ByteBuffer.allocate(length);
+        ByteBuffer buffer = BufferUtil.allocate(length);
         frames.stream()
             .peek(frame -> maskIfClient(behavior, frame))
             .forEach(frame -> generator.generateWholeFrame(frame, buffer));
-        BufferUtil.flipToFlush(buffer, 0);
         return buffer;
     }
 

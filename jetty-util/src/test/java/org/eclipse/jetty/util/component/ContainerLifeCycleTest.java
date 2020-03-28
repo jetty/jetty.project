@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.component;
@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.TypeUtil;
@@ -129,10 +130,7 @@ public class ContainerLifeCycleTest
         container.stop();
         container.destroy();
 
-        assertThrows(IllegalStateException.class, () ->
-        {
-            container.start();
-        });
+        assertThrows(IllegalStateException.class, container::start);
     }
 
     @Test
@@ -210,13 +208,13 @@ public class ContainerLifeCycleTest
     {
         ContainerLifeCycle a0 = new ContainerLifeCycle();
         String dump = trim(a0.dump());
-        dump = check(dump, "ContainerLifeCycl");
+        check(dump, "ContainerLifeCycl");
 
         ContainerLifeCycle aa0 = new ContainerLifeCycle();
         a0.addBean(aa0);
         dump = trim(a0.dump());
         dump = check(dump, "ContainerLifeCycl");
-        dump = check(dump, "+? ContainerLife");
+        check(dump, "+? ContainerLife");
 
         ContainerLifeCycle aa1 = new ContainerLifeCycle();
         a0.addBean(aa1);
@@ -224,7 +222,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "ContainerLifeCycl");
         dump = check(dump, "+? ContainerLife");
         dump = check(dump, "+? ContainerLife");
-        dump = check(dump, "");
+        check(dump, "");
 
         ContainerLifeCycle aa2 = new ContainerLifeCycle();
         a0.addBean(aa2, false);
@@ -233,7 +231,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+? ContainerLife");
         dump = check(dump, "+? ContainerLife");
         dump = check(dump, "+~ ContainerLife");
-        dump = check(dump, "");
+        check(dump, "");
 
         aa1.start();
         a0.start();
@@ -242,7 +240,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+= ContainerLife");
         dump = check(dump, "+~ ContainerLife");
         dump = check(dump, "+~ ContainerLife");
-        dump = check(dump, "");
+        check(dump, "");
 
         a0.manage(aa1);
         a0.removeBean(aa2);
@@ -250,7 +248,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "ContainerLifeCycl");
         dump = check(dump, "+= ContainerLife");
         dump = check(dump, "+= ContainerLife");
-        dump = check(dump, "");
+        check(dump, "");
 
         ContainerLifeCycle aaa0 = new ContainerLifeCycle();
         aa0.addBean(aaa0);
@@ -259,7 +257,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+= ContainerLife");
         dump = check(dump, "|  +~ Container");
         dump = check(dump, "+= ContainerLife");
-        dump = check(dump, "");
+        check(dump, "");
 
         ContainerLifeCycle aa10 = new ContainerLifeCycle();
         aa1.addBean(aa10, true);
@@ -269,7 +267,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "|  +~ Container");
         dump = check(dump, "+= ContainerLife");
         dump = check(dump, "   += Container");
-        dump = check(dump, "");
+        check(dump, "");
 
         final ContainerLifeCycle a1 = new ContainerLifeCycle();
         final ContainerLifeCycle a2 = new ContainerLifeCycle();
@@ -301,7 +299,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "   +> java.util.Arrays$ArrayList");
         dump = check(dump, "      +: ContainerLifeCycle");
         dump = check(dump, "      +: ContainerLifeCycle");
-        dump = check(dump, "");
+        check(dump, "");
 
         a2.addBean(aa0, true);
         dump = trim(a0.dump());
@@ -319,7 +317,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "   +> java.util.Arrays$ArrayList");
         dump = check(dump, "      +: ContainerLifeCycle");
         dump = check(dump, "      +: ContainerLifeCycle");
-        dump = check(dump, "");
+        check(dump, "");
 
         a2.unmanage(aa0);
         dump = trim(a0.dump());
@@ -336,7 +334,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "   +> java.util.Arrays$ArrayList");
         dump = check(dump, "      +: ContainerLifeCycle");
         dump = check(dump, "      +: ContainerLifeCycle");
-        dump = check(dump, "");
+        check(dump, "");
 
         a0.unmanage(aa);
         dump = trim(a0.dump());
@@ -346,7 +344,7 @@ public class ContainerLifeCycleTest
         dump = check(dump, "+= ContainerLife");
         dump = check(dump, "|  += Container");
         dump = check(dump, "+~ ContainerLife");
-        dump = check(dump, "");
+        check(dump, "");
     }
 
     @Test
@@ -377,9 +375,8 @@ public class ContainerLifeCycleTest
                 child.add(c);
             }
 
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "listener";
             }
@@ -387,18 +384,16 @@ public class ContainerLifeCycleTest
 
         ContainerLifeCycle c0 = new ContainerLifeCycle()
         {
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "c0";
             }
         };
         ContainerLifeCycle c00 = new ContainerLifeCycle()
         {
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "c00";
             }
@@ -439,15 +434,19 @@ public class ContainerLifeCycleTest
                 child.add(c);
             }
 
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "inherited";
             }
         };
 
         c0.addBean(inherited);
+
+        assertEquals("listener", handled.poll());
+        assertEquals("added", operation.poll());
+        assertEquals(c0, parent.poll());
+        assertEquals(inherited, child.poll());
 
         assertEquals("inherited", handled.poll());
         assertEquals("added", operation.poll());
@@ -458,11 +457,6 @@ public class ContainerLifeCycleTest
         assertEquals("added", operation.poll());
         assertEquals(c0, parent.poll());
         assertEquals(listener, child.poll());
-
-        assertEquals("listener", handled.poll());
-        assertEquals("added", operation.poll());
-        assertEquals(c0, parent.poll());
-        assertEquals(inherited, child.poll());
 
         assertEquals("inherited", handled.poll());
         assertEquals("added", operation.poll());
@@ -504,7 +498,7 @@ public class ContainerLifeCycleTest
         assertEquals(c00, child.poll());
     }
 
-    private final class InheritedListenerLifeCycle extends AbstractLifeCycle implements Container.InheritedListener
+    private static final class InheritedListenerLifeCycle extends AbstractLifeCycle implements Container.InheritedListener
     {
         @Override
         public void beanRemoved(Container p, Object c)
@@ -528,27 +522,24 @@ public class ContainerLifeCycleTest
     {
         ContainerLifeCycle c0 = new ContainerLifeCycle()
         {
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "c0";
             }
         };
         ContainerLifeCycle c00 = new ContainerLifeCycle()
         {
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "c00";
             }
         };
         ContainerLifeCycle c01 = new ContainerLifeCycle()
         {
-            public
             @Override
-            String toString()
+            public String toString()
             {
                 return "c01";
             }
@@ -627,7 +618,7 @@ public class ContainerLifeCycleTest
     }
 
     @Test
-    public void testGetBeans() throws Exception
+    public void testGetBeans()
     {
         TestContainerLifeCycle root = new TestContainerLifeCycle();
         TestContainerLifeCycle left = new TestContainerLifeCycle();
@@ -651,5 +642,95 @@ public class ContainerLifeCycleTest
         assertThat(root.getContainedBeans(Container.class), containsInAnyOrder(left, right, leaf));
         assertThat(root.getContainedBeans(Integer.class), containsInAnyOrder(0, 1, 2, 3, 4));
         assertThat(root.getContainedBeans(String.class), containsInAnyOrder("leaf"));
+    }
+
+    @Test
+    public void testBeanStoppingAddedToStartingBean() throws Exception
+    {
+        ContainerLifeCycle longLived = new ContainerLifeCycle()
+        {
+            @Override
+            protected void doStop() throws Exception
+            {
+                super.doStop();
+
+                ContainerLifeCycle shortLived = new ContainerLifeCycle();
+                shortLived.addBean(this);
+                shortLived.start();
+
+                assertTrue(shortLived.isStarted());
+                assertTrue(isStopping());
+                assertFalse(shortLived.isManaged(this));
+            }
+        };
+        longLived.start();
+        longLived.stop();
+    }
+
+    @Test
+    public void testFailedManagedBeanCanBeRestarted() throws Exception
+    {
+        AtomicBoolean fail = new AtomicBoolean();
+        ContainerLifeCycle container = new ContainerLifeCycle();
+        ContainerLifeCycle bean1 = new ContainerLifeCycle();
+        ContainerLifeCycle bean2 = new ContainerLifeCycle()
+        {
+            @Override
+            protected void doStart() throws Exception
+            {
+                super.doStart();
+                // Fail only the first time.
+                if (fail.compareAndSet(false, true))
+                    throw new RuntimeException();
+            }
+        };
+        ContainerLifeCycle bean3 = new ContainerLifeCycle();
+        container.addBean(bean1);
+        container.addBean(bean2);
+        container.addBean(bean3);
+
+        // Start the first time, it should fail.
+        assertThrows(RuntimeException.class, container::start);
+        assertTrue(container.isFailed());
+        assertTrue(bean1.isStopped());
+        assertTrue(bean2.isFailed());
+        assertTrue(bean3.isStopped());
+
+        // Re-start, it should succeed.
+        container.start();
+        assertTrue(container.isStarted());
+        assertTrue(bean1.isStarted());
+        assertTrue(bean2.isStarted());
+        assertTrue(bean3.isStarted());
+    }
+
+    @Test
+    public void testFailedAutoBeanIsNotRestarted() throws Exception
+    {
+        AtomicBoolean fail = new AtomicBoolean();
+        ContainerLifeCycle bean = new ContainerLifeCycle()
+        {
+            @Override
+            protected void doStart() throws Exception
+            {
+                super.doStart();
+                // Fail only the first time.
+                if (fail.compareAndSet(false, true))
+                    throw new RuntimeException();
+            }
+        };
+        // The bean is started externally and fails.
+        assertThrows(RuntimeException.class, bean::start);
+
+        // The same bean now becomes part of a container.
+        ContainerLifeCycle container = new ContainerLifeCycle();
+        container.addBean(bean);
+        assertTrue(container.isAuto(bean));
+
+        // Start the container, the bean must not be managed.
+        container.start();
+        assertTrue(container.isStarted());
+        assertTrue(bean.isFailed());
+        assertTrue(container.isUnmanaged(bean));
     }
 }

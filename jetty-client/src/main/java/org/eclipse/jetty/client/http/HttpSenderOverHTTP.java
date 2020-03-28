@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.http;
@@ -35,17 +35,19 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpSenderOverHTTP extends HttpSender
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpSenderOverHTTP.class);
+
     private final HttpGenerator generator = new HttpGenerator();
-    private final HttpClient httpClient;
     private boolean shutdown;
 
     public HttpSenderOverHTTP(HttpChannelOverHTTP channel)
     {
         super(channel);
-        httpClient = channel.getHttpDestination().getHttpClient();
     }
 
     @Override
@@ -64,7 +66,7 @@ public class HttpSenderOverHTTP extends HttpSender
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("Unable to send headers on exchange {}", exchange, x);
             callback.failed(x);
         }
     }
@@ -74,7 +76,9 @@ public class HttpSenderOverHTTP extends HttpSender
     {
         try
         {
+            HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
             ByteBufferPool bufferPool = httpClient.getByteBufferPool();
+            boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
             ByteBuffer chunk = null;
             while (true)
             {
@@ -89,12 +93,12 @@ public class HttpSenderOverHTTP extends HttpSender
                 {
                     case NEED_CHUNK:
                     {
-                        chunk = bufferPool.acquire(HttpGenerator.CHUNK_SIZE, false);
+                        chunk = bufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers);
                         break;
                     }
                     case NEED_CHUNK_TRAILER:
                     {
-                        chunk = bufferPool.acquire(httpClient.getRequestBufferSize(), false);
+                        chunk = bufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
                         break;
                     }
                     case FLUSH:
@@ -133,7 +137,7 @@ public class HttpSenderOverHTTP extends HttpSender
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(x);
+                LOG.debug("Unable to send content on {}", exchange, x);
             callback.failed(x);
         }
     }
@@ -218,21 +222,30 @@ public class HttpSenderOverHTTP extends HttpSender
                         chunkBuffer == null ? -1 : chunkBuffer.remaining(),
                         contentBuffer == null ? -1 : contentBuffer.remaining(),
                         result, generator);
+                HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
+                ByteBufferPool byteBufferPool = httpClient.getByteBufferPool();
+                boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
                 switch (result)
                 {
                     case NEED_HEADER:
                     {
-                        headerBuffer = httpClient.getByteBufferPool().acquire(httpClient.getRequestBufferSize(), false);
+                        headerBuffer = byteBufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
                         break;
+                    }
+                    case HEADER_OVERFLOW:
+                    {
+                        httpClient.getByteBufferPool().release(headerBuffer);
+                        headerBuffer = null;
+                        throw new IllegalArgumentException("Request header too large");
                     }
                     case NEED_CHUNK:
                     {
-                        chunkBuffer = httpClient.getByteBufferPool().acquire(HttpGenerator.CHUNK_SIZE, false);
+                        chunkBuffer = byteBufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers);
                         break;
                     }
                     case NEED_CHUNK_TRAILER:
                     {
-                        chunkBuffer = httpClient.getByteBufferPool().acquire(httpClient.getRequestBufferSize(), false);
+                        chunkBuffer = byteBufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
                         break;
                     }
                     case FLUSH:
@@ -288,7 +301,6 @@ public class HttpSenderOverHTTP extends HttpSender
         public void failed(Throwable x)
         {
             release();
-            callback.failed(x);
             super.failed(x);
         }
 
@@ -299,8 +311,16 @@ public class HttpSenderOverHTTP extends HttpSender
             callback.succeeded();
         }
 
+        @Override
+        protected void onCompleteFailure(Throwable cause)
+        {
+            super.onCompleteFailure(cause);
+            callback.failed(cause);
+        }
+
         private void release()
         {
+            HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
             ByteBufferPool bufferPool = httpClient.getByteBufferPool();
             if (!BufferUtil.isTheEmptyBuffer(headerBuffer))
                 bufferPool.release(headerBuffer);

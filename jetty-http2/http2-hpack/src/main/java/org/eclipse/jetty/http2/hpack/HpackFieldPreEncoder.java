@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.hpack;
@@ -31,22 +31,16 @@ import org.eclipse.jetty.util.BufferUtil;
 public class HpackFieldPreEncoder implements HttpFieldPreEncoder
 {
 
-    /**
-     * @see org.eclipse.jetty.http.HttpFieldPreEncoder#getHttpVersion()
-     */
     @Override
     public HttpVersion getHttpVersion()
     {
         return HttpVersion.HTTP_2;
     }
 
-    /**
-     * @see org.eclipse.jetty.http.HttpFieldPreEncoder#getEncodedField(org.eclipse.jetty.http.HttpHeader, java.lang.String, java.lang.String)
-     */
     @Override
     public byte[] getEncodedField(HttpHeader header, String name, String value)
     {
-        boolean notIndexed = HpackEncoder.__DO_NOT_INDEX.contains(header);
+        boolean notIndexed = HpackEncoder.DO_NOT_INDEX.contains(header);
 
         ByteBuffer buffer = BufferUtil.allocate(name.length() + value.length() + 10);
         BufferUtil.clearToFill(buffer);
@@ -56,8 +50,8 @@ public class HpackFieldPreEncoder implements HttpFieldPreEncoder
         if (notIndexed)
         {
             // Non indexed field
-            boolean neverIndex = HpackEncoder.__NEVER_INDEX.contains(header);
-            huffman = !HpackEncoder.__DO_NOT_HUFFMAN.contains(header);
+            boolean neverIndex = HpackEncoder.NEVER_INDEX.contains(header);
+            huffman = !HpackEncoder.DO_NOT_HUFFMAN.contains(header);
             buffer.put(neverIndex ? (byte)0x10 : (byte)0x00);
             bits = 4;
         }
@@ -72,7 +66,7 @@ public class HpackFieldPreEncoder implements HttpFieldPreEncoder
         {
             // indexed
             buffer.put((byte)0x40);
-            huffman = !HpackEncoder.__DO_NOT_HUFFMAN.contains(header);
+            huffman = !HpackEncoder.DO_NOT_HUFFMAN.contains(header);
             bits = 6;
         }
 

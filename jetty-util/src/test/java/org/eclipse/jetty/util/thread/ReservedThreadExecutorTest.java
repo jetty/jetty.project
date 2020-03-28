@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.thread;
@@ -32,6 +32,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -183,6 +185,26 @@ public class ReservedThreadExecutorTest
         assertThat(_reservedExecutor.getAvailable(), is(0));
     }
 
+    @Test
+    public void testReservedIdleTimeoutWithOneReservedThread() throws Exception
+    {
+        long idleTimeout = 500;
+        _reservedExecutor.stop();
+        _reservedExecutor.setIdleTimeout(idleTimeout, TimeUnit.MILLISECONDS);
+        _reservedExecutor.start();
+
+        assertThat(_reservedExecutor.tryExecute(NOOP), is(false));
+        Thread thread = _executor.startThread();
+        assertNotNull(thread);
+        waitForAvailable(1);
+
+        Thread.sleep(2 * idleTimeout);
+
+        waitForAvailable(0);
+        thread.join(2 * idleTimeout);
+        assertFalse(thread.isAlive());
+    }
+
     protected void waitForAvailable(int size) throws InterruptedException
     {
         long started = System.nanoTime();
@@ -211,11 +233,16 @@ public class ReservedThreadExecutorTest
             _queue.addLast(task);
         }
 
-        public void startThread()
+        public Thread startThread()
         {
             Runnable task = _queue.pollFirst();
             if (task != null)
-                new Thread(task).start();
+            {
+                Thread thread = new Thread(task);
+                thread.start();
+                return thread;
+            }
+            return null;
         }
     }
 
@@ -244,7 +271,6 @@ public class ReservedThreadExecutorTest
     public void stressTest() throws Exception
     {
         QueuedThreadPool pool = new QueuedThreadPool(20);
-        pool.setStopTimeout(10000);
         pool.start();
         ReservedThreadExecutor reserved = new ReservedThreadExecutor(pool, 10);
         reserved.setIdleTimeout(0, null);

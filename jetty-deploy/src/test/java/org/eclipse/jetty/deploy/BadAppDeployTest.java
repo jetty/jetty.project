@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.deploy;
@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -33,12 +34,11 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.LoggerFactory;
 
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,7 +63,7 @@ public class BadAppDeployTest
     }
 
     @Test
-    public void testBadApp_ThrowOnUnavailableTrue_XmlOrder() throws Exception
+    public void testBadAppThrowOnUnavailableTrueXmlOrder() throws Exception
     {
         /* Non-working Bean Order as reported in Issue #3620
            It is important that this Order be maintained for an accurate test case.
@@ -103,10 +103,9 @@ public class BadAppDeployTest
 
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
-
-            try (StacklessLogging ignore = new StacklessLogging(Log.getLogger(WebAppContext.class),
-                Log.getLogger(DeploymentManager.class),
-                Log.getLogger("org.eclipse.jetty.server.handler.ContextHandler.badapp")))
+            try (StacklessLogging ignore = new StacklessLogging(LoggerFactory.getLogger(WebAppContext.class),
+                LoggerFactory.getLogger(DeploymentManager.class),
+                LoggerFactory.getLogger("org.eclipse.jetty.server.handler.ContextHandler.badapp")))
             {
                 ServletException cause = assertThrows(ServletException.class, () -> server.start());
                 assertThat(cause.getMessage(), containsString("intentionally"));
@@ -116,7 +115,7 @@ public class BadAppDeployTest
     }
 
     @Test
-    public void testBadApp_ThrowOnUnavailableTrue_EmbeddedOrder() throws Exception
+    public void testBadAppThrowOnUnavailableTrueEmbeddedOrder() throws Exception
     {
         /* Working Bean Order
            ### BEAN: QueuedThreadPool[qtp1530388690]@5b37e0d2{STOPPED,8<=0<=200,i=0,r=-1,q=0}[NO_TRY]
@@ -157,9 +156,9 @@ public class BadAppDeployTest
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
 
-            try (StacklessLogging ignore = new StacklessLogging(Log.getLogger(WebAppContext.class),
-                Log.getLogger(DeploymentManager.class),
-                Log.getLogger("org.eclipse.jetty.server.handler.ContextHandler.badapp")))
+            try (StacklessLogging ignore = new StacklessLogging(LoggerFactory.getLogger(WebAppContext.class),
+                LoggerFactory.getLogger(DeploymentManager.class),
+                LoggerFactory.getLogger("org.eclipse.jetty.server.handler.ContextHandler.badapp")))
             {
                 ServletException cause = assertThrows(ServletException.class, () -> server.start());
                 assertThat(cause.getMessage(), containsString("intentionally"));

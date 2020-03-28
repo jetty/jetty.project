@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.resource;
@@ -21,12 +21,10 @@ package org.eclipse.jetty.util.resource;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.DirectoryIteratorException;
@@ -42,19 +40,18 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Java NIO Path Resource.
  */
 public class PathResource extends Resource
 {
-    private static final Logger LOG = Log.getLogger(PathResource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PathResource.class);
     private static final LinkOption[] NO_FOLLOW_LINKS = new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
     private static final LinkOption[] FOLLOW_LINKS = new LinkOption[]{};
 
@@ -87,7 +84,7 @@ public class PathResource extends Resource
                 // If the toRealPath() call fails, then let
                 // the alias checking routines continue on
                 // to other techniques.
-                LOG.ignore(ignored);
+                LOG.trace("IGNORED", ignored);
             }
         }
 
@@ -104,67 +101,97 @@ public class PathResource extends Resource
             {
                 Path real = abs.toRealPath(FOLLOW_LINKS);
 
-                /*
-                 * If the real path is not the same as the absolute path
-                 * then we know that the real path is the alias for the
-                 * provided path.
-                 *
-                 * For OS's that are case insensitive, this should
-                 * return the real (on-disk / case correct) version
-                 * of the path.
-                 *
-                 * We have to be careful on Windows and OSX.
-                 *
-                 * Assume we have the following scenario
-                 *   Path a = new File("foo").toPath();
-                 *   Files.createFile(a);
-                 *   Path b = new File("FOO").toPath();
-                 *
-                 * There now exists a file called "foo" on disk.
-                 * Using Windows or OSX, with a Path reference of
-                 * "FOO", "Foo", "fOO", etc.. means the following
-                 *
-                 *                        |  OSX    |  Windows   |  Linux
-                 * -----------------------+---------+------------+---------
-                 * Files.exists(a)        |  True   |  True      |  True
-                 * Files.exists(b)        |  True   |  True      |  False
-                 * Files.isSameFile(a,b)  |  True   |  True      |  False
-                 * a.equals(b)            |  False  |  True      |  False
-                 *
-                 * See the javadoc for Path.equals() for details about this FileSystem
-                 * behavior difference
-                 *
-                 * We also cannot rely on a.compareTo(b) as this is roughly equivalent
-                 * in implementation to a.equals(b)
-                 */
-
-                int absCount = abs.getNameCount();
-                int realCount = real.getNameCount();
-                if (absCount != realCount)
+                if (!isSameName(abs, real))
                 {
-                    // different number of segments
                     return real;
-                }
-
-                // compare each segment of path, backwards
-                for (int i = realCount - 1; i >= 0; i--)
-                {
-                    if (!abs.getName(i).toString().equals(real.getName(i).toString()))
-                    {
-                        return real;
-                    }
                 }
             }
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         catch (Exception e)
         {
             LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(), path);
         }
         return null;
+    }
+
+    /**
+     * Test if the paths are the same name.
+     *
+     * <p>
+     * If the real path is not the same as the absolute path
+     * then we know that the real path is the alias for the
+     * provided path.
+     * </p>
+     *
+     * <p>
+     * For OS's that are case insensitive, this should
+     * return the real (on-disk / case correct) version
+     * of the path.
+     * </p>
+     *
+     * <p>
+     * We have to be careful on Windows and OSX.
+     * </p>
+     *
+     * <p>
+     * Assume we have the following scenario:
+     * </p>
+     *
+     * <pre>
+     *   Path a = new File("foo").toPath();
+     *   Files.createFile(a);
+     *   Path b = new File("FOO").toPath();
+     * </pre>
+     *
+     * <p>
+     * There now exists a file called {@code foo} on disk.
+     * Using Windows or OSX, with a Path reference of
+     * {@code FOO}, {@code Foo}, {@code fOO}, etc.. means the following
+     * </p>
+     *
+     * <pre>
+     *                        |  OSX    |  Windows   |  Linux
+     * -----------------------+---------+------------+---------
+     * Files.exists(a)        |  True   |  True      |  True
+     * Files.exists(b)        |  True   |  True      |  False
+     * Files.isSameFile(a,b)  |  True   |  True      |  False
+     * a.equals(b)            |  False  |  True      |  False
+     * </pre>
+     *
+     * <p>
+     * See the javadoc for Path.equals() for details about this FileSystem
+     * behavior difference
+     * </p>
+     *
+     * <p>
+     * We also cannot rely on a.compareTo(b) as this is roughly equivalent
+     * in implementation to a.equals(b)
+     * </p>
+     */
+    public static boolean isSameName(Path pathA, Path pathB)
+    {
+        int aCount = pathA.getNameCount();
+        int bCount = pathB.getNameCount();
+        if (aCount != bCount)
+        {
+            // different number of segments
+            return false;
+        }
+        
+        // compare each segment of path, backwards
+        for (int i = bCount; i-- > 0; )
+        {
+            if (!pathA.getName(i).toString().equals(pathB.getName(i).toString()))
+            {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     /**
@@ -255,7 +282,7 @@ public class PathResource extends Resource
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             throw new IOException("Unable to build Path from: " + uri, e);
         }
 
@@ -334,7 +361,7 @@ public class PathResource extends Resource
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             return false;
         }
     }
@@ -394,7 +421,6 @@ public class PathResource extends Resource
     @Override
     public InputStream getInputStream() throws IOException
     {
-        // TODO: investigate if SPARSE use for default FileSystem usages is worth it
         return Files.newInputStream(path, StandardOpenOption.READ);
     }
 
@@ -407,7 +433,11 @@ public class PathResource extends Resource
     @Override
     public ReadableByteChannel getReadableByteChannel() throws IOException
     {
-        // TODO: investigate if SPARSE use for default FileSystem usages is worth it
+        return newSeekableByteChannel();
+    }
+
+    public SeekableByteChannel newSeekableByteChannel() throws IOException
+    {
         return Files.newByteChannel(path, StandardOpenOption.READ);
     }
 
@@ -427,10 +457,17 @@ public class PathResource extends Resource
     }
 
     @Override
-    public boolean isContainedIn(Resource r) throws MalformedURLException
+    public boolean isContainedIn(Resource r)
     {
-        // not applicable for FileSystem / path
-        return false;
+        try
+        {
+            PathResource pr = PathResource.class.cast(r);
+            return (path.startsWith(pr.getPath()));
+        }
+        catch (ClassCastException e)
+        {
+            return false;
+        }
     }
 
     @Override
@@ -449,7 +486,7 @@ public class PathResource extends Resource
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             return 0;
         }
     }
@@ -516,11 +553,11 @@ public class PathResource extends Resource
         }
         catch (DirectoryIteratorException e)
         {
-            LOG.debug(e);
+            LOG.debug("Directory list failure", e);
         }
         catch (IOException e)
         {
-            LOG.debug(e);
+            LOG.debug("Directory list access failure", e);
         }
         return null;
     }
@@ -538,7 +575,7 @@ public class PathResource extends Resource
             }
             catch (IOException e)
             {
-                LOG.ignore(e);
+                LOG.trace("IGNORED", e);
                 return false;
             }
         }
@@ -558,43 +595,6 @@ public class PathResource extends Resource
         else
         {
             Files.copy(this.path, destination.toPath());
-        }
-    }
-
-    /**
-     * @param outputStream the output stream to write to
-     * @param start First byte to write
-     * @param count Bytes to write or -1 for all of them.
-     * @throws IOException if unable to copy the Resource to the output
-     */
-    @Override
-    public void writeTo(OutputStream outputStream, long start, long count)
-        throws IOException
-    {
-        long length = count;
-
-        if (count < 0)
-        {
-            length = Files.size(path) - start;
-        }
-
-        try (SeekableByteChannel channel = Files.newByteChannel(path, StandardOpenOption.READ))
-        {
-            ByteBuffer buffer = BufferUtil.allocate(IO.bufferSize);
-            channel.position(start);
-
-            // copy from channel to output stream
-            long readTotal = 0;
-            while (readTotal < length)
-            {
-                BufferUtil.clearToFill(buffer);
-                int size = (int)Math.min(IO.bufferSize, length - readTotal);
-                buffer.limit(size);
-                int readLen = channel.read(buffer);
-                BufferUtil.flipToFlush(buffer, 0);
-                BufferUtil.writeTo(buffer, outputStream);
-                readTotal += readLen;
-            }
         }
     }
 

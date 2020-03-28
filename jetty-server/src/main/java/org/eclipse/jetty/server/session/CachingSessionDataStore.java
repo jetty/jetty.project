@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.session;
@@ -21,8 +21,8 @@ package org.eclipse.jetty.server.session;
 import java.util.Set;
 
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * CachingSessionDataStore
@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class CachingSessionDataStore extends ContainerLifeCycle implements SessionDataStore
 {
-    private static final Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
+    private static final Logger LOG = LoggerFactory.getLogger(CachingSessionDataStore.class);
     /**
      * The actual store for the session data
      */
@@ -83,9 +83,6 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         return _cache;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#load(java.lang.String)
-     */
     @Override
     public SessionData load(String id) throws Exception
     {
@@ -98,7 +95,7 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to load id {}", id, e);
         }
 
         if (d != null)
@@ -110,9 +107,6 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         return d;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#delete(java.lang.String)
-     */
     @Override
     public boolean delete(String id) throws Exception
     {
@@ -124,9 +118,6 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         return deleted;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#getExpired(Set)
-     */
     @Override
     public Set<String> getExpired(Set<String> candidates)
     {
@@ -134,9 +125,6 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         return _store.getExpired(candidates);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#store(java.lang.String, org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public void store(String id, SessionData data) throws Exception
     {
@@ -162,18 +150,12 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         super.doStop();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#isPassivating()
-     */
     @Override
     public boolean isPassivating()
     {
         return _store.isPassivating();
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#exists(java.lang.String)
-     */
     @Override
     public boolean exists(String id) throws Exception
     {
@@ -186,16 +168,13 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable test exists on {}", id, e);
         }
 
         //then the delegate store
         return _store.exists(id);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
-     */
     @Override
     public void initialize(SessionContext context) throws Exception
     {
@@ -204,9 +183,6 @@ public class CachingSessionDataStore extends ContainerLifeCycle implements Sessi
         _cache.initialize(context);
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#newSessionData(java.lang.String, long, long, long, long)
-     */
     @Override
     public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {

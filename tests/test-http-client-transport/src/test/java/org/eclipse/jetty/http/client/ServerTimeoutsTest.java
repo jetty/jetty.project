@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http.client;
@@ -44,6 +44,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
@@ -51,7 +52,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -204,10 +204,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
     {
         init(transport);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 AsyncContext asyncContext = request.startAsync();
@@ -270,10 +270,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         Assumptions.assumeFalse(scenario.transport == UNIX_SOCKET);
 
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 AsyncContext asyncContext = request.startAsync();
@@ -338,10 +338,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         scenario.requestLog.clear();
         scenario.httpConfig.setMinRequestDataRate(bytesPerSecond);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 try
                 {
@@ -402,10 +402,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         int bytesPerSecond = 20;
         scenario.httpConfig.setMinRequestDataRate(bytesPerSecond);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 ServletInputStream input = request.getInputStream();
@@ -481,10 +481,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         long idleTimeout = 3 * httpIdleTimeout;
         scenario.httpConfig.setIdleTimeout(httpIdleTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 AsyncContext asyncContext = request.startAsync();
@@ -665,7 +665,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         assertTrue(clientLatch.await(15, TimeUnit.SECONDS));
     }
 
-    private static class BlockingReadHandler extends AbstractHandler.ErrorDispatchHandler
+    private static class BlockingReadHandler extends AbstractHandler
     {
         private final CountDownLatch handlerLatch;
 
@@ -675,7 +675,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         }
 
         @Override
-        protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
         {
             baseRequest.setHandled(true);
             ServletInputStream input = request.getInputStream();

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.client.http;
@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -61,6 +62,8 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.hpack.HpackException;
+import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -74,6 +77,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -96,6 +100,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         httpClient.setExecutor(executor);
         httpClient.setConnectTimeout(13);
         httpClient.setIdleTimeout(17);
+        httpClient.setUseInputDirectByteBuffers(false);
+        httpClient.setUseOutputDirectByteBuffers(false);
 
         httpClient.start();
 
@@ -105,6 +111,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         assertSame(httpClient.getByteBufferPool(), http2Client.getByteBufferPool());
         assertEquals(httpClient.getConnectTimeout(), http2Client.getConnectTimeout());
         assertEquals(httpClient.getIdleTimeout(), http2Client.getIdleTimeout());
+        assertEquals(httpClient.isUseInputDirectByteBuffers(), http2Client.isUseInputDirectByteBuffers());
+        assertEquals(httpClient.isUseOutputDirectByteBuffers(), http2Client.isUseOutputDirectByteBuffers());
 
         httpClient.stop();
 
@@ -194,7 +202,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             .onRequestBegin(request ->
             {
                 if (request.getVersion() != HttpVersion.HTTP_2)
-                    request.abort(new Exception("Not a HTTP/2 request"));
+                    request.abort(new Exception("Not an HTTP/2 request"));
             })
             .send();
 
@@ -341,7 +349,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         int proxyPort = connector.getLocalPort();
-        client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort));
+        client.getProxyConfiguration().getProxies().add(new HttpProxy(new Origin.Address("localhost", proxyPort), false, new Origin.Protocol(List.of("h2c"), false)));
 
         int serverPort = proxyPort + 1; // Any port will do, just not the same as the proxy.
         ContentResponse response = client.newRequest("localhost", serverPort)
@@ -461,21 +469,35 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                     @Override
                     public void onPreface()
                     {
-                        // Server's preface.
-                        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-                        // Reply to client's SETTINGS.
-                        generator.control(lease, new SettingsFrame(new HashMap<>(), true));
-                        writeFrames();
+                        try
+                        {
+                            // Server's preface.
+                            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+                            // Reply to client's SETTINGS.
+                            generator.control(lease, new SettingsFrame(new HashMap<>(), true));
+                            writeFrames();
+                        }
+                        catch (HpackException x)
+                        {
+                            x.printStackTrace();
+                        }
                     }
 
                     @Override
                     public void onHeaders(HeadersFrame request)
                     {
-                        // Response.
-                        MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
-                        HeadersFrame response = new HeadersFrame(request.getStreamId(), metaData, null, true);
-                        generator.control(lease, response);
-                        writeFrames();
+                        try
+                        {
+                            // Response.
+                            MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                            HeadersFrame response = new HeadersFrame(request.getStreamId(), metaData, null, true);
+                            generator.control(lease, response);
+                            writeFrames();
+                        }
+                        catch (HpackException x)
+                        {
+                            x.printStackTrace();
+                        }
                     }
 
                     private void writeFrames()
@@ -494,7 +516,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                             x.printStackTrace();
                         }
                     }
-                }, 4096, 8192);
+                }, 4096, 8192, RateControl.NO_RATE_CONTROL);
                 parser.init(UnaryOperator.identity());
 
                 byte[] bytes = new byte[1024];
@@ -567,6 +589,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
+                // Disable checks for invalid headers.
+                ((HTTP2Session)stream.getSession()).getGenerator().setValidateHpackEncoding(false);
                 // Produce an invalid HPACK block by adding a request pseudo-header to the response.
                 HttpFields fields = new HttpFields();
                 fields.put(":method", "get");
@@ -595,6 +619,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
 
     @Disabled
     @Test
+    @Tag("external")
     public void testExternalServer() throws Exception
     {
         ClientConnector clientConnector = new ClientConnector();

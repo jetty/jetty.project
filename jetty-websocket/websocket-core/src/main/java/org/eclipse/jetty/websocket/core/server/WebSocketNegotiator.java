@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.websocket.core.server;
@@ -23,11 +23,12 @@ import java.util.function.Function;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 
-public interface WebSocketNegotiator extends FrameHandler.Customizer
+public interface WebSocketNegotiator extends Configuration.Customizer
 {
     FrameHandler negotiate(Negotiation negotiation) throws IOException;
 
@@ -51,7 +52,7 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
         };
     }
 
-    static WebSocketNegotiator from(Function<Negotiation, FrameHandler> negotiate, FrameHandler.Customizer customizer)
+    static WebSocketNegotiator from(Function<Negotiation, FrameHandler> negotiate, Configuration.Customizer customizer)
     {
         return new AbstractNegotiator(null, customizer)
         {
@@ -66,7 +67,7 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
     static WebSocketNegotiator from(
         Function<Negotiation, FrameHandler> negotiate,
         WebSocketComponents components,
-        FrameHandler.Customizer customizer)
+        Configuration.Customizer customizer)
     {
         return new AbstractNegotiator(components, customizer)
         {
@@ -81,21 +82,21 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
     abstract class AbstractNegotiator implements WebSocketNegotiator
     {
         final WebSocketComponents components;
-        final FrameHandler.Customizer customizer;
+        final Configuration.Customizer customizer;
 
         public AbstractNegotiator()
         {
             this(null, null);
         }
 
-        public AbstractNegotiator(WebSocketComponents components, FrameHandler.Customizer customizer)
+        public AbstractNegotiator(WebSocketComponents components, Configuration.Customizer customizer)
         {
             this.components = components == null ? new WebSocketComponents() : components;
             this.customizer = customizer;
         }
 
         @Override
-        public void customize(FrameHandler.Configuration configurable)
+        public void customize(Configuration configurable)
         {
             if (customizer != null)
                 customizer.customize(configurable);
@@ -125,7 +126,7 @@ public interface WebSocketNegotiator extends FrameHandler.Customizer
             return components;
         }
 
-        public FrameHandler.Customizer getCustomizer()
+        public Configuration.Customizer getCustomizer()
         {
             return customizer;
         }

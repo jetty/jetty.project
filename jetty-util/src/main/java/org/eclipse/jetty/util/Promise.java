@@ -1,27 +1,28 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
-import org.eclipse.jetty.util.log.Log;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A callback abstraction that handles completed/failed events of asynchronous operations.</p>
@@ -59,8 +60,34 @@ public interface Promise<C>
         @Override
         public void failed(Throwable x)
         {
-            Log.getLogger(this.getClass()).warn(x);
+            LoggerFactory.getLogger(this.getClass()).warn("Failed", x);
         }
+    }
+
+    /**
+     * <p>Creates a Promise from the given success and failure consumers.</p>
+     *
+     * @param success the consumer invoked when the promise is succeeded
+     * @param failure the consumer invoked when the promise is failed
+     * @param <T> the type of the result
+     * @return a new Promise wrapping the success and failure consumers.
+     */
+    static <T> Promise<T> from(Consumer<T> success, Consumer<Throwable> failure)
+    {
+        return new Promise<>()
+        {
+            @Override
+            public void succeeded(T result)
+            {
+                success.accept(result);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                failure.accept(x);
+            }
+        };
     }
 
     /**

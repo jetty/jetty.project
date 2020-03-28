@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
@@ -27,11 +27,13 @@ import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.http.tools.HttpTester;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -42,7 +44,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -92,10 +94,10 @@ public class AsyncContextTest
         _contextHandler.addServlet(new ServletHolder(new BadExpireServlet()), "/badexpire/*");
         _contextHandler.addServlet(new ServletHolder(new ErrorServlet()), "/error/*");
 
-        ErrorPageErrorHandler error_handler = new ErrorPageErrorHandler();
-        _contextHandler.setErrorHandler(error_handler);
-        error_handler.addErrorPage(500, "/error/500");
-        error_handler.addErrorPage(IOException.class.getName(), "/error/IOE");
+        ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler();
+        _contextHandler.setErrorHandler(errorHandler);
+        errorHandler.addErrorPage(500, "/error/500");
+        errorHandler.addErrorPage(IOException.class.getName(), "/error/IOE");
 
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[]
@@ -223,10 +225,14 @@ public class AsyncContextTest
         assertThat("query string attr is correct", responseBody, containsString("async:run:attr:queryString:dispatch=true"));
         assertThat("context path attr is correct", responseBody, containsString("async:run:attr:contextPath:/ctx"));
         assertThat("request uri attr is correct", responseBody, containsString("async:run:attr:requestURI:/ctx/servletPath"));
+        assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:servletPath"));
+        assertThat("http servlet mapping pattern is correct", responseBody, containsString("async:run:attr:mapping:pattern:/servletPath"));
+        assertThat("http servlet mapping servletName is correct", responseBody, containsString("async:run:attr:mapping:servletName:"));
+        assertThat("http servlet mapping mappingMatch is correct", responseBody, containsString("async:run:attr:mapping:mappingMatch:EXACT"));
     }
 
     @Test
-    public void testDispatchAsyncContext_EncodedUrl() throws Exception
+    public void testDispatchAsyncContextEncodedUrl() throws Exception
     {
         String request = "GET /ctx/test/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
@@ -256,10 +262,14 @@ public class AsyncContextTest
         assertThat("async run attr query string", responseBody, containsString("async:run:attr:queryString:dispatch=true"));
         assertThat("async run context path", responseBody, containsString("async:run:attr:contextPath:/ctx"));
         assertThat("async run request uri has correct encoding", responseBody, containsString("async:run:attr:requestURI:/ctx/test/hello%2fthere"));
+        assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:/test"));
+        assertThat("http servlet mapping pattern is correct", responseBody, containsString("async:run:attr:mapping:pattern:/test/*"));
+        assertThat("http servlet mapping servletName is correct", responseBody, containsString("async:run:attr:mapping:servletName:"));
+        assertThat("http servlet mapping mappingMatch is correct", responseBody, containsString("async:run:attr:mapping:mappingMatch:PATH"));
     }
 
     @Test
-    public void testDispatchAsyncContext_SelfEncodedUrl() throws Exception
+    public void testDispatchAsyncContextSelfEncodedUrl() throws Exception
     {
         String request = "GET /ctx/self/hello%2fthere?dispatch=true HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
@@ -295,6 +305,10 @@ public class AsyncContextTest
         assertThat("query string attr is correct", responseBody, containsString("async:run:attr:queryString:dispatch=true&queryStringWithEncoding=space%20space"));
         assertThat("context path attr is correct", responseBody, containsString("async:run:attr:contextPath:/ctx"));
         assertThat("request uri attr is correct", responseBody, containsString("async:run:attr:requestURI:/ctx/path%20with%20spaces/servletPath"));
+        assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:path with spaces/servletPath"));
+        assertThat("http servlet mapping pattern is correct", responseBody, containsString("async:run:attr:mapping:pattern:/path with spaces/servletPath"));
+        assertThat("http servlet mapping servletName is correct", responseBody, containsString("async:run:attr:mapping:servletName:"));
+        assertThat("http servlet mapping mappingMatch is correct", responseBody, containsString("async:run:attr:mapping:mappingMatch:EXACT"));
     }
 
     @Test
@@ -337,6 +351,10 @@ public class AsyncContextTest
         assertThat("query string attr is correct", responseBody, containsString("async:run:attr:queryString:dispatch=true"));
         assertThat("context path attr is correct", responseBody, containsString("async:run:attr:contextPath:/ctx"));
         assertThat("request uri attr is correct", responseBody, containsString("async:run:attr:requestURI:/ctx/servletPath"));
+        assertThat("http servlet mapping matchValue is correct", responseBody, containsString("async:run:attr:mapping:matchValue:servletPath"));
+        assertThat("http servlet mapping pattern is correct", responseBody, containsString("async:run:attr:mapping:pattern:/servletPath"));
+        assertThat("http servlet mapping servletName is correct", responseBody, containsString("async:run:attr:mapping:servletName:"));
+        assertThat("http servlet mapping mappingMatch is correct", responseBody, containsString("async:run:attr:mapping:mappingMatch:EXACT"));
     }
 
     @Test
@@ -478,7 +496,7 @@ public class AsyncContextTest
 
         assertThat("error servlet", responseBody, containsString("ERROR: /error"));
         assertThat("error servlet", responseBody, containsString("PathInfo= /500"));
-        assertThat("error servlet", responseBody, containsString("EXCEPTION: java.lang.RuntimeException: TEST"));
+        assertThat("error servlet", responseBody, not(containsString("EXCEPTION: ")));
     }
 
     private class DispatchingRunnable implements Runnable
@@ -552,7 +570,7 @@ public class AsyncContextTest
                     @Override
                     public void onTimeout(AsyncEvent event) throws IOException
                     {
-                        throw new RuntimeException("TEST");
+                        throw new RuntimeException("BAD EXPIRE");
                     }
 
                     @Override
@@ -686,6 +704,14 @@ public class AsyncContextTest
                 _context.getResponse().getOutputStream().print("async:run:attr:queryString:" + req.getAttribute(AsyncContext.ASYNC_QUERY_STRING) + "\n");
                 _context.getResponse().getOutputStream().print("async:run:attr:contextPath:" + req.getAttribute(AsyncContext.ASYNC_CONTEXT_PATH) + "\n");
                 _context.getResponse().getOutputStream().print("async:run:attr:requestURI:" + req.getAttribute(AsyncContext.ASYNC_REQUEST_URI) + "\n");
+                HttpServletMapping mapping = (HttpServletMapping)req.getAttribute(AsyncContext.ASYNC_MAPPING);
+                if (mapping != null)
+                {
+                    _context.getResponse().getOutputStream().print("async:run:attr:mapping:matchValue:" + mapping.getMatchValue() + "\n");
+                    _context.getResponse().getOutputStream().print("async:run:attr:mapping:pattern:" + mapping.getPattern() + "\n");
+                    _context.getResponse().getOutputStream().print("async:run:attr:mapping:servletName:" + mapping.getServletName() + "\n");
+                    _context.getResponse().getOutputStream().print("async:run:attr:mapping:mappingMatch:" + mapping.getMappingMatch() + "\n");
+                }
             }
             catch (IOException e)
             {

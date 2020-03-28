@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -38,14 +38,14 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @Tag("stress")
 public class AsyncStressTest
 {
-    private static final Logger LOG = Log.getLogger(AsyncStressTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncStressTest.class);
 
     protected QueuedThreadPool _threads = new QueuedThreadPool();
     protected Server _server = new Server(_threads);
@@ -70,7 +70,7 @@ public class AsyncStressTest
             {"/path?suspend=<PERIOD>", "TIMEOUT"},
             {"/path?suspend=60000&resume=<PERIOD>", "RESUMED"},
             {"/path?suspend=60000&complete=<PERIOD>", "COMPLETED"},
-            };
+        };
 
     @BeforeEach
     public void init() throws Exception
@@ -188,33 +188,33 @@ public class AsyncStressTest
         @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
-            int read_before = 0;
-            long sleep_for = -1;
-            long suspend_for = -1;
-            long resume_after = -1;
-            long complete_after = -1;
+            int readBefore = 0;
+            long sleepFor = -1;
+            long suspendFor = -1;
+            long resumeAfter = -1;
+            long completeAfter = -1;
 
             final String uri = baseRequest.getHttpURI().toString();
 
             if (request.getParameter("read") != null)
-                read_before = Integer.parseInt(request.getParameter("read"));
+                readBefore = Integer.parseInt(request.getParameter("read"));
             if (request.getParameter("sleep") != null)
-                sleep_for = Integer.parseInt(request.getParameter("sleep"));
+                sleepFor = Integer.parseInt(request.getParameter("sleep"));
             if (request.getParameter("suspend") != null)
-                suspend_for = Integer.parseInt(request.getParameter("suspend"));
+                suspendFor = Integer.parseInt(request.getParameter("suspend"));
             if (request.getParameter("resume") != null)
-                resume_after = Integer.parseInt(request.getParameter("resume"));
+                resumeAfter = Integer.parseInt(request.getParameter("resume"));
             if (request.getParameter("complete") != null)
-                complete_after = Integer.parseInt(request.getParameter("complete"));
+                completeAfter = Integer.parseInt(request.getParameter("complete"));
 
             if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
             {
-                if (read_before > 0)
+                if (readBefore > 0)
                 {
-                    byte[] buf = new byte[read_before];
+                    byte[] buf = new byte[readBefore];
                     request.getInputStream().read(buf);
                 }
-                else if (read_before < 0)
+                else if (readBefore < 0)
                 {
                     InputStream in = request.getInputStream();
                     int b = in.read();
@@ -224,13 +224,13 @@ public class AsyncStressTest
                     }
                 }
 
-                if (suspend_for >= 0)
+                if (suspendFor >= 0)
                 {
                     final AsyncContext asyncContext = baseRequest.startAsync();
                     asyncContext.addListener(__asyncListener);
-                    if (suspend_for > 0)
-                        asyncContext.setTimeout(suspend_for);
-                    if (complete_after > 0)
+                    if (suspendFor > 0)
+                        asyncContext.setTimeout(suspendFor);
+                    if (completeAfter > 0)
                     {
                         TimerTask complete = new TimerTask()
                         {
@@ -252,24 +252,25 @@ public class AsyncStressTest
                                     System.err.println(uri + "==" + br.getHttpURI());
                                     System.err.println(asyncContext + "==" + br.getHttpChannelState());
 
-                                    LOG.warn(e);
+                                    LOG.warn("Unable to complete async: request={}, uri={}, asyncContext={}",
+                                        br, br.getHttpURI(), br.getHttpChannelState(), e);
                                     System.exit(1);
                                 }
                             }
                         };
                         synchronized (_timer)
                         {
-                            _timer.schedule(complete, complete_after);
+                            _timer.schedule(complete, completeAfter);
                         }
                     }
-                    else if (complete_after == 0)
+                    else if (completeAfter == 0)
                     {
                         response.setStatus(200);
                         response.getOutputStream().println("COMPLETED " + request.getHeader("result"));
                         baseRequest.setHandled(true);
                         asyncContext.complete();
                     }
-                    else if (resume_after > 0)
+                    else if (resumeAfter > 0)
                     {
                         TimerTask resume = new TimerTask()
                         {
@@ -281,19 +282,19 @@ public class AsyncStressTest
                         };
                         synchronized (_timer)
                         {
-                            _timer.schedule(resume, resume_after);
+                            _timer.schedule(resume, resumeAfter);
                         }
                     }
-                    else if (resume_after == 0)
+                    else if (resumeAfter == 0)
                     {
                         asyncContext.dispatch();
                     }
                 }
-                else if (sleep_for >= 0)
+                else if (sleepFor >= 0)
                 {
                     try
                     {
-                        Thread.sleep(sleep_for);
+                        Thread.sleep(sleepFor);
                     }
                     catch (InterruptedException e)
                     {

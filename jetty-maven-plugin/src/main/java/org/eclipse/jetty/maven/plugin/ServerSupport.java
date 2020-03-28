@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.maven.plugin;
@@ -29,9 +29,11 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -52,22 +54,24 @@ public class ServerSupport
 
     /**
      * Set up the handler structure to receive a webapp.
-     * Also put in a DefaultHandler so we get a nice page
+     * Also put in a DefaultHandler so we get a nicer page
      * than a 404 if we hit the root and the webapp's
      * context isn't at root.
-     *
-     * @param server the server
-     * @param requestLog the request log
-     * @throws Exception if unable to configure the handlers
+     * 
+     * @param server the server to use
+     * @param contextHandlers the context handlers to include
+     * @param requestLog a request log to use
+     * @throws Exception
      */
-    public static void configureHandlers(Server server, RequestLog requestLog) throws Exception
+    public static void configureHandlers(Server server, List<ContextHandler> contextHandlers, RequestLog requestLog) throws Exception 
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");
 
         DefaultHandler defaultHandler = new DefaultHandler();
+        RequestLogHandler requestLogHandler = new RequestLogHandler();
         if (requestLog != null)
-            server.setRequestLog(requestLog);
+            requestLogHandler.setRequestLog(requestLog);
 
         ContextHandlerCollection contexts = findContextHandlerCollection(server);
         if (contexts == null)
@@ -78,11 +82,19 @@ public class ServerSupport
             {
                 handlers = new HandlerCollection();
                 server.setHandler(handlers);
-                handlers.setHandlers(new Handler[]{contexts, defaultHandler});
+                handlers.setHandlers(new Handler[]{contexts, defaultHandler, requestLogHandler});
             }
             else
             {
                 handlers.addHandler(contexts);
+            }
+        } 
+        
+        if (contextHandlers != null)
+        {   
+            for (ContextHandler context:contextHandlers)
+            {
+                contexts.addHandler(context);
             }
         }
     }
@@ -92,8 +104,9 @@ public class ServerSupport
      *
      * @param server the server
      * @param connector the connector
+     * @param properties jetty properties
      */
-    public static void configureConnectors(Server server, Connector connector)
+    public static void configureConnectors(Server server, Connector connector, Map<String,String> properties)
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");
@@ -111,8 +124,14 @@ public class ServerSupport
         {
             //Make a new default connector
             MavenServerConnector tmp = new MavenServerConnector();
-            //use any jetty.http.port settings provided
-            String port = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, System.getProperty("jetty.port", MavenServerConnector.DEFAULT_PORT_STR));
+            //use any jetty.http.port settings provided, trying system properties before jetty properties
+            String port = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY);
+            if (port == null)
+                port = System.getProperty("jetty.port");
+            if (port == null)
+                port = (properties != null ? properties.get(MavenServerConnector.PORT_SYSPROPERTY) : null);
+            if (port == null)
+                port = MavenServerConnector.DEFAULT_PORT_STR;
             tmp.setPort(Integer.parseInt(port.trim()));
             tmp.setServer(server);
             server.setConnectors(new Connector[]{tmp});
@@ -125,7 +144,7 @@ public class ServerSupport
      * @param server the server
      * @param loginServices the login services
      */
-    public static void configureLoginServices(Server server, LoginService[] loginServices)
+    public static void configureLoginServices(Server server, List<LoginService> loginServices)
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");
@@ -140,6 +159,12 @@ public class ServerSupport
         }
     }
 
+    /**
+     * Add a WebAppContext to a Server
+     * @param server the server to use
+     * @param webapp the webapp to add
+     * @throws Exception
+     */
     public static void addWebApplication(Server server, WebAppContext webapp) throws Exception
     {
         if (server == null)
@@ -150,6 +175,12 @@ public class ServerSupport
         contexts.addHandler(webapp);
     }
 
+    /**
+     * Locate a ContextHandlerCollection for a Server.
+     * 
+     * @param server the Server to check.
+     * @return The ContextHandlerCollection or null if not found.
+     */
     public static ContextHandlerCollection findContextHandlerCollection(Server server)
     {
         if (server == null)
@@ -173,7 +204,7 @@ public class ServerSupport
         if (files == null || files.isEmpty())
             return server;
 
-        Map<String, Object> lastMap = new HashMap<>();
+        Map<String,Object> lastMap = new HashMap<String,Object>();
 
         if (server != null)
             lastMap.put("Server", server);
@@ -218,7 +249,7 @@ public class ServerSupport
      * @param server the Server instance to configure
      * @param files the xml configs to apply
      * @return the Server after application of configs
-     * @throws Exception if unable to apply the xml configuration
+     * @throws Exception
      */
     public static Server applyXmlConfigurations(Server server, List<File> files)
         throws Exception

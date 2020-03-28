@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -24,22 +24,24 @@ import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
+import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -54,20 +56,21 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.AtomicBiInteger;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>{@link Response} provides the implementation for {@link HttpServletResponse}.</p>
  */
 public class Response implements HttpServletResponse
 {
-    private static final Logger LOG = Log.getLogger(Response.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Response.class);
     private static final int __MIN_BUFFER_SIZE = 1;
     private static final HttpField __EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
 
@@ -83,15 +86,9 @@ public class Response implements HttpServletResponse
      */
     public static final String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
-    /**
-     * If this string is found within the comment of a cookie added with {@link #addCookie(Cookie)}, then the cookie
-     * will be set as HTTP ONLY.
-     */
-    public static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
-
     private final HttpChannel _channel;
     private final HttpFields _fields = new HttpFields();
-    private final AtomicInteger _include = new AtomicInteger();
+    private final AtomicBiInteger _errorSentAndIncludes = new AtomicBiInteger(); // hi is errorSent flag, lo is include count
     private final HttpOutput _out;
     private int _status = HttpStatus.OK_200;
     private String _reason;
@@ -137,6 +134,7 @@ public class Response implements HttpServletResponse
         _out.recycle();
         _fields.clear();
         _encodingFrom = EncodingFrom.NOT_SET;
+        _trailers = null;
     }
 
     public HttpOutput getHttpOutput()
@@ -144,19 +142,46 @@ public class Response implements HttpServletResponse
         return _out;
     }
 
+    public void reopen()
+    {
+        // Make the response mutable and reopen output.
+        setErrorSent(false);
+        _out.reopen();
+    }
+
+    public void errorClose()
+    {
+        // Make the response immutable and soft close the output.
+        setErrorSent(true);
+        _out.softClose();
+    }
+
+    /**
+     * @return true if the response is mutable, ie not errorSent and not included
+     */
+    private boolean isMutable()
+    {
+        return _errorSentAndIncludes.get() == 0;
+    }
+
+    private void setErrorSent(boolean errorSent)
+    {
+        _errorSentAndIncludes.getAndSetHi(errorSent ? 1 : 0);
+    }
+
     public boolean isIncluding()
     {
-        return _include.get() > 0;
+        return _errorSentAndIncludes.getLo() > 0;
     }
 
     public void include()
     {
-        _include.incrementAndGet();
+        _errorSentAndIncludes.add(0, 1);
     }
 
     public void included()
     {
-        _include.decrementAndGet();
+        _errorSentAndIncludes.add(0, -1);
         if (_outputType == OutputType.WRITER)
         {
             _writer.reopen();
@@ -168,12 +193,41 @@ public class Response implements HttpServletResponse
     {
         if (StringUtil.isBlank(cookie.getName()))
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
-
+     
         // add the set cookie
-        _fields.add(new SetCookieHttpField(cookie, getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()));
+        _fields.add(new SetCookieHttpField(checkSameSite(cookie), getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()));
 
         // Expire responses with set-cookie headers so they do not get cached.
         _fields.put(__EXPIRES_01JAN1970);
+    }
+    
+    /**
+     * Check that samesite is set on the cookie. If not, use a 
+     * context default value, if one has been set.
+     * 
+     * @param cookie the cookie to check
+     * @return either the original cookie, or a new one that has the samesit default set
+     */
+    private HttpCookie checkSameSite(HttpCookie cookie)
+    {
+        if (cookie == null || cookie.getSameSite() != null)
+            return cookie;
+
+        //sameSite is not set, use the default configured for the context, if one exists
+        SameSite contextDefault = HttpCookie.getSameSiteDefault(_channel.getRequest().getContext());
+        if (contextDefault == null)
+            return cookie; //no default set
+
+        return new HttpCookie(cookie.getName(),
+            cookie.getValue(),
+            cookie.getDomain(),
+            cookie.getPath(),
+            cookie.getMaxAge(),
+            cookie.isHttpOnly(),
+            cookie.isSecure(),
+            cookie.getComment(),
+            cookie.getVersion(),
+            contextDefault);
     }
 
     @Override
@@ -183,19 +237,10 @@ public class Response implements HttpServletResponse
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         String comment = cookie.getComment();
-        boolean httpOnly = cookie.isHttpOnly();
-
-        if (comment != null)
-        {
-            int i = comment.indexOf(HTTP_ONLY_COMMENT);
-            if (i >= 0)
-            {
-                httpOnly = true;
-                comment = StringUtil.strip(comment.trim(), HTTP_ONLY_COMMENT);
-                if (comment.length() == 0)
-                    comment = null;
-            }
-        }
+        // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
+        boolean httpOnly = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
+        SameSite sameSite = HttpCookie.getSameSiteFromComment(comment);
+        comment = HttpCookie.getCommentWithoutAttributes(comment);
 
         addCookie(new HttpCookie(
             cookie.getName(),
@@ -206,7 +251,8 @@ public class Response implements HttpServletResponse
             httpOnly,
             cookie.getSecure(),
             comment,
-            cookie.getVersion()));
+            cookie.getVersion(),
+            sameSite));
     }
 
     /**
@@ -223,7 +269,7 @@ public class Response implements HttpServletResponse
 
             if (field.getHeader() == HttpHeader.SET_COOKIE)
             {
-                final CookieCompliance compliance = getHttpChannel().getHttpConfiguration().getResponseCookieCompliance();
+                CookieCompliance compliance = getHttpChannel().getHttpConfiguration().getResponseCookieCompliance();
 
                 HttpCookie oldCookie;
                 if (field instanceof SetCookieHttpField)
@@ -250,7 +296,7 @@ public class Response implements HttpServletResponse
                 else if (!cookie.getPath().equals(oldCookie.getPath()))
                     continue;
 
-                i.set(new SetCookieHttpField(cookie, compliance));
+                i.set(new SetCookieHttpField(checkSameSite(cookie), compliance));
                 return;
             }
         }
@@ -389,71 +435,40 @@ public class Response implements HttpServletResponse
         sendError(sc, null);
     }
 
+    /**
+     * Send an error response.
+     * <p>In addition to the servlet standard handling, this method supports some additional codes:</p>
+     * <dl>
+     * <dt>102</dt><dd>Send a partial PROCESSING response and allow additional responses</dd>
+     * <dt>-1</dt><dd>Abort the HttpChannel and close the connection/stream</dd>
+     * </dl>
+     * @param code The error code
+     * @param message The message
+     * @throws IOException If an IO problem occurred sending the error response.
+     */
     @Override
     public void sendError(int code, String message) throws IOException
     {
         if (isIncluding())
             return;
 
-        if (isCommitted())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Aborting on sendError on committed response {} {}", code, message);
-            code = -1;
-        }
-        else
-            resetBuffer();
-
         switch (code)
         {
             case -1:
-                _channel.abort(new IOException());
-                return;
-            case 102:
+                _channel.abort(new IOException(message));
+                break;
+            case HttpStatus.PROCESSING_102:
                 sendProcessing();
-                return;
+                break;
             default:
+                _channel.getState().sendError(code, message);
                 break;
         }
-
-        _outputType = OutputType.NONE;
-        setContentType(null);
-        setCharacterEncoding(null);
-        setHeader(HttpHeader.EXPIRES, null);
-        setHeader(HttpHeader.LAST_MODIFIED, null);
-        setHeader(HttpHeader.CACHE_CONTROL, null);
-        setHeader(HttpHeader.CONTENT_TYPE, null);
-        setHeader(HttpHeader.CONTENT_LENGTH, null);
-
-        setStatus(code);
-
-        Request request = _channel.getRequest();
-        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
-        _reason = HttpStatus.getMessage(code);
-        if (message == null)
-            message = cause == null ? _reason : cause.toString();
-
-        // If we are allowed to have a body, then produce the error page.
-        if (code != SC_NO_CONTENT && code != SC_NOT_MODIFIED &&
-            code != SC_PARTIAL_CONTENT && code >= SC_OK)
-        {
-            ContextHandler.Context context = request.getContext();
-            ContextHandler contextHandler = context == null ? _channel.getState().getContextHandler() : context.getContextHandler();
-            request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, code);
-            request.setAttribute(RequestDispatcher.ERROR_MESSAGE, message);
-            request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
-            request.setAttribute(RequestDispatcher.ERROR_SERVLET_NAME, request.getServletName());
-            ErrorHandler errorHandler = ErrorHandler.getErrorHandler(_channel.getServer(), contextHandler);
-            if (errorHandler != null)
-                errorHandler.handle(null, request, request, this);
-        }
-        if (!request.isAsyncStarted())
-            closeOutput();
     }
 
     /**
      * Sends a 102-Processing response.
-     * If the connection is a HTTP connection, the version is 1.1 and the
+     * If the connection is an HTTP connection, the version is 1.1 and the
      * request has a Expect header starting with 102, then a 102 response is
      * sent. This indicates that the request still be processed and real response
      * can still be sent.   This method is called by sendError if it is passed 102.
@@ -481,7 +496,7 @@ public class Response implements HttpServletResponse
         if ((code < HttpServletResponse.SC_MULTIPLE_CHOICES) || (code >= HttpServletResponse.SC_BAD_REQUEST))
             throw new IllegalArgumentException("Not a 3xx redirect code");
 
-        if (isIncluding())
+        if (!isMutable())
             return;
 
         if (location == null)
@@ -527,34 +542,34 @@ public class Response implements HttpServletResponse
     @Override
     public void setDateHeader(String name, long date)
     {
-        if (!isIncluding())
+        if (isMutable())
             _fields.putDateField(name, date);
     }
 
     @Override
     public void addDateHeader(String name, long date)
     {
-        if (!isIncluding())
+        if (isMutable())
             _fields.addDateField(name, date);
     }
 
     public void setHeader(HttpHeader name, String value)
     {
-        if (HttpHeader.CONTENT_TYPE == name)
-            setContentType(value);
-        else
+        if (isMutable())
         {
-            if (isIncluding())
-                return;
-
-            _fields.put(name, value);
-
-            if (HttpHeader.CONTENT_LENGTH == name)
+            if (HttpHeader.CONTENT_TYPE == name)
+                setContentType(value);
+            else
             {
-                if (value == null)
-                    _contentLength = -1L;
-                else
-                    _contentLength = Long.parseLong(value);
+                _fields.put(name, value);
+
+                if (HttpHeader.CONTENT_LENGTH == name)
+                {
+                    if (value == null)
+                        _contentLength = -1L;
+                    else
+                        _contentLength = Long.parseLong(value);
+                }
             }
         }
     }
@@ -562,17 +577,21 @@ public class Response implements HttpServletResponse
     @Override
     public void setHeader(String name, String value)
     {
+        long biInt = _errorSentAndIncludes.get();
+        if (biInt != 0)
+        {
+            boolean errorSent = AtomicBiInteger.getHi(biInt) != 0;
+            boolean including = AtomicBiInteger.getLo(biInt) > 0;
+            if (!errorSent && including && name.startsWith(SET_INCLUDE_HEADER_PREFIX))
+                name = name.substring(SET_INCLUDE_HEADER_PREFIX.length());
+            else
+                return;
+        }
+
         if (HttpHeader.CONTENT_TYPE.is(name))
             setContentType(value);
         else
         {
-            if (isIncluding())
-            {
-                if (name.startsWith(SET_INCLUDE_HEADER_PREFIX))
-                    name = name.substring(SET_INCLUDE_HEADER_PREFIX.length());
-                else
-                    return;
-            }
             _fields.put(name, value);
             if (HttpHeader.CONTENT_LENGTH.is(name))
             {
@@ -608,9 +627,12 @@ public class Response implements HttpServletResponse
     @Override
     public void addHeader(String name, String value)
     {
-        if (isIncluding())
+        long biInt = _errorSentAndIncludes.get();
+        if (biInt != 0)
         {
-            if (name.startsWith(SET_INCLUDE_HEADER_PREFIX))
+            boolean errorSent = AtomicBiInteger.getHi(biInt) != 0;
+            boolean including = AtomicBiInteger.getLo(biInt) > 0;
+            if (!errorSent && including && name.startsWith(SET_INCLUDE_HEADER_PREFIX))
                 name = name.substring(SET_INCLUDE_HEADER_PREFIX.length());
             else
                 return;
@@ -634,7 +656,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setIntHeader(String name, int value)
     {
-        if (!isIncluding())
+        if (isMutable())
         {
             _fields.putLongField(name, value);
             if (HttpHeader.CONTENT_LENGTH.is(name))
@@ -645,7 +667,7 @@ public class Response implements HttpServletResponse
     @Override
     public void addIntHeader(String name, int value)
     {
-        if (!isIncluding())
+        if (isMutable())
         {
             _fields.add(name, Integer.toString(value));
             if (HttpHeader.CONTENT_LENGTH.is(name))
@@ -658,10 +680,13 @@ public class Response implements HttpServletResponse
     {
         if (sc <= 0)
             throw new IllegalArgumentException();
-        if (!isIncluding())
+        if (isMutable())
         {
+            // Null the reason only if the status is different. This allows
+            // a specific reason to be sent with setStatusWithReason followed by sendError.
+            if (_status != sc)
+                _reason = null;
             _status = sc;
-            _reason = null;
         }
     }
 
@@ -676,7 +701,7 @@ public class Response implements HttpServletResponse
     {
         if (sc <= 0)
             throw new IllegalArgumentException();
-        if (!isIncluding())
+        if (isMutable())
         {
             _status = sc;
             _reason = message;
@@ -691,9 +716,18 @@ public class Response implements HttpServletResponse
             String encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
             if (encoding != null)
                 return encoding;
+
             encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
             if (encoding != null)
                 return encoding;
+
+            Context context = _channel.getRequest().getContext();
+            if (context != null)
+            {
+                encoding = context.getResponseCharacterEncoding();
+                if (encoding != null)
+                    return encoding;
+            }
             return StringUtil.__ISO_8859_1;
         }
         return _characterEncoding;
@@ -724,6 +758,11 @@ public class Response implements HttpServletResponse
         return _outputType == OutputType.STREAM;
     }
 
+    public boolean isWritingOrStreaming()
+    {
+        return isWriting() || isStreaming();
+    }
+
     @Override
     public PrintWriter getWriter() throws IOException
     {
@@ -732,23 +771,42 @@ public class Response implements HttpServletResponse
 
         if (_outputType == OutputType.NONE)
         {
-            /* get encoding from Content-Type header */
+            //first try explicit char encoding
             String encoding = _characterEncoding;
+
+            //try char set from mime type
             if (encoding == null)
             {
                 if (_mimeType != null && _mimeType.isCharsetAssumed())
                     encoding = _mimeType.getCharsetString();
-                else
-                {
-                    encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
-                    if (encoding == null)
-                    {
-                        encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
-                        if (encoding == null)
-                            encoding = StringUtil.__ISO_8859_1;
-                        setCharacterEncoding(encoding, EncodingFrom.INFERRED);
-                    }
-                }
+            }
+
+            //try char set assumed from content type
+            if (encoding == null)
+            {
+                encoding = MimeTypes.getCharsetAssumedFromContentType(_contentType);
+            }
+            
+            //try char set inferred from content type
+            if (encoding == null)
+            {
+                encoding = MimeTypes.getCharsetInferredFromContentType(_contentType);
+                setCharacterEncoding(encoding, EncodingFrom.INFERRED);
+            }
+            
+            //try any default char encoding for the context
+            if (encoding == null)
+            {
+                Context context = _channel.getRequest().getContext();
+                if (context != null)
+                    encoding = context.getResponseCharacterEncoding();
+            }
+            
+            //fallback to last resort iso-8859-1
+            if (encoding == null)
+            {
+                encoding = StringUtil.__ISO_8859_1;
+                setCharacterEncoding(encoding, EncodingFrom.INFERRED);
             }
 
             Locale locale = getLocale();
@@ -777,7 +835,7 @@ public class Response implements HttpServletResponse
         // Protect from setting after committed as default handling
         // of a servlet HEAD request ALWAYS sets _content length, even
         // if the getHandling committed the response!
-        if (isCommitted() || isIncluding())
+        if (isCommitted() || !isMutable())
             return;
 
         if (len > 0)
@@ -832,21 +890,29 @@ public class Response implements HttpServletResponse
 
     public void closeOutput() throws IOException
     {
-        switch (_outputType)
-        {
-            case WRITER:
-                _writer.close();
-                if (!_out.isClosed())
-                    _out.close();
-                break;
-            case STREAM:
-                if (!_out.isClosed())
-                    getOutputStream().close();
-                break;
-            default:
-                if (!_out.isClosed())
-                    _out.close();
-        }
+        if (_outputType == OutputType.WRITER)
+            _writer.close();
+        else
+            _out.close();
+    }
+
+    /**
+     * close the output
+     *
+     * @deprecated Use {@link #closeOutput()}
+     */
+    @Deprecated
+    public void completeOutput() throws IOException
+    {
+        closeOutput();
+    }
+
+    public void completeOutput(Callback callback)
+    {
+        if (_outputType == OutputType.WRITER)
+            _writer.complete(callback);
+        else
+            _out.complete(callback);
     }
 
     public long getLongContentLength()
@@ -859,7 +925,7 @@ public class Response implements HttpServletResponse
         // Protect from setting after committed as default handling
         // of a servlet HEAD request ALWAYS sets _content length, even
         // if the getHandling committed the response!
-        if (isCommitted() || isIncluding())
+        if (isCommitted() || !isMutable())
             return;
         _contentLength = len;
         _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
@@ -879,7 +945,7 @@ public class Response implements HttpServletResponse
 
     private void setCharacterEncoding(String encoding, EncodingFrom from)
     {
-        if (isIncluding() || isWriting())
+        if (!isMutable() || isWriting())
             return;
 
         if (_outputType != OutputType.WRITER && !isCommitted())
@@ -932,7 +998,7 @@ public class Response implements HttpServletResponse
     @Override
     public void setContentType(String contentType)
     {
-        if (isCommitted() || isIncluding())
+        if (isCommitted() || !isMutable())
             return;
 
         if (contentType == null)
@@ -1039,19 +1105,21 @@ public class Response implements HttpServletResponse
     @Override
     public void reset()
     {
-        reset(false);
-    }
-
-    public void reset(boolean preserveCookies)
-    {
-        resetForForward();
         _status = 200;
         _reason = null;
+        _out.resetBuffer();
+        _outputType = OutputType.NONE;
         _contentLength = -1;
+        _contentType = null;
+        _mimeType = null;
+        _characterEncoding = null;
+        _encodingFrom = EncodingFrom.NOT_SET;
+        _trailers = null;
 
-        List<HttpField> cookies = preserveCookies ? _fields.getFields(HttpHeader.SET_COOKIE) : null;
+        // Clear all response headers
         _fields.clear();
 
+        // recreate necessary connection related fields
         for (String value : _channel.getRequest().getHttpFields().getCSV(HttpHeader.CONNECTION, false))
         {
             HttpHeaderValue cb = HttpHeaderValue.CACHE.get(value);
@@ -1074,21 +1142,57 @@ public class Response implements HttpServletResponse
             }
         }
 
-        if (preserveCookies)
-            cookies.forEach(_fields::add);
-        else
+        // recreate session cookies
+        Request request = getHttpChannel().getRequest();
+        HttpSession session = request.getSession(false);
+        if (session != null && session.isNew())
         {
-            Request request = getHttpChannel().getRequest();
-            HttpSession session = request.getSession(false);
-            if (session != null && session.isNew())
+            SessionHandler sh = request.getSessionHandler();
+            if (sh != null)
             {
-                SessionHandler sh = request.getSessionHandler();
-                if (sh != null)
-                {
-                    HttpCookie c = sh.getSessionCookie(session, request.getContextPath(), request.isSecure());
-                    if (c != null)
-                        addCookie(c);
-                }
+                HttpCookie c = sh.getSessionCookie(session, request.getContextPath(), request.isSecure());
+                if (c != null)
+                    addCookie(c);
+            }
+        }
+    }
+
+    public void resetContent()
+    {
+        _out.resetBuffer();
+        _outputType = OutputType.NONE;
+        _contentLength = -1;
+        _contentType = null;
+        _mimeType = null;
+        _characterEncoding = null;
+        _encodingFrom = EncodingFrom.NOT_SET;
+
+        // remove the content related response headers and keep all others
+        for (Iterator<HttpField> i = getHttpFields().iterator(); i.hasNext(); )
+        {
+            HttpField field = i.next();
+            if (field.getHeader() == null)
+                continue;
+
+            switch (field.getHeader())
+            {
+                case CONTENT_TYPE:
+                case CONTENT_LENGTH:
+                case CONTENT_ENCODING:
+                case CONTENT_LANGUAGE:
+                case CONTENT_RANGE:
+                case CONTENT_MD5:
+                case CONTENT_LOCATION:
+                case TRANSFER_ENCODING:
+                case CACHE_CONTROL:
+                case LAST_MODIFIED:
+                case EXPIRES:
+                case ETAG:
+                case DATE:
+                case VARY:
+                    i.remove();
+                    continue;
+                default:
             }
         }
     }
@@ -1103,13 +1207,7 @@ public class Response implements HttpServletResponse
     public void resetBuffer()
     {
         _out.resetBuffer();
-    }
-
-    @Override
-    public void setTrailerFields(Supplier<Map<String, String>> trailers)
-    {
-        // TODO new for 4.0 - avoid transient supplier?
-        this._trailers = new HttpFieldsSupplier(trailers);
+        _out.reopen();
     }
 
     public Supplier<HttpFields> getTrailers()
@@ -1117,12 +1215,24 @@ public class Response implements HttpServletResponse
         return _trailers;
     }
 
+    public void setTrailers(Supplier<HttpFields> trailers)
+    {
+        _trailers = trailers;
+    }
+
     @Override
     public Supplier<Map<String, String>> getTrailerFields()
     {
         if (_trailers instanceof HttpFieldsSupplier)
-            ((HttpFieldsSupplier)_trailers).getSupplier();
+            return ((HttpFieldsSupplier)_trailers).getSupplier();
         return null;
+    }
+
+    @Override
+    public void setTrailerFields(Supplier<Map<String, String>> trailers)
+    {
+        // TODO new for 4.0 - avoid transient supplier?
+        this._trailers = new HttpFieldsSupplier(trailers);
     }
 
     protected MetaData.Response newResponseMetaData()
@@ -1153,13 +1263,16 @@ public class Response implements HttpServletResponse
     @Override
     public boolean isCommitted()
     {
+        // If we are in sendError state, we pretend to be committed
+        if (_channel.isSendError())
+            return true;
         return _channel.isCommitted();
     }
 
     @Override
     public void setLocale(Locale locale)
     {
-        if (locale == null || isCommitted() || isIncluding())
+        if (locale == null || isCommitted() || !isMutable())
             return;
 
         _locale = locale;
@@ -1290,6 +1403,19 @@ public class Response implements HttpServletResponse
             if (et != null)
                 response.setHeader(HttpHeader.ETAG.asString(), et);
         }
+    }
+
+    public static HttpServletResponse unwrap(ServletResponse servletResponse)
+    {
+        if (servletResponse instanceof HttpServletResponseWrapper)
+        {
+            return (HttpServletResponseWrapper)servletResponse;
+        }
+        if (servletResponse instanceof ServletResponseWrapper)
+        {
+            return unwrap(((ServletResponseWrapper)servletResponse).getResponse());
+        }
+        return (HttpServletResponse)servletResponse;
     }
 
     private static class HttpFieldsSupplier implements Supplier<HttpFields>

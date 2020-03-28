@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.security;
@@ -25,16 +25,16 @@ import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Credential;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractLoginService
  */
 public abstract class AbstractLoginService extends ContainerLifeCycle implements LoginService
 {
-    private static final Logger LOG = Log.getLogger(AbstractLoginService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractLoginService.class);
 
     protected IdentityService _identityService = new DefaultIdentityService();
     protected String _name;
@@ -107,9 +107,6 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         addBean(_identityService);
     }
 
-    /**
-     * @see org.eclipse.jetty.security.LoginService#getName()
-     */
     @Override
     public String getName()
     {
@@ -148,9 +145,6 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         return String.format("%s@%x[%s]", this.getClass().getSimpleName(), hashCode(), _name);
     }
 
-    /**
-     * @see org.eclipse.jetty.security.LoginService#login(java.lang.String, java.lang.Object, javax.servlet.ServletRequest)
-     */
     @Override
     public UserIdentity login(String username, Object credentials, ServletRequest request)
     {
@@ -178,9 +172,6 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         return null;
     }
 
-    /**
-     * @see org.eclipse.jetty.security.LoginService#validate(org.eclipse.jetty.server.UserIdentity)
-     */
     @Override
     public boolean validate(UserIdentity user)
     {
@@ -200,18 +191,12 @@ public abstract class AbstractLoginService extends ContainerLifeCycle implements
         throw new IllegalStateException("UserPrincipal not KnownUser"); //can't validate
     }
 
-    /**
-     * @see org.eclipse.jetty.security.LoginService#getIdentityService()
-     */
     @Override
     public IdentityService getIdentityService()
     {
         return _identityService;
     }
 
-    /**
-     * @see org.eclipse.jetty.security.LoginService#logout(org.eclipse.jetty.server.UserIdentity)
-     */
     @Override
     public void logout(UserIdentity user)
     {

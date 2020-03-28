@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -34,17 +34,17 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Dump request handler.
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
+public class DumpHandler extends AbstractHandler
 {
-    private static final Logger LOG = Log.getLogger(DumpHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DumpHandler.class);
 
     String label = "Dump HttpHandler";
 
@@ -58,7 +58,7 @@ public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
     }
 
     @Override
-    protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         if (!isStarted())
             return;
@@ -113,7 +113,7 @@ public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
         writer.write("<pre>\nlocal=" + request.getLocalAddr() + ":" + request.getLocalPort() + "\n</pre>\n");
         writer.write("<pre>\nremote=" + request.getRemoteAddr() + ":" + request.getRemotePort() + "\n</pre>\n");
         writer.write("<h3>Header:</h3><pre>");
-        writer.write(request.getMethod() + " " + request.getRequestURI() + " " + request.getProtocol() + "\n");
+        writer.write(String.format("%4s %s %s\n", request.getMethod(), request.getRequestURI(), request.getProtocol()));
         Enumeration<String> headers = request.getHeaderNames();
         while (headers.hasMoreElements())
         {
@@ -154,17 +154,17 @@ public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
             }
         }
 
-        String cookie_name = request.getParameter("CookieName");
-        if (cookie_name != null && cookie_name.trim().length() > 0)
+        String cookieName = request.getParameter("CookieName");
+        if (cookieName != null && cookieName.trim().length() > 0)
         {
-            String cookie_action = request.getParameter("Button");
+            String cookieAction = request.getParameter("Button");
             try
             {
                 String val = request.getParameter("CookieVal");
                 val = val.replaceAll("[ \n\r=<>]", "?");
                 Cookie cookie =
-                    new Cookie(cookie_name.trim(), val);
-                if ("Clear Cookie".equals(cookie_action))
+                    new Cookie(cookieName.trim(), val);
+                if ("Clear Cookie".equals(cookieAction))
                     cookie.setMaxAge(0);
                 response.addCookie(cookie);
             }
@@ -223,10 +223,7 @@ public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
             }
             catch (IOException e)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.warn(e);
-                else
-                    LOG.warn(e.toString());
+                LOG.warn("Failed to copy request content", e);
                 writer.write(e.toString());
             }
         }
@@ -259,7 +256,7 @@ public class DumpHandler extends AbstractHandler.ErrorDispatchHandler
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
     }
 }

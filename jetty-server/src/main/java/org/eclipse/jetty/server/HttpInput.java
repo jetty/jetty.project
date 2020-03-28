@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -36,8 +36,8 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Destroyable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link HttpInput} provides an implementation of {@link ServletInputStream} for {@link HttpChannel}.
@@ -121,7 +121,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    private static final Logger LOG = Log.getLogger(HttpInput.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpInput.class);
     static final Content EOF_CONTENT = new EofContent("EOF");
     static final Content EARLY_EOF_CONTENT = new EofContent("EARLY_EOF");
 
@@ -274,7 +274,8 @@ public class HttpInput extends ServletInputStream implements Runnable
                     {
                         BadMessageException bad = new BadMessageException(HttpStatus.REQUEST_TIMEOUT_408,
                             String.format("Request content data rate < %d B/s", minRequestDataRate));
-                        _channelState.getHttpChannel().abort(bad);
+                        if (_channelState.isResponseCommitted())
+                            _channelState.getHttpChannel().abort(bad);
                         throw bad;
                     }
                 }
@@ -659,7 +660,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             }
             catch (Throwable e)
             {
-                LOG.debug(e);
+                LOG.debug("Unable to consume all input", e);
                 _state = new ErrorState(e);
                 return false;
             }
@@ -713,7 +714,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
             return true;
         }
     }
@@ -731,22 +732,29 @@ public class HttpInput extends ServletInputStream implements Runnable
 
                 _listener = Objects.requireNonNull(readListener);
 
-                Content content = produceNextContext();
-                if (content != null)
+                if (isError())
                 {
-                    _state = ASYNC;
                     woken = _channelState.onReadReady();
-                }
-                else if (_state == EOF)
-                {
-                    _state = AEOF;
-                    woken = _channelState.onReadEof();
                 }
                 else
                 {
-                    _state = ASYNC;
-                    _channelState.onReadUnready();
-                    _waitingForContent = true;
+                    Content content = produceNextContext();
+                    if (content != null)
+                    {
+                        _state = ASYNC;
+                        woken = _channelState.onReadReady();
+                    }
+                    else if (_state == EOF)
+                    {
+                        _state = AEOF;
+                        woken = _channelState.onReadEof();
+                    }
+                    else
+                    {
+                        _state = ASYNC;
+                        _channelState.onReadUnready();
+                        _waitingForContent = true;
+                    }
                 }
             }
         }
@@ -788,7 +796,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                     // without modifying the original failure.
                     Throwable failure = new Throwable(_state.getError());
                     failure.addSuppressed(x);
-                    LOG.debug(failure);
+                    LOG.debug("HttpInput failure", failure);
                 }
             }
             else
@@ -879,8 +887,10 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
         catch (Throwable e)
         {
-            LOG.warn(e.toString());
-            LOG.debug(e);
+            if (LOG.isDebugEnabled())
+                LOG.warn("Unable to notify listener", e);
+            else
+                LOG.warn("Unable to notify listener: {}", e.toString());
             try
             {
                 if (aeof || error == null)
@@ -891,9 +901,12 @@ public class HttpInput extends ServletInputStream implements Runnable
             }
             catch (Throwable e2)
             {
-                LOG.warn(e2.toString());
-                LOG.debug(e2);
-                throw new RuntimeIOException(e2);
+                String msg = "Unable to notify error to listener";
+                if (LOG.isDebugEnabled())
+                    LOG.warn(msg, e2);
+                else
+                    LOG.warn(msg + ": {}", e2.toString());
+                throw new RuntimeIOException(msg, e2);
             }
         }
     }

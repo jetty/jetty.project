@@ -1,24 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -30,7 +31,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 
 /**
- * <p>The SPI interface for implementing a HTTP/2 session.</p>
+ * <p>The SPI interface for implementing an HTTP/2 session.</p>
  * <p>This class extends {@link Session} by adding the methods required to
  * implement the HTTP/2 session functionalities.</p>
  */
@@ -151,4 +152,14 @@ public interface ISession extends Session
      * @param callback the callback to notify when the frame has been processed
      */
     public void onData(DataFrame frame, Callback callback);
+
+    /**
+     * <p>Gracefully closes the session, returning a {@code CompletableFuture} that
+     * is completed when all the streams currently being processed are completed.</p>
+     * <p>Implementation is idempotent, i.e. calling this method a second time
+     * or concurrently results in a no-operation.</p>
+     *
+     * @return a {@code CompletableFuture} that is completed when all the streams are completed
+     */
+    public CompletableFuture<Void> shutdown();
 }

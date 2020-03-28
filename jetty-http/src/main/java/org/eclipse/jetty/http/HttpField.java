@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http;
@@ -23,7 +23,7 @@ import java.util.Objects;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
- * A HTTP Field
+ * An HTTP Field
  */
 public class HttpField
 {
@@ -37,7 +37,10 @@ public class HttpField
     public HttpField(HttpHeader header, String name, String value)
     {
         _header = header;
-        _name = name;
+        if (_header != null && name == null)
+            _name = _header.asString();
+        else
+            _name = Objects.requireNonNull(name);
         _value = value;
     }
 
@@ -64,6 +67,11 @@ public class HttpField
     public String getName()
     {
         return _name;
+    }
+
+    public String getLowerCaseName()
+    {
+        return _header != null ? _header.lowerCaseName() : StringUtil.asciiToLowerCase(_name);
     }
 
     public String getValue()
@@ -326,8 +334,6 @@ public class HttpField
         if (_header != field.getHeader())
             return false;
         if (!_name.equalsIgnoreCase(field.getName()))
-            return false;
-        if (_value == null && field.getValue() != null)
             return false;
         return Objects.equals(_value, field.getValue());
     }

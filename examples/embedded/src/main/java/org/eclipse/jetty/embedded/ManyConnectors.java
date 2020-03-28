@@ -1,25 +1,27 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.embedded;
 
-import java.io.File;
 import java.io.FileNotFoundException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
@@ -36,23 +38,13 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public class ManyConnectors
 {
-    public static void main(String[] args) throws Exception
+    public static Server createServer(int plainPort, int securePort) throws Exception
     {
         // Since this example shows off SSL configuration, we need a keystore
-        // with the appropriate key. These lookup of jetty.home is purely a hack
-        // to get access to a keystore that we use in many unit tests and should
-        // probably be a direct path to your own keystore.
-
-        String jettyDistKeystore = "../../jetty-distribution/target/distribution/demo-base/etc/test-keystore";
-        String keystorePath = System.getProperty("example.keystore", jettyDistKeystore);
-        File keystoreFile = new File(keystorePath);
-        if (!keystoreFile.exists())
-        {
-            keystorePath = "jetty-distribution/target/distribution/demo-base/etc/keystore";
-            keystoreFile = new File(keystorePath);
-            if (!keystoreFile.exists())
-                throw new FileNotFoundException(keystoreFile.getAbsolutePath());
-        }
+        // with the appropriate key.
+        Path keystorePath = Paths.get("src/main/resources/etc/keystore.p12").toAbsolutePath();
+        if (!Files.exists(keystorePath))
+            throw new FileNotFoundException(keystorePath.toString());
 
         // Create a basic jetty server object without declaring the port. Since
         // we are configuring connectors directly we'll be setting ports on
@@ -67,7 +59,7 @@ public class ManyConnectors
         // done. The port for secured communication is also set here.
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.setSecureScheme("https");
-        httpConfig.setSecurePort(8443);
+        httpConfig.setSecurePort(securePort);
         httpConfig.setOutputBufferSize(32768);
 
         // HTTP connector
@@ -77,7 +69,7 @@ public class ManyConnectors
         // configure an idle timeout.
         ServerConnector http = new ServerConnector(server,
             new HttpConnectionFactory(httpConfig));
-        http.setPort(8080);
+        http.setPort(plainPort);
         http.setIdleTimeout(30000);
 
         // SSL Context Factory for HTTPS
@@ -88,9 +80,8 @@ public class ManyConnectors
         // keystore to be used.
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
-        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        sslContextFactory.setKeyStorePath(keystorePath.toString());
+        sslContextFactory.setKeyStorePassword("storepwd");
 
         // OPTIONAL: Un-comment the following to use Conscrypt for SSL instead of
         // the native JSSE implementation.
@@ -118,7 +109,7 @@ public class ManyConnectors
         ServerConnector https = new ServerConnector(server,
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
             new HttpConnectionFactory(httpsConfig));
-        https.setPort(8443);
+        https.setPort(securePort);
         https.setIdleTimeout(500000);
 
         // Here you see the server having multiple connectors registered with
@@ -132,7 +123,14 @@ public class ManyConnectors
 
         // Set a handler
         server.setHandler(new HelloHandler());
+        return server;
+    }
 
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        int securePort = ExampleUtil.getPort(args, "jetty.https.port", 8443);
+        Server server = createServer(port, securePort);
         // Start the server
         server.start();
         server.dumpStdErr();

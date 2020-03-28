@@ -1,30 +1,27 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.session;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
-import org.infinispan.Cache;
 import org.infinispan.query.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
@@ -32,8 +29,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -41,34 +37,38 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
+    static
+    {
+        LoggingUtil.init();
+    }
 
-    public InfinispanTestSupport __testSupport;
+    public InfinispanTestSupport _testSupport;
 
     @BeforeEach
     public void setup() throws Exception
     {
-        __testSupport = new InfinispanTestSupport();
-        __testSupport.setup();
+        _testSupport = new InfinispanTestSupport();
+        _testSupport.setup();
     }
 
     @AfterEach
     public void teardown() throws Exception
     {
-        __testSupport.teardown();
+        _testSupport.teardown();
     }
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
-        factory.setCache(__testSupport.getCache());
+        factory.setCache(_testSupport.getCache());
         return factory;
     }
 
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        __testSupport.createSession(data);
+        _testSupport.createSession(data);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
     {
-        return __testSupport.checkSessionExists(data);
+        return _testSupport.checkSessionExists(data);
     }
 
     /**
@@ -153,7 +153,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            return __testSupport.checkSessionPersisted(data);
+            return _testSupport.checkSessionPersisted(data);
         }
         finally
         {
@@ -164,30 +164,26 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     @Test
     public void testQuery() throws Exception
     {
-        Cache<String, SessionData> cache = __testSupport.getCache();
+        InfinispanSessionData sd1 = new InfinispanSessionData("sd1", "", "", 0, 0, 0, 1000);
+        sd1.setLastNode("fred1");
+        _testSupport.getCache().put("session1", sd1);
 
-        SessionData sd1 = new SessionData("sd1", "", "", 0, 0, 0, 0);
-        SessionData sd2 = new SessionData("sd2", "", "", 0, 0, 0, 1000);
-        sd2.setExpiry(100L); //long ago
-        SessionData sd3 = new SessionData("sd3", "", "", 0, 0, 0, 0);
+        InfinispanSessionData sd2 = new InfinispanSessionData("sd2", "", "", 0, 0, 0, 2000);
+        sd2.setLastNode("fred2");
+        _testSupport.getCache().put("session2", sd2);
 
-        cache.put("session1", sd1);
-        cache.put("session2", sd2);
-        cache.put("session3", sd3);
+        InfinispanSessionData sd3 = new InfinispanSessionData("sd3", "", "", 0, 0, 0, 3000);
+        sd3.setLastNode("fred3");
+        _testSupport.getCache().put("session3", sd3);
 
-        QueryFactory qf = Search.getQueryFactory(cache);
-        Query q = qf.from(SessionData.class).select("id").having("expiry").lte(System.currentTimeMillis()).and().having("expiry").gt(0).toBuilder().build();
+        QueryFactory qf = Search.getQueryFactory(_testSupport.getCache());
 
-        List<Object[]> list = q.list();
-
-        List<String> ids = new ArrayList<>();
-        for (Object[] sl : list)
+        for (int i = 0; i <= 3; i++)
         {
-            ids.add((String)sl[0]);
+            long now = System.currentTimeMillis();
+            Query q = qf.from(InfinispanSessionData.class).having("expiry").lt(now).build();
+            assertEquals(i, q.list().size());
+            Thread.sleep(1000);
         }
-
-        assertFalse(ids.isEmpty());
-        assertTrue(1 == ids.size());
-        assertTrue(ids.contains("sd2"));
     }
 }

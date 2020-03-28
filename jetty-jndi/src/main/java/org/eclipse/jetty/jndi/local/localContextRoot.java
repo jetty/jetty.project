@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.jndi.local;
@@ -38,8 +38,8 @@ import javax.naming.Referenceable;
 import javax.naming.spi.NamingManager;
 
 import org.eclipse.jetty.jndi.NamingContext;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // This is a required name for JNDI
 // @checkstyle-disable-check : TypeNameCheck
@@ -51,7 +51,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class localContextRoot implements Context
 {
-    private static final Logger LOG = Log.getLogger(localContextRoot.class);
+    private static final Logger LOG = LoggerFactory.getLogger(localContextRoot.class);
     protected static final NamingContext __root = new NamingRoot();
     private final Hashtable<String, Object> _env;
 
@@ -98,44 +98,29 @@ public class localContextRoot implements Context
         _env = new Hashtable(env);
     }
 
-    /**
-     * @see javax.naming.Context#close()
-     */
     @Override
     public void close() throws NamingException
     {
     }
 
-    /**
-     * @see javax.naming.Context#getNameInNamespace()
-     */
     @Override
     public String getNameInNamespace() throws NamingException
     {
         return "";
     }
 
-    /**
-     * @see javax.naming.Context#destroySubcontext(javax.naming.Name)
-     */
     @Override
     public void destroySubcontext(Name name) throws NamingException
     {
         __root.destroySubcontext(getSuffix(name));
     }
 
-    /**
-     * @see javax.naming.Context#destroySubcontext(java.lang.String)
-     */
     @Override
     public void destroySubcontext(String name) throws NamingException
     {
         destroySubcontext(__root.getNameParser("").parse(getSuffix(name)));
     }
 
-    /**
-     * @see javax.naming.Context#getEnvironment()
-     */
     @Override
     public Hashtable getEnvironment() throws NamingException
     {
@@ -157,7 +142,7 @@ public class localContextRoot implements Context
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to dereference {}, {}", ctx, firstComponent, e);
                 throw new NamingException(e.getMessage());
             }
         }
@@ -186,9 +171,6 @@ public class localContextRoot implements Context
         return (Context)ctx;
     }
 
-    /**
-     * @see javax.naming.Context#unbind(javax.naming.Name)
-     */
     @Override
     public void unbind(Name name) throws NamingException
     {
@@ -219,27 +201,18 @@ public class localContextRoot implements Context
         }
     }
 
-    /**
-     * @see javax.naming.Context#unbind(java.lang.String)
-     */
     @Override
     public void unbind(String name) throws NamingException
     {
         unbind(__root.getNameParser("").parse(getSuffix(name)));
     }
 
-    /**
-     * @see javax.naming.Context#lookupLink(java.lang.String)
-     */
     @Override
     public Object lookupLink(String name) throws NamingException
     {
         return lookupLink(__root.getNameParser("").parse(getSuffix(name)));
     }
 
-    /**
-     * @see javax.naming.Context#lookupLink(javax.naming.Name)
-     */
     @Override
     public Object lookupLink(Name name) throws NamingException
     {
@@ -292,18 +265,12 @@ public class localContextRoot implements Context
         return getContext(cname).lookup(cname.getSuffix(1));
     }
 
-    /**
-     * @see javax.naming.Context#removeFromEnvironment(java.lang.String)
-     */
     @Override
     public Object removeFromEnvironment(String propName) throws NamingException
     {
         return _env.remove(propName);
     }
 
-    /**
-     * @see javax.naming.Context#lookup(javax.naming.Name)
-     */
     @Override
     public Object lookup(Name name) throws NamingException
     {
@@ -370,27 +337,18 @@ public class localContextRoot implements Context
         return getContext(cname).lookup(cname.getSuffix(1));
     }
 
-    /**
-     * @see javax.naming.Context#lookup(java.lang.String)
-     */
     @Override
     public Object lookup(String name) throws NamingException
     {
         return lookup(__root.getNameParser("").parse(getSuffix(name)));
     }
 
-    /**
-     * @see javax.naming.Context#bind(java.lang.String, java.lang.Object)
-     */
     @Override
     public void bind(String name, Object obj) throws NamingException
     {
         bind(__root.getNameParser("").parse(getSuffix(name)), obj);
     }
 
-    /**
-     * @see javax.naming.Context#bind(javax.naming.Name, java.lang.Object)
-     */
     @Override
     public void bind(Name name, Object obj) throws NamingException
     {
@@ -428,9 +386,6 @@ public class localContextRoot implements Context
         }
     }
 
-    /**
-     * @see javax.naming.Context#rebind(javax.naming.Name, java.lang.Object)
-     */
     @Override
     public void rebind(Name name, Object obj) throws NamingException
     {
@@ -468,36 +423,24 @@ public class localContextRoot implements Context
         }
     }
 
-    /**
-     * @see javax.naming.Context#rebind(java.lang.String, java.lang.Object)
-     */
     @Override
     public void rebind(String name, Object obj) throws NamingException
     {
         rebind(__root.getNameParser("").parse(getSuffix(name)), obj);
     }
 
-    /**
-     * @see javax.naming.Context#rename(javax.naming.Name, javax.naming.Name)
-     */
     @Override
     public void rename(Name oldName, Name newName) throws NamingException
     {
         throw new OperationNotSupportedException();
     }
 
-    /**
-     * @see javax.naming.Context#rename(java.lang.String, java.lang.String)
-     */
     @Override
     public void rename(String oldName, String newName) throws NamingException
     {
         throw new OperationNotSupportedException();
     }
 
-    /**
-     * @see javax.naming.Context#createSubcontext(java.lang.String)
-     */
     @Override
     public Context createSubcontext(String name) throws NamingException
     {
@@ -512,9 +455,6 @@ public class localContextRoot implements Context
         return createSubcontext(__root.getNameParser("").parse(name));
     }
 
-    /**
-     * @see javax.naming.Context#createSubcontext(javax.naming.Name)
-     */
     @Override
     public Context createSubcontext(Name name) throws NamingException
     {
@@ -557,64 +497,42 @@ public class localContextRoot implements Context
         return getContext(cname).createSubcontext(cname.getSuffix(1));
     }
 
-    /**
-     * @see javax.naming.Context#getNameParser(java.lang.String)
-     */
     @Override
     public NameParser getNameParser(String name) throws NamingException
     {
         return __root.getNameParser(name);
     }
 
-    /**
-     * @see javax.naming.Context#getNameParser(javax.naming.Name)
-     */
     @Override
     public NameParser getNameParser(Name name) throws NamingException
     {
         return __root.getNameParser(name);
     }
 
-    /**
-     * @see javax.naming.Context#list(java.lang.String)
-     */
     @Override
     public NamingEnumeration list(String name) throws NamingException
     {
         return __root.list(name);
     }
 
-    /**
-     * @see javax.naming.Context#list(javax.naming.Name)
-     */
     @Override
     public NamingEnumeration list(Name name) throws NamingException
     {
         return __root.list(name);
     }
 
-    /**
-     * @see javax.naming.Context#listBindings(javax.naming.Name)
-     */
     @Override
     public NamingEnumeration listBindings(Name name) throws NamingException
     {
         return __root.listBindings(name);
     }
 
-    /**
-     * @see javax.naming.Context#listBindings(java.lang.String)
-     */
     @Override
     public NamingEnumeration listBindings(String name) throws NamingException
     {
         return __root.listBindings(name);
     }
 
-    /**
-     * @see javax.naming.Context#addToEnvironment(java.lang.String,
-     * java.lang.Object)
-     */
     @Override
     public Object addToEnvironment(String propName, Object propVal)
         throws NamingException
@@ -622,9 +540,6 @@ public class localContextRoot implements Context
         return _env.put(propName, propVal);
     }
 
-    /**
-     * @see javax.naming.Context#composeName(java.lang.String, java.lang.String)
-     */
     @Override
     public String composeName(String name, String prefix)
         throws NamingException
@@ -632,10 +547,6 @@ public class localContextRoot implements Context
         return __root.composeName(name, prefix);
     }
 
-    /**
-     * @see javax.naming.Context#composeName(javax.naming.Name,
-     * javax.naming.Name)
-     */
     @Override
     public Name composeName(Name name, Name prefix) throws NamingException
     {

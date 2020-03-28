@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.security;
@@ -47,9 +47,9 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ConstraintSecurityHandler
@@ -60,7 +60,7 @@ import org.eclipse.jetty.util.security.Constraint;
  */
 public class ConstraintSecurityHandler extends SecurityHandler implements ConstraintAware
 {
-    private static final Logger LOG = Log.getLogger(SecurityHandler.class); //use same as SecurityHandler
+    private static final Logger LOG = LoggerFactory.getLogger(SecurityHandler.class); //use same as SecurityHandler
 
     private static final String OMISSION_SUFFIX = ".omission";
     private static final String ALL_METHODS = "*";
@@ -352,9 +352,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         _roles.addAll(roles);
     }
 
-    /**
-     * @see org.eclipse.jetty.security.ConstraintAware#addConstraintMapping(org.eclipse.jetty.security.ConstraintMapping)
-     */
     @Override
     public void addConstraintMapping(ConstraintMapping mapping)
     {
@@ -377,9 +374,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.security.ConstraintAware#addRole(java.lang.String)
-     */
     @Override
     public void addRole(String role)
     {
@@ -399,9 +393,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.security.SecurityHandler#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -677,9 +668,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         return constraintInfo != null && ((RoleInfo)constraintInfo).isChecked();
     }
 
-    /**
-     * @see org.eclipse.jetty.security.SecurityHandler#checkWebResourcePermissions(java.lang.String, org.eclipse.jetty.server.Request, org.eclipse.jetty.server.Response, java.lang.Object, org.eclipse.jetty.server.UserIdentity)
-     */
     @Override
     protected boolean checkWebResourcePermissions(String pathInContext, Request request, Response response, Object constraintInfo, UserIdentity userIdentity)
         throws IOException
@@ -735,9 +723,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             DumpableCollection.from("constraints", _constraintMappings));
     }
 
-    /**
-     * @see org.eclipse.jetty.security.ConstraintAware#setDenyUncoveredHttpMethods(boolean)
-     */
     @Override
     public void setDenyUncoveredHttpMethods(boolean deny)
     {
@@ -759,12 +744,14 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         Set<String> paths = getPathsWithUncoveredHttpMethods();
         if (paths != null && !paths.isEmpty())
         {
+            ContextHandler.Context currentContext = ContextHandler.getCurrentContext();
+
             for (String p : paths)
             {
-                LOG.warn("{} has uncovered http methods for path: {}", ContextHandler.getCurrentContext(), p);
+                LOG.warn("{} has uncovered http methods for path: {}", currentContext, p);
             }
             if (LOG.isDebugEnabled())
-                LOG.debug(new Throwable());
+                LOG.debug("{} has uncovered http methods", currentContext, new Throwable());
             return true;
         }
         return false;
@@ -814,7 +801,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 {
                     //an exact method name
                     if (!hasOmissions)
-                        //a http-method does not have http-method-omission to cover the other method names
+                        //an http-method does not have http-method-omission to cover the other method names
                         uncoveredPaths.add(path);
                 }
             }

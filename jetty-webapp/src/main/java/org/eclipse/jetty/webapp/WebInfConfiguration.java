@@ -1,43 +1,47 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.webapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Locale;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.JarFileResource;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebInfConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(WebInfConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebInfConfiguration.class);
 
     public static final String TEMPDIR_CONFIGURED = "org.eclipse.jetty.tmpdirConfigured";
+    public static final String TEMPORARY_RESOURCE_BASE = "org.eclipse.jetty.webapp.tmpResourceBase";
 
     protected Resource _preUnpackBaseResource;
 
@@ -95,9 +99,6 @@ public class WebInfConfiguration extends AbstractConfiguration
         context.setBaseResource(_preUnpackBaseResource);
     }
 
-    /**
-     * @see org.eclipse.jetty.webapp.AbstractConfiguration#cloneConfigure(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.webapp.WebAppContext)
-     */
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
@@ -338,8 +339,11 @@ public class WebInfConfiguration extends AbstractConfiguration
                 }
 
                 if (extractedWebAppDir == null)
+                {
                     // Then extract it if necessary to the temporary location
                     extractedWebAppDir = new File(context.getTempDirectory(), "webapp");
+                    context.setAttribute(TEMPORARY_RESOURCE_BASE, extractedWebAppDir);
+                }
 
                 if (webApp.getFile() != null && webApp.getFile().isDirectory())
                 {
@@ -493,7 +497,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             }
         }
 
-        //Resource  base
+        // Resource base
         try
         {
             Resource resource = context.getBaseResource();
@@ -502,27 +506,21 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (context.getWar() == null || context.getWar().length() == 0)
                     throw new IllegalStateException("No resourceBase or war set for context");
 
-                // Set dir or WAR
+                // Set dir or WAR to resource
                 resource = context.newResource(context.getWar());
             }
 
-            if (resource.getURI().getPath() != null)
-            {
-                String tmp = URIUtil.decodePath(resource.getURI().getPath());
-                if (tmp.endsWith("/"))
-                    tmp = tmp.substring(0, tmp.length() - 1);
-                if (tmp.endsWith("!"))
-                    tmp = tmp.substring(0, tmp.length() - 1);
-                //get just the last part which is the filename
-                int i = tmp.lastIndexOf("/");
-                canonicalName.append(tmp.substring(i + 1, tmp.length()));
-            }
+            String resourceBaseName = getResourceBaseName(resource);
+            canonicalName.append(resourceBaseName);
             canonicalName.append("-");
         }
         catch (Exception e)
         {
-            LOG.warn("Can't generate resourceBase as part of webapp tmp dir name " + e);
-            LOG.debug(e);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Can't get resource base name", e);
+            }
+            canonicalName.append("-"); // empty resourceBaseName segment
         }
 
         //Context name
@@ -549,6 +547,44 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         canonicalName.append("-");
 
-        return canonicalName.toString();
+        return StringUtil.sanitizeFileSystemName(canonicalName.toString());
+    }
+
+    protected static String getResourceBaseName(Resource resource)
+    {
+        // Use File System and File interface if present
+        try
+        {
+            File resourceFile = resource.getFile();
+            if ((resourceFile != null) && (resource instanceof JarFileResource))
+            {
+                resourceFile = ((JarFileResource)resource).getJarFile();
+            }
+
+            if (resourceFile != null)
+            {
+                return resourceFile.getName();
+            }
+        }
+        catch (IOException e)
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Resource has no File reference: {}", resource);
+            }
+        }
+
+        // Use URI itself.
+        URI uri = resource.getURI();
+        if (uri == null)
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Resource has no URI reference: {}", resource);
+            }
+            return "";
+        }
+
+        return URIUtil.getUriLastPathSegment(uri);
     }
 }

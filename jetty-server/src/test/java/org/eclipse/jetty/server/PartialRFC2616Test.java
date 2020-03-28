@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -24,20 +24,22 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class PartialRFC2616Test
 {
@@ -79,7 +81,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test3_3()
+    public void test33()
     {
         try
         {
@@ -106,7 +108,32 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test3_6_a() throws Exception
+    public void test332()
+    {
+        try
+        {
+            String get = connector.getResponse("GET /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
+            checkContains(get, 0, "HTTP/1.1 200", "GET");
+            checkContains(get, 0, "Content-Type: text/html", "GET _content");
+            checkContains(get, 0, "<html>", "GET body");
+            int cli = get.indexOf("Content-Length");
+            String contentLength = get.substring(cli,get.indexOf("\r",cli));
+
+            String head = connector.getResponse("HEAD /R1 HTTP/1.0\n" + "Host: localhost\n" + "\n");
+            checkContains(head, 0, "HTTP/1.1 200", "HEAD");
+            checkContains(head, 0, "Content-Type: text/html", "HEAD _content");
+            assertEquals(-1, head.indexOf("<html>"), "HEAD no body");
+            checkContains(head, 0, contentLength, "3.3.2 HEAD");
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            assertTrue(false);
+        }
+    }
+
+    @Test
+    public void test36a() throws Exception
     {
         int offset = 0;
         // Chunk last
@@ -123,7 +150,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test3_6_b() throws Exception
+    public void test36b() throws Exception
     {
         String response;
         int offset = 0;
@@ -169,7 +196,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test3_6_c() throws Exception
+    public void test36c() throws Exception
     {
         String response;
         int offset = 0;
@@ -217,7 +244,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test3_6_d() throws Exception
+    public void test36d() throws Exception
     {
         String response;
         int offset = 0;
@@ -249,7 +276,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test3_9() throws Exception
+    public void test39() throws Exception
     {
         HttpFields fields = new HttpFields();
 
@@ -264,7 +291,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test4_1() throws Exception
+    public void test41() throws Exception
     {
         int offset = 0;
 
@@ -303,7 +330,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test4_4_2() throws Exception
+    public void test442() throws Exception
     {
         String response;
         int offset = 0;
@@ -316,7 +343,6 @@ public class PartialRFC2616Test
                 "Content-Length: 5\n" +
                 "\n" +
                 "123\r\n" +
-
                 "GET /R2 HTTP/1.1\n" +
                 "Host: localhost\n" +
                 "Transfer-Encoding: other\n" +
@@ -324,16 +350,14 @@ public class PartialRFC2616Test
                 "\n");
         offset = 0;
         response = endp.getResponse();
-        offset = checkContains(response, offset, "HTTP/1.1 200 OK", "2. identity") + 10;
-        offset = checkContains(response, offset, "/R1", "2. identity") + 3;
+        offset = checkContains(response, offset, "HTTP/1.1 400 ", "2. identity") + 10;
         offset = 0;
         response = endp.getResponse();
-        offset = checkContains(response, offset, "HTTP/1.1 200 OK", "2. identity") + 10;
-        offset = checkContains(response, offset, "/R2", "2. identity") + 3;
+        assertThat("There should be no next response as first one closed connection", response, is(nullValue()));
     }
 
     @Test
-    public void test4_4_3() throws Exception
+    public void test443() throws Exception
     {
         // Due to smuggling concerns, handling has been changed to
         // treat content length and chunking as a bad request.
@@ -361,12 +385,12 @@ public class PartialRFC2616Test
                 "\n" +
                 "abcdef");
         response = endp.getResponse();
-        offset = checkContains(response, offset, "HTTP/1.1 400 Bad", "3. ignore c-l") + 1;
+        offset = checkContains(response, offset, "HTTP/1.1 400 ", "3. ignore c-l") + 1;
         checkNotContained(response, offset, "/R2", "3. _content-length");
     }
 
     @Test
-    public void test4_4_4() throws Exception
+    public void test444() throws Exception
     {
         // No _content length
         assertTrue(true, "Skip 411 checks as IE breaks this rule");
@@ -390,7 +414,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test5_2_1() throws Exception
+    public void test521() throws Exception
     {
         // Default Host
         int offset = 0;
@@ -402,7 +426,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test5_2_2() throws Exception
+    public void test522() throws Exception
     {
         // Default Host
         int offset = 0;
@@ -420,7 +444,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test5_2() throws Exception
+    public void test52() throws Exception
     {
         // Virtual Host
         int offset = 0;
@@ -443,7 +467,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test8_1() throws Exception
+    public void test81() throws Exception
     {
         int offset = 0;
         String response = connector.getResponse("GET /R1 HTTP/1.1\n" + "Host: localhost\n" + "\n", 250, TimeUnit.MILLISECONDS);
@@ -458,7 +482,6 @@ public class PartialRFC2616Test
         response = endp.getResponse();
         offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "8.1.2 default") + 1;
         offset = checkContains(response, offset, "/R1", "8.1.2 default") + 1;
-
         offset = 0;
         response = endp.getResponse();
         offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "8.1.2.2 pipeline") + 11;
@@ -471,7 +494,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test10_4_18() throws Exception
+    public void test10418() throws Exception
     {
         // Expect Failure
         int offset = 0;
@@ -486,7 +509,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test8_2_3_dash5() throws Exception
+    public void test823dash5() throws Exception
     {
         // Expect with body: client sends the content right away, we should not send 100-Continue
         int offset = 0;
@@ -504,7 +527,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test8_2_3() throws Exception
+    public void test823() throws Exception
     {
         int offset = 0;
         // Expect 100
@@ -518,9 +541,7 @@ public class PartialRFC2616Test
         String infomational = endp.getResponse();
         offset = checkContains(infomational, offset, "HTTP/1.1 100 ", "8.2.3 expect 100") + 1;
         checkNotContained(infomational, offset, "HTTP/1.1 200", "8.2.3 expect 100");
-
         endp.addInput("654321\r\n");
-
         String response = endp.getResponse();
         offset = 0;
         offset = checkContains(response, offset, "HTTP/1.1 200", "8.2.3 expect 100") + 1;
@@ -528,7 +549,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test8_2_4() throws Exception
+    public void test824() throws Exception
     {
         // Expect 100 not sent
         int offset = 0;
@@ -544,7 +565,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test9_2() throws Exception
+    public void test92() throws Exception
     {
         int offset = 0;
 
@@ -563,7 +584,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test9_4()
+    public void test94()
     {
         try
         {
@@ -586,7 +607,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test14_23() throws Exception
+    public void test1423() throws Exception
     {
         try (StacklessLogging stackless = new StacklessLogging(HttpParser.class))
         {
@@ -609,7 +630,7 @@ public class PartialRFC2616Test
     }
 
     @Test
-    public void test19_6()
+    public void test196()
     {
         try
         {
@@ -666,7 +687,6 @@ public class PartialRFC2616Test
             response = endp.getResponse();
             offset = checkContains(response, offset, "HTTP/1.1 200 OK\r\n", "19.6.2 Keep-alive 2") + 11;
             offset = checkContains(response, offset, "/R2", "19.6.2 Keep-alive close") + 3;
-
             offset = 0;
             response = endp.getResponse();
             assertThat("19.6.2 closed", response, nullValue());
@@ -674,7 +694,7 @@ public class PartialRFC2616Test
         catch (Exception e)
         {
             e.printStackTrace();
-            assertTrue(false);
+            fail(e.getMessage());
         }
     }
 

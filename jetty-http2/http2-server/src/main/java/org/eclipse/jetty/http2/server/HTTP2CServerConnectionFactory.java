@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.server;
@@ -28,8 +28,8 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * HTTP2 Clear Text Connection factory.
@@ -39,14 +39,14 @@ import org.eclipse.jetty.util.log.Logger;
  * </p>
  * <p>If used in combination with a {@link HttpConnectionFactory} as the
  * default protocol, this factory can support the non-standard direct
- * update mechanism, where a HTTP1 request of the form "PRI * HTTP/2.0"
- * is used to trigger a switch to a HTTP2 connection.    This approach
+ * update mechanism, where an HTTP1 request of the form "PRI * HTTP/2.0"
+ * is used to trigger a switch to an HTTP2 connection.    This approach
  * allows a single port to accept either HTTP/1 or HTTP/2 direct
  * connections.
  */
 public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory implements ConnectionFactory.Upgrading
 {
-    private static final Logger LOG = Log.getLogger(HTTP2CServerConnectionFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP2CServerConnectionFactory.class);
 
     public HTTP2CServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -74,13 +74,13 @@ public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory 
     public Connection upgradeConnection(Connector connector, EndPoint endPoint, Request request, HttpFields response101) throws BadMessageException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} upgraded {}{}", this, request.toString(), request.getFields());
+            LOG.debug("{} upgrading {}{}{}", this, request, System.lineSeparator(), request.getFields());
 
         if (request.getContentLength() > 0)
             return null;
 
         HTTP2ServerConnection connection = (HTTP2ServerConnection)newConnection(connector, endPoint);
-        if (connection.upgrade(request))
+        if (connection.upgrade(request, response101))
             return connection;
         return null;
     }
