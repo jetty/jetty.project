@@ -267,6 +267,7 @@ public class HugeResourceTest
         Path inputFile = staticBase.resolve(filename);
         String name = String.format("file-%d", expectedSize);
         multipart.addFilePart(name, filename, new PathRequestContent(inputFile), null);
+        multipart.close();
 
         URI destUri = server.getURI().resolve("/multipart");
         client.setIdleTimeout(90_000);

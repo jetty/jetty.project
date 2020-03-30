@@ -47,7 +47,6 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
  * top of this.
  */
 @RunWith(PaxExam.class)
-
 public class TestJettyOSGiBootWithAnnotations
 {
     private static final String LOG_LEVEL = "WARN";
@@ -135,6 +134,7 @@ public class TestJettyOSGiBootWithAnnotations
             TestOSGiUtil.assertContains("Response contents", content, "<h1>FRAGMENT</h1>");
             MultiPartRequestContent multiPart = new MultiPartRequestContent();
             multiPart.addFieldPart("field", new StringRequestContent("foo"), null);
+            multiPart.close();
             response = client.newRequest("http://127.0.0.1:" + port + "/multi").method("POST")
                 .body(multiPart).send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
