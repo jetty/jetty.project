@@ -53,7 +53,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.util.FormContentProvider;
+import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -380,7 +380,7 @@ public class HttpClient extends ContainerLifeCycle
      */
     public ContentResponse FORM(URI uri, Fields fields) throws InterruptedException, ExecutionException, TimeoutException
     {
-        return POST(uri).content(new FormContentProvider(fields)).send();
+        return POST(uri).body(new FormRequestContent(fields)).send();
     }
 
     /**
@@ -447,7 +447,7 @@ public class HttpClient extends ContainerLifeCycle
         Request newRequest = newHttpRequest(oldRequest.getConversation(), newURI);
         newRequest.method(oldRequest.getMethod())
             .version(oldRequest.getVersion())
-            .content(oldRequest.getContent())
+            .body(oldRequest.getBody())
             .idleTimeout(oldRequest.getIdleTimeout(), TimeUnit.MILLISECONDS)
             .timeout(oldRequest.getTimeout(), TimeUnit.MILLISECONDS)
             .followRedirects(oldRequest.isFollowRedirects());

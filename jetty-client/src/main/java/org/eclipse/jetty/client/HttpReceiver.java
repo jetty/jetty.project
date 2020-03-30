@@ -528,7 +528,7 @@ public abstract class HttpReceiver
         HttpResponse response = exchange.getResponse();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Response complete {}", response);
+            LOG.debug("Response complete {}, result: {}", response, result);
 
         if (result != null)
         {

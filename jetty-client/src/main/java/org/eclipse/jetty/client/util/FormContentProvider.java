@@ -30,7 +30,10 @@ import org.eclipse.jetty.util.Fields;
 /**
  * A {@link ContentProvider} for form uploads with the
  * "application/x-www-form-urlencoded" content type.
+ *
+ * @deprecated use {@link FormRequestContent} instead.
  */
+@Deprecated
 public class FormContentProvider extends StringContentProvider
 {
     public FormContentProvider(Fields fields)

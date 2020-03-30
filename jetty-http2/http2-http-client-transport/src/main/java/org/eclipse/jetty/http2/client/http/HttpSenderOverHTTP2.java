@@ -19,10 +19,10 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.client.HttpContent;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpSender;
@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
@@ -56,7 +57,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, final HttpContent content, final Callback callback)
+    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, final Callback callback)
     {
         HttpRequest request = exchange.getRequest();
         boolean isTunnel = HttpMethod.CONNECT.is(request.getMethod());
@@ -92,31 +93,10 @@ public class HttpSenderOverHTTP2 extends HttpSender
         }
         else
         {
-            if (content.hasContent())
-            {
-                headersFrame = new HeadersFrame(metaData, null, false);
-                promise = new HeadersPromise(request, callback, stream ->
-                {
-                    if (expects100Continue(request))
-                    {
-                        // Don't send the content yet.
-                        callback.succeeded();
-                    }
-                    else
-                    {
-                        boolean advanced = content.advance();
-                        boolean lastContent = content.isLast();
-                        if (advanced || lastContent)
-                            sendContent(stream, content, trailerSupplier, callback);
-                        else
-                            callback.succeeded();
-                    }
-                });
-            }
-            else
+            if (BufferUtil.isEmpty(contentBuffer) && lastContent)
             {
                 HttpFields trailers = trailerSupplier == null ? null : trailerSupplier.get();
-                boolean endStream = trailers == null || trailers.size() <= 0;
+                boolean endStream = trailers == null || trailers.size() == 0;
                 headersFrame = new HeadersFrame(metaData, null, endStream);
                 promise = new HeadersPromise(request, callback, stream ->
                 {
@@ -125,6 +105,12 @@ public class HttpSenderOverHTTP2 extends HttpSender
                     else
                         sendTrailers(stream, trailers, callback);
                 });
+            }
+            else
+            {
+                headersFrame = new HeadersFrame(metaData, null, false);
+                promise = new HeadersPromise(request, callback, stream ->
+                    sendContent(stream, contentBuffer, lastContent, trailerSupplier, callback));
             }
         }
         // TODO optimize the send of HEADERS and DATA frames.
@@ -151,36 +137,55 @@ public class HttpSenderOverHTTP2 extends HttpSender
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, HttpContent content, Callback callback)
+    protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
-        if (content.isConsumed())
+        Stream stream = getHttpChannel().getStream();
+        Supplier<HttpFields> trailerSupplier = exchange.getRequest().getTrailers();
+        sendContent(stream, contentBuffer, lastContent, trailerSupplier, callback);
+    }
+
+    private void sendContent(Stream stream, ByteBuffer buffer, boolean lastContent, Supplier<HttpFields> trailerSupplier, Callback callback)
+    {
+        boolean hasContent = buffer.hasRemaining();
+        if (lastContent)
         {
-            // The superclass calls sendContent() one more time after the last content.
-            // This is necessary for HTTP/1.1 to generate the terminal chunk (with trailers),
-            // but it's not necessary for HTTP/2 so we just succeed the callback.
-            callback.succeeded();
+            // Call the trailers supplier as late as possible.
+            HttpFields trailers = trailerSupplier == null ? null : trailerSupplier.get();
+            boolean hasTrailers = trailers != null && trailers.size() > 0;
+            if (hasContent)
+            {
+                DataFrame dataFrame = new DataFrame(stream.getId(), buffer, !hasTrailers);
+                Callback dataCallback = callback;
+                if (hasTrailers)
+                    dataCallback = Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed);
+                stream.data(dataFrame, dataCallback);
+            }
+            else
+            {
+                if (hasTrailers)
+                {
+                    sendTrailers(stream, trailers, callback);
+                }
+                else
+                {
+                    DataFrame dataFrame = new DataFrame(stream.getId(), buffer, true);
+                    stream.data(dataFrame, callback);
+                }
+            }
         }
         else
         {
-            Stream stream = getHttpChannel().getStream();
-            Supplier<HttpFields> trailerSupplier = exchange.getRequest().getTrailers();
-            sendContent(stream, content, trailerSupplier, callback);
+            if (hasContent)
+            {
+                DataFrame dataFrame = new DataFrame(stream.getId(), buffer, false);
+                stream.data(dataFrame, callback);
+            }
+            else
+            {
+                // Don't send empty non-last content.
+                callback.succeeded();
+            }
         }
-    }
-
-    private void sendContent(Stream stream, HttpContent content, Supplier<HttpFields> trailerSupplier, Callback callback)
-    {
-        boolean lastContent = content.isLast();
-        HttpFields trailers = null;
-        boolean endStream = false;
-        if (lastContent)
-        {
-            trailers = trailerSupplier == null ? null : trailerSupplier.get();
-            endStream = trailers == null || trailers.size() == 0;
-        }
-        DataFrame dataFrame = new DataFrame(stream.getId(), content.getByteBuffer(), endStream);
-        HttpFields fTrailers = trailers;
-        stream.data(dataFrame, endStream || !lastContent ? callback : Callback.from(() -> sendTrailers(stream, fTrailers, callback), callback::failed));
     }
 
     private void sendTrailers(Stream stream, HttpFields trailers, Callback callback)

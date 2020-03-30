@@ -188,7 +188,7 @@ Have a look at the link:{JDURL}/org/eclipse/jetty/client/api/Request.Listener.ht
 
 Jetty's HTTP client provides a number of utility classes off the shelf to handle request content.
 
-You can provide request content as `String`, `byte[]`, `ByteBuffer`, `java.nio.file.Path`, `InputStream`, and provide your own implementation of `org.eclipse.jetty.client.api.ContentProvider`.
+You can provide request content as `String`, `byte[]`, `ByteBuffer`, `java.nio.file.Path`, `InputStream`, and provide your own implementation of `org.eclipse.jetty.client.api.Request.Content`.
 Here’s an example that provides the request content using `java.nio.file.Paths`:
 
 [source, java, subs="{sub-order}"]
@@ -199,47 +199,47 @@ ContentResponse response = httpClient.newRequest("http://domain.com/upload")
         .send();
 ----
 
-This is equivalent to using the `PathContentProvider` utility class:
+This is equivalent to using the `PathRequestContent` utility class:
 
 [source, java, subs="{sub-order}"]
 ----
 ContentResponse response = httpClient.newRequest("http://domain.com/upload")
         .method(HttpMethod.POST)
-        .content(new PathContentProvider(Paths.get("file_to_upload.txt")), "text/plain")
+        .body(new PathRequestContent("text/plain", Paths.get("file_to_upload.txt")))
         .send();
 ----
 
-Alternatively, you can use `FileInputStream` via the `InputStreamContentProvider` utility class:
+Alternatively, you can use `FileInputStream` via the `InputStreamRequestContent` utility class:
 
 [source, java, subs="{sub-order}"]
 ----
 ContentResponse response = httpClient.newRequest("http://domain.com/upload")
         .method(HttpMethod.POST)
-        .content(new InputStreamContentProvider(new FileInputStream("file_to_upload.txt")), "text/plain")
+        .body(new InputStreamRequestContent("text/plain", new FileInputStream("file_to_upload.txt")))
         .send();
 ----
 
 Since `InputStream` is blocking, then also the send of the request will block if the input stream blocks, even in case of usage of the asynchronous `HttpClient` APIs.
 
-If you have already read the content in memory, you can pass it as a `byte[]` using the `BytesContentProvider` utility class:
+If you have already read the content in memory, you can pass it as a `byte[]` using the `BytesRequestContent` utility class:
 
 [source, java, subs="{sub-order}"]
 ----
 byte[] bytes = ...;
 ContentResponse response = httpClient.newRequest("http://domain.com/upload")
         .method(HttpMethod.POST)
-        .content(new BytesContentProvider(bytes), "text/plain")
+        .body(new BytesRequestContent("text/plain", bytes))
         .send();
 ----
 
-If the request content is not immediately available, but your application will be notified of the content to send, you can use `DeferredContentProvider` in this way:
+If the request content is not immediately available, but your application will be notified of the content to send, you can use `AsyncRequestContent` in this way:
 
 [source, java, subs="{sub-order}"]
 ----
-DeferredContentProvider content = new DeferredContentProvider();
+AsyncRequestContent content = new AsyncRequestContent();
 httpClient.newRequest("http://domain.com/upload")
         .method(HttpMethod.POST)
-        .content(content)
+        .body(content)
         .send(new Response.CompleteListener()
         {
             @Override
@@ -249,17 +249,17 @@ httpClient.newRequest("http://domain.com/upload")
             }
         });
 
-// Content not available yet here
+// Content not available yet here.
 
 ...
 
-// An event happens, now content is available
+// An event happens, now content is available.
 byte[] bytes = ...;
 content.offer(ByteBuffer.wrap(bytes));
 
 ...
 
-// All content has arrived
+// All content has arrived.
 content.close();
 ----
 
@@ -267,19 +267,19 @@ While the request content is awaited and consequently uploaded by the client app
 In this case, `Response.Listener` callbacks will be invoked before the request is fully sent.
 This allows fine-grained control of the request/response conversation: for example the server may reject contents that are too big, send a response to the client, which in turn may stop the content upload.
 
-Another way to provide request content is by using an `OutputStreamContentProvider`,
-which allows applications to write request content when it is available to the `OutputStream` provided by `OutputStreamContentProvider`:
+Another way to provide request content is by using an `OutputStreamRequestContent`,
+which allows applications to write request content when it is available to the `OutputStream` provided by `OutputStreamRequestContent`:
 
 [source, java, subs="{sub-order}"]
 ----
-OutputStreamContentProvider content = new OutputStreamContentProvider();
+OutputStreamRequestContent content = new OutputStreamRequestContent();
 
-// Use try-with-resources to close the OutputStream when all content is written
+// Use try-with-resources to close the OutputStream when all content is written.
 try (OutputStream output = content.getOutputStream())
 {
     client.newRequest("localhost", 8080)
             .method(HttpMethod.POST)
-            .content(content)
+            .body(content)
             .send(new Response.CompleteListener()
             {
                 @Override
@@ -291,10 +291,11 @@ try (OutputStream output = content.getOutputStream())
 
     ...
 
-    // Write content
-    writeContent(output);
+    // Write content.
+    byte[] bytes = ...;
+    output.write(bytes);
 }
-// End of try-with-resource, output.close() called automatically to signal end of content
+// End of try-with-resource, output.close() called automatically to signal end of content.
 ----
 
 [[http-client-response-content]]

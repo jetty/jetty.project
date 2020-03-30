@@ -85,7 +85,10 @@ import org.eclipse.jetty.util.Callback;
  *     content.offer(ByteBuffer.wrap("some content".getBytes()));
  * }
  * </pre>
+ *
+ * @deprecated use {@link AsyncRequestContent} instead.
  */
+@Deprecated
 public class DeferredContentProvider implements AsyncContentProvider, Callback, Closeable
 {
     private static final Chunk CLOSE = new Chunk(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
@@ -285,6 +288,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
             synchronized (lock)
             {
                 chunk = current;
+                current = null;
                 if (chunk != null)
                 {
                     --size;

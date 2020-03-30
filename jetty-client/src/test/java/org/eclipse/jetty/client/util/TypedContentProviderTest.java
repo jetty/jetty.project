@@ -108,7 +108,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .method(HttpMethod.POST)
-            .content(new FormContentProvider(fields))
+            .body(new FormRequestContent(fields))
             .header(HttpHeader.CONTENT_TYPE, contentType)
             .send();
 
@@ -135,7 +135,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .content(new StringContentProvider(null, content, StandardCharsets.UTF_8))
+            .body(new StringRequestContent(null, content, StandardCharsets.UTF_8))
             .send();
 
         assertEquals(200, response.getStatus());

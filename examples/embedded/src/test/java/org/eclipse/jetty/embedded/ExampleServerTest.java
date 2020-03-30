@@ -21,7 +21,7 @@ package org.eclipse.jetty.embedded;
 import java.net.URI;
 
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
@@ -75,7 +75,7 @@ public class ExampleServerTest extends AbstractEmbeddedTest
         String postBody = "Greetings from " + ExampleServerTest.class;
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.POST)
-            .content(new StringContentProvider(postBody))
+            .body(new StringRequestContent(postBody))
             .send();
 
         // Check the response status code
