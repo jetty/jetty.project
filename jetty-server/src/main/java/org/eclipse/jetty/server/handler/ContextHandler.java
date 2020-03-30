@@ -2713,7 +2713,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addListener(Class)");
         }
 
-        protected <T> T createInstance(Class<T> clazz) throws ServletException
+        public <T> T createInstance(Class<T> clazz) throws ServletException
         {
             try
             {

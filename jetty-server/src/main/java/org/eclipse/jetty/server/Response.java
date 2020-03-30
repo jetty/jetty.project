@@ -134,6 +134,7 @@ public class Response implements HttpServletResponse
         _out.recycle();
         _fields.clear();
         _encodingFrom = EncodingFrom.NOT_SET;
+        _trailers = null;
     }
 
     public HttpOutput getHttpOutput()
@@ -529,7 +530,7 @@ public class Response implements HttpServletResponse
         resetBuffer();
         setHeader(HttpHeader.LOCATION, location);
         setStatus(code);
-        completeOutput();
+        closeOutput();
     }
 
     @Override
@@ -849,7 +850,7 @@ public class Response implements HttpServletResponse
             {
                 try
                 {
-                    completeOutput();
+                    closeOutput();
                 }
                 catch (IOException e)
                 {
@@ -887,12 +888,23 @@ public class Response implements HttpServletResponse
         return (_contentLength < 0 || written >= _contentLength);
     }
 
-    public void completeOutput() throws IOException
+    public void closeOutput() throws IOException
     {
         if (_outputType == OutputType.WRITER)
             _writer.close();
         else
             _out.close();
+    }
+
+    /**
+     * close the output
+     *
+     * @deprecated Use {@link #closeOutput()}
+     */
+    @Deprecated
+    public void completeOutput() throws IOException
+    {
+        closeOutput();
     }
 
     public void completeOutput(Callback callback)
@@ -1102,6 +1114,7 @@ public class Response implements HttpServletResponse
         _mimeType = null;
         _characterEncoding = null;
         _encodingFrom = EncodingFrom.NOT_SET;
+        _trailers = null;
 
         // Clear all response headers
         _fields.clear();
@@ -1197,24 +1210,29 @@ public class Response implements HttpServletResponse
         _out.reopen();
     }
 
-    @Override
-    public void setTrailerFields(Supplier<Map<String, String>> trailers)
-    {
-        // TODO new for 4.0 - avoid transient supplier?
-        this._trailers = new HttpFieldsSupplier(trailers);
-    }
-
     public Supplier<HttpFields> getTrailers()
     {
         return _trailers;
+    }
+
+    public void setTrailers(Supplier<HttpFields> trailers)
+    {
+        _trailers = trailers;
     }
 
     @Override
     public Supplier<Map<String, String>> getTrailerFields()
     {
         if (_trailers instanceof HttpFieldsSupplier)
-            ((HttpFieldsSupplier)_trailers).getSupplier();
+            return ((HttpFieldsSupplier)_trailers).getSupplier();
         return null;
+    }
+
+    @Override
+    public void setTrailerFields(Supplier<Map<String, String>> trailers)
+    {
+        // TODO new for 4.0 - avoid transient supplier?
+        this._trailers = new HttpFieldsSupplier(trailers);
     }
 
     protected MetaData.Response newResponseMetaData()

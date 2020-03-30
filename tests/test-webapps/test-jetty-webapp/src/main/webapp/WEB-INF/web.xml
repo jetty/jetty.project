@@ -298,7 +298,7 @@
   </login-config>
   
   <session-config>
-    <session-timeout>5</session-timeout>
+    <session-timeout>54</session-timeout>
   </session-config>
 
   <security-role>

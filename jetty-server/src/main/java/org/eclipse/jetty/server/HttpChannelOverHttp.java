@@ -479,7 +479,6 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         if (LOG.isDebugEnabled())
             LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgradeConnection);
         getRequest().setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, upgradeConnection);
-        getResponse().setStatus(HttpStatus.SWITCHING_PROTOCOLS_101);
         getHttpTransport().onCompleted();
         return true;
     }

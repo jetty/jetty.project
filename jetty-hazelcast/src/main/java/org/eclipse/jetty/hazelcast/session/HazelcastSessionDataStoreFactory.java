@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * Factory to construct {@link HazelcastSessionDataStore}
@@ -82,7 +83,7 @@ public class HazelcastSessionDataStoreFactory
             {
                 if (onlyClient)
                 {
-                    if (configurationLocation == null)
+                    if (StringUtil.isEmpty(configurationLocation))
                     {
                         ClientConfig config = new ClientConfig();
 
@@ -106,7 +107,7 @@ public class HazelcastSessionDataStoreFactory
                 else
                 {
                     Config config;
-                    if (configurationLocation == null)
+                    if (StringUtil.isEmpty(configurationLocation))
                     {
 
                         SerializerConfig sc = new SerializerConfig()

@@ -77,7 +77,7 @@ public class AsyncContextState implements AsyncContext
     {
         ContextHandler contextHandler = state().getContextHandler();
         if (contextHandler != null)
-            return contextHandler.getServletContext().createListener(clazz);
+            return contextHandler.getServletContext().createInstance(clazz);
         try
         {
             return clazz.getDeclaredConstructor().newInstance();
