@@ -2368,7 +2368,7 @@ public class Request implements HttpServletRequest
         if (newQueryParams == null || newQueryParams.size() == 0)
             mergedQueryParams = oldQueryParams == null ? NO_PARAMS : oldQueryParams;
         else if (oldQueryParams == null || oldQueryParams.size() == 0)
-            mergedQueryParams = newQueryParams == null ? NO_PARAMS : newQueryParams;
+            mergedQueryParams = newQueryParams;
         else
         {
             // Parameters values are accumulated.
@@ -2380,38 +2380,7 @@ public class Request implements HttpServletRequest
         resetParameters();
 
         if (updateQueryString)
-        {
-            if (newQuery == null)
-                setQueryString(oldQuery);
-            else if (oldQuery == null)
-                setQueryString(newQuery);
-            else if (oldQueryParams.keySet().stream().anyMatch(newQueryParams.keySet()::contains))
-            {
-                // Build the new merged query string, parameters in the
-                // new query string hide parameters in the old query string.
-                StringBuilder mergedQuery = new StringBuilder();
-                if (newQuery != null)
-                    mergedQuery.append(newQuery);
-                for (Map.Entry<String, List<String>> entry : mergedQueryParams.entrySet())
-                {
-                    if (newQueryParams != null && newQueryParams.containsKey(entry.getKey()))
-                        continue;
-                    for (String value : entry.getValue())
-                    {
-                        if (mergedQuery.length() > 0)
-                            mergedQuery.append("&");
-                        URIUtil.encodePath(mergedQuery, entry.getKey());
-                        mergedQuery.append('=');
-                        URIUtil.encodePath(mergedQuery, value);
-                    }
-                }
-                setQueryString(mergedQuery.toString());
-            }
-            else
-            {
-                setQueryString(newQuery + '&' + oldQuery);
-            }
-        }
+            setQueryString(newQuery == null ? oldQuery : newQuery);
     }
 
     @Override
