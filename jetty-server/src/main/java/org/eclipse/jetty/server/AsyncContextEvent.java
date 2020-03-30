@@ -33,20 +33,25 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
 {
     private final Context _context;
     private final AsyncContextState _asyncContext;
-    private final HttpURI _providedUri;
+    private final HttpURI _baseURI;
     private volatile HttpChannelState _state;
     private ServletContext _dispatchContext;
     private String _dispatchPath;
     private volatile Scheduler.Task _timeoutTask;
     private Throwable _throwable;
 
-    public AsyncContextEvent(Context context, AsyncContextState asyncContext, HttpChannelState state, Request baseRequest, ServletRequest request, ServletResponse response, boolean provided)
+    public AsyncContextEvent(Context context, AsyncContextState asyncContext, HttpChannelState state, Request baseRequest, ServletRequest request, ServletResponse response)
+    {
+        this (context, asyncContext, state, baseRequest, request, response, null);
+    }
+
+    public AsyncContextEvent(Context context, AsyncContextState asyncContext, HttpChannelState state, Request baseRequest, ServletRequest request, ServletResponse response, HttpURI baseURI)
     {
         super(null, request, response, null);
         _context = context;
         _asyncContext = asyncContext;
         _state = state;
-        _providedUri = provided ? new HttpURI(baseRequest.getHttpURI()) : null;
+        _baseURI = baseURI;
 
         // If we haven't been async dispatched before
         if (baseRequest.getAttribute(AsyncContext.ASYNC_REQUEST_URI) == null)
@@ -77,9 +82,9 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         }
     }
 
-    public HttpURI getProvidedUri()
+    public HttpURI getBaseURI()
     {
-        return _providedUri;
+        return _baseURI;
     }
 
     public ServletContext getSuspendedContext()

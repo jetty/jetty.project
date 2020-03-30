@@ -566,10 +566,10 @@ public class Server extends HandlerWrapper implements Attributes
         final HttpChannelState state = channel.getRequest().getHttpChannelState();
         final AsyncContextEvent event = state.getAsyncContextEvent();
         final Request baseRequest = channel.getRequest();
-        final HttpURI providedUri = event.getProvidedUri();
+        final HttpURI baseUri = event.getBaseURI();
         String encodedPathQuery = event.getDispatchPath();
 
-        if (encodedPathQuery == null && providedUri == null)
+        if (encodedPathQuery == null && baseUri == null)
         {
             // Simple case, no request modification or merging needed
             handleAsync(channel, event, baseRequest);
@@ -585,7 +585,7 @@ public class Server extends HandlerWrapper implements Attributes
         try
         {
             baseRequest.resetParameters();
-            HttpURI newUri = providedUri == null ? new HttpURI(oldUri) : providedUri;
+            HttpURI newUri = baseUri == null ? new HttpURI(oldUri) : baseUri;
             if (encodedPathQuery == null)
             {
                 baseRequest.setHttpURI(newUri);
