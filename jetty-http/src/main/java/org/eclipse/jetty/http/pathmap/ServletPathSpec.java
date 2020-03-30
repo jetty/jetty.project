@@ -167,7 +167,6 @@ public class ServletPathSpec extends PathSpec
     @Override
     public String getPathInfo(String path)
     {
-        // Path Info only valid for PREFIX_GLOB types
         switch (group)
         {
             case ROOT:
