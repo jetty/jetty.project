@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 import static java.lang.System.Logger.Level.INFO;
 
-public class ClientConnectorDocSnippets
+public class ClientConnectorDocs
 {
     public void simplest() throws Exception
     {
@@ -107,6 +107,7 @@ public class ClientConnectorDocSnippets
 
     public void connect() throws Exception
     {
+        // tag::connect[]
         class CustomHTTPConnection extends AbstractConnection
         {
             public CustomHTTPConnection(EndPoint endPoint, Executor executor)
@@ -141,10 +142,11 @@ public class ClientConnectorDocSnippets
         Map<String, Object> context = new HashMap<>();
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
         clientConnector.connect(address, context);
+        // end::connect[]
     }
 
     public static void main(String[] args) throws Exception
     {
-        new ClientConnectorDocSnippets().connect();
+        new ClientConnectorDocs().connect();
     }
 }

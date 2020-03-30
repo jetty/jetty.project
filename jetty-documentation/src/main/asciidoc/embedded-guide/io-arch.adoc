@@ -40,26 +40,26 @@ NOTE: TODO: add image
 to a server and by a network server when accepting connections from network
 clients.
 In both cases the `SocketChannel` instance is passed to `SelectorManager`
-(and to `ManagedSelector` and eventually to `java.nio.channels.Selector`)
-to be registered for use within Jetty.
+(which passes it to `ManagedSelector` and eventually to
+`java.nio.channels.Selector`) to be registered for use within Jetty.
 
-It is therefore possible for an application to create the `SocketChannel`
+It is possible for an application to create the `SocketChannel`
 instances outside Jetty, even perform some initial network traffic also
 outside Jetty (for example for authentication purposes), and then pass the
 `SocketChannel` instance to `SelectorManager` for use within Jetty.
 
-This example shows how to connect to a server:
+This example shows how a client can connect to a server:
 
 [source,java,indent=0]
 ----
-include::{docbits}/embedded/SelectorManagerDocSnippets.java[tags=connect]
+include::{doc_code}/embedded/SelectorManagerDocs.java[tags=connect]
 ----
 
-This example shows how to accept a client connection:
+This example shows how a server accepts a client connection:
 
 [source,java,indent=0]
 ----
-include::{docbits}/embedded/SelectorManagerDocSnippets.java[tags=accept]
+include::{doc_code}/embedded/SelectorManagerDocs.java[tags=accept]
 ----
 
 [[io-arch-endpoint-connection]]
@@ -193,7 +193,7 @@ extends `AbstractConnection`:
 
 [source,java,indent=0]
 ----
-include::{docbits}/embedded/SelectorManagerDocSnippets.java[tags=connection]
+include::{doc_code}/embedded/SelectorManagerDocs.java[tags=connection]
 ----
 
 [[io-arch-echo]]
@@ -207,7 +207,7 @@ A naive, but wrong, implementation may be the following:
 
 [source,java,indent=0]
 ----
-include::{docbits}/embedded/SelectorManagerDocSnippets.java[tags=echo-wrong]
+include::{doc_code}/embedded/SelectorManagerDocs.java[tags=echo-wrong]
 ----
 
 WARNING: The implementation above is wrong and leads to `StackOverflowError`.
@@ -231,11 +231,16 @@ which leads to `StackOverflowError`.
 This is a typical side effect of asynchronous programming using non-blocking
 APIs, and happens in the Jetty I/O library as well.
 
+NOTE: The callback is invoked synchronously for efficiency reasons.
+Submitting the invocation of the callback to an `Executor` to be invoked in
+a different thread would cause a context switch and make simple writes
+extremely inefficient.
+
 A correct implementation is the following:
 
 [source,java,indent=0]
 ----
-include::{docbits}/embedded/SelectorManagerDocSnippets.java[tags=echo-correct]
+include::{doc_code}/embedded/SelectorManagerDocs.java[tags=echo-correct]
 ----
 
 The correct implementation performs consecutive reads in a loop (rather than

@@ -34,7 +34,7 @@ import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
-public class SelectorManagerDocSnippets
+public class SelectorManagerDocs
 {
     // tag::connect[]
     public void connect(SelectorManager selectorManager, Map<String, Object> context) throws IOException
@@ -101,9 +101,9 @@ public class SelectorManagerDocSnippets
         // tag::echo-wrong[]
         class WrongEchoConnection extends AbstractConnection implements Callback
         {
-            public WrongEchoConnection(EndPoint endp, Executor executor)
+            public WrongEchoConnection(EndPoint endPoint, Executor executor)
             {
-                super(endp, executor);
+                super(endPoint, executor);
             }
 
             @Override
