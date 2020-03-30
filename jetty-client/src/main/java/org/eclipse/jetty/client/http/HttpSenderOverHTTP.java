@@ -21,12 +21,11 @@ package org.eclipse.jetty.client.http;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpContent;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpRequestException;
 import org.eclipse.jetty.client.HttpSender;
-import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
@@ -42,7 +41,14 @@ public class HttpSenderOverHTTP extends HttpSender
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpSenderOverHTTP.class);
 
+    private final IteratingCallback headersCallback = new HeadersCallback();
+    private final IteratingCallback contentCallback = new ContentCallback();
     private final HttpGenerator generator = new HttpGenerator();
+    private HttpExchange exchange;
+    private MetaData.Request metaData;
+    private ByteBuffer contentBuffer;
+    private boolean lastContent;
+    private Callback callback;
     private boolean shutdown;
 
     public HttpSenderOverHTTP(HttpChannelOverHTTP channel)
@@ -57,11 +63,26 @@ public class HttpSenderOverHTTP extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, HttpContent content, Callback callback)
+    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         try
         {
-            new HeadersCallback(exchange, content, callback).iterate();
+            this.exchange = exchange;
+            this.contentBuffer = contentBuffer;
+            this.lastContent = lastContent;
+            this.callback = callback;
+            HttpRequest request = exchange.getRequest();
+            Request.Content requestContent = request.getBody();
+            long contentLength = requestContent == null ? -1 : requestContent.getLength();
+            String path = request.getPath();
+            String query = request.getQuery();
+            if (query != null)
+                path += "?" + query;
+            metaData = new MetaData.Request(request.getMethod(), new HttpURI(path), request.getVersion(), request.getHeaders(), contentLength);
+            metaData.setTrailerSupplier(request.getTrailers());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Sending headers with content {} last={} for {}", BufferUtil.toDetailString(contentBuffer), lastContent, exchange.getRequest());
+            headersCallback.iterate();
         }
         catch (Throwable x)
         {
@@ -72,67 +93,17 @@ public class HttpSenderOverHTTP extends HttpSender
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, HttpContent content, Callback callback)
+    protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         try
         {
-            HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
-            ByteBufferPool bufferPool = httpClient.getByteBufferPool();
-            boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
-            ByteBuffer chunk = null;
-            while (true)
-            {
-                ByteBuffer contentBuffer = content.getByteBuffer();
-                boolean lastContent = content.isLast();
-                HttpGenerator.Result result = generator.generateRequest(null, null, chunk, contentBuffer, lastContent);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Generated content ({} bytes) - {}/{}",
-                        contentBuffer == null ? -1 : contentBuffer.remaining(),
-                        result, generator);
-                switch (result)
-                {
-                    case NEED_CHUNK:
-                    {
-                        chunk = bufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers);
-                        break;
-                    }
-                    case NEED_CHUNK_TRAILER:
-                    {
-                        chunk = bufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
-                        break;
-                    }
-                    case FLUSH:
-                    {
-                        EndPoint endPoint = getHttpChannel().getHttpConnection().getEndPoint();
-                        if (chunk != null)
-                            endPoint.write(new ByteBufferRecyclerCallback(callback, bufferPool, chunk), chunk, contentBuffer);
-                        else
-                            endPoint.write(callback, contentBuffer);
-                        return;
-                    }
-                    case SHUTDOWN_OUT:
-                    {
-                        shutdownOutput();
-                        break;
-                    }
-                    case CONTINUE:
-                    {
-                        if (lastContent)
-                            break;
-                        callback.succeeded();
-                        return;
-                    }
-                    case DONE:
-                    {
-                        callback.succeeded();
-                        return;
-                    }
-                    default:
-                    {
-                        throw new IllegalStateException(result.toString());
-                    }
-                }
-            }
+            this.exchange = exchange;
+            this.contentBuffer = contentBuffer;
+            this.lastContent = lastContent;
+            this.callback = callback;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Sending content {} last={} for {}", BufferUtil.toDetailString(contentBuffer), lastContent, exchange.getRequest());
+            contentCallback.iterate();
         }
         catch (Throwable x)
         {
@@ -145,6 +116,8 @@ public class HttpSenderOverHTTP extends HttpSender
     @Override
     protected void reset()
     {
+        headersCallback.reset();
+        contentCallback.reset();
         generator.reset();
         super.reset();
     }
@@ -177,54 +150,30 @@ public class HttpSenderOverHTTP extends HttpSender
 
     private class HeadersCallback extends IteratingCallback
     {
-        private final HttpExchange exchange;
-        private final Callback callback;
-        private final MetaData.Request metaData;
         private ByteBuffer headerBuffer;
         private ByteBuffer chunkBuffer;
-        private ByteBuffer contentBuffer;
-        private boolean lastContent;
         private boolean generated;
 
-        public HeadersCallback(HttpExchange exchange, HttpContent content, Callback callback)
+        private HeadersCallback()
         {
             super(false);
-            this.exchange = exchange;
-            this.callback = callback;
-
-            HttpRequest request = exchange.getRequest();
-            ContentProvider requestContent = request.getContent();
-            long contentLength = requestContent == null ? -1 : requestContent.getLength();
-            String path = request.getPath();
-            String query = request.getQuery();
-            if (query != null)
-                path += "?" + query;
-            metaData = new MetaData.Request(request.getMethod(), new HttpURI(path), request.getVersion(), request.getHeaders(), contentLength);
-            metaData.setTrailerSupplier(request.getTrailers());
-
-            if (!expects100Continue(request))
-            {
-                content.advance();
-                contentBuffer = content.getByteBuffer();
-                lastContent = content.isLast();
-            }
         }
 
         @Override
         protected Action process() throws Exception
         {
+            HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
+            ByteBufferPool byteBufferPool = httpClient.getByteBufferPool();
+            boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
             while (true)
             {
                 HttpGenerator.Result result = generator.generateRequest(metaData, headerBuffer, chunkBuffer, contentBuffer, lastContent);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Generated headers ({} bytes), chunk ({} bytes), content ({} bytes) - {}/{}",
+                    LOG.debug("Generated headers ({} bytes), chunk ({} bytes), content ({} bytes) - {}/{} for {}",
                         headerBuffer == null ? -1 : headerBuffer.remaining(),
                         chunkBuffer == null ? -1 : chunkBuffer.remaining(),
                         contentBuffer == null ? -1 : contentBuffer.remaining(),
-                        result, generator);
-                HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
-                ByteBufferPool byteBufferPool = httpClient.getByteBufferPool();
-                boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
+                        result, generator, exchange.getRequest());
                 switch (result)
                 {
                     case NEED_HEADER:
@@ -332,37 +281,86 @@ public class HttpSenderOverHTTP extends HttpSender
         }
     }
 
-    private class ByteBufferRecyclerCallback extends Callback.Nested
+    private class ContentCallback extends IteratingCallback
     {
-        private final ByteBufferPool pool;
-        private final ByteBuffer[] buffers;
+        private ByteBuffer chunkBuffer;
 
-        private ByteBufferRecyclerCallback(Callback callback, ByteBufferPool pool, ByteBuffer... buffers)
+        public ContentCallback()
         {
-            super(callback);
-            this.pool = pool;
-            this.buffers = buffers;
+            super(false);
         }
 
         @Override
-        public void succeeded()
+        protected Action process() throws Exception
         {
-            for (ByteBuffer buffer : buffers)
+            HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
+            ByteBufferPool bufferPool = httpClient.getByteBufferPool();
+            boolean useDirectByteBuffers = httpClient.isUseOutputDirectByteBuffers();
+            while (true)
             {
-                assert !buffer.hasRemaining();
-                pool.release(buffer);
+                HttpGenerator.Result result = generator.generateRequest(null, null, chunkBuffer, contentBuffer, lastContent);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Generated content ({} bytes, last={}) - {}/{}",
+                        contentBuffer == null ? -1 : contentBuffer.remaining(),
+                        lastContent, result, generator);
+                switch (result)
+                {
+                    case NEED_CHUNK:
+                    {
+                        chunkBuffer = bufferPool.acquire(HttpGenerator.CHUNK_SIZE, useDirectByteBuffers);
+                        break;
+                    }
+                    case NEED_CHUNK_TRAILER:
+                    {
+                        chunkBuffer = bufferPool.acquire(httpClient.getRequestBufferSize(), useDirectByteBuffers);
+                        break;
+                    }
+                    case FLUSH:
+                    {
+                        EndPoint endPoint = getHttpChannel().getHttpConnection().getEndPoint();
+                        if (chunkBuffer != null)
+                            endPoint.write(this, chunkBuffer, contentBuffer);
+                        else
+                            endPoint.write(this, contentBuffer);
+                        return Action.SCHEDULED;
+                    }
+                    case SHUTDOWN_OUT:
+                    {
+                        shutdownOutput();
+                        break;
+                    }
+                    case CONTINUE:
+                    {
+                        break;
+                    }
+                    case DONE:
+                    {
+                        release();
+                        callback.succeeded();
+                        return Action.IDLE;
+                    }
+                    default:
+                    {
+                        throw new IllegalStateException(result.toString());
+                    }
+                }
             }
-            super.succeeded();
         }
 
         @Override
-        public void failed(Throwable x)
+        protected void onCompleteFailure(Throwable cause)
         {
-            for (ByteBuffer buffer : buffers)
-            {
-                pool.release(buffer);
-            }
-            super.failed(x);
+            release();
+            callback.failed(cause);
+        }
+
+        private void release()
+        {
+            HttpClient httpClient = getHttpChannel().getHttpDestination().getHttpClient();
+            ByteBufferPool bufferPool = httpClient.getByteBufferPool();
+            bufferPool.release(chunkBuffer);
+            chunkBuffer = null;
+            contentBuffer = null;
         }
     }
 }

@@ -48,7 +48,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
@@ -257,7 +257,7 @@ public class ForwardProxyTLSServerTest
                 .path("/echo")
                 .header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString())
                 .header(HttpHeader.CONTENT_LENGTH, String.valueOf(content.length()))
-                .content(new StringContentProvider(content))
+                .body(new StringRequestContent(content))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
@@ -320,7 +320,7 @@ public class ForwardProxyTLSServerTest
                 .path("/echo")
                 .header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString())
                 .header(HttpHeader.CONTENT_LENGTH, String.valueOf(body2.length()))
-                .content(new StringContentProvider(body2));
+                .body(new StringRequestContent(body2));
 
             // Make sure the second connection can send the exchange via the tunnel
             FutureResponseListener listener2 = new FutureResponseListener(request2);

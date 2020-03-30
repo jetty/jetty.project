@@ -21,10 +21,14 @@ package org.eclipse.jetty.client;
 import java.util.EventListener;
 
 import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.client.api.Request;
 
 /**
  * A {@link ContentProvider} that notifies listeners that content is available.
+ *
+ * @deprecated no replacement, use {@link Request.Content} instead.
  */
+@Deprecated
 public interface AsyncContentProvider extends ContentProvider
 {
     /**

@@ -27,6 +27,7 @@ import java.io.PrintWriter;
 import java.net.ConnectException;
 import java.net.HttpCookie;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -69,9 +70,9 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -305,7 +306,7 @@ public class ProxyServletTest
         new Random().nextBytes(content);
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
             .method(HttpMethod.POST)
-            .content(new BytesContentProvider(content))
+            .body(new BytesRequestContent(content))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -344,7 +345,7 @@ public class ProxyServletTest
         byte[] content = new byte[128 * 1024];
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
             .method(HttpMethod.POST)
-            .content(new BytesContentProvider(content))
+            .body(new BytesRequestContent(content))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -387,7 +388,7 @@ public class ProxyServletTest
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
             .method(HttpMethod.POST)
-            .content(new BytesContentProvider(content))
+            .body(new BytesRequestContent(content))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -933,7 +934,7 @@ public class ProxyServletTest
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
-                byte[] message = "tooshort".getBytes("ascii");
+                byte[] message = "tooshort".getBytes(StandardCharsets.US_ASCII);
                 resp.setContentType("text/plain;charset=ascii");
                 resp.setHeader("Content-Length", Long.toString(message.length + 1));
                 resp.getOutputStream().write(message);
@@ -1283,7 +1284,7 @@ public class ProxyServletTest
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
             .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
-            .content(new BytesContentProvider(content))
+            .body(new BytesRequestContent(content))
             .onRequestContent((request, buffer) -> contentLatch.countDown())
             .send(new BufferingResponseListener()
             {
@@ -1335,12 +1336,12 @@ public class ProxyServletTest
         byte[] content = new byte[1024];
         new Random().nextBytes(content);
         int chunk1 = content.length / 2;
-        DeferredContentProvider contentProvider = new DeferredContentProvider();
-        contentProvider.offer(ByteBuffer.wrap(content, 0, chunk1));
+        AsyncRequestContent requestContent = new AsyncRequestContent();
+        requestContent.offer(ByteBuffer.wrap(content, 0, chunk1));
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
             .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
-            .content(contentProvider)
+            .body(requestContent)
             .send(new BufferingResponseListener()
             {
                 @Override
@@ -1359,8 +1360,8 @@ public class ProxyServletTest
 
         // Wait a while and then offer more content.
         Thread.sleep(1000);
-        contentProvider.offer(ByteBuffer.wrap(content, chunk1, content.length - chunk1));
-        contentProvider.close();
+        requestContent.offer(ByteBuffer.wrap(content, chunk1, content.length - chunk1));
+        requestContent.close();
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
     }
@@ -1395,12 +1396,12 @@ public class ProxyServletTest
         byte[] content = new byte[1024];
         new Random().nextBytes(content);
         int chunk1 = content.length / 2;
-        DeferredContentProvider contentProvider = new DeferredContentProvider();
-        contentProvider.offer(ByteBuffer.wrap(content, 0, chunk1));
+        AsyncRequestContent requestContent = new AsyncRequestContent();
+        requestContent.offer(ByteBuffer.wrap(content, 0, chunk1));
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
             .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
-            .content(contentProvider)
+            .body(requestContent)
             .send(result ->
             {
                 if (result.isFailed())
@@ -1448,7 +1449,7 @@ public class ProxyServletTest
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
             .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
-            .content(new BytesContentProvider(content))
+            .body(new BytesRequestContent(content))
             .onRequestContent((request, buffer) -> contentLatch.countDown())
             .send(result ->
             {

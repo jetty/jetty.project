@@ -24,11 +24,10 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -104,7 +103,7 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 try
                 {
@@ -141,7 +140,7 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 try
                 {
@@ -159,18 +158,18 @@ public class HttpResponseAbortTest extends AbstractHttpClientServerTest
             }
         });
 
-        final DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
-        final AtomicInteger completes = new AtomicInteger();
-        final CountDownLatch completeLatch = new CountDownLatch(1);
+        AsyncRequestContent requestContent = new AsyncRequestContent(ByteBuffer.allocate(1));
+        AtomicInteger completes = new AtomicInteger();
+        CountDownLatch completeLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .content(contentProvider)
+            .body(requestContent)
             .onResponseContent((response, content) ->
             {
                 try
                 {
                     response.abort(new Exception());
-                    contentProvider.close();
+                    requestContent.close();
                     // Delay to let the request side to finish its processing.
                     Thread.sleep(1000);
                 }

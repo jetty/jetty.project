@@ -22,6 +22,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
@@ -29,15 +31,17 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.util.DeferredContentProvider;
-import org.eclipse.jetty.client.util.InputStreamContentProvider;
-import org.eclipse.jetty.client.util.OutputStreamContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.util.InputStreamRequestContent;
+import org.eclipse.jetty.client.util.OutputStreamRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
@@ -50,45 +54,45 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void testEmptyDeferredContent(Transport transport) throws Exception
+    public void testEmptyAsyncContent(Transport transport) throws Exception
     {
         init(transport);
         scenario.start(new ConsumeInputHandler());
 
-        DeferredContentProvider contentProvider = new DeferredContentProvider();
+        AsyncRequestContent content = new AsyncRequestContent();
         CountDownLatch latch = new CountDownLatch(1);
         scenario.client.POST(scenario.newURI())
-            .content(contentProvider)
+            .body(content)
             .send(result ->
             {
                 if (result.isSucceeded() &&
                     result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
-        contentProvider.close();
+        content.close();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void testDeferredContent(Transport transport) throws Exception
+    public void testAsyncContent(Transport transport) throws Exception
     {
         init(transport);
         scenario.start(new ConsumeInputHandler());
 
-        DeferredContentProvider contentProvider = new DeferredContentProvider();
+        AsyncRequestContent content = new AsyncRequestContent();
         CountDownLatch latch = new CountDownLatch(1);
         scenario.client.POST(scenario.newURI())
-            .content(contentProvider)
+            .body(content)
             .send(result ->
             {
                 if (result.isSucceeded() &&
                     result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
-        contentProvider.offer(ByteBuffer.wrap(new byte[1]));
-        contentProvider.close();
+        content.offer(ByteBuffer.wrap(new byte[1]));
+        content.close();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -100,18 +104,17 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
         init(transport);
         scenario.start(new ConsumeInputHandler());
 
-        InputStreamContentProvider contentProvider =
-            new InputStreamContentProvider(new ByteArrayInputStream(new byte[0]));
+        InputStreamRequestContent content =
+            new InputStreamRequestContent(new ByteArrayInputStream(new byte[0]));
         CountDownLatch latch = new CountDownLatch(1);
         scenario.client.POST(scenario.newURI())
-            .content(contentProvider)
+            .body(content)
             .send(result ->
             {
                 if (result.isSucceeded() &&
                     result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
-        contentProvider.close();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -123,18 +126,17 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
         init(transport);
         scenario.start(new ConsumeInputHandler());
 
-        InputStreamContentProvider contentProvider =
-            new InputStreamContentProvider(new ByteArrayInputStream(new byte[1]));
+        InputStreamRequestContent content =
+            new InputStreamRequestContent(new ByteArrayInputStream(new byte[1]));
         CountDownLatch latch = new CountDownLatch(1);
         scenario.client.POST(scenario.newURI())
-            .content(contentProvider)
+            .body(content)
             .send(result ->
             {
                 if (result.isSucceeded() &&
                     result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
-        contentProvider.close();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -146,17 +148,17 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
         init(transport);
         scenario.start(new ConsumeInputHandler());
 
-        OutputStreamContentProvider contentProvider = new OutputStreamContentProvider();
+        OutputStreamRequestContent content = new OutputStreamRequestContent();
         CountDownLatch latch = new CountDownLatch(1);
         scenario.client.POST(scenario.newURI())
-            .content(contentProvider)
+            .body(content)
             .send(result ->
             {
                 if (result.isSucceeded() &&
                     result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
-        contentProvider.close();
+        content.close();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -168,22 +170,60 @@ public class AsyncRequestContentTest extends AbstractTest<TransportScenario>
         init(transport);
         scenario.start(new ConsumeInputHandler());
 
-        OutputStreamContentProvider contentProvider = new OutputStreamContentProvider();
+        OutputStreamRequestContent content = new OutputStreamRequestContent();
         CountDownLatch latch = new CountDownLatch(1);
         scenario.client.POST(scenario.newURI())
-            .content(contentProvider)
+            .body(content)
             .send(result ->
             {
                 if (result.isSucceeded() &&
                     result.getResponse().getStatus() == HttpStatus.OK_200)
                     latch.countDown();
             });
-        OutputStream output = contentProvider.getOutputStream();
+        OutputStream output = content.getOutputStream();
         output.write(new byte[1]);
         output.flush();
-        contentProvider.close();
+        content.close();
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testBufferReuseAfterCallbackCompleted(Transport transport) throws Exception
+    {
+        init(transport);
+        scenario.start(new ConsumeInputHandler());
+
+        AsyncRequestContent content = new AsyncRequestContent();
+
+        CountDownLatch latch = new CountDownLatch(1);
+        List<Byte> requestContent = new ArrayList<>();
+        scenario.client.POST(scenario.newURI())
+            .onRequestContent(((request, buffer) -> requestContent.add(buffer.get())))
+            .body(content)
+            .send(result ->
+            {
+                if (result.isSucceeded() &&
+                    result.getResponse().getStatus() == HttpStatus.OK_200)
+                    latch.countDown();
+            });
+
+        byte first = '1';
+        byte second = '2';
+        byte[] bytes = new byte[1];
+        bytes[0] = first;
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+        content.offer(buffer, Callback.from(() ->
+        {
+            bytes[0] = second;
+            content.offer(ByteBuffer.wrap(bytes), Callback.from(content::close));
+        }));
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertEquals(2, requestContent.size());
+        assertEquals(first, requestContent.get(0));
+        assertEquals(second, requestContent.get(1));
     }
 
     private static class ConsumeInputHandler extends AbstractHandler
