@@ -125,7 +125,6 @@
             <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
             <VERSION>${project.version}</VERSION>
             <TIMESTAMP>${maven.build.timestamp}</TIMESTAMP>
-            <docbits>${basedir}/src/main/java</docbits>
           </attributes>
         </configuration>
         <executions>
@@ -169,6 +168,7 @@
               <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/contribution-guide</outputDirectory>
+              <sourceHighlighter>coderay</sourceHighlighter>
             </configuration>
           </execution>
           <execution>
