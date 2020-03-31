@@ -91,8 +91,8 @@ public class Modules implements Iterable<Module>
         _modules.stream()
             .filter(m ->
             {
-                boolean included = all || m.getTags().stream().anyMatch(t -> include.contains(t));
-                boolean excluded = m.getTags().stream().anyMatch(t -> exclude.contains(t));
+                boolean included = all || m.getTags().stream().anyMatch(include::contains);
+                boolean excluded = m.getTags().stream().anyMatch(exclude::contains);
                 return included && !excluded;
             })
             .sorted()
@@ -135,9 +135,9 @@ public class Modules implements Iterable<Module>
                     {
                         parent = Module.normalizeModuleName(parent);
                         System.out.printf(label, parent);
-                        if (!Module.isRequiredDependency(parent))
+                        if (Module.isConditionalDependency(parent))
                         {
-                            System.out.print(" [not-required]");
+                            System.out.print(" [conditional]");
                         }
                         label = ", %s";
                     }
@@ -219,11 +219,7 @@ public class Modules implements Iterable<Module>
             Module module = new Module(_baseHome, file);
             _modules.add(module);
             _names.put(module.getName(), module);
-            module.getProvides().forEach(n ->
-            {
-                _provided.computeIfAbsent(n, k -> new HashSet<Module>()).add(module);
-            });
-
+            module.getProvides().forEach(n -> _provided.computeIfAbsent(n, k -> new HashSet<>()).add(module));
             return module;
         }
         catch (Error | RuntimeException t)
@@ -258,7 +254,7 @@ public class Modules implements Iterable<Module>
 
     public List<Module> getEnabled()
     {
-        List<Module> enabled = _modules.stream().filter(m -> m.isEnabled()).collect(Collectors.toList());
+        List<Module> enabled = _modules.stream().filter(Module::isEnabled).collect(Collectors.toList());
 
         TopologicalSort<Module> sort = new TopologicalSort<>();
         for (Module module : enabled)
@@ -360,7 +356,7 @@ public class Modules implements Iterable<Module>
         StartLog.debug("Enabled module %s depends on %s", module.getName(), module.getDepends());
         for (String dependsOnRaw : module.getDepends())
         {
-            boolean isRequired = Module.isRequiredDependency(dependsOnRaw);
+            boolean isConditional = Module.isConditionalDependency(dependsOnRaw);
             // Final to allow lambda's below to use name
             final String dependentModule = Module.normalizeModuleName(dependsOnRaw);
 
@@ -376,7 +372,7 @@ public class Modules implements Iterable<Module>
                 if (dependentModule.contains("/"))
                 {
                     Path file = _baseHome.getPath("modules/" + dependentModule + ".mod");
-                    if (isRequired || Files.exists(file))
+                    if (!isConditional || Files.exists(file))
                     {
                         registerModule(file).expandDependencies(_args.getProperties());
                         providers = _provided.get(dependentModule);
@@ -387,10 +383,10 @@ public class Modules implements Iterable<Module>
                         continue;
                     }
                 }
-                // is this a non-required module
-                if (!isRequired)
+                // is this a conditional module
+                if (isConditional)
                 {
-                    StartLog.debug("Skipping non-required module [%s]: doesn't exist", dependentModule);
+                    StartLog.debug("Skipping conditional module [%s]: it does not exist", dependentModule);
                     continue;
                 }
                 // throw an exception (not a dynamic module and a required dependency)
@@ -488,7 +484,7 @@ public class Modules implements Iterable<Module>
         {
             // Check dependencies
             m.getDepends().stream()
-                .filter(Module::isRequiredDependency)
+                .filter(depends -> !Module.isConditionalDependency(depends))
                 .forEach(d ->
                 {
                     Set<Module> providers = getAvailableProviders(d);
