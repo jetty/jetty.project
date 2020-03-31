@@ -105,14 +105,14 @@ public class AsyncContextDispatchWithQueryStrings
             {
                 AsyncContext async = request.startAsync();
                 async.dispatch("/secondDispatchNewValueForExistingQueryString?newQueryString=newValue");
-                assertEquals("newQueryString=initialValue&initialParam=right", queryString);
+                assertEquals("newQueryString=initialValue", queryString);
             }
             else
             {
                 response.setContentType("text/html");
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("<h1>woohhooooo</h1>");
-                assertEquals("newQueryString=newValue&initialParam=right", queryString);
+                assertEquals("newQueryString=newValue", queryString);
             }
         }
     }
