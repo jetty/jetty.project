@@ -29,7 +29,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -131,6 +130,35 @@ public class JdbcTestHelper
 
         sessionTableSchema.prepareTables();
     }
+    
+    public static void dumpRow(ResultSet row) throws SQLException
+    {
+        if (row != null)
+        {
+            String id = row.getString(ID_COL);
+            long created = row.getLong(CREATE_COL);
+            long accessed = row.getLong(ACCESS_COL);
+            long lastAccessed = row.getLong(LAST_ACCESS_COL);
+            long maxIdle = row.getLong(MAX_IDLE_COL);
+            long cookieSet = row.getLong(COOKIE_COL);
+            String node = row.getString(LAST_NODE_COL);
+            long expires = row.getLong(EXPIRY_COL);
+            long lastSaved = row.getLong(LAST_SAVE_COL);
+            String context = row.getString(CONTEXT_COL);
+            Blob blob = row.getBlob(MAP_COL);
+            
+            String dump = "id=" + id +
+                          " ctxt=" + context +
+                          " node=" + node +
+                          " exp=" + expires +
+                          " acc=" + accessed +
+                          " lacc=" + lastAccessed +
+                          " ck=" + cookieSet +
+                          " lsv=" + lastSaved +
+                          " blob length=" + blob.length();
+            System.err.println(dump);
+        }
+    }
 
     public static boolean existsInSessionTable(String id, boolean verbose)
         throws Exception
@@ -151,6 +179,7 @@ public class JdbcTestHelper
                 while (result.next())
                 {
                     results = true;
+                    dumpRow(result);
                 }
                 return results;
             }
@@ -232,41 +261,53 @@ public class JdbcTestHelper
 
         return true;
     }
-
-    public static void insertSession(String id, String contextPath, String vhost)
-        throws Exception
+    
+    public static void insertSession(SessionData data) throws Exception
     {
+
         Class.forName(DRIVER_CLASS);
         try (Connection con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);)
         {
             PreparedStatement statement = con.prepareStatement("insert into " + TABLE +
                 " (" + ID_COL + ", " + CONTEXT_COL + ", virtualHost, " + LAST_NODE_COL +
                 ", " + ACCESS_COL + ", " + LAST_ACCESS_COL + ", " + CREATE_COL + ", " + COOKIE_COL +
-                ", " + LAST_SAVE_COL + ", " + EXPIRY_COL + " " + ") " +
-                " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                ", " + LAST_SAVE_COL + ", " + EXPIRY_COL + ", " + MAX_IDLE_COL + "," + MAP_COL + " ) " +
+                " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
-            statement.setString(1, id);
-            statement.setString(2, contextPath);
-            statement.setString(3, vhost);
-            statement.setString(4, "0");
+            statement.setString(1, data.getId());
+            statement.setString(2, data.getContextPath());
+            statement.setString(3, data.getVhost());
+            statement.setString(4, data.getLastNode());
 
-            statement.setLong(5, System.currentTimeMillis());
-            statement.setLong(6, System.currentTimeMillis());
-            statement.setLong(7, System.currentTimeMillis());
-            statement.setLong(8, System.currentTimeMillis());
+            statement.setLong(5, data.getAccessed());
+            statement.setLong(6, data.getLastAccessed());
+            statement.setLong(7, data.getCreated());
+            statement.setLong(8, data.getCookieSet());
 
-            statement.setLong(9, System.currentTimeMillis());
-            statement.setLong(10, System.currentTimeMillis());
+            statement.setLong(9, data.getLastSaved());
+            statement.setLong(10, data.getExpiry());
+            statement.setLong(11, data.getMaxInactiveMs());
+            
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(baos);)
+            {
+                SessionData.serializeAttributes(data, oos);
+                byte[] bytes = baos.toByteArray();
 
+                try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);)
+                {
+                    statement.setBinaryStream(12, bais, bytes.length);
+                }
+            }
             statement.execute();
             assertEquals(1, statement.getUpdateCount());
         }
     }
 
-    public static void insertSession(String id, String contextPath, String vhost,
+    public static void insertUnreadableSession(String id, String contextPath, String vhost,
                                      String lastNode, long created, long accessed,
                                      long lastAccessed, long maxIdle, long expiry,
-                                     long cookieSet, long lastSaved, Map<String, Object> attributes)
+                                     long cookieSet, long lastSaved)
         throws Exception
     {
         Class.forName(DRIVER_CLASS);
@@ -292,23 +333,7 @@ public class JdbcTestHelper
             statement.setLong(10, expiry);
             statement.setLong(11, maxIdle);
 
-            if (attributes != null)
-            {
-                SessionData tmp = new SessionData(id, contextPath, vhost, created, accessed, lastAccessed, maxIdle);
-                try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                     ObjectOutputStream oos = new ObjectOutputStream(baos);)
-                {
-                    SessionData.serializeAttributes(tmp, oos);
-                    byte[] bytes = baos.toByteArray();
-
-                    try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);)
-                    {
-                        statement.setBinaryStream(12, bais, bytes.length);
-                    }
-                }
-            }
-            else
-                statement.setBinaryStream(12, new ByteArrayInputStream("".getBytes()), 0);
+            statement.setBinaryStream(12, new ByteArrayInputStream("".getBytes()), 0);
 
             statement.execute();
             assertEquals(1, statement.getUpdateCount());

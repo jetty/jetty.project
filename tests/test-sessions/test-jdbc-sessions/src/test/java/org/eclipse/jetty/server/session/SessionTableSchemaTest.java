@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.session;
 
 import java.io.ByteArrayInputStream;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
@@ -70,6 +71,46 @@ public class SessionTableSchemaTest
         JdbcTestHelper.shutdown(null);
     }
 
+    /**
+     * This inserts a session into the db that does not set the session attributes MAP column. As such
+     * this results in a row that is unreadable by the JDBCSessionDataStore, but is readable by using
+     * only jdbc api, which is what this test does.
+     * 
+     * @param id id of session
+     * @param contextPath the context path of the session
+     * @param vhost the virtual host of the session 
+     * @throws Exception
+     */
+    public static void insertSessionWithoutAttributes(String id, String contextPath, String vhost)
+        throws Exception
+    {
+        Class.forName(JdbcTestHelper.DRIVER_CLASS);
+        try (Connection con = DriverManager.getConnection(JdbcTestHelper.DEFAULT_CONNECTION_URL);)
+        {
+            PreparedStatement statement = con.prepareStatement("insert into " + JdbcTestHelper.TABLE +
+                " (" + JdbcTestHelper.ID_COL + ", " + JdbcTestHelper.CONTEXT_COL + ", virtualHost, " + JdbcTestHelper.LAST_NODE_COL +
+                ", " + JdbcTestHelper.ACCESS_COL + ", " + JdbcTestHelper.LAST_ACCESS_COL + ", " + JdbcTestHelper.CREATE_COL + ", " + JdbcTestHelper.COOKIE_COL +
+                ", " + JdbcTestHelper.LAST_SAVE_COL + ", " + JdbcTestHelper.EXPIRY_COL + " " + ") " +
+                " values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+            statement.setString(1, id);
+            statement.setString(2, contextPath);
+            statement.setString(3, vhost);
+            statement.setString(4, "0");
+
+            statement.setLong(5, System.currentTimeMillis());
+            statement.setLong(6, System.currentTimeMillis());
+            statement.setLong(7, System.currentTimeMillis());
+            statement.setLong(8, System.currentTimeMillis());
+
+            statement.setLong(9, System.currentTimeMillis());
+            statement.setLong(10, System.currentTimeMillis());
+
+            statement.execute();
+            assertEquals(1, statement.getUpdateCount());
+        }
+    }
+    
     @Test
     public void testLoad()
         throws Exception
@@ -79,7 +120,7 @@ public class SessionTableSchemaTest
         _tableSchema.prepareTables();
 
         //insert a fake session at the root context
-        JdbcTestHelper.insertSession("1234", "/", "0.0.0.0");
+        insertSessionWithoutAttributes("1234", "/", "0.0.0.0");
 
         //test if it can be seen
         try (Connection con = _da.getConnection())
@@ -104,7 +145,7 @@ public class SessionTableSchemaTest
         _tableSchema.prepareTables();
 
         //insert a fake session at the root context
-        JdbcTestHelper.insertSession("1234", "/", "0.0.0.0");
+        insertSessionWithoutAttributes("1234", "/", "0.0.0.0");
 
         //test if it can be seen
         try (Connection con = _da.getConnection())
@@ -128,7 +169,7 @@ public class SessionTableSchemaTest
         _tableSchema.prepareTables();
 
         //insert a fake session at the root context
-        JdbcTestHelper.insertSession("1234", "/", "0.0.0.0");
+        insertSessionWithoutAttributes("1234", "/", "0.0.0.0");
 
         //test if it can be deleted
         try (Connection con = _da.getConnection())
@@ -152,7 +193,7 @@ public class SessionTableSchemaTest
         _tableSchema.prepareTables();
 
         //insert a fake session at the root context
-        JdbcTestHelper.insertSession("1234", "/", "0.0.0.0");
+        insertSessionWithoutAttributes("1234", "/", "0.0.0.0");
 
         try (Connection con = _da.getConnection())
         {
@@ -178,7 +219,7 @@ public class SessionTableSchemaTest
         _tableSchema.prepareTables();
 
         //insert a fake session at the root context
-        JdbcTestHelper.insertSession("1234", "/", "0.0.0.0");
+        insertSessionWithoutAttributes("1234", "/", "0.0.0.0");
 
         try (Connection con = _da.getConnection())
         {
@@ -203,7 +244,7 @@ public class SessionTableSchemaTest
         _tableSchema.prepareTables();
 
         //insert a fake session at the root context
-        JdbcTestHelper.insertSession("1234", "/", "0.0.0.0");
+        insertSessionWithoutAttributes("1234", "/", "0.0.0.0");
 
         try (Connection con = _da.getConnection())
         {
