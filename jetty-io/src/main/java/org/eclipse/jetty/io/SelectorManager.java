@@ -302,8 +302,10 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      * <p>Callback method invoked when a connection is opened.</p>
      *
      * @param connection the connection just opened
+     * @param context the attachment associated with the creation of the connection
+     * @see #newConnection(SelectableChannel, EndPoint, Object)
      */
-    public void connectionOpened(Connection connection)
+    public void connectionOpened(Connection connection, Object context)
     {
         try
         {
