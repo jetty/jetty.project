@@ -538,6 +538,41 @@ public class ServletContextHandlerTest
     }
     
     @Test
+    public void testContextInitializationDestruction() throws Exception
+    {
+        Server server = new Server();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        class TestServletContextListener implements ServletContextListener
+        {
+            public int initialized = 0;
+            public int destroyed = 0;
+            
+            @Override
+            public void contextInitialized(ServletContextEvent sce)
+            {
+                initialized++;
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent sce)
+            {
+                destroyed++;
+            }
+        }
+        
+        TestServletContextListener listener = new TestServletContextListener();
+        root.addEventListener(listener);
+        server.start();
+        server.stop();
+        assertEquals(1, listener.initialized);
+        server.stop();
+        assertEquals(1, listener.destroyed);
+    }
+    
+    @Test
     public void testListenersFromContextListener() throws Exception
     {
         ContextHandlerCollection contexts = new ContextHandlerCollection();

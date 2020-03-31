@@ -177,6 +177,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         __serverInfo = serverInfo;
     }
 
+    public enum ContextStatus
+    {
+        UNSET, 
+        INITIALIZED,
+        DESTROYED
+    }
+    
+    protected ContextStatus _contextStatus = ContextStatus.UNSET;
     protected Context _scontext;
     private final AttributesMap _attributes;
     private final Map<String, String> _initParams;
@@ -823,6 +831,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             // defers the calling of super.doStart()
             startContext();
+            
+            contextInitialized();
 
             _availability = Availability.AVAILABLE;
             LOG.info("Started {}", this);
@@ -885,35 +895,68 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     public void contextDestroyed() throws Exception
     {
-        MultiException ex = new MultiException();
-        ServletContextEvent event = new ServletContextEvent(_scontext);
-        Collections.reverse(_destroyServletContextListeners);
-        for (ServletContextListener listener : _destroyServletContextListeners)
+        switch (_contextStatus)
         {
-            try
+            case INITIALIZED:
             {
-                callContextDestroyed(listener, event);
+                try
+                {
+                    //Call context listeners
+                    MultiException ex = new MultiException();
+                    ServletContextEvent event = new ServletContextEvent(_scontext);
+                    Collections.reverse(_destroyServletContextListeners);
+                    for (ServletContextListener listener : _destroyServletContextListeners)
+                    {
+                        try
+                        {
+                            callContextDestroyed(listener, event);
+                        }
+                        catch (Exception x)
+                        {
+                            ex.add(x);
+                        }
+                    }
+                    ex.ifExceptionThrow();
+                }
+                finally
+                {
+                    _contextStatus = ContextStatus.DESTROYED;
+                }
+                break;
             }
-            catch (Exception x)
-            {
-                ex.add(x);
-            }
+            default:
+                break;
         }
-        ex.ifExceptionThrow();
     }
-    
+
     public void contextInitialized() throws Exception
     {
         // Call context listeners
-        _destroyServletContextListeners.clear();
-        if (!_servletContextListeners.isEmpty())
+        switch (_contextStatus)
         {
-            ServletContextEvent event = new ServletContextEvent(_scontext);
-            for (ServletContextListener listener : _servletContextListeners)
+            case UNSET:
             {
-                callContextInitialized(listener, event);
-                _destroyServletContextListeners.add(listener);
+                try
+                {
+                    _destroyServletContextListeners.clear();
+                    if (!_servletContextListeners.isEmpty())
+                    {
+                        ServletContextEvent event = new ServletContextEvent(_scontext);
+                        for (ServletContextListener listener : _servletContextListeners)
+                        {
+                            callContextInitialized(listener, event);
+                            _destroyServletContextListeners.add(listener);
+                        }
+                    }
+                }
+                finally
+                {
+                    _contextStatus = ContextStatus.INITIALIZED;
+                }
+                break;
             }
+            default:
+                break;
         }
     }
 
@@ -976,6 +1019,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             stopContext();
 
+            contextDestroyed();
+            
             // retain only durable listeners
             setEventListeners(_durableListeners.toArray(new EventListener[0]));
             _durableListeners.clear();
@@ -1008,6 +1053,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         finally
         {
+            _contextStatus = ContextStatus.UNSET;
             __context.set(oldContext);
             exitScope(null);
             LOG.info("Stopped {}", this);
