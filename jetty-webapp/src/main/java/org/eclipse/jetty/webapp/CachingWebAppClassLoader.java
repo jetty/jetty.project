@@ -24,7 +24,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -51,7 +50,6 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
 
     private final Set<String> _notFound = ConcurrentHashMap.newKeySet();
     private final ConcurrentHashMap<String, URL> _cache = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String,URL> _classCache = new ConcurrentHashMap<>();
     private volatile boolean useCache;
     
     public CachingWebAppClassLoader(ClassLoader parent, Context context) throws IOException
@@ -67,7 +65,7 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
     @Override
     public URL getResource(String name)
     {
-        if(!useCache)
+        if (!useCache)
         {
             return super.getResource(name);
         }
@@ -103,24 +101,23 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
     }
 
     @Override
-    protected URL getResourceClassReference(String name)
+    public URL findResource(String name)
     {
-        if(!useCache)
+        if (!useCache)
         {
-            return super.getResourceClassReference(name);
+            return super.findResource(name);
         }
-        String path = TypeUtil.toClassReference(name);
-        URL webapp_url = _classCache.get(path);
-        if (webapp_url == null)
+        URL webappUrl = _cache.get(name);
+        if (webappUrl == null)
         {
-            webapp_url = findResource(path);
-            if (webapp_url != null)
+            webappUrl = super.findResource(name);
+            if (webappUrl != null)
             {
-                  _classCache.putIfAbsent(path, webapp_url);
+                _cache.putIfAbsent(name, webappUrl);
             }
         }
 
-        return webapp_url;
+        return webappUrl;
     }
 
     @Override
@@ -152,13 +149,12 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
     public void clearCache()
     {
         _cache.clear();
-        _classCache.clear();
         _notFound.clear();
     }
 
     public void setUseCache(boolean useCache)
     {
-            this.useCache = useCache;
+        this.useCache = useCache;
     }
 
     @Override
@@ -169,7 +165,7 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
 
     /**
      * Lifecycle listener, that can be used from {@link WebAppContext#addLifeCycleListener(LifeCycle.Listener)}
-     * to switch off the {@link #_cache} and {@link #_classCache} after web application has been started.
+     * to switch off the {@link #_cache} after web application has been started.
      */
     public static class ClearCacheLifeCycleListener extends AbstractLifeCycle.AbstractLifeCycleListener
     {
@@ -198,8 +194,10 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
             lifeCycleContainer(event,"failure", false);
         }
 
-        private void lifeCycleContainer(LifeCycle event, String action, boolean useCache) {
-            if(event == container && container.getClassLoader() instanceof CachingWebAppClassLoader) {
+        private void lifeCycleContainer(LifeCycle event, String action, boolean useCache)
+        {
+            if (event == container && container.getClassLoader() instanceof CachingWebAppClassLoader)
+            {
                 CachingWebAppClassLoader classLoader = (CachingWebAppClassLoader)container.getClassLoader();
                 if (LOG.isDebugEnabled())
                 {
