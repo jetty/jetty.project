@@ -22,14 +22,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BasicAuthentication;
-import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.JDBCLoginService;
@@ -80,7 +82,7 @@ public class JdbcLoginServiceTest
 
         try (FileOutputStream out = new FileOutputStream(content))
         {
-            out.write(_content.getBytes("utf-8"));
+            out.write(_content.getBytes(StandardCharsets.UTF_8));
         }
 
         //drop any tables that might have existed
@@ -123,7 +125,7 @@ public class JdbcLoginServiceTest
 
             Request request = _client.newRequest(_baseUri.resolve("output.txt"));
             request.method(HttpMethod.PUT);
-            request.content(new BytesContentProvider(_content.getBytes()));
+            request.body(new BytesRequestContent(_content.getBytes()));
             ContentResponse response = request.send();
             int responseStatus = response.getStatus();
             boolean statusOk = (responseStatus == 200 || responseStatus == 201);
@@ -198,7 +200,7 @@ public class JdbcLoginServiceTest
 
             Request request = _client.newRequest(_baseUri.resolve("test"));
             request.method(HttpMethod.POST);
-            request.content(new BytesContentProvider(_content.getBytes()));
+            request.body(new BytesRequestContent(_content.getBytes()));
             ContentResponse response = request.send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
             assertEquals(_content, _testServer.getTestHandler().getRequestContent());

@@ -32,7 +32,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.ByteBufferContentProvider;
+import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -411,7 +411,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             CountDownLatch latch = new CountDownLatch(1);
             ByteBuffer buffer = ByteBuffer.allocate(16 * 1024 * 1024);
             Arrays.fill(buffer.array(), (byte)'x');
-            request.content(new ByteBufferContentProvider(buffer))
+            request.body(new ByteBufferRequestContent(buffer))
                 .send(new Response.Listener.Adapter()
                 {
                     @Override

@@ -29,8 +29,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
-import org.eclipse.jetty.client.util.FormContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -131,13 +131,13 @@ public class FormTest
         length = length + 1;
         byte[] value = new byte[length];
         Arrays.fill(value, (byte)'x');
-        DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(key), ByteBuffer.wrap(value));
+        AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.wrap(key), ByteBuffer.wrap(value));
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
             .path(contextPath + servletPath)
             .header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString())
-            .content(content)
+            .body(content)
             .onRequestBegin(request ->
             {
                 if (withContentLength)
@@ -192,7 +192,7 @@ public class FormTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
             .path(contextPath + servletPath)
-            .content(new FormContentProvider(formParams))
+            .body(new FormRequestContent(formParams))
             .send();
 
         int expected = (maxFormKeys != null && maxFormKeys < 0)

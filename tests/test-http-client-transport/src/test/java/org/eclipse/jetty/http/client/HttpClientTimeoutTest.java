@@ -43,7 +43,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.InputStreamContentProvider;
+import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -159,7 +159,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         final CountDownLatch latch = new CountDownLatch(1);
         final byte[] content = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         Request request = scenario.client.newRequest(scenario.newURI())
-            .content(new InputStreamContentProvider(new ByteArrayInputStream(content)))
+            .body(new InputStreamRequestContent(new ByteArrayInputStream(content)))
             .timeout(2 * timeout, TimeUnit.MILLISECONDS);
         request.send(new BufferingResponseListener()
         {
@@ -400,7 +400,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
                 }
             });
 
-        assertTrue(latch.await(333 * connectTimeout, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(3 * connectTimeout, TimeUnit.MILLISECONDS));
         assertNotNull(request.getAbortCause());
     }
 
@@ -521,7 +521,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         }
     }
 
-    private class TimeoutHandler extends AbstractHandler
+    private static class TimeoutHandler extends AbstractHandler
     {
         private final long timeout;
 

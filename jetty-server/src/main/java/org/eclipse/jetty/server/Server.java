@@ -47,6 +47,8 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -563,22 +565,74 @@ public class Server extends HandlerWrapper implements Attributes
     {
         final HttpChannelState state = channel.getRequest().getHttpChannelState();
         final AsyncContextEvent event = state.getAsyncContextEvent();
-
         final Request baseRequest = channel.getRequest();
-        final String path = event.getPath();
+        final HttpURI baseUri = event.getBaseURI();
+        String encodedPathQuery = event.getDispatchPath();
 
-        if (path != null)
+        if (encodedPathQuery == null && baseUri == null)
         {
-            // this is a dispatch with a path
-            ServletContext context = event.getServletContext();
-            String query = baseRequest.getQueryString();
-            baseRequest.setURIPathQuery(URIUtil.addEncodedPaths(context == null ? null : URIUtil.encodePath(context.getContextPath()), path));
-            HttpURI uri = baseRequest.getHttpURI();
-            baseRequest.setPathInfo(uri.getDecodedPath());
-            if (uri.getQuery() != null)
-                baseRequest.mergeQueryParameters(query, uri.getQuery(), true); //we have to assume dispatch path and query are UTF8
+            // Simple case, no request modification or merging needed
+            handleAsync(channel, event, baseRequest);
+            return;
         }
 
+        // this is a dispatch with either a provided URI and/or a dispatched path
+        // We will have to modify the request and then revert
+        final ServletContext context = event.getServletContext();
+        final HttpURI oldUri = baseRequest.getHttpURI();
+        final String oldQuery = baseRequest.getQueryString();
+        final MultiMap<String> oldQueryParams = baseRequest.getQueryParameters();
+        try
+        {
+            baseRequest.resetParameters();
+            HttpURI newUri = baseUri == null ? new HttpURI(oldUri) : baseUri;
+            if (encodedPathQuery == null)
+            {
+                baseRequest.setHttpURI(newUri);
+            }
+            else
+            {
+                if (context != null && !StringUtil.isEmpty(context.getContextPath()))
+                    encodedPathQuery = URIUtil.addEncodedPaths(URIUtil.encodePath(context.getContextPath()), encodedPathQuery);
+
+                if (newUri.getQuery() == null)
+                {
+                    // parse new path and query
+                    newUri.setPathQuery(encodedPathQuery);
+                    baseRequest.setHttpURI(newUri);
+                }
+                else
+                {
+                    // do we have a new query in the encodedPathQuery
+                    int q = encodedPathQuery.indexOf('?');
+                    if (q < 0)
+                    {
+                        // No query, so we can just set the encoded path
+                        newUri.setPath(encodedPathQuery);
+                        baseRequest.setHttpURI(newUri);
+                    }
+                    else
+                    {
+                        newUri.setPath(encodedPathQuery.substring(0, q));
+                        baseRequest.setHttpURI(newUri);
+                        baseRequest.mergeQueryParameters(oldQuery, encodedPathQuery.substring(q + 1), true);
+                    }
+                }
+            }
+
+            baseRequest.setPathInfo(newUri.getDecodedPath());
+            handleAsync(channel, event, baseRequest);
+        }
+        finally
+        {
+            baseRequest.setHttpURI(oldUri);
+            baseRequest.setQueryParameters(oldQueryParams);
+            baseRequest.resetParameters();
+        }
+    }
+
+    private void handleAsync(HttpChannel channel, AsyncContextEvent event, Request baseRequest) throws IOException, ServletException
+    {
         final String target = baseRequest.getPathInfo();
         final HttpServletRequest request = Request.unwrap(event.getSuppliedRequest());
         final HttpServletResponse response = Response.unwrap(event.getSuppliedResponse());

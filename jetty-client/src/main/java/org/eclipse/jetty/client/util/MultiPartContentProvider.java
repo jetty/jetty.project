@@ -63,7 +63,10 @@ import org.slf4j.LoggerFactory;
  *     &lt;input type="file" name="icon" /&gt;
  * &lt;/form&gt;
  * </pre>
+ *
+ * @deprecated use {@link MultiPartRequestContent} instead.
  */
+@Deprecated
 public class MultiPartContentProvider extends AbstractTypedContentProvider implements AsyncContentProvider, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartContentProvider.class);

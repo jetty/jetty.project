@@ -47,20 +47,22 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
         server.stop();
 
         int count = 10;
-        final CountDownLatch latch = new CountDownLatch(count);
+        CountDownLatch latch = new CountDownLatch(count);
         for (int i = 0; i < count; ++i)
         {
             Request request = client.newRequest("localhost", port)
-                .scheme(scenario.getScheme());
+                .scheme(scenario.getScheme())
+                .path("/" + i);
 
-            synchronized (this)
+            Object lock = this;
+            synchronized (lock)
             {
                 request.send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onFailure(Response response, Throwable failure)
                     {
-                        synchronized (HttpClientSynchronizationTest.this)
+                        synchronized (lock)
                         {
                             assertThat(failure, Matchers.instanceOf(ConnectException.class));
                             latch.countDown();
@@ -80,20 +82,22 @@ public class HttpClientSynchronizationTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler());
 
         int count = 10;
-        final CountDownLatch latch = new CountDownLatch(count);
+        CountDownLatch latch = new CountDownLatch(count);
         for (int i = 0; i < count; ++i)
         {
             Request request = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme());
+                .scheme(scenario.getScheme())
+                .path("/" + i);
 
-            synchronized (this)
+            Object lock = this;
+            synchronized (lock)
             {
                 request.send(new Response.Listener.Adapter()
                 {
                     @Override
                     public void onComplete(Result result)
                     {
-                        synchronized (HttpClientSynchronizationTest.this)
+                        synchronized (lock)
                         {
                             assertFalse(result.isFailed());
                             latch.countDown();

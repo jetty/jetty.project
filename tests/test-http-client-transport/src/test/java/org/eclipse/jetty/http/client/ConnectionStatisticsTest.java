@@ -26,7 +26,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.Connection;
@@ -102,7 +102,7 @@ public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
         long contentLength = content.length;
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
             .header(HttpHeader.CONNECTION, "close")
-            .content(new BytesContentProvider(content))
+            .body(new BytesRequestContent(content))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 

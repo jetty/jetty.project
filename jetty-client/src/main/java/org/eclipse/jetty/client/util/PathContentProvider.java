@@ -43,7 +43,10 @@ import org.slf4j.LoggerFactory;
  * If a {@link ByteBufferPool} is provided via {@link #setByteBufferPool(ByteBufferPool)},
  * the buffer will be allocated from that pool, otherwise one buffer will be
  * allocated and used to read the file.</p>
+ *
+ * @deprecated use {@link PathRequestContent} instead.
  */
+@Deprecated
 public class PathContentProvider extends AbstractTypedContentProvider
 {
     private static final Logger LOG = LoggerFactory.getLogger(PathContentProvider.class);

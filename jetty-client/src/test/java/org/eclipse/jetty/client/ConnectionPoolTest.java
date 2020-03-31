@@ -33,7 +33,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -213,7 +213,7 @@ public class ConnectionPoolTest
                 break;
             case POST:
                 request.header(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength));
-                request.content(new BytesContentProvider(new byte[contentLength]));
+                request.body(new BytesRequestContent(new byte[contentLength]));
                 break;
             default:
                 throw new IllegalStateException();

@@ -19,21 +19,20 @@
 package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -57,11 +56,11 @@ public class ProxyServletLoadTest
 {
     public static Stream<Arguments> data()
     {
-        return Arrays.asList(
+        return Stream.of(
             ProxyServlet.class,
             AsyncProxyServlet.class,
             AsyncMiddleManServlet.class)
-            .stream().map(Arguments::of);
+            .map(Arguments::of);
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(ProxyServletLoadTest.class);
@@ -136,7 +135,7 @@ public class ProxyServletLoadTest
         startServer(proxyServletClass, new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 if (req.getHeader("Via") != null)
                     resp.addHeader(PROXIED_HEADER, "true");
@@ -205,7 +204,7 @@ public class ProxyServletLoadTest
 
                     byte[] content = new byte[1024];
                     new Random().nextBytes(content);
-                    ContentResponse response = client.newRequest(host, port).method(HttpMethod.POST).content(new BytesContentProvider(content))
+                    ContentResponse response = client.newRequest(host, port).method(HttpMethod.POST).body(new BytesRequestContent(content))
                         .timeout(5, TimeUnit.SECONDS).send();
 
                     if (response.getStatus() != 200)

@@ -31,9 +31,9 @@ There are conceptually three layers that compose the Jetty client libraries, fro
 more abstract to more concrete:
 
 . The API layer, that exposes semantic APIs to applications so that they can write
-code such as "GET me the resource at this URI"
+code such as "GET me the resource at this URI".
 . The protocol layer, where the API request is converted into the appropriate
-protocol bytes, for example encrypted HTTP/2
+protocol bytes, for example encrypted HTTP/2.
 . The infrastructure layer, that handles the low level I/O and deals with network,
 buffer, threads, etc.
 
@@ -50,26 +50,31 @@ link:{JDURL}/org/eclipse/jetty/io/ClientConnector.html[`ClientConnector`].
 
 The `ClientConnector` primarily wraps the
 link:{JDURL}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`]
-and aggregates other four components: the thread pool (in form of an `Executor`),
-the `Scheduler`, the `ByteBufferPool` and the `SslContextFactory.Client`.
+and aggregates other four components:
+
+* a thread pool (in form of an `java.util.concurrent.Executor`)
+* a scheduler (in form of `org.eclipse.jetty.util.thread.Scheduler`)
+* a byte buffer pool (in form of `org.eclipse.jetty.io.ByteBufferPool`)
+* a TLS factory (in form of `org.eclipse.jetty.util.ssl.SslContextFactory.Client`)
 
 The `ClientConnector` is where you want to set those components after you
 have configured them.
 If you don't explicitly set those components on the `ClientConnector`, then
 appropriate defaults will be chosen when the `ClientConnector` starts.
 
-The simplest example that creates and starts a `ClientConnector`:
+The simplest example that creates and starts a `ClientConnector` is the
+following:
 
 [source,java,indent=0]
 ----
-include::{docbits}/embedded/client/ClientConnectorDocSnippets.java[tags=simplest]
+include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=simplest]
 ----
 
 A more typical example:
 
 [source,java,indent=0]
 ----
-include::{docbits}/embedded/client/ClientConnectorDocSnippets.java[tags=typical]
+include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=typical]
 ----
 
 A more advanced example that customizes the `ClientConnector` by overriding
@@ -77,12 +82,11 @@ factory methods:
 
 [source,java,indent=0]
 ----
-include::{docbits}/embedded/client/ClientConnectorDocSnippets.java[tags=advanced]
+include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=advanced]
 ----
 
 Since `ClientConnector` is the component that handles the low-level network, it
-is also the component where you want to configure the parameters that control
-how it should handle the low-level network.
+is also the component where you want to configure the low-leven network configuration.
 
 The most common parameters are:
 
@@ -122,9 +126,6 @@ Once the `ClientConnector` is configured and started, it can be used to connect
 to the server via `ClientConnector.connect(SocketAddress, Map<String, Object>)`
 which in turn will call `SocketChannel.connect(SocketAddress)`.
 
-
-// TODO: from down here, moved to io-arch.adoc
-
 When establishing a TCP connection to a server, applications need to tell
 `ClientConnector` how to create the `Connection` for that particular
 TCP connection.
@@ -134,9 +135,8 @@ that must be passed in the context `Map` as follows:
 
 [source,java,indent=0]
 ----
-include::{docbits}/embedded/client/ClientConnectorDocSnippets.java[tags=connect]
+include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=connect]
 ----
-
 
 TODO: expand on what is the API to use, what parameters the context Map must
 have, and basically how we can write a generic network client with it.

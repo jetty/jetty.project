@@ -27,7 +27,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.FormContentProvider;
+import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
@@ -96,7 +96,7 @@ public class RequestDispatchedSessionTest
 
         ContentResponse response = client.newRequest(server.getURI().resolve("/login"))
             .method(HttpMethod.POST)
-            .content(new FormContentProvider(postForm))
+            .body(new FormRequestContent(postForm))
             .send();
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
     }
@@ -115,7 +115,6 @@ public class RequestDispatchedSessionTest
                 }
                 request.getSession(true).setAttribute(USERNAME, request.getParameter("username"));
                 request.getRequestDispatcher("/user").forward(request, response);
-                return;
             }
         }
     }

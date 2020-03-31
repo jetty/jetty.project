@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -40,8 +41,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -148,22 +149,22 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 response.setCharacterEncoding("UTF-8");
                 ServletOutputStream output = response.getOutputStream();
                 String paramValue1 = request.getParameter(paramName1);
-                output.write(paramValue1.getBytes("UTF-8"));
+                output.write(paramValue1.getBytes(StandardCharsets.UTF_8));
                 String paramValue2 = request.getParameter(paramName2);
                 assertEquals("", paramValue2);
-                output.write("empty".getBytes("UTF-8"));
+                output.write("empty".getBytes(StandardCharsets.UTF_8));
                 baseRequest.setHandled(true);
             }
         });
 
         String value1 = "\u20AC";
-        String paramValue1 = URLEncoder.encode(value1, "UTF-8");
+        String paramValue1 = URLEncoder.encode(value1, StandardCharsets.UTF_8);
         String query = paramName1 + "=" + paramValue1 + "&" + paramName2;
         ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query);
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        String content = new String(response.getContent(), "UTF-8");
+        String content = new String(response.getContent(), StandardCharsets.UTF_8);
         assertEquals(value1 + "empty", content);
     }
 
@@ -182,10 +183,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 String[] paramValues1 = request.getParameterValues(paramName1);
                 for (String paramValue : paramValues1)
                 {
-                    output.write(paramValue.getBytes("UTF-8"));
+                    output.write(paramValue.getBytes(StandardCharsets.UTF_8));
                 }
                 String paramValue2 = request.getParameter(paramName2);
-                output.write(paramValue2.getBytes("UTF-8"));
+                output.write(paramValue2.getBytes(StandardCharsets.UTF_8));
                 baseRequest.setHandled(true);
             }
         });
@@ -193,15 +194,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         String value11 = "\u20AC";
         String value12 = "\u20AA";
         String value2 = "&";
-        String paramValue11 = URLEncoder.encode(value11, "UTF-8");
-        String paramValue12 = URLEncoder.encode(value12, "UTF-8");
-        String paramValue2 = URLEncoder.encode(value2, "UTF-8");
+        String paramValue11 = URLEncoder.encode(value11, StandardCharsets.UTF_8);
+        String paramValue12 = URLEncoder.encode(value12, StandardCharsets.UTF_8);
+        String paramValue2 = URLEncoder.encode(value2, StandardCharsets.UTF_8);
         String query = paramName1 + "=" + paramValue11 + "&" + paramName1 + "=" + paramValue12 + "&" + paramName2 + "=" + paramValue2;
         ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort() + "/?" + query);
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        String content = new String(response.getContent(), "UTF-8");
+        String content = new String(response.getContent(), StandardCharsets.UTF_8);
         assertEquals(value11 + value12 + value2, content);
     }
 
@@ -233,7 +234,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertEquals(paramValue, new String(response.getContent(), "UTF-8"));
+        assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -258,14 +259,14 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         });
 
         String uri = scheme + "://localhost:" + connector.getLocalPort() +
-            "/?" + paramName + "=" + URLEncoder.encode(paramValue, "UTF-8");
+            "/?" + paramName + "=" + URLEncoder.encode(paramValue, StandardCharsets.UTF_8);
         ContentResponse response = client.POST(uri)
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertEquals(paramValue, new String(response.getContent(), "UTF-8"));
+        assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -297,7 +298,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertEquals(paramValue, new String(response.getContent(), "UTF-8"));
+        assertEquals(paramValue, new String(response.getContent(), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -326,7 +327,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         {
             ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort() + "/?b=1")
                 .param(paramName, paramValue)
-                .content(new BytesContentProvider(content))
+                .body(new BytesRequestContent(content))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
@@ -350,7 +351,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 if (!Arrays.equals(content, bytes))
                     request.abort(new Exception());
             })
-            .content(new BytesContentProvider(content))
+            .body(new BytesRequestContent(content))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -372,7 +373,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 buffer.get(bytes);
                 assertEquals(bytes[0], progress.getAndIncrement());
             })
-            .content(new BytesContentProvider(new byte[]{0}, new byte[]{1}, new byte[]{
+            .body(new BytesRequestContent(new byte[]{0}, new byte[]{1}, new byte[]{
                 2
             }, new byte[]{3}, new byte[]{4}))
             .timeout(5, TimeUnit.SECONDS)
@@ -636,10 +637,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0}));
+        AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.wrap(new byte[]{0}));
         Request request = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scheme)
-            .content(content);
+            .body(content);
         FutureResponseListener listener = new FutureResponseListener(request);
         request.send(listener);
         // Wait some time to simulate a slow request.

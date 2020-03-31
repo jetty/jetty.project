@@ -29,8 +29,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
-import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -87,7 +87,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         var request = client.newRequest(host, port)
             .scheme(scenario.getScheme())
             .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
-            .content(new StringContentProvider("0"))
+            .body(new StringRequestContent("0"))
             .onRequestSuccess(r ->
             {
                 HttpDestination destination = (HttpDestination)client.resolveDestination(r);
@@ -184,12 +184,12 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
 
-        DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.allocate(8));
+        AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(8));
         CountDownLatch resultLatch = new CountDownLatch(1);
         var request = client.newRequest(host, port)
             .scheme(scenario.getScheme())
             .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
-            .content(content)
+            .body(content)
             .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
             .onRequestSuccess(r ->
             {

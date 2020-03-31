@@ -38,8 +38,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
@@ -181,9 +181,9 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         scenario.setServerIdleTimeout(idleTimeout);
 
         CountDownLatch resultLatch = new CountDownLatch(2);
-        DeferredContentProvider content = new DeferredContentProvider();
+        AsyncRequestContent content = new AsyncRequestContent();
         scenario.client.POST(scenario.newURI())
-            .content(content)
+            .body(content)
             .onResponseSuccess(response ->
             {
                 if (response.getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
@@ -244,10 +244,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         long idleTimeout = 2500;
         scenario.setServerIdleTimeout(idleTimeout);
 
-        DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
+        AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1));
         CountDownLatch resultLatch = new CountDownLatch(1);
         scenario.client.POST(scenario.newURI())
-            .content(contentProvider)
+            .body(content)
             .send(result ->
             {
                 if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
@@ -257,7 +257,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         // Async read should timeout.
         assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
         // Complete the request.
-        contentProvider.close();
+        content.close();
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -362,10 +362,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             }
         });
 
-        DeferredContentProvider contentProvider = new DeferredContentProvider();
+        AsyncRequestContent content = new AsyncRequestContent();
         BlockingQueue<Object> results = new BlockingArrayQueue<>();
         scenario.client.newRequest(scenario.newURI())
-            .content(contentProvider)
+            .body(content)
             .send(result ->
             {
                 if (result.isFailed())
@@ -376,10 +376,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
 
         for (int i = 0; i < 3; ++i)
         {
-            contentProvider.offer(ByteBuffer.allocate(bytesPerSecond / 2));
+            content.offer(ByteBuffer.allocate(bytesPerSecond / 2));
             Thread.sleep(2500);
         }
-        contentProvider.close();
+        content.close();
 
         assertThat(scenario.requestLog.poll(5, TimeUnit.SECONDS), containsString(" 408"));
 
@@ -389,7 +389,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         Object result = results.poll(5, TimeUnit.SECONDS);
         assertNotNull(result);
         if (result instanceof Integer)
-            assertThat((Integer)result, is(408));
+            assertThat(result, is(408));
         else
             assertThat(result, instanceOf(Throwable.class));
     }
@@ -419,10 +419,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             }
         });
 
-        DeferredContentProvider contentProvider = new DeferredContentProvider();
+        AsyncRequestContent content = new AsyncRequestContent();
         CountDownLatch resultLatch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
-            .content(contentProvider)
+            .body(content)
             .send(result ->
             {
                 if (result.getResponse().getStatus() == HttpStatus.OK_200)
@@ -431,10 +431,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
 
         for (int i = 0; i < 3; ++i)
         {
-            contentProvider.offer(ByteBuffer.allocate(bytesPerSecond * 2));
+            content.offer(ByteBuffer.allocate(bytesPerSecond * 2));
             Thread.sleep(2500);
         }
-        contentProvider.close();
+        content.close();
 
         assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
@@ -454,10 +454,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
 
         try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
         {
-            DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
+            AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1));
             CountDownLatch resultLatch = new CountDownLatch(1);
             scenario.client.POST(scenario.newURI())
-                .content(contentProvider)
+                .body(content)
                 .send(result ->
                 {
                     if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
@@ -467,7 +467,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             // Blocking read should timeout.
             assertTrue(handlerLatch.await(2 * httpIdleTimeout, TimeUnit.MILLISECONDS));
             // Complete the request.
-            contentProvider.close();
+            content.close();
             assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
         }
     }
@@ -520,10 +520,10 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         });
         scenario.setServerIdleTimeout(idleTimeout);
 
-        DeferredContentProvider contentProvider = new DeferredContentProvider(ByteBuffer.allocate(1));
+        AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1));
         CountDownLatch resultLatch = new CountDownLatch(1);
         scenario.client.POST(scenario.newURI())
-            .content(contentProvider)
+            .body(content)
             .send(result ->
             {
                 if (result.getResponse().getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500)
@@ -533,7 +533,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         // Async read should timeout.
         assertTrue(handlerLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
         // Complete the request.
-        contentProvider.close();
+        content.close();
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -567,11 +567,11 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         System.arraycopy(data, 0, data1, 0, data1.length);
         byte[] data2 = new byte[data.length - data1.length];
         System.arraycopy(data, data1.length, data2, 0, data2.length);
-        DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(data1));
+        AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.wrap(data1));
         CountDownLatch latch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
             .path(scenario.servletPath)
-            .content(content)
+            .body(content)
             .send(new BufferingResponseListener()
             {
                 @Override
@@ -683,32 +683,6 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             try
             {
                 input.read();
-            }
-            catch (IOException x)
-            {
-                handlerLatch.countDown();
-                throw x;
-            }
-        }
-    }
-
-    private static class BlockingWriteHandler extends AbstractHandler
-    {
-        private final CountDownLatch handlerLatch;
-
-        private BlockingWriteHandler(CountDownLatch handlerLatch)
-        {
-            this.handlerLatch = handlerLatch;
-        }
-
-        @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
-        {
-            baseRequest.setHandled(true);
-            ServletOutputStream output = response.getOutputStream();
-            try
-            {
-                output.write(new byte[64 * 1024 * 1024]);
             }
             catch (IOException x)
             {

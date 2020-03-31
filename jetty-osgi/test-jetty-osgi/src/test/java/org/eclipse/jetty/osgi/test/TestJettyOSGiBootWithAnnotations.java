@@ -25,8 +25,8 @@ import jakarta.inject.Inject;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.util.MultiPartContentProvider;
-import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.util.MultiPartRequestContent;
+import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,7 +47,6 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
  * top of this.
  */
 @RunWith(PaxExam.class)
-
 public class TestJettyOSGiBootWithAnnotations
 {
     private static final String LOG_LEVEL = "WARN";
@@ -133,10 +132,11 @@ public class TestJettyOSGiBootWithAnnotations
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
             TestOSGiUtil.assertContains("Response contents", content, "<h1>FRAGMENT</h1>");
-            MultiPartContentProvider multiPart = new MultiPartContentProvider();
-            multiPart.addFieldPart("field", new StringContentProvider("foo"), null);
+            MultiPartRequestContent multiPart = new MultiPartRequestContent();
+            multiPart.addFieldPart("field", new StringRequestContent("foo"), null);
+            multiPart.close();
             response = client.newRequest("http://127.0.0.1:" + port + "/multi").method("POST")
-                .content(multiPart).send();
+                .body(multiPart).send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
         finally

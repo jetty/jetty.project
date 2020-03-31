@@ -22,9 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,15 +35,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Authentication.HeaderInfo;
 import org.eclipse.jetty.client.api.AuthenticationStore;
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.AbstractAuthentication;
+import org.eclipse.jetty.client.util.AbstractRequestContent;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BasicAuthentication;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.DigestAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -60,6 +58,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.security.Constraint;
@@ -460,7 +460,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 
         CountDownLatch resultLatch = new CountDownLatch(1);
         byte[] data = new byte[]{'h', 'e', 'l', 'l', 'o'};
-        DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(data))
+        AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.wrap(data))
         {
             @Override
             public boolean isReproducible()
@@ -470,7 +470,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         };
         Request request = client.newRequest(uri)
             .path("/secure")
-            .content(content);
+            .body(content);
         request.send(result ->
         {
             if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.UNAUTHORIZED_401)
@@ -527,7 +527,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         authenticationStore.addAuthentication(authentication);
 
         AtomicBoolean fail = new AtomicBoolean(true);
-        GeneratingContentProvider content = new GeneratingContentProvider(index ->
+        GeneratingRequestContent content = new GeneratingRequestContent(index ->
         {
             switch (index)
             {
@@ -546,9 +546,8 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                         catch (InterruptedException ignored)
                         {
                         }
-
                         // Trigger request failure.
-                        throw new RuntimeException();
+                        throw new RuntimeException("explicitly_thrown_by_test");
                     }
                     else
                     {
@@ -563,7 +562,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .path("/secure")
-            .content(content)
+            .body(content)
             .onResponseSuccess(r -> authLatch.countDown())
             .send(result ->
             {
@@ -803,21 +802,14 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         assertEquals(headerInfo.getParameter("nonce"), "1523430383=");
     }
 
-    private static class GeneratingContentProvider implements ContentProvider
+    private static class GeneratingRequestContent extends AbstractRequestContent
     {
-        private static final ByteBuffer DONE = ByteBuffer.allocate(0);
-
         private final IntFunction<ByteBuffer> generator;
 
-        private GeneratingContentProvider(IntFunction<ByteBuffer> generator)
+        private GeneratingRequestContent(IntFunction<ByteBuffer> generator)
         {
+            super("application/octet-stream");
             this.generator = generator;
-        }
-
-        @Override
-        public long getLength()
-        {
-            return -1;
         }
 
         @Override
@@ -827,36 +819,32 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
         }
 
         @Override
-        public Iterator<ByteBuffer> iterator()
+        protected Subscription newSubscription(Consumer consumer, boolean emitInitialContent)
         {
-            return new Iterator<ByteBuffer>()
+            return new SubscriptionImpl(consumer, emitInitialContent);
+        }
+
+        private class SubscriptionImpl extends AbstractSubscription
+        {
+            private int index;
+
+            public SubscriptionImpl(Consumer consumer, boolean emitInitialContent)
             {
-                private int index;
-                public ByteBuffer current;
+                super(consumer, emitInitialContent);
+            }
 
-                @Override
-                @SuppressWarnings("ReferenceEquality")
-                public boolean hasNext()
+            @Override
+            protected boolean produceContent(Producer producer)
+            {
+                ByteBuffer buffer = generator.apply(index++);
+                boolean last = false;
+                if (buffer == null)
                 {
-                    if (current == null)
-                    {
-                        current = generator.apply(index++);
-                        if (current == null)
-                            current = DONE;
-                    }
-                    return current != DONE;
+                    buffer = BufferUtil.EMPTY_BUFFER;
+                    last = true;
                 }
-
-                @Override
-                public ByteBuffer next()
-                {
-                    ByteBuffer result = current;
-                    current = null;
-                    if (result == null)
-                        throw new NoSuchElementException();
-                    return result;
-                }
-            };
+                return producer.produce(buffer, last, Callback.NOOP);
+            }
         }
     }
 }

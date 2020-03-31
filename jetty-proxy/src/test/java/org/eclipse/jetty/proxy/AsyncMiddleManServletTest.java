@@ -50,12 +50,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -224,11 +223,11 @@ public class AsyncMiddleManServletTest
         startClient();
 
         byte[] gzipBytes = gzip(bytes);
-        ContentProvider gzipContent = new BytesContentProvider(gzipBytes);
+        Request.Content gzipContent = new BytesRequestContent(gzipBytes);
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
             .header(HttpHeader.CONTENT_ENCODING, "gzip")
-            .content(gzipContent)
+            .body(gzipContent)
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -303,7 +302,7 @@ public class AsyncMiddleManServletTest
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
             .header(HttpHeader.CONTENT_ENCODING, "gzip")
-            .content(new BytesContentProvider(gzip(bytes)))
+            .body(new BytesRequestContent(gzip(bytes)))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -391,11 +390,11 @@ public class AsyncMiddleManServletTest
         });
         startClient();
 
-        DeferredContentProvider content = new DeferredContentProvider();
+        AsyncRequestContent content = new AsyncRequestContent();
         Request request = client.newRequest("localhost", serverConnector.getLocalPort());
         FutureResponseListener listener = new FutureResponseListener(request);
         request.header(HttpHeader.CONTENT_ENCODING, "gzip")
-            .content(content)
+            .body(content)
             .send(listener);
         byte[] bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
         content.offer(ByteBuffer.wrap(gzip(bytes)));
@@ -440,7 +439,7 @@ public class AsyncMiddleManServletTest
         byte[] bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
             .header(HttpHeader.CONTENT_ENCODING, "gzip")
-            .content(new BytesContentProvider(gzip(bytes)))
+            .body(new BytesRequestContent(gzip(bytes)))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -484,7 +483,7 @@ public class AsyncMiddleManServletTest
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
             .header(HttpHeader.CONTENT_ENCODING, "gzip")
-            .content(new BytesContentProvider(gzip(bytes)))
+            .body(new BytesRequestContent(gzip(bytes)))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -511,7 +510,7 @@ public class AsyncMiddleManServletTest
 
         byte[] bytes = new byte[1024];
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-            .content(new BytesContentProvider(bytes))
+            .body(new BytesRequestContent(bytes))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -521,7 +520,7 @@ public class AsyncMiddleManServletTest
     @Test
     public void testUpstreamTransformationThrowsAfterCommittingProxyRequest() throws Exception
     {
-        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
             startServer(new EchoHttpServlet());
             startProxy(new AsyncMiddleManServlet()
@@ -546,10 +545,10 @@ public class AsyncMiddleManServletTest
             });
             startClient();
 
-            final CountDownLatch latch = new CountDownLatch(1);
-            DeferredContentProvider content = new DeferredContentProvider();
+            CountDownLatch latch = new CountDownLatch(1);
+            AsyncRequestContent content = new AsyncRequestContent();
             client.newRequest("localhost", serverConnector.getLocalPort())
-                .content(content)
+                .body(content)
                 .send(result ->
                 {
                     if (result.isSucceeded() && result.getResponse().getStatus() == 502)
@@ -756,10 +755,10 @@ public class AsyncMiddleManServletTest
         });
         startClient();
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        DeferredContentProvider content = new DeferredContentProvider();
+        CountDownLatch latch = new CountDownLatch(1);
+        AsyncRequestContent content = new AsyncRequestContent();
         client.newRequest("localhost", serverConnector.getLocalPort())
-            .content(content)
+            .body(content)
             .send(result ->
             {
                 System.err.println(result);
@@ -777,7 +776,7 @@ public class AsyncMiddleManServletTest
     @Test
     public void testClientRequestReadFailsOnSecondRead() throws Exception
     {
-        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
             startServer(new EchoHttpServlet());
             startProxy(new AsyncMiddleManServlet()
@@ -795,10 +794,10 @@ public class AsyncMiddleManServletTest
             });
             startClient();
 
-            final CountDownLatch latch = new CountDownLatch(1);
-            DeferredContentProvider content = new DeferredContentProvider();
+            CountDownLatch latch = new CountDownLatch(1);
+            AsyncRequestContent content = new AsyncRequestContent();
             client.newRequest("localhost", serverConnector.getLocalPort())
-                .content(content)
+                .body(content)
                 .send(result ->
                 {
                     if (result.getResponse().getStatus() == 502)
@@ -1114,7 +1113,7 @@ public class AsyncMiddleManServletTest
         // Send only part of the content; the proxy will idle timeout.
         final byte[] data = new byte[]{'c', 'a', 'f', 'e'};
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-            .content(new BytesContentProvider(data)
+            .body(new BytesRequestContent(data)
             {
                 @Override
                 public long getLength()
@@ -1231,7 +1230,7 @@ public class AsyncMiddleManServletTest
                     }
 
                     @Override
-                    public boolean transform(Source source, Sink sink) throws IOException
+                    public boolean transform(Source source, Sink sink)
                     {
                         if (readSource)
                         {
@@ -1320,10 +1319,10 @@ public class AsyncMiddleManServletTest
         });
         startClient();
 
-        DeferredContentProvider content = new DeferredContentProvider();
+        AsyncRequestContent content = new AsyncRequestContent();
         Request request = client.newRequest("localhost", serverConnector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
-            .content(content);
+            .body(content);
         FutureResponseListener listener = new FutureResponseListener(request);
         request.send(listener);
 
@@ -1368,10 +1367,10 @@ public class AsyncMiddleManServletTest
         });
         startClient();
 
-        DeferredContentProvider content = new DeferredContentProvider();
+        AsyncRequestContent content = new AsyncRequestContent();
         Request request = client.newRequest("localhost", serverConnector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
-            .content(content);
+            .body(content);
         FutureResponseListener listener = new FutureResponseListener(request);
         request.send(listener);
 
@@ -1439,10 +1438,10 @@ public class AsyncMiddleManServletTest
         });
         startClient();
 
-        DeferredContentProvider content = new DeferredContentProvider();
+        AsyncRequestContent content = new AsyncRequestContent();
         Request request = client.newRequest("localhost", serverConnector.getLocalPort())
             .timeout(5, TimeUnit.SECONDS)
-            .content(content);
+            .body(content);
         FutureResponseListener listener = new FutureResponseListener(request);
         request.send(listener);
 
@@ -1607,9 +1606,9 @@ public class AsyncMiddleManServletTest
         private static class Client extends HrefTransformer
         {
             @Override
-            protected String transform(String value) throws IOException
+            protected String transform(String value)
             {
-                String result = PREFIX + URLEncoder.encode(value, "UTF-8");
+                String result = PREFIX + URLEncoder.encode(value, StandardCharsets.UTF_8);
                 LOG.debug("{} -> {}", value, result);
                 return result;
             }
@@ -1618,9 +1617,9 @@ public class AsyncMiddleManServletTest
         private static class Server extends HrefTransformer
         {
             @Override
-            protected String transform(String value) throws IOException
+            protected String transform(String value)
             {
-                String result = URLDecoder.decode(value.substring(PREFIX.length()), "UTF-8");
+                String result = URLDecoder.decode(value.substring(PREFIX.length()), StandardCharsets.UTF_8);
                 LOG.debug("{} <- {}", value, result);
                 return result;
             }

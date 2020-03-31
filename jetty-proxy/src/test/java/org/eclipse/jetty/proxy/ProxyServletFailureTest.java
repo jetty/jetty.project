@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -35,12 +36,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -173,7 +173,7 @@ public class ProxyServletFailureTest
                     "Host: " + serverHostPort + "\r\n";
             // Don't sent the \r\n that would signal the end of the headers.
             OutputStream output = socket.getOutputStream();
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Wait for idle timeout to fire.
@@ -203,7 +203,7 @@ public class ProxyServletFailureTest
                     "Content-Length: 1\r\n" +
                     "\r\n";
             OutputStream output = socket.getOutputStream();
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Do not send the promised content, wait to idle timeout.
@@ -239,7 +239,7 @@ public class ProxyServletFailureTest
                     "\r\n" +
                     "Z";
             OutputStream output = socket.getOutputStream();
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Do not send all the promised content, wait to idle timeout.
@@ -261,7 +261,7 @@ public class ProxyServletFailureTest
     {
         final byte[] content = new byte[]{'C', '0', 'F', 'F', 'E', 'E'};
         int expected;
-        ProxyServlet proxyServlet = null;
+        ProxyServlet proxyServlet;
 
         if (proxyServletClass.isAssignableFrom(AsyncProxyServlet.class))
         {
@@ -270,9 +270,9 @@ public class ProxyServletFailureTest
             proxyServlet = new AsyncProxyServlet()
             {
                 @Override
-                protected ContentProvider proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
+                protected Request.Content proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
                 {
-                    DeferredContentProvider provider = new DeferredContentProvider()
+                    AsyncRequestContent requestContent = new AsyncRequestContent()
                     {
                         @Override
                         public boolean offer(ByteBuffer buffer, Callback callback)
@@ -282,8 +282,8 @@ public class ProxyServletFailureTest
                             return super.offer(buffer.slice(), callback);
                         }
                     };
-                    request.getInputStream().setReadListener(newReadListener(request, response, proxyRequest, provider));
-                    return provider;
+                    request.getInputStream().setReadListener(newReadListener(request, response, proxyRequest, requestContent));
+                    return requestContent;
                 }
             };
         }
@@ -293,9 +293,9 @@ public class ProxyServletFailureTest
             proxyServlet = new ProxyServlet()
             {
                 @Override
-                protected ContentProvider proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest)
+                protected Request.Content proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest)
                 {
-                    return new BytesContentProvider(content)
+                    return new BytesRequestContent(content)
                     {
                         @Override
                         public long getLength()
@@ -316,7 +316,7 @@ public class ProxyServletFailureTest
         try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
         {
             ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .content(new BytesContentProvider(content))
+                .body(new BytesRequestContent(content))
                 .send();
 
             assertThat(response.toString(), response.getStatus(), is(expected));

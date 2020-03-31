@@ -40,7 +40,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -241,7 +241,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 break;
             case "POST":
                 request.header("X-Upload", String.valueOf(contentLength));
-                request.content(new BytesContentProvider(new byte[contentLength]));
+                request.body(new BytesRequestContent(new byte[contentLength]));
                 break;
         }
 
@@ -310,7 +310,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         }
     }
 
-    private class LoadHandler extends AbstractHandler
+    private static class LoadHandler extends AbstractHandler
     {
         @Override
         public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException

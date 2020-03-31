@@ -1598,7 +1598,10 @@ public class Request implements HttpServletRequest
     {
         MetaData.Request metadata = _metaData;
         if (metadata != null)
+        {
             metadata.setURI(uri);
+            _queryParameters = null;
+        }
     }
 
     public UserIdentity getUserIdentity()
@@ -2178,17 +2181,8 @@ public class Request implements HttpServletRequest
         HttpChannelState state = getHttpChannelState();
         if (_async == null)
             _async = new AsyncContextState(state);
-        AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, servletRequest, servletResponse);
+        AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, servletRequest, servletResponse, getHttpURI());
         event.setDispatchContext(getServletContext());
-
-        String uri = unwrap(servletRequest).getRequestURI();
-        if (_contextPath != null && uri.startsWith(_contextPath))
-            uri = uri.substring(_contextPath.length());
-        else
-            // TODO probably need to strip encoded context from requestURI, but will do this for now:
-            uri = URIUtil.encodePath(URIUtil.addPaths(getServletPath(), getPathInfo()));
-
-        event.setDispatchPath(uri);
         state.startAsync(event);
         return _async;
     }
@@ -2391,7 +2385,7 @@ public class Request implements HttpServletRequest
                 setQueryString(oldQuery);
             else if (oldQuery == null)
                 setQueryString(newQuery);
-            else
+            else if (oldQueryParams.keySet().stream().anyMatch(newQueryParams.keySet()::contains))
             {
                 // Build the new merged query string, parameters in the
                 // new query string hide parameters in the old query string.
@@ -2412,6 +2406,10 @@ public class Request implements HttpServletRequest
                     }
                 }
                 setQueryString(mergedQuery.toString());
+            }
+            else
+            {
+                setQueryString(newQuery + '&' + oldQuery);
             }
         }
     }
