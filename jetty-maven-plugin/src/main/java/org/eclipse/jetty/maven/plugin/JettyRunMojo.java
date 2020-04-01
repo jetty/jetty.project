@@ -257,7 +257,7 @@ public class JettyRunMojo extends AbstractJettyMojo
             webApp.setTestClasses(testClassesDirectory);
 
         MavenProjectHelper mavenProjectHelper = new MavenProjectHelper(project);
-        List<File> webInfLibs = getWebInfLibArtifacts(project).stream()
+        List<File> webInfLibs = getWebInfLibArtifacts(project.getArtifacts()).stream()
             .map(a ->
             {
                 Path p = mavenProjectHelper.getArtifactPath(a);
@@ -477,16 +477,6 @@ public class JettyRunMojo extends AbstractJettyMojo
         return artifacts.stream()
             .filter(this::canPutArtifactInWebInfLib)
             .collect(Collectors.toList());
-    }
-
-    private Collection<Artifact> getWebInfLibArtifacts(MavenProject mavenProject)
-    {
-        String type = mavenProject.getArtifact().getType();
-        if (!"war".equalsIgnoreCase(type) && !"zip".equalsIgnoreCase(type))
-        {
-            return Collections.emptyList();
-        }
-        return getWebInfLibArtifacts(mavenProject.getArtifacts());
     }
 
     private boolean canPutArtifactInWebInfLib(Artifact artifact)
