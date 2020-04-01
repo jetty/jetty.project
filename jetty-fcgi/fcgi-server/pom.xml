@@ -14,10 +14,6 @@
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
   </properties>
 
-  <build>
-    <plugins></plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -38,6 +34,7 @@
       <artifactId>jetty-server</artifactId>
       <version>${project.version}</version>
     </dependency>
+
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
@@ -52,7 +49,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-server</artifactId>
+      <artifactId>jetty-alpn-java-server</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
