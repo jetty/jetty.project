@@ -18,17 +18,27 @@
 
 package embedded.client;
 
+import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
+import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -108,9 +118,9 @@ public class ClientConnectorDocs
     public void connect() throws Exception
     {
         // tag::connect[]
-        class CustomHTTPConnection extends AbstractConnection
+        class CustomConnection extends AbstractConnection
         {
-            public CustomHTTPConnection(EndPoint endPoint, Executor executor)
+            public CustomConnection(EndPoint endPoint, Executor executor)
             {
                 super(endPoint, executor);
             }
@@ -119,6 +129,7 @@ public class ClientConnectorDocs
             public void onOpen()
             {
                 super.onOpen();
+                System.getLogger("connection").log(INFO, "Opened connection {0}", this);
             }
 
             @Override
@@ -130,23 +141,289 @@ public class ClientConnectorDocs
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.start();
 
+        String host = "serverHost";
+        int port = 8080;
+        SocketAddress address = new InetSocketAddress(host, port);
+
+        // The ClientConnectionFactory that creates CustomConnection instances.
+        ClientConnectionFactory connectionFactory = (endPoint, context) ->
+        {
+            System.getLogger("connection").log(INFO, "Creating connection for {0}", endPoint);
+            return new CustomConnection(endPoint, clientConnector.getExecutor());
+        };
+
+        // The Promise to notify of connection creation success or failure.
+        CompletableFuture<CustomConnection> connectionPromise = new Promise.Completable<>();
+
+        // Populate the context with the mandatory keys to create and obtain connections.
+        Map<String, Object> context = new HashMap<>();
+        context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, connectionPromise);
+        clientConnector.connect(address, context);
+
+        // Use the Connection when it's available.
+
+        // Use it in a non-blocking way via CompletableFuture APIs.
+        connectionPromise.whenComplete((connection, failure) ->
+        {
+            System.getLogger("connection").log(INFO, "Created connection for {0}", connection);
+        });
+
+        // Alternatively, you can block waiting for the connection (or a failure).
+        // CustomConnection connection = connectionPromise.get();
+        // end::connect[]
+    }
+
+    public void telnet() throws Exception
+    {
+        // tag::telnet[]
+        class TelnetConnection extends AbstractConnection
+        {
+            private final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            private Consumer<String> consumer;
+
+            public TelnetConnection(EndPoint endPoint, Executor executor)
+            {
+                super(endPoint, executor);
+            }
+
+            @Override
+            public void onOpen()
+            {
+                super.onOpen();
+
+                // Declare interest for fill events.
+                fillInterested();
+            }
+
+            @Override
+            public void onFillable()
+            {
+                try
+                {
+                    ByteBuffer buffer = BufferUtil.allocate(1024);
+                    while (true)
+                    {
+                        int filled = getEndPoint().fill(buffer);
+                        if (filled > 0)
+                        {
+                            while (buffer.hasRemaining())
+                            {
+                                // Search for newline.
+                                byte read = buffer.get();
+                                if (read == '\n')
+                                {
+                                    // Notify the consumer of the line.
+                                    consumer.accept(bytes.toString(StandardCharsets.UTF_8));
+                                    bytes.reset();
+                                }
+                                else
+                                {
+                                    bytes.write(read);
+                                }
+                            }
+                        }
+                        else if (filled == 0)
+                        {
+                            // No more bytes to fill, declare
+                            // again interest for fill events.
+                            fillInterested();
+                            return;
+                        }
+                        else
+                        {
+                            // The other peer closed the
+                            // connection, close it back.
+                            getEndPoint().close();
+                            return;
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    getEndPoint().close(x);
+                }
+            }
+
+            public void onLine(Consumer<String> consumer)
+            {
+                this.consumer = consumer;
+            }
+
+            public void writeLine(String line, Callback callback)
+            {
+                line = line + "\r\n";
+                getEndPoint().write(callback, ByteBuffer.wrap(line.getBytes(StandardCharsets.UTF_8)));
+            }
+        }
+
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.start();
+
         String host = "wikipedia.org";
         int port = 80;
         SocketAddress address = new InetSocketAddress(host, port);
 
         ClientConnectionFactory connectionFactory = (endPoint, context) ->
-        {
-            System.getLogger("connection").log(INFO, "Creating connection for {0}", endPoint);
-            return new CustomHTTPConnection(endPoint, clientConnector.getExecutor());
-        };
+            new TelnetConnection(endPoint, clientConnector.getExecutor());
+
+        CompletableFuture<TelnetConnection> connectionPromise = new Promise.Completable<>();
+
         Map<String, Object> context = new HashMap<>();
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, connectionPromise);
         clientConnector.connect(address, context);
-        // end::connect[]
+
+        connectionPromise.whenComplete((connection, failure) ->
+        {
+            if (failure == null)
+            {
+                // Register a listener that receives string lines.
+                connection.onLine(line -> System.getLogger("app").log(INFO, "line: {0}", line));
+
+                // Write a line.
+                connection.writeLine("" +
+                    "GET / HTTP/1.0\r\n" +
+                    "", Callback.NOOP);
+            }
+            else
+            {
+                failure.printStackTrace();
+            }
+        });
+        // end::telnet[]
+    }
+
+    public void tlsTelnet() throws Exception
+    {
+        // tag::tlsTelnet[]
+        class TelnetConnection extends AbstractConnection
+        {
+            private final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            private Consumer<String> consumer;
+
+            public TelnetConnection(EndPoint endPoint, Executor executor)
+            {
+                super(endPoint, executor);
+            }
+
+            @Override
+            public void onOpen()
+            {
+                super.onOpen();
+
+                // Declare interest for fill events.
+                fillInterested();
+            }
+
+            @Override
+            public void onFillable()
+            {
+                try
+                {
+                    ByteBuffer buffer = BufferUtil.allocate(1024);
+                    while (true)
+                    {
+                        int filled = getEndPoint().fill(buffer);
+                        if (filled > 0)
+                        {
+                            while (buffer.hasRemaining())
+                            {
+                                // Search for newline.
+                                byte read = buffer.get();
+                                if (read == '\n')
+                                {
+                                    // Notify the consumer of the line.
+                                    consumer.accept(bytes.toString(StandardCharsets.UTF_8));
+                                    bytes.reset();
+                                }
+                                else
+                                {
+                                    bytes.write(read);
+                                }
+                            }
+                        }
+                        else if (filled == 0)
+                        {
+                            // No more bytes to fill, declare
+                            // again interest for fill events.
+                            fillInterested();
+                            return;
+                        }
+                        else
+                        {
+                            // The other peer closed the
+                            // connection, close it back.
+                            getEndPoint().close();
+                            return;
+                        }
+                    }
+                }
+                catch (Exception x)
+                {
+                    getEndPoint().close(x);
+                }
+            }
+
+            public void onLine(Consumer<String> consumer)
+            {
+                this.consumer = consumer;
+            }
+
+            public void writeLine(String line, Callback callback)
+            {
+                line = line + "\r\n";
+                getEndPoint().write(callback, ByteBuffer.wrap(line.getBytes(StandardCharsets.UTF_8)));
+            }
+        }
+
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.start();
+
+        // Use port 443 to contact the server using encrypted HTTP.
+        String host = "wikipedia.org";
+        int port = 443;
+        SocketAddress address = new InetSocketAddress(host, port);
+
+        ClientConnectionFactory connectionFactory = (endPoint, context) ->
+            new TelnetConnection(endPoint, clientConnector.getExecutor());
+
+        // Wrap the "telnet" ClientConnectionFactory with the SslClientConnectionFactory.
+        connectionFactory = new SslClientConnectionFactory(clientConnector.getSslContextFactory(),
+            clientConnector.getByteBufferPool(), clientConnector.getExecutor(), connectionFactory);
+
+        // We will obtain a SslConnection now.
+        CompletableFuture<SslConnection> connectionPromise = new Promise.Completable<>();
+
+        Map<String, Object> context = new HashMap<>();
+        context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, connectionFactory);
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, connectionPromise);
+        clientConnector.connect(address, context);
+
+        connectionPromise.whenComplete((sslConnection, failure) ->
+        {
+            if (failure == null)
+            {
+                // Unwrap the SslConnection to access the "line" APIs in TelnetConnection.
+                TelnetConnection connection = (TelnetConnection)sslConnection.getDecryptedEndPoint().getConnection();
+                // Register a listener that receives string lines.
+                connection.onLine(line -> System.getLogger("app").log(INFO, "line: {0}", line));
+
+                // Write a line.
+                connection.writeLine("" +
+                    "GET / HTTP/1.0\r\n" +
+                    "", Callback.NOOP);
+            }
+            else
+            {
+                failure.printStackTrace();
+            }
+        });
+        // end::tlsTelnet[]
     }
 
     public static void main(String[] args) throws Exception
     {
-        new ClientConnectorDocs().connect();
+        new ClientConnectorDocs().tlsTelnet();
     }
 }

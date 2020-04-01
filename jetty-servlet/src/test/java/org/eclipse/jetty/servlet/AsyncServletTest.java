@@ -534,12 +534,12 @@ public class AsyncServletTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(__history, contains(
             "FWD REQUEST /ctx/fwd/info?start=200&dispatch=20",
-            "FORWARD /ctx/path1?forward=true&start=200&dispatch=20",
+            "FORWARD /ctx/path1?forward=true",
             "initial",
             "start",
             "dispatch",
             "FWD ASYNC /ctx/fwd/info?start=200&dispatch=20",
-            "FORWARD /ctx/path1?forward=true&start=200&dispatch=20",
+            "FORWARD /ctx/path1?forward=true",
             "!initial",
             "onComplete"));
         assertContains("DISPATCHED", response);
@@ -552,7 +552,7 @@ public class AsyncServletTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(__history, contains(
             "FWD REQUEST /ctx/fwd/info?start=200&dispatch=20&path=/path2",
-            "FORWARD /ctx/path1?forward=true&start=200&dispatch=20&path=/path2",
+            "FORWARD /ctx/path1?forward=true",
             "initial",
             "start",
             "dispatch",
@@ -569,11 +569,11 @@ public class AsyncServletTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(__history, contains(
             "FWD REQUEST /ctx/fwd/info?wrap=true&start=200&dispatch=20",
-            "FORWARD /ctx/path1?forward=true&wrap=true&start=200&dispatch=20",
+            "FORWARD /ctx/path1?forward=true",
             "initial",
             "start",
             "dispatch",
-            "ASYNC /ctx/path1?forward=true&wrap=true&start=200&dispatch=20",
+            "ASYNC /ctx/path1?forward=true",
             "wrapped REQ RSP",
             "!initial",
             "onComplete"));
@@ -587,11 +587,11 @@ public class AsyncServletTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(__history, contains(
             "FWD REQUEST /ctx/fwd/info?wrap=true&start=200&dispatch=20&path=/path2",
-            "FORWARD /ctx/path1?forward=true&wrap=true&start=200&dispatch=20&path=/path2",
+            "FORWARD /ctx/path1?forward=true",
             "initial",
             "start",
             "dispatch",
-            "ASYNC /ctx/path2?forward=true&wrap=true&start=200&dispatch=20&path=/path2",
+            "ASYNC /ctx/path2?forward=true",
             "wrapped REQ RSP",
             "!initial",
             "onComplete"));

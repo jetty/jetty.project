@@ -51,6 +51,11 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-io</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -111,6 +116,13 @@
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
         <version>${asciidoctor.maven.plugin.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.asciidoctor</groupId>
+            <artifactId>asciidoctorj-diagram</artifactId>
+            <version>2.0.1</version>
+          </dependency>
+        </dependencies>
         <configuration>
           <attributes>
             <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
@@ -183,6 +195,10 @@
               <sourceDirectory>${basedir}/src/main/asciidoc/embedded-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/embedded-guide</outputDirectory>
+              <sourceHighlighter>coderay</sourceHighlighter>
+              <requires>
+                <require>asciidoctor-diagram</require>
+              </requires>
             </configuration>
           </execution>
         </executions>

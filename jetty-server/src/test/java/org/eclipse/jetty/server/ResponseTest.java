@@ -502,6 +502,17 @@ public class ResponseTest
         response.setCharacterEncoding("ISO-8859-1");
         assertEquals("text/xml;charset=utf-8", response.getContentType());
     }
+    
+    @Test
+    public void testContentEncodingViaContentTypeChange() throws Exception
+    {
+        Response response = getResponse();
+        response.setContentType("text/html;charset=Shift_Jis");
+        assertEquals("Shift_Jis", response.getCharacterEncoding());
+        
+        response.setContentType("text/xml");
+        assertEquals("Shift_Jis", response.getCharacterEncoding());
+    }
 
     @Test
     public void testCharacterEncodingContentType() throws Exception
@@ -625,7 +636,7 @@ public class ResponseTest
 
         response.setContentType("wrong/answer;charset=utf-8");
         response.setContentType("foo/bar");
-        assertEquals("foo/bar", response.getContentType());
+        assertEquals("foo/bar;charset=utf-8", response.getContentType());
         response.setContentType("wrong/answer;charset=utf-8");
         response.getWriter();
         response.setContentType("foo2/bar2;charset=utf-16");

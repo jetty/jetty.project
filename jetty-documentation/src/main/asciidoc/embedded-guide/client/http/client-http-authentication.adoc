@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[http-client-authentication]]
+[[client-http-authentication]]
 === Authentication Support
 
 Jetty's HTTP client supports the `BASIC` and `DIGEST` authentication mechanisms defined by link:https://tools.ietf.org/html/rfc7235[RFC 7235].
@@ -88,4 +88,4 @@ authn.apply(request);
 request.send();
 ----
 
-See also the link:#http-client-proxy-authentication[proxy authentication section] for further information about how authentication works with HTTP proxies.
+See also the link:#client-http-proxy-authentication[proxy authentication section] for further information about how authentication works with HTTP proxies.

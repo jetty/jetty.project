@@ -16,32 +16,25 @@
 // ========================================================================
 //
 
-[[client-concepts]]
-=== Client Libraries Concepts
+[[client-io-arch]]
+=== Client Libraries Architecture
 
-The Jetty client libraries implement a network client speaking different protocols
-such as HTTP/1.1, HTTP/2, WebSocket and FastCGI.
+The Jetty client libraries provide the basic components and APIs to implement
+a network client.
 
-It is possible to implement your own custom protocol on top of the Jetty client
-libraries.
+They build on the common link:#io-arch[Jetty I/O Architecture] and provide client
+specific concepts (such as establishing a connection to a server).
 
-NOTE: TODO: perhaps add a section about this.
+There are conceptually two layers that compose the Jetty client libraries:
 
-There are conceptually three layers that compose the Jetty client libraries, from
-more abstract to more concrete:
+. link:#client-io-arch-network[The network layer], that handles the low level
+I/O and deals with buffers, threads, etc.
+. link:#client-io-arch-protocol[The protocol layer], that handles the parsing
+of bytes read from the network and the generation of bytes to write to the
+network.
 
-. The API layer, that exposes semantic APIs to applications so that they can write
-code such as "GET me the resource at this URI".
-. The protocol layer, where the API request is converted into the appropriate
-protocol bytes, for example encrypted HTTP/2.
-. The infrastructure layer, that handles the low level I/O and deals with network,
-buffer, threads, etc.
-
-Let's look at these layers starting from the more concrete (and low level) one
-and build up to the more abstract layer.
-
-[[client-concepts-infrastructure]]
-==== Client Libraries Infrastructure Layer
+[[client-io-arch-network]]
+==== Client Libraries Network Layer
 
 The Jetty client libraries use the common I/O design described in
 link:#io-arch[this section].
@@ -78,7 +71,7 @@ include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=typical]
 ----
 
 A more advanced example that customizes the `ClientConnector` by overriding
-factory methods:
+some of its methods:
 
 [source,java,indent=0]
 ----
@@ -86,7 +79,7 @@ include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=advanced]
 ----
 
 Since `ClientConnector` is the component that handles the low-level network, it
-is also the component where you want to configure the low-leven network configuration.
+is also the component where you want to configure the low-level network configuration.
 
 The most common parameters are:
 
@@ -122,28 +115,82 @@ Please refer to the `ClientConnector`
 link:{JDURL}/org/eclipse/jetty/io/ClientConnector.html[javadocs]
 for the complete list of configurable parameters.
 
-Once the `ClientConnector` is configured and started, it can be used to connect
-to the server via `ClientConnector.connect(SocketAddress, Map<String, Object>)`
-which in turn will call `SocketChannel.connect(SocketAddress)`.
+[[client-io-arch-protocol]]
+==== Client Libraries Protocol Layer
 
-When establishing a TCP connection to a server, applications need to tell
+The protocol layer builds on top of the network layer to generate the
+bytes to be written to the network and to parse the bytes read from the
+network.
+
+Recall from link:#io-arch-connection[this section] that Jetty uses the
+`Connection` abstraction to produce and interpret the network bytes.
+
+On the client side, a `ClientConnectionFactory` implementation is the
+component that creates `Connection` instances based on the protocol that
+the client wants to "speak" with the server.
+
+Applications use `ClientConnector.connect(SocketAddress, Map<String, Object>)`
+to establish a TCP connection to the server, and must tell
 `ClientConnector` how to create the `Connection` for that particular
-TCP connection.
-This is done via a
-link:{JDURL}/org/eclipse/jetty/io/ClientConnectionFactory.html[`ClientConnectionFactory`].
-that must be passed in the context `Map` as follows:
+TCP connection, and how to notify back the application when the connection
+creation succeeds or fails.
+
+This is done by passing a
+link:{JDURL}/org/eclipse/jetty/io/ClientConnectionFactory.html[`ClientConnectionFactory`]
+(that creates `Connection` instances) and a
+link:{JDURL}/org/eclipse/jetty/util/Promise.html[`Promise`] (that is notified
+of connection creation success or failure) in the context `Map` as follows:
 
 [source,java,indent=0]
 ----
 include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=connect]
 ----
 
-TODO: expand on what is the API to use, what parameters the context Map must
-have, and basically how we can write a generic network client with it.
+When a `Connection` is created successfully, its `onOpen()` method is invoked,
+and then the promise is completed successfully.
 
-[[client-concepts-protocol]]
-==== Client Libraries Protocol Layer
+It is now possible to write a super-simple `telnet` client that reads and writes
+string lines:
 
-The protocol layer builds on top of the infrastructure layer to generate the
-bytes to be written to the network and to parse the bytes received from the
-network.
+[source,java,indent=0]
+----
+include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=telnet]
+----
+
+Note how a very basic "telnet" API that applications could use is implemented
+in the form of the `onLine(Consumer<String>)` for the non-blocking receiving
+side and `writeLine(String, Callback)` for the non-blocking sending side.
+Note also how the `onFillable()` method implements some basic "parsing"
+by looking up the `\n` character in the buffer.
+
+NOTE: The "telnet" client above looks like a super-simple HTTP client because
+HTTP/1.0 can be seen as a line-based protocol. HTTP/1.0 was used just as an
+example, but we could have used any other line-based protocol such as
+link:https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol[SMTP],
+provided that the server was able to understand it.
+
+This is very similar to what the Jetty client implementation does for real
+network protocols.
+Real network protocols are of course more complicated and so is the implementation
+code that handles them, but the general ideas are similar.
+
+The Jetty client implementation provides a number of `ClientConnectionFactory`
+implementations that can be composed to produce and interpret the network bytes.
+
+For example, it is simple to modify the above example to use the TLS protocol
+so that you will be able to connect to the server on port `443`, typically
+reserved for the encrypted HTTP protocol.
+
+The differences between the clear-text version and the TLS encrypted version
+are minimal:
+
+[source,java,indent=0]
+----
+include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=tlsTelnet]
+----
+
+The differences with the clear-text version are only:
+
+* Change the port from `80` to `443`.
+* Wrap the `ClientConnectionFactory` with `SslClientConnectionFactory`.
+* Unwrap the `SslConnection` to access `TelnetConnection`.

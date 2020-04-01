@@ -744,7 +744,7 @@ public class DispatcherTest
 
             assertEquals(null, request.getPathInfo());
             assertEquals(null, request.getPathTranslated());
-            assertEquals("do=end&do=the&test=1", request.getQueryString());
+            assertEquals("do=end&do=the", request.getQueryString());
             assertEquals("/context/AssertForwardServlet", request.getRequestURI());
             assertEquals("/context", request.getContextPath());
             assertEquals("/AssertForwardServlet", request.getServletPath());
@@ -789,8 +789,8 @@ public class DispatcherTest
             q2.decode(query.getString("else"));
             String russian = q2.encode();
             assertThat(russian, is("%D0%B2%D1%8B%D0%B1%D1%80%D0%B0%D0%BD%D0%BE=%D0%A2%D0%B5%D0%BC%D0%BF%D0%B5%D1%80%D0%B0%D1%82%D1%83%D1%80%D0%B0"));
-            assertThat(query.getString("test"), is("1"));
-            assertThat(query.containsKey("foreign"), is(true));
+            assertThat(query.containsKey("test"), is(false));
+            assertThat(query.containsKey("foreign"), is(false));
 
             String[] vals = request.getParameterValues("foreign");
             assertTrue(vals != null);

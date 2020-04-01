@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[http-client-cookie]]
+[[client-http-cookie]]
 === Cookies Support
 
 Jetty HTTP client supports cookies out of the box.

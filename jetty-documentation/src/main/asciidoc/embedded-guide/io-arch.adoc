@@ -261,3 +261,5 @@ Otherwise, the write is now `PENDING` and waiting for the callback to be
 notified of the completion at a later time.
 When the callback is notified of the `write()` completion, it checks whether
 the `write()` was `PENDING`, and if it was it resumes reading.
+
+NOTE: TODO: Introduce IteratingCallback?
