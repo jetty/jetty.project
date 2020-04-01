@@ -14,6 +14,23 @@
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
   </properties>
 
+  <profiles>
+    <profile>
+      <id>jdk9</id>
+      <activation>
+        <jdk>[9,)</jdk>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-alpn-java-server</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
   <dependencies>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -49,7 +66,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-java-server</artifactId>
+      <artifactId>jetty-alpn-openjdk8-server</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
