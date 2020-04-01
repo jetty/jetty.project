@@ -26,7 +26,9 @@ import org.eclipse.jetty.servlet.ServletHolder;
  * RunAs
  * <p>
  * Represents a <code>&lt;run-as&gt;</code> element in web.xml, or a <code>&#064;RunAs</code> annotation.
+ * @deprecated class removed
  */
+@Deprecated
 public class RunAs
 {
     private String _className;

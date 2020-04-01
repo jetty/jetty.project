@@ -20,7 +20,6 @@ package org.eclipse.jetty.plus.webapp;
 
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -43,11 +42,6 @@ public class PlusDecorator implements Decorator
     @Override
     public Object decorate(Object o)
     {
-
-        RunAsCollection runAses = (RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
-        if (runAses != null)
-            runAses.setRunAs(o);
-
         InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
         if (injections != null)
             injections.inject(o);
