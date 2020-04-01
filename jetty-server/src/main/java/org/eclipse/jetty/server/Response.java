@@ -1229,7 +1229,10 @@ public class Response implements HttpServletResponse
     @Override
     public void setTrailerFields(Supplier<Map<String, String>> trailers)
     {
-        // TODO new for 4.0 - avoid transient supplier?
+        if (isCommitted())
+            throw new IllegalStateException("Committed");
+        if (getHttpChannel().getRequest().getHttpVersion().ordinal() <= HttpVersion.HTTP_1_0.ordinal())
+            throw new IllegalStateException("Trailers not supported");
         this._trailers = new HttpFieldsSupplier(trailers);
     }
 
