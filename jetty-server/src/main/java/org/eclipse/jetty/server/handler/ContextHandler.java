@@ -93,19 +93,24 @@ import org.eclipse.jetty.util.resource.Resource;
 /**
  * ContextHandler.
  *
+ * <p>
  * This handler wraps a call to handle by setting the context and servlet path, plus setting the context classloader.
- *
+ * </p>
  * <p>
- * If the context init parameter "org.eclipse.jetty.server.context.ManagedAttributes" is set to a comma separated list of names, then they are treated as
+ * If the context init parameter {@code org.eclipse.jetty.server.context.ManagedAttributes} is set to a comma separated list of names, then they are treated as
  * context attribute names, which if set as attributes are passed to the servers Container so that they may be managed with JMX.
+ * </p>
  * <p>
- * The maximum size of a form that can be processed by this context is controlled by the system properties org.eclipse.jetty.server.Request.maxFormKeys and
- * org.eclipse.jetty.server.Request.maxFormContentSize. These can also be configured with {@link #setMaxFormContentSize(int)} and {@link #setMaxFormKeys(int)}
+ * The maximum size of a form that can be processed by this context is controlled by the system properties {@code org.eclipse.jetty.server.Request.maxFormKeys} and
+ * {@code org.eclipse.jetty.server.Request.maxFormContentSize}. These can also be configured with {@link #setMaxFormContentSize(int)} and {@link #setMaxFormKeys(int)}
+ * </p>
  * <p>
- * This servers executor is made available via a context attributed "org.eclipse.jetty.server.Executor".
+ * The executor is made available via a context attributed {@code org.eclipse.jetty.server.Executor}.
+ * </p>
  * <p>
  * By default, the context is created with alias checkers for {@link AllowSymLinkAliasChecker} (unix only) and {@link ApproveNonExistentDirectoryAliases}. If
  * these alias checkers are not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
+ * </p>
  */
 @ManagedObject("URI Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Graceful
