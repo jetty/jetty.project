@@ -122,7 +122,7 @@ As is the case with annotation scanning, the link:#using-extra-classpath-method[
 ____
 [NOTE]
 As of Jetty 10, Annotations will be discovered even for old versions of `web.xml` (2.5).
-Users wishing to not use `ServletContainerInitializers` from within the webapp with older versions of `web.xml` must call `WebAppContext.setConfigurationDiscovered(false)` either programmatically or in xml.
+Users wishing not to use annotations from the webapp classpath must call `WebAppContext.setConfigurationDiscovered(false)` either programmatically or in xml.
 ____
 
 ===== Controlling the order of ServletContainerInitializer invocation

@@ -29,7 +29,7 @@ Items such as the Java Platform Module System (JPMS), which Jetty 10 supports, a
 ==== ServletContainerInitializers
 
 As of Jetty 10, Annotations will be discovered even for old versions of `web.xml` (2.5).
-Users wishing to not use `ServletContainerInitializers` from within the webapp with older versions of `web.xml` must call `WebAppContext.setConfigurationDiscovered(false)` either programmatically or in xml.
+Users wishing not to use annotations from the webapp classpath with older versions of `web.xml` must call `WebAppContext.setConfigurationDiscovered(false)` either programmatically or in xml.
 
 ==== Removed Classes
 
