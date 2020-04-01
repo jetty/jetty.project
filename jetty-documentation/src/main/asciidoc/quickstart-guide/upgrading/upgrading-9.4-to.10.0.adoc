@@ -23,8 +23,13 @@ It is not comprehensive, but covers many of the major changes included in the re
 
 ==== Required Java Version
 
-Jetty 10 requires, at a minimum, Java 9 to function.
+Jetty 10 requires, at a minimum, Java 11 to function.
 Items such as the Java Platform Module System (JPMS), which Jetty 10 supports, are not available in earlier versions of Java.
+
+==== ServletContainerInitializers
+
+As of Jetty 10, Annotations will be discovered even for old versions of `web.xml` (2.5).
+Users wishing to not use `ServletContainerInitializers` from within the webapp with older versions of `web.xml` must call `WebAppContext.setConfigurationDiscovered(false)` either programmatically or in xml.
 
 ==== Removed Classes
 
