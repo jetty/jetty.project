@@ -26,11 +26,37 @@ Thus Jetty limits the amount of data and keys that can be in a form posted to Je
 The default maximum size Jetty permits is 200000 bytes and 1000 keys.
 You can change this default for a particular webapp or for all webapps on a particular Server instance.
 
+==== Configuring Default Form Limits via System Properties
+
+There exists 2 system properties that will adjust the default maximum form sizes.
+
+* `org.eclipse.jetty.server.Request.maxFormKeys` - the maximum number of Form Keys allowed
+* `org.eclipse.jetty.server.Request.maxFormContentSize` - the maximum size of Form Content allowed
+
+Used from command line as such:
+
+[source,shell,subs="{sub-order}"]
+----
+$ java -Dorg.eclipse.jetty.server.Request.maxFormKeys=200 -jar ...
+
+$ java -Dorg.eclipse.jetty.server.Request.maxFormContentSize=400000 -jar ...
+
+----
+
+Or via Java code (make sure you do this before you instantiate any `ContextHandler`, `ServletContextHandler`, or `WebAppContext`)
+
+[source,java,subs="{sub-order}"]
+----
+System.setProperty(ContextHandler.MAX_FORM_KEYS_KEY, "200");
+System.setProperty(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, "400000");
+
+----
+
 ==== Configuring Form Limits for a Webapp
 
 To configure the form limits for a single web application, the context handler (or webappContext) instance must be configured using the following methods:
 
-[source, java, subs="{sub-order}"]
+[source,java,subs="{sub-order}"]
 ----
 ContextHandler.setMaxFormContentSize(int maxSizeInBytes);
 ContextHandler.setMaxFormKeys(int formKeys);
@@ -48,28 +74,5 @@ These methods may be called directly when embedding Jetty, but more commonly are
   <Set name="maxFormContentSize">200000</Set>
   <Set name="maxFormKeys">200</Set>
 </Configure>
-
-----
-
-==== Configuring Form Limits for the Server
-
-If a context does not have specific form limits configured, then the server attributes are inspected to see if a server wide limit has been set on the size or keys.
-The following XML shows how these attributes can be set in `jetty.xml`:
-
-[source, xml, subs="{sub-order}"]
-----
-<configure class="org.eclipse.jetty.server.Server">
-
-  ...
-
-  <Call name="setAttribute">
-    <Arg>org.eclipse.jetty.server.Request.maxFormContentSize</Arg>
-    <Arg>100000</Arg>
-   </Call>
-  <Call name="setAttribute">
-    <Arg>org.eclipse.jetty.server.Request.maxFormKeys</Arg>
-    <Arg>2000</Arg>
-   </Call>
-</configure>
 
 ----
