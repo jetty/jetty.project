@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * RunAsCollection
- * @deprecated class removed
+ * @deprecated class unused as of 9.4.28 due for removal in 10.0.0
  */
 @Deprecated
 public class RunAsCollection
