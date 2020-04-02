@@ -118,25 +118,25 @@ public class TestAnnotationConfiguration
     @Test
     public void testAnnotationScanControl() throws Exception
     {
-        //check that a 2.5 webapp won't discover annotations
+        //check that a 2.5 webapp with configurationDiscovered will discover annotations
         TestableAnnotationConfiguration config25 = new TestableAnnotationConfiguration();
         WebAppContext context25 = new WebAppContext();
         context25.setClassLoader(Thread.currentThread().getContextClassLoader());
         context25.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE);
         context25.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
+        context25.setConfigurationDiscovered(false);
         context25.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
         context25.getServletContext().setEffectiveMajorVersion(2);
         context25.getServletContext().setEffectiveMinorVersion(5);
         config25.configure(context25);
         config25.assertAnnotationDiscovery(false);
 
-        //check that a 2.5 webapp with configurationDiscovered will discover annotations
+        //check that a 2.5 webapp discover annotations
         TestableAnnotationConfiguration config25b = new TestableAnnotationConfiguration();
         WebAppContext context25b = new WebAppContext();
         context25b.setClassLoader(Thread.currentThread().getContextClassLoader());
         context25b.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE);
         context25b.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
-        context25b.setConfigurationDiscovered(true);
         context25b.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
         context25b.getServletContext().setEffectiveMajorVersion(2);
         context25b.getServletContext().setEffectiveMinorVersion(5);
@@ -293,6 +293,7 @@ public class TestAnnotationConfiguration
             AnnotationConfiguration config = new AnnotationConfiguration();
             WebAppContext context = new WebAppContext();
             List<ServletContainerInitializer> scis;
+            context.setConfigurationDiscovered(false);
             context.setClassLoader(webAppLoader);
             context.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
             context.getMetaData().setWebInfClassesResources(classes);

@@ -84,20 +84,20 @@ public class MetaInfConfigurationTest
         File web31 = MavenTestingUtils.getTestResourceFile("web31.xml");
         File web31false = MavenTestingUtils.getTestResourceFile("web31false.xml");
 
-        //test a 2.5 webapp will not look for fragments by default
+        //test a 2.5 webapp will not look for fragments as manually configured
         MetaInfConfiguration meta25 = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
             Arrays.asList(MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES));
         WebAppContext context25 = new WebAppContext();
+        context25.setConfigurationDiscovered(false);
         context25.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
         context25.getServletContext().setEffectiveMajorVersion(2);
         context25.getServletContext().setEffectiveMinorVersion(5);
         meta25.preConfigure(context25);
 
-        //test a 2.5 webapp will look for fragments if configurationDiscovered==true
+        //test a 2.5 webapp will look for fragments as configurationDiscovered default true
         MetaInfConfiguration meta25b = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
             MetaInfConfiguration.__allScanTypes);
         WebAppContext context25b = new WebAppContext();
-        context25b.setConfigurationDiscovered(true);
         context25b.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
         context25b.getServletContext().setEffectiveMajorVersion(2);
         context25b.getServletContext().setEffectiveMinorVersion(5);
