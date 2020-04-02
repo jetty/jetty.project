@@ -32,6 +32,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.ProxyConfiguration;
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -43,6 +45,7 @@ import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.client.util.DigestAuthentication;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -618,5 +621,49 @@ public class HTTPClientDocs
         authn.apply(request);
         request.send();
         // end::requestPreemptedResult[]
+    }
+
+    public void proxy() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::proxy[]
+        HttpProxy proxy = new HttpProxy("proxyHost", 8888);
+
+        // Do not proxy requests for localhost:8080.
+        proxy.getExcludedAddresses().add("localhost:8080");
+
+        // Add the new proxy to the list of proxies already registered.
+        ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
+        proxyConfig.getProxies().add(proxy);
+
+        ContentResponse response = httpClient.GET("http://domain.com/path");
+        // end::proxy[]
+    }
+
+    public void proxyAuthentication() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::proxyAuthentication[]
+        AuthenticationStore auth = httpClient.getAuthenticationStore();
+
+        // Proxy credentials.
+        URI proxyURI = new URI("http://proxy.net:8080");
+        auth.addAuthentication(new BasicAuthentication(proxyURI, "ProxyRealm", "proxyUser", "proxyPass"));
+
+        // Server credentials.
+        URI serverURI = new URI("http://domain.com/secure");
+        auth.addAuthentication(new DigestAuthentication(serverURI, "ServerRealm", "serverUser", "serverPass"));
+
+        // Proxy configuration.
+        ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
+        HttpProxy proxy = new HttpProxy("proxy.net", 8080);
+        proxyConfig.getProxies().add(proxy);
+
+        ContentResponse response = httpClient.newRequest(serverURI).send();
+        // end::proxyAuthentication[]
     }
 }
