@@ -215,11 +215,6 @@ public abstract class AbstractUnassembledWebAppMojo extends AbstractWebAppMojo
      */
     protected Collection<Artifact> getWebInfLibArtifacts()
     {
-        //if this project isn't a war, then don't calculate web-inf lib
-        String type = project.getArtifact().getType();
-        if (!"war".equalsIgnoreCase(type) && !"zip".equalsIgnoreCase(type))
-            return Collections.emptyList();
-
         return project.getArtifacts().stream()
             .filter(this::isArtifactOKForWebInfLib)
             .collect(Collectors.toList());
