@@ -32,12 +32,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.FutureResponseListener;
@@ -562,5 +565,58 @@ public class HTTPClientDocs
 
         httpClient.setCookieStore(new GoogleOnlyCookieStore());
         // end::filteringCookieStore[]
+    }
+
+    public void addAuthentication() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::addAuthentication[]
+        // Add authentication credentials.
+        AuthenticationStore auth = httpClient.getAuthenticationStore();
+
+        URI uri1 = new URI("http://mydomain.com/secure");
+        auth.addAuthentication(new BasicAuthentication(uri1, "MyRealm", "userName1", "password1"));
+
+        URI uri2 = new URI("http://otherdomain.com/admin");
+        auth.addAuthentication(new BasicAuthentication(uri1, "AdminRealm", "admin", "password"));
+        // end::addAuthentication[]
+    }
+
+    public void clearResults() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::clearResults[]
+        httpClient.getAuthenticationStore().clearAuthenticationResults();
+        // end::clearResults[]
+    }
+
+    public void preemptedResult() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::preemptedResult[]
+        AuthenticationStore auth = httpClient.getAuthenticationStore();
+        URI uri = URI.create("http://domain.com/secure");
+        auth.addAuthenticationResult(new BasicAuthentication.BasicResult(uri, "username", "password"));
+        // end::preemptedResult[]
+    }
+
+    public void requestPreemptedResult() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::requestPreemptedResult[]
+        URI uri = URI.create("http://domain.com/secure");
+        Authentication.Result authn = new BasicAuthentication.BasicResult(uri, "username", "password");
+        Request request = httpClient.newRequest(uri);
+        authn.apply(request);
+        request.send();
+        // end::requestPreemptedResult[]
     }
 }
