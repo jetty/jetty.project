@@ -179,12 +179,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     public enum ContextStatus
     {
-        UNSET, 
+        NOTSET, 
         INITIALIZED,
         DESTROYED
     }
     
-    protected ContextStatus _contextStatus = ContextStatus.UNSET;
+    protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     protected Context _scontext;
     private final AttributesMap _attributes;
     private final Map<String, String> _initParams;
@@ -893,6 +893,55 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         super.doStart();
     }
 
+    /**
+     * Call the ServletContextListeners contextInitialized methods.
+     * This can be called from a ServletHandler during the proper sequence
+     * of initializing filters, servlets and listeners. However, if there is
+     * no ServletHandler, the ContextHandler will call this method during
+     * doStart().
+     * 
+     * @throws Exception
+     */
+    public void contextInitialized() throws Exception
+    {
+        // Call context listeners
+        switch (_contextStatus)
+        {
+            case NOTSET:
+            {
+                try
+                {
+                    _destroyServletContextListeners.clear();
+                    if (!_servletContextListeners.isEmpty())
+                    {
+                        ServletContextEvent event = new ServletContextEvent(_scontext);
+                        for (ServletContextListener listener : _servletContextListeners)
+                        {
+                            callContextInitialized(listener, event);
+                            _destroyServletContextListeners.add(listener);
+                        }
+                    }
+                }
+                finally
+                {
+                    _contextStatus = ContextStatus.INITIALIZED;
+                }
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Call the ServletContextListeners with contextDestroyed.
+     * This method can be called from a ServletHandler in the
+     * proper sequence of destroying filters, servlets and listeners.
+     * If there is no ServletHandler, the ContextHandler must ensure
+     * these listeners are called instead.
+     * 
+     * @throws Exception
+     */
     public void contextDestroyed() throws Exception
     {
         switch (_contextStatus)
@@ -921,37 +970,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 finally
                 {
                     _contextStatus = ContextStatus.DESTROYED;
-                }
-                break;
-            }
-            default:
-                break;
-        }
-    }
-
-    public void contextInitialized() throws Exception
-    {
-        // Call context listeners
-        switch (_contextStatus)
-        {
-            case UNSET:
-            {
-                try
-                {
-                    _destroyServletContextListeners.clear();
-                    if (!_servletContextListeners.isEmpty())
-                    {
-                        ServletContextEvent event = new ServletContextEvent(_scontext);
-                        for (ServletContextListener listener : _servletContextListeners)
-                        {
-                            callContextInitialized(listener, event);
-                            _destroyServletContextListeners.add(listener);
-                        }
-                    }
-                }
-                finally
-                {
-                    _contextStatus = ContextStatus.INITIALIZED;
                 }
                 break;
             }
@@ -1053,7 +1071,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         finally
         {
-            _contextStatus = ContextStatus.UNSET;
+            _contextStatus = ContextStatus.NOTSET;
             __context.set(oldContext);
             exitScope(null);
             LOG.info("Stopped {}", this);
