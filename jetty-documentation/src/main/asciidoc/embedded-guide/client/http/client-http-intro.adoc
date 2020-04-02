@@ -46,6 +46,18 @@ Out of the box features that you get with the Jetty HTTP client include:
 [[client-http-start]]
 ==== Starting HttpClient
 
+The Jetty artifact that provides the main HTTP client implementation is `jetty-client`.
+The Maven artifact coordinates are the following:
+
+[source,xml,subs="{sub-order}"]
+----
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-client</artifactId>
+  <version>{version}</version>
+</dependency>
+----
+
 The main class is named `org.eclipse.jetty.client.HttpClient`.
 
 You can think of a `HttpClient` instance as a browser instance.

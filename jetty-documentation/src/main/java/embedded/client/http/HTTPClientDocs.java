@@ -22,8 +22,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.CookieStore;
+import java.net.HttpCookie;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
@@ -47,6 +51,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import static java.lang.System.Logger.Level.INFO;
@@ -473,5 +478,89 @@ public class HTTPClientDocs
         // Send the request to server1.
         request1.send(result -> System.getLogger("forwarder").log(INFO, "Sourcing from server1 complete"));
         // end::demandedContentListener[]
+    }
+
+    public void getCookies() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::getCookies[]
+        CookieStore cookieStore = httpClient.getCookieStore();
+        List<HttpCookie> cookies = cookieStore.get(URI.create("http://domain.com/path"));
+        // end::getCookies[]
+    }
+
+    public void setCookie() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::setCookie[]
+        CookieStore cookieStore = httpClient.getCookieStore();
+        HttpCookie cookie = new HttpCookie("foo", "bar");
+        cookie.setDomain("domain.com");
+        cookie.setPath("/");
+        cookie.setMaxAge(TimeUnit.DAYS.toSeconds(1));
+        cookieStore.add(URI.create("http://domain.com"), cookie);
+        // end::setCookie[]
+    }
+
+    public void requestCookie() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::requestCookie[]
+        ContentResponse response = httpClient.newRequest("http://domain.com/path")
+            .cookie(new HttpCookie("foo", "bar"))
+            .send();
+        // end::requestCookie[]
+    }
+
+    public void removeCookie() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::removeCookie[]
+        CookieStore cookieStore = httpClient.getCookieStore();
+        URI uri = URI.create("http://domain.com");
+        List<HttpCookie> cookies = cookieStore.get(uri);
+        for (HttpCookie cookie : cookies)
+        {
+            cookieStore.remove(uri, cookie);
+        }
+        // end::removeCookie[]
+    }
+
+    public void emptyCookieStore() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::emptyCookieStore[]
+        httpClient.setCookieStore(new HttpCookieStore.Empty());
+        // end::emptyCookieStore[]
+    }
+
+    public void filteringCookieStore() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::filteringCookieStore[]
+        class GoogleOnlyCookieStore extends HttpCookieStore
+        {
+            @Override
+            public void add(URI uri, HttpCookie cookie)
+            {
+                if (uri.getHost().endsWith("google.com"))
+                    super.add(uri, cookie);
+            }
+        }
+
+        httpClient.setCookieStore(new GoogleOnlyCookieStore());
+        // end::filteringCookieStore[]
     }
 }
