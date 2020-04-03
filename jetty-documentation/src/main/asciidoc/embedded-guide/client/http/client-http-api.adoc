@@ -34,7 +34,7 @@ include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=simpleBl
 The method `HttpClient.GET(...)` performs a HTTP `GET` request to the given URI and returns a `ContentResponse` when the request/response conversation completes successfully.
 
 The `ContentResponse` object contains the HTTP response information: status code, headers and possibly content.
-The content length is limited by default to 2 MiB; for larger content see xref:http-client-response-content[].
+The content length is limited by default to 2 MiB; for larger content see xref:client-http-content-response[].
 
 If you want to customize the request, for example by issuing a `HEAD` request instead of a `GET`, and simulating a browser user agent, you can do it in this way:
 
@@ -190,7 +190,7 @@ which allows applications to write request content when it is available to the `
 include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=outputStreamRequestContent]
 ----
 
-[[http-client-response-content]]
+[[client-http-content-response]]
 ===== Response Content Handling
 
 Jetty's `HttpClient` allows applications to handle response content in different ways.

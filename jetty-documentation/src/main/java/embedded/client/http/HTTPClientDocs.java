@@ -41,6 +41,8 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
+import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
@@ -52,9 +54,16 @@ import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.OutputStreamRequestContent;
 import org.eclipse.jetty.client.util.PathRequestContent;
 import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
+import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HttpCookieStore;
@@ -665,5 +674,130 @@ public class HTTPClientDocs
 
         ContentResponse response = httpClient.newRequest(serverURI).send();
         // end::proxyAuthentication[]
+    }
+
+    public void defaultTransport() throws Exception
+    {
+        // tag::defaultTransport[]
+        // No transport specified, using default.
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+        // end::defaultTransport[]
+    }
+
+    public void http11Transport() throws Exception
+    {
+        // tag::http11Transport[]
+        // Configure HTTP/1.1 transport.
+        HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP();
+        transport.setHeaderCacheSize(16384);
+
+        HttpClient client = new HttpClient(transport);
+        client.start();
+        // end::http11Transport[]
+    }
+
+    public void http2Transport() throws Exception
+    {
+        // tag::http2Transport[]
+        // The HTTP2Client powers the HTTP/2 transport.
+        HTTP2Client h2Client = new HTTP2Client();
+        h2Client.setInitialSessionRecvWindow(64 * 1024 * 1024);
+
+        // Create and configure the HTTP/2 transport.
+        HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(h2Client);
+        transport.setUseALPN(true);
+
+        HttpClient client = new HttpClient(transport);
+        client.start();
+        // end::http2Transport[]
+    }
+
+    public void fcgiTransport() throws Exception
+    {
+        // tag::fcgiTransport[]
+        String scriptRoot = "/var/www/wordpress";
+        HttpClientTransportOverFCGI transport = new HttpClientTransportOverFCGI(scriptRoot);
+
+        HttpClient client = new HttpClient(transport);
+        client.start();
+        // end::fcgiTransport[]
+    }
+
+    public void dynamicDefault() throws Exception
+    {
+        // tag::dynamicDefault[]
+        // Dynamic transport speaks HTTP/1.1 by default.
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic();
+
+        HttpClient client = new HttpClient(transport);
+        client.start();
+        // end::dynamicDefault[]
+    }
+
+    public void dynamicOneProtocol() throws Exception
+    {
+        // tag::dynamicOneProtocol[]
+        ClientConnector connector = new ClientConnector();
+
+        // Equivalent to HttpClientTransportOverHTTP.
+        HttpClientTransportDynamic http11Transport = new HttpClientTransportDynamic(connector, HttpClientConnectionFactory.HTTP11);
+
+        // Equivalent to HttpClientTransportOverHTTP2.
+        HTTP2Client http2Client = new HTTP2Client(connector);
+        HttpClientTransportDynamic http2Transport = new HttpClientTransportDynamic(connector, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client));
+        // end::dynamicOneProtocol[]
+    }
+
+    public void dynamicH1H2() throws Exception
+    {
+        // tag::dynamicH1H2[]
+        ClientConnector connector = new ClientConnector();
+
+        ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
+
+        HTTP2Client http2Client = new HTTP2Client(connector);
+        ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
+
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http1, http2);
+
+        HttpClient client = new HttpClient(transport);
+        client.start();
+        // end::dynamicH1H2[]
+    }
+
+    public void dynamicClearText() throws Exception
+    {
+        // tag::dynamicClearText[]
+        ClientConnector connector = new ClientConnector();
+        ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
+        HTTP2Client http2Client = new HTTP2Client(connector);
+        ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http1, http2);
+        HttpClient client = new HttpClient(transport);
+        client.start();
+
+        // The server supports both HTTP/1.1 and HTTP/2 clear-text on port 8080.
+
+        // Make a clear-text request without explicit version.
+        // The first protocol specified to HttpClientTransportDynamic
+        // is picked, in this example will be HTTP/1.1.
+        ContentResponse http1Response = client.newRequest("host", 8080).send();
+
+        // Make a clear-text request with explicit version.
+        // Clear-text HTTP/2 is used for this request.
+        ContentResponse http2Response = client.newRequest("host", 8080)
+            // Specify the version explicitly.
+            .version(HttpVersion.HTTP_2)
+            .send();
+
+        // Make a clear-text upgrade request from HTTP/1.1 to HTTP/2.
+        // The request will start as HTTP/1.1, but the response will be HTTP/2.
+        ContentResponse upgradedResponse = client.newRequest("host", 8080)
+            .header(HttpHeader.UPGRADE, "h2c")
+            .header(HttpHeader.HTTP2_SETTINGS, "")
+            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
+            .send();
+        // end::dynamicClearText[]
     }
 }
