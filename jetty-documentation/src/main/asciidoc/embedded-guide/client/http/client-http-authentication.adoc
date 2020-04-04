@@ -37,10 +37,10 @@ participant Application
 participant HttpClient
 participant Server
 
-Application -> Server: GET /path
-Server -> HttpClient: 401 + WWW-Authenticate
-HttpClient -> Server: GET + Authentication
-Server -> Application: 200 OK
+Application -> Server : GET /path
+Server -> HttpClient : 401 + WWW-Authenticate
+HttpClient -> Server : GET + Authentication
+Server -> Application : 200 OK
 ----
 
 Upon receiving a HTTP 401 response code, `HttpClient` looks at the

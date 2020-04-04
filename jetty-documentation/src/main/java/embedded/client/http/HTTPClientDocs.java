@@ -31,9 +31,13 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.ProxyConfiguration;
+import org.eclipse.jetty.client.RoundRobinConnectionPool;
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -799,5 +803,48 @@ public class HTTPClientDocs
             .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
             .send();
         // end::dynamicClearText[]
+    }
+
+    public void getConnectionPool() throws Exception
+    {
+        // tag::getConnectionPool[]
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        ConnectionPool connectionPool = httpClient.getDestinations().stream()
+            // Cast to HttpDestination.
+            .map(HttpDestination.class::cast)
+            // Find the destination by filtering on the Origin.
+            .filter(destination -> destination.getOrigin().getAddress().getHost().equals("domain.com"))
+            .findAny()
+            // Get the ConnectionPool.
+            .map(HttpDestination::getConnectionPool)
+            .orElse(null);
+        // end::getConnectionPool[]
+    }
+
+    public void setConnectionPool() throws Exception
+    {
+        // tag::setConnectionPool[]
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // The max number of connections in the pool.
+        int maxConnectionsPerDestination = httpClient.getMaxConnectionsPerDestination();
+
+        // The max number of requests per connection (multiplexing).
+        // Start with 1, since this value is dynamically set to larger values if
+        // the transport supports multiplexing requests on the same connection.
+        int maxRequestsPerConnection = 1;
+
+        HttpClientTransport transport = httpClient.getTransport();
+
+        // Set the ConnectionPool.Factory using a lambda.
+        transport.setConnectionPoolFactory(destination ->
+            new RoundRobinConnectionPool(destination,
+                maxConnectionsPerDestination,
+                destination,
+                maxRequestsPerConnection));
+        // end::setConnectionPool[]
     }
 }

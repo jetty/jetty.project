@@ -71,17 +71,17 @@ participant HttpClient
 participant Proxy
 participant Server
 
-Application -> Proxy: GET /path
-Proxy -> HttpClient: 407 + Proxy-Authenticate
-HttpClient -> Proxy: GET /path + Proxy-Authorization
-Proxy -> Server: GET /path
-Server -> Proxy: 401 + WWW-Authenticate
-Proxy -> HttpClient: 401 + WWW-Authenticate
-HttpClient -> Proxy: GET /path + Proxy-Authorization + Authorization
-Proxy -> Server: GET /path + Authorization
-Server -> Proxy: 200 OK
-Proxy -> HttpClient: 200 OK
-HttpClient -> Application: 200 OK
+Application -> Proxy : GET /path
+Proxy -> HttpClient : 407 + Proxy-Authenticate
+HttpClient -> Proxy : GET /path + Proxy-Authorization
+Proxy -> Server : GET /path
+Server -> Proxy : 401 + WWW-Authenticate
+Proxy -> HttpClient : 401 + WWW-Authenticate
+HttpClient -> Proxy : GET /path + Proxy-Authorization + Authorization
+Proxy -> Server : GET /path + Authorization
+Server -> Proxy : 200 OK
+Proxy -> HttpClient : 200 OK
+HttpClient -> Application : 200 OK
 ----
 
 The application does not receive events related to the responses with code 407

@@ -108,8 +108,8 @@ following components:
 * a set of _destinations_.
 
 A _destination_ is the client-side component that represent an _origin_ on
-a server, and manages a queue of requests for that origin, and a pool of
-connections to that origin.
+a server, and manages a queue of requests for that origin, and a
+link:#client-http-connection-pool[pool of connections] to that origin.
 
 An _origin_ may be simply thought as the tuple `(scheme, host, port)` and it
 is where the client connects to in order to communicate with the server.
@@ -145,8 +145,74 @@ connection pools.
 Therefore an origin is identified by the tuple
 `(scheme, host, port, tag, protocol)`.
 
+[[client-http-connection-pool]]
+==== HttpClient Connection Pooling
+
+A destination manages a `org.eclipse.jetty.client.ConnectionPool`, where
+connections to a particular origin are pooled for performance reasons:
+opening a connection is a costly operation and it's better to reuse them
+for multiple requests.
+
+NOTE: Remember that to select a specific destination you must select a
+specific origin, and that an origin is identified by the tuple
+`(scheme, host, port, tag, protocol)`, so you can have multiple destinations
+for the same `host` and `port`.
+
+You can access the `ConnectionPool` in this way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=getConnectionPool]
+----
+
+Jetty's client library provides the following `ConnectionPool` implementations:
+
+* `DuplexConnectionPool`, historically the first implementation, only used by
+the HTTP/1.1 transport.
+* `MultiplexConnectionPool`, the generic implementation valid for any transport
+where connections are reused with a MRU (most recently used) algorithm (that is,
+the connections most recently returned to the connection pool are the more
+likely to be used again).
+* `RoundRobinConnectionPool`, similar to `MultiplexConnectionPool` but where
+connections are reused with a round-robin algorithm.
+
+The `ConnectionPool` implementation can be customized for each destination in
+by setting a `ConnectionPool.Factory` on the `HttpClientTransport`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=setConnectionPool]
+----
+
 [[client-http-request-processing]]
 ==== HttpClient Request Processing
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant Application
+participant Request
+participant HttpClient
+participant Destination
+participant ConnectionPool
+participant Connection
+
+Application -> HttpClient : newRequest()
+HttpClient -> Request **
+Application -> Request : send()
+Request -> HttpClient : send()
+HttpClient -> Destination ** : get or create
+Destination -> ConnectionPool ** : create
+HttpClient -> Destination : send(Request)
+Destination -> Destination : enqueue(Request)
+Destination -> ConnectionPool : acquire()
+ConnectionPool -> Connection ** : create
+Destination -> Destination : dequeue(Request)
+Destination -> Connection : send(Request)
+----
 
 When a request is sent, an origin is computed from the request; `HttpClient`
 uses that origin to find (or create if it does not exist) the correspondent
@@ -160,8 +226,8 @@ and sends it over the connection.
 
 The first request to a destination triggers the opening of the first
 connection.
-A second request with the same origin sent _after_ the first will reuse the
-same connection.
+A second request with the same origin sent _after_ the first request/response
+cycle is completed will reuse the same connection.
 A second request with the same origin sent _concurrently_ with the first
 request will cause the opening of a second connection.
 The configuration parameter `HttpClient.maxConnectionsPerDestination`
@@ -171,7 +237,7 @@ the max number of connections that can be opened for a destination.
 NOTE: If opening connections to a given origin takes a long time, then
 requests for that origin will queue up in the corresponding destination.
 
-Each connection can handle a limited number of requests.
+Each connection can handle a limited number of concurrent requests.
 For HTTP/1.1, this number is always `1`: there can only be one outstanding
 request for each connection.
 For HTTP/2 this number is determined by the server `max_concurrent_stream`
