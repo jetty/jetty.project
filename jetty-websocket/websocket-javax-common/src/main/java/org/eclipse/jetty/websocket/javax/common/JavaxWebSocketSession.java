@@ -179,7 +179,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     @Override
     public void close()
     {
-        close(new CloseReason(CloseReason.CloseCodes.NO_STATUS_CODE, null));
+        close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, null));
     }
 
     /**
