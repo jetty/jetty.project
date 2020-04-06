@@ -1,24 +1,28 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.annotations;
 
+import java.io.File;
+
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebDescriptor;
 import org.junit.jupiter.api.Test;
@@ -45,16 +49,15 @@ public class TestRunAsAnnotation
         holder2.setHeldClass(ServletC.class);
         holder2.setInitOrder(1);
         wac.getServletHandler().addServletWithMapping(holder2, "/foo2/*");
-        wac.getMetaData().setOrigin(holder2.getName() + ".servlet.run-as", new WebDescriptor(null));
+        Resource fakeXml = Resource.newResource(new File(MavenTestingUtils.getTargetTestingDir("run-as"), "fake.xml"));
+        wac.getMetaData().setOrigin(holder2.getName() + ".servlet.run-as", new WebDescriptor(fakeXml));
         
-        AnnotationIntrospector parser = new AnnotationIntrospector();
+        AnnotationIntrospector parser = new AnnotationIntrospector(wac);
         RunAsAnnotationHandler handler = new RunAsAnnotationHandler(wac);
         parser.registerHandler(handler);
-        parser.introspect(ServletC.class);
+        parser.introspect(new ServletC(), null);
         
         assertEquals("admin", holder.getRunAsRole());
         assertEquals(null, holder2.getRunAsRole());
-
-        
     }
 }
