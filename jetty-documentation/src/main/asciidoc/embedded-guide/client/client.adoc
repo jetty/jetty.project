@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[client]]
+[[eg-client]]
 == Client Libraries
 
 The Eclipse Jetty Project provides also provides client-side libraries
@@ -34,13 +34,13 @@ and asynchronous APIs and come with a large number of configuration options.
 
 These are the available client libraries:
 
-* link:#client-http[The HTTP Client Library]
-* link:#client-http2[The HTTP/2 Client Library]
-* link:#client-websocket[The WebSocket client library]
+* xref:eg-client-http[The HTTP Client Library]
+* xref:eg-client-http2[The HTTP/2 Client Library]
+* xref:eg-client-websocket[The WebSocket client library]
 
 If you are interested in the low-level details of how the Eclipse Jetty
 client libraries work, or are interested in writing a custom protocol,
-look at the link:#client-io-arch[Client I/O Architecture].
+look at the xref:eg-client-io-arch[Client I/O Architecture].
 
 include::http/client-http.adoc[]
 include::http2/client-http2.adoc[]

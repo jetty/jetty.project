@@ -16,14 +16,14 @@
 // ========================================================================
 //
 
-[[client-http2]]
+[[eg-client-http2]]
 === HTTP/2 Client Library
 
 In the vast majority of cases, client applications should use the generic,
-high-level, link:#client-http[HTTP client library] that also provides
+high-level, xref:eg-client-http[HTTP client library] that also provides
 HTTP/2 support via the pluggable
-link:#client-http-transport-http2[HTTP/2 transport] or the
-link:#client-http-transport-dynamic[dynamic transport].
+xref:eg-client-http-transport-http2[HTTP/2 transport] or the
+xref:eg-client-http-transport-dynamic[dynamic transport].
 
 The high-level HTTP library supports cookies, authentication, redirection,
 connection pooling and a number of other features that are absent in the
@@ -33,7 +33,7 @@ The HTTP/2 client library has been designed for those applications that need
 low-level access to HTTP/2 features such as _sessions_, _streams_ and
 _frames_, and this is quite a rare use case.
 
-[[client-http2-intro]]
+[[eg-client-http2-intro]]
 ==== Introducing HTTP2Client
 
 The Maven artifact coordinates for the HTTP/2 client library are the following:
@@ -80,7 +80,7 @@ A _stream_ has typically a very short life compared to the _session_: a
 _stream_ only exists for the duration of the request/response cycle and then
 disappears.
 
-[[client-http2-flow-control]]
+[[eg-client-http2-flow-control]]
 ===== HTTP/2 Flow Control
 
 The HTTP/2 protocol is _flow controlled_ (see
@@ -132,12 +132,12 @@ have consumed data bytes as soon as possible, so that the implementation
 `WINDOW_UPDATE` frame) with the information to enlarge the flow control
 window, therefore reducing the possibility that sender stalls due to the flow
 control windows being reduced to `0`.
-This is discussed in details in link:#client-http2-response[this section].
+This is discussed in details in xref:eg-client-http2-response[this section].
 
 
 
 
-[[client-http2-connect]]
+[[eg-client-http2-connect]]
 ==== Connecting to the Server
 
 The first thing an application should do is to connect to the server and
@@ -160,7 +160,7 @@ IMPORTANT: Applications must know in advance whether they want to connect to a
 clear-text or encrypted port, and pass the `SslContextFactory` parameter
 accordingly to the `connect(...)` method.
 
-[[client-http2-configure]]
+[[eg-client-http2-configure]]
 ===== Configuring the Session
 
 The `connect(...)` method takes a `Session.Listener` parameter.
@@ -185,7 +185,7 @@ Once a `Session` has been established, the communication with the server happens
 by exchanging _frames_, as specified in the
 link:https://tools.ietf.org/html/rfc7540#section-4[HTTP/2 specification].
 
-[[client-http2-request]]
+[[eg-client-http2-request]]
 ==== Sending a Request
 
 Sending an HTTP request to the server, and receiving a response, creates a
@@ -206,7 +206,7 @@ include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=newStr
 Note how `Session.newStream(...)` takes a `Stream.Listener` parameter.
 This listener is notified of stream events originated by the server such as
 receiving `HEADERS` or `DATA` frames that are part of the response, discussed
-in more details in the link:#client-http2-response[section below].
+in more details in the xref:eg-client-http2-response[section below].
 Please refer to the `Stream.Listener`
 link:{JDURL}/org/eclipse/jetty/http2/api/Stream.Listener.html[javadocs] for
 the complete list of events.
@@ -224,7 +224,7 @@ IMPORTANT: When sending two `DATA` frames consecutively, the second call to
 Use the `Callback` APIs or `CompletableFuture` APIs to ensure that the second
 `Stream.data(...)` call is performed when the first completed successfully.
 
-[[client-http2-response]]
+[[eg-client-http2-response]]
 ==== Receiving a Response
 
 Response events are delivered to the `Stream.Listener` passed to
@@ -278,7 +278,7 @@ to call `Stream.demand(...)`. If they don't, the implementation will not
 deliver `DATA` frames and the application will stall threadlessly until an
 idle timeout fires to close the stream or the session.
 
-[[client-http2-reset]]
+[[eg-client-http2-reset]]
 ==== Resetting a Request or Response
 
 In HTTP/2, clients and servers have the ability to tell to the other peer that
@@ -293,7 +293,7 @@ The `HTTP2Client` APIs allow client applications to send and receive this
 include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=reset]
 ----
 
-[[client-http2-push]]
+[[eg-client-http2-push]]
 ==== Receiving HTTP/2 Pushes
 
 HTTP/2 servers have the ability to push resources related to a primary
@@ -303,7 +303,7 @@ frame that contains the request URI and headers that a client would use to
 request explicitly that resource.
 
 Client applications can be configured to tell the server to never push
-resources, see link:#client-http2-configure[this section].
+resources, see xref:eg-client-http2-configure[this section].
 
 Client applications can listen to the push events, and act accordingly:
 

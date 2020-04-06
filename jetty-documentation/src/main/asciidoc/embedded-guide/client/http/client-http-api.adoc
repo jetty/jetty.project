@@ -16,12 +16,12 @@
 // ========================================================================
 //
 
-[[client-http-api]]
+[[eg-client-http-api]]
 === HttpClient API Usage
 
 `HttpClient` provides two types of APIs: a blocking API and a non-blocking API.
 
-[[client-http-blocking]]
+[[eg-client-http-blocking]]
 ==== HttpClient Blocking APIs
 
 The simpler way to perform a HTTP request is the following:
@@ -81,7 +81,7 @@ include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=totalTim
 
 In the example above, when the 5 seconds expire, the request is aborted and a `java.util.concurrent.TimeoutException` is thrown.
 
-[[client-http-non-blocking]]
+[[eg-client-http-non-blocking]]
 ==== HttpClient Non-Blocking APIs
 
 So far we have shown how to use Jetty HTTP client in a blocking style - that is, the thread that issues the request blocks until the request/response conversation is complete.
@@ -139,10 +139,10 @@ This makes Jetty HTTP client suitable for HTTP load testing because, for example
 
 Have a look at the link:{JDURL}/org/eclipse/jetty/client/api/Request.Listener.html[`Request.Listener`] class to know about request events, and to the link:{JDURL}/org/eclipse/jetty/client/api/Response.Listener.html[`Response.Listener`] class to know about response events.
 
-[[client-http-content]]
+[[eg-client-http-content]]
 ==== HttpClient Content Handling
 
-[[client-http-content-request]]
+[[eg-client-http-content-request]]
 ===== Request Content Handling
 
 Jetty's `HttpClient` provides a number of utility classes off the shelf to handle request content.
@@ -190,7 +190,7 @@ which allows applications to write request content when it is available to the `
 include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=outputStreamRequestContent]
 ----
 
-[[client-http-content-response]]
+[[eg-client-http-content-response]]
 ===== Response Content Handling
 
 Jetty's `HttpClient` allows applications to handle response content in different ways.
