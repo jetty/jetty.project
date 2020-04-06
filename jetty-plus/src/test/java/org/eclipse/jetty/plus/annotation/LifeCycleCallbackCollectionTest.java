@@ -243,9 +243,6 @@ public class LifeCycleCallbackCollectionTest
         PreDestroyCallback pdBoth = new PreDestroyCallback(TestServlet.class, "predestroy");
         collection.add(pdBoth);
         
-        //ensure we invoke the lifecyclecallbacks
-        context.getObjectFactory().addDecorator(new PlusDecorator(context));
-        
         server.start();
         
         assertEquals(4, TestServlet.postConstructCount);
