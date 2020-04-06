@@ -462,8 +462,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         //classes are unknown outside the ServletHolder
         Servlet unwrapped = servlet;
         while (WrapperServlet.class.isAssignableFrom(unwrapped.getClass()))
-            unwrapped = ((WrapperServlet)unwrapped).unwrap();
+            unwrapped = ((WrapperServlet)unwrapped).getWrappedServlet();
         getServletHandler().destroyServlet(unwrapped);
+        //destroy the wrapped servlet, in case there is special behaviour
         servlet.destroy();
     }
 
@@ -1314,7 +1315,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         /**
          * @return the original servlet
          */
-        public Servlet unwrap()
+        public Servlet getWrappedServlet()
         {
             return _servlet;
         }
