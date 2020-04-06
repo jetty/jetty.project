@@ -457,7 +457,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (o == null)
             return;
         Servlet servlet = ((Servlet)o);
-        getServletHandler().destroyServlet(servlet);
+        //need to use the unwrapped servlet because lifecycle callbacks such as
+        //postconstruct and predestroy are based off the classname and the wrapper
+        //classes are unknown outside the ServletHolder
+        Servlet unwrapped = servlet;
+        while (WrapperServlet.class.isAssignableFrom(unwrapped.getClass()))
+            unwrapped = ((WrapperServlet)unwrapped).getWrappedServlet();
+        getServletHandler().destroyServlet(unwrapped);
+        //destroy the wrapped servlet, in case there is special behaviour
         servlet.destroy();
     }
 
@@ -1303,6 +1310,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         public void destroy()
         {
             _servlet.destroy();
+        }
+        
+        /**
+         * @return the original servlet
+         */
+        public Servlet getWrappedServlet()
+        {
+            return _servlet;
         }
 
         @Override
