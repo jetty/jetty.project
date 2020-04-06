@@ -27,7 +27,9 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * RunAsCollection
+ * @deprecated class unused as of 9.4.28 due for removal in 10.0.0
  */
+@Deprecated
 public class RunAsCollection
 {
     private static final Logger LOG = Log.getLogger(RunAsCollection.class);
