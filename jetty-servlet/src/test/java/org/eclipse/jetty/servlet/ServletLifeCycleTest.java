@@ -60,8 +60,8 @@ public class ServletLifeCycleTest
         context.getObjectFactory().addDecorator(new TestDecorator());
 
         ServletHandler sh = context.getServletHandler();
-        sh.addListener(new ListenerHolder(TestListener.class));
-        context.addEventListener(context.getServletContext().createListener(TestListener2.class));
+        sh.addListener(new ListenerHolder(TestListener.class)); //added directly to ServletHandler
+        context.addEventListener(context.getServletContext().createListener(TestListener2.class));//create,decorate and add listener to context - no holder!
 
         sh.addFilterWithMapping(TestFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         sh.addFilterWithMapping(new FilterHolder(context.getServletContext().createFilter(TestFilter2.class)), "/*", EnumSet.of(DispatcherType.REQUEST));
@@ -110,8 +110,6 @@ public class ServletLifeCycleTest
         server.stop();
 
         assertThat(events, Matchers.contains(
-            "contextDestroyed class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener",
-            "contextDestroyed class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener2",
             "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
             "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
             "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
@@ -122,6 +120,8 @@ public class ServletLifeCycleTest
             "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2",
             "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet",
             "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet",
+            "contextDestroyed class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener",
+            "contextDestroyed class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener2",
             "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener"
         ));
 
