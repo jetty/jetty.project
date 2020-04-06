@@ -55,7 +55,7 @@ public class CloseStatus
 
     private final int code;
     private final String reason;
-    private final Throwable cause;
+    private Throwable cause;
 
     /**
      * Creates a reason for closing a web socket connection with the no given status code.
@@ -209,6 +209,11 @@ public class CloseStatus
     public boolean isAbnormal()
     {
         return !isOrdinary(code);
+    }
+
+    public void initCause(Throwable cause)
+    {
+        this.cause = cause;
     }
 
     public Throwable getCause()

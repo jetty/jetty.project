@@ -123,6 +123,28 @@ public class WebSocketSessionState
         }
     }
 
+    /**
+     * This should only be called directly before closing the connection when we are in {@link State#CLOSED} state.
+     * This ensures an abnormal close status and if we have no error in the CloseStatus we will set one.
+     * @param t the error which occurred.
+     */
+    public void onError(Throwable t)
+    {
+        synchronized (this)
+        {
+            if (_sessionState != State.CLOSED || _closeStatus == null)
+                throw new IllegalArgumentException();
+
+            // Override any normal close status.
+            if (!_closeStatus.isAbnormal())
+                _closeStatus = new CloseStatus(CloseStatus.SERVER_ERROR, t);
+
+            // Otherwise set the error if it wasn't already set to notify onError as well as onClose.
+            if (_closeStatus.getCause() == null)
+                _closeStatus.initCause(t);
+        }
+    }
+
     public boolean onEof()
     {
         synchronized (this)
