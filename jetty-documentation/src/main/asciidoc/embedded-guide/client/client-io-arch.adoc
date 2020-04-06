@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[client-io-arch]]
+[[eg-client-io-arch]]
 === Client Libraries Architecture
 
 The Jetty client libraries provide the basic components and APIs to implement
@@ -27,13 +27,13 @@ specific concepts (such as establishing a connection to a server).
 
 There are conceptually two layers that compose the Jetty client libraries:
 
-. link:#client-io-arch-network[The network layer], that handles the low level
+. xref:eg-client-io-arch-network[The network layer], that handles the low level
 I/O and deals with buffers, threads, etc.
-. link:#client-io-arch-protocol[The protocol layer], that handles the parsing
+. xref:eg-client-io-arch-protocol[The protocol layer], that handles the parsing
 of bytes read from the network and the generation of bytes to write to the
 network.
 
-[[client-io-arch-network]]
+[[eg-client-io-arch-network]]
 ==== Client Libraries Network Layer
 
 The Jetty client libraries use the common I/O design described in
@@ -115,7 +115,7 @@ Please refer to the `ClientConnector`
 link:{JDURL}/org/eclipse/jetty/io/ClientConnector.html[javadocs]
 for the complete list of configurable parameters.
 
-[[client-io-arch-protocol]]
+[[eg-client-io-arch-protocol]]
 ==== Client Libraries Protocol Layer
 
 The protocol layer builds on top of the network layer to generate the

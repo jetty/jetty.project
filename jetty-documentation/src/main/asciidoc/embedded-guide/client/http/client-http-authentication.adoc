@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[client-http-authentication]]
+[[eg-client-http-authentication]]
 === HttpClient Authentication Support
 
 Jetty's `HttpClient` supports the `BASIC` and `DIGEST` authentication
@@ -97,5 +97,5 @@ in this way:
 include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=requestPreemptedResult]
 ----
 
-See also the link:#client-http-proxy-authentication[proxy authentication section]
+See also the xref:eg-client-http-proxy-authentication[proxy authentication section]
 for further information about how authentication works with HTTP proxies.

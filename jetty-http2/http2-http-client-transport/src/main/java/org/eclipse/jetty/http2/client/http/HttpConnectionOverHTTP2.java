@@ -108,7 +108,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         MetaData.Request metaData = new MetaData.Request(request.getMethod(), new HttpURI(request.getURI()), HttpVersion.HTTP_2, request.getHeaders());
         // We do not support upgrade requests with content, so endStream=true.
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
-        IStream stream = ((HTTP2Session)session).newStream(frame, null);
+        IStream stream = ((HTTP2Session)session).newLocalStream(frame, null);
         stream.updateClose(frame.isEndStream(), CloseState.Event.AFTER_SEND);
 
         HttpExchange exchange = request.getConversation().getExchanges().peekLast();
