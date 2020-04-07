@@ -65,13 +65,13 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
      * can force redeployment by typing a linefeed character at the command line.
      */
     @Parameter(defaultValue = "0", property = "jetty.scan", required = true)
-    protected int scan; 
-    
+    protected int scan;
+
     /**
      * Scanner to check for files changes to cause redeploy
      */
     protected Scanner scanner;
-    
+
     /**
      * Only one of the following will be used, depending the mode
      * the mojo is started in: EMBED, FORK, DISTRO
@@ -92,7 +92,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         try
         {
             //start jetty
-            embedder = newJettyEmbedder();        
+            embedder = newJettyEmbedder();
             embedder.setExitVm(true);
             embedder.setStopAtShutdown(true);
             embedder.start();
@@ -213,7 +213,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
             Resource r = Resource.newResource(webApp.getDescriptor());
             scanner.addFile(r.getFile().toPath());
         }
-        
+
         if (webApp.getJettyEnvXml() != null)
             scanner.addFile(new File(webApp.getJettyEnvXml()).toPath());
 
@@ -227,13 +227,13 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
         {
             scanner.addFile(new File(webApp.getOverrideDescriptor()).toPath());
         }
-        
+
         File jettyWebXmlFile = findJettyWebXmlFile(new File(webAppSourceDirectory,"WEB-INF"));
         if (jettyWebXmlFile != null)
         {
             scanner.addFile(jettyWebXmlFile.toPath());
         }
-        
+
         //make sure each of the war artifacts is added to the scanner
         for (Artifact a:mavenProjectHelper.getWarPluginInfo().getWarArtifacts())
         {
@@ -243,7 +243,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
             else
                 scanner.addFile(f.toPath());
         }
-        
+
         //set up any extra files or dirs to watch
         configureScanTargetPatterns(scanner);
 
@@ -269,7 +269,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                 }
             }
         }
-        
+
         if (webApp.getClasses() != null && webApp.getClasses().exists())
         {
             Path p = webApp.getClasses().toPath();
@@ -289,7 +289,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                         s = "glob:" + s;
                     includeExcludes.include(p.getFileSystem().getPathMatcher(s));
                 }
-            }     
+            }
         }
 
         if (webApp.getWebInfLib() != null)
@@ -303,30 +303,30 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
             }
         }
     }
-    
+
     /**
      * Stop an executing webapp and restart it after optionally
      * reconfiguring it.
-     * 
+     *
      * @param reconfigure if true, the scanner will
      * be reconfigured after changes to the pom. If false, only
      * the webapp will be reconfigured.
-     * 
+     *
      * @throws Exception
      */
-    public void restartWebApp(boolean reconfigure) throws Exception 
+    public void restartWebApp(boolean reconfigure) throws Exception
     {
         getLog().info("Restarting " + webApp);
         getLog().debug("Stopping webapp ...");
         if (scanner != null)
             scanner.stop();
-        
+
         switch (deployMode)
         {
             case EMBED:
             {
                 getLog().debug("Reconfiguring webapp ...");
-                
+
                 verifyPomConfiguration();
                 // check if we need to reconfigure the scanner,
                 // which is if the pom changes
@@ -347,7 +347,7 @@ public class JettyRunMojo extends AbstractUnassembledWebAppMojo
                 if (scanner != null)
                     scanner.start();
                 getLog().info("Restart completed at " + new Date().toString());
-                
+
                 break;
             }
             case FORK:

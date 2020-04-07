@@ -20,7 +20,6 @@ package org.eclipse.jetty.plus.webapp;
 
 import java.util.Iterator;
 import java.util.Objects;
-
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
@@ -33,7 +32,6 @@ import org.eclipse.jetty.plus.annotation.LifeCycleCallback;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.PostConstructCallback;
 import org.eclipse.jetty.plus.annotation.PreDestroyCallback;
-import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
 import org.eclipse.jetty.plus.jndi.Link;
 import org.eclipse.jetty.plus.jndi.NamingEntry;
@@ -89,13 +87,6 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         {
             callbacks = new LifeCycleCallbackCollection();
             context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, callbacks);
-        }
-
-        RunAsCollection runAsCollection = (RunAsCollection)context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
-        if (runAsCollection == null)
-        {
-            runAsCollection = new RunAsCollection();
-            context.setAttribute(RunAsCollection.RUNAS_COLLECTION, runAsCollection);
         }
     }
 

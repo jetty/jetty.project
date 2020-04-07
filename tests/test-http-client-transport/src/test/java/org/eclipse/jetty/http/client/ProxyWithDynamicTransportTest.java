@@ -180,9 +180,8 @@ public class ProxyWithDynamicTransportTest
             {
                 ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
                 HTTP2Client http2Client = new HTTP2Client(clientConnector);
-                ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
-                ClientConnectionFactory.Info h2 = new ClientConnectionFactoryOverHTTP2.H2(http2Client);
-                return new HttpClient(new HttpClientTransportDynamic(clientConnector, h1, h2c, h2));
+                ClientConnectionFactory.Info http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
+                return new HttpClient(new HttpClientTransportDynamic(clientConnector, h1, http2));
             }
         });
         context.addServlet(holder, "/*");
@@ -200,9 +199,8 @@ public class ProxyWithDynamicTransportTest
         clientConnector.setSslContextFactory(new SslContextFactory.Client(true));
         http2Client = new HTTP2Client(clientConnector);
         ClientConnectionFactory.Info h1 = HttpClientConnectionFactory.HTTP11;
-        ClientConnectionFactory.Info h2c = new ClientConnectionFactoryOverHTTP2.H2C(http2Client);
-        ClientConnectionFactory.Info h2 = new ClientConnectionFactoryOverHTTP2.H2(http2Client);
-        client = new HttpClient(new HttpClientTransportDynamic(clientConnector, h1, h2c, h2));
+        ClientConnectionFactory.Info http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
+        client = new HttpClient(new HttpClientTransportDynamic(clientConnector, h1, http2));
         client.start();
     }
 

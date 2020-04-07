@@ -19,11 +19,11 @@
 package org.eclipse.jetty.fcgi.client.http;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Locale;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpContent;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.Request;
@@ -33,7 +33,6 @@ import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.StringUtil;
@@ -56,7 +55,7 @@ public class HttpSenderOverFCGI extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, HttpContent content, Callback callback)
+    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         Request request = exchange.getRequest();
         // Copy the request headers to be able to convert them properly
@@ -102,32 +101,31 @@ public class HttpSenderOverFCGI extends HttpSender
         transport.customize(request, fcgiHeaders);
 
         int id = getHttpChannel().getRequest();
-        boolean hasContent = content.hasContent();
-        Generator.Result headersResult = generator.generateRequestHeaders(id, fcgiHeaders,
-            hasContent ? callback : Callback.NOOP);
-        if (hasContent)
+        if (contentBuffer.hasRemaining() || lastContent)
         {
-            getHttpChannel().flush(headersResult);
+            Generator.Result headersResult = generator.generateRequestHeaders(id, fcgiHeaders, Callback.NOOP);
+            Generator.Result contentResult = generator.generateRequestContent(id, contentBuffer, lastContent, callback);
+            getHttpChannel().flush(headersResult, contentResult);
         }
         else
         {
-            Generator.Result noContentResult = generator.generateRequestContent(id, BufferUtil.EMPTY_BUFFER, true, callback);
-            getHttpChannel().flush(headersResult, noContentResult);
+            Generator.Result headersResult = generator.generateRequestHeaders(id, fcgiHeaders, callback);
+            getHttpChannel().flush(headersResult);
         }
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, HttpContent content, Callback callback)
+    protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
-        if (content.isConsumed())
+        if (contentBuffer.hasRemaining() || lastContent)
         {
-            callback.succeeded();
+            int request = getHttpChannel().getRequest();
+            Generator.Result result = generator.generateRequestContent(request, contentBuffer, lastContent, callback);
+            getHttpChannel().flush(result);
         }
         else
         {
-            int request = getHttpChannel().getRequest();
-            Generator.Result result = generator.generateRequestContent(request, content.getByteBuffer(), content.isLast(), callback);
-            getHttpChannel().flush(result);
+            callback.succeeded();
         }
     }
 }

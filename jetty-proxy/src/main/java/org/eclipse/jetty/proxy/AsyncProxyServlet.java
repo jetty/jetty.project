@@ -30,10 +30,9 @@ import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 
@@ -50,17 +49,16 @@ public class AsyncProxyServlet extends ProxyServlet
     private static final String WRITE_LISTENER_ATTRIBUTE = AsyncProxyServlet.class.getName() + ".writeListener";
 
     @Override
-    protected ContentProvider proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
+    protected Request.Content proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
     {
-        ServletInputStream input = request.getInputStream();
-        DeferredContentProvider provider = new DeferredContentProvider();
-        input.setReadListener(newReadListener(request, response, proxyRequest, provider));
-        return provider;
+        AsyncRequestContent content = new AsyncRequestContent();
+        request.getInputStream().setReadListener(newReadListener(request, response, proxyRequest, content));
+        return content;
     }
 
-    protected ReadListener newReadListener(HttpServletRequest request, HttpServletResponse response, Request proxyRequest, DeferredContentProvider provider)
+    protected ReadListener newReadListener(HttpServletRequest request, HttpServletResponse response, Request proxyRequest, AsyncRequestContent content)
     {
-        return new StreamReader(request, response, proxyRequest, provider);
+        return new StreamReader(request, response, proxyRequest, content);
     }
 
     @Override
@@ -131,28 +129,28 @@ public class AsyncProxyServlet extends ProxyServlet
         private final HttpServletRequest request;
         private final HttpServletResponse response;
         private final Request proxyRequest;
-        private final DeferredContentProvider provider;
+        private final AsyncRequestContent content;
 
-        protected StreamReader(HttpServletRequest request, HttpServletResponse response, Request proxyRequest, DeferredContentProvider provider)
+        protected StreamReader(HttpServletRequest request, HttpServletResponse response, Request proxyRequest, AsyncRequestContent content)
         {
             this.request = request;
             this.response = response;
             this.proxyRequest = proxyRequest;
-            this.provider = provider;
+            this.content = content;
         }
 
         @Override
-        public void onDataAvailable() throws IOException
+        public void onDataAvailable()
         {
             iterate();
         }
 
         @Override
-        public void onAllDataRead() throws IOException
+        public void onAllDataRead()
         {
             if (_log.isDebugEnabled())
                 _log.debug("{} proxying content to upstream completed", getRequestId(request));
-            provider.close();
+            content.close();
         }
 
         @Override
@@ -176,7 +174,7 @@ public class AsyncProxyServlet extends ProxyServlet
                 {
                     if (_log.isDebugEnabled())
                         _log.debug("{} proxying content to upstream: {} bytes", requestId, read);
-                    onRequestContent(request, proxyRequest, provider, buffer, 0, read, this);
+                    onRequestContent(request, proxyRequest, content, buffer, 0, read, this);
                     return Action.SCHEDULED;
                 }
                 else if (read < 0)
@@ -192,9 +190,9 @@ public class AsyncProxyServlet extends ProxyServlet
             return Action.IDLE;
         }
 
-        protected void onRequestContent(HttpServletRequest request, Request proxyRequest, DeferredContentProvider provider, byte[] buffer, int offset, int length, Callback callback)
+        protected void onRequestContent(HttpServletRequest request, Request proxyRequest, AsyncRequestContent content, byte[] buffer, int offset, int length, Callback callback)
         {
-            provider.offer(ByteBuffer.wrap(buffer, offset, length), callback);
+            content.offer(ByteBuffer.wrap(buffer, offset, length), callback);
         }
 
         @Override

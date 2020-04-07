@@ -26,7 +26,10 @@ import org.eclipse.jetty.client.api.ContentProvider;
 
 /**
  * A {@link ContentProvider} for byte arrays.
+ *
+ * @deprecated use {@link BytesRequestContent} instead.
  */
+@Deprecated
 public class BytesContentProvider extends AbstractTypedContentProvider
 {
     private final byte[][] bytes;

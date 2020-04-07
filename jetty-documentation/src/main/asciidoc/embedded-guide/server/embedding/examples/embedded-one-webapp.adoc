@@ -21,7 +21,7 @@
 
 This example shows how to deploy a simple webapp with an embedded instance of Jetty.
 This is useful when you want to manage the lifecycle of a server programmatically, either within a production application or as a simple way to deploying and debugging a full scale application deployment.
-In many ways it is easier then traditional deployment since you control the classpath yourself, making this easy to wire up in a test case in Maven  and issue requests using your favorite http client library (like our Jetty client found in xref:http-client[]).
+In many ways it is easier then traditional deployment since you control the classpath yourself, making this easy to wire up in a test case in Maven  and issue requests using your favorite http client library (like our Jetty client found in xref:client-http[]).
 
 [source, java, subs="{sub-order}"]
 ----

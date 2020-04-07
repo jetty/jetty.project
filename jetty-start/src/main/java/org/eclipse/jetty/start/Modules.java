@@ -136,10 +136,8 @@ public class Modules implements Iterable<Module>
                     {
                         parent = Module.normalizeModuleName(parent);
                         System.out.printf(label, parent);
-                        if (!Module.isRequiredDependency(parent))
-                        {
-                            System.out.print(" [not-required]");
-                        }
+                        if (Module.isConditionalDependency(parent))
+                            System.out.print(" [conditional]");
                         label = ", %s";
                     }
                     System.out.println();
@@ -420,7 +418,7 @@ public class Modules implements Iterable<Module>
         StartLog.debug("Enabled module [%s] depends on %s", module.getName(), module.getDepends());
         for (String dependsOnRaw : module.getDepends())
         {
-            boolean isRequired = Module.isRequiredDependency(dependsOnRaw);
+            boolean isConditional = Module.isConditionalDependency(dependsOnRaw);
             // Final to allow lambda's below to use name
             final String dependentModule = Module.normalizeModuleName(dependsOnRaw);
 
@@ -436,7 +434,7 @@ public class Modules implements Iterable<Module>
                 if (dependentModule.contains("/"))
                 {
                     Path file = _baseHome.getPath("modules/" + dependentModule + ".mod");
-                    if (isRequired || Files.exists(file))
+                    if (!isConditional || Files.exists(file))
                     {
                         registerModule(file).expandDependencies(_args.getProperties());
                         providers = _provided.get(dependentModule);
@@ -447,10 +445,10 @@ public class Modules implements Iterable<Module>
                         continue;
                     }
                 }
-                // is this a non-required module
-                if (!isRequired)
+                // is this a conditional module
+                if (isConditional)
                 {
-                    StartLog.debug("Skipping non-required module [%s]: doesn't exist", dependentModule);
+                    StartLog.debug("Skipping conditional module [%s]: it does not exist", dependentModule);
                     continue;
                 }
                 // throw an exception (not a dynamic module and a required dependency)
@@ -570,7 +568,7 @@ public class Modules implements Iterable<Module>
         {
             // Check dependencies
             m.getDepends().stream()
-                .filter(Module::isRequiredDependency)
+                .filter(depends -> !Module.isConditionalDependency(depends))
                 .forEach(d ->
                 {
                     Set<Module> providers = getAvailableProviders(d);

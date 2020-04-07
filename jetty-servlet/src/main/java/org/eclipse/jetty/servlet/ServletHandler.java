@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -308,6 +309,9 @@ public class ServletHandler extends ScopedHandler
         _servlets = shs;
         ServletMapping[] sms = (ServletMapping[])LazyList.toArray(servletMappings, ServletMapping.class);
         _servletMappings = sms;
+        
+        if (_contextHandler != null)
+            _contextHandler.contextDestroyed();
 
         //Retain only Listeners added via jetty apis (is Source.EMBEDDED)
         List<ListenerHolder> listenerHolders = new ArrayList<>();
@@ -724,30 +728,40 @@ public class ServletHandler extends ScopedHandler
     public void initialize()
         throws Exception
     {
-        _initialized = true;
-        
         MultiException mx = new MultiException();
 
-        Stream.concat(Stream.concat(
-            Arrays.stream(_filters),
-            Arrays.stream(_servlets).sorted()),
-            Arrays.stream(_listeners))
-            .forEach(h ->
+        Consumer<BaseHolder<?>> c = h ->
+        {
+            try
             {
-                try
+                if (!h.isStarted())
                 {
-                    if (!h.isStarted())
-                    {
-                        h.start();
-                        h.initialize();
-                    }
+                    h.start();
+                    h.initialize();
                 }
-                catch (Throwable e)
-                {
-                    LOG.debug("Unable to start {}", h, e);
-                    mx.add(e);
-                }
-            });
+            }
+            catch (Throwable e)
+            {
+                LOG.debug("Unable to start {}", h, e);
+                mx.add(e);
+            }
+        };
+        
+        //Start the listeners so we can call them
+        Arrays.stream(_listeners).forEach(c);
+        
+        //call listeners contextInitialized
+        if (_contextHandler != null)
+            _contextHandler.contextInitialized();
+        
+        //Only set initialized true AFTER the listeners have been called
+        _initialized = true;
+            
+        //Start the filters then the servlets
+        Stream.concat(
+            Arrays.stream(_filters),
+            Arrays.stream(_servlets).sorted())
+            .forEach(c);
 
         mx.ifExceptionThrow();
     }

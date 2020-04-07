@@ -160,12 +160,12 @@ public abstract class AbstractHandshaker implements Handshaker
 
         coreSession.setWebSocketConnection(connection);
 
+        baseRequest.setHandled(true);
         Response baseResponse = baseRequest.getResponse();
         prepareResponse(baseResponse, negotiation);
         if (httpConfig.getSendServerVersion())
             baseResponse.getHttpFields().put(SERVER_VERSION);
         baseResponse.flushBuffer();
-        baseRequest.setHandled(true);
 
         baseRequest.setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, connection);
 

@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 /**
  * <p>A listener for raw network traffic within Jetty.</p>
  * <p>{@link NetworkTrafficListener}s can be installed in a
- * <code>org.eclipse.jetty.server.nio.NetworkTrafficSelectChannelConnector</code>,
+ * {@code org.eclipse.jetty.server.NetworkTrafficServerConnector},
  * and are notified of the following network traffic events:</p>
  * <ul>
  * <li>Connection opened, when the server has accepted the connection from a remote client</li>
@@ -45,7 +45,9 @@ public interface NetworkTrafficListener
      *
      * @param socket the socket associated with the remote client
      */
-    public void opened(Socket socket);
+    default void opened(Socket socket)
+    {
+    }
 
     /**
      * <p>Callback method invoked when bytes sent by a remote client arrived on the server.</p>
@@ -53,7 +55,9 @@ public interface NetworkTrafficListener
      * @param socket the socket associated with the remote client
      * @param bytes the read-only buffer containing the incoming bytes
      */
-    public void incoming(Socket socket, ByteBuffer bytes);
+    default void incoming(Socket socket, ByteBuffer bytes)
+    {
+    }
 
     /**
      * <p>Callback method invoked when bytes are sent to a remote client from the server.</p>
@@ -62,7 +66,9 @@ public interface NetworkTrafficListener
      * @param socket the socket associated with the remote client
      * @param bytes the read-only buffer containing the outgoing bytes
      */
-    public void outgoing(Socket socket, ByteBuffer bytes);
+    default void outgoing(Socket socket, ByteBuffer bytes)
+    {
+    }
 
     /**
      * <p>Callback method invoked when a connection to a remote client has been closed.</p>
@@ -74,31 +80,7 @@ public interface NetworkTrafficListener
      *
      * @param socket the (closed) socket associated with the remote client
      */
-    public void closed(Socket socket);
-
-    /**
-     * <p>A commodity class that implements {@link NetworkTrafficListener} with empty methods.</p>
-     */
-    public static class Adapter implements NetworkTrafficListener
+    default void closed(Socket socket)
     {
-        @Override
-        public void opened(Socket socket)
-        {
-        }
-
-        @Override
-        public void incoming(Socket socket, ByteBuffer bytes)
-        {
-        }
-
-        @Override
-        public void outgoing(Socket socket, ByteBuffer bytes)
-        {
-        }
-
-        @Override
-        public void closed(Socket socket)
-        {
-        }
     }
 }

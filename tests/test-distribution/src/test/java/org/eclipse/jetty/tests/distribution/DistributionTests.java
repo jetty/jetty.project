@@ -21,9 +21,11 @@ package org.eclipse.jetty.tests.distribution;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.TimeUnit;
 
@@ -453,4 +455,49 @@ public class DistributionTests extends AbstractDistributionTest
             }
         }
     }
+
+    @Test
+    public void testStartStopLog4j2Modules() throws Exception
+    {
+        Path jettyBase = Files.createTempDirectory("jetty_base");
+
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance() //
+            .jettyVersion(jettyVersion) //
+            .jettyBase(jettyBase) //
+            .mavenLocalRepository(System.getProperty("mavenRepoPath")) //
+            .build();
+
+        String[] args = {
+            "--create-startd",
+            "--approve-all-licenses",
+            "--add-to-start=http,logging-log4j2"
+        };
+
+        try (DistributionTester.Run run1 = distribution.start(args))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            Files.copy(Paths.get("src/test/resources/log4j2.xml"), //
+                       Paths.get(jettyBase.toString(),"resources").resolve("log4j2.xml"), //
+                       StandardCopyOption.REPLACE_EXISTING);
+
+            int port = distribution.freePort();
+            try (DistributionTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            {
+                assertTrue(run2.awaitLogsFileFor(
+                    jettyBase.resolve("logs").resolve("jetty.log"), //
+                    "Started Server@", 10, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + port);
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+
+                run2.stop();
+                assertTrue(run2.awaitFor(5, TimeUnit.SECONDS));
+            }
+        }
+    }
+
 }

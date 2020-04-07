@@ -59,6 +59,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -606,9 +607,12 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         {
             for (Map.Entry<String,String> e : mergedSystemProperties.entrySet())
             {
-                System.setProperty(e.getKey(), e.getValue());
-                if (getLog().isDebugEnabled())
-                    getLog().debug("Set system property " + e.getKey() + "=" + e.getValue());
+                if (!StringUtil.isEmpty(e.getKey()) && !StringUtil.isEmpty(e.getValue()))
+                {
+                    System.setProperty(e.getKey(), e.getValue());
+                    if (getLog().isDebugEnabled())
+                        getLog().debug("Set system property " + e.getKey() + "=" + e.getValue());
+                }
             }
         }
     }

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import javax.servlet.ServletException;
@@ -73,6 +74,65 @@ public class ResponseHeadersTest
         }
     }
 
+    public static class CharsetResetToJsonMimeTypeServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            // We set an initial desired behavior.
+            response.setContentType("text/html; charset=US-ASCII");
+            PrintWriter writer = response.getWriter();
+
+            // We reset the response, as we don't want it to be HTML anymore.
+            response.reset();
+
+            // switch to json operation
+            // The use of application/json is always assumed to be UTF-8
+            // and should never have a `charset=` entry on the `Content-Type` response header
+            response.setContentType("application/json");
+            writer.println("{ \"what\": \"should this be?\" }");
+        }
+    }
+
+    public static class CharsetChangeToJsonMimeTypeServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            // We set an initial desired behavior.
+            response.setContentType("text/html; charset=US-ASCII");
+
+            // switch to json behavior.
+            // The use of application/json is always assumed to be UTF-8
+            // and should never have a `charset=` entry on the `Content-Type` response header
+            response.setContentType("application/json");
+
+            PrintWriter writer = response.getWriter();
+            writer.println("{ \"what\": \"should this be?\" }");
+        }
+    }
+
+    public static class CharsetChangeToJsonMimeTypeSetCharsetToNullServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            // We set an initial desired behavior.
+
+            response.setContentType("text/html; charset=us-ascii");
+            PrintWriter writer = response.getWriter();
+
+            // switch to json behavior.
+            // The use of application/json is always assumed to be UTF-8
+            // and should never have a `charset=` entry on the `Content-Type` response header
+            response.setContentType("application/json");
+            // attempt to indicate that there is truly no charset meant to be used in the response header
+            response.setCharacterEncoding(null);
+
+            writer.println("{ \"what\": \"should this be?\" }");
+        }
+    }
+
     private static Server server;
     private static LocalConnector connector;
 
@@ -89,6 +149,9 @@ public class ResponseHeadersTest
 
         context.addServlet(new ServletHolder(new SimulateUpgradeServlet()), "/ws/*");
         context.addServlet(new ServletHolder(new MultilineResponseValueServlet()), "/multiline/*");
+        context.addServlet(CharsetResetToJsonMimeTypeServlet.class, "/charset/json-reset/*");
+        context.addServlet(CharsetChangeToJsonMimeTypeServlet.class, "/charset/json-change/*");
+        context.addServlet(CharsetChangeToJsonMimeTypeSetCharsetToNullServlet.class, "/charset/json-change-null/*");
 
         server.start();
     }
@@ -148,5 +211,65 @@ public class ResponseHeadersTest
         expected = URLDecoder.decode(expected, "utf-8"); // decode the rest
         expected = expected.trim(); // trim whitespace at start/end
         assertThat("Response Header X-example", response.get("X-Example"), is(expected));
+    }
+
+    @Test
+    public void testCharsetResetToJsonMimeType() throws Exception
+    {
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/charset/json-reset/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        // The Content-Type should not have a charset= portion
+        assertThat("Response Header Content-Type", response.get("Content-Type"), is("application/json"));
+    }
+
+    @Test
+    public void testCharsetChangeToJsonMimeType() throws Exception
+    {
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/charset/json-change/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        // The Content-Type should not have a charset= portion
+        assertThat("Response Header Content-Type", response.get("Content-Type"), is("application/json"));
+    }
+
+    @Test
+    public void testCharsetChangeToJsonMimeTypeSetCharsetToNull() throws Exception
+    {
+        HttpTester.Request request = new HttpTester.Request();
+        request.setMethod("GET");
+        request.setURI("/charset/json-change-null/");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Connection", "close");
+        request.setHeader("Host", "test");
+
+        ByteBuffer responseBuffer = connector.getResponse(request.generate());
+        // System.err.println(BufferUtil.toUTF8String(responseBuffer));
+        HttpTester.Response response = HttpTester.parseResponse(responseBuffer);
+
+        // Now test for properly formatted HTTP Response Headers.
+        assertThat("Response Code", response.getStatus(), is(200));
+        // The Content-Type should not have a charset= portion
+        assertThat("Response Header Content-Type", response.get("Content-Type"), is("application/json"));
     }
 }

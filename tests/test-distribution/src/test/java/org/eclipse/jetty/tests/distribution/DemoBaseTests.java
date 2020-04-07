@@ -23,7 +23,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.FormContentProvider;
+import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.Test;
@@ -215,7 +215,7 @@ public class DemoBaseTests extends AbstractDistributionTest
             Fields form = new Fields();
             form.add("Action", "New Session");
             response = client.POST("http://localhost:" + httpPort + "/test/session/")
-                .content(new FormContentProvider(form))
+                .body(new FormRequestContent(form))
                 .send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
@@ -231,7 +231,7 @@ public class DemoBaseTests extends AbstractDistributionTest
             form.add("Name", "Zed");
             form.add("Value", "[alpha]");
             response = client.POST(location)
-                .content(new FormContentProvider(form))
+                .body(new FormRequestContent(form))
                 .send();
             assertEquals(HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
