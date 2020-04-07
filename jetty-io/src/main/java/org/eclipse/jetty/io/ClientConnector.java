@@ -301,7 +301,7 @@ public class ClientConnector extends ContainerLifeCycle
 
     protected class ClientSelectorManager extends SelectorManager
     {
-        protected ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
+        public ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
         }
