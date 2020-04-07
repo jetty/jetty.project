@@ -64,4 +64,10 @@ public class JavaxClientUpgradeRequest extends ClientUpgradeRequest implements U
     {
         return getURI();
     }
+
+    @Override
+    public String getPathInContext()
+    {
+        throw new UnsupportedOperationException();
+    }
 }

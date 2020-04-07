@@ -33,7 +33,7 @@ public class DummyFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
     }
 
     @Override
-    public EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass, String path)
+    public EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass)
     {
         return ClientEndpointConfig.Builder.create().build();
     }

@@ -53,7 +53,7 @@ public class PathParamTest
         _server.addConnector(_connector);
 
         _context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        _context.setContextPath("/");
+        _context.setContextPath("/context");
         _server.setHandler(_context);
 
         JavaxWebSocketServletContainerInitializer.configure(_context, (context, container) ->
@@ -68,7 +68,7 @@ public class PathParamTest
         _server.stop();
     }
 
-    @ServerEndpoint("/pathparam/echo/{name}")
+    @ServerEndpoint("/pathParam/echo/{name}")
     public static class EchoParamSocket
     {
         private Session session;
@@ -92,7 +92,7 @@ public class PathParamTest
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         EventSocket clientEndpoint = new EventSocket();
 
-        URI serverUri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/pathparam/echo/myParam");
+        URI serverUri = URI.create("ws://localhost:" + _connector.getLocalPort() + "/context/pathParam/echo/myParam");
         Session session = container.connectToServer(clientEndpoint, serverUri);
         session.getBasicRemote().sendText("echo");
 
