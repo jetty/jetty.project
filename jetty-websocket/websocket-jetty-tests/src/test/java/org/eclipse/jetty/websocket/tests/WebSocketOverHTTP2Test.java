@@ -152,7 +152,7 @@ public class WebSocketOverHTTP2Test
     @Test
     public void testWebSocketOverDynamicHTTP2() throws Exception
     {
-        testWebSocketOverDynamicTransport(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2C(new HTTP2Client(clientConnector)));
+        testWebSocketOverDynamicTransport(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
     }
 
     private void testWebSocketOverDynamicTransport(Function<ClientConnector, ClientConnectionFactory.Info> protocolFn) throws Exception
@@ -184,7 +184,7 @@ public class WebSocketOverHTTP2Test
         AbstractHTTP2ServerConnectionFactory h2c = connector.getBean(AbstractHTTP2ServerConnectionFactory.class);
         h2c.setConnectProtocolEnabled(false);
 
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2C(new HTTP2Client(clientConnector)));
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         EventSocket wsEndPoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/echo");
@@ -220,7 +220,7 @@ public class WebSocketOverHTTP2Test
             }
         });
 
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         // Connect and send immediately a message, so the message
         // arrives to the server while the server is still upgrading.
@@ -242,7 +242,7 @@ public class WebSocketOverHTTP2Test
     public void testWebSocketConnectPortDoesNotExist() throws Exception
     {
         startServer();
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         EventSocket wsEndPoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + (connector.getLocalPort() + 1) + "/ws/echo");
@@ -259,7 +259,7 @@ public class WebSocketOverHTTP2Test
     public void testWebSocketNotFound() throws Exception
     {
         startServer();
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         EventSocket wsEndPoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/nothing");
@@ -276,7 +276,7 @@ public class WebSocketOverHTTP2Test
     public void testNotNegotiated() throws Exception
     {
         startServer();
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         EventSocket wsEndPoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/null");
@@ -293,7 +293,7 @@ public class WebSocketOverHTTP2Test
     public void testThrowFromCreator() throws Exception
     {
         startServer();
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         CountDownLatch latch = new CountDownLatch(1);
         connector.addBean(new HttpChannel.Listener()
@@ -327,7 +327,7 @@ public class WebSocketOverHTTP2Test
     public void testServerConnectionClose() throws Exception
     {
         startServer();
-        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.H2(new HTTP2Client(clientConnector)));
+        startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         EventSocket wsEndPoint = new EventSocket();
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/connectionClose");

@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.file.Files;
@@ -370,6 +371,7 @@ public class DistributionTester
         private String jettyVersion;
         private String mavenLocalRepository = System.getProperty("user.home") + "/.m2/repository";
         private Map<String, String> mavenRemoteRepositories = new HashMap<>();
+        private Path logFile;
 
         @Override
         public String toString()
@@ -508,6 +510,38 @@ public class DistributionTester
         }
 
         /**
+         * Awaits the logs file to contain the given text, for the given amount of time.
+         *
+         * @param logFile the log file to test
+         * @param txt the text that must be present in the console logs
+         * @param time the time to wait
+         * @param unit the unit of time
+         * @return true if the text was found, false if the timeout elapsed
+         * @throws InterruptedException if the wait is interrupted
+         */
+        public boolean awaitLogsFileFor(Path logFile, String txt, long time, TimeUnit unit) throws InterruptedException
+        {
+            LogFileStreamer logFileStreamer = new LogFileStreamer(logFile);
+            Thread thread = new Thread(logFileStreamer, "LogFileStreamer/" + logFile);
+            thread.start();
+            try
+            {
+                long end = System.nanoTime() + unit.toNanos(time);
+                while (System.nanoTime() < end)
+                {
+                    boolean result = logs.stream().anyMatch(s -> s.contains(txt));
+                    if (result) return true;
+                    Thread.sleep(250);
+                }
+                return false;
+            }
+            finally
+            {
+                logFileStreamer.stop();
+            }
+        }
+
+        /**
          * Simple streamer for the console output from a Process
          */
         private class ConsoleStreamer implements Runnable
@@ -546,6 +580,52 @@ public class DistributionTester
             {
                 stop = true;
                 IO.close(reader);
+            }
+        }
+
+        private class LogFileStreamer implements Runnable
+        {
+            private RandomAccessFile inputFile;
+            private volatile boolean stop;
+            private final Path logFile;
+
+            public LogFileStreamer(Path logFile)
+            {
+                this.logFile = logFile;
+            }
+
+            @Override
+            public void run()
+            {
+                String currentLine;
+                long pos = 0;
+                while (!stop)
+                {
+                    try
+                    {
+                        inputFile = new RandomAccessFile(logFile.toFile(), "r");
+                        inputFile.seek(pos);
+                        if ((currentLine = inputFile.readLine()) != null)
+                        {
+                            logs.add(currentLine);
+                        }
+                        pos = inputFile.getFilePointer();
+                    }
+                    catch (IOException e)
+                    {
+                        //ignore
+                    }
+                    finally
+                    {
+                        IO.close(inputFile);
+                    }
+                }
+            }
+
+            public void stop()
+            {
+                stop = true;
+                IO.close(inputFile);
             }
         }
 

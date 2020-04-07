@@ -19,11 +19,14 @@
 package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConfig;
@@ -48,7 +51,7 @@ import org.eclipse.jetty.util.ProcessorUtils;
  * that is sent to the FastCGI server specified in the {@code proxyTo}
  * init-param.
  * <p>
- * This servlet accepts two additional init-params:
+ * This servlet accepts these additional {@code init-param}s:
  * <ul>
  * <li>{@code scriptRoot}, mandatory, that must be set to the directory where
  * the application that must be served via FastCGI is installed and corresponds to
@@ -62,6 +65,8 @@ import org.eclipse.jetty.util.ProcessorUtils;
  * </ul></li>
  * <li>{@code fastCGI.HTTPS}, optional, defaults to false, that specifies whether
  * to force the FastCGI {@code HTTPS} parameter to the value {@code on}</li>
+ * <li>{@code fastCGI.envNames}, optional, a comma separated list of environment variable
+ * names read via {@link System#getenv(String)} that are forwarded as FastCGI parameters.</li>
  * </ul>
  *
  * @see TryFilesFilter
@@ -73,6 +78,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
     public static final String ORIGINAL_URI_ATTRIBUTE_INIT_PARAM = "originalURIAttribute";
     public static final String ORIGINAL_QUERY_ATTRIBUTE_INIT_PARAM = "originalQueryAttribute";
     public static final String FASTCGI_HTTPS_INIT_PARAM = "fastCGI.HTTPS";
+    public static final String FASTCGI_ENV_NAMES_INIT_PARAM = "fastCGI.envNames";
 
     private static final String REMOTE_ADDR_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".remoteAddr";
     private static final String REMOTE_PORT_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".remotePort";
@@ -87,6 +93,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
     private String originalURIAttribute;
     private String originalQueryAttribute;
     private boolean fcgiHTTPS;
+    private Set<String> fcgiEnvNames;
 
     @Override
     public void init() throws ServletException
@@ -102,6 +109,15 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         originalQueryAttribute = getInitParameter(ORIGINAL_QUERY_ATTRIBUTE_INIT_PARAM);
 
         fcgiHTTPS = Boolean.parseBoolean(getInitParameter(FASTCGI_HTTPS_INIT_PARAM));
+
+        fcgiEnvNames = Collections.emptySet();
+        String envNames = getInitParameter(FASTCGI_ENV_NAMES_INIT_PARAM);
+        if (envNames != null)
+        {
+            fcgiEnvNames = Stream.of(envNames.split(","))
+                .map(String::trim)
+                .collect(Collectors.toSet());
+        }
     }
 
     @Override
@@ -195,6 +211,13 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
 
     protected void customizeFastCGIHeaders(Request proxyRequest, HttpFields fastCGIHeaders)
     {
+        for (String envName : fcgiEnvNames)
+        {
+            String envValue = System.getenv(envName);
+            if (envValue != null)
+                fastCGIHeaders.put(envName, envValue);
+        }
+
         fastCGIHeaders.remove("HTTP_PROXY");
 
         fastCGIHeaders.put(FCGI.Headers.REMOTE_ADDR, (String)proxyRequest.getAttributes().get(REMOTE_ADDR_ATTRIBUTE));

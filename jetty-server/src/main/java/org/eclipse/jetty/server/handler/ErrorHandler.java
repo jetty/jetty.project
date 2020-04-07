@@ -410,7 +410,10 @@ public class ErrorHandler extends AbstractHandler
         htmlRow(writer, "URI", uri);
         htmlRow(writer, "STATUS", status);
         htmlRow(writer, "MESSAGE", message);
-        htmlRow(writer, "SERVLET", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+        if (isShowServlet())
+        {
+            htmlRow(writer, "SERVLET", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
+        }
         Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
         while (cause != null)
         {
@@ -451,7 +454,7 @@ public class ErrorHandler extends AbstractHandler
         while (cause != null)
         {
             writer.printf("CAUSED BY %s%n", cause);
-            if (_showStacks && !_disableStacks)
+            if (isShowStacks() && !_disableStacks)
             {
                 cause.printStackTrace(writer);
             }

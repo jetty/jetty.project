@@ -22,7 +22,7 @@
 This example shows the bare minimum required for deploying a servlet into Jetty.
 Note that this is strictly a servlet, not a servlet in the context of a web application, that example comes later.
 This is purely just a servlet deployed and mounted on a context and able to process requests.
-This example is excellent for situations where you have a simple servlet that you need to unit test, just mount it on a context and issue requests using your favorite http client library (like our Jetty client found in xref:http-client[]).
+This example is excellent for situations where you have a simple servlet that you need to unit test, just mount it on a context and issue requests using your favorite http client library (like our Jetty client found in xref:client-http[]).
 
 [source, java, subs="{sub-order}"]
 ----

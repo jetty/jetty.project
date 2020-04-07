@@ -40,9 +40,14 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.options.WrappedUrlProvisionOption.OverwriteMode;
+import org.ops4j.pax.tinybundles.core.TinyBundle;
+import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.ops4j.pax.url.mvn.internal.AetherBasedResolver;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.http.HttpService;
 
@@ -52,6 +57,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
 
 /**
  * Helper methods for pax-exam tests
@@ -59,6 +65,24 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 public class TestOSGiUtil
 {
     public static final String BUNDLE_DEBUG = "bundle.debug";
+    
+    /**
+     * Null FragmentActivator for the fake bundle
+     * that exposes src/test/resources/jetty-logging.properties in
+     * the osgi container
+     */
+    public static class FragmentActivator implements BundleActivator
+    {
+        @Override
+        public void start(BundleContext context) throws Exception
+        {
+        }
+
+        @Override
+        public void stop(BundleContext context) throws Exception
+        {
+        }
+    }
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl, String jettySelectorFileName)
     {
@@ -90,6 +114,16 @@ public class TestOSGiUtil
         options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
         return options;
     }
+    
+    public static List<Option> configurePaxExamLogging()
+    {
+        //sort out logging from the pax-exam environment
+        List<Option> options = new ArrayList<>();
+        options.add(systemProperty("pax.exam.logging").value("none"));
+        String paxExamLogLevel = System.getProperty("pax.exam.LEVEL", "WARN");
+        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(paxExamLogLevel));
+        return options;
+    }
 
     public static List<Option> provisionCoreJetty()
     {
@@ -108,9 +142,11 @@ public class TestOSGiUtil
 
     public static List<Option> coreJettyDependencies()
     {
-        AetherBasedResolver l;
         List<Option> res = new ArrayList<>();
+        //enables a dump of the status of all deployed bundles
         res.add(systemProperty("bundle.debug").value(Boolean.toString(Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))));
+
+        //add locations to look for jars to deploy
         String mavenRepoPath = System.getProperty("mavenRepoPath");
         if (!StringUtil.isBlank(mavenRepoPath))
         {
@@ -124,15 +160,28 @@ public class TestOSGiUtil
         {
             res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
+
+        //make src/test/resources/jetty-logging.properties visible to jetty in the osgi container        
+        TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
+        loggingPropertiesBundle.add("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
+        loggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
+        loggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
+        loggingPropertiesBundle.add(FragmentActivator.class);
+        res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-jakarta-servlet-api").versionAsInProject().start());
+
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-commons").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-tree").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.apache.aries.spifly").artifactId("org.apache.aries.spifly.dynamic.bundle").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.apache.geronimo.specs").artifactId("geronimo-jta_1.1_spec").version("1.1.1").start());
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-log4j12").versionAsInProject().noStart());
+        //the slf4j-api jar does not have support for ServiceLoader in osgi in its manifest, so add it now
+        res.add(wrappedBundle(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject())
+            .instructions("Require-Capability=osgi.serviceloader;filter:=\"(osgi.serviceloader=org.slf4j.spi.SLF4JServiceProvider)\",osgi.extender;filter:=\"(osgi.extender=osgi.serviceloader.processor)\"")
+            .overwriteManifest(OverwriteMode.MERGE)
+            .start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-deploy").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-server").versionAsInProject().start());

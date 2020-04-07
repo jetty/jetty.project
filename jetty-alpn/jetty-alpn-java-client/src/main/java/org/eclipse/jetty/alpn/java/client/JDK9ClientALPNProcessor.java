@@ -75,8 +75,11 @@ public class JDK9ClientALPNProcessor implements ALPNProcessor.Client
         {
             String protocol = alpnConnection.getSSLEngine().getApplicationProtocol();
             if (LOG.isDebugEnabled())
-                LOG.debug("selected protocol {}", protocol);
-            alpnConnection.selected(protocol);
+                LOG.debug("selected protocol '{}'", protocol);
+            if (protocol != null && !protocol.isEmpty())
+                alpnConnection.selected(protocol);
+            else
+                alpnConnection.selected(null);
         }
     }
 }

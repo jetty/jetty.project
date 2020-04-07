@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import jakarta.inject.Inject;
@@ -45,7 +44,6 @@ import org.osgi.framework.Constants;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.options;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
@@ -59,7 +57,6 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 public class TestJettyOSGiBootWithBundle
 {
     private static final String TEST_JETTY_HOME_BUNDLE = "test-jetty-xml-bundle";
-    private static final String LOG_LEVEL = "WARN";
 
     @Inject
     BundleContext bundleContext = null;
@@ -68,6 +65,9 @@ public class TestJettyOSGiBootWithBundle
     public static Option[] configure() throws IOException
     {
         ArrayList<Option> options = new ArrayList<>();
+        
+        options.addAll(TestOSGiUtil.configurePaxExamLogging());
+        
         options.add(CoreOptions.junitBundles());
         options.addAll(configureJettyHomeAndPort());
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
@@ -75,9 +75,6 @@ public class TestJettyOSGiBootWithBundle
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
-        options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
-        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
         TinyBundle bundle = TinyBundles.bundle();
         bundle.add(SomeCustomBean.class);
         bundle.set(Constants.BUNDLE_SYMBOLICNAME, TEST_JETTY_HOME_BUNDLE);

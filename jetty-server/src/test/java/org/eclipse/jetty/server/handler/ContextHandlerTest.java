@@ -28,8 +28,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -445,6 +448,22 @@ public class ContextHandlerTest
         assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
         assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo/bar'"));
     }
+    
+    @Test
+    public void testContextInitializationDestruction() throws Exception
+    {
+        Server server = new Server();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
+
+        ContextHandler noServlets = new ContextHandler(contexts, "/noservlets");
+        TestServletContextListener listener = new TestServletContextListener();
+        noServlets.addEventListener(listener);
+        server.start();
+        assertEquals(1, listener.initialized);
+        server.stop();
+        assertEquals(1, listener.destroyed);
+    }
 
     @Test
     public void testContextVirtualGetContext() throws Exception
@@ -838,6 +857,24 @@ public class ContextHandlerTest
             response.setHeader("Connection", "close");
             PrintWriter writer = response.getWriter();
             writer.println("ctx='" + request.getContextPath() + "'");
+        }
+    }
+    
+    private static class TestServletContextListener implements ServletContextListener
+    {
+        public int initialized = 0;
+        public int destroyed = 0;
+        
+        @Override
+        public void contextInitialized( ServletContextEvent sce)
+        {
+            initialized++;
+        }
+
+        @Override
+        public void contextDestroyed(ServletContextEvent sce)
+        {
+            destroyed++;
         }
     }
 }

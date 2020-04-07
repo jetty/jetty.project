@@ -20,7 +20,6 @@ package org.eclipse.jetty.annotations;
 
 import jakarta.servlet.Servlet;
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.Descriptor;
 import org.eclipse.jetty.webapp.MetaData;
@@ -60,14 +59,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
                     if (d == null)
                     {
                         metaData.setOrigin(holder.getName() + ".servlet.run-as", runAs, clazz);
-                        org.eclipse.jetty.plus.annotation.RunAs ra = new org.eclipse.jetty.plus.annotation.RunAs(clazz.getName(), role);
-                        RunAsCollection raCollection = (RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
-                        if (raCollection == null)
-                        {
-                            raCollection = new RunAsCollection();
-                            _context.setAttribute(RunAsCollection.RUNAS_COLLECTION, raCollection);
-                        }
-                        raCollection.add(ra);
+                        holder.setRunAsRole(role);
                     }
                 }
             }

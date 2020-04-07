@@ -16,88 +16,77 @@
 // ========================================================================
 //
 
-[[client-http-proxy]]
-=== Proxy Support
+[[eg-client-http-proxy]]
+=== HttpClient Proxy Support
 
-Jetty's HTTP client can be configured to use proxies to connect to destinations.
+Jetty's `HttpClient` can be configured to use proxies to connect to destinations.
 
-Two types of proxies are available out of the box: a HTTP proxy (provided by class `org.eclipse.jetty.client.HttpProxy`) and a SOCKS 4 proxy (provided by class `org.eclipse.jetty.client.Socks4Proxy`).
+Two types of proxies are available out of the box: a HTTP proxy (provided by
+class `org.eclipse.jetty.client.HttpProxy`) and a SOCKS 4 proxy (provided by
+class `org.eclipse.jetty.client.Socks4Proxy`).
 Other implementations may be written by subclassing `ProxyConfiguration.Proxy`.
 
 The following is a typical configuration:
 
-[source, java, subs="{sub-order}"]
+[source,java,indent=0]
 ----
-ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
-HttpProxy proxy = new HttpProxy("proxyHost", proxyPort);
-
-// Do not proxy requests for localhost:8080
-proxy.getExcludedAddresses().add("localhost:8080");
-
-// add the new proxy to the list of proxies already registered
-proxyConfig.getProxies().add(proxy);
-
-ContentResponse response = httpClient.GET(uri);
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=proxy]
 ----
 
-You specify the proxy host and port, and optionally also the addresses that you do not want to be proxied, and then add the proxy configuration on the `ProxyConfiguration` instance.
+You specify the proxy host and proxy port, and optionally also the addresses
+that you do not want to be proxied, and then add the proxy configuration on
+the `ProxyConfiguration` instance.
 
-Configured in this way, `HttpClient` makes requests to the HTTP proxy (for plain-text HTTP requests) or establishes a tunnel via `HTTP CONNECT` (for encrypted HTTPS requests).
+Configured in this way, `HttpClient` makes requests to the HTTP proxy (for
+plain-text HTTP requests) or establishes a tunnel via HTTP `CONNECT` (for
+encrypted HTTPS requests).
 
-[[client-http-proxy-authentication]]
+Proxying is supported for both HTTP/1.1 and HTTP/2.
+
+[[eg-client-http-proxy-authentication]]
 ==== Proxy Authentication Support
 
-Jetty's HTTP client support proxy authentication in the same way it supports link:#client-http-authentication[server authentication].
+Jetty's `HttpClient` supports proxy authentication in the same way it supports
+xref:eg-client-http-authentication[server authentication].
 
-In the example below, the proxy requires Basic authentication, but the server requires Digest authentication, and therefore:
+In the example below, the proxy requires `BASIC` authentication, but the server
+requires `DIGEST` authentication, and therefore:
 
-[source, java, subs="{sub-order}"]
+[source,java,indent=0]
 ----
-URI proxyURI = new URI("http://proxy.net:8080");
-URI serverURI = new URI("http://domain.com/secure");
-
-AuthenticationStore auth = httpClient.getAuthenticationStore();
-
-// Proxy credentials.
-auth.addAuthentication(new BasicAuthentication(proxyURI, "ProxyRealm", "proxyUser", "proxyPass"));
-
-// Server credentials.
-auth.addAuthentication(new DigestAuthentication(serverURI, "ServerRealm", "serverUser", "serverPass"));
-
-// Proxy configuration.
-ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
-HttpProxy proxy = new HttpProxy("proxy.net", 8080);
-proxyConfig.getProxies().add(proxy);
-
-ContentResponse response = httpClient.newRequest(serverURI)
-        .send()
-        .get(5, TimeUnit.SECONDS);
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=proxyAuthentication]
 ----
 
-The HTTP conversation for successful authentications on both the proxy and the server is the following:
+The HTTP conversation for successful authentications on both the proxy and the
+server is the following:
 
+[plantuml]
 ----
-Application  HttpClient                         Proxy                    Server
-     |           |                                |                         |
-     |--- GET -->|------------- GET ------------->|                         |
-     |           |                                |                         |
-     |           |<----- 407 + Proxy-Authn -------|                         |
-     |           |                                |                         |
-     |           |------ GET + Proxy-Authz ------>|                         |
-     |           |                                |                         |
-     |           |                                |---------- GET --------->|
-     |           |                                |                         |
-     |           |                                |<--- 401 + WWW-Authn ----|
-     |           |                                |                         |
-     |           |<------ 401 + WWW-Authn --------|                         |
-     |           |                                |                         |
-     |           |-- GET + Proxy-Authz + Authz -->|                         |
-     |           |                                |                         |
-     |           |                                |------ GET + Authz ----->|
-     |           |                                |                         |
-     |<-- 200 ---|<------------ 200 --------------|<--------- 200 ----------|
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant Application
+participant HttpClient
+participant Proxy
+participant Server
+
+Application -> Proxy : GET /path
+Proxy -> HttpClient : 407 + Proxy-Authenticate
+HttpClient -> Proxy : GET /path + Proxy-Authorization
+Proxy -> Server : GET /path
+Server -> Proxy : 401 + WWW-Authenticate
+Proxy -> HttpClient : 401 + WWW-Authenticate
+HttpClient -> Proxy : GET /path + Proxy-Authorization + Authorization
+Proxy -> Server : GET /path + Authorization
+Server -> Proxy : 200 OK
+Proxy -> HttpClient : 200 OK
+HttpClient -> Application : 200 OK
 ----
 
-The application does not receive events related to the responses with code 407 and 401 since they are handled internally by `HttpClient`.
+The application does not receive events related to the responses with code 407
+and 401 since they are handled internally by `HttpClient`.
 
-Similarly to the link:#client-http-authentication[authentication section], the proxy authentication result and the server authentication result can be preempted to avoid, respectively, the 407 and 401 roundtrips.
+Similarly to the xref:eg-client-http-authentication[authentication section], the
+proxy authentication result and the server authentication result can be
+preempted to avoid, respectively, the 407 and 401 roundtrips.

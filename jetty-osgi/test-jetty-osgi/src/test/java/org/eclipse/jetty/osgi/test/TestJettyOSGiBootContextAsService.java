@@ -51,8 +51,6 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 @RunWith(PaxExam.class)
 public class TestJettyOSGiBootContextAsService
 {
-    private static final String LOG_LEVEL = "WARN";
-
     @Inject
     BundleContext bundleContext = null;
 
@@ -60,6 +58,9 @@ public class TestJettyOSGiBootContextAsService
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>();
+        
+        options.addAll(TestOSGiUtil.configurePaxExamLogging());
+        
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-context-as-service.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
@@ -69,8 +70,7 @@ public class TestJettyOSGiBootContextAsService
 
         // a bundle that registers a webapp as a service for the jetty osgi core to pick up and deploy
         options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-context").versionAsInProject().start());
-        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
-        options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
+
         options.add(systemProperty("org.ops4j.pax.url.mvn.localRepository").value(System.getProperty("mavenRepoPath")));
 
         return options.toArray(new Option[0]);

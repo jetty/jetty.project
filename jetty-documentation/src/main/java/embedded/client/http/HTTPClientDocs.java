@@ -22,31 +22,55 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.CookieStore;
+import java.net.HttpCookie;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.ProxyConfiguration;
+import org.eclipse.jetty.client.RoundRobinConnectionPool;
+import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
+import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.client.util.DigestAuthentication;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.OutputStreamRequestContent;
 import org.eclipse.jetty.client.util.PathRequestContent;
 import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
+import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import static java.lang.System.Logger.Level.INFO;
@@ -473,5 +497,354 @@ public class HTTPClientDocs
         // Send the request to server1.
         request1.send(result -> System.getLogger("forwarder").log(INFO, "Sourcing from server1 complete"));
         // end::demandedContentListener[]
+    }
+
+    public void getCookies() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::getCookies[]
+        CookieStore cookieStore = httpClient.getCookieStore();
+        List<HttpCookie> cookies = cookieStore.get(URI.create("http://domain.com/path"));
+        // end::getCookies[]
+    }
+
+    public void setCookie() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::setCookie[]
+        CookieStore cookieStore = httpClient.getCookieStore();
+        HttpCookie cookie = new HttpCookie("foo", "bar");
+        cookie.setDomain("domain.com");
+        cookie.setPath("/");
+        cookie.setMaxAge(TimeUnit.DAYS.toSeconds(1));
+        cookieStore.add(URI.create("http://domain.com"), cookie);
+        // end::setCookie[]
+    }
+
+    public void requestCookie() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::requestCookie[]
+        ContentResponse response = httpClient.newRequest("http://domain.com/path")
+            .cookie(new HttpCookie("foo", "bar"))
+            .send();
+        // end::requestCookie[]
+    }
+
+    public void removeCookie() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::removeCookie[]
+        CookieStore cookieStore = httpClient.getCookieStore();
+        URI uri = URI.create("http://domain.com");
+        List<HttpCookie> cookies = cookieStore.get(uri);
+        for (HttpCookie cookie : cookies)
+        {
+            cookieStore.remove(uri, cookie);
+        }
+        // end::removeCookie[]
+    }
+
+    public void emptyCookieStore() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::emptyCookieStore[]
+        httpClient.setCookieStore(new HttpCookieStore.Empty());
+        // end::emptyCookieStore[]
+    }
+
+    public void filteringCookieStore() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::filteringCookieStore[]
+        class GoogleOnlyCookieStore extends HttpCookieStore
+        {
+            @Override
+            public void add(URI uri, HttpCookie cookie)
+            {
+                if (uri.getHost().endsWith("google.com"))
+                    super.add(uri, cookie);
+            }
+        }
+
+        httpClient.setCookieStore(new GoogleOnlyCookieStore());
+        // end::filteringCookieStore[]
+    }
+
+    public void addAuthentication() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::addAuthentication[]
+        // Add authentication credentials.
+        AuthenticationStore auth = httpClient.getAuthenticationStore();
+
+        URI uri1 = new URI("http://mydomain.com/secure");
+        auth.addAuthentication(new BasicAuthentication(uri1, "MyRealm", "userName1", "password1"));
+
+        URI uri2 = new URI("http://otherdomain.com/admin");
+        auth.addAuthentication(new BasicAuthentication(uri1, "AdminRealm", "admin", "password"));
+        // end::addAuthentication[]
+    }
+
+    public void clearResults() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::clearResults[]
+        httpClient.getAuthenticationStore().clearAuthenticationResults();
+        // end::clearResults[]
+    }
+
+    public void preemptedResult() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::preemptedResult[]
+        AuthenticationStore auth = httpClient.getAuthenticationStore();
+        URI uri = URI.create("http://domain.com/secure");
+        auth.addAuthenticationResult(new BasicAuthentication.BasicResult(uri, "username", "password"));
+        // end::preemptedResult[]
+    }
+
+    public void requestPreemptedResult() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::requestPreemptedResult[]
+        URI uri = URI.create("http://domain.com/secure");
+        Authentication.Result authn = new BasicAuthentication.BasicResult(uri, "username", "password");
+        Request request = httpClient.newRequest(uri);
+        authn.apply(request);
+        request.send();
+        // end::requestPreemptedResult[]
+    }
+
+    public void proxy() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::proxy[]
+        HttpProxy proxy = new HttpProxy("proxyHost", 8888);
+
+        // Do not proxy requests for localhost:8080.
+        proxy.getExcludedAddresses().add("localhost:8080");
+
+        // Add the new proxy to the list of proxies already registered.
+        ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
+        proxyConfig.getProxies().add(proxy);
+
+        ContentResponse response = httpClient.GET("http://domain.com/path");
+        // end::proxy[]
+    }
+
+    public void proxyAuthentication() throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // tag::proxyAuthentication[]
+        AuthenticationStore auth = httpClient.getAuthenticationStore();
+
+        // Proxy credentials.
+        URI proxyURI = new URI("http://proxy.net:8080");
+        auth.addAuthentication(new BasicAuthentication(proxyURI, "ProxyRealm", "proxyUser", "proxyPass"));
+
+        // Server credentials.
+        URI serverURI = new URI("http://domain.com/secure");
+        auth.addAuthentication(new DigestAuthentication(serverURI, "ServerRealm", "serverUser", "serverPass"));
+
+        // Proxy configuration.
+        ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();
+        HttpProxy proxy = new HttpProxy("proxy.net", 8080);
+        proxyConfig.getProxies().add(proxy);
+
+        ContentResponse response = httpClient.newRequest(serverURI).send();
+        // end::proxyAuthentication[]
+    }
+
+    public void defaultTransport() throws Exception
+    {
+        // tag::defaultTransport[]
+        // No transport specified, using default.
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+        // end::defaultTransport[]
+    }
+
+    public void http11Transport() throws Exception
+    {
+        // tag::http11Transport[]
+        // Configure HTTP/1.1 transport.
+        HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP();
+        transport.setHeaderCacheSize(16384);
+
+        HttpClient client = new HttpClient(transport);
+        client.start();
+        // end::http11Transport[]
+    }
+
+    public void http2Transport() throws Exception
+    {
+        // tag::http2Transport[]
+        // The HTTP2Client powers the HTTP/2 transport.
+        HTTP2Client h2Client = new HTTP2Client();
+        h2Client.setInitialSessionRecvWindow(64 * 1024 * 1024);
+
+        // Create and configure the HTTP/2 transport.
+        HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(h2Client);
+        transport.setUseALPN(true);
+
+        HttpClient client = new HttpClient(transport);
+        client.start();
+        // end::http2Transport[]
+    }
+
+    public void fcgiTransport() throws Exception
+    {
+        // tag::fcgiTransport[]
+        String scriptRoot = "/var/www/wordpress";
+        HttpClientTransportOverFCGI transport = new HttpClientTransportOverFCGI(scriptRoot);
+
+        HttpClient client = new HttpClient(transport);
+        client.start();
+        // end::fcgiTransport[]
+    }
+
+    public void dynamicDefault() throws Exception
+    {
+        // tag::dynamicDefault[]
+        // Dynamic transport speaks HTTP/1.1 by default.
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic();
+
+        HttpClient client = new HttpClient(transport);
+        client.start();
+        // end::dynamicDefault[]
+    }
+
+    public void dynamicOneProtocol() throws Exception
+    {
+        // tag::dynamicOneProtocol[]
+        ClientConnector connector = new ClientConnector();
+
+        // Equivalent to HttpClientTransportOverHTTP.
+        HttpClientTransportDynamic http11Transport = new HttpClientTransportDynamic(connector, HttpClientConnectionFactory.HTTP11);
+
+        // Equivalent to HttpClientTransportOverHTTP2.
+        HTTP2Client http2Client = new HTTP2Client(connector);
+        HttpClientTransportDynamic http2Transport = new HttpClientTransportDynamic(connector, new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client));
+        // end::dynamicOneProtocol[]
+    }
+
+    public void dynamicH1H2() throws Exception
+    {
+        // tag::dynamicH1H2[]
+        ClientConnector connector = new ClientConnector();
+
+        ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
+
+        HTTP2Client http2Client = new HTTP2Client(connector);
+        ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
+
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http1, http2);
+
+        HttpClient client = new HttpClient(transport);
+        client.start();
+        // end::dynamicH1H2[]
+    }
+
+    public void dynamicClearText() throws Exception
+    {
+        // tag::dynamicClearText[]
+        ClientConnector connector = new ClientConnector();
+        ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
+        HTTP2Client http2Client = new HTTP2Client(connector);
+        ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(connector, http1, http2);
+        HttpClient client = new HttpClient(transport);
+        client.start();
+
+        // The server supports both HTTP/1.1 and HTTP/2 clear-text on port 8080.
+
+        // Make a clear-text request without explicit version.
+        // The first protocol specified to HttpClientTransportDynamic
+        // is picked, in this example will be HTTP/1.1.
+        ContentResponse http1Response = client.newRequest("host", 8080).send();
+
+        // Make a clear-text request with explicit version.
+        // Clear-text HTTP/2 is used for this request.
+        ContentResponse http2Response = client.newRequest("host", 8080)
+            // Specify the version explicitly.
+            .version(HttpVersion.HTTP_2)
+            .send();
+
+        // Make a clear-text upgrade request from HTTP/1.1 to HTTP/2.
+        // The request will start as HTTP/1.1, but the response will be HTTP/2.
+        ContentResponse upgradedResponse = client.newRequest("host", 8080)
+            .header(HttpHeader.UPGRADE, "h2c")
+            .header(HttpHeader.HTTP2_SETTINGS, "")
+            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
+            .send();
+        // end::dynamicClearText[]
+    }
+
+    public void getConnectionPool() throws Exception
+    {
+        // tag::getConnectionPool[]
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        ConnectionPool connectionPool = httpClient.getDestinations().stream()
+            // Cast to HttpDestination.
+            .map(HttpDestination.class::cast)
+            // Find the destination by filtering on the Origin.
+            .filter(destination -> destination.getOrigin().getAddress().getHost().equals("domain.com"))
+            .findAny()
+            // Get the ConnectionPool.
+            .map(HttpDestination::getConnectionPool)
+            .orElse(null);
+        // end::getConnectionPool[]
+    }
+
+    public void setConnectionPool() throws Exception
+    {
+        // tag::setConnectionPool[]
+        HttpClient httpClient = new HttpClient();
+        httpClient.start();
+
+        // The max number of connections in the pool.
+        int maxConnectionsPerDestination = httpClient.getMaxConnectionsPerDestination();
+
+        // The max number of requests per connection (multiplexing).
+        // Start with 1, since this value is dynamically set to larger values if
+        // the transport supports multiplexing requests on the same connection.
+        int maxRequestsPerConnection = 1;
+
+        HttpClientTransport transport = httpClient.getTransport();
+
+        // Set the ConnectionPool.Factory using a lambda.
+        transport.setConnectionPoolFactory(destination ->
+            new RoundRobinConnectionPool(destination,
+                maxConnectionsPerDestination,
+                destination,
+                maxRequestsPerConnection));
+        // end::setConnectionPool[]
     }
 }

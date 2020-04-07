@@ -92,19 +92,24 @@ import org.slf4j.LoggerFactory;
 /**
  * ContextHandler.
  *
+ * <p>
  * This handler wraps a call to handle by setting the context and servlet path, plus setting the context classloader.
- *
+ * </p>
  * <p>
- * If the context init parameter "org.eclipse.jetty.server.context.ManagedAttributes" is set to a comma separated list of names, then they are treated as
+ * If the context init parameter {@code org.eclipse.jetty.server.context.ManagedAttributes} is set to a comma separated list of names, then they are treated as
  * context attribute names, which if set as attributes are passed to the servers Container so that they may be managed with JMX.
+ * </p>
  * <p>
- * The maximum size of a form that can be processed by this context is controlled by the system properties org.eclipse.jetty.server.Request.maxFormKeys and
- * org.eclipse.jetty.server.Request.maxFormContentSize. These can also be configured with {@link #setMaxFormContentSize(int)} and {@link #setMaxFormKeys(int)}
+ * The maximum size of a form that can be processed by this context is controlled by the system properties {@code org.eclipse.jetty.server.Request.maxFormKeys} and
+ * {@code org.eclipse.jetty.server.Request.maxFormContentSize}. These can also be configured with {@link #setMaxFormContentSize(int)} and {@link #setMaxFormKeys(int)}
+ * </p>
  * <p>
- * This servers executor is made available via a context attributed "org.eclipse.jetty.server.Executor".
+ * The executor is made available via a context attributed {@code org.eclipse.jetty.server.Executor}.
+ * </p>
  * <p>
  * By default, the context is created with alias checkers for {@link AllowSymLinkAliasChecker} (unix only) and {@link ApproveNonExistentDirectoryAliases}. If
  * these alias checkers are not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
+ * </p>
  */
 @ManagedObject("URI Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Graceful
@@ -171,6 +176,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         __serverInfo = serverInfo;
     }
 
+    public enum ContextStatus
+    {
+        NOTSET, 
+        INITIALIZED,
+        DESTROYED
+    }
+    
+    protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     protected Context _scontext;
     private final AttributesMap _attributes;
     private final Map<String, String> _initParams;
@@ -782,6 +795,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             // defers the calling of super.doStart()
             startContext();
+            
+            contextInitialized();
 
             _availability = Availability.AVAILABLE;
             LOG.info("Started {}", this);
@@ -840,49 +855,97 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             addEventListener(new ManagedAttributeListener(this, StringUtil.csvSplit(managedAttributes)));
 
         super.doStart();
+    }
 
+    /**
+     * Call the ServletContextListeners contextInitialized methods.
+     * This can be called from a ServletHandler during the proper sequence
+     * of initializing filters, servlets and listeners. However, if there is
+     * no ServletHandler, the ContextHandler will call this method during
+     * doStart().
+     * 
+     * @throws Exception
+     */
+    public void contextInitialized() throws Exception
+    {
         // Call context listeners
-        _destroyServletContextListeners.clear();
-        if (!_servletContextListeners.isEmpty())
+        switch (_contextStatus)
         {
-            ServletContextEvent event = new ServletContextEvent(_scontext);
-            for (ServletContextListener listener : _servletContextListeners)
+            case NOTSET:
             {
-                callContextInitialized(listener, event);
-                _destroyServletContextListeners.add(listener);
+                try
+                {
+                    _destroyServletContextListeners.clear();
+                    if (!_servletContextListeners.isEmpty())
+                    {
+                        ServletContextEvent event = new ServletContextEvent(_scontext);
+                        for (ServletContextListener listener : _servletContextListeners)
+                        {
+                            callContextInitialized(listener, event);
+                            _destroyServletContextListeners.add(listener);
+                        }
+                    }
+                }
+                finally
+                {
+                    _contextStatus = ContextStatus.INITIALIZED;
+                }
+                break;
             }
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Call the ServletContextListeners with contextDestroyed.
+     * This method can be called from a ServletHandler in the
+     * proper sequence of destroying filters, servlets and listeners.
+     * If there is no ServletHandler, the ContextHandler must ensure
+     * these listeners are called instead.
+     * 
+     * @throws Exception
+     */
+    public void contextDestroyed() throws Exception
+    {
+        switch (_contextStatus)
+        {
+            case INITIALIZED:
+            {
+                try
+                {
+                    //Call context listeners
+                    MultiException ex = new MultiException();
+                    ServletContextEvent event = new ServletContextEvent(_scontext);
+                    Collections.reverse(_destroyServletContextListeners);
+                    for (ServletContextListener listener : _destroyServletContextListeners)
+                    {
+                        try
+                        {
+                            callContextDestroyed(listener, event);
+                        }
+                        catch (Exception x)
+                        {
+                            ex.add(x);
+                        }
+                    }
+                    ex.ifExceptionThrow();
+                }
+                finally
+                {
+                    _contextStatus = ContextStatus.DESTROYED;
+                }
+                break;
+            }
+            default:
+                break;
         }
     }
 
     protected void stopContext() throws Exception
     {
-        // Call the context listeners
-        ServletContextEvent event = new ServletContextEvent(_scontext);
-        Collections.reverse(_destroyServletContextListeners);
-        MultiException ex = new MultiException();
-        for (ServletContextListener listener : _destroyServletContextListeners)
-        {
-            try
-            {
-                callContextDestroyed(listener, event);
-            }
-            catch (Exception x)
-            {
-                ex.add(x);
-            }
-        }
-
         // stop all the handler hierarchy
-        try
-        {
-            super.doStop();
-        }
-        catch (Exception x)
-        {
-            ex.add(x);
-        }
-
-        ex.ifExceptionThrow();
+        super.doStop();
     }
 
     protected void callContextInitialized(ServletContextListener l, ServletContextEvent e)
@@ -926,6 +989,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             stopContext();
 
+            contextDestroyed();
+            
             // retain only durable listeners
             setEventListeners(_durableListeners);
             _durableListeners.clear();
@@ -958,6 +1023,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         finally
         {
+            _contextStatus = ContextStatus.NOTSET;
             __context.set(oldContext);
             exitScope(null);
             LOG.info("Stopped {}", this);

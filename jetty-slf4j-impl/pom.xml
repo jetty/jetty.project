@@ -19,7 +19,10 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.util.security.CredentialProvider)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional</Require-Capability>
+            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+            <Provide-Capability>
+              osgi.serviceloader;osgi.serviceloader=org.slf4j.spi.SLF4JServiceProvider
+            </Provide-Capability>
           </instructions>
         </configuration>
       </plugin>
