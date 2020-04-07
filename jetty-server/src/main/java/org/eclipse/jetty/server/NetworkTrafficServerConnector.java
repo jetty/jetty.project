@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.List;
@@ -29,7 +28,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.NetworkTrafficListener;
-import org.eclipse.jetty.io.NetworkTrafficSelectChannelEndPoint;
+import org.eclipse.jetty.io.NetworkTrafficSocketChannelEndPoint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -84,9 +83,8 @@ public class NetworkTrafficServerConnector extends ServerConnector
     }
 
     @Override
-    protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+    protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
     {
-        NetworkTrafficSelectChannelEndPoint endPoint = new NetworkTrafficSelectChannelEndPoint(channel, selectSet, key, getScheduler(), getIdleTimeout(), listeners);
-        return endPoint;
+        return new NetworkTrafficSocketChannelEndPoint(channel, selectSet, key, getScheduler(), getIdleTimeout(), listeners);
     }
 }
