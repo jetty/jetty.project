@@ -26,7 +26,7 @@ import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
 import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
 
@@ -43,7 +43,7 @@ public class DecodedTextMessageSink<T> extends DecodedMessageSink<Decoder.Text<T
     @Override
     protected MethodHandle newRawMethodHandle() throws NoSuchMethodException, IllegalAccessException
     {
-        return JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(DecodedTextMessageSink.class,
+        return JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(DecodedTextMessageSink.class,
             "onWholeMessage", MethodType.methodType(void.class, String.class))
             .bindTo(this);
     }

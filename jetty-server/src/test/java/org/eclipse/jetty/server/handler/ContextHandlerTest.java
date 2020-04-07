@@ -866,7 +866,7 @@ public class ContextHandlerTest
         public int destroyed = 0;
         
         @Override
-        public void contextInitialized( ServletContextEvent sce)
+        public void contextInitialized(ServletContextEvent sce)
         {
             initialized++;
         }

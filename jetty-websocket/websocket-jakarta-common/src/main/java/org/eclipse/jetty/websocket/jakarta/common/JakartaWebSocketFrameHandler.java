@@ -373,7 +373,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
     {
         try
         {
-            MethodHandles.Lookup lookup = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
+            MethodHandles.Lookup lookup = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
             MethodHandle partialMessageHandler = lookup
                 .findVirtual(MessageHandler.Partial.class, "onMessage", MethodType.methodType(void.class, Object.class, boolean.class));
             partialMessageHandler = partialMessageHandler.bindTo(handler);
@@ -430,7 +430,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
     {
         try
         {
-            MethodHandles.Lookup lookup = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
+            MethodHandles.Lookup lookup = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
             MethodHandle wholeMsgMethodHandle = lookup.findVirtual(MessageHandler.Whole.class, "onMessage", MethodType.methodType(void.class, Object.class));
             wholeMsgMethodHandle = wholeMsgMethodHandle.bindTo(handler);
 

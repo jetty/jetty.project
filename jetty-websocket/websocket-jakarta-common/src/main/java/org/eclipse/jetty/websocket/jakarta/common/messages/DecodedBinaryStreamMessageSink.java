@@ -27,7 +27,7 @@ import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
-import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
@@ -44,7 +44,7 @@ public class DecodedBinaryStreamMessageSink<T> extends DecodedMessageSink<Decode
     @Override
     protected MethodHandle newRawMethodHandle() throws NoSuchMethodException, IllegalAccessException
     {
-        return JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(DecodedBinaryStreamMessageSink.class,
+        return JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(DecodedBinaryStreamMessageSink.class,
             "onStreamStart", MethodType.methodType(void.class, InputStream.class))
             .bindTo(this);
     }
