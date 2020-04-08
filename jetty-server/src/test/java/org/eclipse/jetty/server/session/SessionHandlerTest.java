@@ -22,9 +22,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import javax.servlet.SessionTrackingMode;
+import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SessionHandlerTest
@@ -35,7 +40,64 @@ public class SessionHandlerTest
         SessionHandler sessionHandler = new SessionHandler();
         sessionHandler.setSessionTrackingModes(new HashSet<>(Arrays.asList(SessionTrackingMode.COOKIE, SessionTrackingMode.URL)));
         sessionHandler.setSessionTrackingModes(Collections.singleton(SessionTrackingMode.SSL));
-        assertThrows(IllegalArgumentException.class,() ->
-            sessionHandler.setSessionTrackingModes(new HashSet<>(Arrays.asList(SessionTrackingMode.SSL, SessionTrackingMode.URL))));
+        assertThrows(IllegalArgumentException.class, () -> sessionHandler.setSessionTrackingModes(new HashSet<>(Arrays.asList(SessionTrackingMode.SSL, SessionTrackingMode.URL))));
+    }
+
+    @Test
+    public void testSessionListenerOrdering()
+        throws Exception
+    {
+        final StringBuffer result = new StringBuffer();
+
+        class Listener1 implements HttpSessionListener
+        {
+
+            @Override
+            public void sessionCreated(HttpSessionEvent se)
+            {
+                result.append("Listener1 create;");
+            }
+
+            @Override
+            public void sessionDestroyed(HttpSessionEvent se)
+            {
+                result.append("Listener1 destroy;");
+            }
+        }
+
+        class Listener2 implements HttpSessionListener
+        {
+
+            @Override
+            public void sessionCreated(HttpSessionEvent se)
+            {
+                result.append("Listener2 create;");
+            }
+
+            @Override
+            public void sessionDestroyed(HttpSessionEvent se)
+            {
+                result.append("Listener2 destroy;");
+            }
+
+        }
+
+        Server server = new Server();
+        SessionHandler sessionHandler = new SessionHandler();
+        try
+        {
+            sessionHandler.addEventListener(new Listener1());
+            sessionHandler.addEventListener(new Listener2());
+            sessionHandler.setServer(server);
+            sessionHandler.start();
+            Session session = new Session(sessionHandler, new SessionData("aa", "_", "0.0", 0, 0, 0, 0));
+            sessionHandler.callSessionCreatedListeners(session);
+            sessionHandler.callSessionDestroyedListeners(session);
+            assertEquals("Listener1 create;Listener2 create;Listener2 destroy;Listener1 destroy;", result.toString());
+        }
+        finally
+        {
+            sessionHandler.stop();
+        }
     }
 }
