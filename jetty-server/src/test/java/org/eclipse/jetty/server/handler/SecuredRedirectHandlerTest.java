@@ -126,11 +126,7 @@ public class SecuredRedirectHandlerTest
         contextHandlers.setHandlers(new Handler[]{redirectHandler, rootContext, test1Context, test2Context});
 
         // Create server level handler tree
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(contextHandlers);
-        handlers.addHandler(new DefaultHandler()); // round things out
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(contextHandlers, new DefaultHandler()));
 
         server.start();
 

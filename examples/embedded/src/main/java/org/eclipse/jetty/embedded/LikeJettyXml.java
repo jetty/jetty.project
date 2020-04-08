@@ -40,7 +40,6 @@ import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.AsyncRequestLogWriter;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.DebugListener;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LowResourceMonitor;
@@ -105,10 +104,8 @@ public class LikeJettyXml
         // httpConfig.addCustomizer(new ForwardedRequestCustomizer());
 
         // Handler Structure
-        HandlerList handlers = new HandlerList();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        handlers.setHandlers(new Handler[]{contexts, new DefaultHandler()});
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(contexts, new DefaultHandler()));
 
         // === jetty-jmx.xml ===
         MBeanContainer mbContainer = new MBeanContainer(

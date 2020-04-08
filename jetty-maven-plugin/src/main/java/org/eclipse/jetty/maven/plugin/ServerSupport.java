@@ -26,14 +26,13 @@ import java.util.Map;
 
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.webapp.Configurations;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -68,26 +67,18 @@ public class ServerSupport
         if (server == null)
             throw new IllegalArgumentException("Server is null");
 
-        DefaultHandler defaultHandler = new DefaultHandler();
-        RequestLogHandler requestLogHandler = new RequestLogHandler();
         if (requestLog != null)
-            requestLogHandler.setRequestLog(requestLog);
+            server.setRequestLog(requestLog);
 
         ContextHandlerCollection contexts = findContextHandlerCollection(server);
         if (contexts == null)
         {
             contexts = new ContextHandlerCollection();
-            HandlerCollection handlers = (HandlerCollection)server.getChildHandlerByClass(HandlerCollection.class);
+            HandlerCollection handlers = server.getChildHandlerByClass(HandlerCollection.class);
             if (handlers == null)
-            {
-                handlers = new HandlerCollection();
-                server.setHandler(handlers);
-                handlers.setHandlers(new Handler[]{contexts, defaultHandler, requestLogHandler});
-            }
+                server.setHandler(new HandlerList(contexts, new DefaultHandler()));
             else
-            {
                 handlers.addHandler(contexts);
-            }
         } 
         
         if (contextHandlers != null)
