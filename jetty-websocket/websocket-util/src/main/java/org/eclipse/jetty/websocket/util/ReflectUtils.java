@@ -29,6 +29,7 @@ import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public class ReflectUtils
 {
@@ -220,27 +221,19 @@ public class ReflectUtils
 
     public static Method[] findAnnotatedMethods(Class<?> pojo, Class<? extends Annotation> anno)
     {
-        List<Method> methods = null;
         Class<?> clazz = pojo;
-
+        List<Method> methods = new ArrayList<>();
         while ((clazz != null) && Object.class.isAssignableFrom(clazz))
         {
-            for (Method method : clazz.getDeclaredMethods())
-            {
-                if (method.getAnnotation(anno) != null)
-                {
-                    if (methods == null)
-                        methods = new ArrayList<>();
-                    methods.add(method);
-                }
-            }
+            Stream.of(clazz.getDeclaredMethods())
+                .filter(method -> !method.isSynthetic() && (method.getAnnotation(anno) != null))
+                .forEach(methods::add);
             clazz = clazz.getSuperclass();
         }
 
-        if (methods == null)
+        if (methods.isEmpty())
             return null;
-        int len = methods.size();
-        return methods.toArray(new Method[len]);
+        return methods.toArray(new Method[0]);
     }
 
     /**
