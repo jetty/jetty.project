@@ -85,7 +85,7 @@ public class DefaultHandler extends AbstractHandler
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (response.isCommitted() || baseRequest.isHandled())
+        if (response.isCommitted() || baseRequest.isAsyncStarted())
             return;
 
         baseRequest.setHandled(true);
