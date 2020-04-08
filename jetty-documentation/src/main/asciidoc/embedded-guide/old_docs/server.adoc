@@ -16,30 +16,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.embedded;
+[[server]]
+== Jetty Server Libraries
 
-import org.eclipse.jetty.server.Server;
-
-/**
- * The simplest possible Jetty server.
- */
-// TODO: remove this class, only used in documentation.
-public class SimplestServer
-{
-    public static Server createServer(int port)
-    {
-        Server server = new Server(port);
-        // This has a connector listening on port specified
-        // and no handlers, meaning all requests will result
-        // in a 404 response
-        return server;
-    }
-
-    public static void main(String[] args) throws Exception
-    {
-        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
-        Server server = createServer(port);
-        server.start();
-        server.join();
-    }
-}
+include::embedding/chapter.adoc[]
+include::maven/chapter.adoc[]
+include::clients/http/chapter.adoc[]
+include::handlers/chapter.adoc[]
+include::websockets/intro/chapter.adoc[]
+include::websockets/jetty/chapter.adoc[]
+include::ant/chapter.adoc[]
+include::frameworks/chapter.adoc[]
+include::architecture/chapter.adoc[]
+include::platforms/chapter.adoc[]
+include::jetty-xml/chapter.adoc[]
+include::troubleshooting/chapter.adoc[]
+include::debugging/chapter.adoc[]
+//include::contributing/chapter.adoc[]
+include::upgrading/chapter.adoc[]

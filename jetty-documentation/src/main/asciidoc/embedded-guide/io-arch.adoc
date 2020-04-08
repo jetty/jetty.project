@@ -17,13 +17,13 @@
 //
 
 [appendix]
-[[io-arch]]
+[[eg-io-arch]]
 == Jetty I/O Architecture
 
 Jetty libraries (both client and server) use Java NIO to handle I/O, so that
 at its core Jetty I/O is completely non-blocking.
 
-[[io-arch-selector-manager]]
+[[eg-io-arch-selector-manager]]
 === Jetty I/O: `SelectorManager`
 
 The core class of Jetty I/O is
@@ -62,7 +62,7 @@ This example shows how a server accepts a client connection:
 include::{doc_code}/embedded/SelectorManagerDocs.java[tags=accept]
 ----
 
-[[io-arch-endpoint-connection]]
+[[eg-io-arch-endpoint-connection]]
 === Jetty I/O: `EndPoint` and `Connection`
 
 ``SocketChannel``s that are passed to `SelectorManager` are wrapped into two
@@ -138,7 +138,7 @@ subclasses.
 
 NOTE: TODO: add a link to a client-side specific architecture section
 
-[[io-arch-endpoint]]
+[[eg-io-arch-endpoint]]
 === Jetty I/O: `EndPoint`
 
 The Jetty I/O library use Java NIO to handle I/O, so that I/O is non-blocking.
@@ -162,9 +162,9 @@ fully written, even if they are delayed by TCP congestion/uncongestion).
 The `EndPoint` APIs abstract out the Java NIO details by providing non-blocking
 APIs based on `Callback` objects for I/O operations.
 The `EndPoint` APIs are typically called by `Connection` implementations, see
-link:#io-arch-connection[this section].
+xref:eg-io-arch-connection[this section].
 
-[[io-arch-connection]]
+[[eg-io-arch-connection]]
 === Jetty I/O: `Connection`
 
 `Connection` is the abstraction that deserializes incoming bytes into objects,
@@ -196,7 +196,7 @@ extends `AbstractConnection`:
 include::{doc_code}/embedded/SelectorManagerDocs.java[tags=connection]
 ----
 
-[[io-arch-echo]]
+[[eg-io-arch-echo]]
 === Jetty I/O: Network Echo
 
 With the concepts above it is now possible to write a simple, fully non-blocking,

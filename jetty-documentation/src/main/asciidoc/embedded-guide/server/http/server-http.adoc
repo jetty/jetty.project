@@ -1,0 +1,297 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[eg-server-http]]
+=== HTTP Server Libraries
+
+The Eclipse Jetty Project has historically provided libraries to embed an HTTP
+server and a Servlet Container.
+
+An `org.eclipse.jetty.server.Server` instance is the central component that
+links together a collection of ``Connector``s and a collection of
+``Handler``s, with threads from a `ThreadPool` doing the work.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam padding 5
+
+scale 1.5
+
+hide members
+hide circle
+
+Server - ThreadPool
+Connectors - Server
+Server -- Handlers
+----
+
+The components that accept connections from clients are
+`org.eclipse.jetty.server.Connector` instances.
+
+When a Jetty server interprets the HTTP protocol (both HTTP/1.1 and HTTP/2),
+it uses `org.eclipse.jetty.server.Handler` instances to process incoming
+requests and eventually produce responses.
+
+A `Server` must be created, configured and started:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=simple]
+----
+
+The example above shows the simplest HTTP/1.1 server; it has no support for
+HTTP sessions, for HTTP authentication, or for any of the features required
+by the Servlet specification.
+
+All these features are provided by the Jetty Server Libraries and server
+applications only need to put the required components together to provide
+all the required features.
+// TODO: link to a place where we discuss the handlers in more details.
+
+[[eg-server-connector]]
+=== Server Connectors
+
+A `Connector` is the component that handles incoming requests from clients,
+and works in conjunction with `ConnectionFactory` instances.
+
+The primary implementation is `org.eclipse.jetty.server.ServerConnector`.
+`ServerConnector` uses a `java.nio.channels.ServerSocketChannel` to listen
+to a TCP port and to accept TCP connections.
+
+Since `ServerConnector` wraps a `ServerSocketChannel`, it can be configured
+in a similar way, for example the port to listen to, the network address
+to bind to, etc.:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=configureConnector]
+----
+
+The _acceptors_ are threads that compete to accept TCP connections on the
+listening port, typically only one.
+When a connection is accepted, `ServerConnector` wraps it and passes it to
+the xref:eg-io-arch-selector-manager[`SelectorManager`].
+Therefore there is a little moment where the acceptor thread is not accepting
+new connections because it is busy wrapping the just accepted one to pass it
+to the `SelectorManager`.
+Connections that are ready to be accepted but are not accepted yet are queued
+in a bounded queue (at the OS level) whose capacity can be configured with the
+`ServerConnector.acceptQueueSize` parameter.
+
+If your application must withstand a very high rate of connections opened,
+configuring more than one acceptor thread may be beneficial: when one acceptor
+thread accepts one connection, another acceptor thread can take over accepting
+connections.
+
+The _selectors_ are components that manage a set of connected sockets,
+implemented by xref:eg-io-arch-selector-manager[`ManagedSelector`].
+Each selector requires one thread and uses the Java NIO mechanism to
+efficiently handle the set of connected sockets.
+As a rule of thumb, a single selector can easily manage 1000-5000 sockets,
+although the number may vary greatly depending on the application.
+
+It is possible to configure more than one `ServerConnector`, each listening
+on different ports:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=configureConnectors]
+----
+
+[[eg-server-connector-protocol]]
+==== Configuring Protocols
+
+For each accepted TCP connection, `ServerConnector` asks a `ConnectionFactory`
+to create a `Connection` object that handles the network traffic on that TCP
+connection, parsing and generating bytes for a specific protocol (see
+xref:eg-io-arch[this section] for more details about `Connection` objects).
+
+A `ServerConnector` can be configured with one or more ``ConnectionFactory``s.
+If no `ConnectionFactory` is specified then `HttpConnectionFactory` is
+implicitly configured.
+
+[[eg-server-connector-protocol-http11]]
+===== Configuring HTTP/1.1
+
+`HttpConnectionFactory` creates `HttpConnection` objects that parse bytes
+and generate bytes for the HTTP/1.1 protocol.
+
+This is how you configure Jetty to support clear-text HTTP/1.1:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=http11]
+----
+
+Supporting encrypted HTTP/1.1 (that is, requests with the HTTPS scheme)
+is supported by configuring an `SslContextFactory` that has access to the
+keyStore containing the private server key and public server certificate,
+in this way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=tlsHttp11]
+----
+
+[[eg-server-connector-protocol-proxy-http11]]
+===== Configuring Jetty behind a Load Balancer
+
+It is often the case that Jetty receives connections from a load balancer
+configured to distribute the load among many Jetty backend servers.
+
+From the Jetty point of view, all the connections arrive from the load
+balancer, rather than the real clients, but is possible to forward the real
+client IP address and port to the backend Jetty server using the
+link:https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt[PROXY protocol].
+
+NOTE: The PROXY protocol is widely supported by load balancers such as
+link:http://cbonte.github.io/haproxy-dconv/2.2/configuration.html#5.2-send-proxy[HAProxy]
+(via its `send-proxy` directive), or
+link:https://docs.nginx.com/nginx/admin-guide/load-balancer/using-proxy-protocol[Nginx]
+(via its `proxy_protocol on` directive), and others.
+
+To support this case, Jetty can be configured in this way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=proxyHTTP]
+----
+
+Note how the ``ConnectionFactory``s passed to `ServerConnector` are in order:
+first PROXY, then HTTP/1.1.
+Note also how the PROXY `ConnectionFactory` needs to know its _next_ protocol
+(in this example, HTTP/1.1).
+
+Each `ConnectionFactory` is asked to create a `Connection` object for each
+accepted TCP connection; the `Connection` objects will be chained together
+to handle the bytes, each for its own protocol.
+Therefore the `ProxyConnection` will handle the PROXY protocol bytes and
+`HttpConnection` will handle the HTTP/1.1 bytes producing a request object
+and response object that will be processed by ``Handler``s.
+
+[[eg-server-connector-protocol-http2]]
+===== Configuring HTTP/2
+
+It is well know that the HTTP ports are `80` (for clear-text HTTP) and `443`
+for encrypted HTTP.
+By using those ports, a client had _prior knowledge_ that the server would
+speak, respectively, the HTTP/1.x protocol and the TLS protocol (and, after
+decryption, the HTTP/1.x protocol).
+
+HTTP/2 was designed to be a smooth transition from HTTP/1.1 for users and
+as such the HTTP ports were not changed.
+However the HTTP/2 protocol is, on the wire, a binary protocol, completely
+different from HTTP/1.1.
+Therefore, with HTTP/2, clients that connect to port `80` may speak either
+HTTP/1.1 or HTTP/2, and the server must figure out which version of the HTTP
+protocol the client is speaking.
+
+Jetty can support both HTTP/1.1 and HTTP/2 on the same clear-text port by
+configuring both the HTTP/1.1 and the HTTP/2 ``ConnectionFactory``s:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=http11H2C]
+----
+
+Note how the ``ConnectionFactory``s passed to `ServerConnector` are in order:
+first HTTP/1.1, then HTTP/2.
+This is necessary to support both protocols on the same port: Jetty will
+start parsing the incoming bytes as HTTP/1.1, but then realize that they
+are HTTP/2 bytes and will therefore _upgrade_ from HTTP/1.1 to HTTP/2.
+
+This configuration is also typical when Jetty is installed in backend servers
+behind a load balancer that also takes care of offloading TLS.
+When Jetty is behind a load balancer, you can always prepend the PROXY
+protocol as described in
+xref:eg-server-connector-protocol-proxy-http11[this section].
+
+When using encrypted HTTP/2, the unencrypted protocol is negotiated by client
+and server using an extension to the TLS protocol called ALPN.
+
+Jetty supports ALPN and encrypted HTTP/2 with this configuration:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=tlsALPNHTTP]
+----
+
+[[eg-server-handler]]
+=== Server Handlers
+
+A `Handler` is the component that processes incoming HTTP requests and
+eventually produces HTTP responses.
+
+``Handler``s can be organized in different ways:
+
+* in a sequence, where ``Handler``s are invoked one after the other
+** `HandlerCollection` invokes _all_ ``Handler``s one after the other
+** `HandlerList` invokes ``Handlers``s until one calls `Request.setHandled(true)`
+to indicate that the request has been handled and no further `Handler` should
+be invoked.
+* nested, where one `Handler` invokes the next `Handler`
+** `HandlerWrapper` implements this behavior
+
+The `HandlerCollection` behavior (invoking _all_ handlers) is useful when
+for example the last `Handler` is a logging `Handler` that logs the the
+request(that may have been modified by previous handlers).
+
+The `HandlerList` behavior (invoking handlers up to the first that calls
+`Request.setHandled(true)`) is useful when different handlers process different
+URIs or different virtual hosts: invoke one after the other until one matches
+the URI or virtual host.
+
+The nested behavior is useful to enrich the request with additional services
+such as HTTP session support (`SessionHandler`), or with specific behaviors
+dictated by the Servlet specification (`ServletHandler`).
+
+``Handler``s can be organized in a tree by composing them together:
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam padding 5
+
+scale 1.5
+
+hide members
+hide circle
+
+HandlerCollection -- HandlerList
+HandlerCollection -- LoggingHandler
+HandlerList -- App1Handler
+HandlerList -- App2Handler
+App2Handler -- ServletHandler
+----
+
+In code it looks like this:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=tree]
+----
+
+// TODO: old docs introduces briefly ServletHandler but I think it deserves its own section
+
+// TODO: old docs introduce ContextHandler here and WebAppContext
+
