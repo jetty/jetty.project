@@ -96,18 +96,13 @@ public abstract class AbstractHandshaker implements Handshaker
             return false;
         }
 
-        // Validate negotiated protocol
+        // Validate negotiated protocol.
         String protocol = negotiation.getSubprotocol();
         List<String> offeredProtocols = negotiation.getOfferedSubprotocols();
         if (protocol != null)
         {
             if (!offeredProtocols.contains(protocol))
                 throw new WebSocketException("not upgraded: selected a protocol not present in offered protocols");
-        }
-        else
-        {
-            if (!offeredProtocols.isEmpty())
-                throw new WebSocketException("not upgraded: no protocol selected from offered protocols");
         }
 
         // validate negotiated extensions
