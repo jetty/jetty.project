@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.http2.client;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
@@ -339,18 +339,30 @@ public class HTTP2Client extends ContainerLifeCycle
         this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
-    public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
+    public CompletableFuture<Session> connect(SocketAddress address, Session.Listener listener)
+    {
+        return connect(null, address, listener);
+    }
+
+    public void connect(SocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
         // Prior-knowledge clear-text HTTP/2 (h2c).
         connect(null, address, listener, promise);
     }
 
-    public void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
+    public CompletableFuture<Session> connect(SslContextFactory sslContextFactory, SocketAddress address, Session.Listener listener)
+    {
+        Promise.Completable<Session> result = new Promise.Completable<>();
+        connect(sslContextFactory, address, listener, result);
+        return result;
+    }
+
+    public void connect(SslContextFactory sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
         connect(sslContextFactory, address, listener, promise, null);
     }
 
-    public void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    public void connect(SslContextFactory sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         ClientConnectionFactory factory = newClientConnectionFactory(sslContextFactory);
         connect(address, factory, listener, promise, context);
@@ -359,7 +371,7 @@ public class HTTP2Client extends ContainerLifeCycle
     public void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         context = contextFrom(factory, listener, promise, context);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, promise);
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
         connector.connect(address, context);
     }
 
@@ -372,7 +384,7 @@ public class HTTP2Client extends ContainerLifeCycle
     public void accept(SocketChannel channel, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise)
     {
         Map<String, Object> context = contextFrom(factory, listener, promise, null);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, promise);
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
         connector.accept(channel, context);
     }
 

@@ -49,8 +49,9 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.internal.RequestContentAdapter;
 import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.eclipse.jetty.client.util.PathContentProvider;
+import org.eclipse.jetty.client.util.PathRequestContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -81,7 +82,7 @@ public class HttpRequest implements Request
     private long idleTimeout = -1;
     private long timeout;
     private long timeoutAt;
-    private ContentProvider content;
+    private Content content;
     private boolean followRedirects;
     private List<HttpCookie> cookies;
     private Map<String, Object> attributes;
@@ -647,7 +648,9 @@ public class HttpRequest implements Request
     @Override
     public ContentProvider getContent()
     {
-        return content;
+        if (content instanceof RequestContentAdapter)
+            return ((RequestContentAdapter)content).getContentProvider();
+        return null;
     }
 
     @Override
@@ -661,6 +664,18 @@ public class HttpRequest implements Request
     {
         if (contentType != null)
             header(HttpHeader.CONTENT_TYPE, contentType);
+        return body(ContentProvider.toRequestContent(content));
+    }
+
+    @Override
+    public Content getBody()
+    {
+        return content;
+    }
+
+    @Override
+    public Request body(Content content)
+    {
         this.content = content;
         return this;
     }
@@ -674,7 +689,7 @@ public class HttpRequest implements Request
     @Override
     public Request file(Path file, String contentType) throws IOException
     {
-        return content(new PathContentProvider(contentType, file));
+        return body(new PathRequestContent(contentType, file));
     }
 
     @Override
@@ -809,11 +824,7 @@ public class HttpRequest implements Request
     public boolean abort(Throwable cause)
     {
         if (aborted.compareAndSet(null, Objects.requireNonNull(cause)))
-        {
-            if (content instanceof Callback)
-                ((Callback)content).failed(cause);
             return conversation.abort(cause);
-        }
         return false;
     }
 

@@ -38,7 +38,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  * consumed. Only the smaller bucket can refill the bigger bucket.</p>
  * <p>The smaller bucket is defined as a fraction of the bigger bucket.</p>
  * <p>For a more visual representation, see the
- * <a href="http://en.wikipedia.org/wiki/Shishi-odoshi">rocking bamboo fountain</a>.</p>
+ * <a href="http://en.wikipedia.org/wiki/Shishi-odoshi">rocking bamboo fountain</a>,
+ * where the bamboo is the smaller bucket and the pool is the bigger bucket.</p>
  * <p>The algorithm works in this way.</p>
  * <p>The initial bigger bucket (BB) capacity is 100, and let's imagine the smaller
  * bucket (SB) being 40% of the bigger bucket: 40.</p>
@@ -50,6 +51,16 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  * with delta=45.</p>
  * <p>The application consumes the remaining 15, so now SB=15, and no window
  * control frame is emitted.</p>
+ * <p>The {@code bufferRatio} controls how often the window control frame is
+ * emitted.</p>
+ * <p>A {@code bufferRatio=0.0} means that a window control frame is emitted
+ * every time the application consumes a data frame. This may result in too many
+ * window control frames be emitted, but may allow the sender to avoid stalling.</p>
+ * <p>A {@code bufferRatio=1.0} means that a window control frame is emitted
+ * only when the application has consumed a whole window. This minimizes the
+ * number of window control frames emitted, but may cause the sender to stall,
+ * waiting for the window control frame.</p>
+ * <p>The default value is {@code bufferRatio=0.5}.</p>
  */
 @ManagedObject
 public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy

@@ -50,8 +50,22 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-io</artifactId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-http-client-transport</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.fcgi</groupId>
+      <artifactId>fcgi-client</artifactId>
       <version>${project.version}</version>
     </dependency>
   </dependencies>
@@ -111,6 +125,13 @@
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
         <version>${asciidoctor.maven.plugin.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.asciidoctor</groupId>
+            <artifactId>asciidoctorj-diagram</artifactId>
+            <version>2.0.1</version>
+          </dependency>
+        </dependencies>
         <configuration>
           <attributes>
             <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
@@ -125,7 +146,6 @@
             <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
             <VERSION>${project.version}</VERSION>
             <TIMESTAMP>${maven.build.timestamp}</TIMESTAMP>
-            <docbits>${basedir}/src/main/java</docbits>
           </attributes>
         </configuration>
         <executions>
@@ -169,6 +189,7 @@
               <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/contribution-guide</outputDirectory>
+              <sourceHighlighter>coderay</sourceHighlighter>
             </configuration>
           </execution>
           <execution>
@@ -183,6 +204,10 @@
               <sourceDirectory>${basedir}/src/main/asciidoc/embedded-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/embedded-guide</outputDirectory>
+              <sourceHighlighter>coderay</sourceHighlighter>
+              <requires>
+                <require>asciidoctor-diagram</require>
+              </requires>
             </configuration>
           </execution>
         </executions>

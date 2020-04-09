@@ -47,7 +47,7 @@ public class CertificateUtils
             }
 
             if (!store.exists())
-                throw new IllegalStateException("no valid keystore");
+                throw new IllegalStateException(store.getName() + " is not a valid keystore");
 
             try (InputStream inStream = store.getInputStream())
             {

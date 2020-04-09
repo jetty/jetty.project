@@ -21,7 +21,10 @@ package org.eclipse.jetty.util.security;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.List;
 import java.util.ServiceLoader;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
@@ -42,7 +45,9 @@ public abstract class Credential implements Serializable
 {
     private static final long serialVersionUID = -7760551052768181572L;
     private static final Logger LOG = LoggerFactory.getLogger(Credential.class);
-    private static final ServiceLoader<CredentialProvider> CREDENTIAL_PROVIDER_LOADER = ServiceLoader.load(CredentialProvider.class);
+    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = TypeUtil.serviceProviderStream(ServiceLoader.load(CredentialProvider.class))
+        .flatMap(p -> Stream.of(p.get()))
+        .collect(Collectors.toList());
 
     /**
      * Check a credential
@@ -68,7 +73,7 @@ public abstract class Credential implements Serializable
         if (credential.startsWith(MD5.__TYPE))
             return new MD5(credential);
 
-        for (CredentialProvider cp : CREDENTIAL_PROVIDER_LOADER)
+        for (CredentialProvider cp : CREDENTIAL_PROVIDERS)
         {
             if (credential.startsWith(cp.getPrefix()))
             {

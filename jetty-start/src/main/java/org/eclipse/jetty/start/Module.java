@@ -196,14 +196,14 @@ public class Module implements Comparable<Module>
         process(basehome);
     }
 
-    public static boolean isRequiredDependency(String depends)
+    public static boolean isConditionalDependency(String depends)
     {
-        return (depends != null) && (depends.charAt(0) != '?');
+        return (depends != null) && (depends.charAt(0) == '?');
     }
 
     public static String normalizeModuleName(String name)
     {
-        if (!isRequiredDependency(name))
+        if (isConditionalDependency(name))
             return name.substring(1);
         return name;
     }

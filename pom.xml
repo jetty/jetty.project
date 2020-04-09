@@ -479,6 +479,7 @@
             <compilerArgs>
               <compilerArg>-Xlint:exports</compilerArg>
             </compilerArgs>
+            <testCompilerArgument>-nowarn</testCompilerArgument>
           </configuration>
         </plugin>
         <plugin>
@@ -956,6 +957,7 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-slf4j-impl</artifactId>
         <version>${project.version}</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>

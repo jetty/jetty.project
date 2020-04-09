@@ -107,7 +107,7 @@ public class Response implements HttpServletResponse
         NOT_SET, INFERRED, SET_LOCALE, SET_CONTENT_TYPE, SET_CHARACTER_ENCODING
     }
 
-    private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET, EncodingFrom.INFERRED);
+    private static final EnumSet<EncodingFrom> __localeOverride = EnumSet.of(EncodingFrom.NOT_SET, EncodingFrom.INFERRED, EncodingFrom.SET_LOCALE);
     private static final EnumSet<EncodingFrom> __explicitCharset = EnumSet.of(EncodingFrom.SET_LOCALE, EncodingFrom.SET_CHARACTER_ENCODING);
 
     public Response(HttpChannel channel, HttpOutput out)
@@ -134,6 +134,7 @@ public class Response implements HttpServletResponse
         _out.recycle();
         _fields.clear();
         _encodingFrom = EncodingFrom.NOT_SET;
+        _trailers = null;
     }
 
     public HttpOutput getHttpOutput()
@@ -529,7 +530,7 @@ public class Response implements HttpServletResponse
         resetBuffer();
         setHeader(HttpHeader.LOCATION, location);
         setStatus(code);
-        completeOutput();
+        closeOutput();
     }
 
     @Override
@@ -849,7 +850,7 @@ public class Response implements HttpServletResponse
             {
                 try
                 {
-                    completeOutput();
+                    closeOutput();
                 }
                 catch (IOException e)
                 {
@@ -887,12 +888,23 @@ public class Response implements HttpServletResponse
         return (_contentLength < 0 || written >= _contentLength);
     }
 
-    public void completeOutput() throws IOException
+    public void closeOutput() throws IOException
     {
         if (_outputType == OutputType.WRITER)
             _writer.close();
         else
             _out.close();
+    }
+
+    /**
+     * close the output
+     *
+     * @deprecated Use {@link #closeOutput()}
+     */
+    @Deprecated
+    public void completeOutput() throws IOException
+    {
+        closeOutput();
     }
 
     public void completeOutput(Callback callback)
@@ -1005,11 +1017,9 @@ public class Response implements HttpServletResponse
             _contentType = contentType;
             _mimeType = MimeTypes.CACHE.get(contentType);
 
-            String charset;
-            if (_mimeType != null && _mimeType.getCharset() != null && !_mimeType.isCharsetAssumed())
+            String charset = MimeTypes.getCharsetFromContentType(contentType);
+            if (charset == null && _mimeType != null && _mimeType.isCharsetAssumed())
                 charset = _mimeType.getCharsetString();
-            else
-                charset = MimeTypes.getCharsetFromContentType(contentType);
 
             if (charset == null)
             {
@@ -1018,11 +1028,10 @@ public class Response implements HttpServletResponse
                     case NOT_SET:
                         break;
                     case INFERRED:
-                    case SET_CONTENT_TYPE:
                         if (isWriting())
                         {
-                            _mimeType = null;
                             _contentType = _contentType + ";charset=" + _characterEncoding;
+                            _mimeType = MimeTypes.CACHE.get(_contentType);
                         }
                         else
                         {
@@ -1030,11 +1039,12 @@ public class Response implements HttpServletResponse
                             _characterEncoding = null;
                         }
                         break;
+                    case SET_CONTENT_TYPE:
                     case SET_LOCALE:
                     case SET_CHARACTER_ENCODING:
                     {
                         _contentType = contentType + ";charset=" + _characterEncoding;
-                        _mimeType = null;
+                        _mimeType = MimeTypes.CACHE.get(_contentType);
                         break;
                     }
                     default:
@@ -1044,10 +1054,10 @@ public class Response implements HttpServletResponse
             else if (isWriting() && !charset.equalsIgnoreCase(_characterEncoding))
             {
                 // too late to change the character encoding;
-                _mimeType = null;
                 _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
-                if (_characterEncoding != null)
+                if (_characterEncoding != null  && (_mimeType == null || !_mimeType.isCharsetAssumed()))
                     _contentType = _contentType + ";charset=" + _characterEncoding;
+                _mimeType = MimeTypes.CACHE.get(_contentType);
             }
             else
             {
@@ -1102,6 +1112,7 @@ public class Response implements HttpServletResponse
         _mimeType = null;
         _characterEncoding = null;
         _encodingFrom = EncodingFrom.NOT_SET;
+        _trailers = null;
 
         // Clear all response headers
         _fields.clear();
@@ -1197,24 +1208,32 @@ public class Response implements HttpServletResponse
         _out.reopen();
     }
 
-    @Override
-    public void setTrailerFields(Supplier<Map<String, String>> trailers)
-    {
-        // TODO new for 4.0 - avoid transient supplier?
-        this._trailers = new HttpFieldsSupplier(trailers);
-    }
-
     public Supplier<HttpFields> getTrailers()
     {
         return _trailers;
+    }
+
+    public void setTrailers(Supplier<HttpFields> trailers)
+    {
+        _trailers = trailers;
     }
 
     @Override
     public Supplier<Map<String, String>> getTrailerFields()
     {
         if (_trailers instanceof HttpFieldsSupplier)
-            ((HttpFieldsSupplier)_trailers).getSupplier();
+            return ((HttpFieldsSupplier)_trailers).getSupplier();
         return null;
+    }
+
+    @Override
+    public void setTrailerFields(Supplier<Map<String, String>> trailers)
+    {
+        if (isCommitted())
+            throw new IllegalStateException("Committed");
+        if (getHttpChannel().getRequest().getHttpVersion().ordinal() <= HttpVersion.HTTP_1_0.ordinal())
+            throw new IllegalStateException("Trailers not supported");
+        this._trailers = new HttpFieldsSupplier(trailers);
     }
 
     protected MetaData.Response newResponseMetaData()

@@ -1598,7 +1598,10 @@ public class Request implements HttpServletRequest
     {
         MetaData.Request metadata = _metaData;
         if (metadata != null)
+        {
             metadata.setURI(uri);
+            _queryParameters = null;
+        }
     }
 
     public UserIdentity getUserIdentity()
@@ -2178,17 +2181,8 @@ public class Request implements HttpServletRequest
         HttpChannelState state = getHttpChannelState();
         if (_async == null)
             _async = new AsyncContextState(state);
-        AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, servletRequest, servletResponse);
+        AsyncContextEvent event = new AsyncContextEvent(_context, _async, state, this, servletRequest, servletResponse, getHttpURI());
         event.setDispatchContext(getServletContext());
-
-        String uri = unwrap(servletRequest).getRequestURI();
-        if (_contextPath != null && uri.startsWith(_contextPath))
-            uri = uri.substring(_contextPath.length());
-        else
-            // TODO probably need to strip encoded context from requestURI, but will do this for now:
-            uri = URIUtil.encodePath(URIUtil.addPaths(getServletPath(), getPathInfo()));
-
-        event.setDispatchPath(uri);
         state.startAsync(event);
         return _async;
     }
@@ -2374,7 +2368,7 @@ public class Request implements HttpServletRequest
         if (newQueryParams == null || newQueryParams.size() == 0)
             mergedQueryParams = oldQueryParams == null ? NO_PARAMS : oldQueryParams;
         else if (oldQueryParams == null || oldQueryParams.size() == 0)
-            mergedQueryParams = newQueryParams == null ? NO_PARAMS : newQueryParams;
+            mergedQueryParams = newQueryParams;
         else
         {
             // Parameters values are accumulated.
@@ -2386,34 +2380,7 @@ public class Request implements HttpServletRequest
         resetParameters();
 
         if (updateQueryString)
-        {
-            if (newQuery == null)
-                setQueryString(oldQuery);
-            else if (oldQuery == null)
-                setQueryString(newQuery);
-            else
-            {
-                // Build the new merged query string, parameters in the
-                // new query string hide parameters in the old query string.
-                StringBuilder mergedQuery = new StringBuilder();
-                if (newQuery != null)
-                    mergedQuery.append(newQuery);
-                for (Map.Entry<String, List<String>> entry : mergedQueryParams.entrySet())
-                {
-                    if (newQueryParams != null && newQueryParams.containsKey(entry.getKey()))
-                        continue;
-                    for (String value : entry.getValue())
-                    {
-                        if (mergedQuery.length() > 0)
-                            mergedQuery.append("&");
-                        URIUtil.encodePath(mergedQuery, entry.getKey());
-                        mergedQuery.append('=');
-                        URIUtil.encodePath(mergedQuery, value);
-                    }
-                }
-                setQueryString(mergedQuery.toString());
-            }
-        }
+            setQueryString(newQuery == null ? oldQuery : newQuery);
     }
 
     @Override

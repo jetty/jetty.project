@@ -391,18 +391,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         //check if we need to forcibly set load-on-startup
         checkInitOnStartup();
 
-        if (_runAsRole == null)
-        {
-            _identityService = null;
-            _runAsToken = null;
-        }
-        else
-        {
-            _identityService = getServletHandler().getIdentityService();
-            if (_identityService != null)
-                _runAsToken = _identityService.newRunAsToken(_runAsRole);
-        }
-
         _config = new Config();
 
         synchronized (this)
@@ -456,7 +444,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (o == null)
             return;
         Servlet servlet = ((Servlet)o);
-        getServletHandler().destroyServlet(servlet);
+        //need to use the unwrapped servlet because lifecycle callbacks such as
+        //postconstruct and predestroy are based off the classname and the wrapper
+        //classes are unknown outside the ServletHolder
+        Servlet unwrapped = servlet;
+        while (WrapperServlet.class.isAssignableFrom(unwrapped.getClass()))
+            unwrapped = ((WrapperServlet)unwrapped).getWrappedServlet();
+        getServletHandler().destroyServlet(unwrapped);
+        //destroy the wrapped servlet, in case there is special behaviour
         servlet.destroy();
     }
 
@@ -569,10 +564,23 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 _servlet = newInstance();
             if (_config == null)
                 _config = new Config();
+          
+            //check run-as rolename and convert to token from IdentityService
+            if (_runAsRole == null)
+            {
+                _identityService = null;
+                _runAsToken = null;
+            }
+            else
+            {
+                _identityService = getServletHandler().getIdentityService();
+                if (_identityService != null)
+                {
 
-            // Handle run as
-            if (_identityService != null && _runAsToken != null)
-                _servlet = new RunAsServlet(_servlet, _identityService, _runAsToken);
+                    _runAsToken = _identityService.newRunAsToken(_runAsRole);
+                    _servlet = new RunAsServlet(_servlet, _identityService, _runAsToken);
+                }
+            }
 
             if (!isAsyncSupported())
                 _servlet = new NotAsyncServlet(_servlet);
@@ -1255,6 +1263,14 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         public void destroy()
         {
             _servlet.destroy();
+        }
+        
+        /**
+         * @return the original servlet
+         */
+        public Servlet getWrappedServlet()
+        {
+            return _servlet;
         }
 
         @Override

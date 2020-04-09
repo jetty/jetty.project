@@ -49,7 +49,7 @@ If `true`, welcome files are redirected rather that forwarded.
 welcomeServlets::
 If `true`, attempt to dispatch to welcome files that are servlets, but only after no matching static
 resources could be found. If `false`, then a welcome file must exist on disk. If `exact`, then exact
-servlet matches are supported without an existing file. Default is `true`. This must be `false` if you want directory listings,
+servlet matches are supported without an existing file. Default is `false`. This must be `false` if you want directory listings,
 but have index.jsp in your welcome file list.
 precompressed::
 If set to a comma separated list of encoding types (that may be listed in a requests Accept-Encoding header) to file extension mappings to look for and serve. 

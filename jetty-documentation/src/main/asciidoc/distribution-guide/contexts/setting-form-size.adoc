@@ -19,57 +19,51 @@
 [[setting-form-size]]
 === Setting Max Form Size
 
-Jetty limits the amount of data that can post back from a browser or other client to the server.
-This helps protect the server against denial of service attacks by malicious clients sending huge amounts of data.
-The default maximum size Jetty permits is 200000 bytes.
-You can change this default for a particular webapp, for all webapps on a particular Server instance, or all webapps within the same JVM.
+When a client issues a POST request with `Content-Type: application/x-www-form-urlencoded` there are 2 configurable limits imposed to help protect the server against denial of service attacks by malicious clients sending huge amounts of data.
+
+There is a maximum form size limit, and a maximum form keys limit.
+
+The default maximum form size Jetty permits is 200000 bytes.
+The default maximum form keys Jetty permits is 1000 keys.
+
+You can change these defaults for a particular webapp, or all webapps within the same JVM.
 
 ==== For a Single Webapp
 
-The method to invoke is: `ContextHandler.setMaxFormContentSize(int maxSize);`
+The methods to invoke are:
+
+* `ContextHandler.setMaxFormContentSize(int maxSize);`
+* `ContextHandler.setMaxFormKeys(int max);`
 
 This can be done either in a context XML deployment descriptor external to the webapp, or in a `jetty-web.xml` file in the webapp's `WEB-INF` directory.
 
 In either case the syntax of the XML file is the same:
 
-[source, xml, subs="{sub-order}"]
+[source,xml,subs="{sub-order}"]
 ----
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Max Form Size                                                   -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <Set name="maxFormContentSize">200000</Set>
+  <Set name="maxFormContentSize">400000</Set>
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Max Form Keys                                                   -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <Set name="maxFormKeys">400</Set>
 </Configure>
 ----
-
-==== For All Apps on a Server
-
-Set an attribute in `jetty.xml` on the Server instance for which you want to modify the maximum form content size:
-
-[source, xml, subs="{sub-order}"]
-----
-<Configure class="org.eclipse.jetty.server.Server">
-  <Call name="setAttribute">
-    <Arg>org.eclipse.jetty.server.Request.maxFormContentSize</Arg>
-    <Arg>200000</Arg>
-  </Call>
-</Configure>
-----
-
-____
-[IMPORTANT]
-It is important to remember that you should *not* modify the XML files in your `$JETTY_HOME`.
-If you do for some reason feel you want to change the way an XML file operates, it is best to make a copy of it in your `$JETTY_BASE` in an `/etc` directory.
-Jetty will always look first to the `$JETTY_BASE` for configuration.
-____
 
 ==== For All Apps in the JVM
 
-Use the system property `org.eclipse.jetty.server.Request.maxFormContentSize`.
+Use the system properties:
+
+* `org.eclipse.jetty.server.Request.maxFormContentSize` - the maximum size of Form Content allowed
+* `org.eclipse.jetty.server.Request.maxFormKeys` - the maximum number of Form Keys allowed
+
 This can be set on the command line or in the `$JETTY_BASE\start.ini` or any `$JETTY_BASE\start.d\*.ini` link:#startup-modules[module ini file.]
 Using `$JETTY_BASE\start.d\server.ini` as an example:
 
-[source, console, subs="{sub-order}"]
+[source,console,subs="{sub-order}"]
 ----
 # ---------------------------------------
 # Module: server
@@ -83,5 +77,6 @@ Using `$JETTY_BASE\start.d\server.ini` as an example:
 
 ...
 
--Dorg.eclipse.jetty.server.Request.maxFormContentSize=200000
+-Dorg.eclipse.jetty.server.Request.maxFormContentSize=400000
+-Dorg.eclipse.jetty.server.Request.maxFormKeys=400
 ----

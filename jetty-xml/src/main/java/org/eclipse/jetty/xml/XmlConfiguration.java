@@ -52,6 +52,8 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
@@ -96,7 +98,9 @@ public class XmlConfiguration
         {
             ArrayList.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class
         };
-    private static final Iterable<ConfigurationProcessorFactory> PROCESSOR_FACTORIES = ServiceLoader.load(ConfigurationProcessorFactory.class);
+    private static final List<ConfigurationProcessorFactory> PROCESSOR_FACTORIES = TypeUtil.serviceProviderStream(ServiceLoader.load(ConfigurationProcessorFactory.class))
+        .flatMap(p -> Stream.of(p.get()))
+        .collect(Collectors.toList());
     private static final XmlParser PARSER = initParser();
     public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) ->
     {

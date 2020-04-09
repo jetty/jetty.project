@@ -56,6 +56,7 @@ endif::[]
 // suppress automatic id generation
 :sectids!:
 
+include::.asciidoctorconfig[]
 include::client/client.adoc[]
 include::server/server.adoc[]
 include::io-arch.adoc[]

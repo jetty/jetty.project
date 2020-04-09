@@ -157,7 +157,8 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
 
         try
         {
-            MethodHandle ctorHandle = MethodHandles.lookup().findConstructor(sinkClass,
+            MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
+            MethodHandle ctorHandle = lookup.findConstructor(sinkClass,
                 MethodType.methodType(void.class, CoreSession.class, MethodHandle.class));
             return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgHandle);
         }
@@ -194,7 +195,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     private JettyWebSocketFrameHandlerMetadata createListenerMetadata(Class<?> endpointClass)
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
-        MethodHandles.Lookup lookup = getMethodHandleLookup(endpointClass);
+        MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getApplicationMethodHandleLookup(endpointClass);
 
         Method openMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketConnect", Session.class);
         MethodHandle open = toMethodHandle(lookup, openMethod);
@@ -273,7 +274,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             metadata.setIdleTimeout(Duration.ofMillis(max));
         metadata.setBatchMode(anno.batchMode());
 
-        MethodHandles.Lookup lookup = getMethodHandleLookup(endpointClass);
+        MethodHandles.Lookup lookup = getApplicationMethodHandleLookup(endpointClass);
         Method onmethod;
 
         // OnWebSocketConnect [0..1]
@@ -456,18 +457,53 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         throw new InvalidSignatureException(err.toString());
     }
 
-    private MethodHandles.Lookup getMethodHandleLookup(Class<?> endpointClass) throws InvalidWebSocketException
+    /**
+     * <p>
+     * Gives a {@link MethodHandles.Lookup} instance to be used to find methods in server classes.
+     * For lookups on application classes use {@link #getApplicationMethodHandleLookup(Class)} instead.
+     * </p>
+     * <p>
+     * This uses the caller sensitive {@link MethodHandles#lookup()}, this will allow MethodHandle access
+     * to server classes we need to use and will give access permissions to private methods as well.
+     * </p>
+     *
+     * @return a lookup object to be used to find methods on server classes.
+     */
+    public static MethodHandles.Lookup getServerMethodHandleLookup()
     {
-        MethodHandles.Lookup lookup;
-        try
-        {
-            lookup = MethodHandles.privateLookupIn(endpointClass, MethodHandles.lookup());
-        }
-        catch (IllegalAccessException e)
-        {
-            throw new InvalidWebSocketException("Unable to obtain MethodHandle lookup for " + endpointClass, e);
-        }
-        return lookup;
+        return MethodHandles.lookup();
+    }
+
+    /**
+     * <p>
+     * Gives a {@link MethodHandles.Lookup} instance to be used to find public methods in application classes.
+     * For lookups on server classes use {@link #getServerMethodHandleLookup()} instead.
+     * </p>
+     * <p>
+     * This uses {@link MethodHandles#publicLookup()} as we only need access to public method of the lookupClass.
+     * To look up a method on the lookupClass, it must be public and the class must be accessible from this
+     * module, so if the lookupClass is in a JPMS module it must be exported so that the public methods
+     * of the lookupClass are accessible outside of the module.
+     * </p>
+     * <p>
+     * The {@link java.lang.invoke.MethodHandles.Lookup#in(Class)} allows us to search specifically
+     * in the endpoint Class to avoid any potential linkage errors which could occur if the same
+     * class is present in multiple web apps. Unlike using {@link MethodHandles#publicLookup()}
+     * using {@link MethodHandles#lookup()} with {@link java.lang.invoke.MethodHandles.Lookup#in(Class)}
+     * will cause the lookup to lose its public access to the lookup class if they are in different modules.
+     * </p>
+     * <p>
+     * {@link MethodHandles#privateLookupIn(Class, MethodHandles.Lookup)} is also unsuitable because it
+     * requires the caller module to read the target module, and the target module to open reflective
+     * access to the lookupClasses private methods. This is possible but requires extra configuration
+     * to provide private access which is not necessary for the purpose of accessing the public methods.
+     * </p>
+     * @param lookupClass the desired lookup class for the new lookup object.
+     * @return a lookup object to be used to find methods on the lookupClass.
+     */
+    public static MethodHandles.Lookup getApplicationMethodHandleLookup(Class<?> lookupClass)
+    {
+        return MethodHandles.publicLookup().in(lookupClass);
     }
 
     @Override

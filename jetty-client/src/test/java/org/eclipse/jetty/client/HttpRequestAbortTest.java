@@ -32,7 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.ByteBufferContentProvider;
+import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
@@ -268,7 +268,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             {
                 aborted.set(r.abort(cause));
                 latch.countDown();
-            }).content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
+            }).body(new ByteBufferRequestContent(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
             {
                 @Override
                 public long getLength()
@@ -323,7 +323,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 {
                     aborted.set(r.abort(cause));
                     latch.countDown();
-                }).content(new ByteBufferContentProvider(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
+                }).body(new ByteBufferRequestContent(ByteBuffer.wrap(new byte[]{0}), ByteBuffer.wrap(new byte[]{1}))
                 {
                     @Override
                     public long getLength()

@@ -30,7 +30,10 @@ import org.eclipse.jetty.client.api.ContentProvider;
  * The position and limit of the {@link ByteBuffer}s passed to the constructor are not modified,
  * and each invocation of the {@link #iterator()} method returns a {@link ByteBuffer#slice() slice}
  * of the original {@link ByteBuffer}.
+ *
+ * @deprecated use {@link ByteBufferRequestContent} instead.
  */
+@Deprecated
 public class ByteBufferContentProvider extends AbstractTypedContentProvider
 {
     private final ByteBuffer[] buffers;

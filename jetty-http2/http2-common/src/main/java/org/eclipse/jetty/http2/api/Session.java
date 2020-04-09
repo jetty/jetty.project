@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.api;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -55,6 +56,20 @@ import org.eclipse.jetty.util.Promise;
  */
 public interface Session
 {
+    /**
+     * <p>Sends the given HEADERS {@code frame} to create a new {@link Stream}.</p>
+     *
+     * @param frame the HEADERS frame containing the HTTP headers
+     * @param listener the listener that gets notified of stream events
+     * @return a CompletableFuture that is notified of the stream creation
+     */
+    public default CompletableFuture<Stream> newStream(HeadersFrame frame, Stream.Listener listener)
+    {
+        Promise.Completable<Stream> result = new Promise.Completable<>();
+        newStream(frame, result, listener);
+        return result;
+    }
+
     /**
      * <p>Sends the given HEADERS {@code frame} to create a new {@link Stream}.</p>
      *

@@ -25,6 +25,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -32,6 +33,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
 {
     private final Context _context;
     private final AsyncContextState _asyncContext;
+    private final HttpURI _baseURI;
     private volatile HttpChannelState _state;
     private ServletContext _dispatchContext;
     private String _dispatchPath;
@@ -40,10 +42,16 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
 
     public AsyncContextEvent(Context context, AsyncContextState asyncContext, HttpChannelState state, Request baseRequest, ServletRequest request, ServletResponse response)
     {
+        this (context, asyncContext, state, baseRequest, request, response, null);
+    }
+
+    public AsyncContextEvent(Context context, AsyncContextState asyncContext, HttpChannelState state, Request baseRequest, ServletRequest request, ServletResponse response, HttpURI baseURI)
+    {
         super(null, request, response, null);
         _context = context;
         _asyncContext = asyncContext;
         _state = state;
+        _baseURI = baseURI;
 
         // If we haven't been async dispatched before
         if (baseRequest.getAttribute(AsyncContext.ASYNC_REQUEST_URI) == null)
@@ -74,6 +82,11 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         }
     }
 
+    public HttpURI getBaseURI()
+    {
+        return _baseURI;
+    }
+
     public ServletContext getSuspendedContext()
     {
         return _context;
@@ -92,14 +105,6 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     public ServletContext getServletContext()
     {
         return _dispatchContext == null ? _context : _dispatchContext;
-    }
-
-    /**
-     * @return The path in the context (encoded with possible query string)
-     */
-    public String getPath()
-    {
-        return _dispatchPath;
     }
 
     public void setTimeoutTask(Scheduler.Task task)
@@ -135,6 +140,14 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     public void setDispatchContext(ServletContext context)
     {
         _dispatchContext = context;
+    }
+
+    /**
+     * @return The path in the context (encoded with possible query string)
+     */
+    public String getDispatchPath()
+    {
+        return _dispatchPath;
     }
 
     /**

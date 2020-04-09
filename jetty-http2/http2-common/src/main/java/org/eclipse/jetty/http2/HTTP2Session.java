@@ -541,7 +541,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             synchronized (this)
             {
                 HeadersFrame[] frameOut = new HeadersFrame[1];
-                stream = newStream(frame, frameOut);
+                stream = newLocalStream(frame, frameOut);
                 stream.setListener(listener);
                 ControlEntry entry = new ControlEntry(frameOut[0], stream, new StreamPromiseCallback(promise, stream));
                 queued = flusher.append(entry);
@@ -567,7 +567,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
      * allocated stream id, or null if not interested in the modified headers frame
      * @return a new stream
      */
-    public IStream newStream(HeadersFrame frameIn, HeadersFrame[] frameOut)
+    public IStream newLocalStream(HeadersFrame frameIn, HeadersFrame[] frameOut)
     {
         HeadersFrame frame = frameIn;
         int streamId = frameIn.getStreamId();
@@ -825,6 +825,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             int maxCount = getMaxRemoteStreams();
             if (maxCount >= 0 && remoteCount - remoteClosing >= maxCount)
             {
+                updateLastRemoteStreamId(streamId);
                 reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
                 return null;
             }

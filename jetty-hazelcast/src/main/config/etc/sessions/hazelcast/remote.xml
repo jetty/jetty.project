@@ -31,6 +31,9 @@
         <Set name="addresses">
           <Property name="jetty.session.hazelcast.addresses" default="" />
         </Set>
+        <Set name="configurationLocation">
+          <Property name="jetty.session.hazelcast.configurationLocation" default="" />
+        </Set>
       </New>
     </Arg>
   </Call>

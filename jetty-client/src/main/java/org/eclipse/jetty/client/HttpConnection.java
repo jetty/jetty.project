@@ -27,9 +27,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.api.Authentication;
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
@@ -129,11 +129,6 @@ public abstract class HttpConnection implements IConnection
         if (normalized)
             return;
 
-        HttpVersion version = request.getVersion();
-        HttpFields headers = request.getHeaders();
-        ContentProvider content = request.getContent();
-        ProxyConfiguration.Proxy proxy = destination.getProxy();
-
         // Make sure the path is there
         String path = request.getPath();
         if (path.trim().length() == 0)
@@ -144,6 +139,7 @@ public abstract class HttpConnection implements IConnection
 
         URI uri = request.getURI();
 
+        ProxyConfiguration.Proxy proxy = destination.getProxy();
         if (proxy instanceof HttpProxy && !HttpClient.isSchemeSecure(request.getScheme()) && uri != null)
         {
             path = uri.toString();
@@ -151,6 +147,8 @@ public abstract class HttpConnection implements IConnection
         }
 
         // If we are HTTP 1.1, add the Host header
+        HttpVersion version = request.getVersion();
+        HttpFields headers = request.getHeaders();
         if (version.getVersion() <= 11)
         {
             if (!headers.containsKey(HttpHeader.HOST.asString()))
@@ -158,13 +156,16 @@ public abstract class HttpConnection implements IConnection
         }
 
         // Add content headers
-        if (content != null)
+        Request.Content content = request.getBody();
+        if (content == null)
+        {
+            request.body(new BytesRequestContent());
+        }
+        else
         {
             if (!headers.containsKey(HttpHeader.CONTENT_TYPE.asString()))
             {
-                String contentType = null;
-                if (content instanceof ContentProvider.Typed)
-                    contentType = ((ContentProvider.Typed)content).getContentType();
+                String contentType = content.getContentType();
                 if (contentType != null)
                 {
                     headers.put(HttpHeader.CONTENT_TYPE, contentType);

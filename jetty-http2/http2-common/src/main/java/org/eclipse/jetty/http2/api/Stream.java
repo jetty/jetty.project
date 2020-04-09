@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2.api;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
@@ -66,6 +68,19 @@ public interface Stream
      * @param listener the listener that gets notified of stream events
      */
     public void push(PushPromiseFrame frame, Promise<Stream> promise, Listener listener);
+
+    /**
+     * <p>Sends the given DATA {@code frame}.</p>
+     *
+     * @param frame the DATA frame to send
+     * @return the CompletableFuture that gets notified when the frame has been sent
+     */
+    public default CompletableFuture<Void> data(DataFrame frame)
+    {
+        Callback.Completable result = new Callback.Completable();
+        data(frame, result);
+        return result;
+    }
 
     /**
      * <p>Sends the given DATA {@code frame}.</p>
@@ -174,7 +189,7 @@ public interface Stream
         /**
          * <p>Callback method invoked when a PUSH_PROMISE frame has been received.</p>
          *
-         * @param stream the stream
+         * @param stream the pushed stream
          * @param frame the PUSH_PROMISE frame received
          * @return a Stream.Listener that will be notified of pushed stream events
          */

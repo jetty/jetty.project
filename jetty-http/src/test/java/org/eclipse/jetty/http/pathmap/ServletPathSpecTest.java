@@ -117,7 +117,8 @@ public class ServletPathSpecTest
         assertEquals(null, new ServletPathSpec("/Foo/*").getPathInfo("/Foo"), "pathInfo prefix");
         assertEquals(null, new ServletPathSpec("*.ext").getPathInfo("/Foo/bar.ext"), "pathInfo suffix");
         assertEquals(null, new ServletPathSpec("/").getPathInfo("/Foo/bar.ext"), "pathInfo default");
-
+        assertEquals("/", new ServletPathSpec("").getPathInfo("/"), "pathInfo root");
+        assertEquals("", new ServletPathSpec("").getPathInfo(""), "pathInfo root");
         assertEquals("/xxx/zzz", new ServletPathSpec("/*").getPathInfo("/xxx/zzz"), "pathInfo default");
     }
 
@@ -146,7 +147,8 @@ public class ServletPathSpecTest
         assertEquals("/Foo", new ServletPathSpec("/Foo/*").getPathMatch("/Foo"), "pathMatch prefix");
         assertEquals("/Foo/bar.ext", new ServletPathSpec("*.ext").getPathMatch("/Foo/bar.ext"), "pathMatch suffix");
         assertEquals("/Foo/bar.ext", new ServletPathSpec("/").getPathMatch("/Foo/bar.ext"), "pathMatch default");
-
+        assertEquals("", new ServletPathSpec("").getPathMatch("/"), "pathInfo root");
+        assertEquals("", new ServletPathSpec("").getPathMatch(""), "pathInfo root");
         assertEquals("", new ServletPathSpec("/*").getPathMatch("/xxx/zzz"), "pathMatch default");
     }
 

@@ -373,8 +373,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     {
         try
         {
-            // TODO: move methodhandle lookup to container?
-            MethodHandles.Lookup lookup = MethodHandles.publicLookup();
+            MethodHandles.Lookup lookup = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
             MethodHandle partialMessageHandler = lookup
                 .findVirtual(MessageHandler.Partial.class, "onMessage", MethodType.methodType(void.class, Object.class, boolean.class));
             partialMessageHandler = partialMessageHandler.bindTo(handler);
@@ -431,8 +430,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     {
         try
         {
-            // TODO: move MethodHandle lookup to container?
-            MethodHandles.Lookup lookup = MethodHandles.publicLookup();
+            MethodHandles.Lookup lookup = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
             MethodHandle wholeMsgMethodHandle = lookup.findVirtual(MessageHandler.Whole.class, "onMessage", MethodType.methodType(void.class, Object.class));
             wholeMsgMethodHandle = wholeMsgMethodHandle.bindTo(handler);
 

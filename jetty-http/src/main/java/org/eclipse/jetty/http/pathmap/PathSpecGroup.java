@@ -39,7 +39,7 @@ public enum PathSpecGroup
      *
      * <pre>
      *   ""           - servlet spec       (Root Servlet)
-     *   null         - servlet spec       (Root Servlet)
+     *   null         - legacy             (Root Servlet)
      * </pre>
      *
      * Note: there is no known uri-template spec variant of this kind of path spec

@@ -36,7 +36,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.ByteBufferContentProvider;
+import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -153,7 +153,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             .scheme(scenario.getScheme())
             .method(HttpMethod.POST)
             .path("/307/localhost/done")
-            .content(new ByteBufferContentProvider(ByteBuffer.wrap(data)))
+            .body(new ByteBufferRequestContent(ByteBuffer.wrap(data)))
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertNotNull(response);

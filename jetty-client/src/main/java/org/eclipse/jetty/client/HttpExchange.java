@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.util.List;
 
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.slf4j.Logger;
@@ -236,6 +237,12 @@ public class HttpExchange
             return false;
 
         // We failed this exchange, deal with it.
+
+        // Applications could be blocked providing
+        // request content, notify them of the failure.
+        Request.Content body = request.getBody();
+        if (abortRequest && body != null)
+            body.fail(failure);
 
         // Case #1: exchange was in the destination queue.
         if (destination.remove(this))
