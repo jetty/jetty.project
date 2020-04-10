@@ -16,21 +16,7 @@
 // ========================================================================
 //
 
-[[server]]
-== OLD DOCUMENTATION
+[[eg-server-websocket]]
+=== WebSocket Server Libraries
 
-include::embedding/chapter.adoc[]
-include::maven/chapter.adoc[]
-include::clients/http/chapter.adoc[]
-include::handlers/chapter.adoc[]
-include::websockets/intro/chapter.adoc[]
-include::websockets/jetty/chapter.adoc[]
-include::ant/chapter.adoc[]
-include::frameworks/chapter.adoc[]
-include::architecture/chapter.adoc[]
-include::platforms/chapter.adoc[]
-include::jetty-xml/chapter.adoc[]
-include::troubleshooting/chapter.adoc[]
-include::debugging/chapter.adoc[]
-//include::contributing/chapter.adoc[]
-include::upgrading/chapter.adoc[]
+TODO

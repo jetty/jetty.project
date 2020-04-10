@@ -47,6 +47,8 @@ public class SecuredRedirectHandler extends AbstractHandler
             return;
         }
 
+        baseRequest.setHandled(true);
+
         HttpConfiguration httpConfig = channel.getHttpConfiguration();
         if (httpConfig == null)
         {
@@ -68,7 +70,5 @@ public class SecuredRedirectHandler extends AbstractHandler
         {
             response.sendError(HttpStatus.FORBIDDEN_403, "Not Secure");
         }
-
-        baseRequest.setHandled(true);
     }
 }

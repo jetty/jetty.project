@@ -38,7 +38,7 @@ _frames_, and this is quite a rare use case.
 
 The Maven artifact coordinates for the HTTP/2 client library are the following:
 
-[source,xml,subs="{sub-order}"]
+[source,xml,subs=normal]
 ----
 <dependency>
   <groupId>org.eclipse.jetty.http2</groupId>
@@ -198,7 +198,7 @@ In order to send a HTTP request to the server, the client must send a
 headers.
 Sending the `HEADERS` frame opens the `Stream`:
 
-[source,java,indent=0,subs={sub-order}]
+[source,java,indent=0,subs=normal]
 ----
 include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=newStream]
 ----
