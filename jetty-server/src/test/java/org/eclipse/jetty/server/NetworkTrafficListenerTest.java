@@ -33,6 +33,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BufferUtil;
@@ -78,7 +79,7 @@ public class NetworkTrafficListenerTest
 
         final CountDownLatch openedLatch = new CountDownLatch(1);
         final CountDownLatch closedLatch = new CountDownLatch(1);
-        connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
+        connector.setNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
             public volatile Socket socket;
 
@@ -122,7 +123,7 @@ public class NetworkTrafficListenerTest
         final CountDownLatch incomingLatch = new CountDownLatch(1);
         final AtomicReference<String> outgoingData = new AtomicReference<>("");
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
-        connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
+        connector.setNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
@@ -188,7 +189,7 @@ public class NetworkTrafficListenerTest
         final CountDownLatch incomingLatch = new CountDownLatch(1);
         final AtomicReference<String> outgoingData = new AtomicReference<>("");
         final CountDownLatch outgoingLatch = new CountDownLatch(2);
-        connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
+        connector.setNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
@@ -258,7 +259,7 @@ public class NetworkTrafficListenerTest
         final CountDownLatch incomingLatch = new CountDownLatch(1);
         final AtomicReference<String> outgoingData = new AtomicReference<>("");
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
-        connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
+        connector.setNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
@@ -328,7 +329,7 @@ public class NetworkTrafficListenerTest
         final CountDownLatch incomingLatch = new CountDownLatch(1);
         final AtomicReference<String> outgoingData = new AtomicReference<>("");
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
-        connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
+        connector.setNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
@@ -404,7 +405,7 @@ public class NetworkTrafficListenerTest
         final AtomicReference<String> incomingData = new AtomicReference<>("");
         final AtomicReference<String> outgoingData = new AtomicReference<>("");
         final CountDownLatch outgoingLatch = new CountDownLatch(1);
-        connector.addNetworkTrafficListener(new NetworkTrafficListener.Adapter()
+        connector.setNetworkTrafficListener(new NetworkTrafficListener.Adapter()
         {
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)

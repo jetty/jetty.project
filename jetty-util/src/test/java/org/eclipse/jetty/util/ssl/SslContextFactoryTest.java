@@ -217,7 +217,7 @@ public class SslContextFactoryTest
                 cf.setTrustStorePath("/foo");
                 cf.start();
             });
-            assertThat(x.getMessage(), containsString("no valid keystore"));
+            assertThat(x.getMessage(), equalTo("/foo is not a valid keystore"));
         }
     }
 

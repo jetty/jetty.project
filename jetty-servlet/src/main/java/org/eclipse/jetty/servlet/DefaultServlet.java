@@ -67,7 +67,7 @@ import org.slf4j.LoggerFactory;
  *                    resources could be found. If false, then a welcome
  *                    file must exist on disk. If "exact", then exact
  *                    servlet matches are supported without an existing file.
- *                    Default is true.
+ *                    Default is false.
  *
  *                    This must be false if you want directory listings,
  *                    but have index.jsp in your welcome file list.

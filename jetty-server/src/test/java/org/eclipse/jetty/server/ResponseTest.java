@@ -54,6 +54,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -473,6 +474,67 @@ public class ResponseTest
         //getWriter should not have modified character encoding
         response.getWriter();
         assertThat("iso-8859-1", Matchers.equalTo(response.getCharacterEncoding()));
+    }
+    
+    @Test
+    public void testLocaleAndContentTypeEncoding() throws Exception
+    {
+        _server.stop();
+        MimeTypes.getInferredEncodings().put("text/html", "iso-8859-1");
+        ContextHandler handler = new ContextHandler();
+        handler.addLocaleEncoding("ja", "euc-jp");
+        handler.addLocaleEncoding("zh_CN", "gb18030");
+        _server.setHandler(handler);
+        handler.setHandler(new DumpHandler());
+        _server.start();
+
+        Response response = getResponse();
+        response.getHttpChannel().getRequest().setContext(handler.getServletContext());
+        
+        response.setContentType("text/html");
+        assertEquals("iso-8859-1", response.getCharacterEncoding());
+
+        // setLocale should change character encoding based on
+        // locale-encoding-mapping-list
+        response.setLocale(Locale.JAPAN);
+        assertEquals("euc-jp", response.getCharacterEncoding());
+
+        // setLocale should change character encoding based on
+        // locale-encoding-mapping-list
+        response.setLocale(Locale.CHINA);
+        assertEquals("gb18030", response.getCharacterEncoding());
+
+        // setContentType here doesn't define character encoding
+        response.setContentType("text/html");
+        assertEquals("gb18030", response.getCharacterEncoding());
+
+        // setCharacterEncoding should still be able to change encoding
+        response.setCharacterEncoding("utf-8");
+        assertEquals("utf-8", response.getCharacterEncoding());
+
+        // setLocale should not override explicit character encoding request
+        response.setLocale(Locale.JAPAN);
+        assertEquals("utf-8", response.getCharacterEncoding());
+
+        // setContentType should still be able to change encoding
+        response.setContentType("text/html;charset=gb18030");
+        assertEquals("gb18030", response.getCharacterEncoding());
+
+        // setCharacterEncoding should still be able to change encoding
+        response.setCharacterEncoding("utf-8");
+        assertEquals("utf-8", response.getCharacterEncoding());
+
+        // getWriter should freeze the character encoding
+        PrintWriter pw = response.getWriter();
+        assertEquals("utf-8", response.getCharacterEncoding());
+
+        // setCharacterEncoding should no longer be able to change the encoding
+        response.setCharacterEncoding("iso-8859-1");
+        assertEquals("utf-8", response.getCharacterEncoding());
+
+        // setLocale should not override explicit character encoding request
+        response.setLocale(Locale.JAPAN);
+        assertEquals("utf-8", response.getCharacterEncoding());
     }
 
     @Test

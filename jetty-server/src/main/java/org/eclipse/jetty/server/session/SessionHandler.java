@@ -279,7 +279,8 @@ public class SessionHandler extends ScopedHandler
     }
 
     /**
-     * Call the session lifecycle listeners
+     * Call the session lifecycle listeners in
+     * the reverse order they were added.
      *
      * @param session the session on which to call the lifecycle listeners
      */
@@ -310,7 +311,8 @@ public class SessionHandler extends ScopedHandler
     }
 
     /**
-     * Call the session lifecycle listeners
+     * Call the session lifecycle listeners in the order
+     * they were added.
      *
      * @param session the session on which to call the lifecycle listeners
      */
@@ -322,9 +324,9 @@ public class SessionHandler extends ScopedHandler
         if (_sessionListeners != null)
         {
             HttpSessionEvent event = new HttpSessionEvent(session);
-            for (int i = _sessionListeners.size() - 1; i >= 0; i--)
+            for (HttpSessionListener  l : _sessionListeners)
             {
-                _sessionListeners.get(i).sessionCreated(event);
+                l.sessionCreated(event);
             }
         }
     }

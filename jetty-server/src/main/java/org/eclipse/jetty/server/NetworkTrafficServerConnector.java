@@ -18,29 +18,26 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.NetworkTrafficListener;
-import org.eclipse.jetty.io.NetworkTrafficSelectChannelEndPoint;
+import org.eclipse.jetty.io.NetworkTrafficSocketChannelEndPoint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * <p>A specialized version of {@link ServerConnector} that supports {@link NetworkTrafficListener}s.</p>
- * <p>{@link NetworkTrafficListener}s can be added and removed dynamically before and after this connector has
- * been started without causing {@link java.util.ConcurrentModificationException}s.</p>
+ * <p>A {@link NetworkTrafficListener} can be set and unset dynamically before and after this connector has
+ * been started.</p>
  */
 public class NetworkTrafficServerConnector extends ServerConnector
 {
-    private final List<NetworkTrafficListener> listeners = new CopyOnWriteArrayList<>();
+    private volatile NetworkTrafficListener listener;
 
     public NetworkTrafficServerConnector(Server server)
     {
@@ -68,25 +65,24 @@ public class NetworkTrafficServerConnector extends ServerConnector
     }
 
     /**
-     * @param listener the listener to add
+     * @param listener the listener to set, or null to unset
      */
-    public void addNetworkTrafficListener(NetworkTrafficListener listener)
+    public void setNetworkTrafficListener(NetworkTrafficListener listener)
     {
-        listeners.add(listener);
+        this.listener = listener;
     }
 
     /**
-     * @param listener the listener to remove
+     * @return the listener
      */
-    public void removeNetworkTrafficListener(NetworkTrafficListener listener)
+    public NetworkTrafficListener getNetworkTrafficListener()
     {
-        listeners.remove(listener);
+        return listener;
     }
 
     @Override
-    protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+    protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
     {
-        NetworkTrafficSelectChannelEndPoint endPoint = new NetworkTrafficSelectChannelEndPoint(channel, selectSet, key, getScheduler(), getIdleTimeout(), listeners);
-        return endPoint;
+        return new NetworkTrafficSocketChannelEndPoint(channel, selectSet, key, getScheduler(), getIdleTimeout(), getNetworkTrafficListener());
     }
 }
