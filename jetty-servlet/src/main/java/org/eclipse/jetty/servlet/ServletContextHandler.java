@@ -95,7 +95,6 @@ public class ServletContextHandler extends ContextHandler
 
     public static final int SESSIONS = 1;
     public static final int SECURITY = 2;
-    public static final int GZIP = 4;
     public static final int NO_SESSIONS = 0;
     public static final int NO_SECURITY = 0;
 
@@ -128,7 +127,6 @@ public class ServletContextHandler extends ContextHandler
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
     protected ServletHandler _servletHandler;
-    protected GzipHandler _gzipHandler;
     protected int _options;
     protected JspConfigDescriptor _jspConfig;
 
@@ -281,21 +279,6 @@ public class ServletContextHandler extends ContextHandler
             handler = _securityHandler;
         }
 
-        // link gzip handler
-        if (getGzipHandler() != null)
-        {
-            while (!(handler.getHandler() instanceof GzipHandler) &&
-                !(handler.getHandler() instanceof ServletHandler) &&
-                handler.getHandler() instanceof HandlerWrapper)
-            {
-                handler = (HandlerWrapper)handler.getHandler();
-            }
-
-            if (handler.getHandler() != _gzipHandler)
-                doSetHandler(handler, _gzipHandler);
-            handler = _gzipHandler;
-        }
-
         // link servlet handler
         if (getServletHandler() != null)
         {
@@ -369,8 +352,6 @@ public class ServletContextHandler extends ContextHandler
 
     /**
      * Finish constructing handlers and link them together.
-     *
-     * @see org.eclipse.jetty.server.handler.ContextHandler#startContext()
      */
     @Override
     protected void startContext() throws Exception
@@ -438,17 +419,6 @@ public class ServletContextHandler extends ContextHandler
         if (_sessionHandler == null && (_options & SESSIONS) != 0 && !isStarted())
             _sessionHandler = newSessionHandler();
         return _sessionHandler;
-    }
-
-    /**
-     * @return Returns the gzipHandler.
-     */
-    @ManagedAttribute(value = "context gzip handler", readonly = true)
-    public GzipHandler getGzipHandler()
-    {
-        if (_gzipHandler == null && (_options & GZIP) != 0 && !isStarted())
-            _gzipHandler = new GzipHandler();
-        return _gzipHandler;
     }
 
     /**
@@ -653,16 +623,6 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /**
-     * @param gzipHandler The {@link GzipHandler} to set on this context.
-     */
-    public void setGzipHandler(GzipHandler gzipHandler)
-    {
-        replaceHandler(_gzipHandler, gzipHandler);
-        _gzipHandler = gzipHandler;
-        relinkHandlers();
-    }
-
-    /**
      * @param servletHandler The servletHandler to set.
      */
     public void setServletHandler(ServletHandler servletHandler)
@@ -683,8 +643,6 @@ public class ServletContextHandler extends ContextHandler
             setSessionHandler((SessionHandler)handler);
         else if (handler instanceof SecurityHandler)
             setSecurityHandler((SecurityHandler)handler);
-        else if (handler instanceof GzipHandler)
-            setGzipHandler((GzipHandler)handler);
         else if (handler instanceof ServletHandler)
             setServletHandler((ServletHandler)handler);
         else
