@@ -53,6 +53,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -759,6 +760,56 @@ public class HTTPServerDocs
 
         server.start();
         // end::statsHandler[]
+    }
+
+    public void securedHandler() throws Exception
+    {
+        // tag::securedHandler[]
+        Server server = new Server();
+
+        // Configure the HttpConfiguration for the clear-text connector.
+        int securePort = 8443;
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setSecurePort(securePort);
+
+        // The clear-text connector.
+        ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
+        connector.setPort(8080);
+        server.addConnector(connector);
+
+        // Configure the HttpConfiguration for the encrypted connector.
+        HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
+        // Add the SecureRequestCustomizer because we are using TLS.
+        httpConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // The HttpConnectionFactory for the encrypted connector.
+        HttpConnectionFactory http11 = new HttpConnectionFactory(httpsConfig);
+
+        // Configure the SslContextFactory with the keyStore information.
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+
+        // The ConnectionFactory for TLS.
+        SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, http11.getProtocol());
+
+        // The encrypted connector.
+        ServerConnector secureConnector = new ServerConnector(server, tls, http11);
+        secureConnector.setPort(8443);
+        server.addConnector(secureConnector);
+
+        SecuredRedirectHandler securedHandler = new SecuredRedirectHandler();
+
+        // Link the SecuredRedirectHandler to the Server.
+        server.setHandler(securedHandler);
+
+        // Create a ContextHandlerCollection to hold contexts.
+        ContextHandlerCollection contextCollection = new ContextHandlerCollection();
+        // Link the ContextHandlerCollection to the StatisticsHandler.
+        securedHandler.setHandler(contextCollection);
+
+        server.start();
+        // end::securedHandler[]
     }
 
     public void defaultHandler() throws Exception

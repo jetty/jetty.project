@@ -418,8 +418,24 @@ Server
 [[eg-server-http-handler-use-util-secure-handler]]
 ===== SecuredRedirectHandler -- Redirect from HTTP to HTTPS
 
-// TODO: wait for issue #4766
-TODO
+`SecuredRedirectHandler` allows to redirect requests made with the `http`
+scheme (and therefore to the clear-text port) to the `https` scheme (and
+therefore to the encrypted port).
+
+For example a request to `+http://domain.com:8080/path?param=value+` is
+redirected to `+https://domain.com:8443/path?param=value+`.
+
+Server applications must configure a `HttpConfiguration` object with the
+secure scheme and secure port so that `SecuredRedirectHandler` can build
+the redirect URI.
+
+`SecuredRedirectHandler` is typically configured at the server level,
+although it can be configured on a per-context basis.
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=securedHandler]
+----
 
 [[eg-server-http-handler-use-util-default-handler]]
 ===== DefaultHandler
