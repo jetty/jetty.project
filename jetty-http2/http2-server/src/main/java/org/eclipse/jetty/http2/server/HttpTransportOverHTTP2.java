@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -110,6 +111,13 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             {
                 if (commit.compareAndSet(false, true))
                 {
+                    if (lastContent)
+                    {
+                        HttpFields responseHeaders = info.getFields();
+                        if (!responseHeaders.contains(HttpHeader.CONTENT_LENGTH))
+                            responseHeaders.put(HttpHeader.CONTENT_LENGTH, String.valueOf(BufferUtil.length(content)));
+                    }
+
                     if (hasContent)
                     {
                         Callback commitCallback = new Callback.Nested(callback)
