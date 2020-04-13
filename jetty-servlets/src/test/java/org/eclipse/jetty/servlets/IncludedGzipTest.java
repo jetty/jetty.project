@@ -90,7 +90,7 @@ public class IncludedGzipTest
 
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setMinGzipSize(16);
-        tester.getContext().insertHandler(gzipHandler);
+        tester.getServer().insertHandler(gzipHandler);
         tester.start();
     }
 

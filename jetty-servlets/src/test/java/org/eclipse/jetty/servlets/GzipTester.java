@@ -44,7 +44,6 @@ import org.eclipse.jetty.http.tools.HttpTester;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.toolchain.test.FS;
@@ -82,28 +81,33 @@ public class GzipTester
 
     private String encoding = "ISO8859_1";
     private String userAgent = null;
-    private final ServletTester tester = new ServletTester("/context", ServletContextHandler.GZIP);
+    private final GzipHandler gzipHandler = new GzipHandler();
+    private final ServletTester tester = new ServletTester("/context");
     private Path testdir;
     private String accept;
     private String compressionType;
+
+    public GzipTester(Path testingdir, String compressionType)
+    {
+        this(testingdir, compressionType, compressionType);
+    }
 
     public GzipTester(Path testingdir, String compressionType, String accept)
     {
         this.testdir = testingdir;
         this.compressionType = compressionType;
         this.accept = accept;
+        this.tester.getServer().insertHandler(gzipHandler);
     }
 
-    public GzipTester(Path testingdir, String compressionType)
+    public String getContextPath()
     {
-        this.testdir = testingdir;
-        this.compressionType = compressionType;
-        this.accept = compressionType;
+        return tester.getContextPath();
     }
 
     public GzipHandler getGzipHandler()
     {
-        return tester.getContext().getGzipHandler();
+        return gzipHandler;
     }
 
     public int getOutputBufferSize()
