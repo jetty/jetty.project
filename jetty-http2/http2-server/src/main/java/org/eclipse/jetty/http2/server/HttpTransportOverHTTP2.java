@@ -22,8 +22,8 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -113,9 +113,17 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 {
                     if (lastContent)
                     {
-                        HttpFields responseHeaders = info.getFields();
-                        if (!responseHeaders.contains(HttpHeader.CONTENT_LENGTH))
-                            responseHeaders.put(HttpHeader.CONTENT_LENGTH, String.valueOf(BufferUtil.length(content)));
+                        long realContentLength = BufferUtil.length(content);
+                        long contentLength = info.getContentLength();
+                        if (contentLength < 0)
+                        {
+                            info.setContentLength(realContentLength);
+                        }
+                        else if (contentLength != realContentLength)
+                        {
+                            callback.failed(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
+                            return;
+                        }
                     }
 
                     if (hasContent)

@@ -217,7 +217,8 @@ public class HpackEncoder
             // Remove fields as specified in RFC 7540, 8.1.2.2.
             if (fields != null)
             {
-                // For example: Connection: Close, TE, Upgrade, Custom.
+                // Remove the headers specified in the Connection header,
+                // for example: Connection: Close, TE, Upgrade, Custom.
                 Set<String> hopHeaders = null;
                 for (String value : fields.getCSV(HttpHeader.CONNECTION, false))
                 {
@@ -225,6 +226,8 @@ public class HpackEncoder
                         hopHeaders = new HashSet<>();
                     hopHeaders.add(StringUtil.asciiToLowerCase(value));
                 }
+
+                boolean contentLengthEncoded = false;
                 for (HttpField field : fields)
                 {
                     HttpHeader header = field.getHeader();
@@ -239,7 +242,16 @@ public class HpackEncoder
                     String name = field.getLowerCaseName();
                     if (hopHeaders != null && hopHeaders.contains(name))
                         continue;
+                    if (header == HttpHeader.CONTENT_LENGTH)
+                        contentLengthEncoded = true;
                     encode(buffer, field);
+                }
+
+                if (!contentLengthEncoded)
+                {
+                    long contentLength = metadata.getContentLength();
+                    if (contentLength >= 0)
+                        encode(buffer, new HttpField(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength)));
                 }
             }
 
