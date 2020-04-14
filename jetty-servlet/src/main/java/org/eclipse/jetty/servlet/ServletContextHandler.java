@@ -248,10 +248,8 @@ public class ServletContextHandler extends ContextHandler
         // link session handler
         if (getSessionHandler() != null)
         {
-
             while (!(handler.getHandler() instanceof SessionHandler) &&
                 !(handler.getHandler() instanceof SecurityHandler) &&
-                !(handler.getHandler() instanceof GzipHandler) &&
                 !(handler.getHandler() instanceof ServletHandler) &&
                 handler.getHandler() instanceof HandlerWrapper)
             {
@@ -267,7 +265,6 @@ public class ServletContextHandler extends ContextHandler
         if (getSecurityHandler() != null)
         {
             while (!(handler.getHandler() instanceof SecurityHandler) &&
-                !(handler.getHandler() instanceof GzipHandler) &&
                 !(handler.getHandler() instanceof ServletHandler) &&
                 handler.getHandler() instanceof HandlerWrapper)
             {
