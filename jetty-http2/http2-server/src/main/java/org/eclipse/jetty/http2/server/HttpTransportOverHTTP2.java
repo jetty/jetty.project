@@ -119,7 +119,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                         {
                             info.setContentLength(realContentLength);
                         }
-                        else if (contentLength != realContentLength)
+                        else if (hasContent && contentLength != realContentLength)
                         {
                             callback.failed(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
                             return;
