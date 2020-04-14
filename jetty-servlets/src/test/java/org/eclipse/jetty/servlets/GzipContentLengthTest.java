@@ -18,20 +18,27 @@
 
 package org.eclipse.jetty.servlets;
 
-import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import javax.servlet.Servlet;
 
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.tools.HttpTester;
-import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.servlets.GzipTester.ContentMetadata;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
-import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.Sha1Sum;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.PathResource;
+import org.hamcrest.Matcher;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -42,317 +49,180 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
 /**
- * Test the GzipHandler support for Content-Length setting variations.
- *
- * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+ * Test the {@code GzipHandler} support for the various ways that an App can set {@code Content-Length}.
  */
-@ExtendWith(WorkDirExtension.class)
-public class GzipContentLengthTest
+public class GzipContentLengthTest extends AbstractGzipTest
 {
-    public WorkDir workDir;
-
-    private static final HttpConfiguration defaultHttp = new HttpConfiguration();
-    private static final int LARGE = defaultHttp.getOutputBufferSize() * 8;
-    private static final int MEDIUM = defaultHttp.getOutputBufferSize();
-    private static final int SMALL = defaultHttp.getOutputBufferSize() / 4;
-    private static final int TINY = GzipHandler.DEFAULT_MIN_GZIP_SIZE / 2;
-    private static final boolean EXPECT_COMPRESSED = true;
+    enum GzipMode
+    {
+        INTERNAL, EXTERNAL
+    }
 
     public static Stream<Arguments> scenarios()
     {
-        List<Scenario> ret = new ArrayList<>();
+        // The list of servlets that implement various content sending behaviors
+        // some behaviors are more sane then others, but they are all real world scenarios
+        // that we have seen or had issues reported against Jetty.
+        List<Class<? extends AbstractFileContentServlet>> servlets = new ArrayList<>();
 
-        ret.add(new Scenario(0, "empty.txt", !EXPECT_COMPRESSED));
-        ret.add(new Scenario(TINY, "file-tiny.txt", !EXPECT_COMPRESSED));
-        ret.add(new Scenario(SMALL, "file-small.txt", EXPECT_COMPRESSED));
-        ret.add(new Scenario(SMALL, "file-small.mp3", !EXPECT_COMPRESSED));
-        ret.add(new Scenario(MEDIUM, "file-med.txt", EXPECT_COMPRESSED));
-        ret.add(new Scenario(MEDIUM, "file-medium.mp3", !EXPECT_COMPRESSED));
-        ret.add(new Scenario(LARGE, "file-large.txt", EXPECT_COMPRESSED));
-        ret.add(new Scenario(LARGE, "file-large.mp3", !EXPECT_COMPRESSED));
+        // AsyncContext create -> timeout -> onTimeout -> write-response -> complete
+        servlets.add(AsyncTimeoutCompleteWrite.Default.class);
+        servlets.add(AsyncTimeoutCompleteWrite.Passed.class);
+        // AsyncContext create -> timeout -> onTimeout -> dispatch -> write-response
+        servlets.add(AsyncTimeoutDispatchWrite.Default.class);
+        servlets.add(AsyncTimeoutDispatchWrite.Passed.class);
+        // AsyncContext create -> no-timeout -> scheduler.schedule -> dispatch -> write-response
+        servlets.add(AsyncScheduledDispatchWrite.Default.class);
+        servlets.add(AsyncScheduledDispatchWrite.Passed.class);
 
-        return ret.stream().map(Arguments::of);
-    }
+        // HttpOutput usage scenario from http://bugs.eclipse.org/450873
+        // 1. getOutputStream()
+        // 2. setHeader(content-type)
+        // 3. setHeader(content-length)
+        // 4. (unwrapped) HttpOutput.write(ByteBuffer)
+        servlets.add(HttpOutputWriteFileContentServlet.class);
 
-    private void testWithGzip(Scenario scenario, Class<? extends TestDirContentServlet> contentServlet) throws Exception
-    {
-        GzipTester tester = new GzipTester(workDir.getPath(), GzipHandler.GZIP);
+        // The following blocking scenarios are from http://bugs.eclipse.org/354014
+        // Blocking
+        // 1. setHeader(content-length)
+        // 2. getOutputStream()
+        // 3. setHeader(content-type)
+        // 4. outputStream.write()
+        servlets.add(BlockingServletLengthStreamTypeWrite.class);
+        // Blocking
+        // 1. setHeader(content-length)
+        // 2. setHeader(content-type)
+        // 3. getOutputStream()
+        // 4. outputStream.write()
+        servlets.add(BlockingServletLengthTypeStreamWrite.class);
+        // Blocking
+        // 1. getOutputStream()
+        // 2. setHeader(content-length)
+        // 3. setHeader(content-type)
+        // 4. outputStream.write()
+        servlets.add(BlockingServletStreamLengthTypeWrite.class);
+        // Blocking
+        // 1. getOutputStream()
+        // 2. setHeader(content-length)
+        // 3. setHeader(content-type)
+        // 4. outputStream.write() (with frequent response flush)
+        servlets.add(BlockingServletStreamLengthTypeWriteWithFlush.class);
+        // Blocking
+        // 1. getOutputStream()
+        // 2. setHeader(content-type)
+        // 3. setHeader(content-length)
+        // 4. outputStream.write()
+        servlets.add(BlockingServletStreamTypeLengthWrite.class);
+        // Blocking
+        // 1. setHeader(content-type)
+        // 2. setHeader(content-length)
+        // 3. getOutputStream()
+        // 4. outputStream.write()
+        servlets.add(BlockingServletTypeLengthStreamWrite.class);
+        // Blocking
+        // 1. setHeader(content-type)
+        // 2. getOutputStream()
+        // 3. setHeader(content-length)
+        // 4. outputStream.write()
+        servlets.add(BlockingServletTypeStreamLengthWrite.class);
 
-        // Add AsyncGzip Configuration
-        tester.getGzipHandler().setIncludedMimeTypes("text/plain");
-        tester.getGzipHandler().setIncludedPaths("*.txt", "*.mp3");
+        List<Arguments> scenarios = new ArrayList<>();
 
-        // Add content servlet
-        tester.setContentServlet(contentServlet);
-
-        try
+        for (Class<? extends Servlet> servlet : servlets)
         {
-            String testFilename = String.format("%s-%s", contentServlet.getSimpleName(), scenario.fileName);
-            File testFile = tester.prepareServerFile(testFilename, scenario.fileSize);
-
-            tester.start();
-
-            HttpTester.Response response = tester.executeRequest("GET", "/context/" + testFile.getName(), 5, TimeUnit.SECONDS);
-
-            if (response.getStatus() != 200)
-                System.err.println("DANG!!!! " + response);
-
-            assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
-
-            if (scenario.expectCompressed)
+            for (GzipMode gzipMode : GzipMode.values())
             {
-                // Must be gzip compressed
-                assertThat("Content-Encoding", response.get("Content-Encoding"), containsString(GzipHandler.GZIP));
+                // Not compressible (not large enough)
+                scenarios.add(Arguments.of(gzipMode, servlet, 0, "empty.txt", false));
+                scenarios.add(Arguments.of(gzipMode, servlet, GzipHandler.DEFAULT_MIN_GZIP_SIZE / 2, "file-tiny.txt", false));
+
+                // Compressible.
+                scenarios.add(Arguments.of(gzipMode, servlet, DEFAULT_OUTPUT_BUFFER_SIZE / 2, "file-small.txt", true));
+                scenarios.add(Arguments.of(gzipMode, servlet, DEFAULT_OUTPUT_BUFFER_SIZE, "file-medium.txt", true));
+                scenarios.add(Arguments.of(gzipMode, servlet, DEFAULT_OUTPUT_BUFFER_SIZE * 4, "file-large.txt", true));
+
+                // Not compressible (not a matching Content-Type)
+                scenarios.add(Arguments.of(gzipMode, servlet, DEFAULT_OUTPUT_BUFFER_SIZE / 2, "file-small.mp3", false));
+                scenarios.add(Arguments.of(gzipMode, servlet, DEFAULT_OUTPUT_BUFFER_SIZE, "file-medium.mp3", false));
+                scenarios.add(Arguments.of(gzipMode, servlet, DEFAULT_OUTPUT_BUFFER_SIZE * 4, "file-large.mp3", false));
             }
-            else
-            {
-                assertThat("Content-Encoding", response.get("Content-Encoding"), not(containsString(GzipHandler.GZIP)));
-            }
-
-            // Uncompressed content Size
-            ContentMetadata content = tester.getResponseMetadata(response);
-            assertThat("(Uncompressed) Content Length", content.size, is((long)scenario.fileSize));
         }
-        finally
+
+        return scenarios.stream();
+    }
+
+    private Server server;
+
+    @AfterEach
+    public void stopServer()
+    {
+        LifeCycle.stop(server);
+    }
+
+    @ParameterizedTest
+    @MethodSource("scenarios")
+    public void executeScenario(GzipMode gzipMode, Class<? extends Servlet> contentServlet, int fileSize, String fileName, boolean compressible) throws Exception
+    {
+        server = new Server();
+        LocalConnector localConnector = new LocalConnector(server);
+        server.addConnector(localConnector);
+
+        Path contextDir = workDir.resolve("context");
+        FS.ensureDirExists(contextDir);
+
+        ServletContextHandler servletContextHandler = new ServletContextHandler();
+        servletContextHandler.setContextPath("/context");
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
+        servletContextHandler.addServlet(contentServlet, "/*");
+        GzipHandler gzipHandler = new GzipHandler();
+
+        switch (gzipMode)
         {
-            tester.stop();
+            case INTERNAL:
+                servletContextHandler.insertHandler(gzipHandler);
+                server.setHandler(servletContextHandler);
+                break;
+            case EXTERNAL:
+                gzipHandler.setHandler(servletContextHandler);
+                server.setHandler(gzipHandler);
+                break;
         }
-    }
 
-    /**
-     * Test with content servlet that does:
-     * AsyncContext create -> timeout -> onTimeout -> write-response -> complete
-     *
-     * @throws Exception on test failure
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testAsyncTimeoutCompleteWriteDefault(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, AsyncTimeoutCompleteWrite.Default.class);
-    }
+        Path file = createFile(contextDir, fileName, fileSize);
+        String expectedSha1Sum = Sha1Sum.calculate(file);
 
-    /**
-     * Test with content servlet that does:
-     * AsyncContext create -> timeout -> onTimeout -> write-response -> complete
-     *
-     * @throws Exception on test failure
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testAsyncTimeoutCompleteWritePassed(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, AsyncTimeoutCompleteWrite.Passed.class);
-    }
+        server.start();
 
-    /**
-     * Test with content servlet that does:
-     * AsyncContext create -> timeout -> onTimeout -> dispatch -> write-response
-     *
-     * @throws Exception on test failure
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testAsyncTimeoutDispatchWriteDefault(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, AsyncTimeoutDispatchWrite.Default.class);
-    }
+        // Setup request
+        HttpTester.Request request = HttpTester.newRequest();
+        request.setMethod("GET");
+        request.setVersion(HttpVersion.HTTP_1_1);
+        request.setHeader("Host", "tester");
+        request.setHeader("Connection", "close");
+        request.setHeader("Accept-Encoding", "gzip");
+        request.setURI("/context/" + file.getFileName().toString());
 
-    /**
-     * Test with content servlet that does:
-     * AsyncContext create -> timeout -> onTimeout -> dispatch -> write-response
-     *
-     * @throws Exception on test failure
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testAsyncTimeoutDispatchWritePassed(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, AsyncTimeoutDispatchWrite.Passed.class);
-    }
+        // Issue request
+        ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
 
-    /**
-     * Test with content servlet that does:
-     * AsyncContext create -> no-timeout -> scheduler.schedule -> dispatch -> write-response
-     *
-     * @throws Exception on test failure
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testAsyncScheduledDispatchWriteDefault(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, AsyncScheduledDispatchWrite.Default.class);
-    }
+        // Parse response
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
-    /**
-     * Test with content servlet that does:
-     * AsyncContext create -> no-timeout -> scheduler.schedule -> dispatch -> write-response
-     *
-     * @throws Exception on test failure
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testAsyncScheduledDispatchWritePassed(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, AsyncScheduledDispatchWrite.Passed.class);
-    }
+        assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
-    /**
-     * Test with content servlet that does:
-     * 1) setHeader(content-length)
-     * 2) getOutputStream()
-     * 3) setHeader(content-type)
-     * 4) outputStream.write()
-     *
-     * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testServletLengthStreamTypeWrite(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, TestServletLengthStreamTypeWrite.class);
-    }
-
-    /**
-     * Test with content servlet that does:
-     * 1) setHeader(content-length)
-     * 2) setHeader(content-type)
-     * 3) getOutputStream()
-     * 4) outputStream.write()
-     *
-     * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testServletLengthTypeStreamWrite(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, TestServletLengthTypeStreamWrite.class);
-    }
-
-    /**
-     * Test with content servlet that does:
-     * 1) getOutputStream()
-     * 2) setHeader(content-length)
-     * 3) setHeader(content-type)
-     * 4) outputStream.write()
-     *
-     * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testServletStreamLengthTypeWrite(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, TestServletStreamLengthTypeWrite.class);
-    }
-
-    /**
-     * Test with content servlet that does:
-     * 1) getOutputStream()
-     * 2) setHeader(content-length)
-     * 3) setHeader(content-type)
-     * 4) outputStream.write() (with frequent response flush)
-     *
-     * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testServletStreamLengthTypeWriteWithFlush(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, TestServletStreamLengthTypeWriteWithFlush.class);
-    }
-
-    /**
-     * Test with content servlet that does:
-     * 1) getOutputStream()
-     * 2) setHeader(content-type)
-     * 3) setHeader(content-length)
-     * 4) outputStream.write()
-     *
-     * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testServletStreamTypeLengthWrite(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, TestServletStreamTypeLengthWrite.class);
-    }
-
-    /**
-     * Test with content servlet that does:
-     * 1) setHeader(content-type)
-     * 2) setHeader(content-length)
-     * 3) getOutputStream()
-     * 4) outputStream.write()
-     *
-     * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testServletTypeLengthStreamWrite(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, TestServletTypeLengthStreamWrite.class);
-    }
-
-    /**
-     * Test with content servlet that does:
-     * 1) setHeader(content-type)
-     * 2) getOutputStream()
-     * 3) setHeader(content-length)
-     * 4) outputStream.write()
-     *
-     * @throws Exception on test failure
-     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testServletTypeStreamLengthWrite(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, TestServletTypeStreamLengthWrite.class);
-    }
-
-    /**
-     * Test with content servlet that does:
-     * 2) getOutputStream()
-     * 1) setHeader(content-type)
-     * 3) setHeader(content-length)
-     * 4) (unwrapped) HttpOutput.write(ByteBuffer)
-     *
-     * This is done to demonstrate a bug with using HttpOutput.write()
-     * while also using GzipFilter
-     *
-     * @throws Exception on test failure
-     * @see <a href="http://bugs.eclipse.org/450873">Eclipse Bug 450873</a>
-     */
-    @ParameterizedTest
-    @MethodSource("scenarios")
-    public void testHttpOutputWrite(Scenario scenario) throws Exception
-    {
-        testWithGzip(scenario, TestServletBufferTypeLengthWrite.class);
-    }
-
-    public static class Scenario
-    {
-        final int fileSize;
-        final String fileName;
-        final boolean expectCompressed;
-
-        public Scenario(int fileSize, String fileName, boolean expectCompressed)
+        // Response Content-Encoding check
+        Matcher<String> contentEncodingMatcher = containsString(GzipHandler.GZIP);
+        if (!compressible)
         {
-            this.fileSize = fileSize;
-            this.fileName = fileName;
-            this.expectCompressed = expectCompressed;
+            contentEncodingMatcher = not(contentEncodingMatcher);
         }
+        assertThat("Content-Encoding", response.get("Content-Encoding"), contentEncodingMatcher);
 
-        @Override
-        public String toString()
-        {
-            return String.format("%s [%,d bytes, compressed=%b]", fileName, fileSize, expectCompressed);
-        }
+        // Response Content checks
+        UncompressedMetadata metadata = parseResponseContent(response);
+        assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(fileSize));
+        // TODO: Assertions.assertArrayEquals();
+        // TODO: compare bytes
+        assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
     }
 }

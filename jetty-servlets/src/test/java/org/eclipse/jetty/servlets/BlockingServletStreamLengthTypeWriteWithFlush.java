@@ -42,12 +42,12 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
  * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
  */
 @SuppressWarnings("serial")
-public class TestServletStreamLengthTypeWriteWithFlush extends TestDirContentServlet
+public class BlockingServletStreamLengthTypeWriteWithFlush extends AbstractFileContentServlet
 {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        String fileName = request.getServletPath();
+        String fileName = request.getPathInfo();
         byte[] dataBytes = loadContentFileBytes(fileName);
 
         ServletOutputStream out = response.getOutputStream();
