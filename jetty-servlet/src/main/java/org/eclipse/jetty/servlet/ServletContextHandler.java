@@ -633,7 +633,18 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /**
-     * Insert a HandlerWrapper before the first Session,Security or ServletHandler
+     * @param gzipHandler the GzipHandler for this ServletContextHandler
+     * @deprecated use {@link #insertHandler(HandlerWrapper)} instead
+     */
+    @Deprecated
+    public void setGzipHandler(GzipHandler gzipHandler)
+    {
+        insertHandler(gzipHandler);
+        LOG.warn("ServletContextHandler.setGzipHandler(GzipHandler) is deprecated, use insertHandler(HandlerWrapper) instead.");
+    }
+
+    /**
+     * Insert a HandlerWrapper before the first Session, Security or ServletHandler
      * but after any other HandlerWrappers.
      */
     @Override
