@@ -19,13 +19,11 @@
 package org.eclipse.jetty.websocket.util.messages;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
-import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 
 public class PartialByteArrayMessageSink extends AbstractMessageSink
 {
@@ -34,13 +32,6 @@ public class PartialByteArrayMessageSink extends AbstractMessageSink
     public PartialByteArrayMessageSink(CoreSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
-
-        // byte[] buf, int offset, int length
-        MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class, boolean.class);
-        if (methodHandle.type() != onMessageType)
-        {
-            throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
     }
 
     @Override
@@ -51,7 +42,7 @@ public class PartialByteArrayMessageSink extends AbstractMessageSink
             if (frame.hasPayload() || frame.isFin())
             {
                 byte[] buffer = frame.hasPayload() ? BufferUtil.toArray(frame.getPayload()) : EMPTY_BUFFER;
-                methodHandle.invoke(buffer, 0, buffer.length, frame.isFin());
+                methodHandle.invoke(buffer, frame.isFin());
             }
 
             callback.succeeded();
