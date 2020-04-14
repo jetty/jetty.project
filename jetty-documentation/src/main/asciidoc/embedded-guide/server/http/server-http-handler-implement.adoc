@@ -67,5 +67,5 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=handlerF
 
 Note how a filtering `Handler` extends from `HandlerWrapper` and as such
 needs another handler to forward the request processing to, and how the
-two``Handler``s needs to be linked together to work properly.
+two ``Handler``s needs to be linked together to work properly.
 

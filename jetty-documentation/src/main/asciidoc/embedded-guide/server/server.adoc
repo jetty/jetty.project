@@ -45,6 +45,8 @@ xref:eg-server-http2[HTTP/2 libraries]
 * WebSocket support, for applications that want to embed a WebSocket server,
 via the xref:eg-server-websocket[WebSocket libraries]
 
+// TODO: add a section on lifecycle and the component tree.
+
 include::http/server-http.adoc[]
 include::http2/server-http2.adoc[]
 include::websocket/server-websocket.adoc[]

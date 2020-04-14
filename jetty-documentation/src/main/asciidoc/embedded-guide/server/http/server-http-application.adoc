@@ -20,7 +20,7 @@
 === Writing HTTP Server Applications
 
 Writing HTTP applications is typically simple, especially when using blocking APIs.
-However, there are more subtle cases where it is worth clarifying what a server application should do to obtain the desired results when deployed in Jetty.
+However, there are subtle cases where it is worth clarifying what a server application should do to obtain the desired results when run by Jetty.
 
 [[eg-server-http-application-1xx]]
 ==== Managing 1xx Responses
@@ -44,12 +44,15 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=continue
 ----
 
 [[jetty-102-processing]]
-==== 102 Processing
+===== 102 Processing
 
-link:https://tools.ietf.org/html/rfc2518#section-10.1[RFC 2518] defined the `102 Processing` status code that can be sent "when the server has a reasonable expectation that the request will take significant time to complete.
-As guidance, if a method is taking longer than 20 seconds (a reasonable, but arbitrary value) to process the server SHOULD return a `102 Processing` response".
+link:https://tools.ietf.org/html/rfc2518[RFC 2518] defined the `102 Processing` status code that can be sent:
 
-However a later update of RFC 2518, link:https://tools.ietf.org/html/rfc4918[RFC 4918], removed the `102 Processing` status code for link:https://tools.ietf.org/html/rfc4918#appendix-F.3["lack of implementation"].
+[quote,RFC 2518 section 10.1]
+when the server has a reasonable expectation that the request will take significant time to complete.
+As guidance, if a method is taking longer than 20 seconds (a reasonable, but arbitrary value) to process the server SHOULD return a `102 Processing` response.
+
+However, a later update of RFC 2518, link:https://tools.ietf.org/html/rfc4918[RFC 4918], removed the `102 Processing` status code for link:https://tools.ietf.org/html/rfc4918#appendix-F.3["lack of implementation"].
 
 Jetty supports the `102 Processing` status code.
 If a request is received with the `Expect: 102-processing` header, then a filter/servlet may send a `102 Processing` response (without terminating further processing) by calling `response.sendError(102)`.
