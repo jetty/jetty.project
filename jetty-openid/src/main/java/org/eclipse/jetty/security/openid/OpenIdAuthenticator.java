@@ -434,8 +434,8 @@ public class OpenIdAuthenticator extends LoginAuthenticator
             String redirectUri = URIUtil.addPaths(request.getContextPath(), _errorPage);
             if (message != null)
             {
-                String query = URIUtil.combineQueryParams(ERROR_PARAMETER + "=" + UrlEncoded.encodeString(message), _errorQuery);
-                redirectUri = URIUtil.addPaths(request.getContextPath(), _errorPath) + "?" + query;
+                String query = URIUtil.addQueries(ERROR_PARAMETER + "=" + UrlEncoded.encodeString(message), _errorQuery);
+                redirectUri = URIUtil.addPathQuery(URIUtil.addPaths(request.getContextPath(), _errorPath), query);
                 baseResponse.sendRedirect(getRedirectCode(baseRequest.getHttpVersion()), redirectUri);
             }
 

@@ -730,6 +730,6 @@ public class URIUtilTest
     @MethodSource("addQueryParameterSource")
     public void testAddQueryParam(String param1, String param2, Matcher<String> matcher)
     {
-        assertThat(URIUtil.combineQueryParams(param1, param2), matcher);
+        assertThat(URIUtil.addQueries(param1, param2), matcher);
     }
 }
