@@ -181,3 +181,4 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=httpChan
 
 include::server-http-connector.adoc[]
 include::server-http-handler.adoc[]
+include::server-http-application.adoc[]

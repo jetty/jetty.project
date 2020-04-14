@@ -24,12 +24,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
@@ -884,5 +887,45 @@ public class HTTPServerDocs
 
         server.start();
         // end::defaultHandler[]
+    }
+
+    public void continue100()
+    {
+        // tag::continue100[]
+        class Continue100HttpServlet extends HttpServlet
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                // Inspect the method and headers.
+                boolean isPost = HttpMethod.POST.is(request.getMethod());
+                boolean expects100 = HttpHeaderValue.CONTINUE.is(request.getHeader("Expect"));
+                long contentLength = request.getContentLengthLong();
+
+                if (isPost && expects100)
+                {
+                    if (contentLength > 1024 * 1024)
+                    {
+                        // Rejects uploads that are too large.
+                        response.sendError(HttpStatus.PAYLOAD_TOO_LARGE_413);
+                    }
+                    else
+                    {
+                        // Getting the request InputStream indicates that
+                        // the application wants to read the request content.
+                        // Jetty will send the 100 Continue response at this
+                        // point, and the client will send the request content.
+                        ServletInputStream input = request.getInputStream();
+
+                        // Read and process the request input.
+                    }
+                }
+                else
+                {
+                    // Process normal requests.
+                }
+            }
+        }
+        // end::continue100[]
     }
 }
