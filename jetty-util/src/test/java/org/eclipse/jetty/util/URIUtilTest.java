@@ -40,6 +40,7 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -708,5 +709,27 @@ public class URIUtilTest
     public void testGetUriLastPathSegment(URI uri, String expectedName)
     {
         assertThat(URIUtil.getUriLastPathSegment(uri), is(expectedName));
+    }
+
+    public static Stream<Arguments> addQueryParameterSource()
+    {
+        final String newQueryParam = "newParam=11";
+        return Stream.of(
+            Arguments.of(null, newQueryParam, is(newQueryParam)),
+            Arguments.of(newQueryParam, null, is(newQueryParam)),
+            Arguments.of("", newQueryParam, is(newQueryParam)),
+            Arguments.of(newQueryParam, "", is(newQueryParam)),
+            Arguments.of("existingParam=3", newQueryParam, is("existingParam=3&" + newQueryParam)),
+            Arguments.of(newQueryParam, "existingParam=3", is(newQueryParam + "&existingParam=3")),
+            Arguments.of("existingParam1=value1&existingParam2=value2", newQueryParam, is("existingParam1=value1&existingParam2=value2&" + newQueryParam)),
+            Arguments.of(newQueryParam, "existingParam1=value1&existingParam2=value2", is(newQueryParam + "&existingParam1=value1&existingParam2=value2"))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("addQueryParameterSource")
+    public void testAddQueryParam(String param1, String param2, Matcher<String> matcher)
+    {
+        assertThat(URIUtil.addQueries(param1, param2), matcher);
     }
 }

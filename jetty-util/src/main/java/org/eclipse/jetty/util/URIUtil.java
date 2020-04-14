@@ -714,6 +714,20 @@ public class URIUtil
         return buf.toString();
     }
 
+    /** Add a path and a query string
+     * @param path The path which may already contain contain a query
+     * @param query The query string or null if no query to be added
+     * @return The path with any non null query added after a '?' or '&amp;' as appropriate.
+     */
+    public static String addPathQuery(String path, String query)
+    {
+        if (query == null)
+            return path;
+        if (path.indexOf('?') >= 0)
+            return path + '&' + query;
+        return path + '?' + query;
+    }
+
     /**
      * Given a URI, attempt to get the last segment.
      * <p>
@@ -1303,6 +1317,22 @@ public class URIUtil
         encodePath(buf, path, offset);
 
         return URI.create(buf.toString());
+    }
+
+    /**
+     * Combine two query strings into one. Each query string should not contain the beginning '?' character, but
+     * may contain multiple parameters separated by the '{@literal &}' character.
+     * @param query1 the first query string.
+     * @param query2 the second query string.
+     * @return the combination of the two query strings.
+     */
+    public static String addQueries(String query1, String query2)
+    {
+        if (StringUtil.isEmpty(query1))
+            return query2;
+        if (StringUtil.isEmpty(query2))
+            return query1;
+        return query1 + '&' + query2;
     }
 
     public static URI getJarSource(URI uri)
