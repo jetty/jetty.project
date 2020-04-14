@@ -20,6 +20,8 @@ package embedded.server.http;
 
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -37,6 +39,7 @@ import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
@@ -67,6 +70,8 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
+
+import static java.lang.System.Logger.Level.INFO;
 
 @SuppressWarnings("unused")
 public class HTTPServerDocs
@@ -102,6 +107,50 @@ public class HTTPServerDocs
         // Start the Server so it starts accepting connections from clients.
         server.start();
         // end::simple[]
+    }
+
+    public void httpChannelListener() throws Exception
+    {
+        // tag::httpChannelListener[]
+        class TimingHttpChannelListener implements HttpChannel.Listener
+        {
+            private final ConcurrentMap<Request, Long> times = new ConcurrentHashMap<>();
+
+            @Override
+            public void onRequestBegin(Request request)
+            {
+                times.put(request, System.nanoTime());
+            }
+
+            @Override
+            public void onComplete(Request request)
+            {
+                long begin = times.remove(request);
+                long elapsed = System.nanoTime() - begin;
+                System.getLogger("timing").log(INFO, "Request {0} took {1} ns", request, elapsed);
+            }
+        }
+
+        Server server = new Server();
+
+        Connector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        // Add the HttpChannel.Listener as bean to the connector.
+        connector.addBean(new TimingHttpChannelListener());
+
+        // Set a simple Handler to handle requests/responses.
+        server.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                jettyRequest.setHandled(true);
+            }
+        });
+
+        server.start();
+        // end::httpChannelListener[]
     }
 
     public void configureConnector() throws Exception
