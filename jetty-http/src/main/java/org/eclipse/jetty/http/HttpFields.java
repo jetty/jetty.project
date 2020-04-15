@@ -295,6 +295,8 @@ public class HttpFields implements Iterable<HttpField>, HttpFieldList
     @Override
     public HttpField getField(int index)
     {
+        if (index >= size())
+            throw new NoSuchElementException();
         return _fields.get(index);
     }
 
