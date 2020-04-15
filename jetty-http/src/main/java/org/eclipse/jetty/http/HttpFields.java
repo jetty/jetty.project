@@ -265,6 +265,7 @@ public class HttpFields implements Iterable<HttpField>, HttpFieldList
         add(name, d);
     }
 
+    @Override
     public HttpFieldList asImmutable()
     {
         return new HttpFields.Immutable(_fields.toArray(new HttpField[0]));
@@ -550,6 +551,12 @@ public class HttpFields implements Iterable<HttpField>, HttpFieldList
         Immutable(HttpField[] fields)
         {
             _fields = fields;
+        }
+
+        @Override
+        public HttpFieldList asImmutable()
+        {
+            return this;
         }
 
         @Override

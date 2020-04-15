@@ -42,6 +42,8 @@ public interface HttpFieldList extends Iterable<HttpField>
         return hash;
     }
 
+    HttpFieldList asImmutable();
+
     default String asString()
     {
         StringBuilder buffer = new StringBuilder();
@@ -273,6 +275,20 @@ public interface HttpFieldList extends Iterable<HttpField>
     default long getLongField(String name) throws NumberFormatException
     {
         HttpField field = getField(name);
+        return field == null ? -1L : field.getLongValue();
+    }
+
+    /**
+     * Get a header as an long value. Returns the value of an integer field or -1 if not found. The
+     * case of the field name is ignored.
+     *
+     * @param header the header type
+     * @return the value of the field as a long
+     * @throws NumberFormatException If bad long found
+     */
+    default long getLongField(HttpHeader header) throws NumberFormatException
+    {
+        HttpField field = getField(header);
         return field == null ? -1L : field.getLongValue();
     }
 
