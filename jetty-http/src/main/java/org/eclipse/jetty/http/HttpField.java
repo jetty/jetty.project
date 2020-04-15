@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Map;
 import java.util.Objects;
+import java.util.StringTokenizer;
 
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
@@ -289,9 +292,7 @@ public class HttpField
             return true;
         if (_header != null && _header == field.getHeader())
             return true;
-        if (_name.equalsIgnoreCase(field.getName()))
-            return true;
-        return false;
+        return _name.equalsIgnoreCase(field.getName());
     }
 
     private int nameHashCode()
@@ -412,5 +413,48 @@ public class HttpField
         {
             return _long;
         }
+    }
+
+    /**
+     * Get field value parameters. Some field values can have parameters. This method separates the
+     * value from the parameters and optionally populates a map with the parameters. For example:
+     *
+     * <PRE>
+     *
+     * FieldName : Value ; param1=val1 ; param2=val2
+     *
+     * </PRE>
+     *
+     * @param value The Field value, possibly with parameters.
+     * @param parameters A map to populate with the parameters, or null
+     * @return The value.
+     */
+    public static String getValueParameters(String value, Map<String, String> parameters)
+    {
+        if (value == null)
+            return null;
+
+        int i = value.indexOf(';');
+        if (i < 0)
+            return value;
+        if (parameters == null)
+            return value.substring(0, i).trim();
+
+        StringTokenizer tok1 = new QuotedStringTokenizer(value.substring(i), ";", false, true);
+        while (tok1.hasMoreTokens())
+        {
+            String token = tok1.nextToken();
+            StringTokenizer tok2 = new QuotedStringTokenizer(token, "= ");
+            if (tok2.hasMoreTokens())
+            {
+                String paramName = tok2.nextToken();
+                String paramVal = null;
+                if (tok2.hasMoreTokens())
+                    paramVal = tok2.nextToken();
+                parameters.put(paramName, paramVal);
+            }
+        }
+
+        return value.substring(0, i).trim();
     }
 }
