@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.http.HttpServletRequest;
@@ -89,7 +88,7 @@ public class ContextHandlerTest
         IsHandledHandler handlerC = new IsHandledHandler();
         contextC.setHandler(handlerC);
 
-        HandlerCollection c = new HandlerCollection();
+        HandlerList c = new HandlerList();
 
         c.addHandler(contextA);
         c.addHandler(contextB);
@@ -178,7 +177,7 @@ public class ContextHandlerTest
         contextH.setHandler(handlerH);
         contextH.setVirtualHosts(new String[]{"*.com"});
 
-        HandlerCollection c = new HandlerCollection();
+        HandlerList c = new HandlerList();
         c.addHandler(contextA);
         c.addHandler(contextB);
         c.addHandler(contextC);
@@ -271,7 +270,7 @@ public class ContextHandlerTest
         }
 
         // Reversed order to check priority when multiple matches
-        HandlerCollection d = new HandlerCollection();
+        HandlerList d = new HandlerList();
         d.addHandler(contextH);
         d.addHandler(contextG);
         d.addHandler(contextF);

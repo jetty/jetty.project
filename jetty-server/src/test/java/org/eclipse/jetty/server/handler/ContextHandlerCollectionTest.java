@@ -352,12 +352,11 @@ public class ContextHandlerCollectionTest
         ContextHandler left = new ContextHandler("/left");
         left.setHandler(new AsyncHandler("left"));
 
-        HandlerList centre = new HandlerList();
         ContextHandler centreLeft = new ContextHandler("/leftcentre");
         centreLeft.setHandler(new AsyncHandler("left of centre"));
         ContextHandler centreRight = new ContextHandler("/rightcentre");
         centreRight.setHandler(new AsyncHandler("right of centre"));
-        centre.setHandlers(new Handler[]{centreLeft, new WrappedHandler(centreRight)});
+        HandlerList centre = new HandlerList(centreLeft, new WrappedHandler(centreRight));
 
         ContextHandler right = new ContextHandler("/right");
         right.setHandler(new AsyncHandler("right"));

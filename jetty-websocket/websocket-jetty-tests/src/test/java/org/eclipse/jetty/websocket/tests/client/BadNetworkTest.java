@@ -86,10 +86,7 @@ public class BadNetworkTest
         });
         context.addServlet(holder, "/ws");
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(context);
-        handlers.addHandler(new DefaultHandler());
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(context, new DefaultHandler()));
         JettyWebSocketServletContainerInitializer.configure(context, null);
 
         server.start();
