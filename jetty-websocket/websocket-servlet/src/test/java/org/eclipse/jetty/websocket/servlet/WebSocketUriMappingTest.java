@@ -107,6 +107,24 @@ public class WebSocketUriMappingTest
     }
 
     @Test
+    public void testMiddleVsMiddle2()
+    {
+        mapping.put(new UriTemplatePathSpec("/{a}/{bz}/c/{d}"), "middle1");
+        mapping.put(new UriTemplatePathSpec("/{a}/{ba}/{c}/d"), "middle2");
+
+        assertThat(getMatch("/a/b/c/d"), is("middle1"));
+    }
+
+    @Test
+    public void testMiddleVsMiddle3()
+    {
+        mapping.put(new UriTemplatePathSpec("/{a}/{ba}/c/{d}"), "middle1");
+        mapping.put(new UriTemplatePathSpec("/{a}/{bz}/{c}/d"), "middle2");
+
+        assertThat(getMatch("/a/b/c/d"), is("middle1"));
+    }
+
+    @Test
     public void testPrefixVsPrefix()
     {
         // This works but only because its an alphabetical check and '{' > 'b'.
