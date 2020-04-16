@@ -52,11 +52,11 @@ pipeline {
           }
         }
 
-        stage("Build / Test - JDK13") {
+        stage("Build / Test - JDK14") {
           agent { node { label 'linux' } }
           steps {
             timeout(time: 120, unit: 'MINUTES') {
-              mavenBuild("jdk13", "-T3 -Pmongodb clean install", "maven3", true)
+              mavenBuild("jdk14", "-T3 -Pmongodb clean install", "maven3", true)
               warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
               junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
             }
