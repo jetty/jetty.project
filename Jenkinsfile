@@ -13,7 +13,7 @@ pipeline {
           }
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            docker.image('jettyproject/jetty-build:latest').inside() {
+            docker.image('jettyproject/jetty-build:latest').inside {
               mavenBuild("jdk11", "-T3 -Pmongodb clean install", "maven3", true) // -Pautobahn
               // Collect up the jacoco execution results (only on main build)
               jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
