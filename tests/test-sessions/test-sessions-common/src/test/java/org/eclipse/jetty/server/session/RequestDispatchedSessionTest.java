@@ -65,11 +65,7 @@ public class RequestDispatchedSessionTest
         contextHandler.addServlet(ShowUserServlet.class, "/user");
         contextHandler.addServlet(DefaultServlet.class, "/");
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(contextHandler);
-        handlers.addHandler(new DefaultHandler());
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(contextHandler, new DefaultHandler()));
 
         server.start();
     }

@@ -81,10 +81,7 @@ public class CoreServer extends ContainerLifeCycle
         server.addConnector(connector);
 
         // Add Handler
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(new WebSocketUpgradeHandler(negotiator));
-        handlers.addHandler(new DefaultHandler());
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(new WebSocketUpgradeHandler(negotiator), new DefaultHandler()));
 
         // Start Server
         addBean(server);

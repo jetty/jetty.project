@@ -29,7 +29,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -69,7 +69,7 @@ public class BadAppDeployTest
            It is important that this Order be maintained for an accurate test case.
            ### BEAN: QueuedThreadPool[qtp1327763628]@4f2410ac{STOPPED,8<=0<=200,i=0,r=-1,q=0}[NO_TRY]
            ### BEAN: ServerConnector@16f65612{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
-           ### BEAN: HandlerCollection@5f150435{STOPPED}
+           ### BEAN: HandlerList@5f150435{STOPPED}
            ### BEAN: DeploymentManager@1c53fd30{STOPPED}
          */
 
@@ -79,10 +79,8 @@ public class BadAppDeployTest
         server.addConnector(connector);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        HandlerCollection handlers = new HandlerCollection();
-        handlers.addHandler(contexts);
-        handlers.addHandler(new DefaultHandler());
-        server.setHandler(handlers); // this should be done before addBean(deploymentManager)
+        // this should be done before addBean(deploymentManager)
+        server.setHandler(new HandlerList(contexts, new DefaultHandler()));
 
         DeploymentManager deploymentManager = new DeploymentManager();
         deploymentManager.setContexts(contexts);
@@ -121,7 +119,7 @@ public class BadAppDeployTest
            ### BEAN: QueuedThreadPool[qtp1530388690]@5b37e0d2{STOPPED,8<=0<=200,i=0,r=-1,q=0}[NO_TRY]
            ### BEAN: ServerConnector@5e265ba4{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
            ### BEAN: DeploymentManager@3419866c{STOPPED}
-           ### BEAN: HandlerCollection@63e31ee{STOPPED}
+           ### BEAN: HandlerList@63e31ee{STOPPED}
          */
 
         server = new Server();
@@ -146,12 +144,11 @@ public class BadAppDeployTest
         webAppProvider.setMonitoredDirName(webappsDir.toString());
         webAppProvider.setScanInterval(1);
 
-        server.addBean(deploymentManager); // this should be done before setHandler(handlers)
+        // this must be done before setHandler(handlers)
+        server.addBean(deploymentManager);
 
-        HandlerCollection handlers = new HandlerCollection();
-        handlers.addHandler(contexts);
-        handlers.addHandler(new DefaultHandler());
-        server.setHandler(handlers); // this should be done after addBean(deploymentManager)
+        // this must be done after addBean(deploymentManager)
+        server.setHandler(new HandlerList(contexts, new DefaultHandler()));
 
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

@@ -673,7 +673,7 @@ public class GzipDefaultTest
         GzipTester tester = new GzipTester(testingdir.getEmptyPathDir(), compressionType);
 
         // Configure Gzip Handler
-        tester.getGzipHandler().setExcludedPaths("/bad.txt");
+        tester.getGzipHandler().setExcludedPaths(tester.getContextPath() + "/bad.txt");
         tester.getGzipHandler().setIncludedPaths("*.txt");
 
         // Prepare server file

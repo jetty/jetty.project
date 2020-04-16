@@ -26,7 +26,7 @@
     <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
     <Set name="handler">
-      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerList">
         <Set name="handlers">
          <Array type="org.eclipse.jetty.server.Handler">
            <Item>
@@ -34,9 +34,6 @@
            </Item>
            <Item>
              <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
-           </Item>
-           <Item>
-             <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler"/>
            </Item>
          </Array>
         </Set>

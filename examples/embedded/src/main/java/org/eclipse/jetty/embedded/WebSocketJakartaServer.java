@@ -49,11 +49,8 @@ public class WebSocketJakartaServer
     {
         Server server = new Server(port);
 
-        HandlerList handlers = new HandlerList();
-
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        handlers.addHandler(context);
 
         // Enable jakarta.websocket configuration for the context
         JakartaWebSocketServletContainerInitializer.configure(context,
@@ -64,8 +61,7 @@ public class WebSocketJakartaServer
             }
         );
 
-        handlers.addHandler(new DefaultHandler());
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(context, new DefaultHandler()));
 
         return server;
     }

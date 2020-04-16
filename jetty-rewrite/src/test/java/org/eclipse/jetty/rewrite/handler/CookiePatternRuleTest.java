@@ -76,11 +76,7 @@ public class CookiePatternRuleTest
             }
         };
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(rewriteHandler);
-        handlers.addHandler(dummyHandler);
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(rewriteHandler, dummyHandler));
         server.start();
     }
 

@@ -21,7 +21,6 @@ package org.eclipse.jetty.embedded;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -53,9 +52,7 @@ public class FileServer
         resourceHandler.setBaseResource(baseResource);
 
         // Add the ResourceHandler to the server.
-        HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[]{resourceHandler, new DefaultHandler()});
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(resourceHandler, new DefaultHandler()));
 
         return server;
     }

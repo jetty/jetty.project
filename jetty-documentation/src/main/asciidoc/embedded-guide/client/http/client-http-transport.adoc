@@ -34,7 +34,7 @@ semantic objects that can be used by applications.
 The most common protocol format is HTTP/1.1, a textual protocol with lines
 separated by `\r\n`:
 
-[source,screen,subs="{sub-order}"]
+[source,screen]
 ----
 GET /index.html HTTP/1.1\r\n
 Host: domain.com\r\n
@@ -44,7 +44,7 @@ Host: domain.com\r\n
 
 However, the same request can be made using FastCGI, a binary protocol:
 
-[source,screen,subs="{sub-order}"]
+[source,screen]
 ----
 x01 x01 x00 x01 x00 x08 x00 x00
 x00 x01 x01 x00 x00 x00 x00 x00

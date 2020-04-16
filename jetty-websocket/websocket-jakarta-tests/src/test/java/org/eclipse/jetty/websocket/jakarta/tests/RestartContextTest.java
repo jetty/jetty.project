@@ -73,12 +73,7 @@ public class RestartContextTest
         context.addEventListener(new AddEndpointListener());
 
         // Setup handler tree
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(context);
-        handlers.addHandler(new DefaultHandler());
-
-        // Add handler tree to server
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(context, new DefaultHandler()));
 
         // Start server
         server.start();
@@ -115,9 +110,7 @@ public class RestartContextTest
         });
 
         // Setup handler tree
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(context);
-        handlers.addHandler(new DefaultHandler());
+        HandlerList handlers = new HandlerList(context, new DefaultHandler());
 
         // Add handler tree to server
         server.setHandler(handlers);

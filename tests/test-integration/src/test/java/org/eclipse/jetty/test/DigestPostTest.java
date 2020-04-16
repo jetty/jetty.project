@@ -45,12 +45,11 @@ import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
@@ -141,10 +140,7 @@ public class DigestPostTest
 
             security.setConstraintMappings(Collections.singletonList(mapping));
 
-            HandlerCollection handlers = new HandlerCollection();
-            handlers.setHandlers(new Handler[]
-                {context, new DefaultHandler()});
-            _server.setHandler(handlers);
+            _server.setHandler(new HandlerList(context, new DefaultHandler()));
 
             _server.start();
         }

@@ -71,11 +71,7 @@ public class ServletWrapperTest
         FilterHolder filterHolder = context.addFilter(WrapFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         filterHolder.setAsyncSupported(true);
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(context);
-        handlers.addHandler(new DefaultHandler());
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(context, new DefaultHandler()));
         server.start();
     }
 

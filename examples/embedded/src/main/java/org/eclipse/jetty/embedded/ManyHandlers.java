@@ -124,7 +124,7 @@ public class ManyHandlers
         CustomRequestLog ncsaLog = new CustomRequestLog(requestLogFile.getAbsolutePath());
         server.setRequestLog(ncsaLog);
 
-        // create the handler collections
+        // create the handlers list
         HandlerList handlers = new HandlerList();
 
         // wrap contexts around specific handlers

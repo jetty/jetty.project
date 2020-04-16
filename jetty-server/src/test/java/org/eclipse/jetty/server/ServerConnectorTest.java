@@ -126,11 +126,7 @@ public class ServerConnectorTest
         connector.setPort(0);
         server.addConnector(connector);
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(new ReuseInfoHandler());
-        handlers.addHandler(new DefaultHandler());
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(new ReuseInfoHandler(), new DefaultHandler()));
 
         try
         {
@@ -162,11 +158,7 @@ public class ServerConnectorTest
         connector.setReuseAddress(true);
         server.addConnector(connector);
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(new ReuseInfoHandler());
-        handlers.addHandler(new DefaultHandler());
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(new ReuseInfoHandler(), new DefaultHandler()));
 
         try
         {
@@ -198,11 +190,7 @@ public class ServerConnectorTest
         connector.setReuseAddress(false);
         server.addConnector(connector);
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(new ReuseInfoHandler());
-        handlers.addHandler(new DefaultHandler());
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(new ReuseInfoHandler(), new DefaultHandler()));
 
         try
         {
@@ -312,12 +300,9 @@ public class ServerConnectorTest
             connector.setPort(port);
             server.addConnector(connector);
 
-            HandlerList handlers = new HandlerList();
-            handlers.addHandler(new DefaultHandler());
+            server.setHandler(new HandlerList(new DefaultHandler()));
 
-            server.setHandler(handlers);
-
-            IOException x = assertThrows(IOException.class, () -> server.start());
+            IOException x = assertThrows(IOException.class, server::start);
             assertThat(x.getCause(), instanceOf(BindException.class));
             assertThat(x.getMessage(), containsString("0.0.0.0:" + port));
         }

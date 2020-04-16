@@ -1155,6 +1155,16 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("user=user0"));
         _server.stop();
+        
+        //loginauth
+        _server.start();
+        response = _connector.getResponse("GET /ctx/prog?action=loginauth HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        assertThat(response, containsString("userPrincipal=admin"));
+        assertThat(response, containsString("remoteUser=admin"));
+        assertThat(response, containsString("authType=API"));
+        assertThat(response, containsString("auth=true"));
+        _server.stop();
 
         //Test constraint-based login with programmatic login/logout:
         // constraintlogin - perform constraint login, followed by programmatic login which should fail (already logged in)
@@ -1690,6 +1700,15 @@ public class ConstraintTest
                 response.setStatus(200);
                 response.setContentType("text/plain; charset=UTF-8");
                 response.getWriter().println("user=" + request.getRemoteUser());
+                return;
+            }
+            else if ("loginauth".equals(action))
+            {
+                request.login("admin", "password");
+                response.getWriter().println("userPrincipal=" + request.getUserPrincipal());
+                response.getWriter().println("remoteUser=" + request.getRemoteUser());
+                response.getWriter().println("authType=" + request.getAuthType());
+                response.getWriter().println("auth=" + request.authenticate(response));
                 return;
             }
             else if ("login".equals(action))

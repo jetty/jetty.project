@@ -116,11 +116,7 @@ public class FailedSelectorTest
         ServletHolder closeHolder = new ServletHolder(new CloseSelectorServlet(connector));
         context.addServlet(closeHolder, "/selector/close");
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(context);
-        handlers.addHandler(new DefaultHandler());
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(context, new DefaultHandler()));
 
         server.start();
     }

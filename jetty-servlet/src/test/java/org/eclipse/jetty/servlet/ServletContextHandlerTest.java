@@ -80,7 +80,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
@@ -1633,30 +1632,6 @@ public class ServletContextHandlerTest
     }
 
     @Test
-    public void testGzipHandlerOption() throws Exception
-    {
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.GZIP);
-        GzipHandler gzip = context.getGzipHandler();
-        _server.start();
-        assertEquals(context.getSessionHandler(), context.getHandler());
-        assertEquals(gzip, context.getSessionHandler().getHandler());
-        assertEquals(context.getServletHandler(), gzip.getHandler());
-    }
-
-    @Test
-    public void testGzipHandlerSet() throws Exception
-    {
-        ServletContextHandler context = new ServletContextHandler();
-        context.setSessionHandler(new SessionHandler());
-        context.setGzipHandler(new GzipHandler());
-        GzipHandler gzip = context.getGzipHandler();
-        _server.start();
-        assertEquals(context.getSessionHandler(), context.getHandler());
-        assertEquals(gzip, context.getSessionHandler().getHandler());
-        assertEquals(context.getServletHandler(), gzip.getHandler());
-    }
-
-    @Test
     public void testReplaceServletHandlerWithServlet() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
@@ -1691,23 +1666,18 @@ public class ServletContextHandlerTest
     @Test
     public void testSetSecurityHandler() throws Exception
     {
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY | ServletContextHandler.GZIP);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY);
         assertNotNull(context.getSessionHandler());
         SessionHandler sessionHandler = context.getSessionHandler();
         assertNotNull(context.getSecurityHandler());
         SecurityHandler securityHandler = context.getSecurityHandler();
-        assertNotNull(context.getGzipHandler());
-        GzipHandler gzipHandler = context.getGzipHandler();
-        
+
         //check the handler linking order
         HandlerWrapper h = (HandlerWrapper)context.getHandler();
         assertSame(h, sessionHandler);
 
         h = (HandlerWrapper)h.getHandler();
         assertSame(h, securityHandler);
-
-        h = (HandlerWrapper)h.getHandler();
-        assertSame(h, gzipHandler);
 
         //replace the security handler
         SecurityHandler myHandler = new SecurityHandler()
@@ -1749,9 +1719,6 @@ public class ServletContextHandlerTest
 
         h = (HandlerWrapper)h.getHandler();
         assertSame(h, myHandler);
-
-        h = (HandlerWrapper)h.getHandler();
-        assertSame(h, gzipHandler);
     }
  
     @Test

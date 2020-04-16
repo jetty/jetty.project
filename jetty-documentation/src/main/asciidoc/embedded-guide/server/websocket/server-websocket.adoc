@@ -16,12 +16,7 @@
 // ========================================================================
 //
 
-[[architecture]]
-== Architecture
+[[eg-server-websocket]]
+=== WebSocket Server Libraries
 
-General items related to the architecture of jetty and how it deals with certain design decisions.
-
-include::basic-architecture.adoc[]
-include::jetty-classloading.adoc[]
-include::1xx-responses.adoc[]
-include::server-side-architecture.adoc[]
+TODO

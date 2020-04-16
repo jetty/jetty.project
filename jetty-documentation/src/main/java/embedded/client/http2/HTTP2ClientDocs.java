@@ -24,9 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -199,11 +197,11 @@ public class HTTP2ClientDocs
 
         // Send the first DATA frame on the stream, with endStream=false
         // to signal that there are more frames in this stream.
-        CompletableFuture<Void> dataCF1 = stream.data(new DataFrame(stream.getId(), buffer1, false));
+        CompletableFuture<Stream> dataCF1 = stream.data(new DataFrame(stream.getId(), buffer1, false));
 
         // Only when the first chunk has been sent we can send the second,
         // with endStream=true to signal that there are no more frames.
-        dataCF1.thenCompose(ignored -> stream.data(new DataFrame(stream.getId(), buffer2, true)));
+        dataCF1.thenCompose(s -> s.data(new DataFrame(s.getId(), buffer2, true)));
         // end::newStreamWithData[]
     }
 
@@ -258,60 +256,6 @@ public class HTTP2ClientDocs
             }
         });
         // end::responseListener[]
-    }
-
-    public void responseDataDemanded() throws Exception
-    {
-        HTTP2Client http2Client = new HTTP2Client();
-        http2Client.start();
-        SocketAddress serverAddress = new InetSocketAddress("localhost", 8080);
-        CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
-        Session session = sessionCF.get();
-
-        HttpFields requestHeaders = new HttpFields();
-        requestHeaders.put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", new HttpURI("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
-        HeadersFrame headersFrame = new HeadersFrame(request, null, true);
-
-        // tag::responseDataDemanded[]
-        class Chunk
-        {
-            private final ByteBuffer buffer;
-            private final Callback callback;
-
-            Chunk(ByteBuffer buffer, Callback callback)
-            {
-                this.buffer = buffer;
-                this.callback = callback;
-            }
-        }
-
-        // A queue that consumers poll to consume content asynchronously.
-        Queue<Chunk> dataQueue = new ConcurrentLinkedQueue<>();
-
-        // Open a Stream by sending the HEADERS frame.
-        session.newStream(headersFrame, new Stream.Listener.Adapter()
-        {
-            @Override
-            public void onDataDemanded(Stream stream, DataFrame frame, Callback callback)
-            {
-                // Get the content buffer.
-                ByteBuffer buffer = frame.getData();
-
-                // Store buffer to consume it asynchronously, and wrap the callback.
-                dataQueue.offer(new Chunk(buffer, Callback.from(() ->
-                {
-                    // When the buffer has been consumed, then:
-                    // A) succeed the nested callback.
-                    callback.succeeded();
-                    // B) demand more DATA frames.
-                    stream.demand(1);
-                }, callback::failed)));
-
-                // Do not demand more content here, to avoid to overflow the queue.
-            }
-        });
-        // end::responseDataDemanded[]
     }
 
     public void reset() throws Exception

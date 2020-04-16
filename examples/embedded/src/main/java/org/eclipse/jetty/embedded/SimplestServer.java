@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.Server;
 /**
  * The simplest possible Jetty server.
  */
+// TODO: remove this class, only used in documentation.
 public class SimplestServer
 {
     public static Server createServer(int port)

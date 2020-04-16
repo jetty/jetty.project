@@ -41,10 +41,9 @@ import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -236,8 +235,6 @@ public class DatabaseLoginServiceTestServer
 
         _handler = new TestHandler(_resourceBase);
 
-        HandlerCollection handlers = new HandlerCollection();
-        handlers.setHandlers(new Handler[]{_handler, root});
-        security.setHandler(handlers);
+        security.setHandler(new HandlerList(_handler, root));
     }
 }

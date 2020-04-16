@@ -56,9 +56,36 @@ public interface Stream
      * <p>Sends the given HEADERS {@code frame} representing an HTTP response.</p>
      *
      * @param frame the HEADERS frame to send
+     * @return the CompletableFuture that gets notified when the frame has been sent
+     */
+    public default CompletableFuture<Stream> headers(HeadersFrame frame)
+    {
+        Promise.Completable<Stream> result = new Promise.Completable<>();
+        headers(frame, Callback.from(() -> result.succeeded(this), result::failed));
+        return result;
+    }
+
+    /**
+     * <p>Sends the given HEADERS {@code frame} representing an HTTP response.</p>
+     *
+     * @param frame the HEADERS frame to send
      * @param callback the callback that gets notified when the frame has been sent
      */
     public void headers(HeadersFrame frame, Callback callback);
+
+    /**
+     * <p>Sends the given PUSH_PROMISE {@code frame}.</p>
+     *
+     * @param frame the PUSH_PROMISE frame to send
+     * @param listener the listener that gets notified of stream events
+     * @return the CompletableFuture that gets notified of the pushed stream creation
+     */
+    public default CompletableFuture<Stream> push(PushPromiseFrame frame, Listener listener)
+    {
+        Promise.Completable<Stream> result = new Promise.Completable<>();
+        push(frame, result, listener);
+        return result;
+    }
 
     /**
      * <p>Sends the given PUSH_PROMISE {@code frame}.</p>
@@ -75,10 +102,10 @@ public interface Stream
      * @param frame the DATA frame to send
      * @return the CompletableFuture that gets notified when the frame has been sent
      */
-    public default CompletableFuture<Void> data(DataFrame frame)
+    public default CompletableFuture<Stream> data(DataFrame frame)
     {
-        Callback.Completable result = new Callback.Completable();
-        data(frame, result);
+        Promise.Completable<Stream> result = new Promise.Completable<>();
+        data(frame, Callback.from(() -> result.succeeded(this), result::failed));
         return result;
     }
 
