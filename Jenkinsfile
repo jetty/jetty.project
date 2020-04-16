@@ -10,18 +10,10 @@ pipeline {
         stage("Build / Test - JDK11") {
           agent {
             node { label 'linux' }
-            kubernetes {
-              containerTemplate {
-                name 'jetty-build'
-                image 'jettyproject/jetty-build:latest'
-                ttyEnabled true
-                command 'cat'
-              }
-            }
           }
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            container('jetty-build') {
+            docker.image('jettyproject/jetty-build:latest').inside() {
               mavenBuild("jdk11", "-T3 -Pmongodb clean install", "maven3", true) // -Pautobahn
               // Collect up the jacoco execution results (only on main build)
               jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
