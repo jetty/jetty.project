@@ -23,7 +23,8 @@ import javax.naming.InitialContext;
 import javax.naming.LinkRef;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
-import javax.transaction.UserTransaction;
+
+import jakarta.transaction.UserTransaction;
 
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.slf4j.Logger;

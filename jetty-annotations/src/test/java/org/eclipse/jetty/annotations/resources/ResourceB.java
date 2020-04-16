@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.annotations.resources;
 
-import javax.annotation.Resource;
-import javax.annotation.Resources;
+import jakarta.annotation.Resource;
+import jakarta.annotation.Resources;
 
 /**
  * ResourceB

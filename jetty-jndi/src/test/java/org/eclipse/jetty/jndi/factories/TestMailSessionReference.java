@@ -19,7 +19,6 @@
 package org.eclipse.jetty.jndi.factories;
 
 import java.util.Properties;
-import javax.mail.Session;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.LinkRef;
@@ -52,8 +51,8 @@ public class TestMailSessionReference
         NamingUtil.bind(icontext, "mail/Session", sref);
         Object x = icontext.lookup("mail/Session");
         assertNotNull(x);
-        assertTrue(x instanceof javax.mail.Session);
-        javax.mail.Session session = (javax.mail.Session)x;
+        assertTrue(x instanceof jakarta.mail.Session);
+        jakarta.mail.Session session = (jakarta.mail.Session)x;
         Properties sessionProps = session.getProperties();
         assertEquals(props, sessionProps);
         assertTrue(session.getDebug());
@@ -67,7 +66,7 @@ public class TestMailSessionReference
 
         Object o = foo.lookup("mail/Session");
         assertNotNull(o);
-        Session fooSession = (Session)o;
+        jakarta.mail.Session fooSession = (jakarta.mail.Session)o;
         assertEquals(props, fooSession.getProperties());
         assertTrue(fooSession.getDebug());
 

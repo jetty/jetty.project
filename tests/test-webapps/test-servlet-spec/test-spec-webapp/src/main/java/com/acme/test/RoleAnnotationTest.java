@@ -19,8 +19,8 @@
 package com.acme.test;
 
 import java.io.IOException;
-import javax.annotation.security.DeclareRoles;
 
+import jakarta.annotation.security.DeclareRoles;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;

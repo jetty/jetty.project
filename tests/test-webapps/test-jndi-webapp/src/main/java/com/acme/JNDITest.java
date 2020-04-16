@@ -19,17 +19,17 @@
 package com.acme;
 
 import java.io.IOException;
-import javax.mail.Session;
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
-import javax.transaction.UserTransaction;
 
+import jakarta.mail.Session;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.UserTransaction;
 
 /**
  * JNDITest

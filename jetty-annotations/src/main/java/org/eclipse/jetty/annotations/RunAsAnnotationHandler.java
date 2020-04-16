@@ -44,7 +44,7 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
         if (!Servlet.class.isAssignableFrom(clazz))
             return;
 
-        javax.annotation.security.RunAs runAs = (javax.annotation.security.RunAs)clazz.getAnnotation(javax.annotation.security.RunAs.class);
+        jakarta.annotation.security.RunAs runAs = (jakarta.annotation.security.RunAs)clazz.getAnnotation(jakarta.annotation.security.RunAs.class);
         if (runAs != null)
         {
             String role = runAs.value();

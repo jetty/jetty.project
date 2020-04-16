@@ -19,8 +19,8 @@
 package com.acme.test;
 
 import java.util.EventListener;
-import javax.annotation.Resource;
 
+import jakarta.annotation.Resource;
 import jakarta.servlet.ServletContextAttributeEvent;
 import jakarta.servlet.ServletContextAttributeListener;
 import jakarta.servlet.ServletContextEvent;

@@ -18,9 +18,10 @@
 
 package org.eclipse.jetty.annotations;
 
-import javax.annotation.Resource;
-import javax.annotation.Resources;
 import javax.naming.NamingException;
+
+import jakarta.annotation.Resource;
+import jakarta.annotation.Resources;
 
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.webapp.WebAppContext;

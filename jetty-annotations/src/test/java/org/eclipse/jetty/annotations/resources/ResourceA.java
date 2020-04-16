@@ -19,8 +19,8 @@
 package org.eclipse.jetty.annotations.resources;
 
 import java.io.IOException;
-import javax.annotation.Resource;
 
+import jakarta.annotation.Resource;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
