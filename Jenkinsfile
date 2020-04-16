@@ -13,7 +13,7 @@ pipeline {
           }
           options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            docker.image('jettyproject/jetty-build:latest').inside {
+            container('jetty-build') {
               mavenBuild("jdk11", "-T3 -Pmongodb clean install", "maven3", true) // -Pautobahn
               // Collect up the jacoco execution results (only on main build)
               jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
@@ -47,10 +47,12 @@ pipeline {
         stage("Build / Test - JDK14") {
           agent { node { label 'linux' } }
           steps {
-            timeout(time: 120, unit: 'MINUTES') {
-              mavenBuild("jdk14", "-T3 -Pmongodb clean install", "maven3", true)
-              warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-              junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+            container('jetty-build') {
+              timeout( time: 120, unit: 'MINUTES' ) {
+                mavenBuild( "jdk14", "-T3 -Pmongodb clean install", "maven3", true )
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+                junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+              }
             }
           }
         }
@@ -58,9 +60,13 @@ pipeline {
         stage("Build Javadoc") {
           agent { node { label 'linux' } }
           steps {
-            timeout(time: 30, unit: 'MINUTES') {
-              mavenBuild("jdk11", "package source:jar javadoc:jar javadoc:aggregate-jar -Peclipse-release  -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true", "maven3", true)
-              warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
+            container('jetty-build') {
+              timeout( time: 30, unit: 'MINUTES' ) {
+                mavenBuild( "jdk11",
+                            "package source:jar javadoc:jar javadoc:aggregate-jar -Peclipse-release  -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
+                            "maven3", true )
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
+              }
             }
           }
         }
