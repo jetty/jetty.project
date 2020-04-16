@@ -30,7 +30,7 @@
                   com.acme;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
                 </Export-Package>
                 <Import-Package>
-                  javax.sql, javax.transaction;version="1.1", javax.mail;version="1.4.1"
+                  javax.sql, jakarta.transaction;version="2.0.0", jakarta.mail;version="2.0"
                 </Import-Package>
                 <_nouses>true</_nouses>
               </instructions>
@@ -52,9 +52,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.mail.glassfish</artifactId>
-      <version>1.4.1.v201005082020</version>
+      <groupId>jakarta.mail</groupId>
+      <artifactId>jakarta.mail-api</artifactId>
       <scope>provided</scope>
     </dependency>
 

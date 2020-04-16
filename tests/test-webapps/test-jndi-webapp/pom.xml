@@ -54,7 +54,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeArtifactIds>jakarta.transaction-api,javax.mail.glassfish,test-mock-resources</includeArtifactIds>
+              <includeArtifactIds>jakarta.transaction-api,jakarta.mail-api.glassfish,test-mock-resources</includeArtifactIds>
               <outputDirectory>${project.build.directory}/lib/jndi</outputDirectory>
             </configuration>
           </execution>
@@ -97,9 +97,9 @@
             <version>${project.version}</version>
           </dependency>
           <dependency>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.mail.glassfish</artifactId>
-            <version>1.4.1.v201005082020</version>
+            <groupId>jakarta.mail</groupId>
+            <artifactId>jakarta.mail-api</artifactId>
+            <version>2.0.0-RC4</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -125,7 +125,6 @@
     <dependency>
       <groupId>jakarta.mail</groupId>
       <artifactId>jakarta.mail-api</artifactId>
-      <version>2.0.0-RC4</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

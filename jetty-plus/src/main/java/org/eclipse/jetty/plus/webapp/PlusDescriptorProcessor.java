@@ -164,7 +164,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * <li>javax.jms.ConnectionFactory</li>
      * <li>javax.jms.QueueConnectionFactory</li>
      * <li>javax.jms.TopicConnectionFactory</li>
-     * <li>javax.mail.Session</li>
+     * <li>jakarta.mail.Session</li>
      * <li>java.net.URL</li>
      * <li>javax.resource.cci.ConnectionFactory</li>
      * <li>org.omg.CORBA_2_3.ORB</li>

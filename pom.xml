@@ -29,6 +29,7 @@
     <jsp.version>10.0.0-SNAPSHOT</jsp.version>
     <annotation-api.version>2.0.0-RC1</annotation-api.version>
     <transaction-api.version>2.0.0-RC1</transaction-api.version>
+    <mail-api.version>2.0.0-RC4</mail-api.version>
     <inject-api.version>2.0.0-RC2</inject-api.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <conscrypt.version>2.4.0</conscrypt.version>
@@ -1062,7 +1063,7 @@
       <dependency>
         <groupId>jakarta.mail</groupId>
         <artifactId>jakarta.mail-api</artifactId>
-        <version>2.0.0-RC4</version>
+        <version>${mail-api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.transaction</groupId>
