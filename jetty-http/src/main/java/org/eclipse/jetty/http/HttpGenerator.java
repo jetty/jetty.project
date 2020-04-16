@@ -87,11 +87,11 @@ public class HttpGenerator
 
     private State _state = State.START;
     private EndOfContent _endOfContent = EndOfContent.UNKNOWN_CONTENT;
+    private MetaData _info;
 
     private long _contentPrepared = 0;
     private boolean _noContentResponse = false;
     private Boolean _persistent = null;
-    private Supplier<HttpFields> _trailers = null;
 
     private final int _send;
     private static final int SEND_SERVER = 0x01;
@@ -127,12 +127,12 @@ public class HttpGenerator
     public void reset()
     {
         _state = State.START;
+        _info = null;
         _endOfContent = EndOfContent.UNKNOWN_CONTENT;
         _noContentResponse = false;
         _persistent = null;
         _contentPrepared = 0;
         _needCRLF = false;
-        _trailers = null;
     }
 
     public State getState()
@@ -208,6 +208,7 @@ public class HttpGenerator
             {
                 if (info == null)
                     return Result.NEED_INFO;
+                _info = info;
 
                 if (header == null)
                     return Result.NEED_HEADER;
@@ -222,7 +223,7 @@ public class HttpGenerator
                     if (info.getHttpVersion() == HttpVersion.HTTP_0_9)
                         throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "HTTP/0.9 not supported");
 
-                    generateHeaders(info, header, content, last);
+                    generateHeaders(header, content, last);
 
                     boolean expect100 = info.getFields().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
@@ -325,13 +326,14 @@ public class HttpGenerator
 
         if (isChunking())
         {
-            if (_trailers != null)
+            Supplier<HttpFieldList> trailerSupplier = _info.getTrailerSupplier();
+            if (_info.mayHaveTrailers())
             {
                 // Do we need a chunk buffer?
                 if (chunk == null || chunk.capacity() <= CHUNK_SIZE)
                     return Result.NEED_CHUNK_TRAILER;
 
-                HttpFields trailers = _trailers.get();
+                HttpFieldList trailers = trailerSupplier.get();
 
                 if (trailers != null)
                 {
@@ -368,6 +370,8 @@ public class HttpGenerator
             {
                 if (info == null)
                     return Result.NEED_INFO;
+                _info = info;
+
                 HttpVersion version = info.getHttpVersion();
                 if (version == null)
                     throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "No version");
@@ -411,7 +415,7 @@ public class HttpGenerator
                         _noContentResponse = true;
                     }
 
-                    generateHeaders(info, header, content, last);
+                    generateHeaders(header, content, last);
 
                     // handle the content.
                     int len = BufferUtil.length(content);
@@ -494,7 +498,7 @@ public class HttpGenerator
         }
     }
 
-    private void generateTrailers(ByteBuffer buffer, HttpFields trailer)
+    private void generateTrailers(ByteBuffer buffer, HttpFieldList trailer)
     {
         // if we need CRLF add this to header
         if (_needCRLF)
@@ -573,30 +577,29 @@ public class HttpGenerator
         return bytes;
     }
 
-    private void generateHeaders(MetaData info, ByteBuffer header, ByteBuffer content, boolean last)
+    private void generateHeaders(ByteBuffer header, ByteBuffer content, boolean last)
     {
-        final MetaData.Request request = (info instanceof MetaData.Request) ? (MetaData.Request)info : null;
-        final MetaData.Response response = (info instanceof MetaData.Response) ? (MetaData.Response)info : null;
+        final MetaData.Request request = (_info instanceof MetaData.Request) ? (MetaData.Request)_info : null;
+        final MetaData.Response response = (_info instanceof MetaData.Response) ? (MetaData.Response)_info : null;
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("generateHeaders {} last={} content={}", info, last, BufferUtil.toDetailString(content));
-            LOG.debug(info.getFields().toString());
+            LOG.debug("generateHeaders {} last={} content={}", _info, last, BufferUtil.toDetailString(content));
+            LOG.debug(_info.getFields().toString());
         }
 
         // default field values
         int send = _send;
         HttpField transferEncoding = null;
-        boolean http11 = info.getHttpVersion() == HttpVersion.HTTP_1_1;
+        boolean http11 = _info.getHttpVersion() == HttpVersion.HTTP_1_1;
         boolean close = false;
-        _trailers = http11 ? info.getTrailerSupplier() : null;
-        boolean chunkedHint = _trailers != null;
+        boolean chunkedHint = _info.hasTrailerSupplier();
         boolean contentType = false;
-        long contentLength = info.getContentLength();
+        long contentLength = _info.getContentLength();
         boolean contentLengthField = false;
 
         // Generate fields
-        HttpFields fields = info.getFields();
+        HttpFieldList fields = _info.getFields();
         if (fields != null)
         {
             int n = fields.size();
@@ -647,7 +650,7 @@ public class HttpGenerator
                                 _persistent = false;
                             }
 
-                            if (info.getHttpVersion() == HttpVersion.HTTP_1_0 && _persistent == null && field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
+                            if (_info.getHttpVersion() == HttpVersion.HTTP_1_0 && _persistent == null && field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
                             {
                                 _persistent = true;
                             }
@@ -669,7 +672,7 @@ public class HttpGenerator
         }
 
         // Can we work out the content length?
-        if (last && contentLength < 0 && _trailers == null)
+        if (last && contentLength < 0 && !_info.mayHaveTrailers())
             contentLength = _contentPrepared + BufferUtil.length(content);
 
         // Calculate how to end _content and connection, _content length and transfer encoding

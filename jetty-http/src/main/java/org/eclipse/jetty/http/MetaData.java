@@ -18,35 +18,44 @@
 
 package org.eclipse.jetty.http;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Supplier;
 
 public class MetaData implements Iterable<HttpField>
 {
-    private HttpVersion _httpVersion;
-    private final HttpFields _fields;
-    private long _contentLength;
-    private Supplier<HttpFields> _trailers;
+    private static final Supplier<HttpFieldList> SELF_SUPPLIED_TRAILORS = () -> null;
+    private static final HttpFieldList SUPPLIED_TRAILERS = new HttpFields().asImmutable();
+    private final HttpVersion _httpVersion;
+    private final HttpFieldList _fields;
+    private final long _contentLengthKnown;
+    private final long _contentLengthField;
+    private final Supplier<HttpFieldList> _trailerSupplier;
+    private HttpFieldList _trailers;
 
-    public MetaData(HttpVersion version, HttpFields fields)
+    public MetaData(HttpVersion version, HttpFieldList fields)
     {
         this(version, fields, Long.MIN_VALUE);
     }
 
-    public MetaData(HttpVersion version, HttpFields fields, long contentLength)
+    public MetaData(HttpVersion version, HttpFieldList fields, long contentLengthKnown)
     {
-        _httpVersion = version;
-        _fields = fields;
-        _contentLength = contentLength;
+        this(version, fields, contentLengthKnown, SELF_SUPPLIED_TRAILORS);
     }
 
-    protected void recycle()
+    public MetaData(HttpVersion version, HttpFieldList fields, long contentLengthKnown, Supplier<HttpFieldList> trailers)
     {
-        _httpVersion = null;
-        if (_fields != null)
-            _fields.clear();
-        _contentLength = Long.MIN_VALUE;
+        _httpVersion = version;
+        _fields = fields == null ? null : fields.asImmutable();
+        _contentLengthKnown = contentLengthKnown;
+        _contentLengthField = _fields == null ? -1 : _fields.getLongField(HttpHeader.CONTENT_LENGTH);
+        if (trailers == SELF_SUPPLIED_TRAILORS)
+            _trailerSupplier = () -> _trailers;
+        else
+        {
+            _trailerSupplier = trailers;
+            if (trailers != null)
+                _trailers = SUPPLIED_TRAILERS;
+        }
     }
 
     public boolean isRequest()
@@ -68,52 +77,49 @@ public class MetaData implements Iterable<HttpField>
     }
 
     /**
-     * @param httpVersion the HTTP version to set
-     */
-    public void setHttpVersion(HttpVersion httpVersion)
-    {
-        _httpVersion = httpVersion;
-    }
-
-    /**
      * @return the HTTP fields of this MetaData object
      */
-    public HttpFields getFields()
+    public HttpFieldList getFields()
     {
         return _fields;
     }
 
-    public Supplier<HttpFields> getTrailerSupplier()
+    public boolean mayHaveTrailers()
     {
-        return _trailers;
+        return _trailers != null;
     }
 
-    public void setTrailerSupplier(Supplier<HttpFields> trailers)
+    public boolean hasTrailerSupplier()
     {
+        return _trailers == SUPPLIED_TRAILERS;
+    }
+
+    public Supplier<HttpFieldList> getTrailerSupplier()
+    {
+        return _trailerSupplier;
+    }
+
+    public void setTrailers(HttpFieldList trailers)
+    {
+        if (_trailers != null)
+            throw new IllegalStateException();
         _trailers = trailers;
     }
 
-    /**
-     * @return the content length if available, otherwise {@link Long#MIN_VALUE}
-     */
+    public long getContentLengthField()
+    {
+        return _contentLengthField;
+    }
+
     public long getContentLength()
     {
-        if (_contentLength == Long.MIN_VALUE)
-        {
-            if (_fields != null)
-            {
-                HttpField field = _fields.getField(HttpHeader.CONTENT_LENGTH);
-                _contentLength = field == null ? -1 : field.getLongValue();
-            }
-        }
-        return _contentLength;
+        return _contentLengthKnown;
     }
 
     @Override
     public Iterator<HttpField> iterator()
     {
-        HttpFields fields = getFields();
-        return fields == null ? Collections.<HttpField>emptyIterator() : fields.iterator();
+        return _fields.iterator();
     }
 
     @Override
@@ -129,56 +135,42 @@ public class MetaData implements Iterable<HttpField>
 
     public static class Request extends MetaData
     {
-        private String _method;
-        private HttpURI _uri;
+        private final String _method;
+        private final HttpURI _uri;
 
-        public Request(HttpFields fields)
+        public Request(HttpFieldList fields)
         {
             this(null, null, null, fields);
         }
 
-        public Request(String method, HttpURI uri, HttpVersion version, HttpFields fields)
+        public Request(String method, HttpURI uri, HttpVersion version, HttpFieldList fields)
         {
             this(method, uri, version, fields, Long.MIN_VALUE);
         }
 
-        public Request(String method, HttpURI uri, HttpVersion version, HttpFields fields, long contentLength)
+        public Request(String method, HttpURI uri, HttpVersion version, HttpFieldList fields, long contentLength)
         {
             super(version, fields, contentLength);
             _method = method;
             _uri = uri;
         }
 
-        public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields)
+        public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFieldList fields)
         {
             this(method, scheme, hostPort, uri, version, fields, Long.MIN_VALUE);
         }
 
-        public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields, long contentLength)
+        public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFieldList fields, long contentLength)
         {
             this(method, scheme == null ? null : scheme.asString(), hostPort, uri, version, fields, contentLength);
         }
 
-        public Request(String method, String scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields, long contentLength)
+        public Request(String method, String scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFieldList fields, long contentLength)
         {
-            this(method, new HttpURI(scheme,
-                    hostPort == null ? null : hostPort.getHost(),
-                    hostPort == null ? -1 : hostPort.getPort(),
-                uri), version, fields, contentLength);
-        }
-
-        public Request(Request request)
-        {
-            this(request.getMethod(), new HttpURI(request.getURI()), request.getHttpVersion(), new HttpFields(request.getFields()), request.getContentLength());
-        }
-
-        @Override
-        public void recycle()
-        {
-            super.recycle();
-            _method = null;
-            if (_uri != null)
-                _uri.clear();
+            this(method, new HttpURI.Builder(scheme,
+                hostPort == null ? null : hostPort.getHost(),
+                hostPort == null ? -1 : hostPort.getPort(),
+                uri).build(), version, fields, contentLength);
         }
 
         @Override
@@ -196,27 +188,11 @@ public class MetaData implements Iterable<HttpField>
         }
 
         /**
-         * @param method the HTTP method to set
-         */
-        public void setMethod(String method)
-        {
-            _method = method;
-        }
-
-        /**
          * @return the HTTP URI
          */
         public HttpURI getURI()
         {
             return _uri;
-        }
-
-        /**
-         * @param uri the HTTP URI to set
-         */
-        public void setURI(HttpURI uri)
-        {
-            _uri = uri;
         }
 
         /**
@@ -235,7 +211,7 @@ public class MetaData implements Iterable<HttpField>
         @Override
         public String toString()
         {
-            HttpFields fields = getFields();
+            HttpFieldList fields = getFields();
             return String.format("%s{u=%s,%s,h=%d,cl=%d,p=%s}",
                     getMethod(), getURI(), getHttpVersion(), fields == null ? -1 : fields.size(), getContentLength(), getProtocol());
         }
@@ -243,7 +219,7 @@ public class MetaData implements Iterable<HttpField>
 
     public static class ConnectRequest extends Request
     {
-        private String _protocol;
+        private final String _protocol;
 
         public ConnectRequest(HttpScheme scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
         {
@@ -261,24 +237,12 @@ public class MetaData implements Iterable<HttpField>
         {
             return _protocol;
         }
-
-        @Override
-        public void recycle()
-        {
-            super.recycle();
-            _protocol = null;
-        }
     }
 
     public static class Response extends MetaData
     {
-        private int _status;
-        private String _reason;
-
-        public Response()
-        {
-            this(null, 0, null);
-        }
+        private final int _status;
+        private final String _reason;
 
         public Response(HttpVersion version, int status, HttpFields fields)
         {
@@ -287,13 +251,17 @@ public class MetaData implements Iterable<HttpField>
 
         public Response(HttpVersion version, int status, HttpFields fields, long contentLength)
         {
-            super(version, fields, contentLength);
-            _status = status;
+            this(version, status, null, fields, contentLength);
         }
 
         public Response(HttpVersion version, int status, String reason, HttpFields fields, long contentLength)
         {
-            super(version, fields, contentLength);
+            this(version, status, reason, fields, contentLength, null);
+        }
+
+        public Response(HttpVersion version, int status, String reason, HttpFields fields, long contentLength, Supplier<HttpFieldList> trailers)
+        {
+            super(version, fields, contentLength, trailers);
             _reason = reason;
             _status = status;
         }
@@ -320,26 +288,10 @@ public class MetaData implements Iterable<HttpField>
             return _reason;
         }
 
-        /**
-         * @param status the HTTP status to set
-         */
-        public void setStatus(int status)
-        {
-            _status = status;
-        }
-
-        /**
-         * @param reason the HTTP reason to set
-         */
-        public void setReason(String reason)
-        {
-            _reason = reason;
-        }
-
         @Override
         public String toString()
         {
-            HttpFields fields = getFields();
+            HttpFieldList fields = getFields();
             return String.format("%s{s=%d,h=%d,cl=%d}", getHttpVersion(), getStatus(), fields == null ? -1 : fields.size(), getContentLength());
         }
     }
