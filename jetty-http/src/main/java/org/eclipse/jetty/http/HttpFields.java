@@ -587,24 +587,7 @@ public class HttpFields implements Iterable<HttpField>, HttpFieldList
         @Override
         public Iterator<HttpField> iterator()
         {
-            return new Iterator<>()
-            {
-                int _index = 0;
-
-                @Override
-                public boolean hasNext()
-                {
-                    return _index < _fields.length;
-                }
-
-                @Override
-                public HttpField next()
-                {
-                    if (_index < _fields.length)
-                        return _fields[_index++];
-                    throw new NoSuchElementException();
-                }
-            };
+            return Arrays.stream(_fields).iterator();
         }
 
         @Override

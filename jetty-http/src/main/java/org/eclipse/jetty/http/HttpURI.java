@@ -303,8 +303,8 @@ public class HttpURI
             ASTERISK
         }
 
-        String _uri;
-        String _decodedPath;
+        private String _uri;
+        private String _decodedPath;
         private String _scheme;
         private String _user;
         private String _host;
