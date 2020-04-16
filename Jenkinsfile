@@ -12,36 +12,35 @@ pipeline {
             node { label 'linux' }
           }
           options { timeout(time: 120, unit: 'MINUTES') }
-          docker.image('jettyproject/jetty-build:latest').inside {
-            steps {
+          steps {
+            docker.image('jettyproject/jetty-build:latest').inside {
               mavenBuild("jdk11", "-T3 -Pmongodb clean install", "maven3", true) // -Pautobahn
               // Collect up the jacoco execution results (only on main build)
               jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-                     exclusionPattern: '' +
-                             // build tools
-                             '**/org/eclipse/jetty/ant/**' +
-                             ',**/org/eclipse/jetty/maven/**' +
-                             ',**/org/eclipse/jetty/jspc/**' +
-                             // example code / documentation
-                             ',**/org/eclipse/jetty/embedded/**' +
-                             ',**/org/eclipse/jetty/asyncrest/**' +
-                             ',**/org/eclipse/jetty/demo/**' +
-                             // special environments / late integrations
-                             ',**/org/eclipse/jetty/gcloud/**' +
-                             ',**/org/eclipse/jetty/infinispan/**' +
-                             ',**/org/eclipse/jetty/osgi/**' +
-                             ',**/org/eclipse/jetty/spring/**' +
-                             ',**/org/eclipse/jetty/http/spi/**' +
-                             // test classes
-                             ',**/org/eclipse/jetty/tests/**' +
-                             ',**/org/eclipse/jetty/test/**',
-                     execPattern: '**/target/jacoco.exec',
-                     classPattern: '**/target/classes',
-                     sourcePattern: '**/src/main/java'
+                exclusionPattern: '' +
+                  // build tools
+                  '**/org/eclipse/jetty/ant/**' +
+                  ',**/org/eclipse/jetty/maven/**' +
+                  ',**/org/eclipse/jetty/jspc/**' +
+                  // example code / documentation
+                  ',**/org/eclipse/jetty/embedded/**' +
+                  ',**/org/eclipse/jetty/asyncrest/**' +
+                  ',**/org/eclipse/jetty/demo/**' +
+                  // special environments / late integrations
+                  ',**/org/eclipse/jetty/gcloud/**' +
+                  ',**/org/eclipse/jetty/infinispan/**' +
+                  ',**/org/eclipse/jetty/osgi/**' +
+                  ',**/org/eclipse/jetty/spring/**' +
+                  ',**/org/eclipse/jetty/http/spi/**' +
+                  // test classes
+                  ',**/org/eclipse/jetty/tests/**' +
+                  ',**/org/eclipse/jetty/test/**',
+                execPattern: '**/target/jacoco.exec',
+                classPattern: '**/target/classes',
+                sourcePattern: '**/src/main/java'
               warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
               junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
             }
-
           }
         }
 
