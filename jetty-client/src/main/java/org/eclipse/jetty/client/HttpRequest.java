@@ -69,7 +69,7 @@ public class HttpRequest implements Request
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
     private final HttpClient client;
     private final HttpConversation conversation;
-    private final String host;
+    private String host;
     private final int port;
     private URI uri;
     private String scheme;
@@ -925,4 +925,15 @@ public class HttpRequest implements Request
     {
         return String.format("%s[%s %s %s]@%x", getClass().getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
     }
+    
+    /**
+     * Overrides the host name.
+     *
+     * @param host the new host name.
+     */
+    @Override
+    public void host(String host) {
+        this.host = host;
+    }
+
 }

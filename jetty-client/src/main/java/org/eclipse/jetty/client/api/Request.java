@@ -463,6 +463,13 @@ public interface Request
     Throwable getAbortCause();
 
     /**
+     * Overrides the host name.
+     *
+     * @param host the new host name.
+     */
+    void host(String host);
+
+    /**
      * Common, empty, super-interface for request listeners.
      */
     interface RequestListener extends EventListener
