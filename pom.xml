@@ -1066,16 +1066,6 @@
         <version>${mail-api.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.sun.mail</groupId>
-        <artifactId>jakarta.mail</artifactId>
-        <version>${mail-api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.sun.mail</groupId>
-        <artifactId>mailapi</artifactId>
-        <version>${mail-api.version}</version>
-      </dependency>
-      <dependency>
         <groupId>jakarta.transaction</groupId>
         <artifactId>jakarta.transaction-api</artifactId>
         <version>${transaction-api.version}</version>

@@ -19,10 +19,10 @@
 package com.acme;
 
 import java.io.IOException;
+
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
 
-import jakarta.mail.Session;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
@@ -43,8 +43,6 @@ import jakarta.transaction.UserTransaction;
 public class JNDITest extends HttpServlet
 {
     private DataSource myDS;
-
-    private Session myMailSession;
     private Double wiggle;
     private Integer woggle;
     private Double gargle;
@@ -57,7 +55,6 @@ public class JNDITest extends HttpServlet
     private String envEntryGlobalScopeResult;
     private String envEntryWebAppScopeResult;
     private String userTransactionResult;
-    private String mailSessionResult;
     private String svrResult;
 
     public void setMyDatasource(DataSource ds)
@@ -93,8 +90,6 @@ public class JNDITest extends HttpServlet
             envEntryWebAppScopeResult = "EnvEntry defined in jetty-env.xml lookup result (java:comp/env/gargle): " + (gargle == 100.0 ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL(expected 100, got " + gargle + ")") + "</span>";
             UserTransaction utx = (UserTransaction)ic.lookup("java:comp/UserTransaction");
             userTransactionResult = "UserTransaction lookup result (java:comp/UserTransaction): " + (utx != null ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span>";
-            myMailSession = (Session)ic.lookup("java:comp/env/mail/Session");
-            mailSessionResult = "Mail Session lookup result (java:comp/env/mail/Session): " + (myMailSession != null ? "<span class=\"pass\">PASS" : "<span class=\"fail\">FAIL") + "</span>";
         }
         catch (Exception e)
         {
@@ -111,15 +106,6 @@ public class JNDITest extends HttpServlet
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        String mailTo = request.getParameter("mailto");
-        String mailFrom = request.getParameter("mailfrom");
-
-        if (mailTo != null)
-            mailTo = mailTo.trim();
-
-        if (mailFrom != null)
-            mailFrom = mailFrom.trim();
-
         try
         {
             response.setContentType("text/html");
@@ -138,7 +124,6 @@ public class JNDITest extends HttpServlet
             out.println("<p>" + envEntryWebAppScopeResult + "</p>");
             out.println("<p>" + svrResult + "</p>");
             out.println("<p>" + userTransactionResult + "</p>");
-            out.println("<p>" + mailSessionResult + "</p>");
 
             out.println("</body>");
             out.println("</html>");

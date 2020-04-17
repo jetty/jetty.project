@@ -143,15 +143,6 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>jakarta.mail</groupId>
-      <artifactId>jakarta.mail-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.mail</groupId>
-      <artifactId>mailapi</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>jakarta.transaction</groupId>
       <artifactId>jakarta.transaction-api</artifactId>
       <scope>compile</scope>
