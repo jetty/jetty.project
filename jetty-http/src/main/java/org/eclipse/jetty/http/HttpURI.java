@@ -20,10 +20,8 @@ package org.eclipse.jetty.http;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -93,7 +91,6 @@ public class HttpURI
     public HttpURI(HttpURI baseUri, String pathQuery)
     {
         Builder builder = new Builder(baseUri, pathQuery);
-        _uri = builder._uri;
         _scheme = builder._scheme;
         _user = builder._user;
         _host = builder._host;
@@ -117,29 +114,6 @@ public class HttpURI
         _param = param;
         _query = query;
         _fragment = fragment;
-    }
-
-    public void decodeQueryTo(MultiMap<String> parameters)
-    {
-        if (_query == null)
-            return;
-        UrlEncoded.decodeUtf8To(_query, parameters);
-    }
-
-    public void decodeQueryTo(MultiMap<String> parameters, String encoding)
-    {
-        decodeQueryTo(parameters, Charset.forName(encoding));
-    }
-
-    public void decodeQueryTo(MultiMap<String> parameters, Charset encoding)
-    {
-        if (_query == null)
-            return;
-
-        if (encoding == null || StandardCharsets.UTF_8.equals(encoding))
-            UrlEncoded.decodeUtf8To(_query, parameters);
-        else
-            UrlEncoded.decodeTo(_query, parameters, encoding);
     }
 
     @Override
@@ -233,7 +207,7 @@ public class HttpURI
 
     public boolean isAbsolute()
     {
-        return _scheme != null && !_scheme.isEmpty();
+        return !StringUtil.isEmpty(_scheme);
     }
 
     @Override
@@ -331,27 +305,31 @@ public class HttpURI
 
         public Builder(HttpURI uri)
         {
-            _uri = uri._uri;
-            _scheme = uri._scheme;
-            _user = uri._user;
-            _host = uri._host;
-            _port = uri._port;
-            _path = uri._path;
-            _decodedPath = uri._decodedPath;
-            _param = uri._param;
-            _query = uri._query;
-            _fragment = uri._fragment;
+            uri(uri);
         }
 
-        public Builder(HttpURI uri, String pathQuery)
+        public Builder(HttpURI baseURI, String pathQuery)
         {
             _uri = null;
-            _scheme = uri._scheme;
-            _user = uri._user;
-            _host = uri._host;
-            _port = uri._port;
+            _scheme = baseURI._scheme;
+            _user = baseURI._user;
+            _host = baseURI._host;
+            _port = baseURI._port;
             if (pathQuery != null)
                 parse(State.PATH, pathQuery);
+        }
+
+        public Builder(HttpURI baseURI, String path, String param, String query)
+        {
+            _uri = null;
+            _scheme = baseURI._scheme;
+            _user = baseURI._user;
+            _host = baseURI._host;
+            _port = baseURI._port;
+            _path = path;
+            _param = param;
+            _query = query;
+            _fragment = null;
         }
 
         public Builder(String uri)
@@ -372,17 +350,17 @@ public class HttpURI
             _user = uri.getUserInfo();
             _path = uri.getRawPath();
 
-            _decodedPath = uri.getPath();
-            if (_decodedPath != null)
+            String pathParam = uri.getPath();
+            if (pathParam != null)
             {
-                int p = _decodedPath.lastIndexOf(';');
+                int p = pathParam.lastIndexOf(';');
                 if (p >= 0)
-                    _param = _decodedPath.substring(p + 1);
+                    _param = pathParam.substring(p + 1);
+                else
+                    _decodedPath = pathParam;
             }
             _query = uri.getRawQuery();
             _fragment = uri.getFragment();
-
-            _decodedPath = null;
         }
 
         public Builder(String scheme, String host, int port, String pathQuery)
@@ -447,8 +425,6 @@ public class HttpURI
 
         public String decodedPath()
         {
-            if (_decodedPath == null && _path != null)
-                _decodedPath = URIUtil.canonicalPath(URIUtil.decodePath(_path));
             return _decodedPath;
         }
 
@@ -468,6 +444,7 @@ public class HttpURI
         public Builder fragment(String fragment)
         {
             _fragment = fragment;
+            _uri = null;
             return this;
         }
 
@@ -489,6 +466,7 @@ public class HttpURI
         public Builder host(String host)
         {
             _host = host;
+            _uri = null;
             return this;
         }
 
@@ -503,6 +481,7 @@ public class HttpURI
                 _port = 0;
             if (_port == 443 && HttpScheme.HTTPS.is(_scheme))
                 _port = 0;
+            _uri = null;
             return this;
         }
 
@@ -518,6 +497,7 @@ public class HttpURI
             {
                 _path += ";" + _param;
             }
+            _uri = null;
             return this;
         }
 
@@ -569,6 +549,7 @@ public class HttpURI
         public Builder port(int port)
         {
             _port = port;
+            _uri = null;
             return this;
         }
 
@@ -587,6 +568,11 @@ public class HttpURI
         public String scheme()
         {
             return _scheme;
+        }
+
+        public Builder scheme(HttpScheme scheme)
+        {
+            return scheme(scheme.asString());
         }
 
         public Builder scheme(String scheme)
@@ -614,6 +600,21 @@ public class HttpURI
             }
         }
 
+        public Builder uri(HttpURI uri)
+        {
+            _uri = uri._uri;
+            _scheme = uri._scheme;
+            _user = uri._user;
+            _host = uri._host;
+            _port = uri._port;
+            _path = uri._path;
+            _decodedPath = uri._decodedPath;
+            _param = uri._param;
+            _query = uri._query;
+            _fragment = uri._fragment;
+            return this;
+        }
+
         public Builder uri(String uri)
         {
             clear();
@@ -639,6 +640,7 @@ public class HttpURI
         public Builder user(String user)
         {
             _user = user;
+            _uri = null;
             return this;
         }
 

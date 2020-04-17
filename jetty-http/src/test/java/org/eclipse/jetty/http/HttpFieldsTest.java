@@ -688,8 +688,8 @@ public class HttpFieldsTest
 
         for (int i = 0; i < 8; i++)
         {
-            assertTrue(header.containsKey("n" + i));
-            assertTrue(header.containsKey("N" + i));
+            assertTrue(header.contains("n" + i));
+            assertTrue(header.contains("N" + i));
             assertFalse(header.contains("n" + i, "xyz"), "" + i);
             assertEquals(i >= 4, header.contains("n" + i, "def"), "" + i);
         }
@@ -702,7 +702,7 @@ public class HttpFieldsTest
         assertFalse(header.contains(HttpHeader.ACCEPT, "def"));
         assertFalse(header.contains(HttpHeader.AGE, "abc"));
 
-        assertFalse(header.containsKey("n11"));
+        assertFalse(header.contains("n11"));
     }
 
     @ParameterizedTest
@@ -714,7 +714,7 @@ public class HttpFieldsTest
         HttpField namelessField = new HttpField(HttpHeader.CONNECTION, null, "bogus");
         fields.put(namelessField);
 
-        assertTrue(fields.containsKey(keyName), "containsKey('" + keyName + "')");
+        assertTrue(fields.contains(keyName), "containsKey('" + keyName + "')");
     }
 
     @ParameterizedTest
@@ -726,7 +726,7 @@ public class HttpFieldsTest
         HttpField namelessField = new HttpField(HttpHeader.CONNECTION, null, "bogus");
         fields.put(namelessField);
 
-        assertFalse(fields.containsKey(keyName), "containsKey('" + keyName + "')");
+        assertFalse(fields.contains(keyName), "containsKey('" + keyName + "')");
     }
 
     @Test

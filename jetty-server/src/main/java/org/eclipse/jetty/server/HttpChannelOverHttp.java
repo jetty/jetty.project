@@ -51,8 +51,11 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverHttp.class);
     private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
     private final HttpFields _fields = new HttpFields();
-    private final MetaData.Request _metadata = new MetaData.Request(_fields);
     private final HttpConnection _httpConnection;
+    private String _method;
+    private String _uri;
+    private HttpVersion _version;
+    private MetaData.Request _metadata;
     private HttpField _connection;
     private HttpField _upgrade = null;
     private boolean _delayedForContent;
@@ -66,7 +69,6 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     {
         super(connector, config, endPoint, transport);
         _httpConnection = httpConnection;
-        _metadata.setURI(new HttpURI());
     }
 
     @Override
@@ -85,14 +87,17 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     public void recycle()
     {
         super.recycle();
+        _method = null;
+        _uri = null;
+        _version = null;
         _unknownExpectation = false;
         _expect100Continue = false;
         _expect102Processing = false;
-        _metadata.recycle();
         _connection = null;
         _fields.clear();
         _upgrade = null;
         _trailers = null;
+        _metadata = null;
     }
 
     @Override
@@ -110,9 +115,10 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public void startRequest(String method, String uri, HttpVersion version)
     {
-        _metadata.setMethod(method);
-        _metadata.getURI().parseRequestTarget(method, uri);
-        _metadata.setHttpVersion(version);
+        // TODO should we have a MetaData.RequestBuilder class to hold these values?
+        _method = method;
+        _uri = uri;
+        _version = version;
         _unknownExpectation = false;
         _expect100Continue = false;
         _expect102Processing = false;
@@ -138,7 +144,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
                 case EXPECT:
                 {
-                    if (_metadata.getHttpVersion() == HttpVersion.HTTP_1_1)
+                    if (HttpVersion.HTTP_1_1.equals(_version))
                     {
                         HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
                         switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
@@ -231,7 +237,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     {
         _httpConnection.getGenerator().setPersistent(false);
         // If we have no request yet, just close
-        if (_metadata.getMethod() == null)
+        if (_method == null)
             _httpConnection.close();
         else if (onEarlyEOF() || _delayedForContent)
         { 
@@ -274,6 +280,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         try
         {
             // Need to call onRequest, so RequestLog can reports as much as possible
+            if (_metadata == null)
+                _metadata = new MetaData.Request(_method, new HttpURI.Builder(_method, _uri).build(), _version, _fields);
             onRequest(_metadata);
             getRequest().getHttpInput().earlyEOF();
         }
@@ -288,6 +296,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean headerComplete()
     {
+        _metadata = new MetaData.Request(_method, new HttpURI.Builder(_method, _uri).build(), _version, _fields);
         onRequest(_metadata);
 
         if (_complianceViolations != null && !_complianceViolations.isEmpty())

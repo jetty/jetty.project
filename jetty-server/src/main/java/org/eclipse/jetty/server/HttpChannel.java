@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -83,8 +82,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final HttpChannel.Listener _combinedListener;
     @Deprecated
     private final List<Listener> _transientListeners = new ArrayList<>();
-    private HttpFields _trailers;
-    private final Supplier<HttpFields> _trailerSupplier = () -> _trailers;
     private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
     private long _oldIdleTimeout;
@@ -303,7 +300,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _committedMetaData = null;
         _requestLog = _connector == null ? null : _connector.getServer().getRequestLog();
         _written = 0;
-        _trailers = null;
         _oldIdleTimeout = 0;
         _transientListeners.clear();
     }
@@ -687,7 +683,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (idleTO >= 0 && _oldIdleTimeout != idleTO)
             setIdleTimeout(idleTO);
 
-        request.setTrailerSupplier(_trailerSupplier);
         _request.setMetaData(request);
 
         _request.setSecure(HttpScheme.HTTPS.is(request.getURI().getScheme()));
@@ -720,7 +715,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onTrailers {} {}", this, trailers);
-        _trailers = trailers;
+        _request.getMetaData().setTrailers(trailers.asImmutable());
         _combinedListener.onRequestTrailers(_request);
     }
 

@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFieldList;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -108,7 +109,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         try
         {
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
-            HttpFields fields = request.getFields();
+            HttpFieldList fields = request.getFields();
 
             // HTTP/2 sends the Host header as the :authority
             // pseudo-header, so we need to synthesize a Host header.

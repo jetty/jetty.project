@@ -2132,8 +2132,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public RequestDispatcher getRequestDispatcher(String uriInContext)
         {
-            // uriInContext is encoded, potentially with query
-
             if (uriInContext == null)
                 return null;
 
@@ -2142,16 +2140,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             try
             {
-                HttpURI uri = new HttpURI(null, null, 0, uriInContext);
-
-                String pathInfo = URIUtil.canonicalPath(uri.getDecodedPath());
-                if (pathInfo == null)
-                    return null;
-
                 String contextPath = getContextPath();
-                if (contextPath != null && contextPath.length() > 0)
-                    uri.setPath(URIUtil.addPaths(contextPath, uri.getPath()));
-
+                HttpURI uri;
+                String pathInfo;
+                if (StringUtil.isBlank(contextPath))
+                {
+                    uri = new HttpURI.Builder(null, null, 0, uriInContext).build();
+                    pathInfo = URIUtil.canonicalPath(uri.getDecodedPath());
+                }
+                else
+                {
+                    uri = new HttpURI.Builder(null, null, 0, URIUtil.addPaths(contextPath,uriInContext)).build();
+                    pathInfo = URIUtil.canonicalPath(uri.getDecodedPath().substring(contextPath.length()));
+                }
                 return new Dispatcher(ContextHandler.this, uri, pathInfo);
             }
             catch (Exception e)

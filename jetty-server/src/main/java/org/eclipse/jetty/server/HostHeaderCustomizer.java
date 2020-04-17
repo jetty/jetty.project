@@ -21,6 +21,8 @@ package org.eclipse.jetty.server;
 import java.util.Objects;
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.http.HttpURI;
+
 /**
  * Customizes requests that lack the {@code Host} header (for example, HTTP 1.0 requests).
  * <p>
@@ -63,6 +65,7 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
     public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
         if (request.getHeader("Host") == null)
-            request.setAuthority(serverName, serverPort);  // TODO set the field as well?
+            // TODO set the field as well?
+            request.setHttpURI(new HttpURI.Builder(request.getHttpURI()).host(serverName).port(serverPort).build());
     }
 }

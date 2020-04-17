@@ -44,6 +44,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFieldList;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -62,15 +63,12 @@ import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>{@link Response} provides the implementation for {@link HttpServletResponse}.</p>
  */
 public class Response implements HttpServletResponse
 {
-    private static final Logger LOG = LoggerFactory.getLogger(Response.class);
     private static final int __MIN_BUFFER_SIZE = 1;
     private static final HttpField __EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
 
@@ -100,7 +98,7 @@ public class Response implements HttpServletResponse
     private OutputType _outputType = OutputType.NONE;
     private ResponseWriter _writer;
     private long _contentLength = -1;
-    private Supplier<HttpFields> _trailers;
+    private Supplier<HttpFieldList> _trailers;
 
     private enum EncodingFrom
     {
@@ -247,7 +245,7 @@ public class Response implements HttpServletResponse
             cookie.getValue(),
             cookie.getDomain(),
             cookie.getPath(),
-            (long)cookie.getMaxAge(),
+            cookie.getMaxAge(),
             httpOnly,
             cookie.getSecure(),
             comment,
@@ -308,7 +306,7 @@ public class Response implements HttpServletResponse
     @Override
     public boolean containsHeader(String name)
     {
-        return _fields.containsKey(name);
+        return _fields.contains(name);
     }
 
     @Override
@@ -1208,12 +1206,12 @@ public class Response implements HttpServletResponse
         _out.reopen();
     }
 
-    public Supplier<HttpFields> getTrailers()
+    public Supplier<HttpFieldList> getTrailers()
     {
         return _trailers;
     }
 
-    public void setTrailers(Supplier<HttpFields> trailers)
+    public void setTrailers(Supplier<HttpFieldList> trailers)
     {
         _trailers = trailers;
     }
@@ -1238,8 +1236,7 @@ public class Response implements HttpServletResponse
 
     protected MetaData.Response newResponseMetaData()
     {
-        MetaData.Response info = new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength());
-        info.setTrailerSupplier(getTrailers());
+        MetaData.Response info = new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength(), getTrailers());
         return info;
     }
 
@@ -1419,7 +1416,7 @@ public class Response implements HttpServletResponse
         return (HttpServletResponse)servletResponse;
     }
 
-    private static class HttpFieldsSupplier implements Supplier<HttpFields>
+    private static class HttpFieldsSupplier implements Supplier<HttpFieldList>
     {
         private final Supplier<Map<String, String>> _supplier;
 
@@ -1429,7 +1426,7 @@ public class Response implements HttpServletResponse
         }
 
         @Override
-        public HttpFields get()
+        public HttpFieldList get()
         {
             Map<String, String> t = _supplier.get();
             if (t == null)
@@ -1439,7 +1436,7 @@ public class Response implements HttpServletResponse
             {
                 fields.add(e.getKey(), e.getValue());
             }
-            return fields;
+            return fields.asImmutable();
         }
 
         public Supplier<Map<String, String>> getSupplier()

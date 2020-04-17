@@ -47,7 +47,7 @@ public class HttpFieldsContainsHeaderKey extends TypeSafeMatcher<HttpFields>
     @Override
     protected boolean matchesSafely(HttpFields fields)
     {
-        return fields.containsKey(this.keyName);
+        return fields.contains(this.keyName);
     }
 
     public static Matcher<HttpFields> containsKey(String keyName)

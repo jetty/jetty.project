@@ -176,7 +176,7 @@ public class PushBuilderImpl implements PushBuilder
             //      _rawFields.add("Cookie","JSESSIONID="+_sessionId);
         }
 
-        HttpURI uri = HttpURI.createHttpURI(_request.getScheme(), _request.getServerName(), _request.getServerPort(), path, param, query, null);
+        HttpURI uri = new HttpURI.Builder(_request.getHttpURI(), path, param, query).build();
         MetaData.Request push = new MetaData.Request(_method, uri, _request.getHttpVersion(), _fields);
 
         if (LOG.isDebugEnabled())

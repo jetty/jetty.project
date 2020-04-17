@@ -63,16 +63,6 @@ public class HttpFields implements Iterable<HttpField>, HttpFieldList
      *
      * @param fields the fields to copy data from
      */
-    public HttpFields(HttpFields fields)
-    {
-        _fields = new ArrayList<>(fields._fields);
-    }
-
-    /**
-     * Initialize HttpFields from another.
-     *
-     * @param fields the fields to copy data from
-     */
     public HttpFields(HttpFieldList fields)
     {
         if (fields instanceof Immutable)
@@ -84,6 +74,31 @@ public class HttpFields implements Iterable<HttpField>, HttpFieldList
             _fields = new ArrayList<>(fields.size() + 4);
             for (HttpField f : fields)
                 _fields.add(f);
+        }
+    }
+
+    /**
+     * Initialize HttpFields from another and replace a field
+     *
+     * @param fields the fields to copy data from
+     * @param putField the replacement field
+     */
+    public HttpFields(HttpFieldList fields, HttpField putField)
+    {
+        _fields = new ArrayList<>(fields.size() + 4);
+        boolean put = false;
+        for (HttpField f : fields)
+        {
+            if (putField.isSameName(f))
+            {
+                if (!put)
+                    _fields.add(putField);
+                put = true;
+            }
+            else
+            {
+                _fields.add(f);
+            }
         }
     }
 

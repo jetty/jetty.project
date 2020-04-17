@@ -20,6 +20,7 @@ package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -105,7 +106,17 @@ public interface HttpFieldList extends Iterable<HttpField>
         return false;
     }
 
-    default boolean containsKey(String name)
+    default boolean contains(EnumSet<HttpHeader> headers)
+    {
+        for (HttpField f : this)
+        {
+            if (headers.contains(f.getHeader()))
+                return true;
+        }
+        return false;
+    }
+
+    default boolean contains(String name)
     {
         for (HttpField f : this)
         {
@@ -113,6 +124,12 @@ public interface HttpFieldList extends Iterable<HttpField>
                 return true;
         }
         return false;
+    }
+
+    @Deprecated
+    default boolean containsKey(String name)
+    {
+        return contains(name);
     }
 
     default String get(HttpHeader header)

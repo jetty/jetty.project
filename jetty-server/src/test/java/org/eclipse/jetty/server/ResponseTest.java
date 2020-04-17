@@ -822,7 +822,7 @@ public class ResponseTest
         assertEquals(null, response.getReason());
 
         response.setHeader("Should-Be-Ignored", "value");
-        assertFalse(response.getHttpFields().containsKey("Should-Be-Ignored"));
+        assertFalse(response.getHttpFields().contains("Should-Be-Ignored"));
 
         assertEquals(expectedMessage, response.getHttpChannel().getRequest().getAttribute(RequestDispatcher.ERROR_MESSAGE));
         assertThat(response.getHttpChannel().getState().unhandle(), is(HttpChannelState.Action.SEND_ERROR));
@@ -861,7 +861,7 @@ public class ResponseTest
     {
         Response response = getResponse();
         Request request = response.getHttpChannel().getRequest();
-        request.setAuthority("myhost", 8888);
+        request.setHttpURI(new HttpURI.Builder(request.getHttpURI()).host("myhost").port(8888).build());
         request.setContextPath("/path");
 
         assertEquals("http://myhost:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
@@ -912,6 +912,7 @@ public class ResponseTest
     public void testSendRedirect()
         throws Exception
     {
+        // TODO parameterize
         String[][] tests = {
             // No cookie
             {
@@ -949,10 +950,12 @@ public class ResponseTest
                     Response response = getResponse();
                     Request request = response.getHttpChannel().getRequest();
 
-                    request.setScheme("http");
+                    HttpURI.Builder builder = new HttpURI.Builder(request.getHttpURI(),
+                        "/path/info;param;jsessionid=12345?query=0&more=1#target");
+                    builder.scheme("http");
                     if (host != null)
-                        request.setAuthority(host, port);
-                    request.setURIPathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
+                        builder.host(host).port(port);
+                    request.setHttpURI(builder.build());
                     request.setContextPath("/path");
                     request.setRequestedSessionId("12345");
                     request.setRequestedSessionIdFromCookie(i > 2);

@@ -151,7 +151,7 @@ public abstract class HttpConnection implements IConnection
         HttpFields headers = request.getHeaders();
         if (version.getVersion() <= 11)
         {
-            if (!headers.containsKey(HttpHeader.HOST.asString()))
+            if (!headers.contains(HttpHeader.HOST.asString()))
                 headers.put(getHttpDestination().getHostField());
         }
 
@@ -163,7 +163,7 @@ public abstract class HttpConnection implements IConnection
         }
         else
         {
-            if (!headers.containsKey(HttpHeader.CONTENT_TYPE.asString()))
+            if (!headers.contains(HttpHeader.CONTENT_TYPE.asString()))
             {
                 String contentType = content.getContentType();
                 if (contentType != null)
@@ -180,7 +180,7 @@ public abstract class HttpConnection implements IConnection
             long contentLength = content.getLength();
             if (contentLength >= 0)
             {
-                if (!headers.containsKey(HttpHeader.CONTENT_LENGTH.asString()))
+                if (!headers.contains(HttpHeader.CONTENT_LENGTH.asString()))
                     headers.put(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength));
             }
         }
