@@ -64,7 +64,7 @@
     </dependency>
     <dependency>
       <groupId>com.sun.mail</groupId>
-      <artifactId>mailapi</artifactId>
+      <artifactId>jakarta.mail</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
