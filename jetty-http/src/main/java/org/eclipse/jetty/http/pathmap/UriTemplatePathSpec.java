@@ -63,7 +63,12 @@ public class UriTemplatePathSpec extends RegexPathSpec
         FORBIDDEN_SEGMENTS.add("//");
     }
 
-    private String[] variables;
+    private final String[] variables;
+
+    /**
+     * The logical (simplified) declaration
+     */
+    private final String logicalDeclaration;
 
     public UriTemplatePathSpec(String rawSpec)
     {
@@ -78,6 +83,7 @@ public class UriTemplatePathSpec extends RegexPathSpec
             this.specLength = 1;
             this.variables = new String[0];
             this.group = PathSpecGroup.EXACT;
+            this.logicalDeclaration = "/";
             return;
         }
 
@@ -113,6 +119,7 @@ public class UriTemplatePathSpec extends RegexPathSpec
         // split up into path segments (ignoring the first slash that will always be empty)
         String[] segments = rawSpec.substring(1).split("/");
         char[] segmentSignature = new char[segments.length];
+        StringBuilder simpleSignature = new StringBuilder();
         this.pathDepth = segments.length;
         for (int i = 0; i < segments.length; i++)
         {
@@ -137,6 +144,7 @@ public class UriTemplatePathSpec extends RegexPathSpec
                 assertIsValidVariableLiteral(variable);
 
                 segmentSignature[i] = 'v'; // variable
+                simpleSignature.append('/').append("*");
                 // valid variable name
                 varNames.add(variable);
                 // build regex
@@ -176,6 +184,7 @@ public class UriTemplatePathSpec extends RegexPathSpec
             {
                 // valid path segment
                 segmentSignature[i] = 'e'; // exact
+                simpleSignature.append('/').append(segment);
                 // build regex
                 regex.append('/');
                 // escape regex special characters
@@ -194,6 +203,7 @@ public class UriTemplatePathSpec extends RegexPathSpec
         if (rawSpec.charAt(rawSpec.length() - 1) == '/')
         {
             regex.append('/');
+            simpleSignature.append('/');
         }
 
         regex.append('$');
@@ -204,6 +214,7 @@ public class UriTemplatePathSpec extends RegexPathSpec
         this.variables = varNames.toArray(new String[varcount]);
 
         // Convert signature to group
+        this.logicalDeclaration = simpleSignature.toString();
         String sig = String.valueOf(segmentSignature);
 
         if (Pattern.matches("^e*$", sig))
@@ -310,6 +321,20 @@ public class UriTemplatePathSpec extends RegexPathSpec
         }
 
         return false;
+    }
+
+    @Override
+    public int compareTo(PathSpec other)
+    {
+        if (other instanceof UriTemplatePathSpec)
+        {
+            UriTemplatePathSpec otherUriPathSpec = (UriTemplatePathSpec)other;
+            return otherUriPathSpec.logicalDeclaration.compareTo(this.logicalDeclaration);
+        }
+        else
+        {
+            return super.compareTo(other);
+        }
     }
 
     public Map<String, String> getPathParams(String path)

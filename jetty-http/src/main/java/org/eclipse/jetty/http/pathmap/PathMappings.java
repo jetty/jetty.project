@@ -116,6 +116,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     break;
             }
         }
+        ret.sort(LogicalDeclarationComparator.INSTANCE);
         return ret;
     }
 
