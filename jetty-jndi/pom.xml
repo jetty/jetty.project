@@ -21,7 +21,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-modules jakarta.mail 
+            @{argLine} ${jetty.surefire.argLine} --add-modules jakarta.mail --patch-module jakarta.mail=${settings.localRepository}/com/sun/mail/mailapi/${mail-api.version}/mailapi-${mail-api.version}.jar
           </argLine>
         </configuration>
       </plugin>
