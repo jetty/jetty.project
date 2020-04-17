@@ -248,7 +248,7 @@ public class TestOSGiUtil
                 b.getHeaders().get("Bundle-Version") +
                 " and " +
                 prevBundle.getHeaders().get("Bundle-Version") : "";
-                assertNull(err, prevBundle);
+            assertNull(err, prevBundle);
         }
         return bundles.get(symbolicName);
     }
@@ -283,6 +283,7 @@ public class TestOSGiUtil
                     {
                         diagnoseNonActiveOrNonResolvedBundle(b);
                     }
+                    break;
                 }
                 default:
                 {
@@ -295,7 +296,7 @@ public class TestOSGiUtil
     
     protected static void dumpBundleState(Bundle b)
     {
-        System.err.println("Bundle: [" + b.getBundleId() +"] " + b + " State=" + b.getState());
+        System.err.println("Bundle: [" + b.getBundleId() + "] " + b + " State=" + b.getState());
     }
 
     protected static boolean diagnoseNonActiveOrNonResolvedBundle(Bundle b)
