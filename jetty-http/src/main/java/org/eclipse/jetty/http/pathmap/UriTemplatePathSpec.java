@@ -68,6 +68,10 @@ public class UriTemplatePathSpec implements PathSpec
     private final int _specLength;
     private final Pattern _pattern;
     private final String[] _variables;
+    /**
+     * The logical (simplified) declaration
+     */
+    private final String _logicalDeclaration;
 
     public UriTemplatePathSpec(String rawSpec)
     {
@@ -81,6 +85,7 @@ public class UriTemplatePathSpec implements PathSpec
             _specLength = 1;
             _pattern = Pattern.compile("^/$");
             _variables = new String[0];
+            _logicalDeclaration = "/";
             return;
         }
 
@@ -104,6 +109,7 @@ public class UriTemplatePathSpec implements PathSpec
         // split up into path segments (ignoring the first slash that will always be empty)
         String[] segments = rawSpec.substring(1).split("/");
         char[] segmentSignature = new char[segments.length];
+        StringBuilder logicalSignature = new StringBuilder();
         int pathDepth = segments.length;
         for (int i = 0; i < segments.length; i++)
         {
@@ -123,6 +129,7 @@ public class UriTemplatePathSpec implements PathSpec
                 assertIsValidVariableLiteral(variable, declaration);
 
                 segmentSignature[i] = 'v'; // variable
+                logicalSignature.append("/*");
                 // valid variable name
                 varNames.add(variable);
                 // build regex
@@ -147,6 +154,7 @@ public class UriTemplatePathSpec implements PathSpec
             {
                 // valid path segment
                 segmentSignature[i] = 'e'; // exact
+                logicalSignature.append('/').append(segment);
                 // build regex
                 regex.append('/');
                 // escape regex special characters
@@ -162,7 +170,10 @@ public class UriTemplatePathSpec implements PathSpec
 
         // Handle trailing slash (which is not picked up during split)
         if (rawSpec.charAt(rawSpec.length() - 1) == '/')
+        {
             regex.append('/');
+            logicalSignature.append('/');
+        }
 
         regex.append('$');
 
@@ -190,6 +201,7 @@ public class UriTemplatePathSpec implements PathSpec
         _specLength = declaration.length();
         _pattern = pattern;
         _variables = variables;
+        _logicalDeclaration = logicalSignature.toString();
     }
 
     /**
@@ -263,6 +275,20 @@ public class UriTemplatePathSpec implements PathSpec
         }
 
         return false;
+    }
+
+    @Override
+    public int compareTo(PathSpec other)
+    {
+        if (other instanceof UriTemplatePathSpec)
+        {
+            UriTemplatePathSpec otherUriPathSpec = (UriTemplatePathSpec)other;
+            return otherUriPathSpec._logicalDeclaration.compareTo(this._logicalDeclaration);
+        }
+        else
+        {
+            return PathSpec.super.compareTo(other);
+        }
     }
 
     public Map<String, String> getPathParams(String path)

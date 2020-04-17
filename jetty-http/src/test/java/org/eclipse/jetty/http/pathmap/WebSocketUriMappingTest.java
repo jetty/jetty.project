@@ -1,22 +1,44 @@
-package org.eclipse.jetty.websocket.servlet;
+//
+//  ========================================================================
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
 
-import org.eclipse.jetty.http.pathmap.MappedResource;
-import org.eclipse.jetty.http.pathmap.PathMappings;
-import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
+package org.eclipse.jetty.http.pathmap;
+
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class WebSocketUriMappingTest
 {
     private PathMappings<String> mapping = new PathMappings<>();
 
-    private String getMatch(String pathSpecString)
+    private String getBestMatch(String uriPath)
     {
-        MappedResource<String> resource = mapping.getMatch(pathSpecString);
-        return resource == null ? null : resource.getResource();
+        List<MappedResource<String>> resources = mapping.getMatches(uriPath);
+        assertThat("Matches on " + uriPath, resources, is(not(nullValue())));
+        if (resources.isEmpty())
+            return null;
+        return resources.get(0).getResource();
     }
 
     @Test
@@ -24,8 +46,8 @@ public class WebSocketUriMappingTest
     {
         mapping.put("/a/b", "endpointA");
 
-        assertThat(getMatch("/a/b"), is("endpointA"));
-        assertNull(getMatch("/a/c"));
+        assertThat(getBestMatch("/a/b"), is("endpointA"));
+        assertNull(getBestMatch("/a/c"));
     }
 
     @Test
@@ -33,10 +55,10 @@ public class WebSocketUriMappingTest
     {
         mapping.put(new UriTemplatePathSpec("/a/{var}"), "endpointA");
 
-        assertThat(getMatch("/a/b"), is("endpointA"));
-        assertThat(getMatch("/a/apple"), is("endpointA"));
-        assertNull(getMatch("/a"));
-        assertNull(getMatch("/a/b/c"));
+        assertThat(getBestMatch("/a/b"), is("endpointA"));
+        assertThat(getBestMatch("/a/apple"), is("endpointA"));
+        assertNull(getBestMatch("/a"));
+        assertNull(getBestMatch("/a/b/c"));
     }
 
     @Test
@@ -46,9 +68,9 @@ public class WebSocketUriMappingTest
         mapping.put(new UriTemplatePathSpec("/a/b/c"), "endpointB");
         mapping.put(new UriTemplatePathSpec("/a/{var1}/{var2}"), "endpointC");
 
-        assertThat(getMatch("/a/b/c"), is("endpointB"));
-        assertThat(getMatch("/a/d/c"), is("endpointA"));
-        assertThat(getMatch("/a/x/y"), is("endpointC"));
+        assertThat(getBestMatch("/a/b/c"), is("endpointB"));
+        assertThat(getBestMatch("/a/d/c"), is("endpointA"));
+        assertThat(getBestMatch("/a/x/y"), is("endpointC"));
     }
 
     @Test
@@ -57,7 +79,7 @@ public class WebSocketUriMappingTest
         mapping.put(new UriTemplatePathSpec("/{var1}/d"), "endpointA");
         mapping.put(new UriTemplatePathSpec("/b/{var2}"), "endpointB");
 
-        assertThat(getMatch("/b/d"), is("endpointB"));
+        assertThat(getBestMatch("/b/d"), is("endpointB"));
     }
 
     @Test
@@ -66,7 +88,9 @@ public class WebSocketUriMappingTest
         mapping.put(new UriTemplatePathSpec("/{a}/b"), "suffix");
         mapping.put(new UriTemplatePathSpec("/{a}/{b}"), "prefix");
 
-        assertThat(getMatch("/a/b"), is("suffix"));
+        List<MappedResource<String>> matches = mapping.getMatches("/a/b");
+
+        assertThat(getBestMatch("/a/b"), is("suffix"));
     }
 
     @Test
@@ -75,7 +99,7 @@ public class WebSocketUriMappingTest
         mapping.put(new UriTemplatePathSpec("/a/{b}/c"), "middle");
         mapping.put(new UriTemplatePathSpec("/a/b/{c}"), "suffix");
 
-        assertThat(getMatch("/a/b/c"), is("suffix"));
+        assertThat(getBestMatch("/a/b/c"), is("suffix"));
     }
 
     @Test
@@ -84,7 +108,7 @@ public class WebSocketUriMappingTest
         mapping.put(new UriTemplatePathSpec("/{a}/b/{c}"), "middle");
         mapping.put(new UriTemplatePathSpec("/{a}/b/c"), "suffix");
 
-        assertThat(getMatch("/a/b/c"), is("suffix"));
+        assertThat(getBestMatch("/a/b/c"), is("suffix"));
     }
 
     @Test
@@ -93,7 +117,7 @@ public class WebSocketUriMappingTest
         mapping.put(new UriTemplatePathSpec("/a/{b}/{c}/d"), "middle");
         mapping.put(new UriTemplatePathSpec("/a/b/c/{d}"), "prefix");
 
-        assertThat(getMatch("/a/b/c/d"), is("prefix"));
+        assertThat(getBestMatch("/a/b/c/d"), is("prefix"));
     }
 
     @Test
@@ -103,7 +127,7 @@ public class WebSocketUriMappingTest
         mapping.put(new UriTemplatePathSpec("/a/{b}/{c}/d"), "middle1");
         mapping.put(new UriTemplatePathSpec("/a/{b}/c/d"), "middle2");
 
-        assertThat(getMatch("/a/b/c/d"), is("middle2"));
+        assertThat(getBestMatch("/a/b/c/d"), is("middle2"));
     }
 
     @Test
@@ -112,7 +136,7 @@ public class WebSocketUriMappingTest
         mapping.put(new UriTemplatePathSpec("/{a}/{bz}/c/{d}"), "middle1");
         mapping.put(new UriTemplatePathSpec("/{a}/{ba}/{c}/d"), "middle2");
 
-        assertThat(getMatch("/a/b/c/d"), is("middle1"));
+        assertThat(getBestMatch("/a/b/c/d"), is("middle1"));
     }
 
     @Test
@@ -121,7 +145,7 @@ public class WebSocketUriMappingTest
         mapping.put(new UriTemplatePathSpec("/{a}/{ba}/c/{d}"), "middle1");
         mapping.put(new UriTemplatePathSpec("/{a}/{bz}/{c}/d"), "middle2");
 
-        assertThat(getMatch("/a/b/c/d"), is("middle1"));
+        assertThat(getBestMatch("/a/b/c/d"), is("middle1"));
     }
 
     @Test
@@ -131,7 +155,7 @@ public class WebSocketUriMappingTest
         mapping.put(new UriTemplatePathSpec("/a/{b}/{c}"), "prefix1");
         mapping.put(new UriTemplatePathSpec("/a/b/{c}"), "prefix2");
 
-        assertThat(getMatch("/a/b/c"), is("prefix2"));
+        assertThat(getBestMatch("/a/b/c"), is("prefix2"));
     }
 
     @Test
@@ -141,6 +165,6 @@ public class WebSocketUriMappingTest
         mapping.put(new UriTemplatePathSpec("/{a}/{b}/c"), "suffix1");
         mapping.put(new UriTemplatePathSpec("/{a}/b/c"), "suffix2");
 
-        assertThat(getMatch("/a/b/c"), is("suffix2"));
+        assertThat(getBestMatch("/a/b/c"), is("suffix2"));
     }
 }
