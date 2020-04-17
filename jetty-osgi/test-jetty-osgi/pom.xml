@@ -116,6 +116,13 @@
       <version>3.8.0</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.geronimo.specs</groupId>
+      <artifactId>geronimo-atinject_1.0_spec</artifactId>
+      <version>${injection.bundle.version}</version>
+      <scope>test</scope>
+    </dependency>
+
 
     <!-- Jetty OSGi Deps -->
     <dependency>
@@ -208,6 +215,12 @@
     <dependency>
       <groupId>jakarta.servlet.jsp.jstl</groupId>
       <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>jakarta.el</groupId>
+          <artifactId>jakarta.el-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jasper</groupId>

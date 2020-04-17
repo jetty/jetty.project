@@ -63,7 +63,7 @@
               com.sun.el.lang;resolution:=optional,
               com.sun.el.parser;resolution:=optional,
               com.sun.el.util;resolution:=optional,
-              jakarta.el;version="[3.0,4.0)",
+              jakarta.el;version="[4.0,5.0)",
               jakarta.servlet;version="[5.0,6.0)",
               jakarta.servlet.resources;version="[5.0,6.0)",
               jakarta.servlet.jsp.resources;version="[3.0,4.0)",
@@ -124,8 +124,8 @@
             </Import-Package>
             <DynamicImport-Package>
               org.eclipse.jetty.jsp.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",
-              org.apache.jasper.*;version="8.0.23",
-              org.apache.el.*;version="8.0.23"
+              org.apache.jasper.*;version="10",
+              org.apache.el.*;version="10"
             </DynamicImport-Package>
           </instructions>
         </configuration>
