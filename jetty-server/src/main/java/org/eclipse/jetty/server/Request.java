@@ -1568,9 +1568,9 @@ public class Request implements HttpServletRequest
         HttpURI uri = metadata.getURI();
         if (uri == null)
             return null;
-        return uri.isAbsolute() && metadata.getHttpVersion() != HttpVersion.HTTP_2
-            ? uri.toString()
-            : uri.getPathQuery();
+        return uri.isAbsolute() && metadata.getHttpVersion() == HttpVersion.HTTP_2
+            ? uri.getPathQuery()
+            : uri.toString();
     }
 
     public UserIdentity getUserIdentity()

@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
@@ -50,11 +49,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverHttp.class);
     private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
-    private final HttpFields _fields = new HttpFields();
     private final HttpConnection _httpConnection;
-    private String _method;
-    private String _uri;
-    private HttpVersion _version;
+    private final MetaData.RequestBuilder _requestBuilder = new MetaData.RequestBuilder();
     private MetaData.Request _metadata;
     private HttpField _connection;
     private HttpField _upgrade = null;
@@ -87,14 +83,10 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     public void recycle()
     {
         super.recycle();
-        _method = null;
-        _uri = null;
-        _version = null;
         _unknownExpectation = false;
         _expect100Continue = false;
         _expect102Processing = false;
         _connection = null;
-        _fields.clear();
         _upgrade = null;
         _trailers = null;
         _metadata = null;
@@ -115,10 +107,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public void startRequest(String method, String uri, HttpVersion version)
     {
-        // TODO should we have a MetaData.RequestBuilder class to hold these values?
-        _method = method;
-        _uri = uri;
-        _version = version;
+        _requestBuilder.request(method, uri, version);
         _unknownExpectation = false;
         _expect100Continue = false;
         _expect102Processing = false;
@@ -144,7 +133,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
                 case EXPECT:
                 {
-                    if (HttpVersion.HTTP_1_1.equals(_version))
+                    if (HttpVersion.HTTP_1_1.equals(_requestBuilder.version()))
                     {
                         HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
                         switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
@@ -192,7 +181,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                     break;
             }
         }
-        _fields.add(field);
+        _requestBuilder.add(field);
     }
 
     @Override
@@ -237,7 +226,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     {
         _httpConnection.getGenerator().setPersistent(false);
         // If we have no request yet, just close
-        if (_method == null)
+        if (_metadata == null)
             _httpConnection.close();
         else if (onEarlyEOF() || _delayedForContent)
         { 
@@ -281,7 +270,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         {
             // Need to call onRequest, so RequestLog can reports as much as possible
             if (_metadata == null)
-                _metadata = new MetaData.Request(_method, new HttpURI.Builder(_method, _uri).toHttpURI(), _version, _fields);
+                _metadata = _requestBuilder.build();
             onRequest(_metadata);
             getRequest().getHttpInput().earlyEOF();
         }
@@ -296,7 +285,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean headerComplete()
     {
-        _metadata = new MetaData.Request(_method, new HttpURI.Builder(_method, _uri).toHttpURI(), _version, _fields);
+        _metadata = _requestBuilder.build();
         onRequest(_metadata);
 
         if (_complianceViolations != null && !_complianceViolations.isEmpty())
@@ -323,7 +312,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                         if (_connection.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
                             persistent = true;
                         else
-                            persistent = _fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+                            persistent = _requestBuilder.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
                     }
                     else
                         persistent = false;
@@ -354,7 +343,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                         if (_connection.contains(HttpHeaderValue.CLOSE.asString()))
                             persistent = false;
                         else
-                            persistent = !_fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()); // handle multiple connection fields
+                            persistent = !_requestBuilder.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()); // handle multiple connection fields
                     }
                     else
                         persistent = true;
@@ -380,7 +369,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
                 if (HttpMethod.PRI.is(_metadata.getMethod()) &&
                         "*".equals(_metadata.getURI().getPath()) &&
-                        _fields.size() == 0 &&
+                        _requestBuilder.size() == 0 &&
                         upgrade())
                     return true;
 

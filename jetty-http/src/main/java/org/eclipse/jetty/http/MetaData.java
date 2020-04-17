@@ -155,11 +155,6 @@ public class MetaData implements Iterable<HttpField>
             _uri = uri;
         }
 
-        public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFieldList fields)
-        {
-            this(method, scheme, hostPort, uri, version, fields, Long.MIN_VALUE);
-        }
-
         public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFieldList fields, long contentLength)
         {
             this(method, scheme == null ? null : scheme.asString(), hostPort, uri, version, fields, contentLength);
@@ -214,6 +209,37 @@ public class MetaData implements Iterable<HttpField>
             HttpFieldList fields = getFields();
             return String.format("%s{u=%s,%s,h=%d,cl=%d,p=%s}",
                     getMethod(), getURI(), getHttpVersion(), fields == null ? -1 : fields.size(), getContentLength(), getProtocol());
+        }
+    }
+
+    // TODO this is moderately specific to HttpChannelOverHttp, so unless it get's used elsewhere, it should be moved there.
+    public static class RequestBuilder extends HttpFields
+    {
+        private final HttpURI.Builder _uri = HttpURI.empty();
+        private String _method;
+        private HttpVersion _version;
+
+        public String method()
+        {
+            return _method;
+        }
+
+        public void request(String method, String uri, HttpVersion version)
+        {
+            clear();
+            _method = method;
+            _uri.uri(uri);
+            _version = version;
+        }
+
+        public Request build()
+        {
+            return new Request(_method, _uri.toHttpURI(), _version, asImmutable());
+        }
+
+        public HttpVersion version()
+        {
+            return _version;
         }
     }
 
