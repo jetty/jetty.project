@@ -592,7 +592,7 @@ public class Server extends HandlerWrapper implements Attributes
                 if (context != null && !StringUtil.isEmpty(context.getContextPath()))
                     encodedPathQuery = URIUtil.addEncodedPaths(context.getContextHandler().getContextPathEncoded(), encodedPathQuery);
 
-                baseRequest.setHttpURI(new HttpURI(baseUri == null ? oldUri : baseUri, encodedPathQuery));
+                baseRequest.setHttpURI(HttpURI.from(baseUri == null ? oldUri : baseUri, encodedPathQuery).toHttpURI());
 
                 if (oldUri.getQuery() != null && baseRequest.getQueryString() != null)
                     // TODO why can't the old map be passed?

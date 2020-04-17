@@ -193,7 +193,7 @@ public class Dispatcher implements RequestDispatcher
                 if (query == null)
                     query = old_uri.getQuery();
 
-                HttpURI uri = new HttpURI.Builder(old_uri, _uri.getPath(), _uri.getParam(), query).build();
+                HttpURI uri = HttpURI.from(old_uri, _uri.getPath(), _uri.getParam(), query).toHttpURI();
 
                 baseRequest.setHttpURI(uri);
 

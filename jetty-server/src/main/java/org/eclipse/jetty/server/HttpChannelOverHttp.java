@@ -281,7 +281,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         {
             // Need to call onRequest, so RequestLog can reports as much as possible
             if (_metadata == null)
-                _metadata = new MetaData.Request(_method, new HttpURI.Builder(_method, _uri).build(), _version, _fields);
+                _metadata = new MetaData.Request(_method, new HttpURI.Builder(_method, _uri).toHttpURI(), _version, _fields);
             onRequest(_metadata);
             getRequest().getHttpInput().earlyEOF();
         }
@@ -296,7 +296,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     @Override
     public boolean headerComplete()
     {
-        _metadata = new MetaData.Request(_method, new HttpURI.Builder(_method, _uri).build(), _version, _fields);
+        _metadata = new MetaData.Request(_method, new HttpURI.Builder(_method, _uri).toHttpURI(), _version, _fields);
         onRequest(_metadata);
 
         if (_complianceViolations != null && !_complianceViolations.isEmpty())

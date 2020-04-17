@@ -30,6 +30,55 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class HttpURITest
 {
     @Test
+    public void testBuilder() throws Exception
+    {
+        HttpURI uri = HttpURI.empty()
+            .scheme("http")
+            .user("user:password")
+            .host("host")
+            .port(8888)
+            .path("/ignored/../p%61th;ignored/info")
+            .param("param")
+            .query("query=value")
+            .fragment("fragment")
+            .toHttpURI();
+
+        assertThat(uri.getScheme(), is("http"));
+        assertThat(uri.getUser(), is("user:password"));
+        assertThat(uri.getHost(), is("host"));
+        assertThat(uri.getPort(), is(8888));
+        assertThat(uri.getPath(), is("/ignored/../p%61th;ignored/info;param"));
+        assertThat(uri.getDecodedPath(), is("/path/info"));
+        assertThat(uri.getParam(), is("param"));
+        assertThat(uri.getQuery(), is("query=value"));
+        assertThat(uri.getFragment(), is("fragment"));
+        assertThat(uri.getAuthority(), is("host:8888"));
+        assertThat(uri.toString(), is("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment"));
+
+        uri = HttpURI.from(uri)
+            .scheme("https")
+            .user(null)
+            .authority("[::1]:8080")
+            .decodedPath("/some encoded/evening")
+            .param("id=12345")
+            .query(null)
+            .fragment(null)
+            .toHttpURI();
+
+        assertThat(uri.getScheme(), is("https"));
+        assertThat(uri.getUser(), nullValue());
+        assertThat(uri.getHost(), is("[::1]"));
+        assertThat(uri.getPort(), is(8080));
+        assertThat(uri.getPath(), is("/some%20encoded/evening;id=12345"));
+        assertThat(uri.getDecodedPath(), is("/some encoded/evening"));
+        assertThat(uri.getParam(), is("id=12345"));
+        assertThat(uri.getQuery(), nullValue());
+        assertThat(uri.getFragment(), nullValue());
+        assertThat(uri.getAuthority(), is("[::1]:8080"));
+        assertThat(uri.toString(), is("https://[::1]:8080/some%20encoded/evening;id=12345"));
+    }
+
+    @Test
     public void testExample() throws Exception
     {
         HttpURI uri = new HttpURI("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment");
@@ -58,7 +107,7 @@ public class HttpURITest
     {
         try
         {
-            new HttpURI.Builder(invalidURI).build();
+            new HttpURI.Builder(invalidURI).toHttpURI();
             fail(message);
         }
         catch (IllegalArgumentException e)
@@ -74,22 +123,22 @@ public class HttpURITest
         HttpURI uri;
 
         builder.uri("*");
-        uri = builder.build();
+        uri = builder.toHttpURI();
         assertThat(uri.getHost(), nullValue());
         assertThat(uri.getPath(), is("*"));
 
         builder.uri("/foo/bar");
-        uri = builder.build();
+        uri = builder.toHttpURI();
         assertThat(uri.getHost(), nullValue());
         assertThat(uri.getPath(), is("/foo/bar"));
 
         builder.uri("//foo/bar");
-        uri = builder.build();
+        uri = builder.toHttpURI();
         assertThat(uri.getHost(), is("foo"));
         assertThat(uri.getPath(), is("/bar"));
 
         builder.uri("http://foo/bar");
-        uri = builder.build();
+        uri = builder.toHttpURI();
         assertThat(uri.getHost(), is("foo"));
         assertThat(uri.getPath(), is("/bar"));
     }
@@ -99,19 +148,19 @@ public class HttpURITest
     {
         HttpURI uri;
 
-        uri = new HttpURI.Builder("GET", "*").build();
+        uri = new HttpURI.Builder("GET", "*").toHttpURI();
         assertThat(uri.getHost(), nullValue());
         assertThat(uri.getPath(), is("*"));
 
-        uri = new HttpURI.Builder("GET", "/foo/bar").build();
+        uri = new HttpURI.Builder("GET", "/foo/bar").toHttpURI();
         assertThat(uri.getHost(), nullValue());
         assertThat(uri.getPath(), is("/foo/bar"));
 
-        uri = new HttpURI.Builder("GET", "//foo/bar").build();
+        uri = new HttpURI.Builder("GET", "//foo/bar").toHttpURI();
         assertThat(uri.getHost(), nullValue());
         assertThat(uri.getPath(), is("//foo/bar"));
 
-        uri = new HttpURI.Builder("GET", "http://foo/bar").build();
+        uri = new HttpURI.Builder("GET", "http://foo/bar").toHttpURI();
         assertThat(uri.getHost(), is("foo"));
         assertThat(uri.getPath(), is("/bar"));
     }
@@ -156,41 +205,41 @@ public class HttpURITest
     public void testMutableURIBuilder()
     {
         HttpURI.Builder builder = new HttpURI.Builder("/foo/bar");
-        HttpURI uri = builder.build();
+        HttpURI uri = builder.toHttpURI();
         assertEquals("/foo/bar", uri.toString());
         assertEquals("/foo/bar", uri.getPath());
         assertEquals("/foo/bar", uri.getDecodedPath());
 
-        uri = builder.scheme("http").build();
+        uri = builder.scheme("http").toHttpURI();
         assertEquals("http:/foo/bar", uri.toString());
         assertEquals("/foo/bar", uri.getPath());
         assertEquals("/foo/bar", uri.getDecodedPath());
 
-        uri = builder.authority("host", 0).build();
+        uri = builder.authority("host", 0).toHttpURI();
         assertEquals("http://host/foo/bar", uri.toString());
         assertEquals("/foo/bar", uri.getPath());
         assertEquals("/foo/bar", uri.getDecodedPath());
 
-        uri = builder.authority("host", 8888).build();
+        uri = builder.authority("host", 8888).toHttpURI();
         assertEquals("http://host:8888/foo/bar", uri.toString());
         assertEquals("/foo/bar", uri.getPath());
         assertEquals("/foo/bar", uri.getDecodedPath());
 
-        uri = builder.pathQuery("/f%30%30;p0/bar;p1;p2").build();
+        uri = builder.pathQuery("/f%30%30;p0/bar;p1;p2").toHttpURI();
         assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2", uri.toString());
         assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
         assertEquals("/f00/bar", uri.getDecodedPath());
         assertEquals("p2", uri.getParam());
         assertEquals(null, uri.getQuery());
 
-        uri = builder.pathQuery("/f%30%30;p0/bar;p1;p2?name=value").build();
+        uri = builder.pathQuery("/f%30%30;p0/bar;p1;p2?name=value").toHttpURI();
         assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2?name=value", uri.toString());
         assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
         assertEquals("/f00/bar", uri.getDecodedPath());
         assertEquals("p2", uri.getParam());
         assertEquals("name=value", uri.getQuery());
 
-        uri = builder.query("other=123456").build();
+        uri = builder.query("other=123456").toHttpURI();
         assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2?other=123456", uri.toString());
         assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
         assertEquals("/f00/bar", uri.getDecodedPath());
@@ -202,19 +251,19 @@ public class HttpURITest
     public void testSchemeAndOrAuthority() throws Exception
     {
         HttpURI.Builder builder = new HttpURI.Builder("/path/info");
-        HttpURI uri = builder.build();
+        HttpURI uri = builder.toHttpURI();
         assertEquals("/path/info", uri.toString());
 
-        uri = builder.authority("host", 0).build();
+        uri = builder.authority("host", 0).toHttpURI();
         assertEquals("//host/path/info", uri.toString());
 
-        uri = builder.authority("host", 8888).build();
+        uri = builder.authority("host", 8888).toHttpURI();
         assertEquals("//host:8888/path/info", uri.toString());
 
-        uri = builder.scheme("http").build();
+        uri = builder.scheme("http").toHttpURI();
         assertEquals("http://host:8888/path/info", uri.toString());
 
-        uri = builder.authority(null, 0).build();
+        uri = builder.authority(null, 0).toHttpURI();
         assertEquals("http:/path/info", uri.toString());
     }
 

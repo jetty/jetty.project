@@ -400,7 +400,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
         if (match)
         {
-            HttpURI.Builder builder = new HttpURI.Builder(request.getHttpURI());
+            HttpURI.Builder builder = HttpURI.from(request.getHttpURI());
             if (forwarded._proto != null)
             {
                 builder.scheme(forwarded._proto);
@@ -433,7 +433,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
             if (request.isSecure() && !wasSecure)
                 builder.scheme(HttpScheme.HTTPS);
-            request.setHttpURI(builder.build());
+            request.setHttpURI(builder.toHttpURI());
         }
     }
 

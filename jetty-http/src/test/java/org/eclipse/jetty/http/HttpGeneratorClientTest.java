@@ -37,17 +37,17 @@ public class HttpGeneratorClientTest
     {
         RequestInfo(String method, String uri, HttpFieldList fields)
         {
-            super(method, new HttpURI.Builder(method,uri).build(), HttpVersion.HTTP_1_1, fields, -1);
+            super(method, new HttpURI.Builder(method,uri).toHttpURI(), HttpVersion.HTTP_1_1, fields, -1);
         }
 
         RequestInfo(String method, String uri, HttpVersion version, HttpFieldList fields)
         {
-            super(method, new HttpURI.Builder(method,uri).build(), version, fields, -1);
+            super(method, new HttpURI.Builder(method,uri).toHttpURI(), version, fields, -1);
         }
 
         RequestInfo(String method, String uri, int contentLength, HttpFieldList fields)
         {
-            super(method, new HttpURI.Builder(method,uri).build(), HttpVersion.HTTP_1_1, fields, contentLength);
+            super(method, new HttpURI.Builder(method,uri).toHttpURI(), HttpVersion.HTTP_1_1, fields, contentLength);
         }
     }
 

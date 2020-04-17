@@ -170,7 +170,7 @@ public class MetaData implements Iterable<HttpField>
             this(method, new HttpURI.Builder(scheme,
                 hostPort == null ? null : hostPort.getHost(),
                 hostPort == null ? -1 : hostPort.getPort(),
-                uri).build(), version, fields, contentLength);
+                uri).toHttpURI(), version, fields, contentLength);
         }
 
         @Override

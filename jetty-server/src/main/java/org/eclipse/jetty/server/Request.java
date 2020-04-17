@@ -1696,7 +1696,7 @@ public class Request implements HttpServletRequest
             _uri = uri;
         else
         {
-            HttpURI.Builder builder = new HttpURI.Builder(uri);
+            HttpURI.Builder builder = HttpURI.from(uri);
             if (!uri.isAbsolute())
                 builder.scheme(HttpScheme.HTTP.asString());
 
@@ -1713,7 +1713,7 @@ public class Request implements HttpServletRequest
                     builder.host(findServerName()).port(findServerPort());
                 }
             }
-            _uri = builder.build();
+            _uri = builder.toHttpURI();
         }
 
         String encoded = uri.getPath();

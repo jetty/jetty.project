@@ -21,6 +21,7 @@ package org.eclipse.jetty.http;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -88,21 +89,7 @@ public class HttpURI
         _fragment = builder._fragment;
     }
 
-    public HttpURI(HttpURI baseUri, String pathQuery)
-    {
-        Builder builder = new Builder(baseUri, pathQuery);
-        _scheme = builder._scheme;
-        _user = builder._user;
-        _host = builder._host;
-        _port = builder._port;
-        _path = builder._path;
-        _decodedPath = builder._decodedPath;
-        _param = builder._param;
-        _query = builder._query;
-        _fragment = builder._fragment;
-    }
-
-    HttpURI(String uri, String scheme, String user, String host, int port, String path, String decodedPath, String param, String query, String fragment)
+    private HttpURI(String uri, String scheme, String user, String host, int port, String path, String decodedPath, String param, String query, String fragment)
     {
         _uri = uri;
         _scheme = scheme;
@@ -114,6 +101,36 @@ public class HttpURI
         _param = param;
         _query = query;
         _fragment = fragment;
+    }
+
+    public static HttpURI.Builder empty()
+    {
+        return new HttpURI.Builder();
+    }
+
+    public static HttpURI.Builder from(HttpURI uri)
+    {
+        return new HttpURI.Builder(uri);
+    }
+
+    public static HttpURI.Builder from(HttpURI uri, String pathQuery)
+    {
+        return new HttpURI.Builder(uri, pathQuery);
+    }
+
+    public static HttpURI.Builder from(HttpURI uri, String path, String param, String query)
+    {
+        return new HttpURI.Builder(uri, path, param, query);
+    }
+
+    public static HttpURI.Builder from(URI uri)
+    {
+        return new HttpURI.Builder(uri);
+    }
+
+    public static HttpURI.Builder from(String uri)
+    {
+        return new HttpURI.Builder(uri);
     }
 
     @Override
@@ -288,27 +305,16 @@ public class HttpURI
         private String _query;
         private String _fragment;
 
-        public Builder()
+        Builder()
         {
         }
 
-        public Builder(String scheme, String host, int port, String path, String param, String query, String fragment)
-        {
-            _scheme = scheme;
-            _host = host;
-            _port = port;
-            _path = path;
-            _param = param;
-            _query = query;
-            _fragment = fragment;
-        }
-
-        public Builder(HttpURI uri)
+        Builder(HttpURI uri)
         {
             uri(uri);
         }
 
-        public Builder(HttpURI baseURI, String pathQuery)
+        Builder(HttpURI baseURI, String pathQuery)
         {
             _uri = null;
             _scheme = baseURI._scheme;
@@ -319,7 +325,7 @@ public class HttpURI
                 parse(State.PATH, pathQuery);
         }
 
-        public Builder(HttpURI baseURI, String path, String param, String query)
+        Builder(HttpURI baseURI, String path, String param, String query)
         {
             _uri = null;
             _scheme = baseURI._scheme;
@@ -332,13 +338,13 @@ public class HttpURI
             _fragment = null;
         }
 
-        public Builder(String uri)
+        Builder(String uri)
         {
             _port = -1;
             parse(State.START, uri);
         }
 
-        public Builder(URI uri)
+        Builder(URI uri)
         {
             _uri = null;
 
@@ -404,7 +410,20 @@ public class HttpURI
             return this;
         }
 
-        public HttpURI build()
+        /**
+         * @param hostport the host and port combined
+         */
+        public Builder authority(String hostport)
+        {
+            HostPort hp = new HostPort(hostport);
+            _user = null;
+            _host = hp.getHost();
+            _port = hp.getPort();
+            _uri = null;
+            return this;
+        }
+
+        public HttpURI toHttpURI()
         {
             return new HttpURI(_uri, _scheme, _user, _host, _port, _path, _decodedPath, _param, _query, _fragment);
         }
@@ -585,7 +604,7 @@ public class HttpURI
         @Override
         public String toString()
         {
-            return build().toString();
+            return toHttpURI().toString();
         }
 
         public URI toURI()
