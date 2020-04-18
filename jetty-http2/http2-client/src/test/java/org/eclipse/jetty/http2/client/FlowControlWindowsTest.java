@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
@@ -113,7 +112,7 @@ public class FlowControlWindowsTest
         assertEquals(clientSessionRecvWindow, sessionRecvWindow);
 
         HostPortHttpField hostPort = new HostPortHttpField("localhost:" + connector.getLocalPort());
-        MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP, hostPort, "/", HttpVersion.HTTP_2, new HttpFields());
+        MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP, hostPort, "/", HttpVersion.HTTP_2, HttpFields.from());
         HeadersFrame frame = new HeadersFrame(request, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         clientSession.newStream(frame, promise, new Stream.Listener.Adapter());
@@ -163,7 +162,7 @@ public class FlowControlWindowsTest
         assertEquals(serverSessionRecvWindow, sessionRecvWindow);
 
         HostPortHttpField hostPort = new HostPortHttpField("localhost:" + connector.getLocalPort());
-        MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP, hostPort, "/", HttpVersion.HTTP_2, new HttpFields());
+        MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP, hostPort, "/", HttpVersion.HTTP_2, HttpFields.from());
         HeadersFrame frame = new HeadersFrame(request, null, true);
         clientSession.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter());
 

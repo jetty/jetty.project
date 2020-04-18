@@ -36,6 +36,7 @@ import javax.servlet.ServletException;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
@@ -674,7 +675,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         _requests.incrementAndGet();
         _request.setTimeStamp(System.currentTimeMillis());
-        HttpFields fields = _response.getHttpFields();
+        HttpFieldsBuilder fields = _response.getHttpFields();
         if (_configuration.getSendDateHeader() && !fields.contains(HttpHeader.DATE))
             fields.put(_connector.getServer().getDateField());
 
@@ -711,7 +712,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return false;
     }
 
-    public void onTrailers(HttpFields trailers)
+    public void onTrailers(HttpFieldsBuilder trailers)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onTrailers {} {}", this, trailers);
@@ -791,7 +792,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (action == Action.DISPATCH)
             {
                 ByteBuffer content = null;
-                HttpFields fields = new HttpFields();
+                HttpFieldsBuilder fields = HttpFields.empty();
 
                 ErrorHandler handler = getServer().getBean(ErrorHandler.class);
                 if (handler != null)

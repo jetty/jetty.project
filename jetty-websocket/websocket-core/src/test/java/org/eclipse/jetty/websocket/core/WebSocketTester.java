@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -86,17 +87,17 @@ public class WebSocketTester
         return newClient(port, false, extensions);
     }
 
-    protected static HttpFields newUpgradeRequest(String extensions)
+    protected static HttpFieldsBuilder newUpgradeRequest(String extensions)
     {
-        HttpFields fields = new HttpFields();
-        fields.add(HttpHeader.HOST, "127.0.0.1");
-        fields.add(HttpHeader.UPGRADE, "websocket");
-        fields.add(HttpHeader.CONNECTION, "Upgrade");
-        fields.add(HttpHeader.SEC_WEBSOCKET_KEY, NON_RANDOM_KEY);
-        fields.add(HttpHeader.SEC_WEBSOCKET_VERSION, "13");
-        fields.add(HttpHeader.PRAGMA, "no-cache");
-        fields.add(HttpHeader.CACHE_CONTROL, "no-cache");
-        fields.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "test");
+        HttpFieldsBuilder fields = HttpFields.empty()
+            .add(HttpHeader.HOST, "127.0.0.1")
+            .add(HttpHeader.UPGRADE, "websocket")
+            .add(HttpHeader.CONNECTION, "Upgrade")
+            .add(HttpHeader.SEC_WEBSOCKET_KEY, NON_RANDOM_KEY)
+            .add(HttpHeader.SEC_WEBSOCKET_VERSION, "13")
+            .add(HttpHeader.PRAGMA, "no-cache")
+            .add(HttpHeader.CACHE_CONTROL, "no-cache")
+            .add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "test");
         if (extensions != null)
             fields.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensions);
 

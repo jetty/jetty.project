@@ -1208,7 +1208,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (_contextPath.length() == 1)
                     baseRequest.setContextPath("");
                 else
-                    baseRequest.setContextPath(getContextPathEncoded());
+                    baseRequest.setContextPath(getContextPathEncoded()); // TODO shouldn't this be decoded context path???
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(pathInfo);
             }
@@ -2143,15 +2143,21 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 String contextPath = getContextPath();
                 HttpURI uri;
                 String pathInfo;
-                if (StringUtil.isBlank(contextPath))
+                if (StringUtil.isEmpty(contextPath))
                 {
                     uri = new HttpURI.Builder(null, null, 0, uriInContext).toHttpURI();
                     pathInfo = URIUtil.canonicalPath(uri.getDecodedPath());
+                    if (StringUtil.isEmpty(pathInfo))
+                        return null;
                 }
                 else
                 {
-                    uri = new HttpURI.Builder(null, null, 0, URIUtil.addPaths(contextPath,uriInContext)).toHttpURI();
-                    pathInfo = URIUtil.canonicalPath(uri.getDecodedPath().substring(contextPath.length()));
+                    HttpURI.Builder builder = new HttpURI.Builder(null, null, 0, uriInContext);
+                    if (StringUtil.isEmpty(URIUtil.canonicalPath(builder.decodedPath())))
+                        return null;
+                    builder.path(URIUtil.addPaths(contextPath,builder.path()));
+                    uri = builder.toHttpURI();
+                    pathInfo = uri.getDecodedPath().substring(contextPath.length());
                 }
                 return new Dispatcher(ContextHandler.this, uri, pathInfo);
             }

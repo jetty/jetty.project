@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.http.HttpFieldList;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -1193,7 +1193,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void logRequestTrailer(String arg, StringBuilder b, Request request, Response response)
     {
-        HttpFieldList trailers = request.getTrailerHttpFields();
+        HttpFields trailers = request.getTrailerHttpFields();
         if (trailers != null)
             append(b, trailers.get(arg));
         else
@@ -1202,10 +1202,10 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
 
     private static void logResponseTrailer(String arg, StringBuilder b, Request request, Response response)
     {
-        Supplier<HttpFieldList> supplier = response.getTrailers();
+        Supplier<HttpFields> supplier = response.getTrailers();
         if (supplier != null)
         {
-            HttpFieldList trailers = supplier.get();
+            HttpFields trailers = supplier.get();
 
             if (trailers != null)
                 append(b, trailers.get(arg));

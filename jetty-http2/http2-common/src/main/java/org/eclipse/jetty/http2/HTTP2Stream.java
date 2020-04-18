@@ -30,7 +30,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
@@ -303,7 +303,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest() || metaData.isResponse())
         {
-            HttpFields fields = metaData.getFields();
+            HttpFieldsBuilder fields = metaData.getFields();
             long length = -1;
             if (fields != null && !HttpMethod.CONNECT.is(request.getMethod()))
                 length = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());

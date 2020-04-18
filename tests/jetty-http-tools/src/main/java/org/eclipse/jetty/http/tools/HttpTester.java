@@ -28,7 +28,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -289,7 +289,7 @@ public class HttpTester
         }
     }
 
-    public abstract static class Message extends HttpFields implements HttpParser.HttpHandler
+    public abstract static class Message extends HttpFieldsBuilder implements HttpParser.HttpHandler
     {
         boolean _earlyEOF;
         boolean _complete = false;

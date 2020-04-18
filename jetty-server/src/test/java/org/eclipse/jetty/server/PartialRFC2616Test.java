@@ -22,7 +22,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -81,11 +83,10 @@ public class PartialRFC2616Test
     {
         try
         {
-            HttpFields fields = new HttpFields();
-
-            fields.put("D1", "Sun, 6 Nov 1994 08:49:37 GMT");
-            fields.put("D2", "Sunday, 6-Nov-94 08:49:37 GMT");
-            fields.put("D3", "Sun Nov  6 08:49:37 1994");
+            HttpFieldsBuilder fields = HttpFields.empty()
+                .put("D1", "Sun, 6 Nov 1994 08:49:37 GMT")
+                .put("D2", "Sunday, 6-Nov-94 08:49:37 GMT")
+                .put("D3", "Sun Nov  6 08:49:37 1994");
             Date d1 = new Date(fields.getDateField("D1"));
             Date d2 = new Date(fields.getDateField("D2"));
             Date d3 = new Date(fields.getDateField("D3"));
@@ -99,7 +100,7 @@ public class PartialRFC2616Test
         catch (Exception e)
         {
             e.printStackTrace();
-            assertTrue(false);
+            fail();
         }
     }
 
@@ -274,16 +275,15 @@ public class PartialRFC2616Test
     @Test
     public void test39() throws Exception
     {
-        HttpFields fields = new HttpFields();
-
-        fields.put("Q", "bbb;q=0.5,aaa,ccc;q=0.002,d;q=0,e;q=0.0001,ddd;q=0.001,aa2,abb;q=0.7");
+        HttpFields fields = HttpFields.empty()
+            .put("Q", "bbb;q=0.5,aaa,ccc;q=0.002,d;q=0,e;q=0.0001,ddd;q=0.001,aa2,abb;q=0.7").asImmutable();
         List<String> list = fields.getQualityCSV("Q");
-        assertEquals("aaa", HttpFields.valueParameters(list.get(0), null), "Quality parameters");
-        assertEquals("aa2", HttpFields.valueParameters(list.get(1), null), "Quality parameters");
-        assertEquals("abb", HttpFields.valueParameters(list.get(2), null), "Quality parameters");
-        assertEquals("bbb", HttpFields.valueParameters(list.get(3), null), "Quality parameters");
-        assertEquals("ccc", HttpFields.valueParameters(list.get(4), null), "Quality parameters");
-        assertEquals("ddd", HttpFields.valueParameters(list.get(5), null), "Quality parameters");
+        assertEquals("aaa", HttpField.valueParameters(list.get(0), null), "Quality parameters");
+        assertEquals("aa2", HttpField.valueParameters(list.get(1), null), "Quality parameters");
+        assertEquals("abb", HttpField.valueParameters(list.get(2), null), "Quality parameters");
+        assertEquals("bbb", HttpField.valueParameters(list.get(3), null), "Quality parameters");
+        assertEquals("ccc", HttpField.valueParameters(list.get(4), null), "Quality parameters");
+        assertEquals("ddd", HttpField.valueParameters(list.get(5), null), "Quality parameters");
     }
 
     @Test

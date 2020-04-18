@@ -30,7 +30,7 @@ import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BytesRequestContent;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.HttpCookieStore;
@@ -148,7 +148,7 @@ public abstract class HttpConnection implements IConnection
 
         // If we are HTTP 1.1, add the Host header
         HttpVersion version = request.getVersion();
-        HttpFields headers = request.getHeaders();
+        HttpFieldsBuilder headers = request.getHeaders();
         if (version.getVersion() <= 11)
         {
             if (!headers.contains(HttpHeader.HOST.asString()))

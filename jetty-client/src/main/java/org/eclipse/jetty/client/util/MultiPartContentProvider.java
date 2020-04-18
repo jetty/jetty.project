@@ -34,7 +34,7 @@ import org.eclipse.jetty.client.AsyncContentProvider;
 import org.eclipse.jetty.client.Synchronizable;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.Callback;
@@ -129,7 +129,7 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
      * @param content the part content
      * @param fields the headers associated with this part
      */
-    public void addFieldPart(String name, ContentProvider content, HttpFields fields)
+    public void addFieldPart(String name, ContentProvider content, HttpFieldsBuilder fields)
     {
         addPart(new Part(name, null, "text/plain", content, fields));
     }
@@ -150,7 +150,7 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
      * @param content the part content
      * @param fields the headers associated with this part
      */
-    public void addFilePart(String name, String fileName, ContentProvider content, HttpFields fields)
+    public void addFilePart(String name, String fileName, ContentProvider content, HttpFieldsBuilder fields)
     {
         addPart(new Part(name, fileName, "application/octet-stream", content, fields));
     }
@@ -222,11 +222,11 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
         private final String fileName;
         private final String contentType;
         private final ContentProvider content;
-        private final HttpFields fields;
+        private final HttpFieldsBuilder fields;
         private final ByteBuffer headers;
         private final long length;
 
-        private Part(String name, String fileName, String contentType, ContentProvider content, HttpFields fields)
+        private Part(String name, String fileName, String contentType, ContentProvider content, HttpFieldsBuilder fields)
         {
             this.name = name;
             this.fileName = fileName;

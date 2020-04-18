@@ -25,17 +25,18 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpVersion;
 
 public class HttpResponse implements Response
 {
-    private final HttpFields headers = new HttpFields();
+    private final HttpFieldsBuilder headers = HttpFields.empty();
     private final Request request;
     private final List<ResponseListener> listeners;
     private HttpVersion version;
     private int status;
     private String reason;
-    private HttpFields trailers;
+    private HttpFieldsBuilder trailers;
 
     public HttpResponse(Request request, List<ResponseListener> listeners)
     {
@@ -86,7 +87,7 @@ public class HttpResponse implements Response
     }
 
     @Override
-    public HttpFields getHeaders()
+    public HttpFieldsBuilder getHeaders()
     {
         return headers;
     }
@@ -103,7 +104,7 @@ public class HttpResponse implements Response
         return result;
     }
 
-    public HttpFields getTrailers()
+    public HttpFieldsBuilder getTrailers()
     {
         return trailers;
     }
@@ -111,7 +112,7 @@ public class HttpResponse implements Response
     public HttpResponse trailer(HttpField trailer)
     {
         if (trailers == null)
-            trailers = new HttpFields();
+            trailers = HttpFields.empty();
         trailers.add(trailer);
         return this;
     }

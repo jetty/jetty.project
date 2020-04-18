@@ -26,7 +26,7 @@ import java.util.List;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -51,7 +51,7 @@ public class ServerGenerator extends Generator
         this.sendStatus200 = sendStatus200;
     }
 
-    public Result generateResponseHeaders(int request, int code, String reason, HttpFields fields, Callback callback)
+    public Result generateResponseHeaders(int request, int code, String reason, HttpFieldsBuilder fields, Callback callback)
     {
         request &= 0xFF_FF;
 

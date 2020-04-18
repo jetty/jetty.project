@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -202,7 +201,7 @@ public class HTTP2ServerDocs
                 // Prepare the response HEADERS frame.
 
                 // The response HTTP status and HTTP headers.
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
 
                 if (HttpMethod.GET.is(request.getMethod()))
                 {
@@ -296,13 +295,13 @@ public class HTTP2ServerDocs
                     // Push the favicon.
                     HttpURI pushedURI = new HttpURI(request.getURI());
                     pushedURI.setPath("/favicon.ico");
-                    MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, new HttpFields());
+                    MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.from());
                     PushPromiseFrame promiseFrame = new PushPromiseFrame(stream.getId(), 0, pushedRequest);
                     stream.push(promiseFrame, new Stream.Listener.Adapter())
                         .thenCompose(pushedStream ->
                         {
                             // Send the favicon "response".
-                            MetaData.Response pushedResponse = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                            MetaData.Response pushedResponse = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
                             return pushedStream.headers(new HeadersFrame(pushedStream.getId(), pushedResponse, null, false))
                                 .thenCompose(pushed -> pushed.data(new DataFrame(pushed.getId(), faviconBuffer, true)));
                         });

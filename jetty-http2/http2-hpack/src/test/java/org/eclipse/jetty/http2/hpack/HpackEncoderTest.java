@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.BufferUtil;
@@ -38,7 +39,7 @@ public class HpackEncoderTest
     public void testUnknownFieldsContextManagement() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder(38 * 5);
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.empty();
 
         HttpField[] field =
             {
@@ -151,8 +152,8 @@ public class HpackEncoderTest
         HpackEncoder encoder = new HpackEncoder(38 * 5);
         ByteBuffer buffer = BufferUtil.allocate(4096);
 
-        HttpFields fields = new HttpFields();
-        fields.put("set-cookie", "some cookie value");
+        HttpFieldsBuilder fields = HttpFields.empty()
+            .put("set-cookie", "some cookie value");
 
         // encode
         BufferUtil.clearToFill(buffer);
@@ -180,7 +181,7 @@ public class HpackEncoderTest
     @Test
     public void testFieldLargerThanTable() throws Exception
     {
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.empty();
 
         HpackEncoder encoder = new HpackEncoder(128);
         ByteBuffer buffer0 = BufferUtil.allocate(4096);
@@ -244,7 +245,7 @@ public class HpackEncoderTest
     @Test
     public void testResize() throws Exception
     {
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.empty();
         fields.add("host", "localhost0");
         fields.add("cookie", "abcdefghij");
 

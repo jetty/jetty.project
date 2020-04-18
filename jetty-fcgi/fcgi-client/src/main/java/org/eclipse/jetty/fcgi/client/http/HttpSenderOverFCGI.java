@@ -31,7 +31,7 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.ClientGenerator;
 import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
@@ -59,12 +59,12 @@ public class HttpSenderOverFCGI extends HttpSender
     {
         Request request = exchange.getRequest();
         // Copy the request headers to be able to convert them properly
-        HttpFields headers = new HttpFields();
+        HttpFieldsBuilder headers = HttpFields.from();
         for (HttpField field : request.getHeaders())
         {
             headers.put(field);
         }
-        HttpFields fcgiHeaders = new HttpFields();
+        HttpFieldsBuilder fcgiHeaders = HttpFields.from();
 
         // FastCGI headers based on the URI
         URI uri = request.getURI();
@@ -74,12 +74,12 @@ public class HttpSenderOverFCGI extends HttpSender
         fcgiHeaders.put(FCGI.Headers.QUERY_STRING, query == null ? "" : query);
 
         // FastCGI headers based on HTTP headers
-        HttpField httpField = headers.remove(HttpHeader.AUTHORIZATION);
+        HttpField httpField = headers.getAndRemove(HttpHeader.AUTHORIZATION);
         if (httpField != null)
             fcgiHeaders.put(FCGI.Headers.AUTH_TYPE, httpField.getValue());
-        httpField = headers.remove(HttpHeader.CONTENT_LENGTH);
+        httpField = headers.getAndRemove(HttpHeader.CONTENT_LENGTH);
         fcgiHeaders.put(FCGI.Headers.CONTENT_LENGTH, httpField == null ? "" : httpField.getValue());
-        httpField = headers.remove(HttpHeader.CONTENT_TYPE);
+        httpField = headers.getAndRemove(HttpHeader.CONTENT_TYPE);
         fcgiHeaders.put(FCGI.Headers.CONTENT_TYPE, httpField == null ? "" : httpField.getValue());
 
         // FastCGI headers that are not based on HTTP headers nor URI

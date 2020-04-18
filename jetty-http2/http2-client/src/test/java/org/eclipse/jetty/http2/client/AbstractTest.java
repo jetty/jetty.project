@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -109,12 +109,12 @@ public class AbstractTest
         return promise.get(5, TimeUnit.SECONDS);
     }
 
-    protected MetaData.Request newRequest(String method, HttpFields fields)
+    protected MetaData.Request newRequest(String method, HttpFieldsBuilder fields)
     {
         return newRequest(method, "", fields);
     }
 
-    protected MetaData.Request newRequest(String method, String pathInfo, HttpFields fields)
+    protected MetaData.Request newRequest(String method, String pathInfo, HttpFieldsBuilder fields)
     {
         String host = "localhost";
         int port = connector.getLocalPort();

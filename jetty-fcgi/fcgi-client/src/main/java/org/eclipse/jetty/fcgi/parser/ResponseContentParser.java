@@ -27,7 +27,7 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
@@ -84,7 +84,7 @@ public class ResponseContentParser extends StreamContentParser
 
     private static class ResponseParser implements HttpParser.ResponseHandler
     {
-        private final HttpFields fields = new HttpFields();
+        private final HttpFieldsBuilder fields = HttpFields.from();
         private ClientParser.Listener listener;
         private final int request;
         private final FCGIHttpParser httpParser;
@@ -227,7 +227,7 @@ public class ResponseContentParser extends StreamContentParser
             }
         }
 
-        private void notifyHeaders(HttpFields fields)
+        private void notifyHeaders(HttpFieldsBuilder fields)
         {
             if (fields != null)
             {

@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -78,7 +78,7 @@ public class AbstractServerTest
         generator = new Generator(byteBufferPool);
     }
 
-    protected MetaData.Request newRequest(String method, HttpFields fields)
+    protected MetaData.Request newRequest(String method, HttpFieldsBuilder fields)
     {
         String host = "localhost";
         int port = connector.getLocalPort();

@@ -20,6 +20,7 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -87,8 +88,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
     {
         String replacement = "/replace";
         String queryString = "request=parameter";
-        _request.setURIPathQuery("/old/context");
-        _request.setQueryString(queryString);
+        _request.setHttpURI(HttpURI.from(_request.getHttpURI(),"/old/context", null, queryString).toHttpURI());
 
         RewritePatternRule rewritePatternRule = new RewritePatternRule();
         rewritePatternRule.setPattern("/old/context");
@@ -110,8 +110,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
         String[] split = replacement.split("\\?", 2);
         String path = split[0];
         String queryString = split[1];
-        _request.setURIPathQuery("/old/context");
-        _request.setQueryString(requestQueryString);
+        _request.setHttpURI(HttpURI.from(_request.getHttpURI(),"/old/context", null, queryString).toHttpURI());
 
         RewritePatternRule rewritePatternRule = new RewritePatternRule();
         rewritePatternRule.setPattern("/old/context");

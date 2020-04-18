@@ -24,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
@@ -79,7 +78,7 @@ public class ConnectTunnelTest extends AbstractTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        MetaData.Request request = new MetaData.Request(HttpMethod.CONNECT.asString(), null, new HostPortHttpField(authority), null, HttpVersion.HTTP_2, new HttpFields());
+        MetaData.Request request = new MetaData.Request(HttpMethod.CONNECT.asString(), null, new HostPortHttpField(authority), null, HttpVersion.HTTP_2, HttpFields.from());
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         client.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener.Adapter()
         {
@@ -131,7 +130,7 @@ public class ConnectTunnelTest extends AbstractTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        MetaData.Request request = new MetaData.ConnectRequest(HttpScheme.HTTP, new HostPortHttpField(authority), "/", new HttpFields(), "websocket");
+        MetaData.Request request = new MetaData.ConnectRequest(HttpScheme.HTTP, new HostPortHttpField(authority), "/", HttpFields.from(), "websocket");
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         client.newStream(new HeadersFrame(request, null, false), streamPromise, new Stream.Listener.Adapter()
         {

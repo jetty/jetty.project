@@ -38,7 +38,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
@@ -154,7 +154,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
     public void setSubProtocols(String... protocols)
     {
-        HttpFields headers = getHeaders();
+        HttpFieldsBuilder headers = getHeaders();
         headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
         for (String protocol : protocols)
         {
@@ -164,7 +164,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
     public void setSubProtocols(List<String> protocols)
     {
-        HttpFields headers = getHeaders();
+        HttpFieldsBuilder headers = getHeaders();
         headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
         for (String protocol : protocols)
         {

@@ -35,7 +35,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -86,7 +86,7 @@ public class AsyncIOTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.from();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
@@ -137,7 +137,7 @@ public class AsyncIOTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.from();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
@@ -193,7 +193,7 @@ public class AsyncIOTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.from();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
@@ -266,7 +266,7 @@ public class AsyncIOTest extends AbstractTest
             }
         });
 
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.from();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);

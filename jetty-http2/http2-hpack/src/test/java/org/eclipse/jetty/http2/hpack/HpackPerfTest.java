@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -107,7 +108,7 @@ public class HpackPerfTest
                     var kase = (Map<String, Object>)c;
                     Object[] headers = (Object[])kase.get("headers");
                     // System.err.println("    "+headers);
-                    HttpFields fields = new HttpFields();
+                    HttpFieldsBuilder fields = HttpFields.empty();
                     for (Object header : headers)
                     {
                         @SuppressWarnings("unchecked")

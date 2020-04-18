@@ -444,6 +444,8 @@ public class HttpURI
 
         public String decodedPath()
         {
+            if (_decodedPath == null && _path != null)
+                _decodedPath = URIUtil.canonicalPath(URIUtil.decodePath(_path));
             return _decodedPath;
         }
 
@@ -512,7 +514,7 @@ public class HttpURI
         public Builder param(String param)
         {
             _param = param;
-            if (_path != null && !_path.contains(_param))
+            if (_path != null && _param != null && !_path.contains(_param))
             {
                 _path += ";" + _param;
             }

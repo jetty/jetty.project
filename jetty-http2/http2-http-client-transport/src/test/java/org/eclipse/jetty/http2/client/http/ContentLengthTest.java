@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -45,7 +45,7 @@ public class ContentLengthTest extends AbstractTest
             .method(method)
             .send();
 
-        HttpFields responseHeaders = response.getHeaders();
+        HttpFieldsBuilder responseHeaders = response.getHeaders();
         long contentLength = responseHeaders.getLongField(HttpHeader.CONTENT_LENGTH.asString());
         assertEquals(0, contentLength);
     }
@@ -68,7 +68,7 @@ public class ContentLengthTest extends AbstractTest
             .method(method)
             .send();
 
-        HttpFields responseHeaders = response.getHeaders();
+        HttpFieldsBuilder responseHeaders = response.getHeaders();
         long contentLength = responseHeaders.getLongField(HttpHeader.CONTENT_LENGTH.asString());
         assertEquals(data.length, contentLength);
     }
@@ -98,7 +98,7 @@ public class ContentLengthTest extends AbstractTest
             .method(method)
             .send();
 
-        HttpFields responseHeaders = response.getHeaders();
+        HttpFieldsBuilder responseHeaders = response.getHeaders();
         long contentLength = responseHeaders.getLongField(HttpHeader.CONTENT_LENGTH.asString());
         assertTrue(0 < contentLength && contentLength < data.length);
     }

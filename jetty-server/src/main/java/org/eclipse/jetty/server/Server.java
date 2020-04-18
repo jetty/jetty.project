@@ -28,10 +28,12 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -588,13 +590,30 @@ public class Server extends HandlerWrapper implements Attributes
             }
             else
             {
-                ContextHandler.Context context = baseRequest.getContext();
-                if (context != null && !StringUtil.isEmpty(context.getContextPath()))
-                    encodedPathQuery = URIUtil.addEncodedPaths(context.getContextHandler().getContextPathEncoded(), encodedPathQuery);
+                ServletContext servletContext = event.getServletContext();
+                if (servletContext != null)
+                {
+                    String encodedContextPath = servletContext instanceof ContextHandler.Context
+                        ? ((ContextHandler.Context)servletContext).getContextHandler().getContextPathEncoded()
+                        : URIUtil.encodePath(servletContext.getContextPath());
+                    if (!StringUtil.isEmpty(encodedContextPath))
+                    {
+                        encodedPathQuery = URIUtil.canonicalPath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
+                        if (encodedPathQuery == null)
+                            throw new BadMessageException(500,"Bad dispatch path");
+                    }
+                }
 
-                baseRequest.setHttpURI(HttpURI.from(baseUri == null ? oldUri : baseUri, encodedPathQuery).toHttpURI());
+                if (baseUri == null)
+                    baseUri = oldUri;
+                HttpURI.Builder builder = HttpURI.from(baseUri, encodedPathQuery);
+                if (StringUtil.isEmpty(builder.param()))
+                    builder.param(baseUri.getParam());
+                if (StringUtil.isEmpty(builder.query()))
+                    builder.query(baseUri.getQuery());
+                baseRequest.setHttpURI(builder.toHttpURI());
 
-                if (oldUri.getQuery() != null && baseRequest.getQueryString() != null)
+                if (baseUri.getQuery() != null && baseRequest.getQueryString() != null)
                     // TODO why can't the old map be passed?
                     baseRequest.mergeQueryParameters(oldUri.getQuery(), baseRequest.getQueryString());
             }

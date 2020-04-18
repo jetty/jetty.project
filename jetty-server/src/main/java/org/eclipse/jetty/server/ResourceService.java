@@ -40,7 +40,7 @@ import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
@@ -846,7 +846,7 @@ public class ResourceService
         {
             Response r = (Response)response;
             r.putHeaders(content, contentLength, _etags);
-            HttpFields f = r.getHttpFields();
+            HttpFieldsBuilder f = r.getHttpFields();
             if (_acceptRanges)
                 f.put(ACCEPT_RANGES);
 

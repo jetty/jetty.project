@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.hpack;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
@@ -39,7 +40,7 @@ public class MetaDataBuilder
     private String _path;
     private String _protocol;
     private long _contentLength = Long.MIN_VALUE;
-    private HttpFields _fields = new HttpFields();
+    private HttpFieldsBuilder _fields = HttpFields.empty();
     private HpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;
@@ -242,7 +243,7 @@ public class MetaDataBuilder
         if (_request && _response)
             throw new HpackException.StreamException("Request and Response headers");
 
-        HttpFields fields = _fields;
+        HttpFieldsBuilder fields = _fields;
         try
         {
             if (_request)
@@ -260,20 +261,23 @@ public class MetaDataBuilder
                 if (isConnect)
                     return new MetaData.ConnectRequest(_scheme, _authority, _path, fields, _protocol);
                 else
+                    // TODO is this really a known content length?
                     return new MetaData.Request(_method, _scheme, _authority, _path, HttpVersion.HTTP_2, fields, _contentLength);
             }
             if (_response)
             {
                 if (_status == null)
                     throw new HpackException.StreamException("No Status");
+                // TODO is this really a known content length?
                 return new MetaData.Response(HttpVersion.HTTP_2, _status, fields, _contentLength);
             }
 
+            // TODO is this really a known content length?
             return new MetaData(HttpVersion.HTTP_2, fields, _contentLength);
         }
         finally
         {
-            _fields = new HttpFields(Math.max(16, fields.size() + 5));
+            _fields = HttpFields.empty(Math.max(16, fields.size() + 5));
             _request = false;
             _response = false;
             _status = null;

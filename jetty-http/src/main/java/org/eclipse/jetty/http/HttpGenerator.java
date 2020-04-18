@@ -52,12 +52,7 @@ public class HttpGenerator
     public static final MetaData.Response CONTINUE_100_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 100, null, null, -1);
     public static final MetaData.Response PROGRESS_102_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 102, null, null, -1);
     public static final MetaData.Response RESPONSE_500_INFO =
-        new MetaData.Response(HttpVersion.HTTP_1_1, INTERNAL_SERVER_ERROR_500, null, new HttpFields()
-        {
-            {
-                put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-            }
-        }, 0);
+        new MetaData.Response(HttpVersion.HTTP_1_1, INTERNAL_SERVER_ERROR_500, null, HttpFields.empty().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE), 0);
 
     // states
     public enum State
@@ -326,14 +321,14 @@ public class HttpGenerator
 
         if (isChunking())
         {
-            Supplier<HttpFieldList> trailerSupplier = _info.getTrailerSupplier();
+            Supplier<HttpFields> trailerSupplier = _info.getTrailerSupplier();
             if (_info.mayHaveTrailers())
             {
                 // Do we need a chunk buffer?
                 if (chunk == null || chunk.capacity() <= CHUNK_SIZE)
                     return Result.NEED_CHUNK_TRAILER;
 
-                HttpFieldList trailers = trailerSupplier.get();
+                HttpFields trailers = trailerSupplier.get();
 
                 if (trailers != null)
                 {
@@ -498,7 +493,7 @@ public class HttpGenerator
         }
     }
 
-    private void generateTrailers(ByteBuffer buffer, HttpFieldList trailer)
+    private void generateTrailers(ByteBuffer buffer, HttpFields trailer)
     {
         // if we need CRLF add this to header
         if (_needCRLF)
@@ -595,11 +590,11 @@ public class HttpGenerator
         boolean close = false;
         boolean chunkedHint = _info.hasTrailerSupplier();
         boolean contentType = false;
-        long contentLength = _info.getContentLength();
+        long contentLength = _info.getContentLengthKnown();
         boolean contentLengthField = false;
 
         // Generate fields
-        HttpFieldList fields = _info.getFields();
+        HttpFields fields = _info.getFields();
         if (fields != null)
         {
             int n = fields.size();
@@ -680,13 +675,13 @@ public class HttpGenerator
 
         boolean assumedContentRequest = request != null && Boolean.TRUE.equals(ASSUMED_CONTENT_METHODS.get(request.getMethod()));
         boolean assumedContent = assumedContentRequest || contentType || chunkedHint;
-        boolean nocontentRequest = request != null && contentLength <= 0 && !assumedContent;
+        boolean noContentRequest = request != null && contentLength <= 0 && !assumedContent;
 
         if (_persistent == null)
             _persistent = http11 || (request != null && HttpMethod.CONNECT.is(request.getMethod()));
 
         // If the message is known not to have content
-        if (_noContentResponse || nocontentRequest)
+        if (_noContentResponse || noContentRequest)
         {
             // We don't need to indicate a body length
             _endOfContent = EndOfContent.NO_CONTENT;
@@ -926,7 +921,7 @@ public class HttpGenerator
         }
     }
 
-    public static void putTo(HttpFields fields, ByteBuffer bufferInFillMode)
+    public static void putTo(HttpFieldsBuilder fields, ByteBuffer bufferInFillMode)
     {
         for (HttpField field : fields)
         {

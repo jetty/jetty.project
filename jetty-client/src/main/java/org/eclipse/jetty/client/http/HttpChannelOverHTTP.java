@@ -24,7 +24,7 @@ import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -99,7 +99,7 @@ public class HttpChannelOverHTTP extends HttpChannel
         super.exchangeTerminated(exchange, result);
 
         Response response = result.getResponse();
-        HttpFields responseHeaders = response.getHeaders();
+        HttpFieldsBuilder responseHeaders = response.getHeaders();
 
         String closeReason = null;
         if (result.isFailed())

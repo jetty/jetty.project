@@ -29,7 +29,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
@@ -150,7 +150,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     {
         super.exchangeTerminated(exchange, result);
         idle.onClose();
-        HttpFields responseHeaders = result.getResponse().getHeaders();
+        HttpFieldsBuilder responseHeaders = result.getResponse().getHeaders();
         if (result.isFailed())
             connection.close(result.getFailure());
         else if (!connection.closeByHTTP(responseHeaders))

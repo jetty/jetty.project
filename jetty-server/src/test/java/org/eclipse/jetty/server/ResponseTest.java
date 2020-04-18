@@ -1331,7 +1331,7 @@ public class ResponseTest
     private Response getResponse()
     {
         _channel.recycle();
-        _channel.getRequest().setMetaData(new MetaData.Request("GET", new HttpURI("/path/info"), HttpVersion.HTTP_1_0, new HttpFields()));
+        _channel.getRequest().setMetaData(new MetaData.Request("GET", new HttpURI("/path/info"), HttpVersion.HTTP_1_0, HttpFields.EMPTY));
         BufferUtil.clear(_content);
         return _channel.getResponse();
     }

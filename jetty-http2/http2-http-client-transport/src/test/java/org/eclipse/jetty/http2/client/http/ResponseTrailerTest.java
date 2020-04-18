@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -89,7 +88,7 @@ public class ResponseTrailerTest extends AbstractTest
             Session session = sessionPromise.get(5, TimeUnit.SECONDS);
 
             HttpURI uri = new HttpURI("http://" + host + ":" + port + "/");
-            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, new HttpFields());
+            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.from());
             HeadersFrame frame = new HeadersFrame(request, null, true);
             BlockingQueue<HeadersFrame> headers = new LinkedBlockingQueue<>();
             CountDownLatch latch = new CountDownLatch(1);

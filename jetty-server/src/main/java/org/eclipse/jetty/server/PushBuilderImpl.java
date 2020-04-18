@@ -22,7 +22,7 @@ import java.util.Set;
 import javax.servlet.http.PushBuilder;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
@@ -41,14 +41,14 @@ public class PushBuilderImpl implements PushBuilder
     private static final HttpField JettyPush = new HttpField("x-http2-push", "PushBuilder");
 
     private final Request _request;
-    private final HttpFields _fields;
+    private final HttpFieldsBuilder _fields;
     private String _method;
     private String _queryString;
     private String _sessionId;
     private String _path;
     private String _lastModified;
 
-    public PushBuilderImpl(Request request, HttpFields fields, String method, String queryString, String sessionId)
+    public PushBuilderImpl(Request request, HttpFieldsBuilder fields, String method, String queryString, String sessionId)
     {
         super();
         _request = request;

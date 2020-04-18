@@ -30,7 +30,7 @@ import java.util.Random;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.Callback;
@@ -145,7 +145,7 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
      * @param content the part content
      * @param fields the headers associated with this part
      */
-    public void addFieldPart(String name, Request.Content content, HttpFields fields)
+    public void addFieldPart(String name, Request.Content content, HttpFieldsBuilder fields)
     {
         addPart(new Part(name, null, content, fields));
     }
@@ -164,7 +164,7 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
      * @param content the part content
      * @param fields the headers associated with this part
      */
-    public void addFilePart(String name, String fileName, Request.Content content, HttpFields fields)
+    public void addFilePart(String name, String fileName, Request.Content content, HttpFieldsBuilder fields)
     {
         addPart(new Part(name, fileName, content, fields));
     }
@@ -215,11 +215,11 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
         private final String name;
         private final String fileName;
         private final Request.Content content;
-        private final HttpFields fields;
+        private final HttpFieldsBuilder fields;
         private final ByteBuffer headers;
         private final long length;
 
-        private Part(String name, String fileName, Request.Content content, HttpFields fields)
+        private Part(String name, String fileName, Request.Content content, HttpFieldsBuilder fields)
         {
             this.name = name;
             this.fileName = fileName;

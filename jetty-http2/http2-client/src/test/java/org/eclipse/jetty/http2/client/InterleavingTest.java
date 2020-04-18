@@ -30,7 +30,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -95,12 +94,12 @@ public class InterleavingTest extends AbstractTest
             }
         };
 
-        HeadersFrame headersFrame1 = new HeadersFrame(newRequest("GET", new HttpFields()), null, true);
+        HeadersFrame headersFrame1 = new HeadersFrame(newRequest("GET", HttpFields.from()), null, true);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
         session.newStream(headersFrame1, streamPromise1, streamListener);
         streamPromise1.get(5, TimeUnit.SECONDS);
 
-        HeadersFrame headersFrame2 = new HeadersFrame(newRequest("GET", new HttpFields()), null, true);
+        HeadersFrame headersFrame2 = new HeadersFrame(newRequest("GET", HttpFields.from()), null, true);
         FuturePromise<Stream> streamPromise2 = new FuturePromise<>();
         session.newStream(headersFrame2, streamPromise2, streamListener);
         streamPromise2.get(5, TimeUnit.SECONDS);
@@ -111,7 +110,7 @@ public class InterleavingTest extends AbstractTest
 
         Stream serverStream1 = serverStreams.get(0);
         Stream serverStream2 = serverStreams.get(1);
-        MetaData.Response response1 = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+        MetaData.Response response1 = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
         serverStream1.headers(new HeadersFrame(serverStream1.getId(), response1, null, false), Callback.NOOP);
 
         Random random = new Random();
@@ -120,7 +119,7 @@ public class InterleavingTest extends AbstractTest
         byte[] content2 = new byte[2 * ((ISession)serverStream2.getSession()).updateSendWindow(0)];
         random.nextBytes(content2);
 
-        MetaData.Response response2 = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+        MetaData.Response response2 = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
         serverStream2.headers(new HeadersFrame(serverStream2.getId(), response2, null, false), new Callback()
         {
             @Override

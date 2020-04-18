@@ -27,7 +27,6 @@ import javax.servlet.ServletRequest;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFieldList;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
@@ -375,7 +374,7 @@ public class ForwardedRequestCustomizer implements Customizer
     @Override
     public void customize(Connector connector, HttpConfiguration config, Request request)
     {
-        HttpFieldList httpFields = request.getHttpFields();
+        HttpFields httpFields = request.getHttpFields();
         boolean wasSecure = request.isSecure();
 
         // Do a single pass through the header fields as it is a more efficient single iteration.
@@ -410,18 +409,18 @@ public class ForwardedRequestCustomizer implements Customizer
 
             if (forwarded._server != null && forwarded._host instanceof PortSetHostPort)
             {
-                request.setHttpFields(new HttpFields(httpFields,
+                request.setHttpFields(HttpFields.from(httpFields,
                     new HostPortHttpField(forwarded._server, forwarded._host.getPort())));
                 builder.host(forwarded._server).port(forwarded._host.getPort());
             }
             else if (forwarded._host != null)
             {
-                request.setHttpFields(new HttpFields(httpFields, new HostPortHttpField(forwarded._host)));
+                request.setHttpFields(HttpFields.from(httpFields, new HostPortHttpField(forwarded._host)));
                 builder.host(forwarded._host.getHost()).port(forwarded._host.getPort());
             }
             else if (forwarded._server != null)
             {
-                request.setHttpFields(new HttpFields(httpFields, new HostPortHttpField(forwarded._server)));
+                request.setHttpFields(HttpFields.from(httpFields, new HostPortHttpField(forwarded._server)));
                 builder.host(forwarded._server).port(0);
             }
 

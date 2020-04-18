@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http.tools.matchers;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -30,10 +31,11 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeader()
     {
-        HttpFields fields = new HttpFields();
-        fields.put("a", "foo");
-        fields.put("b", "bar");
-        fields.put("c", "fizz");
+        HttpFields fields = HttpFields.empty()
+            .put("a", "foo")
+            .put("b", "bar")
+            .put("c", "fizz")
+            .asImmutable();
 
         MatcherAssert.assertThat(fields, HttpFieldsMatchers.containsHeader("a"));
     }
@@ -41,10 +43,10 @@ public class HttpFieldsMatchersTest
     @Test
     public void testNotContainsHeader()
     {
-        HttpFields fields = new HttpFields();
-        fields.put("a", "foo");
-        fields.put("b", "bar");
-        fields.put("c", "fizz");
+        HttpFieldsBuilder fields = HttpFields.empty()
+            .put("a", "foo")
+            .put("b", "bar")
+            .put("c", "fizz");
 
         AssertionError x = Assertions.assertThrows(AssertionError.class, () ->
         {
@@ -57,7 +59,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderMisMatch()
     {
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.empty();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");
@@ -73,7 +75,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderValueMisMatchNoSuchHeader()
     {
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.empty();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");
@@ -89,7 +91,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderValueMisMatchNoSuchValue()
     {
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.empty();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");
@@ -105,7 +107,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderValue()
     {
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.empty();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");

@@ -34,7 +34,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
@@ -94,7 +94,7 @@ public class AsyncServletTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.from();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -131,7 +131,7 @@ public class AsyncServletTest extends AbstractTest
         client.setIdleTimeout(idleTimeout);
 
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.from();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
@@ -168,7 +168,7 @@ public class AsyncServletTest extends AbstractTest
         client.setIdleTimeout(10 * idleTimeout);
 
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.from();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
@@ -217,7 +217,7 @@ public class AsyncServletTest extends AbstractTest
         prepareClient();
         client.start();
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.from();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
@@ -328,7 +328,7 @@ public class AsyncServletTest extends AbstractTest
         client.start();
 
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.from();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch clientLatch = new CountDownLatch(1);

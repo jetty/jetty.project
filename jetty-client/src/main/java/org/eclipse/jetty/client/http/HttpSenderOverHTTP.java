@@ -78,8 +78,7 @@ public class HttpSenderOverHTTP extends HttpSender
             String query = request.getQuery();
             if (query != null)
                 path += "?" + query;
-            metaData = new MetaData.Request(request.getMethod(), new HttpURI(path), request.getVersion(), request.getHeaders(), contentLength);
-            metaData.setTrailerSupplier(request.getTrailers());
+            metaData = new MetaData.Request(request.getMethod(), new HttpURI(path), request.getVersion(), request.getHeaders(), contentLength, request.getTrailers());
             if (LOG.isDebugEnabled())
                 LOG.debug("Sending headers with content {} last={} for {}", BufferUtil.toDetailString(contentBuffer), lastContent, exchange.getRequest());
             headersCallback.iterate();

@@ -44,8 +44,8 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpCookie.SameSite;
 import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFieldList;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -85,7 +85,7 @@ public class Response implements HttpServletResponse
     public static final String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
     private final HttpChannel _channel;
-    private final HttpFields _fields = new HttpFields();
+    private final HttpFieldsBuilder _fields = HttpFields.empty();
     private final AtomicBiInteger _errorSentAndIncludes = new AtomicBiInteger(); // hi is errorSent flag, lo is include count
     private final HttpOutput _out;
     private int _status = HttpStatus.OK_200;
@@ -98,7 +98,7 @@ public class Response implements HttpServletResponse
     private OutputType _outputType = OutputType.NONE;
     private ResponseWriter _writer;
     private long _contentLength = -1;
-    private Supplier<HttpFieldList> _trailers;
+    private Supplier<HttpFields> _trailers;
 
     private enum EncodingFrom
     {
@@ -1206,12 +1206,12 @@ public class Response implements HttpServletResponse
         _out.reopen();
     }
 
-    public Supplier<HttpFieldList> getTrailers()
+    public Supplier<HttpFields> getTrailers()
     {
         return _trailers;
     }
 
-    public void setTrailers(Supplier<HttpFieldList> trailers)
+    public void setTrailers(Supplier<HttpFields> trailers)
     {
         _trailers = trailers;
     }
@@ -1307,7 +1307,7 @@ public class Response implements HttpServletResponse
         return _reason;
     }
 
-    public HttpFields getHttpFields()
+    public HttpFieldsBuilder getHttpFields()
     {
         return _fields;
     }
@@ -1416,7 +1416,7 @@ public class Response implements HttpServletResponse
         return (HttpServletResponse)servletResponse;
     }
 
-    private static class HttpFieldsSupplier implements Supplier<HttpFieldList>
+    private static class HttpFieldsSupplier implements Supplier<HttpFields>
     {
         private final Supplier<Map<String, String>> _supplier;
 
@@ -1426,12 +1426,12 @@ public class Response implements HttpServletResponse
         }
 
         @Override
-        public HttpFieldList get()
+        public HttpFields get()
         {
             Map<String, String> t = _supplier.get();
             if (t == null)
                 return null;
-            HttpFields fields = new HttpFields();
+            HttpFieldsBuilder fields = HttpFields.empty();
             for (Map.Entry<String, String> e : t.entrySet())
             {
                 fields.add(e.getKey(), e.getValue());

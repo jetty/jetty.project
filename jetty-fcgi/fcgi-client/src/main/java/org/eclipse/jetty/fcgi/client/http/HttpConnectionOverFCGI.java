@@ -43,7 +43,7 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.parser.ClientParser;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.io.AbstractConnection;
@@ -264,7 +264,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         return closed.get();
     }
 
-    protected boolean closeByHTTP(HttpFields fields)
+    protected boolean closeByHTTP(HttpFieldsBuilder fields)
     {
         if (!fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
             return false;

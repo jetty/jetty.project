@@ -32,7 +32,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
@@ -68,7 +68,7 @@ public class PushCacheFilterTest extends AbstractTest
     }
 
     @Override
-    protected MetaData.Request newRequest(String method, String pathInfo, HttpFields fields)
+    protected MetaData.Request newRequest(String method, String pathInfo, HttpFieldsBuilder fields)
     {
         return new MetaData.Request(method, HttpScheme.HTTP, new HostPortHttpField("localhost:" + connector.getLocalPort()), contextPath + servletPath + pathInfo, HttpVersion.HTTP_2, fields);
     }
@@ -102,7 +102,7 @@ public class PushCacheFilterTest extends AbstractTest
 
         // Request for the primary and secondary resource to build the cache.
         final String referrerURI = newURI(primaryResource);
-        HttpFields primaryFields = new HttpFields();
+        HttpFieldsBuilder primaryFields = HttpFields.from();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -114,7 +114,7 @@ public class PushCacheFilterTest extends AbstractTest
                 if (frame.isEndStream())
                 {
                     // Request for the secondary resource.
-                    HttpFields secondaryFields = new HttpFields();
+                    HttpFieldsBuilder secondaryFields = HttpFields.from();
                     secondaryFields.put(HttpHeader.REFERER, referrerURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
                     session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -206,7 +206,7 @@ public class PushCacheFilterTest extends AbstractTest
         // The referrerURI does not point to the primary resource, so there will be no
         // resource association with the primary resource and therefore won't be pushed.
         final String referrerURI = "http://localhost:" + connector.getLocalPort();
-        HttpFields primaryFields = new HttpFields();
+        HttpFieldsBuilder primaryFields = HttpFields.from();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -218,7 +218,7 @@ public class PushCacheFilterTest extends AbstractTest
                 if (frame.isEndStream())
                 {
                     // Request for the secondary resource.
-                    HttpFields secondaryFields = new HttpFields();
+                    HttpFieldsBuilder secondaryFields = HttpFields.from();
                     secondaryFields.put(HttpHeader.REFERER, referrerURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
                     session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -292,7 +292,7 @@ public class PushCacheFilterTest extends AbstractTest
 
         // Request for the primary and secondary resource to build the cache.
         final String primaryURI = newURI(primaryResource);
-        HttpFields primaryFields = new HttpFields();
+        HttpFieldsBuilder primaryFields = HttpFields.from();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -304,7 +304,7 @@ public class PushCacheFilterTest extends AbstractTest
                 if (frame.isEndStream())
                 {
                     // Request for the secondary resource.
-                    HttpFields secondaryFields = new HttpFields();
+                    HttpFieldsBuilder secondaryFields = HttpFields.from();
                     secondaryFields.put(HttpHeader.REFERER, primaryURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
                     session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -357,7 +357,7 @@ public class PushCacheFilterTest extends AbstractTest
         assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
 
         // Make sure the session is sane by requesting the secondary resource.
-        HttpFields secondaryFields = new HttpFields();
+        HttpFieldsBuilder secondaryFields = HttpFields.from();
         secondaryFields.put(HttpHeader.REFERER, primaryURI);
         MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
         final CountDownLatch secondaryResponseLatch = new CountDownLatch(1);
@@ -395,7 +395,7 @@ public class PushCacheFilterTest extends AbstractTest
 
         // Request for the primary and secondary resource to build the cache.
         final String primaryURI = newURI(primaryResource);
-        HttpFields primaryFields = new HttpFields();
+        HttpFieldsBuilder primaryFields = HttpFields.from();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -406,7 +406,7 @@ public class PushCacheFilterTest extends AbstractTest
                 if (frame.isEndStream())
                 {
                     // Request for the secondary resource.
-                    HttpFields secondaryFields = new HttpFields();
+                    HttpFieldsBuilder secondaryFields = HttpFields.from();
                     secondaryFields.put(HttpHeader.REFERER, primaryURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
                     session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -486,7 +486,7 @@ public class PushCacheFilterTest extends AbstractTest
 
         // Request for the primary, secondary and tertiary resource to build the cache.
         final String primaryURI = newURI(primaryResource);
-        HttpFields primaryFields = new HttpFields();
+        HttpFieldsBuilder primaryFields = HttpFields.from();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(2);
         session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -499,7 +499,7 @@ public class PushCacheFilterTest extends AbstractTest
                 {
                     // Request for the secondary resources.
                     String secondaryURI1 = newURI(secondaryResource1);
-                    HttpFields secondaryFields1 = new HttpFields();
+                    HttpFieldsBuilder secondaryFields1 = HttpFields.from();
                     secondaryFields1.put(HttpHeader.REFERER, primaryURI);
                     MetaData.Request secondaryRequest1 = newRequest("GET", secondaryResource1, secondaryFields1);
                     session.newStream(new HeadersFrame(secondaryRequest1, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -511,7 +511,7 @@ public class PushCacheFilterTest extends AbstractTest
                             if (frame.isEndStream())
                             {
                                 // Request for the tertiary resource.
-                                HttpFields tertiaryFields = new HttpFields();
+                                HttpFieldsBuilder tertiaryFields = HttpFields.from();
                                 tertiaryFields.put(HttpHeader.REFERER, secondaryURI1);
                                 MetaData.Request tertiaryRequest = newRequest("GET", tertiaryResource, tertiaryFields);
                                 session.newStream(new HeadersFrame(tertiaryRequest, null, true), new Promise.Adapter<>(), new Adapter()
@@ -528,7 +528,7 @@ public class PushCacheFilterTest extends AbstractTest
                         }
                     });
 
-                    HttpFields secondaryFields2 = new HttpFields();
+                    HttpFieldsBuilder secondaryFields2 = HttpFields.from();
                     secondaryFields2.put(HttpHeader.REFERER, primaryURI);
                     MetaData.Request secondaryRequest2 = newRequest("GET", secondaryResource2, secondaryFields2);
                     session.newStream(new HeadersFrame(secondaryRequest2, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -604,7 +604,7 @@ public class PushCacheFilterTest extends AbstractTest
         // Make sure that explicitly requesting a secondary resource, we get the tertiary pushed.
         CountDownLatch secondaryResponseLatch = new CountDownLatch(1);
         CountDownLatch secondaryPushLatch = new CountDownLatch(1);
-        MetaData.Request secondaryRequest = newRequest("GET", secondaryResource1, new HttpFields());
+        MetaData.Request secondaryRequest = newRequest("GET", secondaryResource1, HttpFields.from());
         session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
@@ -675,7 +675,7 @@ public class PushCacheFilterTest extends AbstractTest
         final Session session = newClient(new Session.Listener.Adapter());
 
         // Login with the wrong credentials, causing a redirect to self.
-        HttpFields primaryFields = new HttpFields();
+        HttpFieldsBuilder primaryFields = HttpFields.from();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource + "?credentials=wrong", primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -690,7 +690,7 @@ public class PushCacheFilterTest extends AbstractTest
                     {
                         // Follow the redirect.
                         String location = response.getFields().get(HttpHeader.LOCATION);
-                        HttpFields redirectFields = new HttpFields();
+                        HttpFieldsBuilder redirectFields = HttpFields.from();
                         redirectFields.put(HttpHeader.REFERER, primaryURI);
                         MetaData.Request redirectRequest = newRequest("GET", location, redirectFields);
                         session.newStream(new HeadersFrame(redirectRequest, null, true), new Promise.Adapter<>(), new Adapter()
@@ -768,7 +768,7 @@ public class PushCacheFilterTest extends AbstractTest
 
         // Request for the primary and secondary resource to build the cache.
         final String primaryURI = newURI(primaryResource);
-        HttpFields primaryFields = new HttpFields();
+        HttpFieldsBuilder primaryFields = HttpFields.from();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -779,7 +779,7 @@ public class PushCacheFilterTest extends AbstractTest
                 if (frame.isEndStream())
                 {
                     // Request for the secondary resource.
-                    HttpFields secondaryFields = new HttpFields();
+                    HttpFieldsBuilder secondaryFields = HttpFields.from();
                     secondaryFields.put(HttpHeader.REFERER, primaryURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
                     session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -861,7 +861,7 @@ public class PushCacheFilterTest extends AbstractTest
 
         // Request for the primary and secondary resource to build the cache.
         final String referrerURI = newURI(primaryResource);
-        HttpFields primaryFields = new HttpFields();
+        HttpFieldsBuilder primaryFields = HttpFields.from();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -873,7 +873,7 @@ public class PushCacheFilterTest extends AbstractTest
                 if (frame.isEndStream())
                 {
                     // Request for the secondary resource.
-                    HttpFields secondaryFields = new HttpFields();
+                    HttpFieldsBuilder secondaryFields = HttpFields.from();
                     secondaryFields.put(HttpHeader.REFERER, referrerURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
                     session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -956,7 +956,7 @@ public class PushCacheFilterTest extends AbstractTest
 
         // Request for the primary and secondary resource to build the cache.
         final String referrerURI = newURI(primaryResource);
-        HttpFields primaryFields = new HttpFields();
+        HttpFieldsBuilder primaryFields = HttpFields.from();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -968,7 +968,7 @@ public class PushCacheFilterTest extends AbstractTest
                 if (frame.isEndStream())
                 {
                     // Request for the secondary resource.
-                    HttpFields secondaryFields = new HttpFields();
+                    HttpFieldsBuilder secondaryFields = HttpFields.from();
                     secondaryFields.put(HttpHeader.REFERER, referrerURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
                     session.newStream(new HeadersFrame(secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()

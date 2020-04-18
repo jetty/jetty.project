@@ -25,7 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -79,7 +78,7 @@ public class DataDemandTest extends AbstractTest
         });
 
         Session client = newClient(new Session.Listener.Adapter());
-        MetaData.Request post = newRequest("POST", new HttpFields());
+        MetaData.Request post = newRequest("POST", HttpFields.from());
         FuturePromise<Stream> promise = new FuturePromise<>();
         Queue<DataFrame> clientQueue = new ConcurrentLinkedQueue<>();
         client.newStream(new HeadersFrame(post, null, false), promise, new Stream.Listener.Adapter()
@@ -177,7 +176,7 @@ public class DataDemandTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
                 stream.headers(new HeadersFrame(stream.getId(), response, null, false), Callback.from(() -> sendData(stream), x -> {}));
                 return null;
             }
@@ -189,7 +188,7 @@ public class DataDemandTest extends AbstractTest
         });
 
         Session client = newClient(new Session.Listener.Adapter());
-        MetaData.Request post = newRequest("GET", new HttpFields());
+        MetaData.Request post = newRequest("GET", HttpFields.from());
         FuturePromise<Stream> promise = new FuturePromise<>();
         CountDownLatch responseLatch = new CountDownLatch(1);
         CountDownLatch beforeDataLatch = new CountDownLatch(1);
@@ -237,7 +236,7 @@ public class DataDemandTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
                 stream.headers(new HeadersFrame(stream.getId(), response, null, false), Callback.from(() -> sendData(stream), x -> {}));
                 return null;
             }
@@ -249,7 +248,7 @@ public class DataDemandTest extends AbstractTest
         });
 
         Session client = newClient(new Session.Listener.Adapter());
-        MetaData.Request post = newRequest("GET", new HttpFields());
+        MetaData.Request post = newRequest("GET", HttpFields.from());
         CountDownLatch latch = new CountDownLatch(1);
         client.newStream(new HeadersFrame(post, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
@@ -284,7 +283,7 @@ public class DataDemandTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
                 stream.headers(new HeadersFrame(stream.getId(), response, null, false), Callback.from(() -> sendData(stream), x -> {}));
                 return null;
             }
@@ -296,7 +295,7 @@ public class DataDemandTest extends AbstractTest
         });
 
         Session client = newClient(new Session.Listener.Adapter());
-        MetaData.Request post = newRequest("GET", new HttpFields());
+        MetaData.Request post = newRequest("GET", HttpFields.from());
         CountDownLatch latch = new CountDownLatch(1);
         client.newStream(new HeadersFrame(post, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
@@ -339,7 +338,7 @@ public class DataDemandTest extends AbstractTest
                         stream.demand(1);
                         if (frame.isEndStream())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
                             stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                         }
                     }
@@ -348,7 +347,7 @@ public class DataDemandTest extends AbstractTest
         });
 
         Session client = newClient(new Session.Listener.Adapter());
-        MetaData.Request post = newRequest("POST", new HttpFields());
+        MetaData.Request post = newRequest("POST", HttpFields.from());
         FuturePromise<Stream> promise = new FuturePromise<>();
         CountDownLatch latch = new CountDownLatch(1);
         client.newStream(new HeadersFrame(post, null, false), promise, new Stream.Listener.Adapter()

@@ -32,8 +32,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFieldList;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -594,7 +594,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // Handle request inflation
-        HttpFieldList httpFields = baseRequest.getHttpFields();
+        HttpFields httpFields = baseRequest.getHttpFields();
         boolean inflated = _inflateBufferSize > 0 && httpFields.contains(HttpHeader.CONTENT_ENCODING, "gzip");
         if (inflated)
         {
@@ -620,7 +620,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         // Update headers for etags and inflation
         if (inflated || httpFields.contains(ETAG_HEADERS))
         {
-            HttpFields newFields = new HttpFields(httpFields.size() + 1);
+            HttpFieldsBuilder newFields = HttpFields.empty(httpFields.size() + 1);
             for (HttpField field : httpFields)
             {
                 if (field.getHeader() == null)

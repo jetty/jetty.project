@@ -21,9 +21,7 @@ package org.eclipse.jetty.security.authentication;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Authentication;
@@ -77,8 +75,7 @@ public class SpnegoAuthenticatorTest
         };
         Request req = channel.getRequest();
         Response res = channel.getResponse();
-        MetaData.Request metadata = new MetaData.Request(new HttpFields());
-        metadata.setURI(new HttpURI("http://localhost"));
+        MetaData.Request metadata = MetaData.Request.from(null,"http://localhost",null).build();
         req.setMetaData(metadata);
 
         assertThat(channel.getState().handling(), is(HttpChannelState.Action.DISPATCH));
@@ -113,11 +110,10 @@ public class SpnegoAuthenticatorTest
         };
         Request req = channel.getRequest();
         Response res = channel.getResponse();
-        HttpFields httpFields = new HttpFields();
+
         // Create a bogus Authorization header. We don't care about the actual credentials.
-        httpFields.add(HttpHeader.AUTHORIZATION, "Basic asdf");
-        MetaData.Request metadata = new MetaData.Request(httpFields);
-        metadata.setURI(new HttpURI("http://localhost"));
+        MetaData.Request metadata = MetaData.Request.from(null,"http://localhost",null,
+            fields -> fields.add(HttpHeader.AUTHORIZATION, "Basic asdf")).build();
         req.setMetaData(metadata);
 
         assertThat(channel.getState().handling(), is(HttpChannelState.Action.DISPATCH));

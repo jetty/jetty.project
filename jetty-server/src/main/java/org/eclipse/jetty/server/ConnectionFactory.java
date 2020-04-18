@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -84,7 +84,7 @@ public interface ConnectionFactory
          * indicate that the upgrade should proceed.
          * @throws BadMessageException Thrown to indicate the upgrade attempt was illegal and that a bad message response should be sent.
          */
-        public Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFields responseFields) throws BadMessageException;
+        public Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFieldsBuilder responseFields) throws BadMessageException;
     }
 
     /**

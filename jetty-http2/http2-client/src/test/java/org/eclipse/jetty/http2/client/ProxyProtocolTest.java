@@ -29,7 +29,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -119,7 +119,7 @@ public class ProxyProtocolTest
         client.accept(null, channel, new Session.Listener.Adapter(), promise);
         Session session = promise.get(5, TimeUnit.SECONDS);
 
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.from();
         String uri = "http://localhost:" + connector.getLocalPort() + "/";
         MetaData.Request metaData = new MetaData.Request("GET", new HttpURI(uri), HttpVersion.HTTP_2, fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
@@ -177,7 +177,7 @@ public class ProxyProtocolTest
         client.accept(null, channel, new Session.Listener.Adapter(), promise);
         Session session = promise.get(5, TimeUnit.SECONDS);
 
-        HttpFields fields = new HttpFields();
+        HttpFieldsBuilder fields = HttpFields.from();
         String uri = "http://localhost:" + connector.getLocalPort() + "/";
         MetaData.Request metaData = new MetaData.Request("GET", new HttpURI(uri), HttpVersion.HTTP_2, fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);

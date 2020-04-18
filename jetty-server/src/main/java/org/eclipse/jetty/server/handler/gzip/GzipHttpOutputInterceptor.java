@@ -25,7 +25,7 @@ import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
@@ -175,7 +175,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         }
 
         // Has the Content-Encoding header already been set?
-        HttpFields fields = response.getHttpFields();
+        HttpFieldsBuilder fields = response.getHttpFields();
         String ce = fields.get(HttpHeader.CONTENT_ENCODING);
         if (ce != null)
         {

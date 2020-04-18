@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -120,7 +120,7 @@ public class ProxyTest
         return promise.get(5, TimeUnit.SECONDS);
     }
 
-    private MetaData.Request newRequest(String method, String path, HttpFields fields)
+    private MetaData.Request newRequest(String method, String path, HttpFieldsBuilder fields)
     {
         String host = "localhost";
         int port = proxyConnector.getLocalPort();
@@ -165,7 +165,7 @@ public class ProxyTest
 
         final CountDownLatch clientLatch = new CountDownLatch(1);
         Session session = newClient(new Session.Listener.Adapter());
-        MetaData.Request metaData = newRequest("GET", "/", new HttpFields());
+        MetaData.Request metaData = newRequest("GET", "/", HttpFields.from());
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {

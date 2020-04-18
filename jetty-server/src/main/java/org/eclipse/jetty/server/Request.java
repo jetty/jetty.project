@@ -34,6 +34,7 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -72,8 +73,8 @@ import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFieldList;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -151,6 +152,7 @@ public class Request implements HttpServletRequest
     private static final int INPUT_READER = 2;
 
     private static final MultiMap<String> NO_PARAMS = new MultiMap<>();
+    private static final MultiMap<String> BAD_PARAMS = new MultiMap<>();
 
     /**
      * Compare inputParameters to NO_PARAMS by Reference
@@ -275,7 +277,7 @@ public class Request implements HttpServletRequest
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final HttpInput _input;
     private MetaData.Request _metaData;
-    private HttpFieldList _httpFields;
+    private HttpFields _httpFields;
     private HttpURI _uri;
     private String _method;
     private String _contextPath;
@@ -320,12 +322,12 @@ public class Request implements HttpServletRequest
         _input = input;
     }
 
-    public HttpFieldList getHttpFields()
+    public HttpFields getHttpFields()
     {
         return _httpFields;
     }
 
-    public void setHttpFields(HttpFieldList fields)
+    public void setHttpFields(HttpFields fields)
     {
         _httpFields = fields.asImmutable();
     }
@@ -333,7 +335,7 @@ public class Request implements HttpServletRequest
     @Override
     public Map<String, String> getTrailerFields()
     {
-        HttpFieldList trailersFields = getTrailerHttpFields();
+        HttpFields trailersFields = getTrailerHttpFields();
         if (trailersFields == null)
             return Collections.emptyMap();
         Map<String, String> trailers = new HashMap<>();
@@ -346,10 +348,10 @@ public class Request implements HttpServletRequest
         return trailers;
     }
 
-    public HttpFieldList getTrailerHttpFields()
+    public HttpFields getTrailerHttpFields()
     {
         MetaData.Request metadata = _metaData;
-        Supplier<HttpFieldList> trailers = metadata == null ? null : metadata.getTrailerSupplier();
+        Supplier<HttpFields> trailers = metadata == null ? null : metadata.getTrailerSupplier();
         return trailers == null ? null : trailers.get();
     }
 
@@ -368,45 +370,26 @@ public class Request implements HttpServletRequest
         return !isPush() && getHttpChannel().getHttpTransport().isPushSupported();
     }
 
+    private static EnumSet<HttpHeader> NOT_PUSHED_HEADERS = EnumSet.of(
+        HttpHeader.IF_MATCH,
+        HttpHeader.IF_RANGE,
+        HttpHeader.IF_UNMODIFIED_SINCE,
+        HttpHeader.RANGE,
+        HttpHeader.EXPECT,
+        HttpHeader.REFERER,
+        HttpHeader.COOKIE,
+        HttpHeader.AUTHORIZATION,
+        HttpHeader.IF_NONE_MATCH,
+        HttpHeader.IF_MODIFIED_SINCE
+    );
+
     @Override
     public PushBuilder newPushBuilder()
     {
         if (!isPushSupported())
             return null;
 
-        HttpFields fields = new HttpFields(getHttpFields().size() + 5);
-
-        for (HttpField field : getHttpFields())
-        {
-            HttpHeader header = field.getHeader();
-            if (header == null)
-                fields.add(field);
-            else
-            {
-                switch (header)
-                {
-                    case IF_MATCH:
-                    case IF_RANGE:
-                    case IF_UNMODIFIED_SINCE:
-                    case RANGE:
-                    case EXPECT:
-                    case REFERER:
-                    case COOKIE:
-                        continue;
-
-                    case AUTHORIZATION:
-                        continue;
-
-                    case IF_NONE_MATCH:
-                    case IF_MODIFIED_SINCE:
-                        // TODO
-                        continue;
-
-                    default:
-                        fields.add(field);
-                }
-            }
-        }
+        HttpFieldsBuilder fields = HttpFields.from(getHttpFields(), NOT_PUSHED_HEADERS);
 
         String id;
         try
@@ -511,16 +494,7 @@ public class Request implements HttpServletRequest
         // Extract query string parameters; these may be replaced by a forward()
         // and may have already been extracted by mergeQueryParameters().
         if (_queryParameters == null)
-        {
-            try
-            {
-                extractQueryParameters();
-            }
-            catch (IllegalStateException | IllegalArgumentException e)
-            {
-                throw new BadMessageException("Unable to parse URI query", e);
-            }
-        }
+            extractQueryParameters();
 
         // Do parameters need to be combined?
         if (isNoParams(_queryParameters) || _queryParameters.size() == 0)
@@ -546,8 +520,16 @@ public class Request implements HttpServletRequest
             _queryParameters = NO_PARAMS;
         else
         {
-            _queryParameters = new MultiMap<>();
-            UrlEncoded.decodeTo(_uri.getQuery(), _queryParameters, _queryEncoding);
+            try
+            {
+                _queryParameters = new MultiMap<>();
+                UrlEncoded.decodeTo(_uri.getQuery(), _queryParameters, _queryEncoding);
+            }
+            catch (IllegalStateException | IllegalArgumentException e)
+            {
+                _queryParameters = BAD_PARAMS;
+                throw new BadMessageException("Unable to parse URI query", e);
+            }
         }
     }
 
@@ -562,7 +544,7 @@ public class Request implements HttpServletRequest
             int contentLength = getContentLength();
             if (contentLength != 0 && _inputState == INPUT_NONE)
             {
-                String baseType = HttpFields.valueParameters(contentType, null);
+                String baseType = HttpField.valueParameters(contentType, null);
                 if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
                     _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
                 {
@@ -773,30 +755,23 @@ public class Request implements HttpServletRequest
     @Override
     public int getContentLength()
     {
-        MetaData.Request metadata = _metaData;
-        if (metadata == null)
-            return -1;
-
-        long contentLength = metadata.getContentLength();
-        if (contentLength == Long.MIN_VALUE)
-            contentLength = metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.asString());
-
+        long contentLength = getContentLengthLong();
         if (contentLength > Integer.MAX_VALUE)
             // Per ServletRequest#getContentLength() javadoc this must return -1 for values exceeding Integer.MAX_VALUE
             return -1;
-
         return (int)contentLength;
     }
 
     @Override
     public long getContentLengthLong()
     {
-        MetaData.Request metadata = _metaData;
-        if (metadata == null)
-            return -1L;
-        if (metadata.getContentLength() != Long.MIN_VALUE)
-            return metadata.getContentLength();
-        return metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.asString());
+        // Even thought the metadata might know the real content length,
+        // we always look at the headers because the length may be changed by interceptors.
+        if (_httpFields == null)
+            return -1;
+
+        // TODO should we cache this?
+        return _httpFields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
     }
 
     public long getContentRead()
@@ -879,7 +854,7 @@ public class Request implements HttpServletRequest
     @Override
     public long getDateHeader(String name)
     {
-        HttpFieldList fields = _httpFields;
+        HttpFields fields = _httpFields;
         return fields == null ? null : fields.getDateField(name);
     }
 
@@ -892,21 +867,21 @@ public class Request implements HttpServletRequest
     @Override
     public String getHeader(String name)
     {
-        HttpFieldList fields = _httpFields;
+        HttpFields fields = _httpFields;
         return fields == null ? null : fields.get(name);
     }
 
     @Override
     public Enumeration<String> getHeaderNames()
     {
-        HttpFieldList fields = _httpFields;
+        HttpFields fields = _httpFields;
         return fields == null ? Collections.emptyEnumeration() : fields.getFieldNames();
     }
 
     @Override
     public Enumeration<String> getHeaders(String name)
     {
-        HttpFieldList fields = _httpFields;
+        HttpFields fields = _httpFields;
         if (fields == null)
             return Collections.emptyEnumeration();
         Enumeration<String> e = fields.getValues(name);
@@ -939,14 +914,14 @@ public class Request implements HttpServletRequest
     @Override
     public int getIntHeader(String name)
     {
-        HttpFieldList fields = _httpFields;
+        HttpFields fields = _httpFields;
         return fields == null ? -1 : (int)fields.getLongField(name);
     }
 
     @Override
     public Locale getLocale()
     {
-        HttpFieldList fields = _httpFields;
+        HttpFields fields = _httpFields;
         if (fields == null)
             return Locale.getDefault();
 
@@ -957,7 +932,7 @@ public class Request implements HttpServletRequest
             return Locale.getDefault();
 
         String language = acceptable.get(0);
-        language = HttpFields.stripParameters(language);
+        language = HttpField.stripParameters(language);
         String country = "";
         int dash = language.indexOf('-');
         if (dash > -1)
@@ -971,7 +946,7 @@ public class Request implements HttpServletRequest
     @Override
     public Enumeration<Locale> getLocales()
     {
-        HttpFieldList fields = _httpFields;
+        HttpFields fields = _httpFields;
         if (fields == null)
             return Collections.enumeration(__defaultLocale);
 
@@ -983,7 +958,7 @@ public class Request implements HttpServletRequest
 
         List<Locale> locales = acceptable.stream().map(language ->
         {
-            language = HttpFields.stripParameters(language);
+            language = HttpField.stripParameters(language);
             String country = "";
             int dash = language.indexOf('-');
             if (dash > -1)
@@ -1147,7 +1122,12 @@ public class Request implements HttpServletRequest
 
     public String getQueryEncoding()
     {
-        return _queryEncoding.toString();
+        return _queryEncoding == null ? null : _queryEncoding.toString();
+    }
+
+    Charset getQueryCharset()
+    {
+        return _queryEncoding;
     }
 
     @Override
@@ -1288,8 +1268,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getRequestURI()
     {
-        MetaData.Request metadata = _metaData;
-        return metadata == null ? null : metadata.getURI().getPath();
+        return _uri == null ? null : _uri.getPath();
     }
 
     @Override
@@ -1552,7 +1531,7 @@ public class Request implements HttpServletRequest
 
     public void setHttpURI(HttpURI uri)
     {
-        if (_uri != null && !Objects.equals(_uri.getQuery(), uri.getQuery()))
+        if (_uri != null && !Objects.equals(_uri.getQuery(), uri.getQuery()) && _queryParameters != BAD_PARAMS)
             _parameters = _queryParameters = null;
         _uri = uri;
     }
@@ -2168,7 +2147,7 @@ public class Request implements HttpServletRequest
     public Collection<Part> getParts() throws IOException, ServletException
     {
         String contentType = getContentType();
-        if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(contentType, null)))
+        if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
             throw new ServletException("Unsupported Content-Type [" + contentType + "], expected [multipart/form-data]");
         return getParts(null);
     }
@@ -2289,10 +2268,11 @@ public class Request implements HttpServletRequest
             oldQueryParams = new MultiMap<>();
             try
             {
-                UrlEncoded.decodeTo(oldQuery, oldQueryParams, getQueryEncoding());
+                UrlEncoded.decodeTo(oldQuery, oldQueryParams, getQueryCharset());
             }
             catch (Throwable th)
             {
+                _queryParameters = BAD_PARAMS;
                 throw new BadMessageException(400, "Bad query encoding", th);
             }
         }
