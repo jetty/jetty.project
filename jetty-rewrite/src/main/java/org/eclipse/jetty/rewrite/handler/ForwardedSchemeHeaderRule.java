@@ -21,6 +21,7 @@ package org.eclipse.jetty.rewrite.handler;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 
 /**
@@ -47,7 +48,7 @@ public class ForwardedSchemeHeaderRule extends HeaderRule
     protected String apply(String target, String value, HttpServletRequest request, HttpServletResponse response)
     {
         Request baseRequest = Request.getBaseRequest(request);
-        baseRequest.setScheme(_scheme);
+        baseRequest.setHttpURI(HttpURI.from(baseRequest.getHttpURI()).scheme(_scheme).toHttpURI());
         return target;
     }
 }

@@ -22,6 +22,7 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
@@ -90,20 +91,9 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     @Override
     public void applyURI(Request request, String oldURI, String newURI) throws IOException
     {
-        if (_query == null)
-        {
-            request.setURIPathQuery(newURI);
-        }
-        else
-        {
-            String queryString = request.getQueryString();
-            if (queryString != null)
-                queryString = queryString + "&" + _query;
-            else
-                queryString = _query;
-            request.setURIPathQuery(newURI);
-            request.setQueryString(queryString);
-        }
+        HttpURI baseURI = request.getHttpURI();
+        String query = URIUtil.addQueries(baseURI.getQuery(),_query);
+        request.setHttpURI(HttpURI.from(baseURI, newURI, baseURI.getParam(), query).toHttpURI());
     }
 
     /**
