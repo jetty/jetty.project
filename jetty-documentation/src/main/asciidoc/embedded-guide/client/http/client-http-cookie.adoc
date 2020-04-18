@@ -51,9 +51,8 @@ You can remove cookies that you do not want to be sent in future HTTP requests:
 include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=removeCookie]
 ----
 
-If you want to totally disable cookie handling, you can install a
-`HttpCookieStore.Empty`. This must be done when `HttpClient` is used in a
-proxy application, in this way:
+If you want to totally disable cookie handling, you can install a `HttpCookieStore.Empty`.
+This must be done when `HttpClient` is used in a proxy application, in this way:
 
 [source,java,indent=0]
 ----
@@ -71,6 +70,7 @@ The example above will retain only cookies that come from the `google.com` domai
 
 // TODO: move this section to server-side
 ==== Special Characters in Cookies
+
 Jetty is compliant with link:https://tools.ietf.org/html/rfc6265[RFC6265], and as such care must be taken when setting a cookie value that includes special characters such as `;`.
 
 Previously, Version=1 cookies defined in link:https://tools.ietf.org/html/rfc2109[RFC2109] (and continued in link:https://tools.ietf.org/html/rfc2965[RFC2965]) allowed for special/reserved characters to be enclosed within double quotes when declared in a `Set-Cookie` response header:

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Supplier;
 
@@ -119,6 +120,8 @@ public class MetaData implements Iterable<HttpField>
     @Override
     public Iterator<HttpField> iterator()
     {
+        if (_fields == null)
+            return Collections.emptyIterator();
         return _fields.iterator();
     }
 

@@ -436,8 +436,7 @@ public class NcsaRequestLogTest
         setup(logType);
         RequestLogHandler handler = new RequestLogHandler();
         handler.setRequestLog(_log);
-        HandlerCollection handlers = new HandlerCollection();
-        handlers.setHandlers(new Handler[]{handler, testHandler});
+        HandlerList handlers = new HandlerList(handler, testHandler);
         _server.setHandler(handlers);
         startServer();
         makeRequest(requestPath);
@@ -458,8 +457,7 @@ public class NcsaRequestLogTest
                 testHandler instanceof ResponseSendErrorHandler
         );
 
-        HandlerCollection handlers = new HandlerCollection();
-        handlers.setHandlers(new Handler[]{testHandler, handler});
+        HandlerCollection handlers = new HandlerCollection(testHandler, handler);
         _server.setHandler(handlers);
         startServer();
         makeRequest(requestPath);

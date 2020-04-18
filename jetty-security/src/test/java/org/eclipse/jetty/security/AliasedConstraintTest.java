@@ -26,7 +26,6 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -81,9 +80,7 @@ public class AliasedConstraintTest
         context.setContextPath("/ctx");
         context.setResourceBase(MavenTestingUtils.getTestResourceDir("docroot").getAbsolutePath());
 
-        HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[]{context, new DefaultHandler()});
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(context, new DefaultHandler()));
         context.setHandler(session);
         // context.addAliasCheck(new AllowSymLinkAliasChecker());
 

@@ -70,12 +70,7 @@ public class DefaultHandlerTest
         contextFoo.setContextPath("/foo");
         contextFoo.setBaseResource(new PathResource(baseFoo));
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(contextA);
-        handlers.addHandler(contextFoo);
-        handlers.addHandler(new DefaultHandler());
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(contextA, contextFoo, new DefaultHandler()));
         server.start();
     }
 

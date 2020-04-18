@@ -51,10 +51,7 @@ public class JarServer
         context.setBaseResource(base);
         context.addServlet(new ServletHolder(new DefaultServlet()), "/");
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(context);
-        handlers.addHandler(new DefaultHandler());
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(context, new DefaultHandler()));
         return server;
     }
 

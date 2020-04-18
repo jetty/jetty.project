@@ -50,11 +50,8 @@ public class WebSocketJsrServer
     {
         Server server = new Server(port);
 
-        HandlerList handlers = new HandlerList();
-
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        handlers.addHandler(context);
 
         // Enable javax.websocket configuration for the context
         JavaxWebSocketServletContainerInitializer.configure(context,
@@ -65,8 +62,7 @@ public class WebSocketJsrServer
             }
         );
 
-        handlers.addHandler(new DefaultHandler());
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(context, new DefaultHandler()));
 
         return server;
     }

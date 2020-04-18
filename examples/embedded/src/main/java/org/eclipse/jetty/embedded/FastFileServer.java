@@ -31,7 +31,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -62,12 +61,9 @@ public class FastFileServer
     {
         Server server = new Server(port);
 
-        HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[]{
+        server.setHandler(new HandlerList(
             new FastFileHandler(resourceBase),
-            new DefaultHandler()
-        });
-        server.setHandler(handlers);
+            new DefaultHandler()));
         return server;
     }
 
