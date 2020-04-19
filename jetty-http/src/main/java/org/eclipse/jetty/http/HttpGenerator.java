@@ -590,7 +590,7 @@ public class HttpGenerator
         boolean close = false;
         boolean chunkedHint = _info.hasTrailerSupplier();
         boolean contentType = false;
-        long contentLength = _info.getContentLengthKnown();
+        long contentLength = _info.getContentLength();
         boolean contentLengthField = false;
 
         // Generate fields

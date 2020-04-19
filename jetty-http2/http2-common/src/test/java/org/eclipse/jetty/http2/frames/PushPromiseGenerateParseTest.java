@@ -25,6 +25,7 @@ import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
@@ -62,7 +63,7 @@ public class PushPromiseGenerateParseTest
 
         int streamId = 13;
         int promisedStreamId = 17;
-        HttpFieldsBuilder fields = HttpFields.from();
+        HttpFieldsBuilder fields = HttpFields.empty();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields);
@@ -115,7 +116,7 @@ public class PushPromiseGenerateParseTest
 
         int streamId = 13;
         int promisedStreamId = 17;
-        HttpFieldsBuilder fields = HttpFields.from();
+        HttpFieldsBuilder fields = HttpFields.empty();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields);

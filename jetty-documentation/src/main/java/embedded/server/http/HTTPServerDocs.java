@@ -464,9 +464,7 @@ public class HTTPServerDocs
                 {
                     // Rewrite old paths to new paths.
                     HttpURI uri = jettyRequest.getHttpURI();
-                    HttpURI newURI = new HttpURI(uri);
-                    String newPath = "/new_path/" + path.substring("/old_path/".length());
-                    newURI.setPath(newPath);
+                    HttpURI newURI = HttpURI.from(uri).path("/new_path/" + path.substring("/old_path/".length())).toHttpURI();
                     // Modify the request object.
                     jettyRequest.setHttpURI(newURI);
                 }

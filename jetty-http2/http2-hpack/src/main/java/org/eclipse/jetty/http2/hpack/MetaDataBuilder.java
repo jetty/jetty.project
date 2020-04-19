@@ -32,6 +32,7 @@ import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 public class MetaDataBuilder
 {
     private final int _maxSize;
+    private final HttpFieldsBuilder _fields = HttpFields.empty();
     private int _size;
     private Integer _status;
     private String _method;
@@ -40,7 +41,6 @@ public class MetaDataBuilder
     private String _path;
     private String _protocol;
     private long _contentLength = Long.MIN_VALUE;
-    private HttpFieldsBuilder _fields = HttpFields.empty();
     private HpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;
@@ -277,7 +277,7 @@ public class MetaDataBuilder
         }
         finally
         {
-            _fields = HttpFields.empty(Math.max(16, fields.size() + 5));
+            _fields.clear();
             _request = false;
             _response = false;
             _status = null;

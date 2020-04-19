@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
@@ -51,7 +52,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverHttp.class);
     private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
     private final HttpConnection _httpConnection;
-    private final MetaData.RequestBuilder _requestBuilder = new MetaData.RequestBuilder();
+    private final RequestBuilder _requestBuilder = new RequestBuilder();
     private MetaData.Request _metadata;
     private HttpField _connection;
     private HttpField _upgrade = null;
@@ -539,5 +540,41 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             return false;
         }
         return true;
+    }
+
+    private static class RequestBuilder
+    {
+        private final HttpFieldsBuilder _fieldBuilder = HttpFields.empty();
+        private final HttpURI.Builder _uri = HttpURI.empty();
+        private String _method;
+        private HttpVersion _version;
+
+        public String method()
+        {
+            return _method;
+        }
+
+        public void request(String method, String uri, HttpVersion version)
+        {
+            _method = method;
+            _uri.uri(uri);
+            _version = version;
+            _fieldBuilder.clear();
+        }
+
+        public HttpFieldsBuilder getFields()
+        {
+            return _fieldBuilder;
+        }
+
+        public MetaData.Request build()
+        {
+            return new MetaData.Request(_method, _uri.toHttpURI(), _version, _fieldBuilder);
+        }
+
+        public HttpVersion version()
+        {
+            return _version;
+        }
     }
 }

@@ -25,6 +25,7 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
@@ -48,8 +49,8 @@ public class HTTP2Docs
         CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
         Session session = sessionCF.get();
 
-        HttpFieldsBuilder requestHeaders = HttpFields.from();
-        requestHeaders.put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
+        HttpFieldsBuilder requestHeaders = HttpFields.empty()
+            .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
         MetaData.Request request = new MetaData.Request("GET", new HttpURI("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 

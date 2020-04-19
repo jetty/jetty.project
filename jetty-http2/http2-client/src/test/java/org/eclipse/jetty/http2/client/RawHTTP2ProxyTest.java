@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -131,7 +132,7 @@ public class RawHTTP2ProxyTest
                             LOGGER.debug("SERVER1 received {}", frame);
                         if (frame.isEndStream())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
                             HeadersFrame reply = new HeadersFrame(stream.getId(), response, null, false);
                             if (LOGGER.isDebugEnabled())
                                 LOGGER.debug("SERVER1 sending {}", reply);
@@ -167,7 +168,7 @@ public class RawHTTP2ProxyTest
                         if (LOGGER.isDebugEnabled())
                             LOGGER.debug("SERVER2 received {}", frame);
                         callback.succeeded();
-                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
                         Callback.Completable completable1 = new Callback.Completable();
                         HeadersFrame reply = new HeadersFrame(stream.getId(), response, null, false);
                         if (LOGGER.isDebugEnabled())
@@ -183,7 +184,7 @@ public class RawHTTP2ProxyTest
                             return completable2;
                         }).thenRun(() ->
                         {
-                            MetaData trailer = new MetaData(HttpVersion.HTTP_2, HttpFields.from());
+                            MetaData trailer = new MetaData(HttpVersion.HTTP_2, HttpFields.empty());
                             HeadersFrame end = new HeadersFrame(stream.getId(), trailer, null, true);
                             if (LOGGER.isDebugEnabled())
                                 LOGGER.debug("SERVER2 sending {}", end);
@@ -205,7 +206,7 @@ public class RawHTTP2ProxyTest
         Session clientSession = clientPromise.get(5, TimeUnit.SECONDS);
 
         // Send a request with trailers for server1.
-        HttpFieldsBuilder fields1 = HttpFields.from();
+        HttpFieldsBuilder fields1 = HttpFields.empty();
         fields1.put("X-Target", String.valueOf(connector1.getLocalPort()));
         MetaData.Request request1 = new MetaData.Request("GET", new HttpURI("http://localhost/server1"), HttpVersion.HTTP_2, fields1);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
@@ -230,10 +231,10 @@ public class RawHTTP2ProxyTest
             }
         });
         Stream stream1 = streamPromise1.get(5, TimeUnit.SECONDS);
-        stream1.headers(new HeadersFrame(stream1.getId(), new MetaData(HttpVersion.HTTP_2, HttpFields.from()), null, true), Callback.NOOP);
+        stream1.headers(new HeadersFrame(stream1.getId(), new MetaData(HttpVersion.HTTP_2, HttpFields.empty()), null, true), Callback.NOOP);
 
         // Send a request for server2.
-        HttpFieldsBuilder fields2 = HttpFields.from();
+        HttpFieldsBuilder fields2 = HttpFields.empty();
         fields2.put("X-Target", String.valueOf(connector2.getLocalPort()));
         MetaData.Request request2 = new MetaData.Request("GET", new HttpURI("http://localhost/server1"), HttpVersion.HTTP_2, fields2);
         FuturePromise<Stream> streamPromise2 = new FuturePromise<>();
@@ -281,7 +282,7 @@ public class RawHTTP2ProxyTest
                 LOGGER.debug("Received {} for {} on {}: {}", frame, stream, stream.getSession(), frame.getMetaData());
             // Forward to the right server.
             MetaData metaData = frame.getMetaData();
-            HttpFieldsBuilder fields = metaData.getFields();
+            HttpFields fields = metaData.getFields();
             int port = Integer.parseInt(fields.get("X-Target"));
             ClientToProxyToServer clientToProxyToServer = forwarders.computeIfAbsent(port, p -> new ClientToProxyToServer("localhost", p, client));
             clientToProxyToServer.offer(stream, frame, Callback.NOOP);

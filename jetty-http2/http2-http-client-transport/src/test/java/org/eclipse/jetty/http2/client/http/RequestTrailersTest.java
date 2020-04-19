@@ -27,6 +27,7 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -64,7 +65,7 @@ public class RequestTrailersTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
                 return new Stream.Listener.Adapter()
@@ -79,7 +80,7 @@ public class RequestTrailersTest extends AbstractTest
         });
 
         HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
-        HttpFieldsBuilder trailers = HttpFields.from();
+        HttpFieldsBuilder trailers = HttpFields.empty();
         request.trailers(() -> trailers);
         if (content != null)
             request.body(new StringRequestContent(content));
@@ -109,7 +110,7 @@ public class RequestTrailersTest extends AbstractTest
                         // trailers, but instead a DATA frame with endStream=true.
                         if (dataFrame.isEndStream())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
                             HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
                             stream.headers(responseFrame, Callback.NOOP);
                         }
@@ -119,7 +120,7 @@ public class RequestTrailersTest extends AbstractTest
         });
 
         HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
-        HttpFieldsBuilder trailers = HttpFields.from();
+        HttpFieldsBuilder trailers = HttpFields.empty();
         request.trailers(() -> trailers);
         AsyncRequestContent content = new AsyncRequestContent();
         request.body(content);
@@ -158,7 +159,7 @@ public class RequestTrailersTest extends AbstractTest
                         // trailers, but instead a DATA frame with endStream=true.
                         if (dataFrame.isEndStream())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
                             HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
                             stream.headers(responseFrame, Callback.NOOP);
                         }
@@ -168,7 +169,7 @@ public class RequestTrailersTest extends AbstractTest
         });
 
         HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
-        HttpFieldsBuilder trailers = HttpFields.from();
+        HttpFieldsBuilder trailers = HttpFields.empty();
         request.trailers(() -> trailers);
         AsyncRequestContent content = new AsyncRequestContent();
         request.body(content);

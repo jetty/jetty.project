@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
@@ -140,7 +141,7 @@ public class FlowControlStalledTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
 
                 if (request.getURIString().endsWith("/stall"))
                 {
@@ -170,7 +171,7 @@ public class FlowControlStalledTest
 
         CountDownLatch latch = new CountDownLatch(1);
         Queue<Callback> callbacks = new ArrayDeque<>();
-        MetaData.Request request = newRequest("GET", "/stall", HttpFields.from());
+        MetaData.Request request = newRequest("GET", "/stall", HttpFields.empty());
         client.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
@@ -188,7 +189,7 @@ public class FlowControlStalledTest
         // does not result in the first be notified again of being stalled.
         stallLatch.set(new CountDownLatch(1));
 
-        request = newRequest("GET", "/", HttpFields.from());
+        request = newRequest("GET", "/", HttpFields.empty());
         client.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter());
 
         assertFalse(stallLatch.get().await(1, TimeUnit.SECONDS));
@@ -231,7 +232,7 @@ public class FlowControlStalledTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
 
                 if (request.getURIString().endsWith("/stall"))
                 {
@@ -270,7 +271,7 @@ public class FlowControlStalledTest
 
         CountDownLatch latch = new CountDownLatch(1);
         Queue<Callback> callbacks = new ArrayDeque<>();
-        MetaData.Request request = newRequest("GET", "/stall", HttpFields.from());
+        MetaData.Request request = newRequest("GET", "/stall", HttpFields.empty());
         session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
             @Override
@@ -288,7 +289,7 @@ public class FlowControlStalledTest
         // does not result in the session be notified again of being stalled.
         stallLatch.set(new CountDownLatch(1));
 
-        request = newRequest("GET", "/", HttpFields.from());
+        request = newRequest("GET", "/", HttpFields.empty());
         session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter());
 
         assertFalse(stallLatch.get().await(1, TimeUnit.SECONDS));

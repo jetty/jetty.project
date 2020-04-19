@@ -45,6 +45,7 @@ import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -155,7 +156,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
                 stream.headers(new HeadersFrame(stream.getId(), metaData, null, false), new Callback()
                 {
                     @Override
@@ -232,7 +233,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 }
                 else
                 {
-                    MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                    MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
                     stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 }
                 return null;
@@ -489,7 +490,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         try
                         {
                             // Response.
-                            MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                            MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
                             HeadersFrame response = new HeadersFrame(request.getStreamId(), metaData, null, true);
                             generator.control(lease, response);
                             writeFrames();
@@ -563,7 +564,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 int streamId = stream.getId();
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.NO_CONTENT_204, HttpFields.from());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.NO_CONTENT_204, HttpFields.empty());
                 HeadersFrame responseFrame = new HeadersFrame(streamId, response, null, false);
                 Callback.Completable callback = new Callback.Completable();
                 stream.headers(responseFrame, callback);
@@ -592,7 +593,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 // Disable checks for invalid headers.
                 ((HTTP2Session)stream.getSession()).getGenerator().setValidateHpackEncoding(false);
                 // Produce an invalid HPACK block by adding a request pseudo-header to the response.
-                HttpFieldsBuilder fields = HttpFields.from();
+                HttpFieldsBuilder fields = HttpFields.empty();
                 fields.put(":method", "get");
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, fields, 0);
                 int streamId = stream.getId();

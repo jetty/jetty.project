@@ -90,7 +90,7 @@ public class HTTP1Servlet extends HttpServlet
             public void succeeded(Session session)
             {
                 HttpURI uri = new HttpURI(request.getScheme(), host, port, contextPath + "/h2");
-                MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.from());
+                MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.empty());
                 HeadersFrame frame = new HeadersFrame(metaData, null, true);
                 session.newStream(frame, new Promise.Adapter<Stream>()
                 {

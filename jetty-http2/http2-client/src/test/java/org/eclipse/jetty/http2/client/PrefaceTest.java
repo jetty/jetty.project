@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -81,7 +82,7 @@ public class PrefaceTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.from());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.empty());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
                 return null;
@@ -109,7 +110,7 @@ public class PrefaceTest extends AbstractTest
         });
 
         CountDownLatch latch = new CountDownLatch(1);
-        MetaData.Request metaData = newRequest("GET", HttpFields.from());
+        MetaData.Request metaData = newRequest("GET", HttpFields.empty());
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
         session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
@@ -223,7 +224,7 @@ public class PrefaceTest extends AbstractTest
                     @Override
                     public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
                     {
-                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                         return null;
                     }

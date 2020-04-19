@@ -20,7 +20,6 @@ package org.eclipse.jetty.http;
 
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class MetaData implements Iterable<HttpField>
@@ -29,7 +28,7 @@ public class MetaData implements Iterable<HttpField>
     private static final HttpFields SUPPLIED_TRAILERS = HttpFields.empty().asImmutable();
     private final HttpVersion _httpVersion;
     private final HttpFields _fields;
-    private final long _contentLengthKnown;
+    private final long _contentLength;
     private final Supplier<HttpFields> _trailerSupplier;
     private HttpFields _trailers;
 
@@ -38,16 +37,17 @@ public class MetaData implements Iterable<HttpField>
         this(version, fields, -1);
     }
 
-    public MetaData(HttpVersion version, HttpFields fields, long contentLengthKnown)
+    public MetaData(HttpVersion version, HttpFields fields, long contentLength)
     {
-        this(version, fields, contentLengthKnown, SELF_SUPPLIED_TRAILORS);
+        this(version, fields, contentLength, SELF_SUPPLIED_TRAILORS);
     }
 
-    public MetaData(HttpVersion version, HttpFields fields, long contentLengthKnown, Supplier<HttpFields> trailers)
+    public MetaData(HttpVersion version, HttpFields fields, long contentLength, Supplier<HttpFields> trailers)
     {
         _httpVersion = version;
         _fields = fields == null ? null : fields.asImmutable();
-        _contentLengthKnown = contentLengthKnown;
+
+        _contentLength = contentLength >= 0 ? contentLength : _fields == null ? -1 : _fields.getLongField(HttpHeader.CONTENT_LENGTH);
         if (trailers == SELF_SUPPLIED_TRAILORS)
             _trailerSupplier = () -> _trailers;
         else
@@ -106,9 +106,9 @@ public class MetaData implements Iterable<HttpField>
         _trailers = trailers;
     }
 
-    public long getContentLengthKnown()
+    public long getContentLength()
     {
-        return _contentLengthKnown;
+        return _contentLength;
     }
 
     @Override
@@ -132,18 +132,6 @@ public class MetaData implements Iterable<HttpField>
 
     public static class Request extends MetaData
     {
-        public static RequestBuilder from(String method, String uri, HttpVersion version)
-        {
-            return new RequestBuilder(method, uri, version);
-        }
-
-        public static RequestBuilder from(String method, String uri, HttpVersion version, Consumer<HttpFieldsBuilder> fieldBuilder)
-        {
-            RequestBuilder rb = new RequestBuilder(method, uri, version);
-            fieldBuilder.accept(rb._fieldBuilder);
-            return rb;
-        }
-
         private final String _method;
         private final HttpURI _uri;
 
@@ -224,56 +212,7 @@ public class MetaData implements Iterable<HttpField>
         {
             HttpFields fields = getFields();
             return String.format("%s{u=%s,%s,h=%d,cl=%d,p=%s}",
-                    getMethod(), getURI(), getHttpVersion(), fields == null ? -1 : fields.size(), getContentLengthKnown(), getProtocol());
-        }
-    }
-
-    // TODO this is moderately specific to HttpChannelOverHttp, so unless it get's used elsewhere, it should be moved there.
-    public static class RequestBuilder
-    {
-        private final HttpURI.Builder _uri;
-        private String _method;
-        private HttpVersion _version;
-        private final HttpFieldsBuilder _fieldBuilder = HttpFields.empty();
-
-        public RequestBuilder()
-        {
-            _uri = HttpURI.empty();
-        }
-
-        public RequestBuilder(String method, String uri, HttpVersion version)
-        {
-            _method = method;
-            _uri = HttpURI.from(uri);
-            _version = version;
-        }
-
-        public String method()
-        {
-            return _method;
-        }
-
-        public void request(String method, String uri, HttpVersion version)
-        {
-            _method = method;
-            _uri.uri(uri);
-            _version = version;
-            _fieldBuilder.clear();
-        }
-
-        public HttpFieldsBuilder getFields()
-        {
-            return _fieldBuilder;
-        }
-
-        public Request build()
-        {
-            return new Request(_method, _uri.toHttpURI(), _version, _fieldBuilder.asImmutable());
-        }
-
-        public HttpVersion version()
-        {
-            return _version;
+                    getMethod(), getURI(), getHttpVersion(), fields == null ? -1 : fields.size(), getContentLength(), getProtocol());
         }
     }
 
@@ -352,7 +291,7 @@ public class MetaData implements Iterable<HttpField>
         public String toString()
         {
             HttpFields fields = getFields();
-            return String.format("%s{s=%d,h=%d,cl=%d}", getHttpVersion(), getStatus(), fields == null ? -1 : fields.size(), getContentLengthKnown());
+            return String.format("%s{s=%d,h=%d,cl=%d}", getHttpVersion(), getStatus(), fields == null ? -1 : fields.size(), getContentLength());
         }
     }
 }

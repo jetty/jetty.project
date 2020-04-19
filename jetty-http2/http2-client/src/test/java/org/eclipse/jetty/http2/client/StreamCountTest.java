@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -73,7 +74,7 @@ public class StreamCountTest extends AbstractTest
                     {
                         if (frame.isEndStream())
                         {
-                            HttpFieldsBuilder fields = HttpFields.from();
+                            HttpFieldsBuilder fields = HttpFields.empty();
                             MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, fields);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), callback);
                         }
@@ -98,7 +99,7 @@ public class StreamCountTest extends AbstractTest
 
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        HttpFieldsBuilder fields = HttpFields.from();
+        HttpFieldsBuilder fields = HttpFields.empty();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame1 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
@@ -143,7 +144,7 @@ public class StreamCountTest extends AbstractTest
                     {
                         if (frame.isEndStream())
                         {
-                            HttpFieldsBuilder fields = HttpFields.from();
+                            HttpFieldsBuilder fields = HttpFields.empty();
                             MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, fields);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), callback);
                         }
@@ -166,7 +167,7 @@ public class StreamCountTest extends AbstractTest
             }
         });
 
-        HttpFieldsBuilder fields = HttpFields.from();
+        HttpFieldsBuilder fields = HttpFields.empty();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame1 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();

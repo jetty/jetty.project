@@ -32,6 +32,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
@@ -148,7 +149,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         int contentLength = random.nextInt(maxContentLength) + 1;
 
         long requestId = requestIds.incrementAndGet();
-        MetaData.Request request = newRequest(method.asString(), "/" + requestId, HttpFields.from());
+        MetaData.Request request = newRequest(method.asString(), "/" + requestId, HttpFields.empty());
         if (download)
             request.getFields().put("X-Download", String.valueOf(contentLength));
         HeadersFrame requestFrame = new HeadersFrame(request, null, download);

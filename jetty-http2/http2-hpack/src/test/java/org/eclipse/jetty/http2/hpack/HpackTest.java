@@ -79,7 +79,7 @@ public class HpackTest
         BufferUtil.flipToFlush(buffer, 0);
         Response decoded0b = (Response)decoder.decode(buffer);
 
-        assertMetaDataResponseSame(original0, decoded0b);
+        assertMetaDataResponseSame(nullToEmpty, decoded0b);
 
         HttpFieldsBuilder fields1 = HttpFields.empty()
             .add(HttpHeader.CONTENT_TYPE, "text/plain")

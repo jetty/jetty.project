@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -201,7 +202,7 @@ public class HTTP2ServerDocs
                 // Prepare the response HEADERS frame.
 
                 // The response HTTP status and HTTP headers.
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
 
                 if (HttpMethod.GET.is(request.getMethod()))
                 {
@@ -293,15 +294,14 @@ public class HTTP2ServerDocs
                 if (pushEnabled && request.getURIString().endsWith("/index.html"))
                 {
                     // Push the favicon.
-                    HttpURI pushedURI = new HttpURI(request.getURI());
-                    pushedURI.setPath("/favicon.ico");
-                    MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.from());
+                    HttpURI pushedURI = HttpURI.from(request.getURI()).path("/favicon.ico").toHttpURI();
+                    MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.empty());
                     PushPromiseFrame promiseFrame = new PushPromiseFrame(stream.getId(), 0, pushedRequest);
                     stream.push(promiseFrame, new Stream.Listener.Adapter())
                         .thenCompose(pushedStream ->
                         {
                             // Send the favicon "response".
-                            MetaData.Response pushedResponse = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                            MetaData.Response pushedResponse = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
                             return pushedStream.headers(new HeadersFrame(pushedStream.getId(), pushedResponse, null, false))
                                 .thenCompose(pushed -> pushed.data(new DataFrame(pushed.getId(), faviconBuffer, true)));
                         });

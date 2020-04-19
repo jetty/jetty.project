@@ -439,7 +439,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         public void onHeaders(Response serverResponse)
         {
-            contentLength = serverResponse.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH.asString());
+            contentLength = serverResponse.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
             onServerResponseHeaders(clientRequest, proxyResponse, serverResponse);
         }
 

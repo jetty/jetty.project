@@ -771,7 +771,9 @@ public class Request implements HttpServletRequest
             return -1;
 
         // TODO should we cache this?
-        return _httpFields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
+        return _httpFields.getLongField(HttpHeader.CONTENT_LENGTH);
+
+        // TODO should we return metaData.getContentLength() if field is not found?
     }
 
     public long getContentRead()

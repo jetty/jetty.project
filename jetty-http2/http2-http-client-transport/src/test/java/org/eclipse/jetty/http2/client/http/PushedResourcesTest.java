@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -62,14 +63,14 @@ public class PushedResourcesTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 HttpURI pushURI = new HttpURI("http://localhost:" + connector.getLocalPort() + pushPath);
-                MetaData.Request pushRequest = new MetaData.Request(HttpMethod.GET.asString(), pushURI, HttpVersion.HTTP_2, HttpFields.from());
+                MetaData.Request pushRequest = new MetaData.Request(HttpMethod.GET.asString(), pushURI, HttpVersion.HTTP_2, HttpFields.empty());
                 stream.push(new PushPromiseFrame(stream.getId(), 0, pushRequest), new Promise.Adapter<>()
                 {
                     @Override
                     public void succeeded(Stream pushStream)
                     {
                         // Just send the normal response and wait for the reset.
-                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.from());
+                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                     }
                 }, new Stream.Listener.Adapter()
