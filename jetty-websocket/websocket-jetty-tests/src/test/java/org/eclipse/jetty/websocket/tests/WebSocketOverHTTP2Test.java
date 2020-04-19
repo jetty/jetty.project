@@ -167,13 +167,13 @@ public class WebSocketOverHTTP2Test
         String text = "websocket";
         session.getRemote().sendString(text);
 
-        String message = wsEndPoint.messageQueue.poll(5, TimeUnit.SECONDS);
+        String message = wsEndPoint.textMessages.poll(5, TimeUnit.SECONDS);
         assertNotNull(message);
         assertEquals(text, message);
 
         session.close(StatusCode.NORMAL, null);
         assertTrue(wsEndPoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertEquals(StatusCode.NORMAL, wsEndPoint.statusCode);
+        assertEquals(StatusCode.NORMAL, wsEndPoint.closeCode);
         assertNull(wsEndPoint.error);
     }
 
@@ -230,7 +230,7 @@ public class WebSocketOverHTTP2Test
         String text = "websocket";
         session.getRemote().sendString(text);
 
-        String message = wsEndPoint.messageQueue.poll(5, TimeUnit.SECONDS);
+        String message = wsEndPoint.textMessages.poll(5, TimeUnit.SECONDS);
         assertNotNull(message);
         assertEquals(text, message);
 

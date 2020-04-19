@@ -130,7 +130,7 @@ public class JettyWebSocketExtensionConfigTest
         assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(correctResponseExtensions.await(5, TimeUnit.SECONDS));
 
-        String msg = socket.messageQueue.poll();
+        String msg = socket.textMessages.poll();
         assertThat(msg, is("hello world"));
     }
 }

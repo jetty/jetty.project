@@ -29,14 +29,6 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
     public PartialByteBufferMessageSink(CoreSession session, MethodHandle methodHandle)
     {
         super(session, methodHandle);
-
-        /* TODO: Review
-        MethodType onMessageType = MethodType.methodType(Void.TYPE, ByteBuffer.class, boolean.class);
-        if (methodHandle.type() != onMessageType)
-        {
-            throw InvalidSignatureException.build(onMessageType, methodHandle.type());
-        }
-        */
     }
 
     @Override
