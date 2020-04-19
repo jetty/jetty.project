@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
@@ -152,7 +153,7 @@ public abstract class HttpConnection implements IConnection
         if (version.getVersion() <= 11)
         {
             if (!headers.contains(HttpHeader.HOST.asString()))
-                headers.put(getHttpDestination().getHostField());
+                request.put(getHttpDestination().getHostField());
         }
 
         // Add content headers
@@ -168,20 +169,20 @@ public abstract class HttpConnection implements IConnection
                 String contentType = content.getContentType();
                 if (contentType != null)
                 {
-                    headers.put(HttpHeader.CONTENT_TYPE, contentType);
+                    request.put(new HttpField(HttpHeader.CONTENT_TYPE, contentType));
                 }
                 else
                 {
                     contentType = getHttpClient().getDefaultRequestContentType();
                     if (contentType != null)
-                        headers.put(HttpHeader.CONTENT_TYPE, contentType);
+                        request.put(new HttpField(HttpHeader.CONTENT_TYPE, contentType));
                 }
             }
             long contentLength = content.getLength();
             if (contentLength >= 0)
             {
                 if (!headers.contains(HttpHeader.CONTENT_LENGTH.asString()))
-                    headers.put(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength));
+                    request.put(new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, contentLength));
             }
         }
 

@@ -34,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -151,6 +152,32 @@ public interface Request
      * @return the headers of this request
      */
     HttpFields getHeaders();
+
+    /** Set the headers, clearing any existing headers
+     * @param fields The fields to set
+     * @return this request object
+     */
+    Request set(HttpFields fields);
+
+    /**
+     * @param header the header to remove
+     * @return this request object
+     */
+    Request remove(HttpHeader header);
+
+    /**
+     * @param field the field to add
+     * @return this request object
+     * @see #header(HttpHeader, String)
+     */
+    Request add(HttpField field);
+
+    /**
+     * @param field the field to put
+     * @return this request object
+     * @see #header(HttpHeader, String)
+     */
+    Request put(HttpField field);
 
     /**
      * @param name the name of the header

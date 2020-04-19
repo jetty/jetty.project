@@ -291,6 +291,34 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request set(HttpFields fields)
+    {
+        headers.clear().add(fields);
+        return this;
+    }
+
+    @Override
+    public Request remove(HttpHeader header)
+    {
+        headers.remove(header);
+        return this;
+    }
+
+    @Override
+    public Request put(HttpField field)
+    {
+        headers.put(field);
+        return this;
+    }
+
+    @Override
+    public Request add(HttpField field)
+    {
+        headers.add(field);
+        return this;
+    }
+
+    @Override
     public Request header(String name, String value)
     {
         if (value == null)

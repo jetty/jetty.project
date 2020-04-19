@@ -23,12 +23,14 @@ import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
 public class HttpUpgraderOverHTTP2 implements HttpUpgrader
 {
+    public static final PreEncodedHttpField SPEC_VERSION_FIELD = new PreEncodedHttpField(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
     private final ClientUpgradeRequest clientUpgradeRequest;
 
     public HttpUpgraderOverHTTP2(ClientUpgradeRequest clientUpgradeRequest)
@@ -41,7 +43,7 @@ public class HttpUpgraderOverHTTP2 implements HttpUpgrader
     {
         request.method(HttpMethod.CONNECT);
         request.upgradeProtocol("websocket");
-        request.header(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
+        request.add(SPEC_VERSION_FIELD);
 
         // Notify the UpgradeListeners now the headers are set.
         clientUpgradeRequest.requestComplete();
