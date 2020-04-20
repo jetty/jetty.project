@@ -28,16 +28,10 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=handlerA
 
 The `target` parameter is an identifier for the resource.
 This is normally the URI that is parsed from an HTTP request.
-However, a request could be forwarded to either a named resource, in which case
-`target` will be the name of the resource, or to a different URI, in which case
-`target` will be the new URI.
+However, a request could be forwarded to either a named resource, in which case `target` will be the name of the resource, or to a different URI, in which case `target` will be the new URI.
 
-Applications may wrap the request or response (or both) and forward the wrapped
-request or response to a different URI (which may be possibly handled by a
-different `Handler`).
-This is the reason why there are two request parameters in the `Handler` APIs:
-the first is the unwrapped, original, request while the second is the
-application-wrapped request.
+Applications may wrap the request or response (or both) and forward the wrapped request or response to a different URI (which may be possibly handled by a different `Handler`).
+This is the reason why there are two request parameters in the `Handler` APIs: the first is the unwrapped, original, request while the second is the application-wrapped request.
 
 [[eg-server-http-handler-impl-hello]]
 ===== Hello World Handler
@@ -49,23 +43,17 @@ A simple "Hello World" `Handler` is the following:
 include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=handlerHello]
 ----
 
-Such a simple `Handler` extends from `AbstractHandler` and can access the
-request and response main features, such as reading request headers and
-content, or writing response headers and content.
+Such a simple `Handler` extends from `AbstractHandler` and can access the request and response main features, such as reading request headers and content, or writing response headers and content.
 
 [[eg-server-http-handler-impl-filter]]
 ===== Filtering Handler
 
-A filtering `Handler` is a handler that perform some modification to the
-request or response, and then either forwards the request to another
-`Handler` or produces an error response:
+A filtering `Handler` is a handler that perform some modification to the request or response, and then either forwards the request to another `Handler` or produces an error response:
 
 [source,java,indent=0]
 ----
 include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=handlerFilter]
 ----
 
-Note how a filtering `Handler` extends from `HandlerWrapper` and as such
-needs another handler to forward the request processing to, and how the
-two ``Handler``s needs to be linked together to work properly.
+Note how a filtering `Handler` extends from `HandlerWrapper` and as such needs another handler to forward the request processing to, and how the two ``Handler``s needs to be linked together to work properly.
 
