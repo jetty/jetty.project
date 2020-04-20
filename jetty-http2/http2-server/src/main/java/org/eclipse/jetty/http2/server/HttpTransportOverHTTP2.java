@@ -24,7 +24,6 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -115,7 +114,14 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                         long contentLength = response.getContentLength();
                         if (contentLength < 0)
                         {
-                            response.setContentLength(realContentLength);
+                            response = new MetaData.Response(
+                                response.getHttpVersion(),
+                                response.getStatus(),
+                                response.getReason(),
+                                response.getFields(),
+                                realContentLength,
+                                response.getTrailerSupplier()
+                            );
                         }
                         else if (hasContent && contentLength != realContentLength)
                         {
@@ -133,7 +139,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                             {
                                 if (lastContent)
                                 {
-                                    HttpFieldsBuilder trailers = retrieveTrailers();
+                                    HttpFields trailers = retrieveTrailers();
                                     if (trailers != null)
                                     {
                                         if (transportCallback.start(new SendTrailers(getCallback(), trailers), false))
@@ -166,7 +172,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                             }
                             else
                             {
-                                HttpFieldsBuilder trailers = retrieveTrailers();
+                                HttpFields trailers = retrieveTrailers();
                                 if (trailers != null)
                                 {
                                     if (transportCallback.start(new SendTrailers(callback, trailers), true))
@@ -198,7 +204,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             {
                 if (lastContent)
                 {
-                    HttpFieldsBuilder trailers = retrieveTrailers();
+                    HttpFields trailers = retrieveTrailers();
                     if (trailers != null)
                     {
                         SendTrailers sendTrailers = new SendTrailers(callback, trailers);
@@ -508,9 +514,9 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
     private class SendTrailers extends Callback.Nested
     {
-        private final HttpFieldsBuilder trailers;
+        private final HttpFields trailers;
 
-        private SendTrailers(Callback callback, HttpFieldsBuilder trailers)
+        private SendTrailers(Callback callback, HttpFields trailers)
         {
             super(callback);
             this.trailers = trailers;

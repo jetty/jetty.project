@@ -238,22 +238,22 @@ public class MetaData implements Iterable<HttpField>
         private final int _status;
         private final String _reason;
 
-        public Response(HttpVersion version, int status, HttpFieldsBuilder fields)
+        public Response(HttpVersion version, int status, HttpFields fields)
         {
             this(version, status, fields, Long.MIN_VALUE);
         }
 
-        public Response(HttpVersion version, int status, HttpFieldsBuilder fields, long contentLength)
+        public Response(HttpVersion version, int status, HttpFields fields, long contentLength)
         {
             this(version, status, null, fields, contentLength);
         }
 
-        public Response(HttpVersion version, int status, String reason, HttpFieldsBuilder fields, long contentLength)
+        public Response(HttpVersion version, int status, String reason, HttpFields fields, long contentLength)
         {
             this(version, status, reason, fields, contentLength, null);
         }
 
-        public Response(HttpVersion version, int status, String reason, HttpFieldsBuilder fields, long contentLength, Supplier<HttpFields> trailers)
+        public Response(HttpVersion version, int status, String reason, HttpFields fields, long contentLength, Supplier<HttpFields> trailers)
         {
             super(version, fields, contentLength, trailers);
             _reason = reason;

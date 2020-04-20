@@ -141,7 +141,6 @@ public class MetaDataBuilder
                             _authority = (HostPortHttpField)field;
                         else if (value != null)
                             _authority = new AuthorityHttpField(value);
-                        _fields.add(_authority); // TODO does this need to be lowercase "host"
                     }
 
                     _request = true;
@@ -165,9 +164,7 @@ public class MetaDataBuilder
                     break;
 
                 case HOST:
-                    // if the :authority fields has come first then ignore the host header.
-                    if (_authority == null)
-                        _fields.add(field);
+                    _fields.add(field);
                     break;
 
                 case CONTENT_LENGTH:
