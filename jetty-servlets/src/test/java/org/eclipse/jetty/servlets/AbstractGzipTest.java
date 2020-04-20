@@ -95,8 +95,8 @@ public abstract class AbstractGzipTest
             IO.copy(streamFilter, digester);
             metadata.uncompressedContent = uncompressedStream.toByteArray();
             metadata.uncompressedSize = metadata.uncompressedContent.length;
-            // Odd toLowerCase is because TypeUtil.toHexString is mixed case results!??
-            metadata.uncompressedSha1Sum = TypeUtil.toHexString(digest.digest()).toLowerCase(Locale.ENGLISH);
+            // Odd toUpperCase is because TypeUtil.toHexString is mixed case results!??
+            metadata.uncompressedSha1Sum = TypeUtil.toHexString(digest.digest()).toUpperCase(Locale.ENGLISH);
             return metadata;
         }
     }

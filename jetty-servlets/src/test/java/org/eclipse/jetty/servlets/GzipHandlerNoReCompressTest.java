@@ -21,6 +21,7 @@ package org.eclipse.jetty.servlets;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -110,7 +111,7 @@ public class GzipHandlerNoReCompressTest extends AbstractGzipTest
         Path testResource = MavenTestingUtils.getTestResourcePath(fileName);
         Path file = contextDir.resolve(fileName);
         IO.copy(testResource.toFile(), file.toFile());
-        String expectedSha1Sum = Sha1Sum.loadSha1(MavenTestingUtils.getTestResourceFile(fileName + ".sha1"));
+        String expectedSha1Sum = Sha1Sum.loadSha1(MavenTestingUtils.getTestResourceFile(fileName + ".sha1")).toUpperCase(Locale.ENGLISH);
         int fileSize = (int)Files.size(file);
 
         server.start();
