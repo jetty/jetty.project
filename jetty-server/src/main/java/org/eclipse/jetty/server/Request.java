@@ -1673,13 +1673,21 @@ public class Request implements HttpServletRequest
         _httpFields = request.getFields();
         final HttpURI uri = request.getURI();
 
-        if (uri.isAbsolute() && uri.hasAuthority())
+        if (uri.isAbsolute() && uri.hasAuthority() && uri.getPath() != null)
             _uri = uri;
         else
         {
             HttpURI.Builder builder = HttpURI.build(uri);
-            if (!uri.isAbsolute())
+
+            if (uri.isAbsolute())
+            {
+                if (uri.getPath() == null)
+                    builder.path("/");
+            }
+            else
+            {
                 builder.scheme(HttpScheme.HTTP.asString());
+            }
 
             if (!uri.hasAuthority())
             {
@@ -1694,6 +1702,8 @@ public class Request implements HttpServletRequest
                     builder.host(findServerName()).port(findServerPort());
                 }
             }
+
+
             _uri = builder.asImmutable();
         }
 

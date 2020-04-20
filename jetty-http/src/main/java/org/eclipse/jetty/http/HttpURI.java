@@ -754,6 +754,24 @@ public interface HttpURI
             return this;
         }
 
+        public Builder uri(String method, String uri)
+        {
+            if (HttpMethod.CONNECT.is(method))
+            {
+                clear();
+                _uri = uri;
+                _path = uri;
+            }
+            else if (uri.startsWith("/"))
+            {
+                clear();
+                pathQuery(uri);
+            }
+            else
+                uri(uri);
+            return this;
+        }
+
         public Builder uri(String uri, int offset, int length)
         {
             clear();

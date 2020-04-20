@@ -557,7 +557,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         public void request(String method, String uri, HttpVersion version)
         {
             _method = method;
-            _uri.uri(uri);
+            _uri.uri(method, uri);
             _version = version;
             _fieldBuilder.clear();
         }
