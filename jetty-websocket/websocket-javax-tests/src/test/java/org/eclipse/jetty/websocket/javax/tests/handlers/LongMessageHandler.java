@@ -20,10 +20,11 @@ package org.eclipse.jetty.websocket.javax.tests.handlers;
 
 import javax.websocket.MessageHandler;
 
-public class LongMessageHandler implements MessageHandler.Whole<Long>
+public class LongMessageHandler extends AbstractHandler implements MessageHandler.Whole<Long>
 {
     @Override
     public void onMessage(Long message)
     {
+        sendText(message.toString(), true);
     }
 }

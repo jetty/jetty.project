@@ -122,15 +122,15 @@ public class ConcurrentConnectTest
         for (EventSocket l : listeners)
         {
             l.session.getRemote().sendString("ping");
-            assertThat(l.messageQueue.poll(5, TimeUnit.SECONDS), is("ping"));
+            assertThat(l.textMessages.poll(5, TimeUnit.SECONDS), is("ping"));
             l.session.close(StatusCode.NORMAL, "close from client");
         }
 
         for (EventSocket l : listeners)
         {
             assertTrue(l.closeLatch.await(5, TimeUnit.SECONDS));
-            assertThat(l.statusCode, is(StatusCode.NORMAL));
-            assertThat(l.reason, is("close from client"));
+            assertThat(l.closeCode, is(StatusCode.NORMAL));
+            assertThat(l.closeReason, is("close from client"));
             assertNull(l.error);
         }
 
