@@ -81,7 +81,6 @@ public class TestJettyOSGiBootWithJsp
 
     public void assertAllBundlesActiveOrResolved()
     {
-        TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 

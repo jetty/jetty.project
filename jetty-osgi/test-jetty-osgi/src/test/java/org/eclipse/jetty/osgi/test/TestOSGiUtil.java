@@ -222,8 +222,12 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("apache-jsp").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.servlet.jsp.jstl").artifactId("jakarta.servlet.jsp.jstl-api").versionAsInProject());
-        //TODO: skip the standard taglib: it wants to use xalan, which doesn't have an osgi manifest
-        //res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("taglibs-standard").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.apache.servicemix.bundles").artifactId("org.apache.servicemix.bundles.xmlresolver").version("1.2_5").start());
+        res.add(mavenBundle().groupId("org.apache.servicemix.bundles").artifactId("org.apache.servicemix.bundles.xerces").version("2.12.0_1").start());
+        res.add(mavenBundle().groupId("org.apache.servicemix.bundles").artifactId("org.apache.servicemix.bundles.xalan-serializer").version("2.7.2_1").start());
+        res.add(mavenBundle().groupId("org.apache.servicemix.bundles").artifactId("org.apache.servicemix.bundles.bcel").version("5.2_4").start());
+        res.add(mavenBundle().groupId("org.apache.servicemix.bundles").artifactId("org.apache.servicemix.bundles.xalan").version("2.7.2_3").start());
+        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("taglibs-standard").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
         return res;
@@ -248,7 +252,7 @@ public class TestOSGiUtil
                 b.getHeaders().get("Bundle-Version") +
                 " and " +
                 prevBundle.getHeaders().get("Bundle-Version") : "";
-                assertNull(err, prevBundle);
+            assertNull(err, prevBundle);
         }
         return bundles.get(symbolicName);
     }
@@ -283,11 +287,12 @@ public class TestOSGiUtil
                     {
                         diagnoseNonActiveOrNonResolvedBundle(b);
                     }
+                    dumpBundleState(b);
+                    break;
                 }
                 default:
                 {
                     dumpBundleState(b);
-                    break;
                 }
             }
         }
@@ -295,7 +300,7 @@ public class TestOSGiUtil
     
     protected static void dumpBundleState(Bundle b)
     {
-        System.err.println("Bundle: [" + b.getBundleId() +"] " + b + " State=" + b.getState());
+        System.err.println("Bundle: [" + b.getBundleId() + "] " + b + " State=" + b.getState());
     }
 
     protected static boolean diagnoseNonActiveOrNonResolvedBundle(Bundle b)

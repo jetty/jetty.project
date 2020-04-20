@@ -20,8 +20,8 @@ package org.eclipse.jetty.osgi.test;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.inject.Inject;
 
-import jakarta.inject.Inject;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -84,8 +84,6 @@ public class TestJettyOSGiBootWithAnnotations
     public static List<Option> annotationDependencies()
     {
         List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId("com.sun.activation").artifactId("javax.activation").version("1.2.0").noStart());
-        res.add(mavenBundle().groupId("jakarta.mail").artifactId("jakarta.mail-api").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-container-initializer").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-mock-resources").versionAsInProject());
         //test webapp bundle

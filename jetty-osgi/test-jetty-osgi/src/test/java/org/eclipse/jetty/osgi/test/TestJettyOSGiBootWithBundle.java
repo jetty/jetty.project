@@ -23,8 +23,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.inject.Inject;
 
-import jakarta.inject.Inject;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
@@ -95,16 +95,17 @@ public class TestJettyOSGiBootWithBundle
         return options;
     }
 
-    @Test
     public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
-    @Ignore
     @Test
     public void testContextHandlerAsOSGiService() throws Exception
     {
+        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
+            assertAllBundlesActiveOrResolved();
+        
         // now test the context
         HttpClient client = new HttpClient();
         try
