@@ -35,7 +35,6 @@ import org.eclipse.jetty.client.Synchronizable;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.Callback;
@@ -130,7 +129,7 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
      * @param content the part content
      * @param fields the headers associated with this part
      */
-    public void addFieldPart(String name, ContentProvider content, HttpFieldsBuilder fields)
+    public void addFieldPart(String name, ContentProvider content, HttpFields fields)
     {
         addPart(new Part(name, null, "text/plain", content, fields));
     }
@@ -151,7 +150,7 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
      * @param content the part content
      * @param fields the headers associated with this part
      */
-    public void addFilePart(String name, String fileName, ContentProvider content, HttpFieldsBuilder fields)
+    public void addFilePart(String name, String fileName, ContentProvider content, HttpFields fields)
     {
         addPart(new Part(name, fileName, "application/octet-stream", content, fields));
     }
