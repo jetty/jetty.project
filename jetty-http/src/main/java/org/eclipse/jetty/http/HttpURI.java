@@ -92,12 +92,14 @@ public interface HttpURI
     {
         if (HttpMethod.CONNECT.is(method))
             return new Immutable(uri, null, null, null, -1, uri, null, null, null, null);
-        return new HttpURI.Builder(uri).asImmutable();
+        if (uri.startsWith("/"))
+            return HttpURI.build().pathQuery(uri).asImmutable();
+        return HttpURI.from(uri);
     }
 
     static HttpURI from(String scheme, String host, int port, String pathQuery)
     {
-        return build(pathQuery).scheme(scheme).host(host).port(port).asImmutable();
+        return build(pathQuery).scheme(scheme).host(host).port(port).pathQuery(pathQuery).asImmutable();
     }
 
     String getAuthority();
