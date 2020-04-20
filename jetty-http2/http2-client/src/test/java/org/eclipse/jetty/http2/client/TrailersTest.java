@@ -133,7 +133,7 @@ public class TrailersTest extends AbstractTest
                 }
 
                 // Now we have the trailers.
-                HttpFieldsBuilder trailers = jettyRequest.getTrailerHttpFields();
+                HttpFields trailers = jettyRequest.getTrailerHttpFields();
                 assertNotNull(trailers);
                 assertNotNull(trailers.get("X-Trailer"));
             }

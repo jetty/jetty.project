@@ -95,6 +95,11 @@ public interface HttpURI
         return new HttpURI.Builder(uri).asImmutable();
     }
 
+    static HttpURI from(String scheme, String host, int port, String pathQuery)
+    {
+        return build(pathQuery).scheme(scheme).host(host).port(port).asImmutable();
+    }
+
     String getAuthority();
 
     String getDecodedPath();

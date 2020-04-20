@@ -69,7 +69,7 @@ public class PushCacheFilterTest extends AbstractTest
     }
 
     @Override
-    protected MetaData.Request newRequest(String method, String pathInfo, HttpFieldsBuilder fields)
+    protected MetaData.Request newRequest(String method, String pathInfo, HttpFields fields)
     {
         return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), contextPath + servletPath + pathInfo, HttpVersion.HTTP_2, fields, -1);
     }

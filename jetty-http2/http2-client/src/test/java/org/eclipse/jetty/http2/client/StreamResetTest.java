@@ -1020,7 +1020,7 @@ public class StreamResetTest extends AbstractTest
             waitUntilTCPCongested(exchanger.exchange(null));
 
             // Send a second request.
-            uri = new HttpURI("http", host, port, servletPath + "/2");
+            uri = HttpURI.from("http", host, port, servletPath + "/2");
             request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.build());
             int streamId = 5;
             headersFrame = new HeadersFrame(streamId, request, null, true);

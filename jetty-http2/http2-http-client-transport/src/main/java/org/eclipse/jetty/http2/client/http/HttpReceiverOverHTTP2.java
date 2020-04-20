@@ -35,7 +35,7 @@ import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
@@ -94,7 +94,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
             if (responseBegin(exchange))
             {
-                HttpFieldsBuilder headers = response.getFields();
+                HttpFields headers = response.getFields();
                 for (HttpField header : headers)
                 {
                     if (!responseHeader(exchange, header))
@@ -138,7 +138,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         }
         else // Response trailers.
         {
-            HttpFieldsBuilder trailers = metaData.getFields();
+            HttpFields trailers = metaData.getFields();
             trailers.forEach(httpResponse::trailer);
             // Previous DataFrames had endStream=false, so
             // add a poison pill to trigger response success

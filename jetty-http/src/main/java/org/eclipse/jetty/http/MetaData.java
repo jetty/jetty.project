@@ -215,12 +215,12 @@ public class MetaData implements Iterable<HttpField>
     {
         private final String _protocol;
 
-        public ConnectRequest(HttpScheme scheme, HostPortHttpField authority, String path, HttpFieldsBuilder fields, String protocol)
+        public ConnectRequest(HttpScheme scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
         {
             this(scheme == null ? null : scheme.asString(), authority, path, fields, protocol);
         }
 
-        public ConnectRequest(String scheme, HostPortHttpField authority, String path, HttpFieldsBuilder fields, String protocol)
+        public ConnectRequest(String scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
         {
             super(HttpMethod.CONNECT.asString(), scheme, authority, path, HttpVersion.HTTP_2, fields, Long.MIN_VALUE);
             _protocol = protocol;

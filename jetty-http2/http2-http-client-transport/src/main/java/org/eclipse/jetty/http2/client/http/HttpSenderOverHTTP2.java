@@ -27,7 +27,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -64,6 +64,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
         MetaData.Request metaData;
         if (isTunnel)
         {
+            // TODO what to do with trailers ??
             String upgradeProtocol = request.getUpgradeProtocol();
             if (upgradeProtocol == null)
             {
@@ -78,11 +79,14 @@ public class HttpSenderOverHTTP2 extends HttpSender
         else
         {
             String path = relativize(request.getPath());
-            HttpURI uri = HttpURI.createHttpURI(request.getScheme(), request.getHost(), request.getPort(), path, null, request.getQuery(), null);
-            metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders());
+            HttpURI uri = HttpURI.build()
+                .scheme(request.getScheme())
+                .host(request.getHost())
+                .port(request.getPort())
+                .path(path)
+                .query(request.getQuery());
+            metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders(), -1, request.getTrailers());
         }
-        Supplier<HttpFieldsBuilder> trailerSupplier = request.getTrailers();
-        metaData.setTrailerSupplier(trailerSupplier);
 
         HeadersFrame headersFrame;
         Promise<Stream> promise;
@@ -93,9 +97,10 @@ public class HttpSenderOverHTTP2 extends HttpSender
         }
         else
         {
+            Supplier<HttpFields> trailerSupplier = request.getTrailers();
             if (BufferUtil.isEmpty(contentBuffer) && lastContent)
             {
-                HttpFieldsBuilder trailers = trailerSupplier == null ? null : trailerSupplier.get();
+                HttpFields trailers = trailerSupplier == null ? null : trailerSupplier.get();
                 boolean endStream = trailers == null || trailers.size() == 0;
                 headersFrame = new HeadersFrame(metaData, null, endStream);
                 promise = new HeadersPromise(request, callback, stream ->
@@ -140,17 +145,17 @@ public class HttpSenderOverHTTP2 extends HttpSender
     protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         Stream stream = getHttpChannel().getStream();
-        Supplier<HttpFieldsBuilder> trailerSupplier = exchange.getRequest().getTrailers();
+        Supplier<HttpFields> trailerSupplier = exchange.getRequest().getTrailers();
         sendContent(stream, contentBuffer, lastContent, trailerSupplier, callback);
     }
 
-    private void sendContent(Stream stream, ByteBuffer buffer, boolean lastContent, Supplier<HttpFieldsBuilder> trailerSupplier, Callback callback)
+    private void sendContent(Stream stream, ByteBuffer buffer, boolean lastContent, Supplier<HttpFields> trailerSupplier, Callback callback)
     {
         boolean hasContent = buffer.hasRemaining();
         if (lastContent)
         {
             // Call the trailers supplier as late as possible.
-            HttpFieldsBuilder trailers = trailerSupplier == null ? null : trailerSupplier.get();
+            HttpFields trailers = trailerSupplier == null ? null : trailerSupplier.get();
             boolean hasTrailers = trailers != null && trailers.size() > 0;
             if (hasContent)
             {
@@ -188,7 +193,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
         }
     }
 
-    private void sendTrailers(Stream stream, HttpFieldsBuilder trailers, Callback callback)
+    private void sendTrailers(Stream stream, HttpFields trailers, Callback callback)
     {
         MetaData metaData = new MetaData(HttpVersion.HTTP_2, trailers);
         HeadersFrame trailersFrame = new HeadersFrame(stream.getId(), metaData, null, true);

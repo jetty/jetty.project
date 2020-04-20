@@ -24,6 +24,7 @@ import java.net.Socket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -113,7 +114,7 @@ public class SessionFailureTest extends AbstractTest
                 clientFailureLatch.countDown();
             }
         });
-        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.empty()), null, true);
+        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         Promise<Stream> promise = new Promise.Adapter<>();
         session.newStream(frame, promise, null);
 
