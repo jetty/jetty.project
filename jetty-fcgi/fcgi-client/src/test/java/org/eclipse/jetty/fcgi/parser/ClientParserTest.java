@@ -113,8 +113,8 @@ public class ClientParserTest
     public void testParseNoResponseContent() throws Exception
     {
         final int id = 13;
-        HttpFieldsBuilder fields = HttpFields.build();
-        fields.put("Content-Length", "0");
+        HttpFields fields = HttpFields.build()
+            .put("Content-Length", "0");
 
         ByteBufferPool byteBufferPool = new MappedByteBufferPool();
         ServerGenerator generator = new ServerGenerator(byteBufferPool);

@@ -141,7 +141,7 @@ public class PatternRuleTest
             new Request(null, null)
             {
                 {
-                    setMetaData(new MetaData.Request("GET", HttpURI.from(uri), HttpVersion.HTTP_1_0, HttpFields.build()));
+                    setMetaData(new MetaData.Request("GET", HttpURI.from(uri), HttpVersion.HTTP_1_0, HttpFields.EMPTY));
                 }
             }, null
         );

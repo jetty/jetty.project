@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.HTTP2Session;
@@ -74,8 +73,7 @@ public class StreamCountTest extends AbstractTest
                     {
                         if (frame.isEndStream())
                         {
-                            HttpFieldsBuilder fields = HttpFields.build();
-                            MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, fields);
+                            MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), callback);
                         }
                         else
@@ -99,8 +97,7 @@ public class StreamCountTest extends AbstractTest
 
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        HttpFieldsBuilder fields = HttpFields.build();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame1 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
         CountDownLatch responseLatch = new CountDownLatch(1);
@@ -144,8 +141,7 @@ public class StreamCountTest extends AbstractTest
                     {
                         if (frame.isEndStream())
                         {
-                            HttpFieldsBuilder fields = HttpFields.build();
-                            MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, fields);
+                            MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), callback);
                         }
                         else
@@ -167,8 +163,7 @@ public class StreamCountTest extends AbstractTest
             }
         });
 
-        HttpFieldsBuilder fields = HttpFields.build();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame1 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
         CountDownLatch responseLatch = new CountDownLatch(1);

@@ -202,7 +202,7 @@ public class HTTP2ServerDocs
                 // Prepare the response HEADERS frame.
 
                 // The response HTTP status and HTTP headers.
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.build());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
 
                 if (HttpMethod.GET.is(request.getMethod()))
                 {
@@ -295,13 +295,13 @@ public class HTTP2ServerDocs
                 {
                     // Push the favicon.
                     HttpURI pushedURI = HttpURI.build(request.getURI()).path("/favicon.ico").asImmutable();
-                    MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.build());
+                    MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.EMPTY);
                     PushPromiseFrame promiseFrame = new PushPromiseFrame(stream.getId(), 0, pushedRequest);
                     stream.push(promiseFrame, new Stream.Listener.Adapter())
                         .thenCompose(pushedStream ->
                         {
                             // Send the favicon "response".
-                            MetaData.Response pushedResponse = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.build());
+                            MetaData.Response pushedResponse = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                             return pushedStream.headers(new HeadersFrame(pushedStream.getId(), pushedResponse, null, false))
                                 .thenCompose(pushed -> pushed.data(new DataFrame(pushed.getId(), faviconBuffer, true)));
                         });

@@ -77,7 +77,7 @@ public class SpnegoAuthenticatorTest
         };
         Request req = channel.getRequest();
         Response res = channel.getResponse();
-        MetaData.Request metadata = new MetaData.Request(null, HttpURI.build("http://localhost").asImmutable(), null, HttpFields.build());
+        MetaData.Request metadata = new MetaData.Request(null, HttpURI.build("http://localhost").asImmutable(), null, HttpFields.EMPTY);
         req.setMetaData(metadata);
 
         assertThat(channel.getState().handling(), is(HttpChannelState.Action.DISPATCH));

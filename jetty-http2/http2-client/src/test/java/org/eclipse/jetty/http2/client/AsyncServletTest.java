@@ -35,7 +35,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
@@ -95,8 +94,7 @@ public class AsyncServletTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFieldsBuilder fields = HttpFields.build();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         CountDownLatch latch = new CountDownLatch(1);
@@ -132,8 +130,7 @@ public class AsyncServletTest extends AbstractTest
         client.setIdleTimeout(idleTimeout);
 
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFieldsBuilder fields = HttpFields.build();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         CountDownLatch responseLatch = new CountDownLatch(1);
@@ -169,8 +166,7 @@ public class AsyncServletTest extends AbstractTest
         client.setIdleTimeout(10 * idleTimeout);
 
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFieldsBuilder fields = HttpFields.build();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         CountDownLatch clientLatch = new CountDownLatch(1);
@@ -218,8 +214,7 @@ public class AsyncServletTest extends AbstractTest
         prepareClient();
         client.start();
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFieldsBuilder fields = HttpFields.build();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, new Stream.Listener.Adapter());
@@ -329,8 +324,7 @@ public class AsyncServletTest extends AbstractTest
         client.start();
 
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFieldsBuilder fields = HttpFields.build();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch clientLatch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()

@@ -208,7 +208,7 @@ public class TrailersTest extends AbstractTest
         });
 
         Session session = newClient(new Session.Listener.Adapter());
-        MetaData.Request request = newRequest("GET", HttpFields.build());
+        MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(request, null, true);
         CountDownLatch latch = new CountDownLatch(1);
         session.newStream(requestFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -263,7 +263,7 @@ public class TrailersTest extends AbstractTest
         });
 
         Session session = newClient(new Session.Listener.Adapter());
-        MetaData.Request request = newRequest("GET", HttpFields.build());
+        MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(request, null, true);
         CountDownLatch latch = new CountDownLatch(1);
         List<Frame> frames = new ArrayList<>();
@@ -305,7 +305,7 @@ public class TrailersTest extends AbstractTest
         start(new EmptyHttpServlet());
 
         Session session = newClient(new Session.Listener.Adapter());
-        MetaData.Request request = newRequest("POST", HttpFields.build());
+        MetaData.Request request = newRequest("POST", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(request, null, false);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(requestFrame, promise, new Stream.Listener.Adapter());
@@ -356,7 +356,7 @@ public class TrailersTest extends AbstractTest
 
         CountDownLatch clientLatch = new CountDownLatch(1);
         Session session = newClient(new Session.Listener.Adapter());
-        MetaData.Request request = newRequest("POST", HttpFields.build());
+        MetaData.Request request = newRequest("POST", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(request, null, false);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(requestFrame, promise, new Stream.Listener.Adapter()

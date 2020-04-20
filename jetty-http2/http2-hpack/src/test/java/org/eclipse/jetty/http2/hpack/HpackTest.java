@@ -108,7 +108,7 @@ public class HpackTest
         HpackDecoder decoder = new HpackDecoder(4096, 164);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
-        HttpFieldsBuilder fields0 = HttpFields.build()
+        HttpFields fields0 = HttpFields.build()
             .add("1234567890", "1234567890123456789012345678901234567890")
             .add("Cookie", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
         MetaData original0 = new MetaData(HttpVersion.HTTP_2, fields0);
@@ -120,7 +120,7 @@ public class HpackTest
 
         assertMetaDataSame(original0, decoded0);
 
-        HttpFieldsBuilder fields1 = HttpFields.build()
+        HttpFields fields1 = HttpFields.build()
             .add("1234567890", "1234567890123456789012345678901234567890")
             .add("Cookie", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR")
             .add("x", "y");
@@ -147,7 +147,7 @@ public class HpackTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
         ByteBuffer buffer = BufferUtil.allocate(16 * 1024);
 
-        HttpFieldsBuilder fields0 = HttpFields.build()
+        HttpFields fields0 = HttpFields.build()
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
             .add("Cookie", "[\uD842\uDF9F]")
             .add("custom-key", "[\uD842\uDF9F]");
@@ -170,7 +170,7 @@ public class HpackTest
 
         String longEnoughToBeEvicted = "012345678901234567890123456789012345678901234567890";
 
-        HttpFieldsBuilder fields0 = HttpFields.build()
+        HttpFields fields0 = HttpFields.build()
             .add(longEnoughToBeEvicted, "value")
             .add("foo", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
         MetaData original0 = new MetaData(HttpVersion.HTTP_2, fields0);
@@ -187,7 +187,7 @@ public class HpackTest
 
         assertMetaDataSame(original0, decoded0);
 
-        HttpFieldsBuilder fields1 = HttpFields.build()
+        HttpFields fields1 = HttpFields.build()
             .add(longEnoughToBeEvicted, "other_value")
             .add("x", "y");
         MetaData original1 = new MetaData(HttpVersion.HTTP_2, fields1);
@@ -210,7 +210,7 @@ public class HpackTest
         HpackEncoder encoder = new HpackEncoder();
         HpackDecoder decoder = new HpackDecoder(4096, 16384);
 
-        HttpFieldsBuilder input = HttpFields.build()
+        HttpFields input = HttpFields.build()
             .add(HttpHeader.ACCEPT, "*")
             .add(HttpHeader.CONNECTION, "TE, Upgrade, Custom")
             .add("Custom", "Pizza")
@@ -239,7 +239,7 @@ public class HpackTest
 
         String teValue = "trailers";
         String trailerValue = "Custom";
-        HttpFieldsBuilder input = HttpFields.build()
+        HttpFields input = HttpFields.build()
             .add(HttpHeader.CONNECTION, "TE")
             .add(HttpHeader.TE, teValue)
             .add(HttpHeader.TRAILER, trailerValue);
@@ -262,7 +262,7 @@ public class HpackTest
         HpackEncoder encoder = new HpackEncoder();
         HpackDecoder decoder = new HpackDecoder(4096, 16384);
 
-        HttpFieldsBuilder input = HttpFields.build()
+        HttpFields input = HttpFields.build()
             .add(":status", "200")
             .add(":custom", "special");
 

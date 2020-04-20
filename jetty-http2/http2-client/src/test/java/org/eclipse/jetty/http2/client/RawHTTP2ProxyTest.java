@@ -132,7 +132,7 @@ public class RawHTTP2ProxyTest
                             LOGGER.debug("SERVER1 received {}", frame);
                         if (frame.isEndStream())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.build());
+                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                             HeadersFrame reply = new HeadersFrame(stream.getId(), response, null, false);
                             if (LOGGER.isDebugEnabled())
                                 LOGGER.debug("SERVER1 sending {}", reply);
@@ -168,7 +168,7 @@ public class RawHTTP2ProxyTest
                         if (LOGGER.isDebugEnabled())
                             LOGGER.debug("SERVER2 received {}", frame);
                         callback.succeeded();
-                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.build());
+                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                         Callback.Completable completable1 = new Callback.Completable();
                         HeadersFrame reply = new HeadersFrame(stream.getId(), response, null, false);
                         if (LOGGER.isDebugEnabled())
@@ -184,7 +184,7 @@ public class RawHTTP2ProxyTest
                             return completable2;
                         }).thenRun(() ->
                         {
-                            MetaData trailer = new MetaData(HttpVersion.HTTP_2, HttpFields.build());
+                            MetaData trailer = new MetaData(HttpVersion.HTTP_2, HttpFields.EMPTY);
                             HeadersFrame end = new HeadersFrame(stream.getId(), trailer, null, true);
                             if (LOGGER.isDebugEnabled())
                                 LOGGER.debug("SERVER2 sending {}", end);
@@ -231,7 +231,7 @@ public class RawHTTP2ProxyTest
             }
         });
         Stream stream1 = streamPromise1.get(5, TimeUnit.SECONDS);
-        stream1.headers(new HeadersFrame(stream1.getId(), new MetaData(HttpVersion.HTTP_2, HttpFields.build()), null, true), Callback.NOOP);
+        stream1.headers(new HeadersFrame(stream1.getId(), new MetaData(HttpVersion.HTTP_2, HttpFields.EMPTY), null, true), Callback.NOOP);
 
         // Send a request for server2.
         HttpFieldsBuilder fields2 = HttpFields.build();

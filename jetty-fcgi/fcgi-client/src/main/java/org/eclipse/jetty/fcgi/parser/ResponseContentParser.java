@@ -228,7 +228,7 @@ public class ResponseContentParser extends StreamContentParser
             }
         }
 
-        private void notifyHeaders(HttpFieldsBuilder fields)
+        private void notifyHeaders(HttpFields fields)
         {
             if (fields != null)
             {

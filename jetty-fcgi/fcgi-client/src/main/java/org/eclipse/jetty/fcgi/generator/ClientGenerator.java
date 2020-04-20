@@ -26,7 +26,7 @@ import java.util.List;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -48,7 +48,7 @@ public class ClientGenerator extends Generator
         super(byteBufferPool, useDirectByteBuffers);
     }
 
-    public Result generateRequestHeaders(int request, HttpFieldsBuilder fields, Callback callback)
+    public Result generateRequestHeaders(int request, HttpFields fields, Callback callback)
     {
         request &= 0xFF_FF;
 

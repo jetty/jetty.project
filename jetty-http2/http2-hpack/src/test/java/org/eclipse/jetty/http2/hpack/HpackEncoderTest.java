@@ -245,9 +245,9 @@ public class HpackEncoderTest
     @Test
     public void testResize() throws Exception
     {
-        HttpFieldsBuilder fields = HttpFields.build();
-        fields.add("host", "localhost0");
-        fields.add("cookie", "abcdefghij");
+        HttpFields fields = HttpFields.build()
+            .add("host", "localhost0")
+            .add("cookie", "abcdefghij");
 
         HpackEncoder encoder = new HpackEncoder(4096);
 
