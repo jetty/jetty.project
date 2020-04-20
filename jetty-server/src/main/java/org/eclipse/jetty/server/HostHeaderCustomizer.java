@@ -66,6 +66,6 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
     {
         if (request.getHeader("Host") == null)
             // TODO set the field as well?
-            request.setHttpURI(HttpURI.from(request.getHttpURI()).host(serverName).port(serverPort).toHttpURI());
+            request.setHttpURI(HttpURI.build(request.getHttpURI()).host(serverName).port(serverPort));
     }
 }

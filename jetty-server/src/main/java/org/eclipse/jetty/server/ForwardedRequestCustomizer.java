@@ -399,7 +399,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
         if (match)
         {
-            HttpURI.Builder builder = HttpURI.from(request.getHttpURI());
+            HttpURI.Builder builder = HttpURI.build(request.getHttpURI());
             if (forwarded._proto != null)
             {
                 builder.scheme(forwarded._proto);
@@ -409,18 +409,18 @@ public class ForwardedRequestCustomizer implements Customizer
 
             if (forwarded._server != null && forwarded._host instanceof PortSetHostPort)
             {
-                request.setHttpFields(HttpFields.from(httpFields,
+                request.setHttpFields(HttpFields.build(httpFields,
                     new HostPortHttpField(forwarded._server, forwarded._host.getPort())));
                 builder.host(forwarded._server).port(forwarded._host.getPort());
             }
             else if (forwarded._host != null)
             {
-                request.setHttpFields(HttpFields.from(httpFields, new HostPortHttpField(forwarded._host)));
+                request.setHttpFields(HttpFields.build(httpFields, new HostPortHttpField(forwarded._host)));
                 builder.host(forwarded._host.getHost()).port(forwarded._host.getPort());
             }
             else if (forwarded._server != null)
             {
-                request.setHttpFields(HttpFields.from(httpFields, new HostPortHttpField(forwarded._server)));
+                request.setHttpFields(HttpFields.build(httpFields, new HostPortHttpField(forwarded._server)));
                 builder.host(forwarded._server).port(0);
             }
 
@@ -432,7 +432,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
             if (request.isSecure() && !wasSecure)
                 builder.scheme(HttpScheme.HTTPS);
-            request.setHttpURI(builder.toHttpURI());
+            request.setHttpURI(builder);
         }
     }
 

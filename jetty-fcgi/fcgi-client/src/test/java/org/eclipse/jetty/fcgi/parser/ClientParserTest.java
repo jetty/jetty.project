@@ -43,7 +43,7 @@ public class ClientParserTest
     public void testParseResponseHeaders() throws Exception
     {
         final int id = 13;
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
 
         final int statusCode = 200;
         final String statusMessage = "OK";
@@ -113,7 +113,7 @@ public class ClientParserTest
     public void testParseNoResponseContent() throws Exception
     {
         final int id = 13;
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         fields.put("Content-Length", "0");
 
         ByteBufferPool byteBufferPool = new MappedByteBufferPool();
@@ -158,7 +158,7 @@ public class ClientParserTest
     public void testParseSmallResponseContent() throws Exception
     {
         final int id = 13;
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
 
         ByteBuffer content = ByteBuffer.wrap(new byte[1024]);
         final int contentLength = content.remaining();
@@ -211,7 +211,7 @@ public class ClientParserTest
     public void testParseLargeResponseContent() throws Exception
     {
         final int id = 13;
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
 
         ByteBuffer content = ByteBuffer.wrap(new byte[128 * 1024]);
         final int contentLength = content.remaining();

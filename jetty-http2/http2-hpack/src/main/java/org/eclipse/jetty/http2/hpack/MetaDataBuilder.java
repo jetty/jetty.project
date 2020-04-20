@@ -32,7 +32,7 @@ import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 public class MetaDataBuilder
 {
     private final int _maxSize;
-    private final HttpFieldsBuilder _fields = HttpFields.empty();
+    private final HttpFieldsBuilder _fields = HttpFields.build();
     private int _size;
     private Integer _status;
     private String _method;
@@ -141,7 +141,9 @@ public class MetaDataBuilder
                             _authority = (HostPortHttpField)field;
                         else if (value != null)
                             _authority = new AuthorityHttpField(value);
+                        _fields.add(_authority); // TODO does this need to be lowercase "host"
                     }
+
                     _request = true;
                     break;
 
@@ -163,15 +165,9 @@ public class MetaDataBuilder
                     break;
 
                 case HOST:
-                    // :authority fields must come first.  If we have one, ignore the host header as far as authority goes.
+                    // if the :authority fields has come first then ignore the host header.
                     if (_authority == null)
-                    {
-                        if (field instanceof HostPortHttpField)
-                            _authority = (HostPortHttpField)field;
-                        else if (value != null)
-                            _authority = new AuthorityHttpField(value);
-                    }
-                    _fields.add(field);
+                        _fields.add(field);
                     break;
 
                 case CONTENT_LENGTH:
@@ -261,18 +257,22 @@ public class MetaDataBuilder
                 if (isConnect)
                     return new MetaData.ConnectRequest(_scheme, _authority, _path, fields, _protocol);
                 else
-                    // TODO is this really a known content length?
-                    return new MetaData.Request(_method, _scheme, _authority, _path, HttpVersion.HTTP_2, fields, _contentLength);
+                    return new MetaData.Request(
+                        _method,
+                        _scheme == null ? HttpScheme.HTTP.asString() : _scheme.asString(),
+                        _authority,
+                        _path,
+                        HttpVersion.HTTP_2,
+                        fields,
+                        _contentLength);
             }
             if (_response)
             {
                 if (_status == null)
                     throw new HpackException.StreamException("No Status");
-                // TODO is this really a known content length?
                 return new MetaData.Response(HttpVersion.HTTP_2, _status, fields, _contentLength);
             }
 
-            // TODO is this really a known content length?
             return new MetaData(HttpVersion.HTTP_2, fields, _contentLength);
         }
         finally

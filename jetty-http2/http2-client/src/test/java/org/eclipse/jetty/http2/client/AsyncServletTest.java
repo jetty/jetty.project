@@ -95,7 +95,7 @@ public class AsyncServletTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -132,7 +132,7 @@ public class AsyncServletTest extends AbstractTest
         client.setIdleTimeout(idleTimeout);
 
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
@@ -169,7 +169,7 @@ public class AsyncServletTest extends AbstractTest
         client.setIdleTimeout(10 * idleTimeout);
 
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
@@ -218,7 +218,7 @@ public class AsyncServletTest extends AbstractTest
         prepareClient();
         client.start();
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
@@ -329,7 +329,7 @@ public class AsyncServletTest extends AbstractTest
         client.start();
 
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch clientLatch = new CountDownLatch(1);

@@ -78,7 +78,7 @@ public class HttpGeneratorServerHTTPTest
 
     private static class Result
     {
-        private HttpFieldsBuilder _fields = HttpFields.empty();
+        private HttpFieldsBuilder _fields = HttpFields.build();
         private final String _body;
         private final int _code;
         private String _connection;

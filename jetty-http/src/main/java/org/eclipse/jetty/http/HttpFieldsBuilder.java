@@ -112,7 +112,7 @@ public class HttpFieldsBuilder implements Iterable<HttpField>, HttpFields
      */
     HttpFieldsBuilder(HttpFields fields, EnumSet<HttpHeader> removeFields)
     {
-        _fields = new ArrayList<>(fields.size());
+        _fields = new ArrayList<>(Math.max(fields.size() + 4, 16));
         for (HttpField f : fields)
         {
             if (f.getHeader() == null || removeFields.contains(f.getHeader()))

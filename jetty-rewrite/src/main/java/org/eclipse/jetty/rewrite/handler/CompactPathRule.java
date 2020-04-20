@@ -43,7 +43,7 @@ public class CompactPathRule extends Rule implements Rule.ApplyURI
         String uri = request.getRequestURI();
         if (uri.startsWith("/"))
             uri = URIUtil.compactPath(uri);
-        request.setHttpURI(HttpURI.from(request.getHttpURI(), uri).toHttpURI());
+        request.setHttpURI(HttpURI.build(request.getHttpURI(), uri));
     }
 
     @Override

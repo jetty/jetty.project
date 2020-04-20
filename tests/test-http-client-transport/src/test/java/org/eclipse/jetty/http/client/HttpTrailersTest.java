@@ -105,7 +105,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
             }
         });
 
-        HttpFieldsBuilder trailers = HttpFields.empty();
+        HttpFieldsBuilder trailers = HttpFields.build();
         trailers.put(trailerName, trailerValue);
 
         HttpRequest request = (HttpRequest)scenario.client.newRequest(scenario.newURI());
@@ -141,7 +141,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
             }
         });
 
-        HttpFieldsBuilder trailers = HttpFields.empty();
+        HttpFieldsBuilder trailers = HttpFields.build();
         HttpRequest request = (HttpRequest)scenario.client.newRequest(scenario.newURI());
         request = request.trailers(() -> trailers);
         ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
@@ -178,7 +178,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
 
                 if (once.compareAndSet(false, true))
                 {
-                    HttpFieldsBuilder trailers = HttpFields.empty();
+                    HttpFieldsBuilder trailers = HttpFields.build();
                     trailers.put(trailerName, trailerValue);
                     jettyResponse.setTrailers(() -> trailers);
                 }
@@ -241,7 +241,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                HttpFieldsBuilder trailers = HttpFields.empty();
+                HttpFieldsBuilder trailers = HttpFields.build();
                 response.setTrailerFields(() ->
                     trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
             }
@@ -283,7 +283,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                HttpFieldsBuilder trailers = HttpFields.empty();
+                HttpFieldsBuilder trailers = HttpFields.build();
                 trailers.put(trailerName, trailerValue);
 
                 response.setTrailerFields(() ->
@@ -334,7 +334,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 Response jettyResponse = jettyRequest.getResponse();
-                HttpFieldsBuilder trailers = HttpFields.empty();
+                HttpFieldsBuilder trailers = HttpFields.build();
                 trailers.put("name", "value");
                 jettyResponse.setTrailers(() -> trailers);
                 // Fill some other response field.

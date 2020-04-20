@@ -606,12 +606,12 @@ public class Server extends HandlerWrapper implements Attributes
 
                 if (baseUri == null)
                     baseUri = oldUri;
-                HttpURI.Builder builder = HttpURI.from(baseUri, encodedPathQuery);
-                if (StringUtil.isEmpty(builder.param()))
+                HttpURI.Builder builder = HttpURI.build(baseUri, encodedPathQuery);
+                if (StringUtil.isEmpty(builder.getParam()))
                     builder.param(baseUri.getParam());
-                if (StringUtil.isEmpty(builder.query()))
+                if (StringUtil.isEmpty(builder.getQuery()))
                     builder.query(baseUri.getQuery());
-                baseRequest.setHttpURI(builder.toHttpURI());
+                baseRequest.setHttpURI(builder);
 
                 if (baseUri.getQuery() != null && baseRequest.getQueryString() != null)
                     // TODO why can't the old map be passed?

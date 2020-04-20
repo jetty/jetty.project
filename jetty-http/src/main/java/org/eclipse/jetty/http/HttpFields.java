@@ -35,29 +35,29 @@ import java.util.stream.Stream;
  */
 public interface HttpFields extends Iterable<HttpField>
 {
-    HttpFields EMPTY = empty().asImmutable();
+    HttpFields EMPTY = build().asImmutable();
 
-    static HttpFieldsBuilder empty()
+    static HttpFieldsBuilder build()
     {
         return new HttpFieldsBuilder();
     }
 
-    static HttpFieldsBuilder empty(int capacity)
+    static HttpFieldsBuilder build(int capacity)
     {
         return new HttpFieldsBuilder(capacity);
     }
 
-    static HttpFieldsBuilder from(HttpFields fields)
+    static HttpFieldsBuilder build(HttpFields fields)
     {
         return new HttpFieldsBuilder(fields);
     }
 
-    static HttpFieldsBuilder from(HttpFields fields, HttpField replaceField)
+    static HttpFieldsBuilder build(HttpFields fields, HttpField replaceField)
     {
         return new HttpFieldsBuilder(fields, replaceField);
     }
 
-    static HttpFieldsBuilder from(HttpFields fields, EnumSet<HttpHeader> removeFields)
+    static HttpFieldsBuilder build(HttpFields fields, EnumSet<HttpHeader> removeFields)
     {
         return new HttpFieldsBuilder(fields, removeFields);
     }
@@ -74,7 +74,7 @@ public interface HttpFields extends Iterable<HttpField>
 
     default HttpFieldsBuilder asMutable()
     {
-        return from(this);
+        return build(this);
     }
 
     default String asString()

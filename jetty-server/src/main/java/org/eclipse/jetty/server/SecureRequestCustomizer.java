@@ -207,13 +207,13 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             SSLEngine sslEngine = sslConnection.getSSLEngine();
             customize(sslEngine, request);
 
-            request.setHttpURI(HttpURI.from(request.getHttpURI()).scheme(HttpScheme.HTTPS).toHttpURI());
+            request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS));
         }
         else if (endp instanceof ProxyConnectionFactory.ProxyEndPoint)
         {
             ProxyConnectionFactory.ProxyEndPoint proxy = (ProxyConnectionFactory.ProxyEndPoint)endp;
             if (request.getHttpURI().getScheme() == null && proxy.getAttribute(ProxyConnectionFactory.TLS_VERSION) != null)
-                request.setHttpURI(HttpURI.from(request.getHttpURI()).scheme(HttpScheme.HTTPS).toHttpURI());
+                request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS));
         }
 
         if (HttpScheme.HTTPS.is(request.getScheme()))

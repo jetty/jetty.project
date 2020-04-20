@@ -861,7 +861,7 @@ public class ResponseTest
     {
         Response response = getResponse();
         Request request = response.getHttpChannel().getRequest();
-        request.setHttpURI(HttpURI.from(request.getHttpURI()).host("myhost").port(8888).toHttpURI());
+        request.setHttpURI(HttpURI.build(request.getHttpURI()).host("myhost").port(8888).asImmutable());
         request.setContextPath("/path");
 
         assertEquals("http://myhost:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
@@ -950,12 +950,12 @@ public class ResponseTest
                     Response response = getResponse();
                     Request request = response.getHttpChannel().getRequest();
 
-                    HttpURI.Builder builder = HttpURI.from(request.getHttpURI(),
+                    HttpURI.Builder builder = HttpURI.build(request.getHttpURI(),
                         "/path/info;param;jsessionid=12345?query=0&more=1#target");
                     builder.scheme("http");
                     if (host != null)
                         builder.host(host).port(port);
-                    request.setHttpURI(builder.toHttpURI());
+                    request.setHttpURI(builder.asImmutable());
                     request.setContextPath("/path");
                     request.setRequestedSessionId("12345");
                     request.setRequestedSessionIdFromCookie(i > 2);
@@ -1331,7 +1331,7 @@ public class ResponseTest
     private Response getResponse()
     {
         _channel.recycle();
-        _channel.getRequest().setMetaData(new MetaData.Request("GET", new HttpURI("/path/info"), HttpVersion.HTTP_1_0, HttpFields.EMPTY));
+        _channel.getRequest().setMetaData(new MetaData.Request("GET", HttpURI.from("/path/info"), HttpVersion.HTTP_1_0, HttpFields.EMPTY));
         BufferUtil.clear(_content);
         return _channel.getResponse();
     }

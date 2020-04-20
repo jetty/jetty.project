@@ -356,7 +356,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
             // This is the settings from the HTTP2-Settings header.
             upgradeFrames.add(settingsFrame);
             // Remember the request to send a response.
-            upgradeFrames.add(new HeadersFrame(1, new Request(request), null, true));
+            upgradeFrames.add(new HeadersFrame(1, request, null, true));
         }
         return true;
     }

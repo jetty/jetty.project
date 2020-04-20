@@ -46,230 +46,98 @@ import org.eclipse.jetty.util.UrlEncoded;
  * return value of {@link #getDecodedPath()}.   If there are multiple parameters, the
  * {@link #getParam()} method returns only the last one.
  */
-public class HttpURI
+public interface HttpURI
 {
-    private final String _scheme;
-    private final String _user;
-    private final String _host;
-    private final int _port;
-    private final String _path;
-    private final String _param;
-    private final String _query;
-    private final String _fragment;
-    private String _uri;
-    private String _decodedPath;
-
-    public HttpURI(String uri)
-    {
-        Builder builder = new Builder(uri);
-        _uri = builder._uri;
-        _scheme = builder._scheme;
-        _user = builder._user;
-        _host = builder._host;
-        _port = builder._port;
-        _path = builder._path;
-        _decodedPath = builder._decodedPath;
-        _param = builder._param;
-        _query = builder._query;
-        _fragment = builder._fragment;
-    }
-
-    public HttpURI(URI uri)
-    {
-        Builder builder = new Builder(uri);
-        _uri = builder._uri;
-        _scheme = builder._scheme;
-        _user = builder._user;
-        _host = builder._host;
-        _port = builder._port;
-        _path = builder._path;
-        _decodedPath = builder._decodedPath;
-        _param = builder._param;
-        _query = builder._query;
-        _fragment = builder._fragment;
-    }
-
-    private HttpURI(String uri, String scheme, String user, String host, int port, String path, String decodedPath, String param, String query, String fragment)
-    {
-        _uri = uri;
-        _scheme = scheme;
-        _user = user;
-        _host = host;
-        _port = port;
-        _path = path;
-        _decodedPath = decodedPath;
-        _param = param;
-        _query = query;
-        _fragment = fragment;
-    }
-
-    public static HttpURI.Builder empty()
+    static HttpURI.Builder build()
     {
         return new HttpURI.Builder();
     }
 
-    public static HttpURI.Builder from(HttpURI uri)
+    static HttpURI.Builder build(HttpURI uri)
     {
         return new HttpURI.Builder(uri);
     }
 
-    public static HttpURI.Builder from(HttpURI uri, String pathQuery)
+    static HttpURI.Builder build(HttpURI uri, String pathQuery)
     {
         return new HttpURI.Builder(uri, pathQuery);
     }
 
-    public static HttpURI.Builder from(HttpURI uri, String path, String param, String query)
+    static HttpURI.Builder build(HttpURI uri, String path, String param, String query)
     {
         return new HttpURI.Builder(uri, path, param, query);
     }
 
-    public static HttpURI.Builder from(URI uri)
+    static HttpURI.Builder build(URI uri)
     {
         return new HttpURI.Builder(uri);
     }
 
-    public static HttpURI.Builder from(String uri)
+    static HttpURI.Builder build(String uri)
     {
         return new HttpURI.Builder(uri);
     }
 
-    @Override
-    public boolean equals(Object o)
+    static HttpURI from(URI uri)
     {
-        if (o == this)
-            return true;
-        if (!(o instanceof HttpURI))
-            return false;
-        return toString().equals(o.toString());
+        return new HttpURI.Immutable(uri);
     }
 
-    public String getAuthority()
+    static HttpURI from(String uri)
     {
-        if (_port > 0)
-            return _host + ":" + _port;
-        return _host;
+        return new HttpURI.Immutable(uri);
     }
 
-    public String getDecodedPath()
+    static HttpURI from(String method, String uri)
     {
-        if (_decodedPath == null && _path != null)
-            _decodedPath = URIUtil.canonicalPath(URIUtil.decodePath(_path));
-        return _decodedPath;
+        if (HttpMethod.CONNECT.is(method))
+            return new Immutable(uri, null, null, null, -1, uri, null, null, null, null);
+        return new HttpURI.Builder(uri).asImmutable();
     }
 
-    public String getFragment()
-    {
-        return _fragment;
-    }
+    String getAuthority();
 
-    public String getHost()
-    {
-        // Return null for empty host to retain compatibility with java.net.URI
-        if (_host != null && _host.isEmpty())
-            return null;
-        return _host;
-    }
+    String getDecodedPath();
 
-    public String getParam()
-    {
-        return _param;
-    }
+    String getFragment();
+
+    String getHost();
+
+    String getParam();
 
     /**
      * The parsed Path.
      *
      * @return the path as parsed on valid URI.  null for invalid URI.
      */
-    public String getPath()
-    {
-        return _path;
-    }
+    String getPath();
 
-    public String getPathQuery()
-    {
-        if (_query == null)
-            return _path;
-        return _path + "?" + _query;
-    }
+    String getPathQuery();
 
-    public int getPort()
-    {
-        return _port;
-    }
+    int getPort();
 
-    public String getQuery()
-    {
-        return _query;
-    }
+    String getQuery();
 
-    public String getScheme()
-    {
-        return _scheme;
-    }
+    String getScheme();
 
-    public String getUser()
-    {
-        return _user;
-    }
+    String getUser();
 
-    public boolean hasAuthority()
-    {
-        return _host != null;
-    }
+    boolean hasAuthority();
 
-    public boolean hasQuery()
-    {
-        return _query != null && !_query.isEmpty();
-    }
+    boolean hasQuery();
 
-    public boolean isAbsolute()
-    {
-        return !StringUtil.isEmpty(_scheme);
-    }
+    boolean isAbsolute();
 
-    @Override
-    public String toString()
-    {
-        if (_uri == null)
-        {
-            StringBuilder out = new StringBuilder();
+    HttpURI asImmutable();
 
-            if (_scheme != null)
-                out.append(_scheme).append(':');
+    HttpURI.Builder asMutable();
 
-            if (_host != null)
-            {
-                out.append("//");
-                if (_user != null)
-                    out.append(_user).append('@');
-                out.append(_host);
-            }
-
-            if (_port > 0)
-                out.append(':').append(_port);
-
-            if (_path != null)
-                out.append(_path);
-
-            if (_query != null)
-                out.append('?').append(_query);
-
-            if (_fragment != null)
-                out.append('#').append(_fragment);
-
-            if (out.length() > 0)
-                _uri = out.toString();
-            else
-                _uri = "";
-        }
-        return _uri;
-    }
-
-    public URI toURI()
+    default URI toURI()
     {
         try
         {
-            return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
+            String query = getQuery();
+            return new URI(getScheme(), null, getHost(), getPort(), getPath(), query == null ? null : UrlEncoded.decodeString(query), getFragment());
         }
         catch (URISyntaxException x)
         {
@@ -277,7 +145,236 @@ public class HttpURI
         }
     }
 
-    public static class Builder
+    class Immutable implements HttpURI
+    {
+        private final String _scheme;
+        private final String _user;
+        private final String _host;
+        private final int _port;
+        private final String _path;
+        private final String _param;
+        private final String _query;
+        private final String _fragment;
+        private String _uri;
+        private String _decodedPath;
+
+        private Immutable(String uri)
+        {
+            Builder builder = new Builder(uri);
+            _uri = builder._uri;
+            _scheme = builder._scheme;
+            _user = builder._user;
+            _host = builder._host;
+            _port = builder._port;
+            _path = builder._path;
+            _decodedPath = builder._decodedPath;
+            _param = builder._param;
+            _query = builder._query;
+            _fragment = builder._fragment;
+        }
+
+        private Immutable(URI uri)
+        {
+            Builder builder = new Builder(uri);
+            _uri = builder._uri;
+            _scheme = builder._scheme;
+            _user = builder._user;
+            _host = builder._host;
+            _port = builder._port;
+            _path = builder._path;
+            _decodedPath = builder._decodedPath;
+            _param = builder._param;
+            _query = builder._query;
+            _fragment = builder._fragment;
+        }
+
+        private Immutable(String uri, String scheme, String user, String host, int port, String path, String decodedPath, String param, String query, String fragment)
+        {
+            _uri = uri;
+            _scheme = scheme;
+            _user = user;
+            _host = host;
+            _port = port;
+            _path = path;
+            _decodedPath = decodedPath;
+            _param = param;
+            _query = query;
+            _fragment = fragment;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (o == this)
+                return true;
+            if (!(o instanceof HttpURI))
+                return false;
+            return toString().equals(o.toString());
+        }
+
+        @Override
+        public String getAuthority()
+        {
+            if (_port > 0)
+                return _host + ":" + _port;
+            return _host;
+        }
+
+        @Override
+        public String getDecodedPath()
+        {
+            if (_decodedPath == null && _path != null)
+                _decodedPath = URIUtil.canonicalPath(URIUtil.decodePath(_path));
+            return _decodedPath;
+        }
+
+        @Override
+        public String getFragment()
+        {
+            return _fragment;
+        }
+
+        @Override
+        public String getHost()
+        {
+            // Return null for empty host to retain compatibility with java.net.URI
+            if (_host != null && _host.isEmpty())
+                return null;
+            return _host;
+        }
+
+        @Override
+        public String getParam()
+        {
+            return _param;
+        }
+
+        /**
+         * The parsed Path.
+         *
+         * @return the path as parsed on valid URI.  null for invalid URI.
+         */
+        @Override
+        public String getPath()
+        {
+            return _path;
+        }
+
+        @Override
+        public String getPathQuery()
+        {
+            if (_query == null)
+                return _path;
+            return _path + "?" + _query;
+        }
+
+        @Override
+        public int getPort()
+        {
+            return _port;
+        }
+
+        @Override
+        public String getQuery()
+        {
+            return _query;
+        }
+
+        @Override
+        public String getScheme()
+        {
+            return _scheme;
+        }
+
+        @Override
+        public String getUser()
+        {
+            return _user;
+        }
+
+        @Override
+        public boolean hasAuthority()
+        {
+            return _host != null;
+        }
+
+        @Override
+        public boolean hasQuery()
+        {
+            return _query != null && !_query.isEmpty();
+        }
+
+        @Override
+        public boolean isAbsolute()
+        {
+            return !StringUtil.isEmpty(_scheme);
+        }
+
+        @Override
+        public URI toURI()
+        {
+            try
+            {
+                return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
+            }
+            catch (URISyntaxException x)
+            {
+                throw new RuntimeException(x);
+            }
+        }
+
+        @Override
+        public HttpURI asImmutable()
+        {
+            return this;
+        }
+
+        @Override
+        public HttpURI.Builder asMutable()
+        {
+            return build(this);
+        }
+
+        @Override
+        public String toString()
+        {
+            if (_uri == null)
+            {
+                StringBuilder out = new StringBuilder();
+
+                if (_scheme != null)
+                    out.append(_scheme).append(':');
+
+                if (_host != null)
+                {
+                    out.append("//");
+                    if (_user != null)
+                        out.append(_user).append('@');
+                    out.append(_host);
+                }
+
+                if (_port > 0)
+                    out.append(':').append(_port);
+
+                if (_path != null)
+                    out.append(_path);
+
+                if (_query != null)
+                    out.append('?').append(_query);
+
+                if (_fragment != null)
+                    out.append('#').append(_fragment);
+
+                if (out.length() > 0)
+                    _uri = out.toString();
+                else
+                    _uri = "";
+            }
+            return _uri;
+        }
+    }
+
+    class Builder implements HttpURI
     {
         private enum State
         {
@@ -305,46 +402,46 @@ public class HttpURI
         private String _query;
         private String _fragment;
 
-        Builder()
+        private Builder()
         {
         }
 
-        Builder(HttpURI uri)
+        private Builder(HttpURI uri)
         {
             uri(uri);
         }
 
-        Builder(HttpURI baseURI, String pathQuery)
+        private Builder(HttpURI baseURI, String pathQuery)
         {
             _uri = null;
-            _scheme = baseURI._scheme;
-            _user = baseURI._user;
-            _host = baseURI._host;
-            _port = baseURI._port;
+            _scheme = baseURI.getScheme();
+            _user = baseURI.getUser();
+            _host = baseURI.getHost();
+            _port = baseURI.getPort();
             if (pathQuery != null)
                 parse(State.PATH, pathQuery);
         }
 
-        Builder(HttpURI baseURI, String path, String param, String query)
+        private Builder(HttpURI baseURI, String path, String param, String query)
         {
             _uri = null;
-            _scheme = baseURI._scheme;
-            _user = baseURI._user;
-            _host = baseURI._host;
-            _port = baseURI._port;
+            _scheme = baseURI.getScheme();
+            _user = baseURI.getUser();
+            _host = baseURI.getHost();
+            _port = baseURI.getPort();
             _path = path;
             _param = param;
             _query = query;
             _fragment = null;
         }
 
-        Builder(String uri)
+        private Builder(String uri)
         {
             _port = -1;
             parse(State.START, uri);
         }
 
-        Builder(URI uri)
+        private Builder(URI uri)
         {
             _uri = null;
 
@@ -369,7 +466,7 @@ public class HttpURI
             _fragment = uri.getFragment();
         }
 
-        public Builder(String scheme, String host, int port, String pathQuery)
+        private Builder(String scheme, String host, int port, String pathQuery)
         {
             _uri = null;
 
@@ -381,16 +478,20 @@ public class HttpURI
                 parse(State.PATH, pathQuery);
         }
 
-        public Builder(String method, String uri)
+        @Override
+        public HttpURI asImmutable()
         {
-            _uri = uri;
-            if (HttpMethod.CONNECT.is(method))
-                _path = uri;
-            else
-                parse(uri.startsWith("/") ? State.PATH : State.START, uri);
+            return new Immutable(_uri, _scheme, _user, _host, _port, _path, _decodedPath, _param, _query, _fragment);
         }
 
-        public String authority()
+        @Override
+        public HttpURI.Builder asMutable()
+        {
+            return this;
+        }
+
+        @Override
+        public String getAuthority()
         {
             if (_port > 0)
                 return _host + ":" + _port;
@@ -423,11 +524,6 @@ public class HttpURI
             return this;
         }
 
-        public HttpURI toHttpURI()
-        {
-            return new HttpURI(_uri, _scheme, _user, _host, _port, _path, _decodedPath, _param, _query, _fragment);
-        }
-
         public void clear()
         {
             _uri = null;
@@ -442,7 +538,8 @@ public class HttpURI
             _user = null;
         }
 
-        public String decodedPath()
+        @Override
+        public String getDecodedPath()
         {
             if (_decodedPath == null && _path != null)
                 _decodedPath = URIUtil.canonicalPath(URIUtil.decodePath(_path));
@@ -457,7 +554,8 @@ public class HttpURI
             return this;
         }
 
-        public String fragment()
+        @Override
+        public String getFragment()
         {
             return _fragment;
         }
@@ -469,17 +567,20 @@ public class HttpURI
             return this;
         }
 
+        @Override
         public boolean hasAuthority()
         {
             return _host != null;
         }
 
+        @Override
         public boolean hasQuery()
         {
             return _query != null && !_query.isEmpty();
         }
 
-        public String host()
+        @Override
+        public String getHost()
         {
             return _host;
         }
@@ -491,6 +592,7 @@ public class HttpURI
             return this;
         }
 
+        @Override
         public boolean isAbsolute()
         {
             return _scheme != null && !_scheme.isEmpty();
@@ -506,7 +608,8 @@ public class HttpURI
             return this;
         }
 
-        public String param()
+        @Override
+        public String getParam()
         {
             return _param;
         }
@@ -522,12 +625,8 @@ public class HttpURI
             return this;
         }
 
-        /**
-         * The parsed Path.
-         *
-         * @return the path as parsed on valid URI.  null for invalid URI.
-         */
-        public String path()
+        @Override
+        public String getPath()
         {
             return _path;
         }
@@ -543,7 +642,8 @@ public class HttpURI
             return this;
         }
 
-        public String pathQuery()
+        @Override
+        public String getPathQuery()
         {
             if (_query == null)
                 return _path;
@@ -562,7 +662,8 @@ public class HttpURI
             return this;
         }
 
-        public int port()
+        @Override
+        public int getPort()
         {
             return _port;
         }
@@ -574,7 +675,8 @@ public class HttpURI
             return this;
         }
 
-        public String query()
+        @Override
+        public String getQuery()
         {
             return _query;
         }
@@ -586,7 +688,8 @@ public class HttpURI
             return this;
         }
 
-        public String scheme()
+        @Override
+        public String getScheme()
         {
             return _scheme;
         }
@@ -606,7 +709,7 @@ public class HttpURI
         @Override
         public String toString()
         {
-            return toHttpURI().toString();
+            return asImmutable().toString();
         }
 
         public URI toURI()
@@ -623,16 +726,16 @@ public class HttpURI
 
         public Builder uri(HttpURI uri)
         {
-            _uri = uri._uri;
-            _scheme = uri._scheme;
-            _user = uri._user;
-            _host = uri._host;
-            _port = uri._port;
-            _path = uri._path;
-            _decodedPath = uri._decodedPath;
-            _param = uri._param;
-            _query = uri._query;
-            _fragment = uri._fragment;
+            _uri = null;
+            _scheme = uri.getScheme();
+            _user = uri.getUser();
+            _host = uri.getHost();
+            _port = uri.getPort();
+            _path = uri.getPath();
+            _decodedPath = uri.getDecodedPath();
+            _param = uri.getParam();
+            _query = uri.getQuery();
+            _fragment = uri.getFragment();
             return this;
         }
 
@@ -653,7 +756,7 @@ public class HttpURI
             return this;
         }
 
-        public String user()
+        public String getUser()
         {
             return _user;
         }

@@ -132,7 +132,7 @@ public class RawHTTP2ProxyTest
                             LOGGER.debug("SERVER1 received {}", frame);
                         if (frame.isEndStream())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
+                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.build());
                             HeadersFrame reply = new HeadersFrame(stream.getId(), response, null, false);
                             if (LOGGER.isDebugEnabled())
                                 LOGGER.debug("SERVER1 sending {}", reply);
@@ -168,7 +168,7 @@ public class RawHTTP2ProxyTest
                         if (LOGGER.isDebugEnabled())
                             LOGGER.debug("SERVER2 received {}", frame);
                         callback.succeeded();
-                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
+                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.build());
                         Callback.Completable completable1 = new Callback.Completable();
                         HeadersFrame reply = new HeadersFrame(stream.getId(), response, null, false);
                         if (LOGGER.isDebugEnabled())
@@ -184,7 +184,7 @@ public class RawHTTP2ProxyTest
                             return completable2;
                         }).thenRun(() ->
                         {
-                            MetaData trailer = new MetaData(HttpVersion.HTTP_2, HttpFields.empty());
+                            MetaData trailer = new MetaData(HttpVersion.HTTP_2, HttpFields.build());
                             HeadersFrame end = new HeadersFrame(stream.getId(), trailer, null, true);
                             if (LOGGER.isDebugEnabled())
                                 LOGGER.debug("SERVER2 sending {}", end);
@@ -206,9 +206,9 @@ public class RawHTTP2ProxyTest
         Session clientSession = clientPromise.get(5, TimeUnit.SECONDS);
 
         // Send a request with trailers for server1.
-        HttpFieldsBuilder fields1 = HttpFields.empty();
+        HttpFieldsBuilder fields1 = HttpFields.build();
         fields1.put("X-Target", String.valueOf(connector1.getLocalPort()));
-        MetaData.Request request1 = new MetaData.Request("GET", new HttpURI("http://localhost/server1"), HttpVersion.HTTP_2, fields1);
+        MetaData.Request request1 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields1);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
         CountDownLatch latch1 = new CountDownLatch(1);
         clientSession.newStream(new HeadersFrame(request1, null, false), streamPromise1, new Stream.Listener.Adapter()
@@ -231,12 +231,12 @@ public class RawHTTP2ProxyTest
             }
         });
         Stream stream1 = streamPromise1.get(5, TimeUnit.SECONDS);
-        stream1.headers(new HeadersFrame(stream1.getId(), new MetaData(HttpVersion.HTTP_2, HttpFields.empty()), null, true), Callback.NOOP);
+        stream1.headers(new HeadersFrame(stream1.getId(), new MetaData(HttpVersion.HTTP_2, HttpFields.build()), null, true), Callback.NOOP);
 
         // Send a request for server2.
-        HttpFieldsBuilder fields2 = HttpFields.empty();
+        HttpFieldsBuilder fields2 = HttpFields.build();
         fields2.put("X-Target", String.valueOf(connector2.getLocalPort()));
-        MetaData.Request request2 = new MetaData.Request("GET", new HttpURI("http://localhost/server1"), HttpVersion.HTTP_2, fields2);
+        MetaData.Request request2 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields2);
         FuturePromise<Stream> streamPromise2 = new FuturePromise<>();
         CountDownLatch latch2 = new CountDownLatch(1);
         clientSession.newStream(new HeadersFrame(request2, null, false), streamPromise2, new Stream.Listener.Adapter()

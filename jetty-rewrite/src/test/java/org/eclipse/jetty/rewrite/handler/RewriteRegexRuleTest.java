@@ -63,12 +63,12 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
         RewriteRegexRule rule = new RewriteRegexRule();
 
         reset();
-        _request.setHttpURI(HttpURI.from(_request.getHttpURI()).toHttpURI());
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI()).asImmutable());
 
         rule.setRegex(scenario.regex);
         rule.setReplacement(scenario.replacement);
 
-        _request.setHttpURI(HttpURI.from(_request.getHttpURI(),scenario.uriPathQuery, null, scenario.queryString).toHttpURI());
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), scenario.uriPathQuery, null, scenario.queryString).asImmutable());
 
         String result = rule.matchAndApply(scenario.uriPathQuery, _request, _response);
         assertEquals(scenario.expectedRequestURI, result);
@@ -107,7 +107,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
         rule.setRegex(scenario.regex);
         rule.setReplacement(scenario.replacement);
 
-        _request.setHttpURI(HttpURI.from(_request.getHttpURI(),scenario.uriPathQuery, null, scenario.queryString).toHttpURI());
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), scenario.uriPathQuery, null, scenario.queryString).asImmutable());
         _request.getAttributes().clearAttributes();
 
         String result = container.apply(URIUtil.decodePath(scenario.uriPathQuery), _request, _response);

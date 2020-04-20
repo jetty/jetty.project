@@ -62,15 +62,15 @@ public class PushedResourcesTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                HttpURI pushURI = new HttpURI("http://localhost:" + connector.getLocalPort() + pushPath);
-                MetaData.Request pushRequest = new MetaData.Request(HttpMethod.GET.asString(), pushURI, HttpVersion.HTTP_2, HttpFields.empty());
+                HttpURI pushURI = HttpURI.from("http://localhost:" + connector.getLocalPort() + pushPath);
+                MetaData.Request pushRequest = new MetaData.Request(HttpMethod.GET.asString(), pushURI, HttpVersion.HTTP_2, HttpFields.build());
                 stream.push(new PushPromiseFrame(stream.getId(), 0, pushRequest), new Promise.Adapter<>()
                 {
                     @Override
                     public void succeeded(Stream pushStream)
                     {
                         // Just send the normal response and wait for the reset.
-                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
+                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.build());
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                     }
                 }, new Stream.Listener.Adapter()

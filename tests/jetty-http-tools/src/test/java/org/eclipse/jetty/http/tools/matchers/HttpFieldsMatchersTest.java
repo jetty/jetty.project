@@ -31,7 +31,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeader()
     {
-        HttpFields fields = HttpFields.empty()
+        HttpFields fields = HttpFields.build()
             .put("a", "foo")
             .put("b", "bar")
             .put("c", "fizz")
@@ -43,7 +43,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testNotContainsHeader()
     {
-        HttpFieldsBuilder fields = HttpFields.empty()
+        HttpFieldsBuilder fields = HttpFields.build()
             .put("a", "foo")
             .put("b", "bar")
             .put("c", "fizz");
@@ -59,7 +59,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderMisMatch()
     {
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");
@@ -75,7 +75,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderValueMisMatchNoSuchHeader()
     {
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");
@@ -91,7 +91,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderValueMisMatchNoSuchValue()
     {
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");
@@ -107,7 +107,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderValue()
     {
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");

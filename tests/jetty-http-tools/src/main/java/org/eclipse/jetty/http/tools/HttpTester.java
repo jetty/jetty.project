@@ -548,7 +548,7 @@ public class HttpTester
         @Override
         public MetaData.Request getInfo()
         {
-            return new MetaData.Request(_method, new HttpURI(_uri), _version, this, _content == null ? 0 : _content.size());
+            return new MetaData.Request(_method, HttpURI.from(_uri), _version, this, _content == null ? 0 : _content.size());
         }
 
         @Override

@@ -60,8 +60,8 @@ public class HttpSenderOverFCGI extends HttpSender
     {
         Request request = exchange.getRequest();
         // Copy the request headers to be able to convert them properly
-        HttpFieldsBuilder headers = HttpFields.from(request.getHeaders());
-        HttpFieldsBuilder fcgiHeaders = HttpFields.empty();
+        HttpFieldsBuilder headers = HttpFields.build(request.getHeaders());
+        HttpFieldsBuilder fcgiHeaders = HttpFields.build();
 
         // FastCGI headers based on the URI
         URI uri = request.getURI();

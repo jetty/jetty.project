@@ -74,7 +74,7 @@ public class StreamCountTest extends AbstractTest
                     {
                         if (frame.isEndStream())
                         {
-                            HttpFieldsBuilder fields = HttpFields.empty();
+                            HttpFieldsBuilder fields = HttpFields.build();
                             MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, fields);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), callback);
                         }
@@ -99,7 +99,7 @@ public class StreamCountTest extends AbstractTest
 
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame1 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
@@ -144,7 +144,7 @@ public class StreamCountTest extends AbstractTest
                     {
                         if (frame.isEndStream())
                         {
-                            HttpFieldsBuilder fields = HttpFields.empty();
+                            HttpFieldsBuilder fields = HttpFields.build();
                             MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, fields);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), callback);
                         }
@@ -167,7 +167,7 @@ public class StreamCountTest extends AbstractTest
             }
         });
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame1 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();

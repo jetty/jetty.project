@@ -89,7 +89,7 @@ public class WebSocketTester
 
     protected static HttpFieldsBuilder newUpgradeRequest(String extensions)
     {
-        HttpFieldsBuilder fields = HttpFields.empty()
+        HttpFieldsBuilder fields = HttpFields.build()
             .add(HttpHeader.HOST, "127.0.0.1")
             .add(HttpHeader.UPGRADE, "websocket")
             .add(HttpHeader.CONNECTION, "Upgrade")

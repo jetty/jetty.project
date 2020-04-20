@@ -2145,18 +2145,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 String pathInfo;
                 if (StringUtil.isEmpty(contextPath))
                 {
-                    uri = new HttpURI.Builder(null, null, 0, uriInContext).toHttpURI();
+                    uri = HttpURI.from(uriInContext);
                     pathInfo = URIUtil.canonicalPath(uri.getDecodedPath());
                     if (StringUtil.isEmpty(pathInfo))
                         return null;
                 }
                 else
                 {
-                    HttpURI.Builder builder = new HttpURI.Builder(null, null, 0, uriInContext);
-                    if (StringUtil.isEmpty(URIUtil.canonicalPath(builder.decodedPath())))
+                    HttpURI.Builder builder = HttpURI.build(uriInContext);
+                    if (StringUtil.isEmpty(URIUtil.canonicalPath(builder.getDecodedPath())))
                         return null;
-                    builder.path(URIUtil.addPaths(contextPath,builder.path()));
-                    uri = builder.toHttpURI();
+                    builder.path(URIUtil.addPaths(contextPath,builder.getPath()));
+                    uri = builder.asImmutable();
                     pathInfo = uri.getDecodedPath().substring(contextPath.length());
                 }
                 return new Dispatcher(ContextHandler.this, uri, pathInfo);

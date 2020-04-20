@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 public class MetaData implements Iterable<HttpField>
 {
     private static final Supplier<HttpFields> SELF_SUPPLIED_TRAILORS = () -> null;
-    private static final HttpFields SUPPLIED_TRAILERS = HttpFields.empty().asImmutable();
+    private static final HttpFields SUPPLIED_TRAILERS = HttpFields.build(HttpFields.EMPTY).asImmutable();
     private final HttpVersion _httpVersion;
     private final HttpFields _fields;
     private final long _contentLength;
@@ -149,20 +149,15 @@ public class MetaData implements Iterable<HttpField>
         {
             super(version, fields, contentLength);
             _method = method;
-            _uri = uri;
+            _uri = uri.asImmutable();
         }
 
-        public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields, long contentLength)
+        public Request(String method, String scheme, HostPortHttpField authority, String uri, HttpVersion version, HttpFields fields, long contentLength)
         {
-            this(method, scheme == null ? null : scheme.asString(), hostPort, uri, version, fields, contentLength);
-        }
-
-        public Request(String method, String scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields, long contentLength)
-        {
-            this(method, new HttpURI.Builder(scheme,
-                hostPort == null ? null : hostPort.getHost(),
-                hostPort == null ? -1 : hostPort.getPort(),
-                uri).toHttpURI(), version, fields, contentLength);
+            // TODO review this constructor
+            this(method,
+                HttpURI.build().scheme(scheme).host(authority == null ? null : authority.getHost()).port(authority == null ? -1 : authority.getPort()).pathQuery(uri),
+                version, fields, contentLength);
         }
 
         public Request(String method, HttpURI uri, HttpVersion version, HttpFieldsBuilder fields, long contentLength, Supplier<HttpFields> trailers)

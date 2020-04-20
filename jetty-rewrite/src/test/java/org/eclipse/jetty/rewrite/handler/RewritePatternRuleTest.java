@@ -88,7 +88,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
     {
         String replacement = "/replace";
         String queryString = "request=parameter";
-        _request.setHttpURI(HttpURI.from(_request.getHttpURI(),"/old/context", null, queryString).toHttpURI());
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/old/context", null, queryString).asImmutable());
 
         RewritePatternRule rewritePatternRule = new RewritePatternRule();
         rewritePatternRule.setPattern("/old/context");
@@ -110,7 +110,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
         String[] split = replacement.split("\\?", 2);
         String path = split[0];
         String queryString = split[1];
-        _request.setHttpURI(HttpURI.from(_request.getHttpURI(),"/old/context", null, queryString).toHttpURI());
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/old/context", null, queryString).asImmutable());
 
         RewritePatternRule rewritePatternRule = new RewritePatternRule();
         rewritePatternRule.setPattern("/old/context");

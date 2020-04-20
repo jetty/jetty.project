@@ -77,7 +77,7 @@ public class SpnegoAuthenticatorTest
         };
         Request req = channel.getRequest();
         Response res = channel.getResponse();
-        MetaData.Request metadata = new MetaData.Request(null, HttpURI.from("http://localhost").toHttpURI(), null, HttpFields.empty());
+        MetaData.Request metadata = new MetaData.Request(null, HttpURI.build("http://localhost").asImmutable(), null, HttpFields.build());
         req.setMetaData(metadata);
 
         assertThat(channel.getState().handling(), is(HttpChannelState.Action.DISPATCH));
@@ -115,8 +115,8 @@ public class SpnegoAuthenticatorTest
 
         // Create a bogus Authorization header. We don't care about the actual credentials.
 
-        MetaData.Request metadata = new MetaData.Request(null, HttpURI.from("http://localhost").toHttpURI(), null,
-            HttpFields.empty().add(HttpHeader.AUTHORIZATION, "Basic asdf"));
+        MetaData.Request metadata = new MetaData.Request(null, HttpURI.build("http://localhost").asImmutable(), null,
+            HttpFields.build().add(HttpHeader.AUTHORIZATION, "Basic asdf"));
         req.setMetaData(metadata);
 
         assertThat(channel.getState().handling(), is(HttpChannelState.Action.DISPATCH));

@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -230,12 +231,12 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         }
     }
 
-    private HttpFieldsBuilder retrieveTrailers()
+    private HttpFields retrieveTrailers()
     {
-        Supplier<HttpFieldsBuilder> supplier = metaData.getTrailerSupplier();
+        Supplier<HttpFields> supplier = metaData.getTrailerSupplier();
         if (supplier == null)
             return null;
-        HttpFieldsBuilder trailers = supplier.get();
+        HttpFields trailers = supplier.get();
         if (trailers == null)
             return null;
         return trailers.size() == 0 ? null : trailers;

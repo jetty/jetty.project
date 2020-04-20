@@ -111,18 +111,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
             HttpFields fields = request.getFields();
 
-            // HTTP/2 sends the Host header as the :authority
-            // pseudo-header, so we need to synthesize a Host header.
-            if (!fields.contains(HttpHeader.HOST))
-            {
-                String authority = request.getURI().getAuthority();
-                if (authority != null)
-                {
-                    // Lower-case to be consistent with other HTTP/2 headers.
-                    fields.put("host", authority);
-                }
-            }
-
             _expect100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
             HttpFieldsBuilder response = getResponse().getHttpFields();
@@ -300,7 +288,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     @Override
     public Runnable onTrailer(HeadersFrame frame)
     {
-        HttpFieldsBuilder trailers = frame.getMetaData().getFields();
+        HttpFields trailers = frame.getMetaData().getFields();
         if (trailers.size() > 0)
             onTrailers(trailers);
 

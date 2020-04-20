@@ -442,7 +442,7 @@ public class ProxyWithDynamicTransportTest
         http2Client.connect(new InetSocketAddress("localhost", proxyConnector.getLocalPort()), new Session.Listener.Adapter(), sessionPromise);
         Session session = sessionPromise.get(5, TimeUnit.SECONDS);
         String serverAddress = "localhost:" + serverConnector.getLocalPort();
-        MetaData.ConnectRequest connect = new MetaData.ConnectRequest(HttpScheme.HTTP, new AuthorityHttpField(serverAddress), null, HttpFields.empty(), null);
+        MetaData.ConnectRequest connect = new MetaData.ConnectRequest(HttpScheme.HTTP, new AuthorityHttpField(serverAddress), null, HttpFields.build(), null);
         HeadersFrame frame = new HeadersFrame(connect, null, false);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         CountDownLatch tunnelLatch = new CountDownLatch(1);
@@ -527,7 +527,7 @@ public class ProxyWithDynamicTransportTest
         http2Client.connect(new InetSocketAddress("localhost", proxyConnector.getLocalPort()), new Session.Listener.Adapter(), sessionPromise);
         Session session = sessionPromise.get(5, TimeUnit.SECONDS);
         String serverAddress = "localhost:" + serverConnector.getLocalPort();
-        MetaData.ConnectRequest connect = new MetaData.ConnectRequest(HttpScheme.HTTP, new AuthorityHttpField(serverAddress), null, HttpFields.empty(), null);
+        MetaData.ConnectRequest connect = new MetaData.ConnectRequest(HttpScheme.HTTP, new AuthorityHttpField(serverAddress), null, HttpFields.build(), null);
         HeadersFrame frame = new HeadersFrame(connect, null, false);
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         CountDownLatch tunnelLatch = new CountDownLatch(1);

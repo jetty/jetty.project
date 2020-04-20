@@ -93,7 +93,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     {
         HttpURI baseURI = request.getHttpURI();
         String query = URIUtil.addQueries(baseURI.getQuery(),_query);
-        request.setHttpURI(HttpURI.from(baseURI, newURI, baseURI.getParam(), query).toHttpURI());
+        request.setHttpURI(HttpURI.build(baseURI, newURI, baseURI.getParam(), query));
     }
 
     /**

@@ -110,7 +110,7 @@ public class RewriteRegexRule extends RegexRule implements Rule.ApplyURI
         HttpURI baseURI = request.getHttpURI();
         if (_query == null)
         {
-            request.setHttpURI(HttpURI.from(baseURI, newURI, baseURI.getParam(), baseURI.getQuery()).toHttpURI());
+            request.setHttpURI(HttpURI.build(baseURI, newURI, baseURI.getParam(), baseURI.getQuery()));
         }
         else
         {
@@ -119,7 +119,7 @@ public class RewriteRegexRule extends RegexRule implements Rule.ApplyURI
             if (!_queryGroup)
                 query = URIUtil.addQueries(baseURI.getQuery(), query);
 
-            request.setHttpURI(HttpURI.from(baseURI, newURI, baseURI.getParam(), query).toHttpURI());
+            request.setHttpURI(HttpURI.build(baseURI, newURI, baseURI.getParam(), query));
         }
     }
 

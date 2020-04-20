@@ -34,7 +34,7 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTestCase
     {
         start(false);
         _rule = new ForwardedSchemeHeaderRule();
-        _request.setHttpURI(HttpURI.from(_request.getRequestURI()).scheme((String)null).toHttpURI());
+        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).scheme((String)null).asImmutable());
     }
 
     @Test
@@ -72,13 +72,13 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTestCase
         _rule.matchAndApply("/", _request, _response);
         assertEquals("https", _request.getScheme());
 
-        _request.setHttpURI(HttpURI.from(_request.getRequestURI()).scheme("other").toHttpURI());
+        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).scheme("other").asImmutable());
         // header value doesn't match rule's value
         setRequestHeader("Front-End-Https", "off");
         _rule.matchAndApply("/", _request, _response);
         assertEquals("other", _request.getScheme());
 
-        _request.setHttpURI(HttpURI.from(_request.getRequestURI()).scheme((String)null).toHttpURI());
+        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).scheme((String)null).asImmutable());
         // header value can be any value
         setRequestHeader("Front-End-Https", "any");
         _rule.setHeaderValue(null);
@@ -88,6 +88,6 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTestCase
 
     private void setRequestHeader(String header, String headerValue)
     {
-        _request.setHttpFields(HttpFields.from(_request.getHttpFields()).put(header, headerValue));
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields()).put(header, headerValue));
     }
 }

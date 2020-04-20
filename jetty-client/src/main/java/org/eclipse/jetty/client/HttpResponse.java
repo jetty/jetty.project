@@ -30,7 +30,7 @@ import org.eclipse.jetty.http.HttpVersion;
 
 public class HttpResponse implements Response
 {
-    private final HttpFieldsBuilder headers = HttpFields.empty();
+    private final HttpFieldsBuilder headers = HttpFields.build();
     private final Request request;
     private final List<ResponseListener> listeners;
     private HttpVersion version;
@@ -112,7 +112,7 @@ public class HttpResponse implements Response
     public HttpResponse trailer(HttpField trailer)
     {
         if (trailers == null)
-            trailers = HttpFields.empty();
+            trailers = HttpFields.build();
         trailers.add(trailer);
         return this;
     }

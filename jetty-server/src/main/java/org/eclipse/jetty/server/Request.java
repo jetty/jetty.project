@@ -389,7 +389,7 @@ public class Request implements HttpServletRequest
         if (!isPushSupported())
             return null;
 
-        HttpFieldsBuilder fields = HttpFields.from(getHttpFields(), NOT_PUSHED_HEADERS);
+        HttpFieldsBuilder fields = HttpFields.build(getHttpFields(), NOT_PUSHED_HEADERS);
 
         String id;
         try
@@ -1535,7 +1535,7 @@ public class Request implements HttpServletRequest
     {
         if (_uri != null && !Objects.equals(_uri.getQuery(), uri.getQuery()) && _queryParameters != BAD_PARAMS)
             _parameters = _queryParameters = null;
-        _uri = uri;
+        _uri = uri.asImmutable();
     }
 
     /**
@@ -1677,7 +1677,7 @@ public class Request implements HttpServletRequest
             _uri = uri;
         else
         {
-            HttpURI.Builder builder = HttpURI.from(uri);
+            HttpURI.Builder builder = HttpURI.build(uri);
             if (!uri.isAbsolute())
                 builder.scheme(HttpScheme.HTTP.asString());
 
@@ -1694,7 +1694,7 @@ public class Request implements HttpServletRequest
                     builder.host(findServerName()).port(findServerPort());
                 }
             }
-            _uri = builder.toHttpURI();
+            _uri = builder.asImmutable();
         }
 
         String encoded = uri.getPath();

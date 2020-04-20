@@ -202,7 +202,7 @@ public class HTTP2ServerDocs
                 // Prepare the response HEADERS frame.
 
                 // The response HTTP status and HTTP headers.
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.build());
 
                 if (HttpMethod.GET.is(request.getMethod()))
                 {
@@ -294,14 +294,14 @@ public class HTTP2ServerDocs
                 if (pushEnabled && request.getURIString().endsWith("/index.html"))
                 {
                     // Push the favicon.
-                    HttpURI pushedURI = HttpURI.from(request.getURI()).path("/favicon.ico").toHttpURI();
-                    MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.empty());
+                    HttpURI pushedURI = HttpURI.build(request.getURI()).path("/favicon.ico").asImmutable();
+                    MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.build());
                     PushPromiseFrame promiseFrame = new PushPromiseFrame(stream.getId(), 0, pushedRequest);
                     stream.push(promiseFrame, new Stream.Listener.Adapter())
                         .thenCompose(pushedStream ->
                         {
                             // Send the favicon "response".
-                            MetaData.Response pushedResponse = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.empty());
+                            MetaData.Response pushedResponse = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.build());
                             return pushedStream.headers(new HeadersFrame(pushedStream.getId(), pushedResponse, null, false))
                                 .thenCompose(pushed -> pushed.data(new DataFrame(pushed.getId(), faviconBuffer, true)));
                         });

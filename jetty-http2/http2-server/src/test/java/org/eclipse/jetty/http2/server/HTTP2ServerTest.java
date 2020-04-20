@@ -82,7 +82,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         startServer(new HttpServlet() {});
 
         // No preface bytes.
-        MetaData.Request metaData = newRequest("GET", HttpFields.empty());
+        MetaData.Request metaData = newRequest("GET", HttpFields.build());
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
@@ -127,7 +127,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-        MetaData.Request metaData = newRequest("GET", HttpFields.empty());
+        MetaData.Request metaData = newRequest("GET", HttpFields.build());
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
@@ -185,7 +185,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-        MetaData.Request metaData = newRequest("GET", HttpFields.empty());
+        MetaData.Request metaData = newRequest("GET", HttpFields.build());
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
@@ -361,7 +361,7 @@ public class HTTP2ServerTest extends AbstractServerTest
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-        MetaData.Request metaData = newRequest("GET", HttpFields.empty());
+        MetaData.Request metaData = newRequest("GET", HttpFields.build());
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
         try (Socket client = new Socket("localhost", connector2.getLocalPort()))
         {
@@ -399,7 +399,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
             generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-            MetaData.Request metaData = newRequest("GET", HttpFields.empty());
+            MetaData.Request metaData = newRequest("GET", HttpFields.build());
             generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
             try (Socket client = new Socket("localhost", connector.getLocalPort()))
@@ -428,7 +428,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
             generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-            MetaData.Request metaData = newRequest("GET", HttpFields.empty());
+            MetaData.Request metaData = newRequest("GET", HttpFields.build());
             generator.control(lease, new HeadersFrame(1, metaData, null, true));
             return lease;
         });
@@ -443,7 +443,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
             generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-            MetaData.Request metaData = newRequest("GET", HttpFields.empty());
+            MetaData.Request metaData = newRequest("GET", HttpFields.build());
             generator.control(lease, new HeadersFrame(1, metaData, priority, true));
             return lease;
         });
@@ -457,7 +457,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
             generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-            MetaData.Request metaData = newRequest("GET", HttpFields.empty());
+            MetaData.Request metaData = newRequest("GET", HttpFields.build());
             generator.control(lease, new HeadersFrame(1, metaData, null, true));
             // Take the HeadersFrame header and set the length to zero.
             List<ByteBuffer> buffers = lease.getByteBuffers();
@@ -479,7 +479,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
             generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-            MetaData.Request metaData = newRequest("GET", HttpFields.empty());
+            MetaData.Request metaData = newRequest("GET", HttpFields.build());
             generator.control(lease, new HeadersFrame(1, metaData, priority, true));
             // Take the HeadersFrame header and set the length to just the priority frame.
             List<ByteBuffer> buffers = lease.getByteBuffers();
@@ -500,7 +500,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
             generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-            MetaData.Request metaData = newRequest("GET", HttpFields.empty());
+            MetaData.Request metaData = newRequest("GET", HttpFields.build());
             generator.control(lease, new HeadersFrame(1, metaData, null, true));
             // Take the ContinuationFrame header, duplicate it, and set the length to zero.
             List<ByteBuffer> buffers = lease.getByteBuffers();
@@ -524,7 +524,7 @@ public class HTTP2ServerTest extends AbstractServerTest
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
             generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-            MetaData.Request metaData = newRequest("GET", HttpFields.empty());
+            MetaData.Request metaData = newRequest("GET", HttpFields.build());
             generator.control(lease, new HeadersFrame(1, metaData, null, true));
             // Take the last CONTINUATION frame and reset the flag.
             List<ByteBuffer> buffers = lease.getByteBuffers();
@@ -562,7 +562,7 @@ public class HTTP2ServerTest extends AbstractServerTest
 
                 serverLatch.countDown();
 
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.empty());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.build());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
                 return null;

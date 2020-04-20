@@ -43,7 +43,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWin2kSP1WithIE5() throws Exception
     {
-        HttpFieldsBuilder fields = HttpFields.from(_request.getHttpFields());
+        HttpFieldsBuilder fields = HttpFields.build(_request.getHttpFields());
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.01)");
         _request.setHttpFields(fields);
 
@@ -68,7 +68,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWin2kSP1WithIE6() throws Exception
     {
-        _request.setHttpFields(HttpFields.from(_request.getHttpFields())
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
             .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.01)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
@@ -80,7 +80,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWin2kSP1WithIE7() throws Exception
     {
-        _request.setHttpFields(HttpFields.from(_request.getHttpFields())
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
             .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.01)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
@@ -92,7 +92,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWin2kWithIE5() throws Exception
     {
-        HttpFieldsBuilder fields = HttpFields.from(_request.getHttpFields());
+        HttpFieldsBuilder fields = HttpFields.build(_request.getHttpFields());
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.0)");
         _request.setHttpFields(fields);
 
@@ -117,7 +117,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWin2kWithIE6() throws Exception
     {
-        _request.setHttpFields(HttpFields.from(_request.getHttpFields())
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
             .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)")
             .asImmutable());
 
@@ -130,7 +130,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWin2kWithIE7() throws Exception
     {
-        _request.setHttpFields(HttpFields.from(_request.getHttpFields())
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
             .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.0)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
@@ -142,7 +142,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWinVistaWithIE5() throws Exception
     {
-        HttpFieldsBuilder fields = HttpFields.from(_request.getHttpFields());
+        HttpFieldsBuilder fields = HttpFields.build(_request.getHttpFields());
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 6.0)");
         _request.setHttpFields(fields);
 
@@ -167,7 +167,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWinVistaWithIE6() throws Exception
     {
-        _request.setHttpFields(HttpFields.from(_request.getHttpFields())
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
             .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 6.0)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
@@ -179,7 +179,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWinVistaWithIE7() throws Exception
     {
-        _request.setHttpFields(HttpFields.from(_request.getHttpFields())
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
             .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
@@ -191,7 +191,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWinXpWithIE5() throws Exception
     {
-        HttpFieldsBuilder fields = HttpFields.from(_request.getHttpFields());
+        HttpFieldsBuilder fields = HttpFields.build(_request.getHttpFields());
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.1)");
         _request.setHttpFields(fields);
 
@@ -216,7 +216,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWinXpWithIE6() throws Exception
     {
-        _request.setHttpFields(HttpFields.from(_request.getHttpFields())
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
             .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
@@ -228,7 +228,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWinXpWithIE7() throws Exception
     {
-        _request.setHttpFields(HttpFields.from(_request.getHttpFields())
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
             .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
@@ -244,7 +244,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
         super.stop();
         super.start(false);
 
-        _request.setHttpFields(HttpFields.from(_request.getHttpFields())
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
             .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.0)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);

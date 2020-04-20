@@ -52,10 +52,10 @@ public class HeadersGenerateParseTest
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
 
         int streamId = 13;
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
         final List<HeadersFrame> frames = new ArrayList<>();
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
@@ -125,10 +125,10 @@ public class HeadersGenerateParseTest
         for (int i = 0; i < 2; ++i)
         {
             int streamId = 13;
-            HttpFieldsBuilder fields = HttpFields.empty();
+            HttpFieldsBuilder fields = HttpFields.build();
             fields.put("Accept", "text/html");
             fields.put("User-Agent", "Jetty");
-            MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields);
+            MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
 
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             PriorityFrame priorityFrame = new PriorityFrame(streamId, 3 * streamId, 200, true);

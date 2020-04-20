@@ -420,7 +420,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     public void parsedTrailer(HttpField field)
     {
         if (_trailers == null)
-            _trailers = HttpFields.empty();
+            _trailers = HttpFields.build();
         _trailers.add(field);
     }
 
@@ -503,7 +503,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         }
 
         // Create new connection
-        HttpFieldsBuilder response101 = HttpFields.empty();
+        HttpFieldsBuilder response101 = HttpFields.build();
         Connection upgradeConnection = factory.upgradeConnection(getConnector(), getEndPoint(), _metadata, response101);
         if (upgradeConnection == null)
         {
@@ -544,8 +544,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
     private static class RequestBuilder
     {
-        private final HttpFieldsBuilder _fieldBuilder = HttpFields.empty();
-        private final HttpURI.Builder _uri = HttpURI.empty();
+        private final HttpFieldsBuilder _fieldBuilder = HttpFields.build();
+        private final HttpURI.Builder _uri = HttpURI.build();
         private String _method;
         private HttpVersion _version;
 
@@ -569,7 +569,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
         public MetaData.Request build()
         {
-            return new MetaData.Request(_method, _uri.toHttpURI(), _version, _fieldBuilder);
+            return new MetaData.Request(_method, _uri, _version, _fieldBuilder);
         }
 
         public HttpVersion version()

@@ -149,7 +149,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         int contentLength = random.nextInt(maxContentLength) + 1;
 
         long requestId = requestIds.incrementAndGet();
-        MetaData.Request request = newRequest(method.asString(), "/" + requestId, HttpFields.empty());
+        MetaData.Request request = newRequest(method.asString(), "/" + requestId, HttpFields.build());
         if (download)
             request.getFields().put("X-Download", String.valueOf(contentLength));
         HeadersFrame requestFrame = new HeadersFrame(request, null, download);

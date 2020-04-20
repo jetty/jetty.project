@@ -87,7 +87,7 @@ public class AsyncIOTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
@@ -138,7 +138,7 @@ public class AsyncIOTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
@@ -194,7 +194,7 @@ public class AsyncIOTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
@@ -267,7 +267,7 @@ public class AsyncIOTest extends AbstractTest
             }
         });
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);

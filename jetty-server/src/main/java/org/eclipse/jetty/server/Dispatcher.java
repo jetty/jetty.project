@@ -193,10 +193,7 @@ public class Dispatcher implements RequestDispatcher
                 if (query == null)
                     query = old_uri.getQuery();
 
-                HttpURI uri = HttpURI.from(old_uri, _uri.getPath(), _uri.getParam(), query).toHttpURI();
-
-                baseRequest.setHttpURI(uri);
-
+                baseRequest.setHttpURI(HttpURI.build(old_uri, _uri.getPath(), _uri.getParam(), query));
                 baseRequest.setContextPath(_contextHandler.getContextPath());
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(_pathInContext);

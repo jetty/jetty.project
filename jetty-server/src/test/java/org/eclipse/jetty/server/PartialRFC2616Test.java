@@ -83,7 +83,7 @@ public class PartialRFC2616Test
     {
         try
         {
-            HttpFieldsBuilder fields = HttpFields.empty()
+            HttpFieldsBuilder fields = HttpFields.build()
                 .put("D1", "Sun, 6 Nov 1994 08:49:37 GMT")
                 .put("D2", "Sunday, 6-Nov-94 08:49:37 GMT")
                 .put("D3", "Sun Nov  6 08:49:37 1994");
@@ -275,7 +275,7 @@ public class PartialRFC2616Test
     @Test
     public void test39() throws Exception
     {
-        HttpFields fields = HttpFields.empty()
+        HttpFields fields = HttpFields.build()
             .put("Q", "bbb;q=0.5,aaa,ccc;q=0.002,d;q=0,e;q=0.0001,ddd;q=0.001,aa2,abb;q=0.7").asImmutable();
         List<String> list = fields.getQualityCSV("Q");
         assertEquals("aaa", HttpField.valueParameters(list.get(0), null), "Quality parameters");

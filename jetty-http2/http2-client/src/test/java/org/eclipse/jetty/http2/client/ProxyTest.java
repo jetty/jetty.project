@@ -126,7 +126,7 @@ public class ProxyTest
         String host = "localhost";
         int port = proxyConnector.getLocalPort();
         String authority = host + ":" + port;
-        return new MetaData.Request(method, HttpScheme.HTTP, new HostPortHttpField(authority), path, HttpVersion.HTTP_2, fields);
+        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), path, HttpVersion.HTTP_2, fields, -1);
     }
 
     @AfterEach
@@ -166,7 +166,7 @@ public class ProxyTest
 
         final CountDownLatch clientLatch = new CountDownLatch(1);
         Session session = newClient(new Session.Listener.Adapter());
-        MetaData.Request metaData = newRequest("GET", "/", HttpFields.empty());
+        MetaData.Request metaData = newRequest("GET", "/", HttpFields.build());
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {

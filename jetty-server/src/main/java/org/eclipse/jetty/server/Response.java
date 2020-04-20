@@ -85,7 +85,7 @@ public class Response implements HttpServletResponse
     public static final String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
     private final HttpChannel _channel;
-    private final HttpFieldsBuilder _fields = HttpFields.empty();
+    private final HttpFieldsBuilder _fields = HttpFields.build();
     private final AtomicBiInteger _errorSentAndIncludes = new AtomicBiInteger(); // hi is errorSent flag, lo is include count
     private final HttpOutput _out;
     private int _status = HttpStatus.OK_200;
@@ -321,7 +321,7 @@ public class Response implements HttpServletResponse
         HttpURI uri = null;
         if (sessionManager.isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(url))
         {
-            uri = new HttpURI(url);
+            uri = HttpURI.from(url);
             String path = uri.getPath();
             path = (path == null ? "" : path);
             int port = uri.getPort();
@@ -375,7 +375,7 @@ public class Response implements HttpServletResponse
         String id = sessionManager.getExtendedId(session);
 
         if (uri == null)
-            uri = new HttpURI(url);
+            uri = HttpURI.from(url);
 
         // Already encoded
         int prefix = url.indexOf(sessionURLPrefix);
@@ -1431,7 +1431,7 @@ public class Response implements HttpServletResponse
             Map<String, String> t = _supplier.get();
             if (t == null)
                 return null;
-            HttpFieldsBuilder fields = HttpFields.empty();
+            HttpFieldsBuilder fields = HttpFields.build();
             for (Map.Entry<String, String> e : t.entrySet())
             {
                 fields.add(e.getKey(), e.getValue());

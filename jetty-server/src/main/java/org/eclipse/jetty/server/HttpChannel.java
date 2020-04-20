@@ -712,7 +712,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return false;
     }
 
-    public void onTrailers(HttpFieldsBuilder trailers)
+    public void onTrailers(HttpFields trailers)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onTrailers {} {}", this, trailers);
@@ -792,7 +792,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (action == Action.DISPATCH)
             {
                 ByteBuffer content = null;
-                HttpFieldsBuilder fields = HttpFields.empty();
+                HttpFieldsBuilder fields = HttpFields.build();
 
                 ErrorHandler handler = getServer().getBean(ErrorHandler.class);
                 if (handler != null)

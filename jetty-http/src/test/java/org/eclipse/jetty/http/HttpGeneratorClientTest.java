@@ -37,17 +37,17 @@ public class HttpGeneratorClientTest
     {
         RequestInfo(String method, String uri, HttpFields fields)
         {
-            super(method, new HttpURI.Builder(method,uri).toHttpURI(), HttpVersion.HTTP_1_1, fields, -1);
+            super(method, HttpURI.from(method,uri), HttpVersion.HTTP_1_1, fields, -1);
         }
 
         RequestInfo(String method, String uri, HttpVersion version, HttpFields fields)
         {
-            super(method, new HttpURI.Builder(method,uri).toHttpURI(), version, fields, -1);
+            super(method, HttpURI.from(method,uri), version, fields, -1);
         }
 
         RequestInfo(String method, String uri, int contentLength, HttpFields fields)
         {
-            super(method, new HttpURI.Builder(method,uri).toHttpURI(), HttpVersion.HTTP_1_1, fields, contentLength);
+            super(method, HttpURI.from(method,uri), HttpVersion.HTTP_1_1, fields, contentLength);
         }
     }
 
@@ -62,7 +62,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         fields.add("Host", "something");
         fields.add("User-Agent", "test");
         RequestInfo info = new RequestInfo("GET", "/index.html", fields);
@@ -100,7 +100,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         fields.add("Host", "something");
         fields.add("Null", null);
         fields.add("Empty", "");
@@ -136,7 +136,7 @@ public class HttpGeneratorClientTest
     {
         HttpGenerator gen = new HttpGenerator();
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         fields.add("Host", "localhost");
         fields.add("Field", "SomeWhatLongValue");
         RequestInfo info = new RequestInfo("GET", "/index.html", HttpVersion.HTTP_1_0, fields);
@@ -178,7 +178,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         fields.add("Host", "something");
         fields.add("User-Agent", "test");
         RequestInfo info = new RequestInfo("POST", "/index.html", fields);
@@ -218,7 +218,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         fields.add("Host", "something");
         fields.add("User-Agent", "test");
         RequestInfo info = new RequestInfo("POST", "/index.html", fields);
@@ -264,7 +264,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         fields.add("Host", "something");
         fields.add("User-Agent", "test");
         RequestInfo info = new RequestInfo("POST", "/index.html", fields);
@@ -336,7 +336,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
         fields.add("Host", "something");
         fields.add("User-Agent", "test");
         RequestInfo info = new RequestInfo("POST", "/index.html", 58, fields);

@@ -39,7 +39,7 @@ public class ClientGeneratorTest
     @Test
     public void testGenerateRequestHeaders() throws Exception
     {
-        HttpFieldsBuilder fields = HttpFields.empty();
+        HttpFieldsBuilder fields = HttpFields.build();
 
         // Short name, short value
         final String shortShortName = "REQUEST_METHOD";

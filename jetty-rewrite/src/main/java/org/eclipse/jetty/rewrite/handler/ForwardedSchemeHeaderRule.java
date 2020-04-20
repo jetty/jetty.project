@@ -48,7 +48,7 @@ public class ForwardedSchemeHeaderRule extends HeaderRule
     protected String apply(String target, String value, HttpServletRequest request, HttpServletResponse response)
     {
         Request baseRequest = Request.getBaseRequest(request);
-        baseRequest.setHttpURI(HttpURI.from(baseRequest.getHttpURI()).scheme(_scheme).toHttpURI());
+        baseRequest.setHttpURI(HttpURI.build(baseRequest.getHttpURI()).scheme(_scheme));
         return target;
     }
 }
