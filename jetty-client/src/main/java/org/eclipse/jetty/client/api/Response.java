@@ -26,7 +26,7 @@ import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Callback;
 
@@ -72,7 +72,7 @@ public interface Response
     /**
      * @return the headers of this response
      */
-    HttpFieldsBuilder getHeaders();
+    HttpFields getHeaders();
 
     /**
      * Attempts to abort the receive of this response.

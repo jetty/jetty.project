@@ -28,6 +28,7 @@ import javax.websocket.HandshakeResponse;
 
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 
@@ -76,7 +77,7 @@ public class JsrUpgradeListener implements UpgradeListener
 
         HandshakeResponse handshakeResponse = () ->
         {
-            HttpFieldsBuilder fields = response.getHeaders();
+            HttpFields fields = response.getHeaders();
             Map<String, List<String>> ret = new HashMap<>();
             fields.forEach((field) ->
             {

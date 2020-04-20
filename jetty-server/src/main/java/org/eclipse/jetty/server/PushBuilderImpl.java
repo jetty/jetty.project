@@ -22,6 +22,7 @@ import java.util.Set;
 import javax.servlet.http.PushBuilder;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -48,11 +49,11 @@ public class PushBuilderImpl implements PushBuilder
     private String _path;
     private String _lastModified;
 
-    public PushBuilderImpl(Request request, HttpFieldsBuilder fields, String method, String queryString, String sessionId)
+    public PushBuilderImpl(Request request, HttpFields fields, String method, String queryString, String sessionId)
     {
         super();
         _request = request;
-        _fields = fields;
+        _fields = HttpFields.build(fields);
         _method = method;
         _queryString = queryString;
         _sessionId = sessionId;

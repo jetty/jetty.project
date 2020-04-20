@@ -29,7 +29,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.BufferUtil;
@@ -74,7 +74,7 @@ public abstract class BufferingResponseListener extends Listener.Adapter
         super.onHeaders(response);
 
         Request request = response.getRequest();
-        HttpFieldsBuilder headers = response.getHeaders();
+        HttpFields headers = response.getHeaders();
         long length = headers.getLongField(HttpHeader.CONTENT_LENGTH);
         if (HttpMethod.HEAD.is(request.getMethod()))
             length = 0;

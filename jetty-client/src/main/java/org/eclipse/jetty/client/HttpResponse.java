@@ -87,7 +87,12 @@ public class HttpResponse implements Response
     }
 
     @Override
-    public HttpFieldsBuilder getHeaders()
+    public HttpFields getHeaders()
+    {
+        return headers.asImmutable();
+    }
+
+    public HttpFieldsBuilder getHeadersBuilder()
     {
         return headers;
     }

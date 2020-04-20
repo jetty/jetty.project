@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -89,8 +90,8 @@ public class HTTP1Servlet extends HttpServlet
             @Override
             public void succeeded(Session session)
             {
-                HttpURI uri = new HttpURI(request.getScheme(), host, port, contextPath + "/h2");
-                MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.empty());
+                HttpURI uri = HttpURI.from(request.getScheme(), host, port, contextPath + "/h2");
+                MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
                 HeadersFrame frame = new HeadersFrame(metaData, null, true);
                 session.newStream(frame, new Promise.Adapter<Stream>()
                 {

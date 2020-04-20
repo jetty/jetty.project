@@ -26,7 +26,7 @@ import java.util.List;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 
 public class HttpContentResponse implements ContentResponse
@@ -75,7 +75,7 @@ public class HttpContentResponse implements ContentResponse
     }
 
     @Override
-    public HttpFieldsBuilder getHeaders()
+    public HttpFields getHeaders()
     {
         return response.getHeaders();
     }

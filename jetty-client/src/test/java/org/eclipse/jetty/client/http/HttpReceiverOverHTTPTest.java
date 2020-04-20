@@ -37,7 +37,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCompliance;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
@@ -122,7 +122,7 @@ public class HttpReceiverOverHTTPTest
         assertEquals(200, response.getStatus());
         assertEquals("OK", response.getReason());
         assertSame(HttpVersion.HTTP_1_1, response.getVersion());
-        HttpFieldsBuilder headers = response.getHeaders();
+        HttpFields headers = response.getHeaders();
         assertNotNull(headers);
         assertEquals(1, headers.size());
         assertEquals("0", headers.get(HttpHeader.CONTENT_LENGTH));
@@ -148,7 +148,7 @@ public class HttpReceiverOverHTTPTest
         assertEquals(200, response.getStatus());
         assertEquals("OK", response.getReason());
         assertSame(HttpVersion.HTTP_1_1, response.getVersion());
-        HttpFieldsBuilder headers = response.getHeaders();
+        HttpFields headers = response.getHeaders();
         assertNotNull(headers);
         assertEquals(1, headers.size());
         assertEquals(String.valueOf(content.length()), headers.get(HttpHeader.CONTENT_LENGTH));

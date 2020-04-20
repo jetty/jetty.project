@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import org.conscrypt.Conscrypt;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -75,8 +74,7 @@ public class ConscryptHTTP2ClientTest
             client.connect(sslContextFactory, new InetSocketAddress(host, port), new Session.Listener.Adapter(), sessionPromise);
             Session session = sessionPromise.get(15, TimeUnit.SECONDS);
 
-            HttpFieldsBuilder requestFields = HttpFields.build();
-            requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
+            HttpFields requestFields = HttpFields.build().put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
             MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
             HeadersFrame headersFrame = new HeadersFrame(metaData, null, true);
             CountDownLatch latch = new CountDownLatch(1);

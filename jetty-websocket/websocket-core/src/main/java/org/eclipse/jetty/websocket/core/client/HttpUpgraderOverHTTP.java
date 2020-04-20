@@ -26,7 +26,7 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.HttpUpgrader;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -81,10 +81,10 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
     public void upgrade(HttpResponse response, EndPoint endPoint, Callback callback)
     {
         HttpRequest request = (HttpRequest)response.getRequest();
-        HttpFieldsBuilder requestHeaders = request.getHeaders();
+        HttpFields requestHeaders = request.getHeaders();
         if (requestHeaders.contains(HttpHeader.UPGRADE, "websocket"))
         {
-            HttpFieldsBuilder responseHeaders = response.getHeaders();
+            HttpFields responseHeaders = response.getHeaders();
             if (responseHeaders.contains(HttpHeader.CONNECTION, "upgrade"))
             {
                 // Check the Accept hash

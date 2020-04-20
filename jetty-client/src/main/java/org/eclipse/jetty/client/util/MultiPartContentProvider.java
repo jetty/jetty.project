@@ -34,6 +34,7 @@ import org.eclipse.jetty.client.AsyncContentProvider;
 import org.eclipse.jetty.client.Synchronizable;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -222,11 +223,11 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
         private final String fileName;
         private final String contentType;
         private final ContentProvider content;
-        private final HttpFieldsBuilder fields;
+        private final HttpFields fields;
         private final ByteBuffer headers;
         private final long length;
 
-        private Part(String name, String fileName, String contentType, ContentProvider content, HttpFieldsBuilder fields)
+        private Part(String name, String fileName, String contentType, ContentProvider content, HttpFields fields)
         {
             this.name = name;
             this.fileName = fileName;

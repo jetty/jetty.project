@@ -30,6 +30,7 @@ import java.util.Random;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -215,11 +216,11 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
         private final String name;
         private final String fileName;
         private final Request.Content content;
-        private final HttpFieldsBuilder fields;
+        private final HttpFields fields;
         private final ByteBuffer headers;
         private final long length;
 
-        private Part(String name, String fileName, Request.Content content, HttpFieldsBuilder fields)
+        private Part(String name, String fileName, Request.Content content, HttpFields fields)
         {
             this.name = name;
             this.fileName = fileName;

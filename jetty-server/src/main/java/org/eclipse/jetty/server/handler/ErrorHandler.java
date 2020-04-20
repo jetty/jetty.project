@@ -525,7 +525,8 @@ public class ErrorHandler extends AbstractHandler
     {
         if (reason == null)
             reason = HttpStatus.getMessage(status);
-        // TODO only if a status allows a body!
+        if (HttpStatus.hasNoBody(status))
+            return BufferUtil.EMPTY_BUFFER;
         fields.put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_8859_1.asString());
         return BufferUtil.toBuffer("<h1>Bad Message " + status + "</h1><pre>reason: " + reason + "</pre>");
     }

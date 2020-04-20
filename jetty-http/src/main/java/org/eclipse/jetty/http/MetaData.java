@@ -160,7 +160,7 @@ public class MetaData implements Iterable<HttpField>
                 version, fields, contentLength);
         }
 
-        public Request(String method, HttpURI uri, HttpVersion version, HttpFieldsBuilder fields, long contentLength, Supplier<HttpFields> trailers)
+        public Request(String method, HttpURI uri, HttpVersion version, HttpFields fields, long contentLength, Supplier<HttpFields> trailers)
         {
             super(version, fields, contentLength, trailers);
             _method = method;

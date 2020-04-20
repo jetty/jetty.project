@@ -24,7 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
@@ -80,7 +80,7 @@ public class FileServerTest extends AbstractEmbeddedTest
 
         // dumpResponseHeaders(response);
 
-        HttpFieldsBuilder responseHeaders = response.getHeaders();
+        HttpFields responseHeaders = response.getHeaders();
 
         assertThat("Content-Type", responseHeaders.get("Content-Type"), is("text/plain"));
         assertThat("Content-Length", responseHeaders.getLongField("Content-Length"),
