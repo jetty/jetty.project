@@ -31,13 +31,13 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=configur
 ----
 
 The _acceptors_ are threads (typically only one) that compete to accept TCP connections on the listening port.
-When a connection is accepted, `ServerConnector` wraps the accepted `SocketChannel` and passes it to the xref:eg-io-arch-selector-manager[`SelectorManager`].
+When a connection is accepted, `ServerConnector` wraps the accepted `SocketChannel` and passes it to the xref:eg-arch-io-selector-manager[`SelectorManager`].
 Therefore, there is a little moment where the acceptor thread is not accepting new connections because it is busy wrapping the just accepted one to pass it to the `SelectorManager`.
 Connections that are ready to be accepted but are not accepted yet are queued in a bounded queue (at the OS level) whose capacity can be configured with the `ServerConnector.acceptQueueSize` parameter.
 
 If your application must withstand a very high rate of connections opened, configuring more than one acceptor thread may be beneficial: when one acceptor thread accepts one connection, another acceptor thread can take over accepting connections.
 
-The _selectors_ are components that manage a set of connected sockets, implemented by xref:eg-io-arch-selector-manager[`ManagedSelector`].
+The _selectors_ are components that manage a set of connected sockets, implemented by xref:eg-arch-io-selector-manager[`ManagedSelector`].
 Each selector requires one thread and uses the Java NIO mechanism to efficiently handle the set of connected sockets.
 As a rule of thumb, a single selector can easily manage up to 1000-5000 sockets, although the number may vary greatly depending on the application.
 
@@ -56,7 +56,7 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=configur
 [[eg-server-http-connector-protocol]]
 ==== Configuring Protocols
 
-For each accepted TCP connection, `ServerConnector` asks a `ConnectionFactory` to create a `Connection` object that handles the network traffic on that TCP connection, parsing and generating bytes for a specific protocol (see xref:eg-io-arch[this section] for more details about `Connection` objects).
+For each accepted TCP connection, `ServerConnector` asks a `ConnectionFactory` to create a `Connection` object that handles the network traffic on that TCP connection, parsing and generating bytes for a specific protocol (see xref:eg-arch-io[this section] for more details about `Connection` objects).
 
 A `ServerConnector` can be configured with one or more ``ConnectionFactory``s.
 If no `ConnectionFactory` is specified then `HttpConnectionFactory` is implicitly configured.
