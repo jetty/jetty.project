@@ -42,18 +42,18 @@ public class MetaData implements Iterable<HttpField>
         this(version, fields, contentLength, SELF_SUPPLIED_TRAILORS);
     }
 
-    public MetaData(HttpVersion version, HttpFields fields, long contentLength, Supplier<HttpFields> trailers)
+    public MetaData(HttpVersion version, HttpFields fields, long contentLength, Supplier<HttpFields> trailerSupplier)
     {
         _httpVersion = version;
         _fields = fields == null ? null : fields.asImmutable();
 
         _contentLength = contentLength >= 0 ? contentLength : _fields == null ? -1 : _fields.getLongField(HttpHeader.CONTENT_LENGTH);
-        if (trailers == SELF_SUPPLIED_TRAILORS)
+        if (trailerSupplier == SELF_SUPPLIED_TRAILORS)
             _trailerSupplier = () -> _trailers;
         else
         {
-            _trailerSupplier = trailers;
-            if (trailers != null)
+            _trailerSupplier = trailerSupplier;
+            if (trailerSupplier != null)
                 _trailers = SUPPLIED_TRAILERS;
         }
     }
@@ -222,7 +222,9 @@ public class MetaData implements Iterable<HttpField>
 
         public ConnectRequest(String scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
         {
-            super(HttpMethod.CONNECT.asString(), scheme, authority, path, HttpVersion.HTTP_2, fields, Long.MIN_VALUE);
+            super(HttpMethod.CONNECT.asString(),
+                HttpURI.build().scheme(scheme).host(authority == null ? null : authority.getHost()).port(authority == null ? -1 : authority.getPort()).pathQuery(path),
+                HttpVersion.HTTP_2, fields, Long.MIN_VALUE, null);
             _protocol = protocol;
         }
 
