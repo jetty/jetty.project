@@ -111,20 +111,21 @@ public class TestJettyOSGiBootHTTP2Conscrypt
 
     public void assertAllBundlesActiveOrResolved()
     {
-        TestOSGiUtil.debugBundles(bundleContext);
-        Bundle conscrypt = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.conscrypt.server");
-        TestOSGiUtil.diagnoseNonActiveOrNonResolvedBundle(conscrypt);
-        assertNotNull(conscrypt);
-        ServiceReference<?>[] services = conscrypt.getRegisteredServices();
-        assertNotNull(services);
-        assertTrue(services.length > 0);
+
     }
 
     @Test
     public void testHTTP2() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
-            assertAllBundlesActiveOrResolved();
+        {
+            TestOSGiUtil.diagnoseBundles(bundleContext);
+            Bundle conscrypt = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.conscrypt.server");
+            assertNotNull(conscrypt);
+            ServiceReference<?>[] services = conscrypt.getRegisteredServices();
+            assertNotNull(services);
+            assertTrue(services.length > 0);
+        }
 
         HTTP2Client client = new HTTP2Client();
         try

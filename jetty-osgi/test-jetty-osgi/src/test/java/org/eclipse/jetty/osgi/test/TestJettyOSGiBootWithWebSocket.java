@@ -83,17 +83,16 @@ public class TestJettyOSGiBootWithWebSocket
         return res;
     }
 
-    public void assertAllBundlesActiveOrResolved()
+    public void debugBundles()
     {
-        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
-        TestOSGiUtil.debugBundles(bundleContext);
+
     }
 
     @Test
     public void testWebsocket() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
-            assertAllBundlesActiveOrResolved();
+            TestOSGiUtil.diagnoseBundles(bundleContext);
 
         String port = System.getProperty("boot.websocket.port");
         assertNotNull(port);
