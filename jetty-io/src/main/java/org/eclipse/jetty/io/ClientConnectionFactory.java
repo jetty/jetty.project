@@ -66,26 +66,21 @@ public interface ClientConnectionFactory
     }
 
     /**
-     * <p>A holder for a list of protocol strings identifying a network protocol
+     * <p>A holder for a list of protocol strings identifying an application protocol
      * (for example {@code ["h2", "h2-17", "h2-16"]}) and a {@link ClientConnectionFactory}
      * that creates connections that speak that network protocol.</p>
      */
-    public static class Info extends ContainerLifeCycle
+    public abstract static class Info extends ContainerLifeCycle
     {
-        private final List<String> protocols;
         private final ClientConnectionFactory factory;
 
-        public Info(List<String> protocols, ClientConnectionFactory factory)
+        public Info(ClientConnectionFactory factory)
         {
-            this.protocols = protocols;
             this.factory = factory;
             addBean(factory);
         }
 
-        public List<String> getProtocols()
-        {
-            return protocols;
-        }
+        public abstract List<String> getProtocols(boolean secure);
 
         public ClientConnectionFactory getClientConnectionFactory()
         {
@@ -98,20 +93,14 @@ public interface ClientConnectionFactory
          * @param candidates the candidates to match against
          * @return whether one of the protocols of this class is present in the candidates
          */
-        public boolean matches(List<String> candidates)
+        public boolean matches(List<String> candidates, boolean secure)
         {
-            return protocols.stream().anyMatch(p -> candidates.stream().anyMatch(c -> c.equalsIgnoreCase(p)));
+            return getProtocols(secure).stream().anyMatch(p -> candidates.stream().anyMatch(c -> c.equalsIgnoreCase(p)));
         }
 
         public void upgrade(EndPoint endPoint, Map<String, Object> context)
         {
             throw new UnsupportedOperationException(this + " does not support upgrade to another protocol");
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x%s", getClass().getSimpleName(), hashCode(), protocols);
         }
     }
 }

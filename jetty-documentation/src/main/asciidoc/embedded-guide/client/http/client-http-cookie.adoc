@@ -16,104 +16,88 @@
 // ========================================================================
 //
 
-[[client-http-cookie]]
-=== Cookies Support
+[[eg-client-http-cookie]]
+=== HttpClient Cookie Support
 
-Jetty HTTP client supports cookies out of the box.
+Jetty's `HttpClient` supports cookies out of the box.
 The `HttpClient` instance receives cookies from HTTP responses and stores them in a `java.net.CookieStore`, a class that is part of the JDK.
 When new requests are made, the cookie store is consulted and if there are matching cookies (that is, cookies that are not expired and that match domain and path of the request) then they are added to the requests.
 
 Applications can programmatically access the cookie store to find the cookies that have been set:
 
-[source, java, subs="{sub-order}"]
+[source,java,indent=0]
 ----
-CookieStore cookieStore = httpClient.getCookieStore();
-List<HttpCookie> cookies = cookieStore.get(URI.create("http://domain.com/path"));
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=getCookies]
 ----
 
 Applications can also programmatically set cookies as if they were returned from a HTTP response:
 
-[source, java, subs="{sub-order}"]
+[source,java,indent=0]
 ----
-CookieStore cookieStore = httpClient.getCookieStore();
-HttpCookie cookie = new HttpCookie("foo", "bar");
-cookie.setDomain("domain.com");
-cookie.setPath("/");
-cookie.setMaxAge(TimeUnit.DAYS.toSeconds(1));
-cookieStore.add(URI.create("http://domain.com"), cookie);
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=setCookie]
 ----
 
-Cookies may be added only for a particular request:
+Cookies may be added explicitly only for a particular request:
 
-[source, java, subs="{sub-order}"]
+[source,java,indent=0]
 ----
-ContentResponse response = httpClient.newRequest("http://domain.com/path")
-        .cookie(new HttpCookie("foo", "bar"))
-        .send();
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=requestCookie]
 ----
 
 You can remove cookies that you do not want to be sent in future HTTP requests:
 
-[source, java, subs="{sub-order}"]
+[source,java,indent=0]
 ----
-CookieStore cookieStore = httpClient.getCookieStore();
-URI uri = URI.create("http://domain.com");
-List<HttpCookie> cookies = cookieStore.get(uri);
-for (HttpCookie cookie : cookies)
-    cookieStore.remove(uri, cookie);
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=removeCookie]
 ----
 
-If you want to totally disable cookie handling, you can install a `HttpCookieStore.Empty` instance in this way:
+If you want to totally disable cookie handling, you can install a `HttpCookieStore.Empty`.
+This must be done when `HttpClient` is used in a proxy application, in this way:
 
-[source, java, subs="{sub-order}"]
+[source,java,indent=0]
 ----
-httpClient.setCookieStore(new HttpCookieStore.Empty());
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=emptyCookieStore]
 ----
 
 You can enable cookie filtering by installing a cookie store that performs the filtering logic in this way:
 
-[source, java, subs="{sub-order}"]
+[source,java,indent=0]
 ----
-httpClient.setCookieStore(new GoogleOnlyCookieStore());
-
-public class GoogleOnlyCookieStore extends HttpCookieStore
-{
-    @Override
-    public void add(URI uri, HttpCookie cookie)
-    {
-        if (uri.getHost().endsWith("google.com"))
-            super.add(uri, cookie);
-    }
-}
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=filteringCookieStore]
 ----
 
 The example above will retain only cookies that come from the `google.com` domain or sub-domains.
 
+// TODO: move this section to server-side
 ==== Special Characters in Cookies
+
 Jetty is compliant with link:https://tools.ietf.org/html/rfc6265[RFC6265], and as such care must be taken when setting a cookie value that includes special characters such as `;`.
 
 Previously, Version=1 cookies defined in link:https://tools.ietf.org/html/rfc2109[RFC2109] (and continued in link:https://tools.ietf.org/html/rfc2965[RFC2965]) allowed for special/reserved characters to be enclosed within double quotes when declared in a `Set-Cookie` response header:
 
-[source, java, subs="{sub-order}"]
+[source,screen]
 ----
 Set-Cookie: foo="bar;baz";Version=1;Path="/secur"
 ----
 
-This was added to the HTTP Response header as follows:
+This was added to the HTTP Response as follows:
 
-[source, java, subs="{sub-order}"]
+[source,java]
 ----
-Cookie cookie = new Cookie("foo", "bar;baz");
-cookie.setPath("/secur");
-response.addCookie(cookie);
+protected void service(HttpServletRequest request, HttpServletResponse response)
+{
+    javax.servlet.http.Cookie cookie = new Cookie("foo", "bar;baz");
+    cookie.setPath("/secur");
+    response.addCookie(cookie);
+}
 ----
 
 The introduction of RFC6265 has rendered this approach no longer possible; users are now required to encode cookie values that use these special characters.
 This can be done utilizing `javax.servlet.http.Cookie` as follows:
 
-[source, java, subs="{sub-order}"]
+[source,java]
 ----
-Cookie cookie = new Cookie("foo", URLEncoder.encode("bar;baz", "utf-8"));
+javax.servlet.http.Cookie cookie = new Cookie("foo", URLEncoder.encode("bar;baz", "UTF-8"));
 ----
 
 Jetty validates all cookie names and values being added to the `HttpServletResponse` via the `addCookie(Cookie)` method.

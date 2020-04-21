@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2.api;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
@@ -54,9 +56,36 @@ public interface Stream
      * <p>Sends the given HEADERS {@code frame} representing an HTTP response.</p>
      *
      * @param frame the HEADERS frame to send
+     * @return the CompletableFuture that gets notified when the frame has been sent
+     */
+    public default CompletableFuture<Stream> headers(HeadersFrame frame)
+    {
+        Promise.Completable<Stream> result = new Promise.Completable<>();
+        headers(frame, Callback.from(() -> result.succeeded(this), result::failed));
+        return result;
+    }
+
+    /**
+     * <p>Sends the given HEADERS {@code frame} representing an HTTP response.</p>
+     *
+     * @param frame the HEADERS frame to send
      * @param callback the callback that gets notified when the frame has been sent
      */
     public void headers(HeadersFrame frame, Callback callback);
+
+    /**
+     * <p>Sends the given PUSH_PROMISE {@code frame}.</p>
+     *
+     * @param frame the PUSH_PROMISE frame to send
+     * @param listener the listener that gets notified of stream events
+     * @return the CompletableFuture that gets notified of the pushed stream creation
+     */
+    public default CompletableFuture<Stream> push(PushPromiseFrame frame, Listener listener)
+    {
+        Promise.Completable<Stream> result = new Promise.Completable<>();
+        push(frame, result, listener);
+        return result;
+    }
 
     /**
      * <p>Sends the given PUSH_PROMISE {@code frame}.</p>
@@ -66,6 +95,19 @@ public interface Stream
      * @param listener the listener that gets notified of stream events
      */
     public void push(PushPromiseFrame frame, Promise<Stream> promise, Listener listener);
+
+    /**
+     * <p>Sends the given DATA {@code frame}.</p>
+     *
+     * @param frame the DATA frame to send
+     * @return the CompletableFuture that gets notified when the frame has been sent
+     */
+    public default CompletableFuture<Stream> data(DataFrame frame)
+    {
+        Promise.Completable<Stream> result = new Promise.Completable<>();
+        data(frame, Callback.from(() -> result.succeeded(this), result::failed));
+        return result;
+    }
 
     /**
      * <p>Sends the given DATA {@code frame}.</p>
@@ -174,7 +216,7 @@ public interface Stream
         /**
          * <p>Callback method invoked when a PUSH_PROMISE frame has been received.</p>
          *
-         * @param stream the stream
+         * @param stream the pushed stream
          * @param frame the PUSH_PROMISE frame received
          * @return a Stream.Listener that will be notified of pushed stream events
          */

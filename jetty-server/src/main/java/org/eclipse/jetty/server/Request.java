@@ -2215,13 +2215,26 @@ public class Request implements HttpServletRequest
     @Override
     public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
     {
+        //if already authenticated, return true
+        if (getUserPrincipal() != null && getRemoteUser() != null && getAuthType() != null)
+            return true;
+        
+        //do the authentication
         if (_authentication instanceof Authentication.Deferred)
         {
             setAuthentication(((Authentication.Deferred)_authentication).authenticate(this, response));
-            return !(_authentication instanceof Authentication.ResponseSent);
         }
-        response.sendError(HttpStatus.UNAUTHORIZED_401);
-        return false;
+        
+        //if the authentication did not succeed
+        if (_authentication instanceof Authentication.Deferred)
+            response.sendError(HttpStatus.UNAUTHORIZED_401);
+        
+        //if the authentication is incomplete, return false
+        if (!(_authentication instanceof Authentication.ResponseSent))
+            return false;
+        
+        //something has gone wrong
+        throw new ServletException("Authentication failed");
     }
 
     @Override

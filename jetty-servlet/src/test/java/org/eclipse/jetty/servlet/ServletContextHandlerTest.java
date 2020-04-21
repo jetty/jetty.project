@@ -35,6 +35,7 @@ import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.FilterRegistration;
+import javax.servlet.GenericServlet;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
@@ -78,7 +79,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
@@ -109,6 +109,75 @@ public class ServletContextHandlerTest
     private LocalConnector _connector;
 
     private static final AtomicInteger __testServlets = new AtomicInteger();
+    private static int __initIndex = 0;
+    private static int __destroyIndex = 0;
+    
+    public class StopTestFilter implements Filter
+    {
+        int _initIndex;
+        int _destroyIndex;
+        
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {
+            _initIndex = __initIndex++;
+        }
+
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException,
+            ServletException
+        {
+        }
+
+        @Override
+        public void destroy()
+        {
+            _destroyIndex = __destroyIndex++;
+        }
+    }
+
+    public class StopTestServlet extends GenericServlet
+    {        
+        int _initIndex;
+        int _destroyIndex;
+
+        @Override
+        public void destroy()
+        {
+            _destroyIndex = __destroyIndex++;
+            super.destroy();
+        }
+
+        @Override
+        public void init() throws ServletException
+        {
+            _initIndex = __initIndex++;
+            super.init();
+        }
+
+        @Override
+        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
+        {
+        }
+    }
+
+    public class StopTestListener implements ServletContextListener
+    {
+        int _initIndex;
+        int _destroyIndex;
+
+        @Override
+        public void contextInitialized(ServletContextEvent sce)
+        {
+            _initIndex = __initIndex++;
+        }
+
+        @Override
+        public void contextDestroyed(ServletContextEvent sce)
+        {
+            _destroyIndex = __destroyIndex++;
+        }
+    }
 
     public static class MySCI implements ServletContainerInitializer
     {
@@ -653,6 +722,37 @@ public class ServletContextHandlerTest
     }
 
     @Test
+    public void testDestroyOrder() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        ListenerHolder listenerHolder = new ListenerHolder();
+        StopTestListener stopTestListener = new StopTestListener();
+        listenerHolder.setListener(stopTestListener);
+        root.getServletHandler().addListener(listenerHolder);
+        ServletHolder servletHolder = new ServletHolder();
+        StopTestServlet stopTestServlet = new StopTestServlet();
+        servletHolder.setServlet(stopTestServlet);
+        root.addServlet(servletHolder, "/test");
+        FilterHolder filterHolder = new FilterHolder();
+        StopTestFilter stopTestFilter = new StopTestFilter();
+        filterHolder.setFilter(stopTestFilter);
+        root.addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+        _server.start();
+        _server.stop();
+        
+        assertEquals(0, stopTestListener._initIndex); //listeners contextInitialized called first
+        assertEquals(1, stopTestFilter._initIndex); //filters init
+        assertEquals(2, stopTestServlet._initIndex); //servlets init
+
+        assertEquals(0, stopTestFilter._destroyIndex); //filters destroyed first
+        assertEquals(1, stopTestServlet._destroyIndex); //servlets destroyed next
+        assertEquals(2, stopTestListener._destroyIndex); //listener contextDestroyed last
+    }
+    
+    @Test
     public void testAddSessionListener() throws Exception
     {
         ContextHandlerCollection contexts = new ContextHandlerCollection();
@@ -687,6 +787,41 @@ public class ServletContextHandlerTest
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.defaultSessionTrackingModes"));
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.effectiveSessionTrackingModes"));
         assertTrue((Boolean)root.getServletContext().getAttribute("MyContextListener.setSessionTrackingModes"));
+    }
+    
+    @Test
+    public void testContextInitializationDestruction() throws Exception
+    {
+        Server server = new Server();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/");
+        class TestServletContextListener implements ServletContextListener
+        {
+            public int initialized = 0;
+            public int destroyed = 0;
+            
+            @Override
+            public void contextInitialized(ServletContextEvent sce)
+            {
+                initialized++;
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent sce)
+            {
+                destroyed++;
+            }
+        }
+        
+        TestServletContextListener listener = new TestServletContextListener();
+        root.addEventListener(listener);
+        server.start();
+        server.stop();
+        assertEquals(1, listener.initialized);
+        server.stop();
+        assertEquals(1, listener.destroyed);
     }
     
     @Test
@@ -1495,30 +1630,6 @@ public class ServletContextHandlerTest
     }
 
     @Test
-    public void testGzipHandlerOption() throws Exception
-    {
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.GZIP);
-        GzipHandler gzip = context.getGzipHandler();
-        _server.start();
-        assertEquals(context.getSessionHandler(), context.getHandler());
-        assertEquals(gzip, context.getSessionHandler().getHandler());
-        assertEquals(context.getServletHandler(), gzip.getHandler());
-    }
-
-    @Test
-    public void testGzipHandlerSet() throws Exception
-    {
-        ServletContextHandler context = new ServletContextHandler();
-        context.setSessionHandler(new SessionHandler());
-        context.setGzipHandler(new GzipHandler());
-        GzipHandler gzip = context.getGzipHandler();
-        _server.start();
-        assertEquals(context.getSessionHandler(), context.getHandler());
-        assertEquals(gzip, context.getSessionHandler().getHandler());
-        assertEquals(context.getServletHandler(), gzip.getHandler());
-    }
-
-    @Test
     public void testReplaceServletHandlerWithServlet() throws Exception
     {
         ServletContextHandler context = new ServletContextHandler();
@@ -1553,23 +1664,18 @@ public class ServletContextHandlerTest
     @Test
     public void testSetSecurityHandler() throws Exception
     {
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY | ServletContextHandler.GZIP);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS | ServletContextHandler.SECURITY);
         assertNotNull(context.getSessionHandler());
         SessionHandler sessionHandler = context.getSessionHandler();
         assertNotNull(context.getSecurityHandler());
         SecurityHandler securityHandler = context.getSecurityHandler();
-        assertNotNull(context.getGzipHandler());
-        GzipHandler gzipHandler = context.getGzipHandler();
-        
+
         //check the handler linking order
         HandlerWrapper h = (HandlerWrapper)context.getHandler();
         assertSame(h, sessionHandler);
 
         h = (HandlerWrapper)h.getHandler();
         assertSame(h, securityHandler);
-
-        h = (HandlerWrapper)h.getHandler();
-        assertSame(h, gzipHandler);
 
         //replace the security handler
         SecurityHandler myHandler = new SecurityHandler()
@@ -1611,9 +1717,6 @@ public class ServletContextHandlerTest
 
         h = (HandlerWrapper)h.getHandler();
         assertSame(h, myHandler);
-
-        h = (HandlerWrapper)h.getHandler();
-        assertSame(h, gzipHandler);
     }
  
     @Test

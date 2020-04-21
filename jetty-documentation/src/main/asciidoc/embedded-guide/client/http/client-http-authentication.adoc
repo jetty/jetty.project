@@ -16,76 +16,66 @@
 // ========================================================================
 //
 
-[[client-http-authentication]]
-=== Authentication Support
+[[eg-client-http-authentication]]
+=== HttpClient Authentication Support
 
-Jetty's HTTP client supports the `BASIC` and `DIGEST` authentication mechanisms defined by link:https://tools.ietf.org/html/rfc7235[RFC 7235].
+Jetty's `HttpClient` supports the `BASIC` and `DIGEST` authentication mechanisms defined by link:https://tools.ietf.org/html/rfc7235[RFC 7235], as well as the SPNEGO authentication mechanism defined in link:https://tools.ietf.org/html/rfc4559[RFC 4559].
 
-You can configure authentication credentials in the HTTP client instance as follows:
+The HTTP _conversation_ - the sequence of related HTTP requests - for a request that needs authentication is the following:
 
-[source, java, subs="{sub-order}"]
+[plantuml]
 ----
-URI uri = new URI("http://domain.com/secure");
-String realm = "MyRealm";
-String user = "username";
-String pass = "password";
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
 
-// Add authentication credentials
-AuthenticationStore auth = httpClient.getAuthenticationStore();
-auth.addAuthentication(new BasicAuthentication(uri, realm, user, pass));
+participant Application
+participant HttpClient
+participant Server
 
-ContentResponse response = httpClient
-        .newRequest(uri)
-        .send()
-        .get(5, TimeUnit.SECONDS);
-----
-
-Jetty's HTTP client tests authentication credentials against the challenge(s) the server issues (see our section here on link:#configuring-security-secure-passwords[secure password obfuscation]), and if they match it automatically sends the right authentication headers to the server for authentication.
-If the authentication is successful, it caches the result and reuses it for subsequent requests for the same domain and matching URIs.
-
-The HTTP conversation for a successful match is the following:
-
-----
-Application  HttpClient                     Server
-     |           |                             |
-     |--- GET ---|------------ GET ----------->|
-     |           |                             |
-     |           |<-- 401 + WWW-Authenticate --|
-     |           |                             |
-     |           |--- GET + Authentication --->|
-     |           |                             |
-     |<-- 200 ---|------------ 200 ------------|
+Application -> Server : GET /path
+Server -> HttpClient : 401 + WWW-Authenticate
+HttpClient -> Server : GET + Authentication
+Server -> Application : 200 OK
 ----
 
-The application does not receive events related to the response with code 401, they are handled internally by `HttpClient` which produces a request similar to the original but with the correct `Authorization` header, and then relays the response with code 200 to the application.
+Upon receiving a HTTP 401 response code, `HttpClient` looks at the `WWW-Authenticate` response header (the server _challenge_) and then tries to match configured authentication credentials to produce an `Authentication` header that contains the authentication credentials to access the resource.
 
-Successful authentications are cached, but it is possible to clear them in order to force authentication again:
+You can configure authentication credentials in the `HttpClient` instance as follows:
 
-[source, java, subs="{sub-order}"]
+[source,java,indent=0]
 ----
-httpClient.getAuthenticationStore().clearAuthenticationResults();
-----
-
-Authentications may be preempted to avoid the additional roundtrip due to the server challenge in this way:
-
-[source, java, subs="{sub-order}"]
-----
-AuthenticationStore auth = httpClient.getAuthenticationStore();
-URI uri = URI.create("http://domain.com/secure");
-auth.addAuthenticationResult(new BasicAuthentication.BasicResult(uri, "username", "password"));
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=addAuthentication]
 ----
 
-In this way, requests for the given URI are enriched by `HttpClient` immediately with the `Authorization` header, and the server should respond with a 200 and the resource content rather than with the 401 and the challenge.
+``Authentication``s are matched against the server challenge first by mechanism (e.g. `BASIC` or `DIGEST`), then by realm and then by URI.
+
+If an `Authentication` match is found, the application does not receive events related to the HTTP 401 response.
+These events are handled internally by `HttpClient` which produces another (internal) request similar to the original request but with an additional `Authorization` header.
+
+If the authentication is successful, the server responds with a HTTP 200 and `HttpClient` caches the `Authentication.Result` so that subsequent requests for a matching URI will not incur in the additional rountrip caused by the HTTP 401 response.
+
+It is possible to clear ``Authentication.Result``s in order to force authentication again:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=clearResults]
+----
+
+Authentication results may be preempted to avoid the additional roundtrip due to the server challenge in this way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=preemptedResult]
+----
+
+In this way, requests for the given URI are enriched immediately with the `Authorization` header, and the server should respond with HTTP 200 (and the resource content) rather than with the 401 and the challenge.
 
 It is also possible to preempt the authentication for a single request only, in this way:
 
-[source, java, subs="{sub-order}"]
+[source,java,indent=0]
 ----
-URI uri = URI.create("http://domain.com/secure");
-Authentication.Result authn = new BasicAuthentication.BasicResult(uri, "username", "password")
-Request request = httpClient.newRequest(uri);
-authn.apply(request);
-request.send();
+include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=requestPreemptedResult]
 ----
 
-See also the link:#client-http-proxy-authentication[proxy authentication section] for further information about how authentication works with HTTP proxies.
+See also the xref:eg-client-http-proxy-authentication[proxy authentication section] for further information about how authentication works with HTTP proxies.

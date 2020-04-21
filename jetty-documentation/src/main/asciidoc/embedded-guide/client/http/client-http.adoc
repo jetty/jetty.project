@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[client-http]]
+[[eg-client-http]]
 === HTTP Client
 
 include::client-http-intro.adoc[]
