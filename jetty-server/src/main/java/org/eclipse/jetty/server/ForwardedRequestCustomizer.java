@@ -399,7 +399,7 @@ public class ForwardedRequestCustomizer implements Customizer
 
         if (match)
         {
-            HttpURI.Builder builder = HttpURI.build(request.getHttpURI());
+            HttpURI.Mutable builder = HttpURI.build(request.getHttpURI());
             if (forwarded._proto != null)
             {
                 builder.scheme(forwarded._proto);

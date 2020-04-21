@@ -950,7 +950,7 @@ public class ResponseTest
                     Response response = getResponse();
                     Request request = response.getHttpChannel().getRequest();
 
-                    HttpURI.Builder builder = HttpURI.build(request.getHttpURI(),
+                    HttpURI.Mutable builder = HttpURI.build(request.getHttpURI(),
                         "/path/info;param;jsessionid=12345?query=0&more=1#target");
                     builder.scheme("http");
                     if (host != null)

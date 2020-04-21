@@ -29,7 +29,6 @@ import java.util.TimeZone;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
@@ -138,7 +137,7 @@ public abstract class RFC2616BaseTest
         expected.set(Calendar.ZONE_OFFSET, 0); // Use GMT+0:00
         expected.set(Calendar.DST_OFFSET, 0); // No Daylight Savings Offset
 
-        HttpFieldsBuilder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
 
         // RFC 822 Preferred Format
         fields.put("D1", "Sun, 6 Nov 1994 08:49:37 GMT");
@@ -335,7 +334,7 @@ public abstract class RFC2616BaseTest
     @Test
     public void test39()
     {
-        HttpFieldsBuilder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
 
         fields.put("Q", "bbb;q=0.5,aaa,ccc;q=0.002,d;q=0,e;q=0.0001,ddd;q=0.001,aa2,abb;q=0.7");
         List<String> list = fields.getQualityCSV("Q");

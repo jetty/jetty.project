@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http.tools.matchers;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -43,7 +42,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testNotContainsHeader()
     {
-        HttpFieldsBuilder fields = HttpFields.build()
+        HttpFields.Mutable fields = HttpFields.build()
             .put("a", "foo")
             .put("b", "bar")
             .put("c", "fizz");
@@ -59,7 +58,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderMisMatch()
     {
-        HttpFieldsBuilder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");
@@ -75,7 +74,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderValueMisMatchNoSuchHeader()
     {
-        HttpFieldsBuilder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");
@@ -91,7 +90,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderValueMisMatchNoSuchValue()
     {
-        HttpFieldsBuilder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");
@@ -107,7 +106,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderValue()
     {
-        HttpFieldsBuilder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");

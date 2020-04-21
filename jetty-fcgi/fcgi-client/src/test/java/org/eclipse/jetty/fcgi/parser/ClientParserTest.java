@@ -28,7 +28,6 @@ import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.jupiter.api.Test;
@@ -43,7 +42,7 @@ public class ClientParserTest
     public void testParseResponseHeaders() throws Exception
     {
         final int id = 13;
-        HttpFieldsBuilder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
 
         final int statusCode = 200;
         final String statusMessage = "OK";
@@ -158,7 +157,7 @@ public class ClientParserTest
     public void testParseSmallResponseContent() throws Exception
     {
         final int id = 13;
-        HttpFieldsBuilder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
 
         ByteBuffer content = ByteBuffer.wrap(new byte[1024]);
         final int contentLength = content.remaining();
@@ -211,7 +210,7 @@ public class ClientParserTest
     public void testParseLargeResponseContent() throws Exception
     {
         final int id = 13;
-        HttpFieldsBuilder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
 
         ByteBuffer content = ByteBuffer.wrap(new byte[128 * 1024]);
         final int contentLength = content.remaining();

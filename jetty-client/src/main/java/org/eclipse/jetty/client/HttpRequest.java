@@ -54,7 +54,6 @@ import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.PathRequestContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -65,7 +64,7 @@ public class HttpRequest implements Request
 {
     private static final URI NULL_URI = URI.create("null:0");
 
-    private final HttpFieldsBuilder headers = HttpFields.build();
+    private final HttpFields.Mutable headers = HttpFields.build();
     private final Fields params = new Fields(true);
     private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
@@ -382,7 +381,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public HttpFieldsBuilder getHeaders()
+    public HttpFields.Mutable getHeaders()
     {
         return headers;
     }

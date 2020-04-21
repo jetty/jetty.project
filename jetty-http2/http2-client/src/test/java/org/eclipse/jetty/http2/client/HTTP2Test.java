@@ -36,7 +36,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -267,7 +266,7 @@ public class HTTP2Test extends AbstractTest
         Session session = newClient(new Session.Listener.Adapter());
 
         Random random = new Random();
-        HttpFieldsBuilder fields = HttpFields.build()
+        HttpFields.Mutable fields = HttpFields.build()
             .putLongField(downloadBytes, random.nextInt(128 * 1024))
             .put("User-Agent", "HTTP2Client/" + Jetty.VERSION);
         MetaData.Request metaData = newRequest("GET", fields);
@@ -807,7 +806,7 @@ public class HTTP2Test extends AbstractTest
 
         // A bad header in the request should fail on the client.
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFieldsBuilder requestFields = HttpFields.build()
+        HttpFields.Mutable requestFields = HttpFields.build()
             .put(":custom", "special");
         MetaData.Request metaData = newRequest("GET", requestFields);
         HeadersFrame request = new HeadersFrame(metaData, null, true);

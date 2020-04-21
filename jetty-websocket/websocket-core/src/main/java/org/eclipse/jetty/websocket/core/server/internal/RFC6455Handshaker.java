@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -106,7 +106,7 @@ public final class RFC6455Handshaker extends AbstractHandshaker
     protected void prepareResponse(Response response, Negotiation negotiation)
     {
         response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
-        HttpFieldsBuilder responseFields = response.getHttpFields();
+        HttpFields.Mutable responseFields = response.getHttpFields();
         responseFields.put(UPGRADE_WEBSOCKET);
         responseFields.put(CONNECTION_UPGRADE);
         responseFields.put(HttpHeader.SEC_WEBSOCKET_ACCEPT, WebSocketCore.hashKey(((RFC6455Negotiation)negotiation).getKey()));

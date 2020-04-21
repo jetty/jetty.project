@@ -26,7 +26,6 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
@@ -44,7 +43,7 @@ public class HttpChannelOverFCGI extends HttpChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverFCGI.class);
 
-    private final HttpFieldsBuilder fields = HttpFields.build();
+    private final HttpFields.Mutable fields = HttpFields.build();
     private final Dispatcher dispatcher;
     private String method;
     private String path;

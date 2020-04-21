@@ -32,7 +32,7 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.fcgi.FCGI;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -103,7 +103,7 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
         return new HttpConnectionOverFCGI(endPoint, destination, promise);
     }
 
-    protected void customize(Request request, HttpFieldsBuilder fastCGIHeaders)
+    protected void customize(Request request, HttpFields.Mutable fastCGIHeaders)
     {
         fastCGIHeaders.put(FCGI.Headers.DOCUMENT_ROOT, getScriptRoot());
     }

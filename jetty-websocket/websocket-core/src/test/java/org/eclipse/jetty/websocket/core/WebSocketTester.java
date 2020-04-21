@@ -28,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -87,9 +86,9 @@ public class WebSocketTester
         return newClient(port, false, extensions);
     }
 
-    protected static HttpFieldsBuilder newUpgradeRequest(String extensions)
+    protected static HttpFields.Mutable newUpgradeRequest(String extensions)
     {
-        HttpFieldsBuilder fields = HttpFields.build()
+        HttpFields.Mutable fields = HttpFields.build()
             .add(HttpHeader.HOST, "127.0.0.1")
             .add(HttpHeader.UPGRADE, "websocket")
             .add(HttpHeader.CONNECTION, "Upgrade")

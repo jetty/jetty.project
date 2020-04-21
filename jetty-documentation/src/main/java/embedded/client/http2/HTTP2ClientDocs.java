@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -173,7 +172,7 @@ public class HTTP2ClientDocs
         Session session = sessionCF.get();
 
         // Configure the request headers.
-        HttpFieldsBuilder requestHeaders = HttpFields.build()
+        HttpFields.Mutable requestHeaders = HttpFields.build()
             .put(HttpHeader.CONTENT_TYPE, "application/json");
 
         // The request metadata with method, URI and headers.
@@ -214,7 +213,7 @@ public class HTTP2ClientDocs
         CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
         Session session = sessionCF.get();
 
-        HttpFieldsBuilder requestHeaders = HttpFields.build()
+        HttpFields.Mutable requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
@@ -359,7 +358,7 @@ public class HTTP2ClientDocs
         CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
         Session session = sessionCF.get();
 
-        HttpFieldsBuilder requestHeaders = HttpFields.build()
+        HttpFields.Mutable requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);

@@ -25,18 +25,17 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpVersion;
 
 public class HttpResponse implements Response
 {
-    private final HttpFieldsBuilder headers = HttpFields.build();
+    private final HttpFields.Mutable headers = HttpFields.build();
     private final Request request;
     private final List<ResponseListener> listeners;
     private HttpVersion version;
     private int status;
     private String reason;
-    private HttpFieldsBuilder trailers;
+    private HttpFields.Mutable trailers;
 
     public HttpResponse(Request request, List<ResponseListener> listeners)
     {
@@ -92,7 +91,7 @@ public class HttpResponse implements Response
         return headers.asImmutable();
     }
 
-    public HttpFieldsBuilder getHeadersBuilder()
+    public HttpFields.Mutable getHeadersBuilder()
     {
         return headers;
     }
@@ -109,7 +108,7 @@ public class HttpResponse implements Response
         return result;
     }
 
-    public HttpFieldsBuilder getTrailers()
+    public HttpFields.Mutable getTrailers()
     {
         return trailers;
     }

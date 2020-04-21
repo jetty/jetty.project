@@ -38,7 +38,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.proxy.AsyncProxyServlet;
@@ -209,7 +209,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         super.sendProxyRequest(request, proxyResponse, proxyRequest);
     }
 
-    protected void customizeFastCGIHeaders(Request proxyRequest, HttpFieldsBuilder fastCGIHeaders)
+    protected void customizeFastCGIHeaders(Request proxyRequest, HttpFields.Mutable fastCGIHeaders)
     {
         for (String envName : fcgiEnvNames)
         {
@@ -271,7 +271,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         }
 
         @Override
-        protected void customize(Request request, HttpFieldsBuilder fastCGIHeaders)
+        protected void customize(Request request, HttpFields.Mutable fastCGIHeaders)
         {
             super.customize(request, fastCGIHeaders);
             customizeFastCGIHeaders(request, fastCGIHeaders);

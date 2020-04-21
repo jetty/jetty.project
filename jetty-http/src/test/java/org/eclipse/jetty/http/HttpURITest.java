@@ -119,7 +119,7 @@ public class HttpURITest
     @Test
     public void testParse()
     {
-        HttpURI.Builder builder = HttpURI.build();
+        HttpURI.Mutable builder = HttpURI.build();
         HttpURI uri;
 
         builder.uri("*");
@@ -204,7 +204,7 @@ public class HttpURITest
     @Test
     public void testMutableURIBuilder()
     {
-        HttpURI.Builder builder = HttpURI.build("/foo/bar");
+        HttpURI.Mutable builder = HttpURI.build("/foo/bar");
         HttpURI uri = builder.asImmutable();
         assertEquals("/foo/bar", uri.toString());
         assertEquals("/foo/bar", uri.getPath());
@@ -250,7 +250,7 @@ public class HttpURITest
     @Test
     public void testSchemeAndOrAuthority() throws Exception
     {
-        HttpURI.Builder builder = HttpURI.build("/path/info");
+        HttpURI.Mutable builder = HttpURI.build("/path/info");
         HttpURI uri = builder.asImmutable();
         assertEquals("/path/info", uri.toString());
 

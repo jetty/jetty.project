@@ -19,7 +19,6 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +42,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWin2kSP1WithIE5() throws Exception
     {
-        HttpFieldsBuilder fields = HttpFields.build(_request.getHttpFields());
+        HttpFields.Mutable fields = HttpFields.build(_request.getHttpFields());
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.01)");
         _request.setHttpFields(fields);
 
@@ -92,7 +91,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWin2kWithIE5() throws Exception
     {
-        HttpFieldsBuilder fields = HttpFields.build(_request.getHttpFields());
+        HttpFields.Mutable fields = HttpFields.build(_request.getHttpFields());
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.0)");
         _request.setHttpFields(fields);
 
@@ -142,7 +141,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWinVistaWithIE5() throws Exception
     {
-        HttpFieldsBuilder fields = HttpFields.build(_request.getHttpFields());
+        HttpFields.Mutable fields = HttpFields.build(_request.getHttpFields());
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 6.0)");
         _request.setHttpFields(fields);
 
@@ -191,7 +190,7 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWinXpWithIE5() throws Exception
     {
-        HttpFieldsBuilder fields = HttpFields.build(_request.getHttpFields());
+        HttpFields.Mutable fields = HttpFields.build(_request.getHttpFields());
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.1)");
         _request.setHttpFields(fields);
 

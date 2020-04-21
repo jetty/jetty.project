@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -53,7 +52,7 @@ public class HpackTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
-        HttpFieldsBuilder fields0 = HttpFields.build()
+        HttpFields.Mutable fields0 = HttpFields.build()
             .add(HttpHeader.CONTENT_TYPE, "text/html")
             .add(HttpHeader.CONTENT_LENGTH, "1024")
             .add(new HttpField(HttpHeader.CONTENT_ENCODING, (String)null))
@@ -81,7 +80,7 @@ public class HpackTest
 
         assertMetaDataResponseSame(nullToEmpty, decoded0b);
 
-        HttpFieldsBuilder fields1 = HttpFields.build()
+        HttpFields.Mutable fields1 = HttpFields.build()
             .add(HttpHeader.CONTENT_TYPE, "text/plain")
             .add(HttpHeader.CONTENT_LENGTH, "1234")
             .add(HttpHeader.CONTENT_ENCODING, " ")

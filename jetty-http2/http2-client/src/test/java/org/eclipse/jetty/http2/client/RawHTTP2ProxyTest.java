@@ -32,7 +32,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -206,7 +205,7 @@ public class RawHTTP2ProxyTest
         Session clientSession = clientPromise.get(5, TimeUnit.SECONDS);
 
         // Send a request with trailers for server1.
-        HttpFieldsBuilder fields1 = HttpFields.build();
+        HttpFields.Mutable fields1 = HttpFields.build();
         fields1.put("X-Target", String.valueOf(connector1.getLocalPort()));
         MetaData.Request request1 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields1);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
@@ -234,7 +233,7 @@ public class RawHTTP2ProxyTest
         stream1.headers(new HeadersFrame(stream1.getId(), new MetaData(HttpVersion.HTTP_2, HttpFields.EMPTY), null, true), Callback.NOOP);
 
         // Send a request for server2.
-        HttpFieldsBuilder fields2 = HttpFields.build();
+        HttpFields.Mutable fields2 = HttpFields.build();
         fields2.put("X-Target", String.valueOf(connector2.getLocalPort()));
         MetaData.Request request2 = new MetaData.Request("GET", HttpURI.from("http://localhost/server1"), HttpVersion.HTTP_2, fields2);
         FuturePromise<Stream> streamPromise2 = new FuturePromise<>();

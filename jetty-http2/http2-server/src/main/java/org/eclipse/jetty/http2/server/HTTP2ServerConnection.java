@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -320,7 +320,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
         }
     }
 
-    public boolean upgrade(Request request, HttpFieldsBuilder responseFields)
+    public boolean upgrade(Request request, HttpFields.Mutable responseFields)
     {
         if (HttpMethod.PRI.is(request.getMethod()))
         {

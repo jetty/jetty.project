@@ -29,7 +29,6 @@ import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -61,7 +60,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
     private List<String> _complianceViolations;
-    private HttpFieldsBuilder _trailers;
+    private HttpFields.Mutable _trailers;
 
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
     {
@@ -503,7 +502,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         }
 
         // Create new connection
-        HttpFieldsBuilder response101 = HttpFields.build();
+        HttpFields.Mutable response101 = HttpFields.build();
         Connection upgradeConnection = factory.upgradeConnection(getConnector(), getEndPoint(), _metadata, response101);
         if (upgradeConnection == null)
         {
@@ -544,8 +543,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
     private static class RequestBuilder
     {
-        private final HttpFieldsBuilder _fieldBuilder = HttpFields.build();
-        private final HttpURI.Builder _uri = HttpURI.build();
+        private final HttpFields.Mutable _fieldBuilder = HttpFields.build();
+        private final HttpURI.Mutable _uri = HttpURI.build();
         private String _method;
         private HttpVersion _version;
 
@@ -562,7 +561,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             _fieldBuilder.clear();
         }
 
-        public HttpFieldsBuilder getFields()
+        public HttpFields.Mutable getFields()
         {
             return _fieldBuilder;
         }

@@ -30,7 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -72,7 +72,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         this.upgradeRequest = new RawUpgradeRequest(client, wsURI);
         if (requestHeaders != null)
         {
-            HttpFieldsBuilder fields = this.upgradeRequest.getHeaders();
+            HttpFields.Mutable fields = this.upgradeRequest.getHeaders();
             requestHeaders.forEach((name, value) ->
             {
                 fields.remove(name);

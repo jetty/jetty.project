@@ -26,7 +26,6 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.parser.ServerParser;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,7 @@ public class ClientGeneratorTest
     @Test
     public void testGenerateRequestHeaders() throws Exception
     {
-        HttpFieldsBuilder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
 
         // Short name, short value
         final String shortShortName = "REQUEST_METHOD";

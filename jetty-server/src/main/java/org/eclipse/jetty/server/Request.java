@@ -74,7 +74,6 @@ import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
@@ -389,7 +388,7 @@ public class Request implements HttpServletRequest
         if (!isPushSupported())
             return null;
 
-        HttpFieldsBuilder fields = HttpFields.build(getHttpFields(), NOT_PUSHED_HEADERS);
+        HttpFields.Mutable fields = HttpFields.build(getHttpFields(), NOT_PUSHED_HEADERS);
 
         String id;
         try
@@ -1677,7 +1676,7 @@ public class Request implements HttpServletRequest
             _uri = uri;
         else
         {
-            HttpURI.Builder builder = HttpURI.build(uri);
+            HttpURI.Mutable builder = HttpURI.build(uri);
 
             if (uri.isAbsolute())
             {

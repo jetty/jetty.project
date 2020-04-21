@@ -32,7 +32,6 @@ import org.eclipse.jetty.fcgi.generator.ClientGenerator;
 import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
@@ -60,8 +59,8 @@ public class HttpSenderOverFCGI extends HttpSender
     {
         Request request = exchange.getRequest();
         // Copy the request headers to be able to convert them properly
-        HttpFieldsBuilder headers = HttpFields.build(request.getHeaders());
-        HttpFieldsBuilder fcgiHeaders = HttpFields.build();
+        HttpFields.Mutable headers = HttpFields.build(request.getHeaders());
+        HttpFields.Mutable fcgiHeaders = HttpFields.build();
 
         // FastCGI headers based on the URI
         URI uri = request.getURI();

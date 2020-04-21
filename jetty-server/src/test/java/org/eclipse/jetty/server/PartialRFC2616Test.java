@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
@@ -83,7 +82,7 @@ public class PartialRFC2616Test
     {
         try
         {
-            HttpFieldsBuilder fields = HttpFields.build()
+            HttpFields.Mutable fields = HttpFields.build()
                 .put("D1", "Sun, 6 Nov 1994 08:49:37 GMT")
                 .put("D2", "Sunday, 6-Nov-94 08:49:37 GMT")
                 .put("D3", "Sun Nov  6 08:49:37 1994");

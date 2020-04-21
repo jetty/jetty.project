@@ -48,47 +48,47 @@ import org.eclipse.jetty.util.UrlEncoded;
  */
 public interface HttpURI
 {
-    static HttpURI.Builder build()
+    static Mutable build()
     {
-        return new HttpURI.Builder();
+        return new Mutable();
     }
 
-    static HttpURI.Builder build(HttpURI uri)
+    static Mutable build(HttpURI uri)
     {
-        return new HttpURI.Builder(uri);
+        return new Mutable(uri);
     }
 
-    static HttpURI.Builder build(HttpURI uri, String pathQuery)
+    static Mutable build(HttpURI uri, String pathQuery)
     {
-        return new HttpURI.Builder(uri, pathQuery);
+        return new Mutable(uri, pathQuery);
     }
 
-    static HttpURI.Builder build(HttpURI uri, String path, String param, String query)
+    static Mutable build(HttpURI uri, String path, String param, String query)
     {
-        return new HttpURI.Builder(uri, path, param, query);
+        return new Mutable(uri, path, param, query);
     }
 
-    static HttpURI.Builder build(URI uri)
+    static Mutable build(URI uri)
     {
-        return new HttpURI.Builder(uri);
+        return new Mutable(uri);
     }
 
-    static HttpURI.Builder build(String uri)
+    static Mutable build(String uri)
     {
-        return new HttpURI.Builder(uri);
+        return new Mutable(uri);
     }
 
-    static HttpURI from(URI uri)
-    {
-        return new HttpURI.Immutable(uri);
-    }
-
-    static HttpURI from(String uri)
+    static Immutable from(URI uri)
     {
         return new HttpURI.Immutable(uri);
     }
 
-    static HttpURI from(String method, String uri)
+    static Immutable from(String uri)
+    {
+        return new HttpURI.Immutable(uri);
+    }
+
+    static Immutable from(String method, String uri)
     {
         if (HttpMethod.CONNECT.is(method))
             return new Immutable(uri, null, null, null, -1, uri, null, null, null, null);
@@ -97,10 +97,12 @@ public interface HttpURI
         return HttpURI.from(uri);
     }
 
-    static HttpURI from(String scheme, String host, int port, String pathQuery)
+    static Immutable from(String scheme, String host, int port, String pathQuery)
     {
-        return build(pathQuery).scheme(scheme).host(host).port(port).pathQuery(pathQuery).asImmutable();
+        return new Immutable(scheme, host, port, pathQuery);
     }
+
+    Immutable asImmutable();
 
     String getAuthority();
 
@@ -135,10 +137,6 @@ public interface HttpURI
 
     boolean isAbsolute();
 
-    HttpURI asImmutable();
-
-    HttpURI.Builder asMutable();
-
     default URI toURI()
     {
         try
@@ -167,7 +165,7 @@ public interface HttpURI
 
         private Immutable(String uri)
         {
-            Builder builder = new Builder(uri);
+            Mutable builder = new Mutable(uri);
             _uri = builder._uri;
             _scheme = builder._scheme;
             _user = builder._user;
@@ -182,8 +180,23 @@ public interface HttpURI
 
         private Immutable(URI uri)
         {
-            Builder builder = new Builder(uri);
+            Mutable builder = new Mutable(uri);
             _uri = builder._uri;
+            _scheme = builder._scheme;
+            _user = builder._user;
+            _host = builder._host;
+            _port = builder._port;
+            _path = builder._path;
+            _decodedPath = builder._decodedPath;
+            _param = builder._param;
+            _query = builder._query;
+            _fragment = builder._fragment;
+        }
+
+        private Immutable(String scheme, String host, int port, String pathQuery)
+        {
+            Mutable builder = build().scheme(scheme).host(host).port(port).pathQuery(pathQuery);
+            _uri = null;
             _scheme = builder._scheme;
             _user = builder._user;
             _host = builder._host;
@@ -207,6 +220,12 @@ public interface HttpURI
             _param = param;
             _query = query;
             _fragment = fragment;
+        }
+
+        @Override
+        public Immutable asImmutable()
+        {
+            return this;
         }
 
         @Override
@@ -318,31 +337,6 @@ public interface HttpURI
         }
 
         @Override
-        public URI toURI()
-        {
-            try
-            {
-                return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
-            }
-            catch (URISyntaxException x)
-            {
-                throw new RuntimeException(x);
-            }
-        }
-
-        @Override
-        public HttpURI asImmutable()
-        {
-            return this;
-        }
-
-        @Override
-        public HttpURI.Builder asMutable()
-        {
-            return build(this);
-        }
-
-        @Override
         public String toString()
         {
             if (_uri == null)
@@ -379,9 +373,22 @@ public interface HttpURI
             }
             return _uri;
         }
+
+        @Override
+        public URI toURI()
+        {
+            try
+            {
+                return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
+            }
+            catch (URISyntaxException x)
+            {
+                throw new RuntimeException(x);
+            }
+        }
     }
 
-    class Builder implements HttpURI
+    class Mutable implements HttpURI
     {
         private enum State
         {
@@ -409,16 +416,16 @@ public interface HttpURI
         private String _query;
         private String _fragment;
 
-        private Builder()
+        private Mutable()
         {
         }
 
-        private Builder(HttpURI uri)
+        private Mutable(HttpURI uri)
         {
             uri(uri);
         }
 
-        private Builder(HttpURI baseURI, String pathQuery)
+        private Mutable(HttpURI baseURI, String pathQuery)
         {
             _uri = null;
             _scheme = baseURI.getScheme();
@@ -429,7 +436,7 @@ public interface HttpURI
                 parse(State.PATH, pathQuery);
         }
 
-        private Builder(HttpURI baseURI, String path, String param, String query)
+        private Mutable(HttpURI baseURI, String path, String param, String query)
         {
             _uri = null;
             _scheme = baseURI.getScheme();
@@ -442,13 +449,13 @@ public interface HttpURI
             _fragment = null;
         }
 
-        private Builder(String uri)
+        private Mutable(String uri)
         {
             _port = -1;
             parse(State.START, uri);
         }
 
-        private Builder(URI uri)
+        private Mutable(URI uri)
         {
             _uri = null;
 
@@ -473,7 +480,7 @@ public interface HttpURI
             _fragment = uri.getFragment();
         }
 
-        private Builder(String scheme, String host, int port, String pathQuery)
+        private Mutable(String scheme, String host, int port, String pathQuery)
         {
             _uri = null;
 
@@ -486,30 +493,16 @@ public interface HttpURI
         }
 
         @Override
-        public HttpURI asImmutable()
+        public Immutable asImmutable()
         {
             return new Immutable(_uri, _scheme, _user, _host, _port, _path, _decodedPath, _param, _query, _fragment);
-        }
-
-        @Override
-        public HttpURI.Builder asMutable()
-        {
-            return this;
-        }
-
-        @Override
-        public String getAuthority()
-        {
-            if (_port > 0)
-                return _host + ":" + _port;
-            return _host;
         }
 
         /**
          * @param host the host
          * @param port the port
          */
-        public Builder authority(String host, int port)
+        public Mutable authority(String host, int port)
         {
             _user = null;
             _host = host;
@@ -521,7 +514,7 @@ public interface HttpURI
         /**
          * @param hostport the host and port combined
          */
-        public Builder authority(String hostport)
+        public Mutable authority(String hostport)
         {
             HostPort hp = new HostPort(hostport);
             _user = null;
@@ -545,6 +538,29 @@ public interface HttpURI
             _user = null;
         }
 
+        public Mutable decodedPath(String path)
+        {
+            _uri = null;
+            _path = URIUtil.encodePath(path);
+            _decodedPath = path;
+            return this;
+        }
+
+        public Mutable fragment(String fragment)
+        {
+            _fragment = fragment;
+            _uri = null;
+            return this;
+        }
+
+        @Override
+        public String getAuthority()
+        {
+            if (_port > 0)
+                return _host + ":" + _port;
+            return _host;
+        }
+
         @Override
         public String getDecodedPath()
         {
@@ -553,25 +569,59 @@ public interface HttpURI
             return _decodedPath;
         }
 
-        public Builder decodedPath(String path)
-        {
-            _uri = null;
-            _path = URIUtil.encodePath(path);
-            _decodedPath = path;
-            return this;
-        }
-
         @Override
         public String getFragment()
         {
             return _fragment;
         }
 
-        public Builder fragment(String fragment)
+        @Override
+        public String getHost()
         {
-            _fragment = fragment;
-            _uri = null;
-            return this;
+            return _host;
+        }
+
+        @Override
+        public String getParam()
+        {
+            return _param;
+        }
+
+        @Override
+        public String getPath()
+        {
+            return _path;
+        }
+
+        @Override
+        public String getPathQuery()
+        {
+            if (_query == null)
+                return _path;
+            return _path + "?" + _query;
+        }
+
+        @Override
+        public int getPort()
+        {
+            return _port;
+        }
+
+        @Override
+        public String getQuery()
+        {
+            return _query;
+        }
+
+        @Override
+        public String getScheme()
+        {
+            return _scheme;
+        }
+
+        public String getUser()
+        {
+            return _user;
         }
 
         @Override
@@ -586,13 +636,7 @@ public interface HttpURI
             return _query != null && !_query.isEmpty();
         }
 
-        @Override
-        public String getHost()
-        {
-            return _host;
-        }
-
-        public Builder host(String host)
+        public Mutable host(String host)
         {
             _host = host;
             _uri = null;
@@ -605,7 +649,7 @@ public interface HttpURI
             return _scheme != null && !_scheme.isEmpty();
         }
 
-        public Builder normalize()
+        public Mutable normalize()
         {
             if (_port == 80 && HttpScheme.HTTP.is(_scheme))
                 _port = 0;
@@ -615,13 +659,7 @@ public interface HttpURI
             return this;
         }
 
-        @Override
-        public String getParam()
-        {
-            return _param;
-        }
-
-        public Builder param(String param)
+        public Mutable param(String param)
         {
             _param = param;
             if (_path != null && _param != null && !_path.contains(_param))
@@ -632,16 +670,10 @@ public interface HttpURI
             return this;
         }
 
-        @Override
-        public String getPath()
-        {
-            return _path;
-        }
-
         /**
          * @param path the path
          */
-        public Builder path(String path)
+        public Mutable path(String path)
         {
             _uri = null;
             _path = path;
@@ -649,15 +681,7 @@ public interface HttpURI
             return this;
         }
 
-        @Override
-        public String getPathQuery()
-        {
-            if (_query == null)
-                return _path;
-            return _path + "?" + _query;
-        }
-
-        public Builder pathQuery(String pathQuery)
+        public Mutable pathQuery(String pathQuery)
         {
             _uri = null;
             _path = null;
@@ -669,44 +693,26 @@ public interface HttpURI
             return this;
         }
 
-        @Override
-        public int getPort()
-        {
-            return _port;
-        }
-
-        public Builder port(int port)
+        public Mutable port(int port)
         {
             _port = port;
             _uri = null;
             return this;
         }
 
-        @Override
-        public String getQuery()
-        {
-            return _query;
-        }
-
-        public Builder query(String query)
+        public Mutable query(String query)
         {
             _query = query;
             _uri = null;
             return this;
         }
 
-        @Override
-        public String getScheme()
-        {
-            return _scheme;
-        }
-
-        public Builder scheme(HttpScheme scheme)
+        public Mutable scheme(HttpScheme scheme)
         {
             return scheme(scheme.asString());
         }
 
-        public Builder scheme(String scheme)
+        public Mutable scheme(String scheme)
         {
             _scheme = scheme;
             _uri = null;
@@ -731,7 +737,7 @@ public interface HttpURI
             }
         }
 
-        public Builder uri(HttpURI uri)
+        public Mutable uri(HttpURI uri)
         {
             _uri = null;
             _scheme = uri.getScheme();
@@ -746,7 +752,7 @@ public interface HttpURI
             return this;
         }
 
-        public Builder uri(String uri)
+        public Mutable uri(String uri)
         {
             clear();
             _uri = uri;
@@ -754,7 +760,7 @@ public interface HttpURI
             return this;
         }
 
-        public Builder uri(String method, String uri)
+        public Mutable uri(String method, String uri)
         {
             if (HttpMethod.CONNECT.is(method))
             {
@@ -772,7 +778,7 @@ public interface HttpURI
             return this;
         }
 
-        public Builder uri(String uri, int offset, int length)
+        public Mutable uri(String uri, int offset, int length)
         {
             clear();
             int end = offset + length;
@@ -781,12 +787,7 @@ public interface HttpURI
             return this;
         }
 
-        public String getUser()
-        {
-            return _user;
-        }
-
-        public Builder user(String user)
+        public Mutable user(String user)
         {
             _user = user;
             _uri = null;

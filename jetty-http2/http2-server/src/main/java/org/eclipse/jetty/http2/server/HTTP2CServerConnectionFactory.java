@@ -19,7 +19,7 @@
 package org.eclipse.jetty.http2.server;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData.Request;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -71,7 +71,7 @@ public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory 
     }
 
     @Override
-    public Connection upgradeConnection(Connector connector, EndPoint endPoint, Request request, HttpFieldsBuilder response101) throws BadMessageException
+    public Connection upgradeConnection(Connector connector, EndPoint endPoint, Request request, HttpFields.Mutable response101) throws BadMessageException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} upgrading {}{}{}", this, request, System.lineSeparator(), request.getFields());

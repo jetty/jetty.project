@@ -606,7 +606,7 @@ public class Server extends HandlerWrapper implements Attributes
 
                 if (baseUri == null)
                     baseUri = oldUri;
-                HttpURI.Builder builder = HttpURI.build(baseUri, encodedPathQuery);
+                HttpURI.Mutable builder = HttpURI.build(baseUri, encodedPathQuery);
                 if (StringUtil.isEmpty(builder.getParam()))
                     builder.param(baseUri.getParam());
                 if (StringUtil.isEmpty(builder.getQuery()))

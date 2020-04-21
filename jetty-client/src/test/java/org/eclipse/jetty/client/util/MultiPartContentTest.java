@@ -44,7 +44,6 @@ import javax.servlet.http.Part;
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.Request;
@@ -145,7 +144,7 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         });
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        HttpFieldsBuilder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + encoding.name());
         BytesRequestContent content = new BytesRequestContent(value.getBytes(encoding));
         multiPart.addFieldPart(name, content, fields);
@@ -241,7 +240,7 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
                 closeLatch.countDown();
             }
         });
-        HttpFieldsBuilder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put(HttpHeader.CONTENT_TYPE, contentType);
         multiPart.addFilePart(name, fileName, content, fields);
         multiPart.close();
@@ -355,7 +354,7 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         });
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        HttpFieldsBuilder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put(headerName, headerValue);
         multiPart.addFieldPart(field, new StringRequestContent(value, encoding), fields);
         multiPart.addFilePart(fileField, tmpPath.getFileName().toString(), new PathRequestContent(tmpPath), null);

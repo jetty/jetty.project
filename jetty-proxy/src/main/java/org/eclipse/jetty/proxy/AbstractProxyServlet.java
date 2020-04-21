@@ -45,7 +45,6 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpScheme;
@@ -470,7 +469,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
     protected void copyRequestHeaders(HttpServletRequest clientRequest, Request proxyRequest)
     {
         // First clear possibly existing headers, as we are going to copy those from the client request.
-        HttpFieldsBuilder newHeaders = HttpFields.build();
+        HttpFields.Mutable newHeaders = HttpFields.build();
 
         Set<String> headersToRemove = findConnectionHeaders(clientRequest);
 

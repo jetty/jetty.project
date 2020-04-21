@@ -21,7 +21,6 @@ package org.eclipse.jetty.http2.hpack;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
@@ -32,7 +31,7 @@ import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 public class MetaDataBuilder
 {
     private final int _maxSize;
-    private final HttpFieldsBuilder _fields = HttpFields.build();
+    private final HttpFields.Mutable _fields = HttpFields.build();
     private int _size;
     private Integer _status;
     private String _method;
@@ -236,7 +235,7 @@ public class MetaDataBuilder
         if (_request && _response)
             throw new HpackException.StreamException("Request and Response headers");
 
-        HttpFieldsBuilder fields = _fields;
+        HttpFields.Mutable fields = _fields;
         try
         {
             if (_request)

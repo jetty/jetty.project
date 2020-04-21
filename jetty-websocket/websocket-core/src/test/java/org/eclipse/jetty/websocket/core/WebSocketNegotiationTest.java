@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpChannel;
@@ -255,7 +255,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         Socket client = new Socket();
         client.connect(new InetSocketAddress("127.0.0.1", server.getLocalPort()));
 
-        HttpFieldsBuilder httpFields = newUpgradeRequest("nonExistentExtensionName");
+        HttpFields.Mutable httpFields = newUpgradeRequest("nonExistentExtensionName");
         String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;
         client.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
         String response = getUpgradeResponse(client.getInputStream());
@@ -336,7 +336,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         Socket client = new Socket();
         client.connect(new InetSocketAddress("127.0.0.1", server.getLocalPort()));
 
-        HttpFieldsBuilder httpFields = newUpgradeRequest(null);
+        HttpFields.Mutable httpFields = newUpgradeRequest(null);
         String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;
         client.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
         String response = getUpgradeResponse(client.getInputStream());
@@ -352,7 +352,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         Socket client = new Socket();
         client.connect(new InetSocketAddress("127.0.0.1", server.getLocalPort()));
 
-        HttpFieldsBuilder httpFields = newUpgradeRequest(null);
+        HttpFields.Mutable httpFields = newUpgradeRequest(null);
         httpFields.remove(HttpHeader.SEC_WEBSOCKET_KEY);
 
         String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;

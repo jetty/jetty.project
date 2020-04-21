@@ -28,7 +28,6 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpFieldsBuilder;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -80,7 +79,7 @@ public class RequestTrailersTest extends AbstractTest
         });
 
         HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
-        HttpFieldsBuilder trailers = HttpFields.build();
+        HttpFields.Mutable trailers = HttpFields.build();
         request.trailers(() -> trailers);
         if (content != null)
             request.body(new StringRequestContent(content));
@@ -120,7 +119,7 @@ public class RequestTrailersTest extends AbstractTest
         });
 
         HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
-        HttpFieldsBuilder trailers = HttpFields.build();
+        HttpFields.Mutable trailers = HttpFields.build();
         request.trailers(() -> trailers);
         AsyncRequestContent content = new AsyncRequestContent();
         request.body(content);
@@ -169,7 +168,7 @@ public class RequestTrailersTest extends AbstractTest
         });
 
         HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
-        HttpFieldsBuilder trailers = HttpFields.build();
+        HttpFields.Mutable trailers = HttpFields.build();
         request.trailers(() -> trailers);
         AsyncRequestContent content = new AsyncRequestContent();
         request.body(content);

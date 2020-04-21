@@ -72,7 +72,7 @@ import static org.eclipse.jetty.http.HttpCompliance.Violation.WHITESPACE_AFTER_F
  * is used to lookup common combinations of headers and values
  * (eg. "Connection: close"), or just header names (eg. "Connection:" ).
  * For headers who's value is not known statically (eg. Host, COOKIE) then a
- * per parser dynamic Trie of {@link HttpFieldsBuilder} from previous parsed messages
+ * per parser dynamic Trie of {@link HttpFields.Mutable} from previous parsed messages
  * is used to help the parsing of subsequent messages.
  * </p>
  * <p>

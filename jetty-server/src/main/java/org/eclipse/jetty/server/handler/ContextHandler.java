@@ -2152,7 +2152,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 }
                 else
                 {
-                    HttpURI.Builder builder = HttpURI.build(uriInContext);
+                    HttpURI.Mutable builder = HttpURI.build(uriInContext);
                     if (StringUtil.isEmpty(URIUtil.canonicalPath(builder.getDecodedPath())))
                         return null;
                     builder.path(URIUtil.addPaths(contextPath,builder.getPath()));
