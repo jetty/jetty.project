@@ -1702,15 +1702,14 @@ public class Request implements HttpServletRequest
                     builder.host(findServerName()).port(findServerPort());
                 }
             }
-
-
             _uri = builder.asImmutable();
         }
 
-        String encoded = uri.getPath();
+        String encoded = _uri.getPath();
         String path;
         if (encoded == null)
-            path = uri.isAbsolute() ? "/" : null;
+            // TODO this is not really right for CONNECT
+            path = _uri.isAbsolute() ? "/" : null;
         else if (encoded.startsWith("/"))
             path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(URIUtil.decodePath(encoded));
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))

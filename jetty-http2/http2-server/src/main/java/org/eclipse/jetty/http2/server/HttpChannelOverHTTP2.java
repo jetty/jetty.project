@@ -150,6 +150,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         }
         catch (BadMessageException x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onRequest", x);
             onBadMessage(x);
             return null;
         }

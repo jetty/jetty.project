@@ -65,6 +65,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
         if (isTunnel)
         {
             // TODO what to do with trailers ??
+            // TODO should connect requests have paths???
             String upgradeProtocol = request.getUpgradeProtocol();
             if (upgradeProtocol == null)
             {
