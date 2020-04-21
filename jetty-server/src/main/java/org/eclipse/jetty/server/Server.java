@@ -528,7 +528,7 @@ public class Server extends HandlerWrapper implements Attributes
         final Response response = channel.getResponse();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} {} on {}", request.getDispatcherType(), request.getMethod(), target, channel);
+            LOG.debug("{} {} {} ?{} on {}", request.getDispatcherType(), request.getMethod(), target, request.getQueryString(), channel);
 
         if (HttpMethod.OPTIONS.is(request.getMethod()) || "*".equals(target))
         {

@@ -189,7 +189,8 @@ public class RuleContainer extends Rule implements Dumpable
                     {
                         HttpURI baseUri = baseRequest.getHttpURI();
                         baseRequest.setHttpURI(HttpURI.build(baseUri,encoded)
-                            .param(baseUri.getParam()));
+                            .param(baseUri.getParam())
+                            .query(baseUri.getQuery()));
                     }
                 }
 
