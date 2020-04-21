@@ -33,7 +33,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Interface that represents readonly list of {@link HttpField}s.
+ * Interface that represents on ordered collection of {@link HttpField}s.
+ * Both {@link Mutable} and {@link Immutable} implementations are available
+ * via the static methods such as {@link #build()} and {@link #from(HttpField...)}.
  */
 public interface HttpFields extends Iterable<HttpField>
 {

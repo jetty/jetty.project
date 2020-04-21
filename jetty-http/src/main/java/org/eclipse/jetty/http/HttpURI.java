@@ -29,9 +29,13 @@ import org.eclipse.jetty.util.UrlEncoded;
 
 /**
  * Http URI.
- * Parse an HTTP URI from a string or byte array.  Given a URI
- * <code>http://user@host:port/path/info;param?query#fragment</code>
- * this class will split it into the following undecoded optional elements:<ul>
+ *
+ * Both {@link HttpFields.Mutable} and {@link HttpFields.Immutable} implementations are available
+ * via the static methods such as {@link #build()} and {@link #from(String)}.
+ *
+ * A URI such as
+ * <code>http://user@host:port/path;ignored/info;param?query#ignored</code>
+ * is split into the following undecoded elements:<ul>
  * <li>{@link #getScheme()} - http:</li>
  * <li>{@link #getAuthority()} - //name@host:port</li>
  * <li>{@link #getHost()} - host</li>
@@ -39,12 +43,10 @@ import org.eclipse.jetty.util.UrlEncoded;
  * <li>{@link #getPath()} - /path/info</li>
  * <li>{@link #getParam()} - param</li>
  * <li>{@link #getQuery()} - query</li>
- * <li>{@link #getFragment()} - fragment</li>
  * </ul>
- *
  * <p>Any parameters will be returned from {@link #getPath()}, but are excluded from the
  * return value of {@link #getDecodedPath()}.   If there are multiple parameters, the
- * {@link #getParam()} method returns only the last one.
+ * {@link #getParam()} method returns only the last one. Fragments are ignored.
  */
 public interface HttpURI
 {
@@ -80,18 +82,18 @@ public interface HttpURI
 
     static Immutable from(URI uri)
     {
-        return new HttpURI.Immutable(uri);
+        return new HttpURI.Mutable(uri).asImmutable();
     }
 
     static Immutable from(String uri)
     {
-        return new HttpURI.Immutable(uri);
+        return new HttpURI.Mutable(uri).asImmutable();
     }
 
     static Immutable from(String method, String uri)
     {
         if (HttpMethod.CONNECT.is(method))
-            return new Immutable(uri, null, null, null, -1, uri, null, null, null, null);
+            return new Immutable(uri);
         if (uri.startsWith("/"))
             return HttpURI.build().pathQuery(uri).asImmutable();
         return HttpURI.from(uri);
@@ -99,7 +101,7 @@ public interface HttpURI
 
     static Immutable from(String scheme, String host, int port, String pathQuery)
     {
-        return new Immutable(scheme, host, port, pathQuery);
+        return new Mutable(scheme, host, port, pathQuery).asImmutable();
     }
 
     Immutable asImmutable();
@@ -108,17 +110,10 @@ public interface HttpURI
 
     String getDecodedPath();
 
-    String getFragment();
-
     String getHost();
 
     String getParam();
 
-    /**
-     * The parsed Path.
-     *
-     * @return the path as parsed on valid URI.  null for invalid URI.
-     */
     String getPath();
 
     String getPathQuery();
@@ -133,8 +128,6 @@ public interface HttpURI
 
     boolean hasAuthority();
 
-    boolean hasQuery();
-
     boolean isAbsolute();
 
     default URI toURI()
@@ -142,7 +135,7 @@ public interface HttpURI
         try
         {
             String query = getQuery();
-            return new URI(getScheme(), null, getHost(), getPort(), getPath(), query == null ? null : UrlEncoded.decodeString(query), getFragment());
+            return new URI(getScheme(), null, getHost(), getPort(), getPath(), query == null ? null : UrlEncoded.decodeString(query), null);
         }
         catch (URISyntaxException x)
         {
@@ -159,67 +152,33 @@ public interface HttpURI
         private final String _path;
         private final String _param;
         private final String _query;
-        private final String _fragment;
         private String _uri;
         private String _decodedPath;
 
+        private Immutable(Mutable builder)
+        {
+            _uri = builder._uri;
+            _scheme = builder._scheme;
+            _user = builder._user;
+            _host = builder._host;
+            _port = builder._port;
+            _path = builder._path;
+            _decodedPath = builder._decodedPath;
+            _param = builder._param;
+            _query = builder._query;
+        }
+
         private Immutable(String uri)
         {
-            Mutable builder = new Mutable(uri);
-            _uri = builder._uri;
-            _scheme = builder._scheme;
-            _user = builder._user;
-            _host = builder._host;
-            _port = builder._port;
-            _path = builder._path;
-            _decodedPath = builder._decodedPath;
-            _param = builder._param;
-            _query = builder._query;
-            _fragment = builder._fragment;
-        }
-
-        private Immutable(URI uri)
-        {
-            Mutable builder = new Mutable(uri);
-            _uri = builder._uri;
-            _scheme = builder._scheme;
-            _user = builder._user;
-            _host = builder._host;
-            _port = builder._port;
-            _path = builder._path;
-            _decodedPath = builder._decodedPath;
-            _param = builder._param;
-            _query = builder._query;
-            _fragment = builder._fragment;
-        }
-
-        private Immutable(String scheme, String host, int port, String pathQuery)
-        {
-            Mutable builder = build().scheme(scheme).host(host).port(port).pathQuery(pathQuery);
-            _uri = null;
-            _scheme = builder._scheme;
-            _user = builder._user;
-            _host = builder._host;
-            _port = builder._port;
-            _path = builder._path;
-            _decodedPath = builder._decodedPath;
-            _param = builder._param;
-            _query = builder._query;
-            _fragment = builder._fragment;
-        }
-
-        private Immutable(String uri, String scheme, String user, String host, int port, String path, String decodedPath, String param, String query, String fragment)
-        {
             _uri = uri;
-            _scheme = scheme;
-            _user = user;
-            _host = host;
-            _port = port;
-            _path = path;
-            _decodedPath = decodedPath;
-            _param = param;
-            _query = query;
-            _fragment = fragment;
+            _scheme = null;
+            _user = null;
+            _host = null;
+            _port = -1;
+            _path = uri;
+            _decodedPath = null;
+            _param = null;
+            _query = null;
         }
 
         @Override
@@ -255,12 +214,6 @@ public interface HttpURI
         }
 
         @Override
-        public String getFragment()
-        {
-            return _fragment;
-        }
-
-        @Override
         public String getHost()
         {
             // Return null for empty host to retain compatibility with java.net.URI
@@ -275,11 +228,6 @@ public interface HttpURI
             return _param;
         }
 
-        /**
-         * The parsed Path.
-         *
-         * @return the path as parsed on valid URI.  null for invalid URI.
-         */
         @Override
         public String getPath()
         {
@@ -322,12 +270,6 @@ public interface HttpURI
         public boolean hasAuthority()
         {
             return _host != null;
-        }
-
-        @Override
-        public boolean hasQuery()
-        {
-            return _query != null && !_query.isEmpty();
         }
 
         @Override
@@ -363,9 +305,6 @@ public interface HttpURI
                 if (_query != null)
                     out.append('?').append(_query);
 
-                if (_fragment != null)
-                    out.append('#').append(_fragment);
-
                 if (out.length() > 0)
                     _uri = out.toString();
                 else
@@ -379,7 +318,7 @@ public interface HttpURI
         {
             try
             {
-                return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
+                return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), null);
             }
             catch (URISyntaxException x)
             {
@@ -414,7 +353,6 @@ public interface HttpURI
         private String _path;
         private String _param;
         private String _query;
-        private String _fragment;
 
         private Mutable()
         {
@@ -446,7 +384,6 @@ public interface HttpURI
             _path = path;
             _param = param;
             _query = query;
-            _fragment = null;
         }
 
         private Mutable(String uri)
@@ -477,7 +414,6 @@ public interface HttpURI
                     _decodedPath = pathParam;
             }
             _query = uri.getRawQuery();
-            _fragment = uri.getFragment();
         }
 
         private Mutable(String scheme, String host, int port, String pathQuery)
@@ -495,12 +431,13 @@ public interface HttpURI
         @Override
         public Immutable asImmutable()
         {
-            return new Immutable(_uri, _scheme, _user, _host, _port, _path, _decodedPath, _param, _query, _fragment);
+            return new Immutable(this);
         }
 
         /**
          * @param host the host
          * @param port the port
+         * @return this mutable
          */
         public Mutable authority(String host, int port)
         {
@@ -513,6 +450,7 @@ public interface HttpURI
 
         /**
          * @param hostport the host and port combined
+         * @return this mutable
          */
         public Mutable authority(String hostport)
         {
@@ -524,7 +462,7 @@ public interface HttpURI
             return this;
         }
 
-        public void clear()
+        public Mutable clear()
         {
             _uri = null;
             _scheme = null;
@@ -533,9 +471,9 @@ public interface HttpURI
             _path = null;
             _param = null;
             _query = null;
-            _fragment = null;
             _decodedPath = null;
             _user = null;
+            return this;
         }
 
         public Mutable decodedPath(String path)
@@ -543,13 +481,6 @@ public interface HttpURI
             _uri = null;
             _path = URIUtil.encodePath(path);
             _decodedPath = path;
-            return this;
-        }
-
-        public Mutable fragment(String fragment)
-        {
-            _fragment = fragment;
-            _uri = null;
             return this;
         }
 
@@ -567,12 +498,6 @@ public interface HttpURI
             if (_decodedPath == null && _path != null)
                 _decodedPath = URIUtil.canonicalPath(URIUtil.decodePath(_path));
             return _decodedPath;
-        }
-
-        @Override
-        public String getFragment()
-        {
-            return _fragment;
         }
 
         @Override
@@ -628,12 +553,6 @@ public interface HttpURI
         public boolean hasAuthority()
         {
             return _host != null;
-        }
-
-        @Override
-        public boolean hasQuery()
-        {
-            return _query != null && !_query.isEmpty();
         }
 
         public Mutable host(String host)
@@ -672,6 +591,7 @@ public interface HttpURI
 
         /**
          * @param path the path
+         * @return this Mutuble
          */
         public Mutable path(String path)
         {
@@ -687,7 +607,6 @@ public interface HttpURI
             _path = null;
             _decodedPath = null;
             _param = null;
-            _fragment = null;
             if (pathQuery != null)
                 parse(State.PATH, pathQuery);
             return this;
@@ -729,7 +648,7 @@ public interface HttpURI
         {
             try
             {
-                return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
+                return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), null);
             }
             catch (URISyntaxException x)
             {
@@ -748,7 +667,6 @@ public interface HttpURI
             _decodedPath = uri.getDecodedPath();
             _param = uri.getParam();
             _query = uri.getQuery();
-            _fragment = uri.getFragment();
             return this;
         }
 
@@ -1097,7 +1015,6 @@ public interface HttpURI
 
                     case FRAGMENT:
                     {
-                        _fragment = uri.substring(mark, end);
                         i = end;
                         break;
                     }
@@ -1111,7 +1028,10 @@ public interface HttpURI
             switch (state)
             {
                 case START:
+                case ASTERISK:
+                case FRAGMENT:
                     break;
+
                 case SCHEME_OR_PATH:
                     _path = uri.substring(mark, end);
                     break;
@@ -1130,13 +1050,6 @@ public interface HttpURI
 
                 case PORT:
                     _port = TypeUtil.parseInt(uri, mark, end - mark, 10);
-                    break;
-
-                case ASTERISK:
-                    break;
-
-                case FRAGMENT:
-                    _fragment = uri.substring(mark, end);
                     break;
 
                 case PARAM:

@@ -40,7 +40,6 @@ public class HttpURITest
             .path("/ignored/../p%61th;ignored/info")
             .param("param")
             .query("query=value")
-            .fragment("fragment")
             .asImmutable();
 
         assertThat(uri.getScheme(), is("http"));
@@ -51,9 +50,8 @@ public class HttpURITest
         assertThat(uri.getDecodedPath(), is("/path/info"));
         assertThat(uri.getParam(), is("param"));
         assertThat(uri.getQuery(), is("query=value"));
-        assertThat(uri.getFragment(), is("fragment"));
         assertThat(uri.getAuthority(), is("host:8888"));
-        assertThat(uri.toString(), is("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value#fragment"));
+        assertThat(uri.toString(), is("http://user:password@host:8888/ignored/../p%61th;ignored/info;param?query=value"));
 
         uri = HttpURI.build(uri)
             .scheme("https")
@@ -62,7 +60,6 @@ public class HttpURITest
             .decodedPath("/some encoded/evening")
             .param("id=12345")
             .query(null)
-            .fragment(null)
             .asImmutable();
 
         assertThat(uri.getScheme(), is("https"));
@@ -73,7 +70,6 @@ public class HttpURITest
         assertThat(uri.getDecodedPath(), is("/some encoded/evening"));
         assertThat(uri.getParam(), is("id=12345"));
         assertThat(uri.getQuery(), nullValue());
-        assertThat(uri.getFragment(), nullValue());
         assertThat(uri.getAuthority(), is("[::1]:8080"));
         assertThat(uri.toString(), is("https://[::1]:8080/some%20encoded/evening;id=12345"));
     }
@@ -91,7 +87,6 @@ public class HttpURITest
         assertThat(uri.getDecodedPath(), is("/path/info"));
         assertThat(uri.getParam(), is("param"));
         assertThat(uri.getQuery(), is("query=value"));
-        assertThat(uri.getFragment(), is("fragment"));
         assertThat(uri.getAuthority(), is("host:8888"));
     }
 

@@ -540,7 +540,13 @@ public class Response implements HttpServletResponse
     public void setDateHeader(String name, long date)
     {
         if (isMutable())
-            _fields.putDateField(name, date);
+        {
+            HttpHeader header = HttpHeader.CACHE.get(name);
+            if (header == null)
+                _fields.putDateField(name, date);
+            else
+                _fields.putDateField(header, date);
+        }
     }
 
     @Override

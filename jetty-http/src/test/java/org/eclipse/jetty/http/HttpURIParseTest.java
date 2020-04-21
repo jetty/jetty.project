@@ -179,7 +179,10 @@ public class HttpURIParseTest
             assertThat("[" + input + "] .path", httpUri.getPath(), is(path));
             assertThat("[" + input + "] .param", httpUri.getParam(), is(param));
             assertThat("[" + input + "] .query", httpUri.getQuery(), is(query));
-            assertThat("[" + input + "] .fragment", httpUri.getFragment(), is(fragment));
+
+            // We don't retain the fragment
+            if (input.indexOf('#') >= 0)
+                input = input.substring(0, input.indexOf('#'));
             assertThat("[" + input + "] .toString", httpUri.toString(), is(input));
         }
         catch (URISyntaxException e)
@@ -191,7 +194,6 @@ public class HttpURIParseTest
             assertThat("[" + input + "] .path", httpUri.getPath(), is(nullValue()));
             assertThat("[" + input + "] .param", httpUri.getParam(), is(nullValue()));
             assertThat("[" + input + "] .query", httpUri.getQuery(), is(nullValue()));
-            assertThat("[" + input + "] .fragment", httpUri.getFragment(), is(nullValue()));
         }
     }
 
@@ -218,8 +220,10 @@ public class HttpURIParseTest
         assertThat("[" + input + "] .path", httpUri.getPath(), is(path));
         assertThat("[" + input + "] .param", httpUri.getParam(), is(param));
         assertThat("[" + input + "] .query", httpUri.getQuery(), is(query));
-        assertThat("[" + input + "] .fragment", httpUri.getFragment(), is(fragment));
 
+        // We don't retain the fragment
+        if (input.indexOf('#') >= 0)
+            input = input.substring(0, input.indexOf('#'));
         assertThat("[" + input + "] .toString", httpUri.toString(), is(input));
     }
 
@@ -246,7 +250,11 @@ public class HttpURIParseTest
         assertThat("[" + input + "] .path", httpUri.getPath(), is(javaUri.getRawPath()));
         // Not Relevant for java.net.URI -- assertThat("["+input+"] .param", httpUri.getParam(), is(param));
         assertThat("[" + input + "] .query", httpUri.getQuery(), is(javaUri.getRawQuery()));
-        assertThat("[" + input + "] .fragment", httpUri.getFragment(), is(javaUri.getFragment()));
-        assertThat("[" + input + "] .toString", httpUri.toString(), is(javaUri.toASCIIString()));
+
+        // We don't retain the fragment
+        String javaString = javaUri.toASCIIString();
+        if (javaString.indexOf('#') >= 0)
+            javaString = javaString.substring(0, javaString.indexOf('#'));
+        assertThat("[" + input + "] .toString", httpUri.toString(), is(javaString));
     }
 }
