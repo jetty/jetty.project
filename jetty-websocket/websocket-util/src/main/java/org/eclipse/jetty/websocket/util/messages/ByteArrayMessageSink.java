@@ -42,7 +42,8 @@ public class ByteArrayMessageSink extends AbstractMessageSink
     {
         super(session, methodHandle);
 
-        // byte[] buf
+        // This uses the offset length byte array signature not supported by javax websocket.
+        // The javax layer instead uses decoders for whole byte array messages instead of this message sink.
         MethodType onMessageType = MethodType.methodType(Void.TYPE, byte[].class, int.class, int.class);
         if (methodHandle.type().changeReturnType(void.class) != onMessageType.changeReturnType(void.class))
         {

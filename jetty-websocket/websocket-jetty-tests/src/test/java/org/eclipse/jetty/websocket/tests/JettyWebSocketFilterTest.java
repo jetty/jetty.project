@@ -80,7 +80,7 @@ public class JettyWebSocketFilterTest
         }
         assertTrue(socket.closeLatch.await(10, TimeUnit.SECONDS));
 
-        String msg = socket.messageQueue.poll();
+        String msg = socket.textMessages.poll();
         assertThat(msg, is("hello world"));
     }
 }

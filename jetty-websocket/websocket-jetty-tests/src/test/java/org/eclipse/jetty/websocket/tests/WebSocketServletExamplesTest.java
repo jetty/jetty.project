@@ -123,7 +123,7 @@ public class WebSocketServletExamplesTest
             String message = "hello world";
             session.getRemote().sendString(message);
 
-            String response = socket.messageQueue.poll(5, TimeUnit.SECONDS);
+            String response = socket.textMessages.poll(5, TimeUnit.SECONDS);
             assertThat(response, is(message));
         }
 
@@ -147,7 +147,7 @@ public class WebSocketServletExamplesTest
             String message = "hello world";
             session.getRemote().sendString(message);
 
-            String response = socket.messageQueue.poll(5, TimeUnit.SECONDS);
+            String response = socket.textMessages.poll(5, TimeUnit.SECONDS);
             assertThat(response, is(message));
         }
 
@@ -173,7 +173,7 @@ public class WebSocketServletExamplesTest
             String message = "hello world";
             session.getRemote().sendString(message);
 
-            String response = socket.messageQueue.poll(5, TimeUnit.SECONDS);
+            String response = socket.textMessages.poll(5, TimeUnit.SECONDS);
             assertThat(response, is(message));
         }
 

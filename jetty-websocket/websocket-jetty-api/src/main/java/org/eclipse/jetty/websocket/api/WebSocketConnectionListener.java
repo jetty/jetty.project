@@ -31,7 +31,9 @@ public interface WebSocketConnectionListener
      * @param statusCode the close status code. (See {@link StatusCode})
      * @param reason the optional reason for the close.
      */
-    void onWebSocketClose(int statusCode, String reason);
+    default void onWebSocketClose(int statusCode, String reason)
+    {
+    }
 
     /**
      * A WebSocket {@link Session} has connected successfully and is ready to be used.
@@ -40,7 +42,9 @@ public interface WebSocketConnectionListener
      *
      * @param session the websocket session.
      */
-    void onWebSocketConnect(Session session);
+    default void onWebSocketConnect(Session session)
+    {
+    }
 
     /**
      * A WebSocket exception has occurred.
@@ -53,5 +57,7 @@ public interface WebSocketConnectionListener
      *
      * @param cause the error that occurred.
      */
-    void onWebSocketError(Throwable cause);
+    default void onWebSocketError(Throwable cause)
+    {
+    }
 }

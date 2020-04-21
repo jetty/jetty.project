@@ -24,17 +24,17 @@ import javax.websocket.MessageHandler;
 /**
  * A particularly annoying type of MessageHandler. One defining 2 implementations.
  */
-public class ComboMessageHandler implements MessageHandler.Whole<String>, MessageHandler.Partial<ByteBuffer>
+public class ComboMessageHandler extends AbstractHandler implements MessageHandler.Whole<String>, MessageHandler.Partial<ByteBuffer>
 {
     @Override
     public void onMessage(ByteBuffer partialMessage, boolean last)
     {
-        // TODO Auto-generated method stub
+        sendBinary(partialMessage, last);
     }
 
     @Override
     public void onMessage(String message)
     {
-        // TODO Auto-generated method stub
+        sendText(message, true);
     }
 }

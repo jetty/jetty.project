@@ -30,12 +30,16 @@ public interface WebSocketPingPongListener extends WebSocketConnectionListener
      *
      * @param payload the ping payload
      */
-    void onWebSocketPing(ByteBuffer payload);
+    default void onWebSocketPing(ByteBuffer payload)
+    {
+    }
 
     /**
      * A WebSocket PONG has been received.
      *
      * @param payload the pong payload
      */
-    void onWebSocketPong(ByteBuffer payload);
+    default void onWebSocketPong(ByteBuffer payload)
+    {
+    }
 }
