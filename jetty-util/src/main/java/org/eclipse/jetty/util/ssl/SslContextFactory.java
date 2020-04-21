@@ -1413,7 +1413,15 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     public void customize(SSLEngine sslEngine)
     {
         SSLParameters sslParams = sslEngine.getSSLParameters();
-        sslParams.setEndpointIdentificationAlgorithm(_endpointIdentificationAlgorithm);
+        try
+        {
+            // Method introduced on introduced on Android API 24.
+            sslParams.setEndpointIdentificationAlgorithm(_endpointIdentificationAlgorithm);
+        }
+        catch (NoSuchMethodError ignored)
+        {
+            // ignore failure on old Android API revisions.
+        }
         sslEngine.setSSLParameters(sslParams);
 
         if (getWantClientAuth())
