@@ -22,10 +22,12 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -78,6 +80,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Session.class);
 
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
+    private final StreamCreator streamCreator = new StreamCreator();
     private final AtomicBiInteger streamCount = new AtomicBiInteger(); // Hi = closed, Lo = stream count
     private final AtomicInteger localStreamIds = new AtomicInteger();
     private final AtomicInteger lastRemoteStreamId = new AtomicInteger();
@@ -532,29 +535,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void newStream(HeadersFrame frame, Promise<Stream> promise, Stream.Listener listener)
     {
-        try
-        {
-            // Synchronization is necessary to atomically create
-            // the stream id and enqueue the frame to be sent.
-            IStream stream;
-            boolean queued;
-            synchronized (this)
-            {
-                HeadersFrame[] frameOut = new HeadersFrame[1];
-                stream = newLocalStream(frame, frameOut);
-                stream.setListener(listener);
-                ControlEntry entry = new ControlEntry(frameOut[0], stream, new StreamPromiseCallback(promise, stream));
-                stream.process(new PrefaceFrame(), Callback.NOOP);
-                queued = flusher.append(entry);
-            }
-            // Iterate outside the synchronized block.
-            if (queued)
-                flusher.iterate();
-        }
-        catch (Throwable x)
-        {
-            promise.failed(x);
-        }
+        streamCreator.newStream(frame, promise, listener);
     }
 
     /**
@@ -592,45 +573,13 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public int priority(PriorityFrame frame, Callback callback)
     {
-        int streamId = frame.getStreamId();
-        IStream stream = streams.get(streamId);
-        if (stream == null)
-        {
-            streamId = localStreamIds.getAndAdd(2);
-            frame = new PriorityFrame(streamId, frame.getParentStreamId(),
-                frame.getWeight(), frame.isExclusive());
-        }
-        control(stream, callback, frame);
-        return streamId;
+        return streamCreator.priority(frame, callback);
     }
 
     @Override
     public void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame, Stream.Listener listener)
     {
-        try
-        {
-            // Synchronization is necessary to atomically create
-            // the stream id and enqueue the frame to be sent.
-            boolean queued;
-            synchronized (this)
-            {
-                int streamId = localStreamIds.getAndAdd(2);
-                frame = new PushPromiseFrame(frame.getStreamId(), streamId, frame.getMetaData());
-
-                IStream pushStream = createLocalStream(streamId, frame.getMetaData());
-                pushStream.setListener(listener);
-
-                ControlEntry entry = new ControlEntry(frame, pushStream, new StreamPromiseCallback(promise, pushStream));
-                queued = flusher.append(entry);
-            }
-            // Iterate outside the synchronized block.
-            if (queued)
-                flusher.iterate();
-        }
-        catch (Throwable x)
-        {
-            promise.failed(x);
-        }
+        streamCreator.push(frame, promise, listener);
     }
 
     @Override
@@ -1731,4 +1680,138 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             terminate(failure);
         }
     }
+
+    /**
+     * SPEC: It is required that stream ids are strictly crescent.
+     * Here we use a queue to atomically create the stream id and
+     * claim the slot in the queue. Concurrent threads will only
+     *
+     */
+    private class StreamCreator
+    {
+        private final Queue<Slot> slots = new ArrayDeque<>();
+        private Thread flushing;
+
+        private int priority(PriorityFrame frame, Callback callback)
+        {
+            Slot slot = new Slot();
+            int streamId = frame.getStreamId();
+            if (streamId <= 0)
+            {
+                synchronized (this)
+                {
+                    streamId = localStreamIds.getAndAdd(2);
+                    slots.offer(slot);
+                }
+                frame = new PriorityFrame(streamId, frame);
+            }
+            else
+            {
+                synchronized (this)
+                {
+                    slots.offer(slot);
+                }
+            }
+
+            slot.entry = new ControlEntry(frame, null, callback);
+            flush();
+            return streamId;
+        }
+
+        private void newStream(HeadersFrame frame, Promise<Stream> promise, Stream.Listener listener)
+        {
+            try
+            {
+                Slot slot = new Slot();
+                int streamId = frame.getStreamId();
+                if (streamId <= 0)
+                {
+                    synchronized (this)
+                    {
+                        streamId = localStreamIds.getAndAdd(2);
+                        slots.offer(slot);
+                    }
+                    PriorityFrame priority = frame.getPriority();
+                    priority = priority == null ? null : new PriorityFrame(streamId, priority);
+                    frame = new HeadersFrame(streamId, priority, frame);
+                }
+                else
+                {
+                    synchronized (this)
+                    {
+                        slots.offer(slot);
+                    }
+                }
+
+                IStream stream = createLocalStream(streamId, (MetaData.Request)frame.getMetaData());
+                stream.setListener(listener);
+                stream.process(new PrefaceFrame(), Callback.NOOP);
+                slot.entry = new ControlEntry(frame, stream, new StreamPromiseCallback(promise, stream));
+                flush();
+            }
+            catch (Throwable x)
+            {
+                promise.failed(x);
+            }
+        }
+
+        private void push(PushPromiseFrame frame, Promise<Stream> promise, Stream.Listener listener)
+        {
+            try
+            {
+                Slot slot = new Slot();
+                int streamId;
+                synchronized (this)
+                {
+                    streamId = localStreamIds.getAndAdd(2);
+                    slots.offer(slot);
+                }
+                frame = new PushPromiseFrame(streamId, frame);
+
+                IStream pushStream = createLocalStream(streamId, frame.getMetaData());
+                pushStream.setListener(listener);
+                slot.entry = new ControlEntry(frame, pushStream, new StreamPromiseCallback(promise, pushStream));
+                flush();
+            }
+            catch (Throwable x)
+            {
+                promise.failed(x);
+            }
+        }
+
+        private void flush()
+        {
+            Thread thread = Thread.currentThread();
+            boolean queued = false;
+            while (true)
+            {
+                ControlEntry entry = null;
+                synchronized (this)
+                {
+                    if (flushing != null && flushing != thread)
+                        return;
+                    flushing = thread;
+
+                    Slot slot = slots.peek();
+                    if (slot != null)
+                        entry = slot.entry;
+                    if (entry == null)
+                    {
+                        flushing = null;
+                        break;
+                    }
+                    slots.poll();
+                }
+                queued |= flusher.append(entry);
+            }
+            if (queued)
+                flusher.iterate();
+        }
+
+        private class Slot
+        {
+            private volatile ControlEntry entry;
+        }
+    }
+
 }

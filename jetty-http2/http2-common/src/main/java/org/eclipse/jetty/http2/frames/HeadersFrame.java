@@ -41,6 +41,11 @@ public class HeadersFrame extends Frame
         this(0, metaData, priority, endStream);
     }
 
+    public HeadersFrame(int streamId, PriorityFrame priority, HeadersFrame other)
+    {
+        this(streamId, other.getMetaData(), priority, other.isEndStream());
+    }
+
     /**
      * <p>Creates a new {@code HEADERS} frame with the specified stream {@code id}.</p>
      * <p>{@code HEADERS} frames with a specific stream {@code id} are typically used

@@ -94,7 +94,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
     private final AtomicLong totalResponses = new AtomicLong();
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
-    private boolean recycleHttpChannels;
+    private boolean recycleHttpChannels = true;
 
     public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {

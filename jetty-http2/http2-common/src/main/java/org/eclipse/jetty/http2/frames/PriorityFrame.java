@@ -41,6 +41,11 @@ public class PriorityFrame extends Frame
         this.exclusive = exclusive;
     }
 
+    public PriorityFrame(int streamId, PriorityFrame other)
+    {
+        this(streamId, other.getParentStreamId(), other.getWeight(), other.isExclusive());
+    }
+
     public int getStreamId()
     {
         return streamId;
