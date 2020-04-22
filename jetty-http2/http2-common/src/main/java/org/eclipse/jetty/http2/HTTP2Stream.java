@@ -57,7 +57,6 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Stream.class);
 
     private final AutoLock lock = new AutoLock();
-    private final Queue<DataEntry> dataQueue = new ArrayDeque<>();
     private final AtomicReference<Object> attachment = new AtomicReference<>();
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
@@ -69,6 +68,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private final int streamId;
     private final MetaData.Request request;
     private final boolean local;
+    private Queue<DataEntry> dataQueue;
     private boolean localReset;
     private Listener listener;
     private boolean remoteReset;
@@ -358,6 +358,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         DataEntry entry = new DataEntry(frame, callback);
         try (AutoLock l = lock.lock())
         {
+            if (dataQueue == null)
+                dataQueue = new ArrayDeque<>();
             dataQueue.offer(entry);
             initial = dataInitial;
             if (initial)
@@ -399,7 +401,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         {
             demand = dataDemand = MathUtils.cappedAdd(dataDemand, n);
             if (!dataProcess)
-                dataProcess = proceed = !dataQueue.isEmpty();
+                dataProcess = proceed = (dataQueue != null && !dataQueue.isEmpty());
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Demand {}/{}, {} data processing for {}", n, demand, proceed ? "proceeding" : "stalling", this);
@@ -414,6 +416,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             DataEntry dataEntry;
             try (AutoLock l = lock.lock())
             {
+                assert dataQueue != null;
                 if (dataQueue.isEmpty() || dataDemand == 0)
                 {
                     if (LOG.isDebugEnabled())
