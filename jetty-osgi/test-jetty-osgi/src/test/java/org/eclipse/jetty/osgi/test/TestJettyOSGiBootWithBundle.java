@@ -94,6 +94,7 @@ public class TestJettyOSGiBootWithBundle
         return options;
     }
 
+    @Test
     public void testContextHandlerAsOSGiService() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
