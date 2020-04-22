@@ -1208,7 +1208,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (_contextPath.length() == 1)
                     baseRequest.setContextPath("");
                 else
-                    baseRequest.setContextPath(getContextPathEncoded()); // TODO shouldn't this be decoded context path???
+                    baseRequest.setContextPath(getContextPathEncoded());
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(pathInfo);
             }

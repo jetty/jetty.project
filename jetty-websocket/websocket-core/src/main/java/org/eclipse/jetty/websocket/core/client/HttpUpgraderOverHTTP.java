@@ -38,11 +38,11 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 
 public class HttpUpgraderOverHTTP implements HttpUpgrader
 {
-    public static final PreEncodedHttpField WS_VERSIONS_FIELD = new PreEncodedHttpField(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
-    public static final PreEncodedHttpField WS_UPGRADE_FIELD = new PreEncodedHttpField(HttpHeader.UPGRADE, "websocket");
-    public static final PreEncodedHttpField WS_CONNECTION_FIELD = new PreEncodedHttpField(HttpHeader.CONNECTION, "Upgrade");
-    public static final PreEncodedHttpField PRAGMA_NO_CACHE_FIELD = new PreEncodedHttpField(HttpHeader.PRAGMA, "no-cache");
-    public static final PreEncodedHttpField CACHE_CONTROL_NO_CACHE_FIELD = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "no-cache");
+    private static final PreEncodedHttpField WS_VERSIONS_FIELD = new PreEncodedHttpField(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
+    private static final PreEncodedHttpField WS_UPGRADE_FIELD = new PreEncodedHttpField(HttpHeader.UPGRADE, "websocket");
+    private static final PreEncodedHttpField WS_CONNECTION_FIELD = new PreEncodedHttpField(HttpHeader.CONNECTION, "Upgrade");
+    private static final PreEncodedHttpField PRAGMA_NO_CACHE_FIELD = new PreEncodedHttpField(HttpHeader.PRAGMA, "no-cache");
+    private static final PreEncodedHttpField CACHE_CONTROL_NO_CACHE_FIELD = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "no-cache");
     private final ClientUpgradeRequest clientUpgradeRequest;
 
     public HttpUpgraderOverHTTP(ClientUpgradeRequest clientUpgradeRequest)
@@ -53,18 +53,17 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
     @Override
     public void prepare(HttpRequest request)
     {
-        request.method(HttpMethod.GET).version(HttpVersion.HTTP_1_1);
-        request.add(WS_VERSIONS_FIELD);
-        request.add(WS_UPGRADE_FIELD);
-        request.add(WS_CONNECTION_FIELD);
-        request.header(HttpHeader.SEC_WEBSOCKET_KEY, generateRandomKey());
-
-        // Per the hybi list: Add no-cache headers to avoid compatibility issue.
-        // There are some proxies that rewrite "Connection: upgrade" to
-        // "Connection: close" in the response if a request doesn't contain
-        // these headers.
-        request.add(PRAGMA_NO_CACHE_FIELD);
-        request.add(CACHE_CONTROL_NO_CACHE_FIELD);
+        request.method(HttpMethod.GET).version(HttpVersion.HTTP_1_1)
+            .add(WS_VERSIONS_FIELD)
+            .add(WS_UPGRADE_FIELD)
+            .add(WS_CONNECTION_FIELD)
+            .header(HttpHeader.SEC_WEBSOCKET_KEY, generateRandomKey())
+            // Per the hybi list: Add no-cache headers to avoid compatibility issue.
+            // There are some proxies that rewrite "Connection: upgrade" to
+            // "Connection: close" in the response if a request doesn't contain
+            // these headers.
+            .add(PRAGMA_NO_CACHE_FIELD)
+            .add(CACHE_CONTROL_NO_CACHE_FIELD);
 
         // Notify the UpgradeListeners now the headers are set.
         clientUpgradeRequest.requestComplete();

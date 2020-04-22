@@ -478,18 +478,15 @@ public interface HttpFields extends Iterable<HttpField>
         if (size() != that.size())
             return false;
 
-        // Order is not important, so we cannot rely on List.equals(). // TODO is this true?
-        loop:
-        for (HttpField fi : this)
+        Iterator i = that.iterator();
+        for (HttpField f : this)
         {
-            for (HttpField fa : that)
-            {
-                if (fi.equals(fa))
-                    continue loop;
-            }
-            return false;
+            if (!i.hasNext())
+                return false;
+            if (!f.equals(i.next()))
+                return false;
         }
-        return true;
+        return !i.hasNext();
     }
 
     int size();

@@ -154,7 +154,6 @@ public class MetaData implements Iterable<HttpField>
 
         public Request(String method, String scheme, HostPortHttpField authority, String uri, HttpVersion version, HttpFields fields, long contentLength)
         {
-            // TODO review this constructor
             this(method,
                 HttpURI.build().scheme(scheme).host(authority == null ? null : authority.getHost()).port(authority == null ? -1 : authority.getPort()).pathQuery(uri),
                 version, fields, contentLength);

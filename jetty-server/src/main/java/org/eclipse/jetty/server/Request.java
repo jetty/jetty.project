@@ -769,10 +769,7 @@ public class Request implements HttpServletRequest
         if (_httpFields == null)
             return -1;
 
-        // TODO should we cache this?
         return _httpFields.getLongField(HttpHeader.CONTENT_LENGTH);
-
-        // TODO should we return metaData.getContentLength() if field is not found?
     }
 
     public long getContentRead()
