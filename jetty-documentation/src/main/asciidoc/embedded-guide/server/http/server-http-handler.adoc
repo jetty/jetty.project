@@ -61,5 +61,7 @@ However, in some cases the additional features are not required, or additional c
 In these cases, implementing your own `Handler` may be a better solution.
 Refer to xref:eg-server-http-handler-implement[this section] for more information about how to write your own ``Handler``s.
 
+// TODO: document ScopedHandler? Is this really necessary or just an implementation detail that application will never worry about?
+
 include::server-http-handler-use.adoc[]
 include::server-http-handler-implement.adoc[]

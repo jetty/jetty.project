@@ -64,7 +64,12 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=simple]
 
 The example above shows the simplest HTTP/1.1 server; it has no support for HTTP sessions, for HTTP authentication, or for any of the features required by the Servlet specification.
 
-All these features are provided by the Jetty Server Libraries and server applications only need to put the required components together to provide all the required features, and it is discussed in details in xref:eg-server-http-handler-use[this section].
+All these features are provided by the Jetty Server Libraries, and server applications only need to put the required components together to provide all the required features.
+
+The ``Handler``s provided by the Jetty Server Libraries allow writing server applications that have functionalities similar to Apache HTTPD or Nginx (for example: URL redirection, URL rewriting, serving static content, reverse proxying, etc.), as well as generating content dynamically by processing incoming requests.
+Read xref:eg-server-http-handler[this section] for further details.
+
+If you are interested in writing your server application based on the Servlet APIs, jump to xref:eg-server-http-handler-use-servlet[this section].
 
 [[eg-server-http-request-processing]]
 ==== Server Request Processing
@@ -74,15 +79,6 @@ The Jetty HTTP request processing is outlined below in the diagram below.
 Request handing is slightly different for each protocol; in HTTP/2 Jetty takes into account multiplexing, something that is not present in HTTP/1.1.
 
 However, the diagram below captures the essence of request handling that is common among all protocols that carry HTTP requests.
-
-First, the Jetty I/O layer emits an event that a socket has data to read.
-This event is converted to a call to `AbstractConnection.onFillable()`, where the `Connection` first reads from the `EndPoint` into a `ByteBuffer`, and then calls a protocol specific parser to parse the bytes in the `ByteBuffer`.
-
-The parser emit events such that are protocol specific; the HTTP/2 parser, for example, emits events for each HTTP/2 frame that has been parsed.
-The parser events are then converted to protocol independent events such as _"request start"_, _"request headers"_, _"request content chunk"_, etc.
-that in turn are converted into method calls to `HttpChannel`.
-
-When enough of the HTTP request is arrived, the `Connection` calls `HttpChannel.handle()` that calls the `Handler` chain, that eventually calls the server application code.
 
 [plantuml]
 ----
@@ -108,6 +104,15 @@ Connection -> HttpChannel : handle()
 HttpChannel -> Server : handle()
 Server -> Handlers : handle()
 ----
+
+First, the Jetty I/O layer emits an event that a socket has data to read.
+This event is converted to a call to `AbstractConnection.onFillable()`, where the `Connection` first reads from the `EndPoint` into a `ByteBuffer`, and then calls a protocol specific parser to parse the bytes in the `ByteBuffer`.
+
+The parser emit events that are protocol specific; the HTTP/2 parser, for example, emits events for each HTTP/2 frame that has been parsed.
+The parser events are then converted to protocol independent events such as _"request start"_, _"request headers"_, _"request content chunk"_, etc.
+that in turn are converted into method calls to `HttpChannel`.
+
+When enough of the HTTP request is arrived, the `Connection` calls `HttpChannel.handle()` that calls the `Handler` chain, that eventually calls the server application code.
 
 [[eg-server-http-channel-events]]
 ===== HttpChannel Events
@@ -141,7 +146,7 @@ Currently, the following events are available:
 
 Please refer to the `HttpChannel.Listener` link:{JDURL}/org/eclipse/jetty/server/HttpChannel.Listener.html[javadocs] for the complete list of events.
 
-Server applications can register `HttpChannel.Listener` by adding them as beans to the `Connector`:
+Server applications can register `HttpChannel.Listener` by adding them as xref:eg-arch-bean[beans] to the `Connector`:
 
 [source,java,indent=0]
 ----
@@ -150,4 +155,5 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=httpChan
 
 include::server-http-connector.adoc[]
 include::server-http-handler.adoc[]
+include::server-http-security.adoc[]
 include::server-http-application.adoc[]

@@ -38,8 +38,19 @@ A client making a request to `+https://shop.domain.com/cart+` is directed by Jet
 Therefore, in general, a web application is deployed to a _context_ which can be seen as the pair `(virtual_host, context_path)`.
 In the first case the contexts were `(domain.com, /shop)` and `(domain.com, /api)`, while in the second case the contexts were `(shop.domain.com, /)` and `(api.domain.com, /)`.
 Server applications using the Jetty Server Libraries create and configure a _context_ for each web application.
+Many __context__s can be deployed together to enrich the web application offering -- for example a catalog context, a shop context, an API context, an administration context, etc.
 
-[[eg-server-http-handler-use-context]]
+Web applications can be written using exclusively the Servlet APIs, since developers know well the Servlet API and because they guarantee better portability across Servlet container implementations.
+
+Embedded web applications based on the Servlet APIs are described in xref:eg-server-http-handler-use-servlet[this section].
+
+Embedded web applications may also require additional features such as access to Jetty specific APIs, or utility features such as redirection from HTTP to HTTPS, support for `gzip` content compression, etc.
+The Jetty Server Libraries provides a number of out-of-the-box __Handler__s that implement the most common functionalities and are described in xref:eg-server-http-handler-use-util[this section].
+
+[[eg-server-http-handler-use-util]]
+==== Custom and Utility Handlers
+
+[[eg-server-http-handler-use-util-context]]
 ===== ContextHandler
 
 `ContextHandler` is a `Handler` that represents a _context_ for a web application.
@@ -62,7 +73,7 @@ Server
     └── ShopHandler
 ----
 
-[[eg-server-http-handler-use-context-collection]]
+[[eg-server-http-handler-use-util-context-collection]]
 ===== ContextHandlerCollection
 
 Server applications may need to deploy to Jetty more than one web application.
@@ -93,63 +104,7 @@ Server
         └── RESTHandler
 ----
 
-[[eg-server-http-handler-use-servlet-context]]
-===== ServletContextHandler
-
-``Handler``s are easy to write, but often web applications have already been written using the Servlet APIs, using ``Servlet``s and ``Filter``s.
-
-`ServletContextHandler` is a `ContextHandler` that provides support for the Servlet APIs and implements the behaviors required by the Servlet specification.
-
-The Maven artifact coordinates are:
-
-[source,xml,subs=normal]
-----
-<dependency>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-servlet</artifactId>
-  <version>{version}</version>
-</dependency>
-----
-
-[source,java,indent=0]
-----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=servletContextHandler]
-----
-
-The `Handler` and Servlet components tree structure looks like the following:
-
-[source,screen,subs=normal]
-----
-Server
-└── ServletContextHandler /shop
-    ├── _ShopCartServlet /cart/*_
-    └── _CrossOriginFilter /*_
-----
-
-Note how the Servlet components (they are not ``Handler``s) are represented in _italic_.
-
-Note also how adding a `Servlet` or a `Filter` returns a _holder_ object that can be used to specify additional configuration for that particular `Servlet` or `Filter`.
-
-When a request arrives to `ServletContextHandler` the request URI will be matched against the ``Filter``s and ``Servlet`` mappings and only those that match will process the request, as dictated by the Servlet specification.
-
-IMPORTANT: `ServletContextHandler` is a terminal `Handler`, that is it always calls `Request.setHandled(true)` when invoked.
-Server applications must be careful when creating the `Handler` tree to put ``ServletContextHandler``s as last ``Handler``s in a `HandlerList` or as children of `ContextHandlerCollection`.
-
-[[eg-server-http-handler-use-webapp-context]]
-===== WebAppContext
-
-`WebAppContext` is a `ServletContextHandler` that auto configures itself by reading a `web.xml` Servlet configuration file.
-
-Server applications can specify a `+*.war+` file or a directory with the structure of a `+*.war+` file to `WebAppContext` to deploy a standard Servlet web application packaged as a `war` (as defined by the Servlet specification).
-
-Where server applications using `ServletContextHandler` must manually invoke methods to add ``Servlet``s and ``Filter``s, `WebAppContext` reads `WEB-INF/web.xml` to add ``Servlet``s and ``Filter``s.
-
-[source,java,indent=0]
-----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=webAppContextHandler]
-----
-
-[[eg-server-http-handler-use-resource-handler]]
+[[eg-server-http-handler-use-util-resource-handler]]
 ===== ResourceHandler -- Static Content
 
 Static content such as images or files (HTML, JavaScript, CSS) can be sent by Jetty very efficiently because Jetty can write the content asynchronously, using direct ``ByteBuffer``s to minimize data copy, and using a memory cache for faster access to the data to send.
@@ -187,17 +142,6 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=multiple
 
 If the resource is not found, `ResourceHandler` will not call `Request.setHandled(true)` so what happens next depends on the `Handler` tree structure.
 See also xref:eg-server-http-handler-use-util-default-handler[how to use] `DefaultHandler`.
-
-[[eg-server-http-handler-use-default-servlet]]
-===== DefaultServlet -- Static Content for Servlets
-
-If you have a xref:eg-server-http-handler-use-servlet-context[Servlet web application], you may want to use a `DefaultServlet` instead of `ResourceHandler`.
-The features are similar, but `DefaultServlet` is more commonly used to serve static files for Servlet web applications.
-
-[source,java,indent=0]
-----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=defaultServlet]
-----
 
 [[eg-server-http-handler-use-util-gzip-handler]]
 ===== GzipHandler
@@ -372,3 +316,77 @@ In the example above, `ContextHandlerCollection` will try to match a request to 
 
 NOTE: `DefaultHandler` just sends a nicer HTTP `404` response in case of wrong requests from clients.
 Jetty will send an HTTP `404` response anyway if `DefaultHandler` is not used.
+
+[[eg-server-http-handler-use-servlet]]
+==== Servlet API Handlers
+
+[[eg-server-http-handler-use-servlet-context]]
+===== ServletContextHandler
+
+``Handler``s are easy to write, but often web applications have already been written using the Servlet APIs, using ``Servlet``s and ``Filter``s.
+
+`ServletContextHandler` is a `ContextHandler` that provides support for the Servlet APIs and implements the behaviors required by the Servlet specification.
+
+The Maven artifact coordinates are:
+
+[source,xml,subs=normal]
+----
+<dependency>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-servlet</artifactId>
+  <version>{version}</version>
+</dependency>
+----
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=servletContextHandler]
+----
+
+The `Handler` and Servlet components tree structure looks like the following:
+
+[source,screen,subs=normal]
+----
+Server
+└── ServletContextHandler /shop
+    ├── _ShopCartServlet /cart/*_
+    └── _CrossOriginFilter /*_
+----
+
+Note how the Servlet components (they are not ``Handler``s) are represented in _italic_.
+
+Note also how adding a `Servlet` or a `Filter` returns a _holder_ object that can be used to specify additional configuration for that particular `Servlet` or `Filter`.
+
+When a request arrives to `ServletContextHandler` the request URI will be matched against the ``Filter``s and ``Servlet`` mappings and only those that match will process the request, as dictated by the Servlet specification.
+
+IMPORTANT: `ServletContextHandler` is a terminal `Handler`, that is it always calls `Request.setHandled(true)` when invoked.
+Server applications must be careful when creating the `Handler` tree to put ``ServletContextHandler``s as last ``Handler``s in a `HandlerList` or as children of `ContextHandlerCollection`.
+
+[[eg-server-http-handler-use-webapp-context]]
+===== WebAppContext
+
+`WebAppContext` is a `ServletContextHandler` that auto configures itself by reading a `web.xml` Servlet configuration file.
+
+Server applications can specify a `+*.war+` file or a directory with the structure of a `+*.war+` file to `WebAppContext` to deploy a standard Servlet web application packaged as a `war` (as defined by the Servlet specification).
+
+Where server applications using `ServletContextHandler` must manually invoke methods to add ``Servlet``s and ``Filter``s, `WebAppContext` reads `WEB-INF/web.xml` to add ``Servlet``s and ``Filter``s.
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=webAppContextHandler]
+----
+
+// TODO: add a section on Configuration (system/server classes)
+// TODO: add a section about how to setup JSP support
+// TODO: add a section on ClassLoading (see old docs)
+
+[[eg-server-http-handler-use-default-servlet]]
+===== DefaultServlet -- Static Content for Servlets
+
+If you have a xref:eg-server-http-handler-use-servlet-context[Servlet web application], you may want to use a `DefaultServlet` instead of `ResourceHandler`.
+The features are similar, but `DefaultServlet` is more commonly used to serve static files for Servlet web applications.
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=defaultServlet]
+----

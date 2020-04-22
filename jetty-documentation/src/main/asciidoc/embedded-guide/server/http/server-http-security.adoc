@@ -16,19 +16,9 @@
 // ========================================================================
 //
 
-[[eg-server-io-arch]]
-=== Server Libraries I/O Architecture
+[[eg-server-http-security]]
+==== Securing HTTP Server Applications
 
-The Jetty server libraries provide the basic components and APIs to implement a network server.
+// TODO: ConstraintSecurityHandler and Authenticators and LoginServices
+TODO
 
-They build on the common xref:eg-arch-io[Jetty I/O Architecture] and provide server specific concepts.
-
-The main I/O server-side class is `org.eclipse.jetty.server.ServerConnector`.
-
-A `ServerConnector` manages a list of factories.
-
-// TODO: here we want to be generic and talk about writing a custom factory
-//  without the use of Handler. Existing factories we document elsewhere.
-
-// TODO
-include::../old_docs/architecture/server-side-architecture.adoc[]
