@@ -152,7 +152,7 @@ public abstract class HttpConnection implements IConnection
         HttpFields headers = request.getHeaders();
         if (version.getVersion() <= 11)
         {
-            if (!headers.contains(HttpHeader.HOST.asString()))
+            if (!headers.contains(HttpHeader.HOST))
                 request.put(getHttpDestination().getHostField());
         }
 
@@ -164,7 +164,7 @@ public abstract class HttpConnection implements IConnection
         }
         else
         {
-            if (!headers.contains(HttpHeader.CONTENT_TYPE.asString()))
+            if (!headers.contains(HttpHeader.CONTENT_TYPE))
             {
                 String contentType = content.getContentType();
                 if (contentType != null)
@@ -181,7 +181,7 @@ public abstract class HttpConnection implements IConnection
             long contentLength = content.getLength();
             if (contentLength >= 0)
             {
-                if (!headers.contains(HttpHeader.CONTENT_LENGTH.asString()))
+                if (!headers.contains(HttpHeader.CONTENT_LENGTH))
                     request.put(new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, contentLength));
             }
         }
@@ -195,7 +195,7 @@ public abstract class HttpConnection implements IConnection
                 cookies = convertCookies(HttpCookieStore.matchPath(uri, cookieStore.get(uri)), null);
             cookies = convertCookies(request.getCookies(), cookies);
             if (cookies != null)
-                request.header(HttpHeader.COOKIE.asString(), cookies.toString());
+                request.header(HttpHeader.COOKIE, cookies.toString());
         }
 
         // Authentication
