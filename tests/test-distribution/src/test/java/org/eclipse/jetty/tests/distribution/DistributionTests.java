@@ -410,7 +410,6 @@ public class DistributionTests extends AbstractDistributionTest
         "",
         "--jpms",
     })
-    @Disabled // TODO: fix and re-enable.
     public void testSimpleWebAppWithWebsocket(String arg) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
