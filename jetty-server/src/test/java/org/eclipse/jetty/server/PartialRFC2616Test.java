@@ -27,7 +27,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,11 +64,7 @@ public class PartialRFC2616Test
         context.setContextPath("/");
         context.setHandler(new DumpHandler());
 
-        HandlerCollection collection = new HandlerCollection();
-        collection.setHandlers(new Handler[]
-            {vcontext, context});
-
-        server.setHandler(collection);
+        server.setHandler(new HandlerList(vcontext, context));
 
         server.start();
     }

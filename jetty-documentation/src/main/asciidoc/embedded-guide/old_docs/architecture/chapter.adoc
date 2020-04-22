@@ -23,5 +23,4 @@ General items related to the architecture of jetty and how it deals with certain
 
 include::basic-architecture.adoc[]
 include::jetty-classloading.adoc[]
-include::1xx-responses.adoc[]
 include::server-side-architecture.adoc[]

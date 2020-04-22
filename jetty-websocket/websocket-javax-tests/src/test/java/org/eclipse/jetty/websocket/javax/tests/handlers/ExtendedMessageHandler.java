@@ -26,6 +26,6 @@ public class ExtendedMessageHandler extends BaseMessageHandler implements Messag
     @Override
     public void onMessage(ByteBuffer partialMessage, boolean last)
     {
-        // TODO Auto-generated method stub
+        sendBinary(partialMessage, last);
     }
 }

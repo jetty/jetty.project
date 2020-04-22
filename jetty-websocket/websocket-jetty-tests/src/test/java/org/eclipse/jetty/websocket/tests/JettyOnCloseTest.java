@@ -130,8 +130,8 @@ public class JettyOnCloseTest
 
         clientEndpoint.session.close();
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.statusCode, is(StatusCode.SERVICE_RESTART));
-        assertThat(clientEndpoint.reason, is("custom close reason"));
+        assertThat(clientEndpoint.closeCode, is(StatusCode.SERVICE_RESTART));
+        assertThat(clientEndpoint.closeReason, is("custom close reason"));
     }
 
     @Test
@@ -146,8 +146,8 @@ public class JettyOnCloseTest
 
         serverEndpoint.session.close(StatusCode.NORMAL, "first close");
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.statusCode, is(StatusCode.NORMAL));
-        assertThat(clientEndpoint.reason, is("first close"));
+        assertThat(clientEndpoint.closeCode, is(StatusCode.NORMAL));
+        assertThat(clientEndpoint.closeReason, is("first close"));
     }
 
     @Test
@@ -166,8 +166,8 @@ public class JettyOnCloseTest
 
         serverEndpoint.session.close(StatusCode.PROTOCOL, "abnormal close 1");
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.statusCode, is(StatusCode.PROTOCOL));
-        assertThat(clientEndpoint.reason, is("abnormal close 1"));
+        assertThat(clientEndpoint.closeCode, is(StatusCode.PROTOCOL));
+        assertThat(clientEndpoint.closeReason, is("abnormal close 1"));
     }
 
     @Test
@@ -185,8 +185,8 @@ public class JettyOnCloseTest
 
         clientEndpoint.session.close();
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.statusCode, is(StatusCode.SERVER_ERROR));
-        assertThat(clientEndpoint.reason, containsString("trigger onError from onClose"));
+        assertThat(clientEndpoint.closeCode, is(StatusCode.SERVER_ERROR));
+        assertThat(clientEndpoint.closeReason, containsString("trigger onError from onClose"));
 
         assertTrue(serverEndpoint.errorLatch.await(5, TimeUnit.SECONDS));
         assertThat(serverEndpoint.error, instanceOf(RuntimeException.class));

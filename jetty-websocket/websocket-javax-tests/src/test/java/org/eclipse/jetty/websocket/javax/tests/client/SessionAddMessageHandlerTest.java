@@ -41,10 +41,9 @@ import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequestAdapter;
 import org.eclipse.jetty.websocket.javax.tests.MessageType;
 import org.eclipse.jetty.websocket.javax.tests.SessionMatchers;
-import org.eclipse.jetty.websocket.javax.tests.handlers.ByteArrayWholeHandler;
-import org.eclipse.jetty.websocket.javax.tests.handlers.ByteBufferPartialHandler;
+import org.eclipse.jetty.websocket.javax.tests.handlers.BinaryHandlers;
 import org.eclipse.jetty.websocket.javax.tests.handlers.LongMessageHandler;
-import org.eclipse.jetty.websocket.javax.tests.handlers.StringWholeHandler;
+import org.eclipse.jetty.websocket.javax.tests.handlers.TextHandlers;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,7 +92,7 @@ public class SessionAddMessageHandlerTest
     @Test
     public void testMessageHandlerBinary()
     {
-        session.addMessageHandler(new ByteBufferPartialHandler());
+        session.addMessageHandler(new BinaryHandlers.ByteBufferPartialHandler());
         assertThat("session", session, SessionMatchers.isMessageHandlerTypeRegistered(MessageType.BINARY));
         assertThat("session", session, Matchers.not(SessionMatchers.isMessageHandlerTypeRegistered(MessageType.TEXT)));
         assertThat("session", session, Matchers.not(SessionMatchers.isMessageHandlerTypeRegistered(MessageType.PONG)));
@@ -102,7 +101,7 @@ public class SessionAddMessageHandlerTest
             Matchers.hasItem(
                 Matchers.allOf(
                     SessionMatchers.isMessageHandlerType(session, MessageType.BINARY),
-                    instanceOf(ByteBufferPartialHandler.class)
+                    instanceOf(BinaryHandlers.ByteBufferPartialHandler.class)
                 )
             )
         );
@@ -111,8 +110,8 @@ public class SessionAddMessageHandlerTest
     @Test
     public void testMessageHandlerBoth()
     {
-        session.addMessageHandler(new StringWholeHandler());
-        session.addMessageHandler(new ByteArrayWholeHandler());
+        session.addMessageHandler(new TextHandlers.StringWholeHandler());
+        session.addMessageHandler(new BinaryHandlers.ByteArrayWholeHandler());
         assertThat("session", session, SessionMatchers.isMessageHandlerTypeRegistered(MessageType.BINARY));
         assertThat("session", session, SessionMatchers.isMessageHandlerTypeRegistered(MessageType.TEXT));
         assertThat("session", session, Matchers.not(SessionMatchers.isMessageHandlerTypeRegistered(MessageType.PONG)));
@@ -121,7 +120,7 @@ public class SessionAddMessageHandlerTest
             Matchers.hasItem(
                 Matchers.allOf(
                     SessionMatchers.isMessageHandlerType(session, MessageType.BINARY),
-                    instanceOf(ByteArrayWholeHandler.class)
+                    instanceOf(BinaryHandlers.ByteArrayWholeHandler.class)
                 )
             )
         );
@@ -130,7 +129,7 @@ public class SessionAddMessageHandlerTest
             Matchers.hasItem(
                 Matchers.allOf(
                     SessionMatchers.isMessageHandlerType(session, MessageType.TEXT),
-                    instanceOf(StringWholeHandler.class)
+                    instanceOf(TextHandlers.StringWholeHandler.class)
                 )
             )
         );
@@ -139,9 +138,9 @@ public class SessionAddMessageHandlerTest
     @Test
     public void testMessageHandlerReplaceTextHandler()
     {
-        MessageHandler strHandler = new StringWholeHandler();
+        MessageHandler strHandler = new TextHandlers.StringWholeHandler();
         session.addMessageHandler(strHandler); // add a TEXT handler
-        session.addMessageHandler(new ByteArrayWholeHandler()); // add BINARY handler
+        session.addMessageHandler(new BinaryHandlers.ByteArrayWholeHandler()); // add BINARY handler
         session.removeMessageHandler(strHandler); // remove original TEXT handler
         session.addMessageHandler(new LongMessageHandler()); // add new TEXT handler
 
@@ -154,7 +153,7 @@ public class SessionAddMessageHandlerTest
             Matchers.hasItem(
                 Matchers.allOf(
                     SessionMatchers.isMessageHandlerType(session, MessageType.BINARY),
-                    instanceOf(ByteArrayWholeHandler.class)
+                    instanceOf(BinaryHandlers.ByteArrayWholeHandler.class)
                 )
             )
         );
@@ -177,7 +176,7 @@ public class SessionAddMessageHandlerTest
         MessageHandler.Whole<String> lamdaHandler = (msg) -> received.add(msg);
 
         session.addMessageHandler(String.class, lamdaHandler); // add a TEXT handler lambda
-        session.addMessageHandler(new ByteArrayWholeHandler()); // add BINARY handler
+        session.addMessageHandler(new BinaryHandlers.ByteArrayWholeHandler()); // add BINARY handler
         session.removeMessageHandler(lamdaHandler); // remove original TEXT handler
 
         assertThat("session", session, SessionMatchers.isMessageHandlerTypeRegistered(MessageType.BINARY));
@@ -189,7 +188,7 @@ public class SessionAddMessageHandlerTest
             Matchers.hasItem(
                 Matchers.allOf(
                     SessionMatchers.isMessageHandlerType(session, MessageType.BINARY),
-                    instanceOf(ByteArrayWholeHandler.class)
+                    instanceOf(BinaryHandlers.ByteArrayWholeHandler.class)
                 )
             )
         );
@@ -198,7 +197,7 @@ public class SessionAddMessageHandlerTest
     @Test
     public void testMessageHandlerText()
     {
-        session.addMessageHandler(new StringWholeHandler());
+        session.addMessageHandler(new TextHandlers.StringWholeHandler());
 
         assertThat("session", session, Matchers.not(SessionMatchers.isMessageHandlerTypeRegistered(MessageType.BINARY)));
         assertThat("session", session, SessionMatchers.isMessageHandlerTypeRegistered(MessageType.TEXT));
@@ -209,7 +208,7 @@ public class SessionAddMessageHandlerTest
             Matchers.hasItem(
                 Matchers.allOf(
                     SessionMatchers.isMessageHandlerType(session, MessageType.TEXT),
-                    instanceOf(StringWholeHandler.class)
+                    instanceOf(TextHandlers.StringWholeHandler.class)
                 )
             )
         );

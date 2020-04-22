@@ -230,7 +230,7 @@ public class ServerConfigTest
         assertNull(serverEndpoint.error);
 
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.statusCode, is(StatusCode.NO_CODE));
+        assertThat(clientEndpoint.closeCode, is(StatusCode.NO_CODE));
 
         listener.assertClosed();
     }
@@ -251,7 +251,7 @@ public class ServerConfigTest
         assertThat(serverEndpoint.error, instanceOf(MessageTooLargeException.class));
 
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.statusCode, is(StatusCode.MESSAGE_TOO_LARGE));
+        assertThat(clientEndpoint.closeCode, is(StatusCode.MESSAGE_TOO_LARGE));
 
         listener.assertClosed();
     }
@@ -267,7 +267,7 @@ public class ServerConfigTest
 
         connect.get(5, TimeUnit.SECONDS);
         clientEndpoint.session.getRemote().sendString("hello world");
-        String msg = serverEndpoint.messageQueue.poll(500, TimeUnit.MILLISECONDS);
+        String msg = serverEndpoint.textMessages.poll(500, TimeUnit.MILLISECONDS);
         assertThat(msg, is("hello world"));
         Thread.sleep(idleTimeout + 500);
 
@@ -275,7 +275,7 @@ public class ServerConfigTest
         assertThat(serverEndpoint.error, instanceOf(WebSocketTimeoutException.class));
 
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.statusCode, is(StatusCode.SHUTDOWN));
+        assertThat(clientEndpoint.closeCode, is(StatusCode.SHUTDOWN));
 
         listener.assertClosed();
     }
@@ -296,7 +296,7 @@ public class ServerConfigTest
         assertThat(serverEndpoint.error, instanceOf(MessageTooLargeException.class));
 
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.statusCode, is(StatusCode.MESSAGE_TOO_LARGE));
+        assertThat(clientEndpoint.closeCode, is(StatusCode.MESSAGE_TOO_LARGE));
 
         listener.assertClosed();
     }

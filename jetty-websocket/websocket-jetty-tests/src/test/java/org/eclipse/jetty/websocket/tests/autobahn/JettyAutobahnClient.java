@@ -161,7 +161,7 @@ public class JettyAutobahnClient
 
         if (waitForUpgrade(wsUri, response))
         {
-            String msg = onCaseCount.messageQueue.poll(10, TimeUnit.SECONDS);
+            String msg = onCaseCount.textMessages.poll(10, TimeUnit.SECONDS);
             onCaseCount.session.close(StatusCode.SHUTDOWN, null);
             assertTrue(onCaseCount.closeLatch.await(2, TimeUnit.SECONDS));
             assertNotNull(msg);

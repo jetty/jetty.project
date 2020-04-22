@@ -35,7 +35,9 @@ public interface WebSocketPartialListener extends WebSocketConnectionListener
      * @param payload the binary message frame payload
      * @param fin true if this is the final frame, false otherwise
      */
-    void onWebSocketPartialBinary(ByteBuffer payload, boolean fin);
+    default void onWebSocketPartialBinary(ByteBuffer payload, boolean fin)
+    {
+    }
 
     /**
      * A WebSocket TEXT (or associated CONTINUATION) frame has been received.
@@ -50,5 +52,7 @@ public interface WebSocketPartialListener extends WebSocketConnectionListener
      * will be held over until the next frame is received.
      * @param fin true if this is the final frame, false otherwise
      */
-    void onWebSocketPartialText(String payload, boolean fin);
+    default void onWebSocketPartialText(String payload, boolean fin)
+    {
+    }
 }
