@@ -544,9 +544,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 stream = newLocalStream(frame, frameOut);
                 stream.setListener(listener);
                 ControlEntry entry = new ControlEntry(frameOut[0], stream, new StreamPromiseCallback(promise, stream));
+                stream.process(new PrefaceFrame(), Callback.NOOP);
                 queued = flusher.append(entry);
             }
-            stream.process(new PrefaceFrame(), Callback.NOOP);
             // Iterate outside the synchronized block.
             if (queued)
                 flusher.iterate();
