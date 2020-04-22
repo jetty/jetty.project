@@ -124,11 +124,15 @@ INSTALLED 2
 60 org.eclipse.jetty.tests.webapp file:/home/janb/src/jetty-eclipse/jetty-10.0.x/jetty-osgi/test-jetty-osgi/target/1584628869418-0/pax-exam-downloads/org.eclipse.jetty.tests.webapp_10.0.0.SNAPSHOT.jar 10.0.0.SNAPSHOT 32
 61 PAXEXAM-PROBE-d9c5a341-5c98-4084-b814-8303880cb447 local 0.0.0 32
 
-If one of them isn't active (32) and you think it should be, you can edit the src of the test and call a method to generate more information next time you run the test:
 
-TestOSGiUtil.getBundle(BundleContext, String)
+If things didn't go so well, and some bundle that should be in state ACTIVE (32) isn't, then you'll see diagnosis like this:
 
-Where BundleContext is the field called bundleContext in the unit test class, and the String is the symbolic name of the jar. For example, for jetty-util, the symbolic name is org.eclipse.jetty.util. You can find it on the list above. You can also look into the pom.xml for the relevant jetty module and find it. If it's a 3rd party jar, you'll have to look in the META-INF/MANIFEST.MF.
+Trying to start the bundle org.glassfish.web.javax.servlet.jsp.jstl that was supposed to be active or resolved.
+org.glassfish.web.javax.servlet.jsp.jstl failed to start
+org.osgi.framework.BundleException: Could not resolve module: org.glassfish.web.javax.servlet.jsp.jstl [57]
+  Unresolved requirement: Import-Package: javax.servlet.jsp.jstl.core
+
+The "Unresolved requirement" means either that some bundle that exports that package has not been deployed, or that it is deployed, but it's manifest is screwed up, and didn't expose that package. Check the test code for the mavenBundle() statements to ascertain if it has been deployed, and then check the manifest inside the jar for the Export-Package statements to verify the correct packages are exported.
 
 
 
@@ -204,3 +208,13 @@ at org.eclipse.osgi.internal.serviceregistry.ServiceRegistry.notifyHooksPrivileg
 at org.eclipse.osgi.internal.weaving.WovenClassImpl.callHooks(WovenClassImpl.java:270)
 at org.eclipse.osgi.internal.weaving.WeavingHookConfigurator.processClass(WeavingHookConfigurator.java:71)
 ... 35 more
+
+
+
+
+Other Useful Things
+-------------------
+
+If you have an ordinary jar with no osgi manifest headers in it, or one with incorrect/incomplete osgi manifest headers in it, you can use the Pax Wrapped Bundle facility to add in/replace the headers so that the test will work.
+
+See https://ops4j1.jira.com/wiki/spaces/PAXEXAM4/pages/54263890/Configuration+Options#ConfigurationOptions-wrappedBundle for more information. The wrappedBundle() itself uses an underlying Wrap Protocol mechanism, which has more details on configuration options, so also look at https://ops4j1.jira.com/wiki/spaces/paxurl/pages/3833898/Wrap+Protocol.  For an example of it in use in the tests, look at TestOSGiUtil.java line 179.
