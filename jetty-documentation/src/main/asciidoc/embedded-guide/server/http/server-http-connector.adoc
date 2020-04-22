@@ -21,7 +21,8 @@
 
 A `Connector` is the component that handles incoming requests from clients, and works in conjunction with `ConnectionFactory` instances.
 
-The primary implementation is `org.eclipse.jetty.server.ServerConnector`.`ServerConnector` uses a `java.nio.channels.ServerSocketChannel` to listen to a TCP port and to accept TCP connections.
+The primary implementation is `org.eclipse.jetty.server.ServerConnector`.
+`ServerConnector` uses a `java.nio.channels.ServerSocketChannel` to listen to a TCP port and to accept TCP connections.
 
 Since `ServerConnector` wraps a `ServerSocketChannel`, it can be configured in a similar way, for example the port to listen to, the network address to bind to, etc.:
 
@@ -32,18 +33,18 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=configur
 
 The _acceptors_ are threads (typically only one) that compete to accept TCP connections on the listening port.
 When a connection is accepted, `ServerConnector` wraps the accepted `SocketChannel` and passes it to the xref:eg-arch-io-selector-manager[`SelectorManager`].
-Therefore, there is a little moment where the acceptor thread is not accepting new connections because it is busy wrapping the just accepted one to pass it to the `SelectorManager`.
+Therefore, there is a little moment where the acceptor thread is not accepting new connections because it is busy wrapping the just accepted connection to pass it to the `SelectorManager`.
 Connections that are ready to be accepted but are not accepted yet are queued in a bounded queue (at the OS level) whose capacity can be configured with the `ServerConnector.acceptQueueSize` parameter.
 
 If your application must withstand a very high rate of connections opened, configuring more than one acceptor thread may be beneficial: when one acceptor thread accepts one connection, another acceptor thread can take over accepting connections.
 
 The _selectors_ are components that manage a set of connected sockets, implemented by xref:eg-arch-io-selector-manager[`ManagedSelector`].
-Each selector requires one thread and uses the Java NIO mechanism to efficiently handle the set of connected sockets.
+Each selector requires one thread and uses the Java NIO mechanism to efficiently handle a set of connected sockets.
 As a rule of thumb, a single selector can easily manage up to 1000-5000 sockets, although the number may vary greatly depending on the application.
 
 For example, web site applications tend to use sockets for one or more HTTP requests to retrieve resources and then the socket is idle for most of the time.
 In this case a single selector may be able to manage many sockets because chances are that they will be idle most of the time.
-On the contrary, web messaging applications tend to send many small messages at a very high frequency so that the socket is rarely idle.
+On the contrary, web messaging applications tend to send many small messages at a very high frequency so that sockets are rarely idle.
 In this case a single selector may be able to manage less sockets because chances are that many of them will be active at the same time.
 
 It is possible to configure more than one `ServerConnector`, each listening on a different port:
