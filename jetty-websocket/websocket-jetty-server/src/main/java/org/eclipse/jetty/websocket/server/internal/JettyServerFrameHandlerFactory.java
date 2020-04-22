@@ -27,9 +27,9 @@ import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.util.server.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.util.server.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.util.server.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeResponse;
 
 public class JettyServerFrameHandlerFactory
     extends JettyWebSocketFrameHandlerFactory

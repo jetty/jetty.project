@@ -47,7 +47,7 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.javax.tests.CoreServer;
 import org.eclipse.jetty.websocket.javax.tests.DataUtils;
-import org.eclipse.jetty.websocket.util.TextUtil;
+import org.eclipse.jetty.websocket.util.TextUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -328,7 +328,7 @@ public class MessageReceivingTest
         {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("{}.onWholeText({})", EchoWholeMessageFrameHandler.class.getSimpleName(), TextUtil.hint(wholeMessage));
+                LOG.debug("{}.onWholeText({})", EchoWholeMessageFrameHandler.class.getSimpleName(), TextUtils.hint(wholeMessage));
             }
 
             sendText(wholeMessage, callback, false);

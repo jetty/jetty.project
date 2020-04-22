@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.util.server;
+package org.eclipse.jetty.websocket.util.server.internal;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,8 +44,6 @@ import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static javax.servlet.http.HttpServletResponse.SC_SERVICE_UNAVAILABLE;
 
 /**
  * Mapping of pathSpec to a tupple of {@link WebSocketCreator}, {@link FrameHandlerFactory} and
@@ -136,7 +134,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
         throw new IllegalArgumentException("Unrecognized path spec syntax [" + rawSpec + "]");
     }
 
-    public static final String DEFAULT_KEY = "org.eclipse.jetty.websocket.util.server.WebSocketMapping";
+    public static final String DEFAULT_KEY = "org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping";
 
     private final PathMappings<Negotiator> mappings = new PathMappings<>();
     private final WebSocketComponents components;
@@ -281,7 +279,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
             if (websocketPojo == null)
             {
                 // no creation, sorry
-                upgradeResponse.sendError(SC_SERVICE_UNAVAILABLE, "WebSocket Endpoint Creation Refused");
+                upgradeResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "WebSocket Endpoint Creation Refused");
                 return null;
             }
 

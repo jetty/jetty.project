@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.util.server;
+package org.eclipse.jetty.websocket.util.server.internal;
 
 import java.net.HttpCookie;
 import java.net.InetSocketAddress;
@@ -41,7 +41,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
-import org.eclipse.jetty.websocket.util.server.internal.UpgradeHttpServletRequest;
 
 /**
  * Holder of request data for a WebSocket upgrade request.

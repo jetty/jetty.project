@@ -32,12 +32,12 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
-import org.eclipse.jetty.websocket.util.server.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.util.server.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.util.server.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.util.server.WebSocketCreator;
-import org.eclipse.jetty.websocket.util.server.WebSocketMapping;
 import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.util.server.internal.WebSocketCreator;
+import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

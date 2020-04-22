@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.util;
 /**
  * Collection of utility methods for Text content
  */
-public final class TextUtil
+public final class TextUtils
 {
     /**
      * Create a hint of what the text is like.

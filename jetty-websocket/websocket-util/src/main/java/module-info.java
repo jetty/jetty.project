@@ -20,7 +20,6 @@ module org.eclipse.jetty.websocket.util
 {
     exports org.eclipse.jetty.websocket.util;
     exports org.eclipse.jetty.websocket.util.messages;
-    exports org.eclipse.jetty.websocket.util.server;
 
     requires org.slf4j;
     requires org.eclipse.jetty.servlet;

@@ -16,6 +16,7 @@
   <modules>
     <module>websocket-core</module>
     <module>websocket-util</module>
+    <module>websocket-util-server</module>
     <!-- Jetty WebSocket Implementation -->
     <module>websocket-jetty-api</module>
     <module>websocket-jetty-common</module>

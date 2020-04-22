@@ -16,32 +16,23 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server.internal;
+package org.eclipse.jetty.websocket.util.server.internal;
 
-import java.net.URI;
-import java.security.Principal;
-
-import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
-
-public class JavaxServerUpgradeRequest implements UpgradeRequest
+/**
+ * Abstract WebSocket creator interface.
+ * <p>
+ * Should you desire filtering of the WebSocket object creation due to criteria such as origin or sub-protocol, then you will be required to implement a custom
+ * WebSocketCreator implementation.
+ * </p>
+ */
+public interface WebSocketCreator
 {
-    private final ServletUpgradeRequest servletRequest;
-
-    public JavaxServerUpgradeRequest(ServletUpgradeRequest servletRequest)
-    {
-        this.servletRequest = servletRequest;
-    }
-
-    @Override
-    public Principal getUserPrincipal()
-    {
-        return servletRequest.getUserPrincipal();
-    }
-
-    @Override
-    public URI getRequestURI()
-    {
-        return this.servletRequest.getRequestURI();
-    }
+    /**
+     * Create a websocket from the incoming request.
+     *
+     * @param req the request details
+     * @param resp the response details
+     * @return a websocket object to use, or null if no websocket should be created from this request.
+     */
+    Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp);
 }

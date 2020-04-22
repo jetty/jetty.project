@@ -67,7 +67,7 @@ public class PartialStringMessageSinkTest
 
         List<String> message = Objects.requireNonNull(endpoint.messages.poll(5, TimeUnit.SECONDS));
         assertThat(message.size(), is(1));
-        assertThat(message.get(0), is("\uD800\uDF48"));
+        assertThat(message.get(0), is("\uD800\uDF48")); // UTF-8 encoded payload.
     }
 
     @Test
@@ -87,7 +87,7 @@ public class PartialStringMessageSinkTest
         List<String> message = Objects.requireNonNull(endpoint.messages.poll(5, TimeUnit.SECONDS));
         assertThat(message.size(), is(2));
         assertThat(message.get(0), is(""));
-        assertThat(message.get(1), is("\uD800\uDF48"));
+        assertThat(message.get(1), is("\uD800\uDF48")); // UTF-8 encoded payload.
     }
 
     @Test
