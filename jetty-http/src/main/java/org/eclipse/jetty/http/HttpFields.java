@@ -71,14 +71,6 @@ public interface HttpFields extends Iterable<HttpField>
         return new Immutable(fields);
     }
 
-    default int asHashCode()
-    {
-        int hash = 0;
-        for (HttpField f : this)
-            hash ^= f.hashCode();
-        return hash;
-    }
-
     Immutable asImmutable();
 
     default String asString()
@@ -751,26 +743,6 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         /**
-         * Remove the first instance of a header and return previous value
-         *
-         * @param name the field to remove
-         * @return the header that was removed
-         */
-        public HttpField getAndRemove(HttpHeader name)
-        {
-            for (ListIterator<HttpField> i = listIterator(); i.hasNext(); )
-            {
-                HttpField f = i.next();
-                if (f.getHeader() == name)
-                {
-                    i.remove();
-                    return f;
-                }
-            }
-            return null;
-        }
-
-        /**
          * Get a Field by index.
          *
          * @param index the field index
@@ -787,7 +759,10 @@ public interface HttpFields extends Iterable<HttpField>
         @Override
         public int hashCode()
         {
-            return asHashCode();
+            int hash = 0;
+            for (int i = _fields.length; i-- > 0; )
+                hash ^= _fields[i].hashCode();
+            return hash;
         }
 
         @Override
@@ -814,9 +789,7 @@ public interface HttpFields extends Iterable<HttpField>
                 {
                     if (_size == 0)
                         throw new IllegalStateException();
-                    System.arraycopy(_fields, _index, _fields, _index - 1, _size - _index);
-                    _index--;
-                    _size--;
+                    System.arraycopy(_fields, _index, _fields, _index - 1, _size-- - _index--);
                 }
             };
         }
@@ -829,16 +802,17 @@ public interface HttpFields extends Iterable<HttpField>
         public Mutable put(HttpField field)
         {
             boolean put = false;
-            for (ListIterator<HttpField> i = listIterator(); i.hasNext(); )
+
+            for (int i = 0; i < _size; i++)
             {
-                HttpField f = i.next();
+                HttpField f = _fields[i];
                 if (f.isSameName(field))
                 {
                     if (put)
-                        i.remove();
+                        System.arraycopy(_fields, i + 1, _fields, i, _size-- - i-- - 1);
                     else
                     {
-                        i.set(field);
+                        _fields[i] = field;
                         put = true;
                     }
                 }
@@ -955,11 +929,22 @@ public interface HttpFields extends Iterable<HttpField>
          */
         public Mutable remove(HttpHeader name)
         {
-            for (ListIterator<HttpField> i = listIterator(); i.hasNext(); )
+            for (int i = 0; i < _size; i++)
             {
-                HttpField f = i.next();
+                HttpField f = _fields[i];
                 if (f.getHeader() == name)
-                    i.remove();
+                    System.arraycopy(_fields, i + 1, _fields, i, _size-- - i-- - 1);
+            }
+            return this;
+        }
+
+        public Mutable remove(EnumSet<HttpHeader> fields)
+        {
+            for (int i = 0; i < _size; i++)
+            {
+                HttpField f = _fields[i];
+                if (fields.contains(f.getHeader()))
+                    System.arraycopy(_fields, i + 1, _fields, i, _size-- - i-- - 1);
             }
             return this;
         }
@@ -972,11 +957,11 @@ public interface HttpFields extends Iterable<HttpField>
          */
         public Mutable remove(String name)
         {
-            for (ListIterator<HttpField> i = listIterator(); i.hasNext(); )
+            for (int i = 0; i < _size; i++)
             {
-                HttpField f = i.next();
+                HttpField f = _fields[i];
                 if (f.getName().equalsIgnoreCase(name))
-                    i.remove();
+                    System.arraycopy(_fields, i + 1, _fields, i, _size-- - i-- - 1);
             }
             return this;
         }
@@ -1040,9 +1025,24 @@ public interface HttpFields extends Iterable<HttpField>
             int _current = -1;
 
             @Override
+            public void add(HttpField field)
+            {
+                _fields = Arrays.copyOf(_fields, _fields.length + 1);
+                System.arraycopy(_fields, _cursor, _fields, _cursor + 1, _size++);
+                _fields[_cursor++] = field;
+                _current = -1;
+            }
+
+            @Override
             public boolean hasNext()
             {
                 return _cursor != _size;
+            }
+
+            @Override
+            public boolean hasPrevious()
+            {
+                return _cursor > 0;
             }
 
             @Override
@@ -1052,6 +1052,27 @@ public interface HttpFields extends Iterable<HttpField>
                     throw new NoSuchElementException();
                 _current = _cursor++;
                 return _fields[_current];
+            }
+
+            @Override
+            public int nextIndex()
+            {
+                return _cursor + 1;
+            }
+
+            @Override
+            public HttpField previous()
+            {
+                if (_cursor == 0)
+                    throw new NoSuchElementException();
+                _current = --_cursor;
+                return _fields[_current];
+            }
+
+            @Override
+            public int previousIndex()
+            {
+                return _cursor - 1;
             }
 
             @Override
@@ -1067,47 +1088,11 @@ public interface HttpFields extends Iterable<HttpField>
             }
 
             @Override
-            public boolean hasPrevious()
-            {
-                return _cursor > 0;
-            }
-
-            @Override
-            public HttpField previous()
-            {
-                if (_cursor == 0)
-                    throw new NoSuchElementException();
-                _current = --_cursor;
-                return _fields[_current];
-            }
-
-            @Override
-            public int nextIndex()
-            {
-                return _cursor + 1;
-            }
-
-            @Override
-            public int previousIndex()
-            {
-                return _cursor - 1;
-            }
-
-            @Override
             public void set(HttpField field)
             {
                 if (_current < 0)
                     throw new IllegalStateException();
                 _fields[_current] = field;
-            }
-
-            @Override
-            public void add(HttpField field)
-            {
-                _fields = Arrays.copyOf(_fields, _fields.length + 1);
-                System.arraycopy(_fields, _cursor, _fields, _cursor + 1, _size++);
-                _fields[_cursor++] = field;
-                _current = -1;
             }
         }
     }
@@ -1152,6 +1137,46 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
+        public String get(String header)
+        {
+            // default impl overridden for efficiency
+            for (HttpField f : _fields)
+                if (f.getName().equalsIgnoreCase(header))
+                    return f.getValue();
+            return null;
+        }
+
+        @Override
+        public String get(HttpHeader header)
+        {
+            // default impl overridden for efficiency
+            for (HttpField f : _fields)
+                if (f.getHeader() == header)
+                    return f.getValue();
+            return null;
+        }
+
+        @Override
+        public HttpField getField(HttpHeader header)
+        {
+            // default impl overridden for efficiency
+            for (HttpField f : _fields)
+                if (f.getHeader() == header)
+                    return f;
+            return null;
+        }
+
+        @Override
+        public HttpField getField(String name)
+        {
+            // default impl overridden for efficiency
+            for (HttpField f : _fields)
+                if (f.getName().equalsIgnoreCase(name))
+                    return f;
+            return null;
+        }
+
+        @Override
         public HttpField getField(int index)
         {
             if (index >= _fields.length)
@@ -1162,7 +1187,10 @@ public interface HttpFields extends Iterable<HttpField>
         @Override
         public int hashCode()
         {
-            return asHashCode();
+            int hash = 0;
+            for (int i = _fields.length; i-- > 0; )
+                hash ^= _fields[i].hashCode();
+            return hash;
         }
 
         @Override

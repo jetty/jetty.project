@@ -20,6 +20,7 @@ package org.eclipse.jetty.fcgi.client.http;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.EnumSet;
 import java.util.Locale;
 
 import org.eclipse.jetty.client.HttpChannel;
@@ -70,13 +71,14 @@ public class HttpSenderOverFCGI extends HttpSender
         fcgiHeaders.put(FCGI.Headers.QUERY_STRING, query == null ? "" : query);
 
         // FastCGI headers based on HTTP headers
-        HttpField httpField = headers.getAndRemove(HttpHeader.AUTHORIZATION);
+        HttpField httpField = headers.getField(HttpHeader.AUTHORIZATION);
         if (httpField != null)
             fcgiHeaders.put(FCGI.Headers.AUTH_TYPE, httpField.getValue());
-        httpField = headers.getAndRemove(HttpHeader.CONTENT_LENGTH);
+        httpField = headers.getField(HttpHeader.CONTENT_LENGTH);
         fcgiHeaders.put(FCGI.Headers.CONTENT_LENGTH, httpField == null ? "" : httpField.getValue());
-        httpField = headers.getAndRemove(HttpHeader.CONTENT_TYPE);
+        httpField = headers.getField(HttpHeader.CONTENT_TYPE);
         fcgiHeaders.put(FCGI.Headers.CONTENT_TYPE, httpField == null ? "" : httpField.getValue());
+        headers.remove(EnumSet.of(HttpHeader.AUTHORIZATION, HttpHeader.CONTENT_LENGTH, HttpHeader.CONTENT_TYPE));
 
         // FastCGI headers that are not based on HTTP headers nor URI
         fcgiHeaders.put(FCGI.Headers.REQUEST_METHOD, request.getMethod());

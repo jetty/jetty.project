@@ -20,11 +20,14 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -36,6 +39,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -119,6 +123,40 @@ public class HttpFieldsTest
         {
             header.getField(2);
         });
+    }
+
+    @Test
+    public void testMutable() throws Exception
+    {
+        HttpFields headers = HttpFields.build()
+            .add(HttpHeader.ETAG, "tag")
+            .add("name0", "value0")
+            .add("name1", "value1").asImmutable();
+
+        headers = HttpFields.build(headers, EnumSet.of(HttpHeader.ETAG, HttpHeader.CONTENT_RANGE))
+            .add(new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
+            .addDateField("name2", System.currentTimeMillis()).asImmutable();
+
+        headers = HttpFields.build(headers, new HttpField(HttpHeader.CONNECTION, "open"));
+
+        assertThat(headers.size(), is(4));
+        assertThat(headers.getField(0).getValue(), is("value0"));
+        assertThat(headers.getField(1).getValue(), is("value1"));
+        assertThat(headers.getField(2).getValue(), is("open"));
+        assertThat(headers.getField(3).getName(), is("name2"));
+    }
+
+    @Test
+    public void testMap() throws Exception
+    {
+        Map<HttpFields.Immutable,String> map = new HashMap<>();
+        map.put(HttpFields.build().add("X","1").add(HttpHeader.ETAG,"tag").asImmutable(),"1");
+        map.put(HttpFields.build().add("X","2").add(HttpHeader.ETAG,"other").asImmutable(),"2");
+
+        assertThat(map.get(HttpFields.build().add("X","1").add(HttpHeader.ETAG,"tag").asImmutable()), is("1"));
+        assertThat(map.get(HttpFields.build().add("X","2").add(HttpHeader.ETAG,"other").asImmutable()), is("2"));
+        assertThat(map.get(HttpFields.build().add("X","2").asImmutable()), nullValue());
+        assertThat(map.get(HttpFields.build().add("X","2").add(HttpHeader.ETAG,"tag").asImmutable()), nullValue());
     }
 
     @Test
@@ -246,19 +284,27 @@ public class HttpFieldsTest
     }
 
     @Test
-    public void testRemovePut() throws Exception
+    public void testRemove() throws Exception
     {
-        HttpFields.Mutable header = HttpFields.build(1);
-
-        header.put("name0", "value0");
-        header.put("name1", "value1");
-        header.put("name2", "value2");
+        HttpFields.Mutable header = HttpFields.build(1)
+            .put("name0", "value0")
+            .add(HttpHeader.CONTENT_TYPE, "text")
+            .add("name1", "WRONG")
+            .add(HttpHeader.EXPECT, "spanish inquisition")
+            .put("name1", "value1")
+            .add(HttpHeader.ETAG, "tag")
+            .put("name2", "value2");
 
         assertEquals("value0", header.get("name0"));
+        assertEquals("text", header.get(HttpHeader.CONTENT_TYPE));
         assertEquals("value1", header.get("name1"));
+        assertEquals("spanish inquisition", header.get(HttpHeader.EXPECT));
+        assertEquals("tag", header.get(HttpHeader.ETAG));
         assertEquals("value2", header.get("name2"));
 
         header.remove("name1");
+        header.remove(HttpHeader.ETAG);
+        header.remove(EnumSet.of(HttpHeader.CONTENT_TYPE, HttpHeader.EXPECT, HttpHeader.EXPIRES));
 
         assertEquals("value0", header.get("name0"));
         assertNull(header.get("name1"));
@@ -740,11 +786,17 @@ public class HttpFieldsTest
         Iterator<HttpField> i = header.iterator();
         assertThat(i.hasNext(), is(false));
 
-        header.put("name1", "valueA");
-        header.put("name2", "valueB");
-        header.add("name3", "valueC");
+        header.add("REMOVE", "ME")
+            .add("name1", "valueA")
+            .add("name2", "valueB")
+            .add("name3", "valueC");
 
         i = header.iterator();
+
+        assertThat(i.hasNext(), is(true));
+        assertThat(i.next().getName(), is("REMOVE"));
+        i.remove();
+
         assertThat(i.hasNext(), is(true));
         assertThat(i.next().getName(), is("name1"));
         assertThat(i.next().getName(), is("name2"));
@@ -758,6 +810,7 @@ public class HttpFieldsTest
         assertThat(i.next().getName(), is("name3"));
         assertThat(i.hasNext(), is(false));
 
+        header.add("REMOVE", "ME");
         ListIterator<HttpField> l = header.listIterator();
         assertThat(l.hasNext(), is(true));
         l.add(new HttpField("name0", "value"));
@@ -778,6 +831,11 @@ public class HttpFieldsTest
         assertThat(l.next().getName(), is("NAME1"));
         l.add(new HttpField("name2", "value"));
         assertThat(l.next().getName(), is("name3"));
+
+        assertThat(l.hasNext(), is(true));
+        assertThat(l.next().getName(), is("REMOVE"));
+        l.remove();
+
         assertThat(l.hasNext(), is(false));
         assertThat(l.hasPrevious(), is(true));
         l.add(new HttpField("name4", "value"));
