@@ -36,7 +36,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class HandlerTest
 {
-
     @Test
     public void testWrapperSetServer()
     {
@@ -117,16 +116,16 @@ public class HandlerTest
     }
 
     @Test
-    public void testCollectionSetServer()
+    public void testHandlerListSetServer()
     {
         Server s = new Server();
-        HandlerCollection a = new HandlerCollection();
-        HandlerCollection b = new HandlerCollection();
-        HandlerCollection b1 = new HandlerCollection();
-        HandlerCollection b2 = new HandlerCollection();
-        HandlerCollection c = new HandlerCollection();
-        HandlerCollection c1 = new HandlerCollection();
-        HandlerCollection c2 = new HandlerCollection();
+        HandlerList a = new HandlerList();
+        HandlerList b = new HandlerList();
+        HandlerList b1 = new HandlerList();
+        HandlerList b2 = new HandlerList();
+        HandlerList c = new HandlerList();
+        HandlerList c1 = new HandlerList();
+        HandlerList c2 = new HandlerList();
 
         a.addHandler(b);
         a.addHandler(c);
@@ -143,16 +142,16 @@ public class HandlerTest
     }
 
     @Test
-    public void testCollectionServerSet()
+    public void testHandlerListServerSet()
     {
         Server s = new Server();
-        HandlerCollection a = new HandlerCollection();
-        HandlerCollection b = new HandlerCollection();
-        HandlerCollection b1 = new HandlerCollection();
-        HandlerCollection b2 = new HandlerCollection();
-        HandlerCollection c = new HandlerCollection();
-        HandlerCollection c1 = new HandlerCollection();
-        HandlerCollection c2 = new HandlerCollection();
+        HandlerList a = new HandlerList();
+        HandlerList b = new HandlerList();
+        HandlerList b1 = new HandlerList();
+        HandlerList b2 = new HandlerList();
+        HandlerList c = new HandlerList();
+        HandlerList c1 = new HandlerList();
+        HandlerList c2 = new HandlerList();
 
         a.setServer(s);
         a.addHandler(b);
@@ -169,24 +168,24 @@ public class HandlerTest
     }
 
     @Test
-    public void testCollectionThisLoop()
+    public void testHandlerListThisLoop()
     {
-        HandlerCollection a = new HandlerCollection();
+        HandlerList a = new HandlerList();
 
         IllegalStateException e = assertThrows(IllegalStateException.class, () -> a.addHandler(a));
         assertThat(e.getMessage(), containsString("loop"));
     }
 
     @Test
-    public void testCollectionDeepLoop()
+    public void testHandlerListDeepLoop()
     {
-        HandlerCollection a = new HandlerCollection();
-        HandlerCollection b = new HandlerCollection();
-        HandlerCollection b1 = new HandlerCollection();
-        HandlerCollection b2 = new HandlerCollection();
-        HandlerCollection c = new HandlerCollection();
-        HandlerCollection c1 = new HandlerCollection();
-        HandlerCollection c2 = new HandlerCollection();
+        HandlerList a = new HandlerList();
+        HandlerList b = new HandlerList();
+        HandlerList b1 = new HandlerList();
+        HandlerList b2 = new HandlerList();
+        HandlerList c = new HandlerList();
+        HandlerList c1 = new HandlerList();
+        HandlerList c2 = new HandlerList();
 
         a.addHandler(b);
         a.addHandler(c);
@@ -198,15 +197,15 @@ public class HandlerTest
     }
 
     @Test
-    public void testCollectionChainLoop()
+    public void testHandlerListChainLoop()
     {
-        HandlerCollection a = new HandlerCollection();
-        HandlerCollection b = new HandlerCollection();
-        HandlerCollection b1 = new HandlerCollection();
-        HandlerCollection b2 = new HandlerCollection();
-        HandlerCollection c = new HandlerCollection();
-        HandlerCollection c1 = new HandlerCollection();
-        HandlerCollection c2 = new HandlerCollection();
+        HandlerList a = new HandlerList();
+        HandlerList b = new HandlerList();
+        HandlerList b1 = new HandlerList();
+        HandlerList b2 = new HandlerList();
+        HandlerList c = new HandlerList();
+        HandlerList c1 = new HandlerList();
+        HandlerList c2 = new HandlerList();
 
         a.addHandler(c);
         b.setHandlers(new Handler[]{b1, b2});

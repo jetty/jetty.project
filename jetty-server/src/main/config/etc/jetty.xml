@@ -78,17 +78,13 @@
 
     <!-- =========================================================== -->
     <!-- Set the default handler structure for the Server            -->
-    <!-- A handler collection is used to pass received requests to   -->
+    <!-- A handler list is used to pass received requests to         -->
     <!-- both the ContextHandlerCollection, which selects the next   -->
-    <!-- handler by context path and virtual host, and the           -->
-    <!-- DefaultHandler, which handles any requests not handled by   -->
-    <!-- the context handlers.                                       -->
-    <!-- Other handlers may be added to the "Handlers" collection,   -->
-    <!-- for example the jetty-requestlog.xml file adds the          -->
-    <!-- RequestLogHandler after the default handler                 -->
+    <!-- handler by context path and virtual host, and then only if  -->
+    <!-- the request is not handled is the DefaultHandler invoked    -->
     <!-- =========================================================== -->
     <Set name="handler">
-      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerList">
         <Set name="handlers">
          <Array type="org.eclipse.jetty.server.Handler">
            <Item>

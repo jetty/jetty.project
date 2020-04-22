@@ -16,15 +16,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.tests.handlers;
+[[eg-server-http-security]]
+==== Securing HTTP Server Applications
 
-import javax.websocket.MessageHandler;
+// TODO: ConstraintSecurityHandler and Authenticators and LoginServices
+TODO
 
-public class StringWholeHandler implements MessageHandler.Whole<String>
-{
-    @Override
-    public void onMessage(String message)
-    {
-        // TODO Auto-generated method stub
-    }
-}

@@ -102,8 +102,8 @@ public class WebSocketStopTest
         client.stop();
         assertTrue(clientSocket1.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientSocket2.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientSocket1.statusCode, is(StatusCode.SHUTDOWN));
-        assertThat(clientSocket2.statusCode, is(StatusCode.SHUTDOWN));
+        assertThat(clientSocket1.closeCode, is(StatusCode.SHUTDOWN));
+        assertThat(clientSocket2.closeCode, is(StatusCode.SHUTDOWN));
     }
 
     @Test
@@ -116,7 +116,7 @@ public class WebSocketStopTest
         upgradeRequest.addExtensions("permessage-deflate");
         Session session = client.connect(clientSocket, uri, upgradeRequest).get(5, TimeUnit.SECONDS);
         clientSocket.session.getRemote().sendString("init deflater");
-        assertThat(serverSocket.messageQueue.poll(5, TimeUnit.SECONDS), is("init deflater"));
+        assertThat(serverSocket.textMessages.poll(5, TimeUnit.SECONDS), is("init deflater"));
         session.close(StatusCode.NORMAL, null);
 
         // make sure both sides are closed
@@ -125,8 +125,8 @@ public class WebSocketStopTest
         assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
 
         // check we closed normally
-        assertThat(clientSocket.statusCode, is(StatusCode.NORMAL));
-        assertThat(serverSocket.statusCode, is(StatusCode.NORMAL));
+        assertThat(clientSocket.closeCode, is(StatusCode.NORMAL));
+        assertThat(serverSocket.closeCode, is(StatusCode.NORMAL));
 
         IOException error = assertThrows(IOException.class,
             () -> session.getRemote().sendString("this should fail before ExtensionStack"));

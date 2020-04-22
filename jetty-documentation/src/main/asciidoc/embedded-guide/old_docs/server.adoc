@@ -21,8 +21,6 @@
 
 include::embedding/chapter.adoc[]
 include::maven/chapter.adoc[]
-include::clients/http/chapter.adoc[]
-include::handlers/chapter.adoc[]
 include::websockets/intro/chapter.adoc[]
 include::websockets/jetty/chapter.adoc[]
 include::ant/chapter.adoc[]

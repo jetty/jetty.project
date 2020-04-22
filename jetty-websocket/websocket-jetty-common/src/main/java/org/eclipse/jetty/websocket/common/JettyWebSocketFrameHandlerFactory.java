@@ -296,15 +296,9 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
             final InvokerUtils.Arg STATUS_CODE = new InvokerUtils.Arg(int.class);
             final InvokerUtils.Arg REASON = new InvokerUtils.Arg(String.class);
             MethodHandle methodHandle = InvokerUtils.mutatedInvoker(lookup, endpointClass, onmethod, SESSION, STATUS_CODE, REASON);
-            // TODO: need mutation of args? ...
-            // Session + CloseInfo ->
-            // setOnClose((closeInfo) ->{
-            // args[0] = getSession();
-            // args[1] = closeInfo.getStatusCode();
-            // args[2] = closeInfo.getReason();
-            // invoker.apply(endpoint, args);
             metadata.setCloseHandler(methodHandle, onmethod);
         }
+
         // OnWebSocketError [0..1]
         onmethod = ReflectUtils.findAnnotatedMethod(endpointClass, OnWebSocketError.class);
         if (onmethod != null)
@@ -360,7 +354,6 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                 new InvokerUtils.Arg(Reader.class).required()
             };
 
-            onmessageloop:
             for (Method onMsg : onMessages)
             {
                 assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
@@ -371,7 +364,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     // Normal Text Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setTextHandler(StringMessageSink.class, methodHandle, onMsg);
-                    continue onmessageloop;
+                    continue;
                 }
 
                 methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, binaryBufferCallingArgs);
@@ -380,7 +373,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     // ByteBuffer Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setBinaryHandle(ByteBufferMessageSink.class, methodHandle, onMsg);
-                    continue onmessageloop;
+                    continue;
                 }
 
                 methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, binaryArrayCallingArgs);
@@ -389,7 +382,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     // byte[] Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setBinaryHandle(ByteArrayMessageSink.class, methodHandle, onMsg);
-                    continue onmessageloop;
+                    continue;
                 }
 
                 methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, inputStreamCallingArgs);
@@ -398,7 +391,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     // InputStream Binary Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setBinaryHandle(InputStreamMessageSink.class, methodHandle, onMsg);
-                    continue onmessageloop;
+                    continue;
                 }
 
                 methodHandle = InvokerUtils.optionalMutatedInvoker(lookup, endpointClass, onMsg, readerCallingArgs);
@@ -407,7 +400,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
                     // Reader Text Message
                     assertSignatureValid(endpointClass, onMsg, OnWebSocketMessage.class);
                     metadata.setTextHandler(ReaderMessageSink.class, methodHandle, onMsg);
-                    continue onmessageloop;
+                    continue;
                 }
                 else
                 {

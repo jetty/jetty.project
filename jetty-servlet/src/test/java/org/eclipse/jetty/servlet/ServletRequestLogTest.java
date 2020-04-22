@@ -47,7 +47,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.junit.jupiter.api.Assertions;
@@ -301,7 +301,7 @@ public class ServletRequestLogTest
 
         // First the behavior as defined in etc/jetty.xml
         // id="Handlers"
-        HandlerCollection handlers = new HandlerCollection();
+        HandlerList handlers = new HandlerList();
         // id="Contexts"
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         // id="DefaultHandler"
@@ -389,16 +389,9 @@ public class ServletRequestLogTest
         ErrorHandler errorHandler = new ErrorHandler();
         server.addBean(errorHandler);
 
-        // First the behavior as defined in etc/jetty.xml
-        // id="Handlers"
-        HandlerCollection handlers = new HandlerCollection();
-        // id="Contexts"
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        // id="DefaultHandler"
         DefaultHandler defaultHandler = new DefaultHandler();
-
-        handlers.setHandlers(new Handler[]{contexts, defaultHandler});
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(contexts, defaultHandler));
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
@@ -477,16 +470,8 @@ public class ServletRequestLogTest
         connector.setPort(0);
         server.setConnectors(new Connector[]{connector});
 
-        // First the behavior as defined in etc/jetty.xml
-        // id="Handlers"
-        HandlerCollection handlers = new HandlerCollection();
-        // id="Contexts"
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        // id="DefaultHandler"
-        DefaultHandler defaultHandler = new DefaultHandler();
-
-        handlers.setHandlers(new Handler[]{contexts, defaultHandler});
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(contexts, new DefaultHandler()));
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
@@ -571,15 +556,11 @@ public class ServletRequestLogTest
         server.setConnectors(new Connector[]{connector});
 
         // First the behavior as defined in etc/jetty.xml (as is)
-        // id="Handlers"
-        HandlerCollection handlers = new HandlerCollection();
         // id="Contexts"
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         // id="DefaultHandler"
         DefaultHandler defaultHandler = new DefaultHandler();
-
-        handlers.setHandlers(new Handler[]{contexts, defaultHandler});
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(contexts, defaultHandler));
 
         // Next the proposed behavioral change to etc/jetty-requestlog.xml
         // the id="RequestLog"

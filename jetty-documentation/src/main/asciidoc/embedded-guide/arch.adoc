@@ -16,15 +16,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.tests.handlers;
+[appendix]
+[[eg-arch]]
+== Jetty Architecture
 
-import javax.websocket.MessageHandler;
-
-public class ByteArrayPartialHandler implements MessageHandler.Partial<byte[]>
-{
-    @Override
-    public void onMessage(byte[] partialMessage, boolean last)
-    {
-        // TODO Auto-generated method stub
-    }
-}
+include::arch-bean.adoc[]
+include::arch-listener.adoc[]
+include::arch-io.adoc[]

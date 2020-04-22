@@ -14,10 +14,10 @@
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-	<Set name="pattern">/favicon.ico</Set>
-	<Set name="name">Cache-Control</Set>
-	<Set name="value">Max-Age=3600,public</Set>
-	<Set name="terminating">true</Set>
+        <Set name="pattern">/favicon.ico</Set>
+        <Set name="name">Cache-Control</Set>
+        <Set name="value">Max-Age=3600,public</Set>
+        <Set name="terminating">true</Set>
       </New>
     </Arg>
   </Call>
@@ -27,8 +27,8 @@
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
-	<Set name="pattern">/test/rewrite/</Set>
-	<Set name="replacement">/test/rewrite/info.html</Set>
+        <Set name="pattern">/test/rewrite/</Set>
+        <Set name="replacement">/test/rewrite/info.html</Set>
       </New>
     </Arg>
   </Call>
@@ -38,8 +38,8 @@
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
-	<Set name="pattern">/test/some/old/context</Set>
-	<Set name="replacement">/test/rewritten/newcontext</Set>
+        <Set name="pattern">/test/some/old/context</Set>
+        <Set name="replacement">/test/rewritten/newcontext</Set>
       </New>
     </Arg>
   </Call>
@@ -49,8 +49,8 @@
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RewritePatternRule">
-	<Set name="pattern">/test/rewrite/for/*</Set>
-	<Set name="replacement">/test/rewritten/</Set>
+        <Set name="pattern">/test/rewrite/for/*</Set>
+        <Set name="replacement">/test/rewritten/</Set>
       </New>
     </Arg>
   </Call>
@@ -60,8 +60,8 @@
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RewriteRegexRule">
-	<Set name="regex">(.*?)/reverse/([^/]*)/(.*)</Set>
-	<Set name="replacement">$1/reverse/$3/$2</Set>
+        <Set name="regex">(.*?)/reverse/([^/]*)/(.*)</Set>
+        <Set name="replacement">$1/reverse/$3/$2</Set>
       </New>
     </Arg>
   </Call>
@@ -71,9 +71,9 @@
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.CookiePatternRule">
-	<Set name="pattern">/*</Set>
-	<Set name="name">visited</Set>
-	<Set name="value">yes</Set>
+        <Set name="pattern">/*</Set>
+        <Set name="name">visited</Set>
+        <Set name="value">yes</Set>
       </New>
     </Arg>
   </Call>
@@ -83,8 +83,8 @@
   <Call name="addRule">
     <Arg>
       <New class="org.eclipse.jetty.rewrite.handler.RedirectPatternRule">
-	<Set name="pattern">/test/redirect/*</Set>
-	<Set name="location">/test/redirected</Set>
+        <Set name="pattern">/test/redirect/*</Set>
+        <Set name="location">/test/redirected</Set>
       </New>
     </Arg>
   </Call>
@@ -94,9 +94,9 @@
   <Call name="addRule">
     <Arg>
        <New class="org.eclipse.jetty.rewrite.handler.ResponsePatternRule">
-	 <Set name="pattern">/400Error</Set>
-	 <Set name="code">400</Set>
-	 <Set name="message">ResponsePatternRule Demo</Set>
+         <Set name="pattern">/400Error</Set>
+         <Set name="code">400</Set>
+         <Set name="message">ResponsePatternRule Demo</Set>
       </New>
     </Arg>
   </Call>

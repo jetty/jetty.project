@@ -25,7 +25,7 @@
   </New>
 
   <Set name="handler">
-    <New class="org.eclipse.jetty.server.handler.HandlerCollection">
+    <New class="org.eclipse.jetty.server.handler.HandlerList">
       <Set name="handlers">
         <Array type="org.eclipse.jetty.server.Handler">
           <Item>
