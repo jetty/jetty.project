@@ -33,8 +33,6 @@ The Jetty server-side libraries provide:
 * HTTP/2 low-level support, for applications that want to explicitly handle low-level HTTP/2 _sessions_, _streams_ and _frames_, via the xref:eg-server-http2[HTTP/2 libraries]
 * WebSocket support, for applications that want to embed a WebSocket server, via the xref:eg-server-websocket[WebSocket libraries]
 
-// TODO: add a section on lifecycle and the component tree.
-
 include::http/server-http.adoc[]
 include::http2/server-http2.adoc[]
 include::websocket/server-websocket.adoc[]

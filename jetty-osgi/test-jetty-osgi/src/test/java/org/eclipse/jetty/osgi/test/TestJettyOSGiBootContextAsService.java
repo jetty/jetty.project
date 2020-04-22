@@ -80,7 +80,7 @@ public class TestJettyOSGiBootContextAsService
     public void testContextHandlerAsOSGiService() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
-            TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
+            TestOSGiUtil.diagnoseBundles(bundleContext);
 
         // now test the context
         HttpClient client = new HttpClient();
