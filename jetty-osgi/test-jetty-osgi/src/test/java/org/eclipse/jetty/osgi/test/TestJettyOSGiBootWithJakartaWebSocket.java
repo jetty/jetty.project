@@ -96,12 +96,6 @@ public class TestJettyOSGiBootWithJakartaWebSocket
         return res;
     }
 
-    public void assertAllBundlesActiveOrResolved()
-    {
-        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
-        TestOSGiUtil.debugBundles(bundleContext);
-    }
-
     @Test
     public void testWebsocket() throws Exception
     {
@@ -111,7 +105,7 @@ public class TestJettyOSGiBootWithJakartaWebSocket
         startBundle(bundleContext, "org.eclipse.jetty.tests.webapp");
 
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
-            assertAllBundlesActiveOrResolved();
+            TestOSGiUtil.diagnoseBundles(bundleContext);
 
         String port = System.getProperty("boot.jakarta.websocket.port");
         assertNotNull(port);

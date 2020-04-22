@@ -159,7 +159,7 @@ public class ClientConfigTest
         assertNull(clientEndpoint.error);
 
         assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(serverSocket.statusCode, is(StatusCode.NO_CODE));
+        assertThat(serverSocket.closeCode, is(StatusCode.NO_CODE));
     }
 
     @ParameterizedTest
@@ -177,7 +177,7 @@ public class ClientConfigTest
         assertThat(clientEndpoint.error, instanceOf(MessageTooLargeException.class));
 
         assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(serverSocket.statusCode, is(StatusCode.MESSAGE_TOO_LARGE));
+        assertThat(serverSocket.closeCode, is(StatusCode.MESSAGE_TOO_LARGE));
     }
 
     @ParameterizedTest
@@ -196,7 +196,7 @@ public class ClientConfigTest
         assertThat(clientEndpoint.error, instanceOf(WebSocketTimeoutException.class));
 
         assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(serverSocket.statusCode, is(StatusCode.SHUTDOWN));
+        assertThat(serverSocket.closeCode, is(StatusCode.SHUTDOWN));
     }
 
     @ParameterizedTest
@@ -214,6 +214,6 @@ public class ClientConfigTest
         assertThat(clientEndpoint.error, instanceOf(MessageTooLargeException.class));
 
         assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(serverSocket.statusCode, is(StatusCode.MESSAGE_TOO_LARGE));
+        assertThat(serverSocket.closeCode, is(StatusCode.MESSAGE_TOO_LARGE));
     }
 }

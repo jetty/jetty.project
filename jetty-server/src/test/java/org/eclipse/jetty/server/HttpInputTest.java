@@ -88,11 +88,96 @@ public class HttpInputTest
             super.failed(x);
         }
     }
+    
+    public class TestHttpInput extends HttpInput
+    {
+        public TestHttpInput(HttpChannelState state)
+        {
+            super(state);
+        }
+
+        @Override
+        protected void produceContent() throws IOException
+        {
+            _history.add("produceContent " + _fillAndParseSimulate.size());
+
+            for (String s = _fillAndParseSimulate.poll(); s != null; s = _fillAndParseSimulate.poll())
+            {
+                if ("_EOF_".equals(s))
+                    _in.eof();
+                else
+                    _in.addContent(new TContent(s));
+            }
+        }
+
+        @Override
+        protected void blockForContent() throws IOException
+        {
+            _history.add("blockForContent");
+            super.blockForContent();
+        }
+    }
+
+    public class TestHttpChannelState extends HttpChannelState
+    {
+        private boolean _fakeAsyncState;
+
+        public TestHttpChannelState(HttpChannel channel)
+        {
+            super(channel);
+        }
+
+        public boolean isFakeAsyncState()
+        {
+            return _fakeAsyncState;
+        }
+
+        public void setFakeAsyncState(boolean fakeAsyncState)
+        {
+            _fakeAsyncState = fakeAsyncState;
+        }
+
+        @Override
+        public boolean isAsync()
+        {
+            if (isFakeAsyncState())
+                return true;
+            return super.isAsync();
+        }
+
+        @Override
+        public void onReadUnready()
+        {
+            _history.add("s.onReadUnready");
+            super.onReadUnready();
+        }
+
+        @Override
+        public boolean onReadPossible()
+        {
+            _history.add("s.onReadPossible");
+            return super.onReadPossible();
+        }
+
+        @Override
+        public boolean onContentAdded()
+        {
+            _history.add("s.onDataAvailable");
+            return super.onContentAdded();
+        }
+
+        @Override
+        public boolean onReadReady()
+        {
+            _history.add("s.onReadReady");
+            return super.onReadReady();
+        }
+    }
 
     @BeforeEach
     public void before()
     {
-        _in = new HttpInput(new HttpChannelState(new HttpChannel(new MockConnector(), new HttpConfiguration(), null, null)
+        _in = new TestHttpInput(new TestHttpChannelState(new HttpChannel(new MockConnector(), new HttpConfiguration(), null, null)
         {
             @Override
             public void onAsyncWaitForContent()
@@ -100,57 +185,7 @@ public class HttpInputTest
                 _history.add("asyncReadInterested");
             }
         })
-        {
-            @Override
-            public void onReadUnready()
-            {
-                _history.add("s.onReadUnready");
-                super.onReadUnready();
-            }
-
-            @Override
-            public boolean onReadPossible()
-            {
-                _history.add("s.onReadPossible");
-                return super.onReadPossible();
-            }
-
-            @Override
-            public boolean onContentAdded()
-            {
-                _history.add("s.onDataAvailable");
-                return super.onContentAdded();
-            }
-
-            @Override
-            public boolean onReadReady()
-            {
-                _history.add("s.onReadReady");
-                return super.onReadReady();
-            }
-        })
-        {
-            @Override
-            protected void produceContent() throws IOException
-            {
-                _history.add("produceContent " + _fillAndParseSimulate.size());
-
-                for (String s = _fillAndParseSimulate.poll(); s != null; s = _fillAndParseSimulate.poll())
-                {
-                    if ("_EOF_".equals(s))
-                        _in.eof();
-                    else
-                        _in.addContent(new TContent(s));
-                }
-            }
-
-            @Override
-            protected void blockForContent() throws IOException
-            {
-                _history.add("blockForContent");
-                super.blockForContent();
-            }
-        };
+      );
     }
 
     @AfterEach
@@ -326,7 +361,9 @@ public class HttpInputTest
     @Test
     public void testAsyncEmpty() throws Exception
     {
+        ((TestHttpChannelState)_in.getHttpChannelState()).setFakeAsyncState(true);
         _in.setReadListener(_listener);
+        ((TestHttpChannelState)_in.getHttpChannelState()).setFakeAsyncState(false);
         assertThat(_history.poll(), equalTo("produceContent 0"));
         assertThat(_history.poll(), equalTo("s.onReadUnready"));
         assertThat(_history.poll(), nullValue());
@@ -341,7 +378,10 @@ public class HttpInputTest
     @Test
     public void testAsyncRead() throws Exception
     {
+        ((TestHttpChannelState)_in.getHttpChannelState()).setFakeAsyncState(true);
         _in.setReadListener(_listener);
+        ((TestHttpChannelState)_in.getHttpChannelState()).setFakeAsyncState(false);
+
         assertThat(_history.poll(), equalTo("produceContent 0"));
         assertThat(_history.poll(), equalTo("s.onReadUnready"));
         assertThat(_history.poll(), nullValue());
@@ -388,7 +428,9 @@ public class HttpInputTest
     @Test
     public void testAsyncEOF() throws Exception
     {
+        ((TestHttpChannelState)_in.getHttpChannelState()).setFakeAsyncState(true);
         _in.setReadListener(_listener);
+        ((TestHttpChannelState)_in.getHttpChannelState()).setFakeAsyncState(false);
         assertThat(_history.poll(), equalTo("produceContent 0"));
         assertThat(_history.poll(), equalTo("s.onReadUnready"));
         assertThat(_history.poll(), nullValue());
@@ -406,8 +448,10 @@ public class HttpInputTest
 
     @Test
     public void testAsyncReadEOF() throws Exception
-    {
+    {        
+        ((TestHttpChannelState)_in.getHttpChannelState()).setFakeAsyncState(true);
         _in.setReadListener(_listener);
+        ((TestHttpChannelState)_in.getHttpChannelState()).setFakeAsyncState(false);
         assertThat(_history.poll(), equalTo("produceContent 0"));
         assertThat(_history.poll(), equalTo("s.onReadUnready"));
         assertThat(_history.poll(), nullValue());
@@ -452,7 +496,9 @@ public class HttpInputTest
     @Test
     public void testAsyncError() throws Exception
     {
+        ((TestHttpChannelState)_in.getHttpChannelState()).setFakeAsyncState(true);
         _in.setReadListener(_listener);
+        ((TestHttpChannelState)_in.getHttpChannelState()).setFakeAsyncState(false);
         assertThat(_history.poll(), equalTo("produceContent 0"));
         assertThat(_history.poll(), equalTo("s.onReadUnready"));
         assertThat(_history.poll(), nullValue());
@@ -476,6 +522,42 @@ public class HttpInputTest
         assertThat(_in.isFinished(), equalTo(true));
 
         assertThat(_history.poll(), nullValue());
+    }
+    
+    @Test
+    public void testSetListenerWithNull() throws Exception
+    {
+        //test can't be null
+        assertThrows(NullPointerException.class, () ->
+        {
+            _in.setReadListener(null);
+        });
+    }
+    
+    @Test
+    public void testSetListenerNotAsync() throws Exception
+    {
+        //test not async
+        assertThrows(IllegalStateException.class, () ->
+        {
+            _in.setReadListener(_listener);
+        });
+    }
+    
+    @Test
+    public void testSetListenerAlreadySet() throws Exception
+    {
+        //set up a listener
+        ((TestHttpChannelState)_in.getHttpChannelState()).setFakeAsyncState(true);
+        _in.setReadListener(_listener);
+        //throw away any events generated by setting the listener
+        _history.clear();
+        ((TestHttpChannelState)_in.getHttpChannelState()).setFakeAsyncState(false);
+        //now test that you can't set another listener
+        assertThrows(IllegalStateException.class, () ->
+        {
+            _in.setReadListener(_listener);
+        });
     }
 
     @Test

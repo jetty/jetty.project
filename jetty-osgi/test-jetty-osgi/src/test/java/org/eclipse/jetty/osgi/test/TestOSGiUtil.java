@@ -39,8 +39,6 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
@@ -205,14 +203,6 @@ public class TestOSGiUtil
         return res;
     }
 
-    public static List<Option> consoleDependencies()
-    {
-        List<Option> res = new ArrayList<>();
-        res.add(systemProperty("osgi.console").value("6666"));
-        res.add(systemProperty("osgi.console.enable.builtin").value("true"));
-        return res;
-    }
-
     public static List<Option> jspDependencies()
     {
         List<Option> res = new ArrayList<>();
@@ -233,14 +223,6 @@ public class TestOSGiUtil
         return res;
     }
 
-    public static List<Option> httpServiceJetty()
-    {
-        List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-httpservice").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.equinox.http").artifactId("servlet").versionAsInProject().start());
-        return res;
-    }
-
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)
     {
         Map<String, Bundle> bundles = new HashMap<>();
@@ -257,25 +239,11 @@ public class TestOSGiUtil
         return bundles.get(symbolicName);
     }
 
-    protected static void assertActiveBundle(BundleContext bundleContext, String symbolicName) throws Exception
+    protected static void diagnoseBundles(BundleContext bundleContext)
     {
-        Bundle b = getBundle(bundleContext, symbolicName);
-        assertNotNull(b);
-        assertEquals(b.getSymbolicName() + " must be active.", Bundle.ACTIVE, b.getState());
-    }
-
-    protected static void assertActiveOrResolvedBundle(BundleContext bundleContext, String symbolicName) throws Exception
-    {
-        Bundle b = getBundle(bundleContext, symbolicName);
-        assertNotNull(b);
-        if (b.getHeaders().get("Fragment-Host") == null)
-            diagnoseNonActiveOrNonResolvedBundle(b);
-        assertTrue(b.getSymbolicName() + " must be active or resolved. It was " + b.getState(),
-            b.getState() == Bundle.ACTIVE || b.getState() == Bundle.RESOLVED);
-    }
-
-    protected static void assertAllBundlesActiveOrResolved(BundleContext bundleContext)
-    {
+        System.err.println("ACTIVE: " + Bundle.ACTIVE);
+        System.err.println("RESOLVED: " + Bundle.RESOLVED);
+        System.err.println("INSTALLED: " + Bundle.INSTALLED);
         for (Bundle b : bundleContext.getBundles())
         {
             switch (b.getState())
@@ -287,24 +255,24 @@ public class TestOSGiUtil
                     {
                         diagnoseNonActiveOrNonResolvedBundle(b);
                     }
-                    dumpBundleState(b);
+                    dumpBundle(b);
                     break;
                 }
                 default:
                 {
-                    dumpBundleState(b);
+                    dumpBundle(b);
                 }
             }
         }
     }
     
-    protected static void dumpBundleState(Bundle b)
+    protected static void dumpBundle(Bundle b)
     {
-        System.err.println("Bundle: [" + b.getBundleId() + "] " + b + " State=" + b.getState());
+        System.err.println("    " + b.getBundleId() + " " + b.getSymbolicName() + " " + b.getLocation() + " " + b.getVersion() + " " + b.getState());
     }
 
-    protected static boolean diagnoseNonActiveOrNonResolvedBundle(Bundle b)
-    {
+    protected static void diagnoseNonActiveOrNonResolvedBundle(Bundle b)
+    {        
         if (b.getState() != Bundle.ACTIVE && b.getHeaders().get("Fragment-Host") == null)
         {
             try
@@ -312,29 +280,22 @@ public class TestOSGiUtil
                 System.err.println("Trying to start the bundle " + b.getSymbolicName() + " that was supposed to be active or resolved.");
                 b.start();
                 System.err.println(b.getSymbolicName() + " did start");
-                return true;
             }
             catch (Throwable t)
             {
                 System.err.println(b.getSymbolicName() + " failed to start");
                 t.printStackTrace(System.err);
-                return false;
             }
         }
-        return false;
     }
 
-    protected static void debugBundles(BundleContext bundleContext)
+    protected static void dumpBundles(BundleContext bundleContext)
     {
-        Map<String, Bundle> bundlesIndexedBySymbolicName = new HashMap<String, Bundle>();
-        System.err.println("Active " + Bundle.ACTIVE);
-        System.err.println("RESOLVED " + Bundle.RESOLVED);
-        System.err.println("INSTALLED " + Bundle.INSTALLED);
+        System.err.println("ACTIVE: " + Bundle.ACTIVE);
+        System.err.println("RESOLVED: " + Bundle.RESOLVED);
+        System.err.println("INSTALLED: " + Bundle.INSTALLED);
         for (Bundle b : bundleContext.getBundles())
-        {
-            bundlesIndexedBySymbolicName.put(b.getSymbolicName(), b);
-            System.err.println("    " + b.getBundleId() + " " + b.getSymbolicName() + " " + b.getLocation() + " " + b.getVersion() + " " + b.getState());
-        }
+            dumpBundle(b);
     }
 
     @SuppressWarnings("rawtypes")
@@ -354,51 +315,6 @@ public class TestOSGiUtil
     {
         assertTrue(message + "\nContains: <" + needle + ">\nIn:\n" + haystack, haystack.contains(needle));
     }
-
-// THIS IS NOT USED???
-//
-//    protected static void testHttpServiceGreetings(BundleContext bundleContext, String protocol, int port) throws Exception
-//    {
-//        assertActiveBundle(bundleContext, "org.eclipse.jetty.osgi.boot");
-//
-//        assertActiveBundle(bundleContext, "org.eclipse.jetty.osgi.httpservice");
-//        assertActiveBundle(bundleContext, "org.eclipse.equinox.http.servlet");
-//
-//        // in the OSGi world this would be bad code and we should use a bundle
-//        // tracker.
-//        // here we purposely want to make sure that the httpService is actually
-//        // ready.
-//        ServiceReference<?> sr = bundleContext.getServiceReference(HttpService.class.getName());
-//        assertNotNull("The httpServiceOSGiBundle is started and should " + "have deployed a service reference for HttpService", sr);
-//        HttpService http = (HttpService)bundleContext.getService(sr);
-//        http.registerServlet("/greetings", new HttpServlet()
-//        {
-//            private static final long serialVersionUID = 1L;
-//
-//            @Override
-//            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-//            {
-//                resp.getWriter().write("Hello");
-//            }
-//        }, null, null);
-//
-//        // now test the servlet
-//        ClientConnector clientConnector = new ClientConnector();
-//        clientConnector.setSelectors(1);
-//        clientConnector.setSslContextFactory(newClientSslContextFactory());
-//        HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
-//        try
-//        {
-//            client.start();
-//            ContentResponse response = client.GET(protocol + "://127.0.0.1:" + port + "/greetings");
-//            assertEquals(HttpStatus.OK_200, response.getStatus());
-//
-//            String content = new String(response.getContent());
-//            assertEquals("Hello", content);
-//        }
-//        finally
-//        {
-//            client.stop();
 //        }
 //    }
 }

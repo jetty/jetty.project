@@ -40,6 +40,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.jakarta.client.internal.JsrUpgradeListener;
 import org.eclipse.jetty.websocket.jakarta.common.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketExtensionConfig;

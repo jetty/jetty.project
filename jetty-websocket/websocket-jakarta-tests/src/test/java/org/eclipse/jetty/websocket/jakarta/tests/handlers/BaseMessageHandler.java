@@ -20,11 +20,11 @@ package org.eclipse.jetty.websocket.jakarta.tests.handlers;
 
 import jakarta.websocket.MessageHandler;
 
-public class BaseMessageHandler implements MessageHandler.Whole<String>
+public class BaseMessageHandler extends AbstractHandler implements MessageHandler.Whole<String>
 {
     @Override
     public void onMessage(String message)
     {
-        // TODO Auto-generated method stub
+        sendText(message, true);
     }
 }
