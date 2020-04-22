@@ -167,4 +167,16 @@ public class WebSocketUriMappingTest
 
         assertThat(getBestMatch("/a/b/c"), is("suffix2"));
     }
+
+    @Test
+    public void testDifferentLengths()
+    {
+        mapping.put(new UriTemplatePathSpec("/a/{var}/c"), "endpointA");
+        mapping.put(new UriTemplatePathSpec("/a/{var}/c/d"), "endpointB");
+        mapping.put(new UriTemplatePathSpec("/a/{var1}/{var2}/d/e"), "endpointC");
+
+        assertThat(getBestMatch("/a/b/c"), is("endpointA"));
+        assertThat(getBestMatch("/a/d/c/d"), is("endpointB"));
+        assertThat(getBestMatch("/a/x/y/d/e"), is("endpointC"));
+    }
 }
