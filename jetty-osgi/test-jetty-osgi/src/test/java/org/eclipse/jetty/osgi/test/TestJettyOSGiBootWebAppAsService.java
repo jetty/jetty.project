@@ -94,17 +94,11 @@ public class TestJettyOSGiBootWebAppAsService
         return res;
     }
 
-    public void assertAllBundlesActiveOrResolved()
-    {
-        TestOSGiUtil.debugBundles(bundleContext);
-        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
-    }
-
     @Test
     public void testBundle() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
-            assertAllBundlesActiveOrResolved();
+            TestOSGiUtil.diagnoseBundles(bundleContext);
 
         ServiceReference<?>[] refs = bundleContext.getServiceReferences(WebAppContext.class.getName(), null);
         assertNotNull(refs);

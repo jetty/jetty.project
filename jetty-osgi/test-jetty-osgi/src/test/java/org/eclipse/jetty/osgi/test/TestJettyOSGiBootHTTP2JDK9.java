@@ -100,23 +100,19 @@ public class TestJettyOSGiBootHTTP2JDK9
         return res;
     }
 
-    public void assertAllBundlesActiveOrResolved()
-    {
-        TestOSGiUtil.debugBundles(bundleContext);
-        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
-        Bundle javaAlpn = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.java.server");
-        assertNotNull(javaAlpn);
-        ServiceReference<?>[] services = javaAlpn.getRegisteredServices();
-        assertNotNull(services);
-        Bundle server = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.server");
-        assertNotNull(server);
-    }
-
     @Test
     public void testHTTP2() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
-            assertAllBundlesActiveOrResolved();
+        {
+            TestOSGiUtil.diagnoseBundles(bundleContext);
+            Bundle javaAlpn = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.java.server");
+            assertNotNull(javaAlpn);
+            ServiceReference<?>[] services = javaAlpn.getRegisteredServices();
+            assertNotNull(services);
+            Bundle server = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.server");
+            assertNotNull(server);
+        }
 
         HttpClient httpClient = null;
         HTTP2Client http2Client = null;
