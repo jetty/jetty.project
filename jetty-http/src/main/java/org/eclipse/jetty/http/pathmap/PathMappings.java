@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 {
     private static final Logger LOG = Log.getLogger(PathMappings.class);
-    private final Set<MappedResource<E>> _mappings = new TreeSet<>();
+    private final Set<MappedResource<E>> _mappings = new TreeSet<>(LogicalDeclarationComparator.INSTANCE);
 
     private Trie<MappedResource<E>> _exactMap = new ArrayTernaryTrie<>(false);
     private Trie<MappedResource<E>> _prefixMap = new ArrayTernaryTrie<>(false);
@@ -116,7 +116,6 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
                     break;
             }
         }
-        ret.sort(LogicalDeclarationComparator.INSTANCE);
         return ret;
     }
 
