@@ -48,7 +48,7 @@ public class HTTP2Docs
         CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
         Session session = sessionCF.get();
 
-        HttpFields.Mutable requestHeaders = HttpFields.build()
+        HttpFields requestHeaders = HttpFields.build()
             .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);

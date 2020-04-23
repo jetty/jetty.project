@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 
 public class HttpUpgraderOverHTTP2 implements HttpUpgrader
 {
-    public static final PreEncodedHttpField SPEC_VERSION_FIELD = new PreEncodedHttpField(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
+    public static final PreEncodedHttpField WS_VERSIONS_FIELD = new PreEncodedHttpField(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
     private final ClientUpgradeRequest clientUpgradeRequest;
 
     public HttpUpgraderOverHTTP2(ClientUpgradeRequest clientUpgradeRequest)
@@ -43,7 +43,7 @@ public class HttpUpgraderOverHTTP2 implements HttpUpgrader
     {
         request.method(HttpMethod.CONNECT);
         request.upgradeProtocol("websocket");
-        request.add(SPEC_VERSION_FIELD);
+        request.add(WS_VERSIONS_FIELD);
 
         // Notify the UpgradeListeners now the headers are set.
         clientUpgradeRequest.requestComplete();

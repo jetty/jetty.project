@@ -294,7 +294,7 @@ public class HTTP2ServerDocs
                 if (pushEnabled && request.getURIString().endsWith("/index.html"))
                 {
                     // Push the favicon.
-                    HttpURI pushedURI = HttpURI.build(request.getURI()).path("/favicon.ico").asImmutable();
+                    HttpURI pushedURI = HttpURI.build(request.getURI()).path("/favicon.ico");
                     MetaData.Request pushedRequest = new MetaData.Request("GET", pushedURI, HttpVersion.HTTP_2, HttpFields.EMPTY);
                     PushPromiseFrame promiseFrame = new PushPromiseFrame(stream.getId(), 0, pushedRequest);
                     stream.push(promiseFrame, new Stream.Listener.Adapter())

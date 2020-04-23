@@ -43,6 +43,7 @@ import org.eclipse.jetty.util.UrlEncoded;
  * <li>{@link #getPath()} - /path/info</li>
  * <li>{@link #getParam()} - param</li>
  * <li>{@link #getQuery()} - query</li>
+ * <li>{@link #getFragment()} - fragment</li>
  * </ul>
  * <p>Any parameters will be returned from {@link #getPath()}, but are excluded from the
  * return value of {@link #getDecodedPath()}.   If there are multiple parameters, the
@@ -110,6 +111,8 @@ public interface HttpURI
 
     String getDecodedPath();
 
+    String getFragment();
+
     String getHost();
 
     String getParam();
@@ -152,6 +155,7 @@ public interface HttpURI
         private final String _path;
         private final String _param;
         private final String _query;
+        private final String _fragment;
         private String _uri;
         private String _decodedPath;
 
@@ -166,6 +170,7 @@ public interface HttpURI
             _decodedPath = builder._decodedPath;
             _param = builder._param;
             _query = builder._query;
+            _fragment = builder._fragment;
         }
 
         private Immutable(String uri)
@@ -179,6 +184,7 @@ public interface HttpURI
             _decodedPath = null;
             _param = null;
             _query = null;
+            _fragment = null;
         }
 
         @Override
@@ -211,6 +217,12 @@ public interface HttpURI
             if (_decodedPath == null && _path != null)
                 _decodedPath = URIUtil.canonicalPath(URIUtil.decodePath(_path));
             return _decodedPath;
+        }
+
+        @Override
+        public String getFragment()
+        {
+            return _fragment;
         }
 
         @Override
@@ -305,6 +317,9 @@ public interface HttpURI
                 if (_query != null)
                     out.append('?').append(_query);
 
+                if (_fragment != null)
+                    out.append('#').append(_fragment);
+
                 if (out.length() > 0)
                     _uri = out.toString();
                 else
@@ -318,7 +333,7 @@ public interface HttpURI
         {
             try
             {
-                return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), null);
+                return new URI(_scheme, null, _host, _port, _path, _query == null ? null : UrlEncoded.decodeString(_query), _fragment);
             }
             catch (URISyntaxException x)
             {
@@ -353,6 +368,7 @@ public interface HttpURI
         private String _path;
         private String _param;
         private String _query;
+        private String _fragment;
 
         private Mutable()
         {
@@ -384,6 +400,7 @@ public interface HttpURI
             _path = path;
             _param = param;
             _query = query;
+            _fragment = null;
         }
 
         private Mutable(String uri)
@@ -414,6 +431,7 @@ public interface HttpURI
                     _decodedPath = pathParam;
             }
             _query = uri.getRawQuery();
+            _fragment = uri.getRawFragment();
         }
 
         private Mutable(String scheme, String host, int port, String pathQuery)
@@ -471,6 +489,7 @@ public interface HttpURI
             _path = null;
             _param = null;
             _query = null;
+            _fragment = null;
             _decodedPath = null;
             _user = null;
             return this;
@@ -481,6 +500,12 @@ public interface HttpURI
             _uri = null;
             _path = URIUtil.encodePath(path);
             _decodedPath = path;
+            return this;
+        }
+
+        public Mutable fragment(String fragment)
+        {
+            _fragment = fragment;
             return this;
         }
 
@@ -498,6 +523,12 @@ public interface HttpURI
             if (_decodedPath == null && _path != null)
                 _decodedPath = URIUtil.canonicalPath(URIUtil.decodePath(_path));
             return _decodedPath;
+        }
+
+        @Override
+        public String getFragment()
+        {
+            return _fragment;
         }
 
         @Override
@@ -1029,7 +1060,6 @@ public interface HttpURI
             {
                 case START:
                 case ASTERISK:
-                case FRAGMENT:
                     break;
 
                 case SCHEME_OR_PATH:
@@ -1063,6 +1093,10 @@ public interface HttpURI
 
                 case QUERY:
                     _query = uri.substring(mark, end);
+                    break;
+
+                case FRAGMENT:
+                    _fragment =  uri.substring(mark, end);
                     break;
 
                 default:

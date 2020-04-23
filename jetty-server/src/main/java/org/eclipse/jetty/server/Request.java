@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
@@ -277,6 +276,7 @@ public class Request implements HttpServletRequest
     private final HttpInput _input;
     private MetaData.Request _metaData;
     private HttpFields _httpFields;
+    private HttpFields _trailers;
     private HttpURI _uri;
     private String _method;
     private String _contextPath;
@@ -347,11 +347,14 @@ public class Request implements HttpServletRequest
         return trailers;
     }
 
+    public void setTrailerHttpFields(HttpFields trailers)
+    {
+        _trailers = trailers == null ? null : trailers.asImmutable();
+    }
+
     public HttpFields getTrailerHttpFields()
     {
-        MetaData.Request metadata = _metaData;
-        Supplier<HttpFields> trailers = metadata == null ? null : metadata.getTrailerSupplier();
-        return trailers == null ? null : trailers.get();
+        return _trailers;
     }
 
     public HttpInput getHttpInput()
@@ -1735,6 +1738,7 @@ public class Request implements HttpServletRequest
     {
         _metaData = null;
         _httpFields = null;
+        _trailers = null;
         _method = null;
         _uri = null;
 

@@ -108,7 +108,7 @@ public class HttpResponse implements Response
         return result;
     }
 
-    public HttpFields.Mutable getTrailers()
+    public HttpFields getTrailers()
     {
         return trailers;
     }

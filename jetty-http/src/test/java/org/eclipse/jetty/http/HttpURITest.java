@@ -87,6 +87,7 @@ public class HttpURITest
         assertThat(uri.getDecodedPath(), is("/path/info"));
         assertThat(uri.getParam(), is("param"));
         assertThat(uri.getQuery(), is("query=value"));
+        assertThat(uri.getFragment(), is("fragment"));
         assertThat(uri.getAuthority(), is("host:8888"));
     }
 

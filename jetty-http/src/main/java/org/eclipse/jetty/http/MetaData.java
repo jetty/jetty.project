@@ -24,13 +24,10 @@ import java.util.function.Supplier;
 
 public class MetaData implements Iterable<HttpField>
 {
-    private static final Supplier<HttpFields> SELF_SUPPLIED_TRAILORS = () -> null;
-    private static final HttpFields SUPPLIED_TRAILERS = HttpFields.build(HttpFields.EMPTY).asImmutable();
     private final HttpVersion _httpVersion;
     private final HttpFields _fields;
     private final long _contentLength;
     private final Supplier<HttpFields> _trailerSupplier;
-    private HttpFields _trailers;
 
     public MetaData(HttpVersion version, HttpFields fields)
     {
@@ -39,7 +36,7 @@ public class MetaData implements Iterable<HttpField>
 
     public MetaData(HttpVersion version, HttpFields fields, long contentLength)
     {
-        this(version, fields, contentLength, SELF_SUPPLIED_TRAILORS);
+        this(version, fields, contentLength, null);
     }
 
     public MetaData(HttpVersion version, HttpFields fields, long contentLength, Supplier<HttpFields> trailerSupplier)
@@ -48,14 +45,7 @@ public class MetaData implements Iterable<HttpField>
         _fields = fields == null ? null : fields.asImmutable();
 
         _contentLength = contentLength >= 0 ? contentLength : _fields == null ? -1 : _fields.getLongField(HttpHeader.CONTENT_LENGTH);
-        if (trailerSupplier == SELF_SUPPLIED_TRAILORS)
-            _trailerSupplier = () -> _trailers;
-        else
-        {
-            _trailerSupplier = trailerSupplier;
-            if (trailerSupplier != null)
-                _trailers = SUPPLIED_TRAILERS;
-        }
+        _trailerSupplier = trailerSupplier;
     }
 
     public boolean isRequest()
@@ -84,26 +74,9 @@ public class MetaData implements Iterable<HttpField>
         return _fields;
     }
 
-    public boolean mayHaveTrailers()
-    {
-        return _trailers != null;
-    }
-
-    public boolean hasTrailerSupplier()
-    {
-        return _trailers == SUPPLIED_TRAILERS;
-    }
-
     public Supplier<HttpFields> getTrailerSupplier()
     {
         return _trailerSupplier;
-    }
-
-    public void setTrailers(HttpFields trailers)
-    {
-        if (_trailers != null)
-            throw new IllegalStateException();
-        _trailers = trailers;
     }
 
     public long getContentLength()

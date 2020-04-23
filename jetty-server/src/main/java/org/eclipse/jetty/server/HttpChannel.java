@@ -685,7 +685,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         _request.setMetaData(request);
 
-        _request.setSecure(HttpScheme.HTTPS.is(request.getURI().getScheme()));
+        _request.setSecure(HttpScheme.HTTPS.is(request.getURI().getScheme())); // TODO move to setMetaData
 
         _combinedListener.onRequestBegin(_request);
 
@@ -715,7 +715,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onTrailers {} {}", this, trailers);
-        _request.getMetaData().setTrailers(trailers.asImmutable());
+        _request.setTrailerHttpFields(trailers);
         _combinedListener.onRequestTrailers(_request);
     }
 

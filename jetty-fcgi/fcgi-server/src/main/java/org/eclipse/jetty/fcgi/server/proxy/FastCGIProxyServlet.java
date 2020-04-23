@@ -180,7 +180,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             proxyRequest.attribute(REQUEST_QUERY_ATTRIBUTE, originalQuery);
 
         // If the Host header is missing, add it.
-        if (!proxyRequest.getHeaders().contains(HttpHeader.HOST.asString()))
+        if (!proxyRequest.getHeaders().contains(HttpHeader.HOST))
         {
             String host = request.getServerName();
             int port = request.getServerPort();

@@ -38,7 +38,7 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
 
 public class HttpUpgraderOverHTTP implements HttpUpgrader
 {
-    private static final PreEncodedHttpField WS_VERSIONS_FIELD = new PreEncodedHttpField(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
+    private static final PreEncodedHttpField WS_VERSION_FIELD = new PreEncodedHttpField(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
     private static final PreEncodedHttpField WS_UPGRADE_FIELD = new PreEncodedHttpField(HttpHeader.UPGRADE, "websocket");
     private static final PreEncodedHttpField WS_CONNECTION_FIELD = new PreEncodedHttpField(HttpHeader.CONNECTION, "Upgrade");
     private static final PreEncodedHttpField PRAGMA_NO_CACHE_FIELD = new PreEncodedHttpField(HttpHeader.PRAGMA, "no-cache");
@@ -54,7 +54,7 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
     public void prepare(HttpRequest request)
     {
         request.method(HttpMethod.GET).version(HttpVersion.HTTP_1_1)
-            .add(WS_VERSIONS_FIELD)
+            .add(WS_VERSION_FIELD)
             .add(WS_UPGRADE_FIELD)
             .add(WS_CONNECTION_FIELD)
             .header(HttpHeader.SEC_WEBSOCKET_KEY, generateRandomKey())

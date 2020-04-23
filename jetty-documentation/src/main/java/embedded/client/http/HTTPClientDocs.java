@@ -63,7 +63,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
@@ -79,11 +78,6 @@ import static java.lang.System.Logger.Level.INFO;
 @SuppressWarnings("unused")
 public class HTTPClientDocs
 {
-
-    public static final PreEncodedHttpField H2C_UPGRADE_FIELD = new PreEncodedHttpField(HttpHeader.UPGRADE, "h2c");
-    public static final PreEncodedHttpField H2_SETTINGS_FIELD = new PreEncodedHttpField(HttpHeader.HTTP2_SETTINGS, "");
-    public static final PreEncodedHttpField H2_UPGRADE_CONNECTION_FIELD = new PreEncodedHttpField(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings");
-
     public void start() throws Exception
     {
         // tag::start[]
@@ -804,9 +798,9 @@ public class HTTPClientDocs
         // Make a clear-text upgrade request from HTTP/1.1 to HTTP/2.
         // The request will start as HTTP/1.1, but the response will be HTTP/2.
         ContentResponse upgradedResponse = client.newRequest("host", 8080)
-            .add(H2C_UPGRADE_FIELD)
-            .add(H2_SETTINGS_FIELD)
-            .add(H2_UPGRADE_CONNECTION_FIELD)
+            .header(HttpHeader.UPGRADE, "h2c")
+            .header(HttpHeader.HTTP2_SETTINGS, "")
+            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
             .send();
         // end::dynamicClearText[]
     }

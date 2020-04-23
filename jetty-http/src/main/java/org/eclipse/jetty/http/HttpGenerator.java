@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTrie;
@@ -321,14 +320,13 @@ public class HttpGenerator
 
         if (isChunking())
         {
-            Supplier<HttpFields> trailerSupplier = _info.getTrailerSupplier();
-            if (_info.mayHaveTrailers())
+            if (_info.getTrailerSupplier() != null)
             {
                 // Do we need a chunk buffer?
                 if (chunk == null || chunk.capacity() <= CHUNK_SIZE)
                     return Result.NEED_CHUNK_TRAILER;
 
-                HttpFields trailers = trailerSupplier.get();
+                HttpFields trailers = _info.getTrailerSupplier().get();
 
                 if (trailers != null)
                 {
@@ -588,7 +586,7 @@ public class HttpGenerator
         HttpField transferEncoding = null;
         boolean http11 = _info.getHttpVersion() == HttpVersion.HTTP_1_1;
         boolean close = false;
-        boolean chunkedHint = _info.hasTrailerSupplier();
+        boolean chunkedHint = _info.getTrailerSupplier() != null;
         boolean contentType = false;
         long contentLength = _info.getContentLength();
         boolean contentLengthField = false;
@@ -667,7 +665,7 @@ public class HttpGenerator
         }
 
         // Can we work out the content length?
-        if (last && contentLength < 0 && !_info.mayHaveTrailers())
+        if (last && contentLength < 0 && _info.getTrailerSupplier() == null)
             contentLength = _contentPrepared + BufferUtil.length(content);
 
         // Calculate how to end _content and connection, _content length and transfer encoding

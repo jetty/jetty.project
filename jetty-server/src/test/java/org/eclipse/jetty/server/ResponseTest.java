@@ -861,7 +861,7 @@ public class ResponseTest
     {
         Response response = getResponse();
         Request request = response.getHttpChannel().getRequest();
-        request.setHttpURI(HttpURI.build(request.getHttpURI()).host("myhost").port(8888).asImmutable());
+        request.setHttpURI(HttpURI.build(request.getHttpURI()).host("myhost").port(8888));
         request.setContextPath("/path");
 
         assertEquals("http://myhost:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
@@ -950,12 +950,12 @@ public class ResponseTest
                     Response response = getResponse();
                     Request request = response.getHttpChannel().getRequest();
 
-                    HttpURI.Mutable builder = HttpURI.build(request.getHttpURI(),
+                    HttpURI.Mutable uri = HttpURI.build(request.getHttpURI(),
                         "/path/info;param;jsessionid=12345?query=0&more=1#target");
-                    builder.scheme("http");
+                    uri.scheme("http");
                     if (host != null)
-                        builder.host(host).port(port);
-                    request.setHttpURI(builder.asImmutable());
+                        uri.host(host).port(port);
+                    request.setHttpURI(uri);
                     request.setContextPath("/path");
                     request.setRequestedSessionId("12345");
                     request.setRequestedSessionIdFromCookie(i > 2);

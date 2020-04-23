@@ -145,7 +145,7 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
      * @param content the part content
      * @param fields the headers associated with this part
      */
-    public void addFieldPart(String name, Request.Content content, HttpFields.Mutable fields)
+    public void addFieldPart(String name, Request.Content content, HttpFields fields)
     {
         addPart(new Part(name, null, content, fields));
     }
@@ -164,7 +164,7 @@ public class MultiPartRequestContent extends AbstractRequestContent implements C
      * @param content the part content
      * @param fields the headers associated with this part
      */
-    public void addFilePart(String name, String fileName, Request.Content content, HttpFields.Mutable fields)
+    public void addFilePart(String name, String fileName, Request.Content content, HttpFields fields)
     {
         addPart(new Part(name, fileName, content, fields));
     }

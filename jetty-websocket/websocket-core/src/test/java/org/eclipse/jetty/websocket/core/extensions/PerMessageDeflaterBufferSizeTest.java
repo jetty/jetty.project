@@ -106,7 +106,7 @@ public class PerMessageDeflaterBufferSizeTest
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate; @deflate_buffer_size=" + deflateBufferSize);
 
-        CompletableFuture<HttpFields.Mutable> futureRequestHeaders = new CompletableFuture<>();
+        CompletableFuture<HttpFields> futureRequestHeaders = new CompletableFuture<>();
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
@@ -121,7 +121,7 @@ public class PerMessageDeflaterBufferSizeTest
         connect.get(5, TimeUnit.SECONDS);
 
         // Make sure the internal parameter was not sent to the server.
-        HttpFields.Mutable requestHeaders = futureRequestHeaders.get();
+        HttpFields requestHeaders = futureRequestHeaders.get();
         assertThat(requestHeaders.getFields(HttpHeader.SEC_WEBSOCKET_EXTENSIONS).size(), is(1));
         assertThat(requestHeaders.get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS), is("permessage-deflate"));
 
@@ -160,7 +160,7 @@ public class PerMessageDeflaterBufferSizeTest
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate; @inflate_buffer_size=" + inflateBufferSize);
 
-        CompletableFuture<HttpFields.Mutable> futureRequestHeaders = new CompletableFuture<>();
+        CompletableFuture<HttpFields> futureRequestHeaders = new CompletableFuture<>();
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
@@ -175,7 +175,7 @@ public class PerMessageDeflaterBufferSizeTest
         connect.get(5, TimeUnit.SECONDS);
 
         // Make sure the internal parameter was not sent to the server.
-        HttpFields.Mutable requestHeaders = futureRequestHeaders.get();
+        HttpFields requestHeaders = futureRequestHeaders.get();
         assertThat(requestHeaders.getFields(HttpHeader.SEC_WEBSOCKET_EXTENSIONS).size(), is(1));
         assertThat(requestHeaders.get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS), is("permessage-deflate"));
 
@@ -215,7 +215,7 @@ public class PerMessageDeflaterBufferSizeTest
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate");
 
-        CompletableFuture<HttpFields.Mutable> futureResponseHeaders = new CompletableFuture<>();
+        CompletableFuture<HttpFields> futureResponseHeaders = new CompletableFuture<>();
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
@@ -230,7 +230,7 @@ public class PerMessageDeflaterBufferSizeTest
         connect.get(5, TimeUnit.SECONDS);
 
         // Make sure the internal parameter was not sent from the server.
-        HttpFields.Mutable responseHeaders = futureResponseHeaders.get();
+        HttpFields responseHeaders = futureResponseHeaders.get();
         assertThat(responseHeaders.getFields(HttpHeader.SEC_WEBSOCKET_EXTENSIONS).size(), is(1));
         assertThat(responseHeaders.get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS), is("permessage-deflate"));
 
@@ -270,7 +270,7 @@ public class PerMessageDeflaterBufferSizeTest
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate");
 
-        CompletableFuture<HttpFields.Mutable> futureResponseHeaders = new CompletableFuture<>();
+        CompletableFuture<HttpFields> futureResponseHeaders = new CompletableFuture<>();
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
@@ -285,7 +285,7 @@ public class PerMessageDeflaterBufferSizeTest
         connect.get(5, TimeUnit.SECONDS);
 
         // Make sure the internal parameter was not sent from the server.
-        HttpFields.Mutable responseHeaders = futureResponseHeaders.get();
+        HttpFields responseHeaders = futureResponseHeaders.get();
         assertThat(responseHeaders.getFields(HttpHeader.SEC_WEBSOCKET_EXTENSIONS).size(), is(1));
         assertThat(responseHeaders.get(HttpHeader.SEC_WEBSOCKET_EXTENSIONS), is("permessage-deflate"));
 

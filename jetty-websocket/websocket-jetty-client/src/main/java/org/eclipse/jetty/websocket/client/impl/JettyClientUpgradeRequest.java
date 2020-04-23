@@ -56,12 +56,9 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
             List<HttpCookie> cookies = request.getCookies();
             if (cookies != null)
             {
-                HttpFields.Mutable headers = getHeaders();
                 // TODO: remove existing Cookie header (if set)?
                 for (HttpCookie cookie : cookies)
-                {
-                    headers.add(HttpHeader.COOKIE, cookie.toString());
-                }
+                    fields.add(HttpHeader.COOKIE, cookie.toString());
             }
 
             // Copy sub-protocols
