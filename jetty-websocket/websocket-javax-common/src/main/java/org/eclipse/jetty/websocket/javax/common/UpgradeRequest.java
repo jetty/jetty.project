@@ -31,9 +31,14 @@ public interface UpgradeRequest
     Principal getUserPrincipal();
 
     /**
-     * For obtaining {@link javax.websocket.server.PathParam} values from Request URI path
-     *
-     * @return the request URI
+     * @return the full URI of this request.
      */
     URI getRequestURI();
+
+    /**
+     * For obtaining {@link javax.websocket.server.PathParam} values from the Request context path.
+     *
+     * @return the path in Context.
+     */
+    String getPathInContext();
 }
