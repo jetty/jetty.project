@@ -154,12 +154,6 @@ public interface HttpFields extends Iterable<HttpField>
         return false;
     }
 
-    @Deprecated
-    default boolean containsKey(String name)
-    {
-        return contains(name);
-    }
-
     default String get(HttpHeader header)
     {
         for (HttpField f : this)
@@ -478,7 +472,7 @@ public interface HttpFields extends Iterable<HttpField>
         if (size() != that.size())
             return false;
 
-        Iterator i = that.iterator();
+        Iterator<HttpField> i = that.iterator();
         for (HttpField f : this)
         {
             if (!i.hasNext())

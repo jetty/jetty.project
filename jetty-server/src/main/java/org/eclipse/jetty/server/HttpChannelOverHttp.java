@@ -543,8 +543,8 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
     private static class RequestBuilder
     {
-        private final HttpFields.Mutable _fieldBuilder = HttpFields.build();
-        private final HttpURI.Mutable _uri = HttpURI.build();
+        private final HttpFields.Mutable _fieldsBuilder = HttpFields.build();
+        private final HttpURI.Mutable _uriBuilder = HttpURI.build();
         private String _method;
         private HttpVersion _version;
 
@@ -556,19 +556,19 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         public void request(String method, String uri, HttpVersion version)
         {
             _method = method;
-            _uri.uri(method, uri);
+            _uriBuilder.uri(method, uri);
             _version = version;
-            _fieldBuilder.clear();
+            _fieldsBuilder.clear();
         }
 
         public HttpFields.Mutable getFields()
         {
-            return _fieldBuilder;
+            return _fieldsBuilder;
         }
 
         public MetaData.Request build()
         {
-            return new MetaData.Request(_method, _uri, _version, _fieldBuilder);
+            return new MetaData.Request(_method, _uriBuilder, _version, _fieldsBuilder);
         }
 
         public HttpVersion version()
