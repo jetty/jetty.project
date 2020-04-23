@@ -37,6 +37,11 @@ public class RawHTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnecti
 {
     private final ServerSessionListener listener;
 
+    public RawHTTP2ServerConnectionFactory(ServerSessionListener listener)
+    {
+        this(new HttpConfiguration(), listener);
+    }
+
     public RawHTTP2ServerConnectionFactory(HttpConfiguration httpConfiguration, ServerSessionListener listener)
     {
         super(httpConfiguration);

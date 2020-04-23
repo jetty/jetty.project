@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -281,15 +282,7 @@ public class ClientConnector extends ContainerLifeCycle
 
     protected void safeClose(Closeable closeable)
     {
-        try
-        {
-            if (closeable != null)
-                closeable.close();
-        }
-        catch (Throwable x)
-        {
-            LOG.trace("IGNORED", x);
-        }
+        IO.close(closeable);
     }
 
     protected void configure(SocketChannel channel) throws IOException
@@ -308,7 +301,7 @@ public class ClientConnector extends ContainerLifeCycle
 
     protected class ClientSelectorManager extends SelectorManager
     {
-        protected ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
+        public ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
         }
@@ -328,6 +321,18 @@ public class ClientConnector extends ContainerLifeCycle
             Map<String, Object> context = (Map<String, Object>)attachment;
             ClientConnectionFactory factory = (ClientConnectionFactory)context.get(CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
             return factory.newConnection(endPoint, context);
+        }
+
+        @Override
+        public void connectionOpened(Connection connection, Object context)
+        {
+            super.connectionOpened(connection, context);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> contextMap = (Map<String, Object>)context;
+            @SuppressWarnings("unchecked")
+            Promise<Connection> promise = (Promise<Connection>)contextMap.get(CONNECTION_PROMISE_CONTEXT_KEY);
+            if (promise != null)
+                promise.succeeded(connection);
         }
 
         @Override

@@ -50,5 +50,5 @@ The Jetty HTTP/2 implementation consists of the following sub-projects (each pro
 2.  `http2-hpack`: Contains the HTTP/2 HPACK implementation for HTTP header compression.
 3.  `http2-server`: Provides the server-side implementation of HTTP/2.
 4.  `http2-client`: Provides the implementation of HTTP/2 client with a low level HTTP/2 API, dealing with HTTP/2 streams, frames, etc.
-5.  `http2-http-client-transport`: Provides the implementation of the HTTP/2 transport for `HttpClient` (see xref:http-client[]).
+5.  `http2-http-client-transport`: Provides the implementation of the HTTP/2 transport for `HttpClient` (see xref:client-http[this section]).
 Applications can use the higher level API provided by `HttpClient` to send HTTP requests and receive HTTP responses, and the HTTP/2 transport will take care of converting them in HTTP/2 format (see also https://webtide.com/http2-support-for-httpclient/[this blog entry]).

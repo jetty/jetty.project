@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.websocket.CloseReason;
@@ -62,6 +63,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     private final AvailableDecoders availableDecoders;
     private final AvailableEncoders availableEncoders;
     private final Map<String, String> pathParameters;
+    private final String sessionId;
     private Map<String, Object> userProperties;
 
     private List<Extension> negotiatedExtensions;
@@ -76,8 +78,8 @@ public class JavaxWebSocketSession implements javax.websocket.Session
         this.container = container;
         this.coreSession = coreSession;
         this.frameHandler = frameHandler;
+        this.sessionId = UUID.randomUUID().toString();
         this.config = Objects.requireNonNull(endpointConfig);
-
         this.availableDecoders = new AvailableDecoders(this.config);
         this.availableEncoders = new AvailableEncoders(this.config);
 
@@ -179,7 +181,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     @Override
     public void close()
     {
-        close(new CloseReason(CloseReason.CloseCodes.NO_STATUS_CODE, null));
+        close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, null));
     }
 
     /**
@@ -315,7 +317,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     @Override
     public String getId()
     {
-        return this.frameHandler.getUpgradeRequest().toString();
+        return sessionId;
     }
 
     /**

@@ -26,7 +26,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
@@ -60,10 +59,7 @@ public class AsyncContextDispatchWithQueryStrings
         _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/firstDispatchWithNewQueryString");
         _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/secondDispatchNewValueForExistingQueryString");
 
-        HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[]{_contextHandler, new DefaultHandler()});
-
-        _server.setHandler(handlers);
+        _server.setHandler(new HandlerList(_contextHandler, new DefaultHandler()));
         _server.start();
     }
 
@@ -105,14 +101,14 @@ public class AsyncContextDispatchWithQueryStrings
             {
                 AsyncContext async = request.startAsync();
                 async.dispatch("/secondDispatchNewValueForExistingQueryString?newQueryString=newValue");
-                assertEquals("newQueryString=initialValue&initialParam=right", queryString);
+                assertEquals("newQueryString=initialValue", queryString);
             }
             else
             {
                 response.setContentType("text/html");
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.getWriter().println("<h1>woohhooooo</h1>");
-                assertEquals("newQueryString=newValue&initialParam=right", queryString);
+                assertEquals("newQueryString=newValue", queryString);
             }
         }
     }

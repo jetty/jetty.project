@@ -85,11 +85,7 @@ public class ServerCloseTest
         });
         context.addServlet(closeEndpoint, "/ws");
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(context);
-        handlers.addHandler(new DefaultHandler());
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(context, new DefaultHandler()));
         JettyWebSocketServletContainerInitializer.configure(context, null);
 
         server.start();

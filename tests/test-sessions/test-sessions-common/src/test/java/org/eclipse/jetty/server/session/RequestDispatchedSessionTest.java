@@ -27,7 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.FormContentProvider;
+import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
@@ -65,11 +65,7 @@ public class RequestDispatchedSessionTest
         contextHandler.addServlet(ShowUserServlet.class, "/user");
         contextHandler.addServlet(DefaultServlet.class, "/");
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(contextHandler);
-        handlers.addHandler(new DefaultHandler());
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(contextHandler, new DefaultHandler()));
 
         server.start();
     }
@@ -96,7 +92,7 @@ public class RequestDispatchedSessionTest
 
         ContentResponse response = client.newRequest(server.getURI().resolve("/login"))
             .method(HttpMethod.POST)
-            .content(new FormContentProvider(postForm))
+            .body(new FormRequestContent(postForm))
             .send();
         assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
     }
@@ -115,7 +111,6 @@ public class RequestDispatchedSessionTest
                 }
                 request.getSession(true).setAttribute(USERNAME, request.getParameter("username"));
                 request.getRequestDispatcher("/user").forward(request, response);
-                return;
             }
         }
     }

@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.internal.RequestContentAdapter;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.client.util.PathContentProvider;
 
@@ -41,9 +42,24 @@ import org.eclipse.jetty.client.util.PathContentProvider;
  * header set by applications; if the length is negative, it typically removes
  * any {@code Content-Length} header set by applications, resulting in chunked
  * content (i.e. {@code Transfer-Encoding: chunked}) being sent to the server.</p>
+ *
+ * @deprecated use {@link Request.Content} instead, or {@link #toRequestContent(ContentProvider)}
+ * to convert ContentProvider to {@link Request.Content}.
  */
+@Deprecated
 public interface ContentProvider extends Iterable<ByteBuffer>
 {
+    /**
+     * <p>Converts a ContentProvider to a {@link Request.Content}.</p>
+     *
+     * @param provider the ContentProvider to convert
+     * @return a {@link Request.Content} that wraps the ContentProvider
+     */
+    public static Request.Content toRequestContent(ContentProvider provider)
+    {
+        return new RequestContentAdapter(provider);
+    }
+
     /**
      * @return the content length, if known, or -1 if the content length is unknown
      */
@@ -68,7 +84,10 @@ public interface ContentProvider extends Iterable<ByteBuffer>
     /**
      * An extension of {@link ContentProvider} that provides a content type string
      * to be used as a {@code Content-Type} HTTP header in requests.
+     *
+     * @deprecated use {@link Request.Content} instead
      */
+    @Deprecated
     public interface Typed extends ContentProvider
     {
         /**

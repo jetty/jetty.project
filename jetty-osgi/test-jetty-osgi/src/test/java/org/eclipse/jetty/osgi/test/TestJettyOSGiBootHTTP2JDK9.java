@@ -49,14 +49,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
 public class TestJettyOSGiBootHTTP2JDK9
 {
-    private static final String LOG_LEVEL = "WARN";
-
     @Inject
     private BundleContext bundleContext;
 
@@ -64,6 +61,9 @@ public class TestJettyOSGiBootHTTP2JDK9
     public Option[] config()
     {
         ArrayList<Option> options = new ArrayList<>();
+        
+        options.addAll(TestOSGiUtil.configurePaxExamLogging());
+        
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true, "jetty-http2-jdk9.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
@@ -81,8 +81,6 @@ public class TestJettyOSGiBootHTTP2JDK9
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-http-client-transport").versionAsInProject().start());
 
-        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
-        options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.add(CoreOptions.cleanCaches(true));
         return options.toArray(new Option[0]);
     }
@@ -102,23 +100,19 @@ public class TestJettyOSGiBootHTTP2JDK9
         return res;
     }
 
-    public void assertAllBundlesActiveOrResolved()
-    {
-        TestOSGiUtil.debugBundles(bundleContext);
-        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
-        Bundle javaAlpn = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.java.server");
-        assertNotNull(javaAlpn);
-        ServiceReference<?>[] services = javaAlpn.getRegisteredServices();
-        assertNotNull(services);
-        Bundle server = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.server");
-        assertNotNull(server);
-    }
-
     @Test
     public void testHTTP2() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
-            assertAllBundlesActiveOrResolved();
+        {
+            TestOSGiUtil.diagnoseBundles(bundleContext);
+            Bundle javaAlpn = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.java.server");
+            assertNotNull(javaAlpn);
+            ServiceReference<?>[] services = javaAlpn.getRegisteredServices();
+            assertNotNull(services);
+            Bundle server = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.server");
+            assertNotNull(server);
+        }
 
         HttpClient httpClient = null;
         HTTP2Client http2Client = null;

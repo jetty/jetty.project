@@ -1,24 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ~
-  ~ ========================================================================
-  ~ Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-  ~
-  ~ This program and the accompanying materials are made available under
-  ~ the terms of the Eclipse Public License 2.0 which is available at
-  ~ https://www.eclipse.org/legal/epl-2.0
-  ~
-  ~ This Source Code may also be made available under the following
-  ~ Secondary Licenses when the conditions for such availability set
-  ~ forth in the Eclipse Public License, v. 2.0 are satisfied:
-  ~ the Apache License v2.0 which is available at
-  ~ https://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
-  ~ ========================================================================
-  ~
-  -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
@@ -41,7 +21,7 @@
     <asciidoctorj.epub.version>1.5.0-alpha.8.1</asciidoctorj.epub.version>
     <asciidoctorj.version>1.5.8.1</asciidoctorj.version>
     <jruby.version>1.7.27</jruby.version>
-    <web.resources.version>1.1</web.resources.version>
+    <web.resources.version>1.2</web.resources.version>
     <web.resources.directory>${project.build.directory}/web-resources</web.resources.directory>
     <!-- old properties -->
     <html.directory>${project.build.directory}/current</html.directory>
@@ -50,9 +30,64 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-io</artifactId>
+      <artifactId>jetty-server</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlets</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-rewrite</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.fcgi</groupId>
+      <artifactId>fcgi-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-http-client-transport</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
     </dependency>
   </dependencies>
 
@@ -111,6 +146,13 @@
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
         <version>${asciidoctor.maven.plugin.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.asciidoctor</groupId>
+            <artifactId>asciidoctorj-diagram</artifactId>
+            <version>2.0.1</version>
+          </dependency>
+        </dependencies>
         <configuration>
           <attributes>
             <JDURL>http://www.eclipse.org/jetty/javadoc/${javadoc.version}</JDURL>
@@ -125,7 +167,6 @@
             <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
             <VERSION>${project.version}</VERSION>
             <TIMESTAMP>${maven.build.timestamp}</TIMESTAMP>
-            <docbits>${basedir}/src/main/java</docbits>
           </attributes>
         </configuration>
         <executions>
@@ -169,6 +210,7 @@
               <sourceDirectory>${basedir}/src/main/asciidoc/contribution-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/contribution-guide</outputDirectory>
+              <sourceHighlighter>coderay</sourceHighlighter>
             </configuration>
           </execution>
           <execution>
@@ -183,6 +225,10 @@
               <sourceDirectory>${basedir}/src/main/asciidoc/embedded-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
               <outputDirectory>${project.build.directory}/html/embedded-guide</outputDirectory>
+              <sourceHighlighter>coderay</sourceHighlighter>
+              <requires>
+                <require>asciidoctor-diagram</require>
+              </requires>
             </configuration>
           </execution>
         </executions>

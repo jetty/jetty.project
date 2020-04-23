@@ -35,11 +35,13 @@ detected.
     <Arg type="Boolean">true</Arg>
   </Call>
   
-  <Set name="gzipHandler">
-    <New class="org.eclipse.jetty.server.handler.gzip.GzipHandler">
-      <Set name="minGzipSize">2048</Set>      
-    </New>
-  </Set>
+  <Call name="insertHandler">
+    <Arg>
+      <New class="org.eclipse.jetty.server.handler.gzip.GzipHandler">
+        <Set name="minGzipSize">2048</Set>
+      </New>
+    </Arg>
+  </Call>
   
   <!-- Set Caching Classloader that improves performance on resource searching webapps -->
   <!--

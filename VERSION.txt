@@ -355,6 +355,46 @@ jetty-10.0.0-alpha0 - 11 July 2019
  + 3849 ClosedChannelException from jetty-test-webapp javax websocket chat
    example
 
+jetty-9.4.28.v20200408 - 08 April 2020
+ + 847 Setting async timeout on WebSocketClient does not seem to timeout writes
+ + 2896 Wrong Certificate Selected When Using Multiple Virtual Host Names in
+   Conscrypt
+ + 4443 Track backport of ALPN APIs to Java 8
+ + 4529 ErrorHandler showing servlet info, can not be disabled unless
+   overriding most of its functionality
+ + 4542 servlet context root mapping incorrect
+ + 4619 Inconsistent library versions notice.
+ + 4620 Using console-capture with StdErrLog results in empty log file
+ + 4621 jetty-jaspi in jetty-all uber aggregate artifact requires
+   javax.security.auth.message.AuthException which cannot be included
+ + 4628 Add support for conditional module dependencies in jetty-start
+ + 4631 Startup XmlConfiguration WARN on Arg threadpool
+ + 4638 maxFormContentSize fix in Issue #3856 broke JenkinsCI/Winstone
+ + 4644 no injection of env-entry if env-entry-value is whitespace only or
+   missing
+ + 4645 Empty "X-Forwarded-Port" header results in NumberFormatException
+ + 4647 Hazelcast remote.xml configuration file do not configure hazelcast
+   remote addresses
+ + 4650 Do not use ServiceLoader every time a WebSocketSession is created
+ + 4654 Hazelcast configurationLocation is not configurable via mod files
+ + 4662 Jetty 9.4.x calls ServletContextListener.contextDestroyed() too early
+ + 4671 CustomRequestLog throws NullPointerException when no request cookie is
+   present
+ + 4673 Short reads break form-data multipart parsing
+ + 4676 ALPN support for Java 15
+ + 4682 "UnreadableSessionDataException Unreadable session ..." after upgrading
+   to 9.4.27
+ + 4693 Version 9.4.25 breaks binary compatibility by renaming
+   Response.closeOutput()
+ + 4699 ServletContainerInitializer.onStartUp is not called with maven jar
+   packaging using Jetty Maven Plugin
+ + 4711 Reset trailers on recycled response
+ + 4714 Low setMaxConcurrentStreams causes "1/unexpected_data_frame" errors
+ + 4735 Get env variables in PHP scripts served through FastCGIProxyServlet
+ + 4737 PreDestroy not called for non-async and run-as servlets
+ + 4739 @RunAs not honoured on servlets
+ + 4751 Refresh NetworkTraffic* classes
+
 jetty-9.4.27.v20200227 - 27 February 2020
  + 3247 Generate jetty-maven-plugin website
  + 4247 Cookie security attributes are going to mandated by Google Chrome
@@ -398,13 +438,13 @@ jetty-9.4.25.v20191220 - 20 December 2019
  + 4269 ResponseWriter should not throw RuntimeIOExceptions
  + 4323 QOS Filter does not handle IllegalStateException and never releases
    passes
- + 4329 rewrite prevents URL session tracking.
+ + 4329 rewrite prevents URL session tracking
  + 4331 Improve handling of HttpOutput.close() for pending writes
  + 4350 Deprecated MultiPartInputStreamParser still used in jetty-server
    (MultiPartsUtilParser) but OSGi ExportPackage suppressed
  + 4351 Servlet.service called before Servlet.init is finished when servlet is
    lazily initialized
- + 4363 jetty-maven-plugin no longer processes supplied context.xml-file.
+ + 4363 jetty-maven-plugin no longer processes supplied context.xml-file
  + 4366 HTTP client uses SOCKS4 proxy hostname for SSL hostname verification
  + 4374 Jetty client: Response.AsyncContentListener.onContent is not called
  + 4376 Async Content Complete bug results in

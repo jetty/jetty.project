@@ -20,6 +20,10 @@ package org.eclipse.jetty.client.util;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 
+/**
+ * @deprecated use {@link AbstractRequestContent} instead.
+ */
+@Deprecated
 public abstract class AbstractTypedContentProvider implements ContentProvider.Typed
 {
     private final String contentType;

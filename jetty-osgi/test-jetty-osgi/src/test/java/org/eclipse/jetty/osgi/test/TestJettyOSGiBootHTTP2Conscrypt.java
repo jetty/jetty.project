@@ -50,15 +50,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
 
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
 public class TestJettyOSGiBootHTTP2Conscrypt
 {
-    private static final String LOG_LEVEL = "WARN";
-
     @Inject
     private BundleContext bundleContext;
 
@@ -66,6 +63,9 @@ public class TestJettyOSGiBootHTTP2Conscrypt
     public Option[] config()
     {
         ArrayList<Option> options = new ArrayList<>();
+        
+        options.addAll(TestOSGiUtil.configurePaxExamLogging());
+           
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(true, "jetty-http2.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
@@ -84,8 +84,6 @@ public class TestJettyOSGiBootHTTP2Conscrypt
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-http-client-transport").versionAsInProject().start());
 
-        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
-        options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.add(CoreOptions.cleanCaches(true));
         return options.toArray(new Option[0]);
     }
@@ -113,20 +111,21 @@ public class TestJettyOSGiBootHTTP2Conscrypt
 
     public void assertAllBundlesActiveOrResolved()
     {
-        TestOSGiUtil.debugBundles(bundleContext);
-        Bundle conscrypt = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.conscrypt.server");
-        TestOSGiUtil.diagnoseNonActiveOrNonResolvedBundle(conscrypt);
-        assertNotNull(conscrypt);
-        ServiceReference<?>[] services = conscrypt.getRegisteredServices();
-        assertNotNull(services);
-        assertTrue(services.length > 0);
+
     }
 
     @Test
     public void testHTTP2() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
-            assertAllBundlesActiveOrResolved();
+        {
+            TestOSGiUtil.diagnoseBundles(bundleContext);
+            Bundle conscrypt = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.alpn.conscrypt.server");
+            assertNotNull(conscrypt);
+            ServiceReference<?>[] services = conscrypt.getRegisteredServices();
+            assertNotNull(services);
+            assertTrue(services.length > 0);
+        }
 
         HTTP2Client client = new HTTP2Client();
         try

@@ -44,9 +44,6 @@ public class ALPNClientConnection extends NegotiatingClientConnection
 
     public void selected(String protocol)
     {
-        if (protocol == null || !protocols.contains(protocol))
-            close();
-        else
-            completed(protocol);
+        completed(protocol);
     }
 }

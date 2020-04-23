@@ -35,7 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -110,7 +110,7 @@ public class HttpTrailersTest extends AbstractTest<TransportScenario>
         HttpRequest request = (HttpRequest)scenario.client.newRequest(scenario.newURI());
         request = request.trailers(() -> trailers);
         if (content != null)
-            request.method(HttpMethod.POST).content(new BytesContentProvider(content));
+            request.method(HttpMethod.POST).body(new BytesRequestContent(content));
         ContentResponse response = request.timeout(5, TimeUnit.SECONDS).send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }

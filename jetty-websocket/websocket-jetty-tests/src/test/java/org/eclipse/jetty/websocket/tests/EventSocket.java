@@ -42,10 +42,10 @@ public class EventSocket
     public Session session;
     private String behavior;
 
-    public BlockingQueue<String> messageQueue = new BlockingArrayQueue<>();
-    public BlockingQueue<ByteBuffer> binaryMessageQueue = new BlockingArrayQueue<>();
-    public volatile int statusCode = StatusCode.UNDEFINED;
-    public volatile String reason;
+    public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
+    public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
+    public volatile int closeCode = StatusCode.UNDEFINED;
+    public volatile String closeReason;
     public volatile Throwable error = null;
 
     public CountDownLatch openLatch = new CountDownLatch(1);
@@ -67,7 +67,7 @@ public class EventSocket
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onMessage(): {}", toString(), message);
-        messageQueue.offer(message);
+        textMessages.offer(message);
     }
 
     @OnWebSocketMessage
@@ -76,7 +76,7 @@ public class EventSocket
         ByteBuffer message = ByteBuffer.wrap(buf, offset, len);
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onMessage(): {}", toString(), message);
-        binaryMessageQueue.offer(message);
+        binaryMessages.offer(message);
     }
 
     @OnWebSocketClose
@@ -84,8 +84,8 @@ public class EventSocket
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onClose(): {}:{}", toString(), statusCode, reason);
-        this.statusCode = statusCode;
-        this.reason = reason;
+        this.closeCode = statusCode;
+        this.closeReason = reason;
         closeLatch.countDown();
     }
 

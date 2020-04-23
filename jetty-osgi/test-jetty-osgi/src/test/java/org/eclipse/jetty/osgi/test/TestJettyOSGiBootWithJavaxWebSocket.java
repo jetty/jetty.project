@@ -41,7 +41,6 @@ import org.osgi.framework.BundleException;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  * Test using websocket in osgi
@@ -49,8 +48,6 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 @RunWith(PaxExam.class)
 public class TestJettyOSGiBootWithJavaxWebSocket
 {
-    private static final String LOG_LEVEL = "WARN";
-
     @Inject
     BundleContext bundleContext = null;
 
@@ -58,6 +55,9 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>();
+        
+        options.addAll(TestOSGiUtil.configurePaxExamLogging());
+        
         // options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-javax-websocket.xml"));
@@ -69,8 +69,6 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         options.addAll(TestOSGiUtil.coreJettyDependencies());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
-        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
-        options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.addAll(jspDependencies());
         options.addAll(testJettyWebApp());
         options.addAll(extraDependencies());
@@ -93,15 +91,9 @@ public class TestJettyOSGiBootWithJavaxWebSocket
     public static List<Option> extraDependencies()
     {
         List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("bndlib").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").version("2.1.1").start());
+        res.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").versionAsInProject().start());
         return res;
-    }
-
-    public void assertAllBundlesActiveOrResolved()
-    {
-        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
-        TestOSGiUtil.debugBundles(bundleContext);
     }
 
     @Test
@@ -113,7 +105,7 @@ public class TestJettyOSGiBootWithJavaxWebSocket
         startBundle(bundleContext, "org.eclipse.jetty.tests.webapp");
 
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
-            assertAllBundlesActiveOrResolved();
+            TestOSGiUtil.diagnoseBundles(bundleContext);
 
         String port = System.getProperty("boot.javax.websocket.port");
         assertNotNull(port);

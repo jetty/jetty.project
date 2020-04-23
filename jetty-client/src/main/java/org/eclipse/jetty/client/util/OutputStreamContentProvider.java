@@ -72,7 +72,10 @@ import org.eclipse.jetty.util.Callback;
  *     output.write("some content".getBytes());
  * }
  * </pre>
+ *
+ * @deprecated use {@link OutputStreamRequestContent} instead
  */
+@Deprecated
 public class OutputStreamContentProvider implements AsyncContentProvider, Callback, Closeable
 {
     private final DeferredContentProvider deferred = new DeferredContentProvider();

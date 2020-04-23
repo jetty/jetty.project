@@ -37,7 +37,6 @@ import org.osgi.framework.BundleContext;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 /**
  *
@@ -46,8 +45,6 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 public class TestJettyOSGiBootWithWebSocket
 {
-    private static final String LOG_LEVEL = "WARN";
-
     @Inject
     BundleContext bundleContext = null;
 
@@ -55,6 +52,9 @@ public class TestJettyOSGiBootWithWebSocket
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>();
+        
+        options.addAll(TestOSGiUtil.configurePaxExamLogging());
+        
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-websocket.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*", "javax.xml.*", "javax.activation.*"));
@@ -65,8 +65,6 @@ public class TestJettyOSGiBootWithWebSocket
         options.addAll(TestOSGiUtil.coreJettyDependencies());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
-        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
-        options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
         options.addAll(jspDependencies());
         options.addAll(testJettyWebApp());
         return options.toArray(new Option[0]);
@@ -85,17 +83,16 @@ public class TestJettyOSGiBootWithWebSocket
         return res;
     }
 
-    public void assertAllBundlesActiveOrResolved()
+    public void debugBundles()
     {
-        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
-        TestOSGiUtil.debugBundles(bundleContext);
+
     }
 
     @Test
     public void testWebsocket() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
-            assertAllBundlesActiveOrResolved();
+            TestOSGiUtil.diagnoseBundles(bundleContext);
 
         String port = System.getProperty("boot.websocket.port");
         assertNotNull(port);

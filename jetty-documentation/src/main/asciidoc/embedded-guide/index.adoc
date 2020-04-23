@@ -23,8 +23,12 @@
 :revdate: {TIMESTAMP}
 :toc: left
 :toc-title: Embedded Guide
-:toc-image: ../../common/images/jetty-logo.svg
-:toc-image-url: /jetty/index.html
+:toc-style:
+
+:header-style: eclipse-thin
+:breadcrumb-style: eclipse-thin
+:footer-style: default
+
 :breadcrumb: Home:../index.html | Embedded Guide:./index.html
 
 // docinfo lets you pull in shared content and/or influence via render type
@@ -43,12 +47,6 @@ endif::[]
 // options for special blocks, code snippets, screen, etc
 :sub-order: attributes+
 
-// suppress document footer generation
-//:nofooter:
-
-// suppress Eclipse footer
-:no-eclipse-footer:
-
 // uncomment to allow include::https:// style content inclusion
 //:allow-uri-read: true
 
@@ -58,6 +56,8 @@ endif::[]
 // suppress automatic id generation
 :sectids!:
 
+include::.asciidoctorconfig[]
 include::client/client.adoc[]
 include::server/server.adoc[]
-include::io-arch.adoc[]
+include::arch.adoc[]
+include::troubleshooting.adoc[]

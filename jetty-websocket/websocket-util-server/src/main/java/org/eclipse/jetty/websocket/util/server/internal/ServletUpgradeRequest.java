@@ -38,6 +38,7 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
@@ -311,6 +312,14 @@ public class ServletUpgradeRequest
     public URI getRequestURI()
     {
         return requestURI;
+    }
+
+    /**
+     * @return the path within the context, combination of the ServletPath with the PathInfo.
+     */
+    public String getPathInContext()
+    {
+        return URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
     }
 
     /**

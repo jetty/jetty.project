@@ -109,11 +109,16 @@ public class MetaData implements Iterable<HttpField>
         return _contentLength;
     }
 
+    public void setContentLength(long contentLength)
+    {
+        _contentLength = contentLength;
+    }
+
     @Override
     public Iterator<HttpField> iterator()
     {
         HttpFields fields = getFields();
-        return fields == null ? Collections.<HttpField>emptyIterator() : fields.iterator();
+        return fields == null ? Collections.emptyIterator() : fields.iterator();
     }
 
     @Override

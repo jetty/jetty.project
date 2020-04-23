@@ -26,6 +26,8 @@ import java.util.Map;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.api.Connection;
+import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
+import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.HTTP2ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -56,19 +58,25 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
         return factory.newConnection(endPoint, context);
     }
 
-    public static class H2 extends Info
+    /**
+     * <p>Representation of the {@code HTTP/2} application protocol used by {@link HttpClientTransportDynamic}.</p>
+     *
+     * @see HttpClientConnectionFactory#HTTP11
+     */
+    public static class HTTP2 extends Info
     {
-        public H2(HTTP2Client client)
-        {
-            super(List.of("h2"), new ClientConnectionFactoryOverHTTP2(client));
-        }
-    }
+        private static final List<String> protocols = List.of("h2", "h2c");
+        private static final List<String> h2c = List.of("h2c");
 
-    public static class H2C extends Info
-    {
-        public H2C(HTTP2Client client)
+        public HTTP2(HTTP2Client client)
         {
-            super(List.of("h2c"), new ClientConnectionFactoryOverHTTP2(client));
+            super(new ClientConnectionFactoryOverHTTP2(client));
+        }
+
+        @Override
+        public List<String> getProtocols(boolean secure)
+        {
+            return secure ? protocols : h2c;
         }
 
         @Override
@@ -118,6 +126,12 @@ public class ClientConnectionFactoryOverHTTP2 extends ContainerLifeCycle impleme
             {
                 throw new UncheckedIOException(x);
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x%s", getClass().getSimpleName(), hashCode(), protocols);
         }
     }
 }

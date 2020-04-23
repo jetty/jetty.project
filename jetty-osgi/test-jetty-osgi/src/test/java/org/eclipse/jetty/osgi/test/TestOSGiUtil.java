@@ -40,9 +40,14 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.options.WrappedUrlProvisionOption.OverwriteMode;
+import org.ops4j.pax.tinybundles.core.TinyBundle;
+import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.ops4j.pax.url.mvn.internal.AetherBasedResolver;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.http.HttpService;
 
@@ -52,6 +57,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
+import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
 
 /**
  * Helper methods for pax-exam tests
@@ -59,6 +65,24 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 public class TestOSGiUtil
 {
     public static final String BUNDLE_DEBUG = "bundle.debug";
+    
+    /**
+     * Null FragmentActivator for the fake bundle
+     * that exposes src/test/resources/jetty-logging.properties in
+     * the osgi container
+     */
+    public static class FragmentActivator implements BundleActivator
+    {
+        @Override
+        public void start(BundleContext context) throws Exception
+        {
+        }
+
+        @Override
+        public void stop(BundleContext context) throws Exception
+        {
+        }
+    }
 
     public static List<Option> configureJettyHomeAndPort(boolean ssl, String jettySelectorFileName)
     {
@@ -90,6 +114,16 @@ public class TestOSGiUtil
         options.add(systemProperty("jetty.base").value(etc.getParentFile().getAbsolutePath()));
         return options;
     }
+    
+    public static List<Option> configurePaxExamLogging()
+    {
+        //sort out logging from the pax-exam environment
+        List<Option> options = new ArrayList<>();
+        options.add(systemProperty("pax.exam.logging").value("none"));
+        String paxExamLogLevel = System.getProperty("pax.exam.LEVEL", "WARN");
+        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(paxExamLogLevel));
+        return options;
+    }
 
     public static List<Option> provisionCoreJetty()
     {
@@ -108,9 +142,11 @@ public class TestOSGiUtil
 
     public static List<Option> coreJettyDependencies()
     {
-        AetherBasedResolver l;
         List<Option> res = new ArrayList<>();
+        //enables a dump of the status of all deployed bundles
         res.add(systemProperty("bundle.debug").value(Boolean.toString(Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))));
+
+        //add locations to look for jars to deploy
         String mavenRepoPath = System.getProperty("mavenRepoPath");
         if (!StringUtil.isBlank(mavenRepoPath))
         {
@@ -124,6 +160,14 @@ public class TestOSGiUtil
         {
             res.add(systemProperty("org.ops4j.pax.url.mvn.settings").value(System.getProperty("settingsFilePath")));
         }
+        
+        //make src/test/resources/jetty-logging.properties visible to jetty in the osgi container        
+        TinyBundle loggingPropertiesBundle = TinyBundles.bundle();
+        loggingPropertiesBundle.add("jetty-logging.properties", ClassLoader.getSystemResource("jetty-logging.properties"));
+        loggingPropertiesBundle.set(Constants.BUNDLE_SYMBOLICNAME, "jetty-logging-properties");
+        loggingPropertiesBundle.set(Constants.FRAGMENT_HOST, "org.eclipse.jetty.logging");
+        loggingPropertiesBundle.add(FragmentActivator.class);
+        res.add(CoreOptions.streamBundle(loggingPropertiesBundle.build()).noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-servlet-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-commons").versionAsInProject().start());
@@ -131,8 +175,12 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.apache.aries.spifly").artifactId("org.apache.aries.spifly.dynamic.bundle").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.apache.geronimo.specs").artifactId("geronimo-jta_1.1_spec").version("1.1.1").start());
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-log4j12").versionAsInProject().noStart());
+        //the slf4j-api jar does not have support for ServiceLoader in osgi in its manifest, so add it now
+        res.add(wrappedBundle(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject())
+            .instructions("Require-Capability=osgi.serviceloader;filter:=\"(osgi.serviceloader=org.slf4j.spi.SLF4JServiceProvider)\",osgi.extender;filter:=\"(osgi.extender=osgi.serviceloader.processor)\"")
+            .overwriteManifest(OverwriteMode.MERGE)
+            .start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-slf4j-impl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-deploy").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-server").versionAsInProject().start());
@@ -163,14 +211,6 @@ public class TestOSGiUtil
         return res;
     }
 
-    public static List<Option> consoleDependencies()
-    {
-        List<Option> res = new ArrayList<>();
-        res.add(systemProperty("osgi.console").value("6666"));
-        res.add(systemProperty("osgi.console.enable.builtin").value("true"));
-        return res;
-    }
-
     public static List<Option> jspDependencies()
     {
         List<Option> res = new ArrayList<>();
@@ -183,14 +223,6 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.glassfish.web").artifactId("javax.servlet.jsp.jstl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
-        return res;
-    }
-
-    public static List<Option> httpServiceJetty()
-    {
-        List<Option> res = new ArrayList<>();
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-httpservice").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.equinox.http").artifactId("servlet").versionAsInProject().start());
         return res;
     }
 
@@ -210,46 +242,40 @@ public class TestOSGiUtil
         return bundles.get(symbolicName);
     }
 
-    protected static void assertActiveBundle(BundleContext bundleContext, String symbolicName) throws Exception
+    protected static void diagnoseBundles(BundleContext bundleContext)
     {
-        Bundle b = getBundle(bundleContext, symbolicName);
-        assertNotNull(b);
-        assertEquals(b.getSymbolicName() + " must be active.", Bundle.ACTIVE, b.getState());
-    }
-
-    protected static void assertActiveOrResolvedBundle(BundleContext bundleContext, String symbolicName) throws Exception
-    {
-        Bundle b = getBundle(bundleContext, symbolicName);
-        assertNotNull(b);
-        if (b.getHeaders().get("Fragment-Host") == null)
-            diagnoseNonActiveOrNonResolvedBundle(b);
-        assertTrue(b.getSymbolicName() + " must be active or resolved. It was " + b.getState(),
-            b.getState() == Bundle.ACTIVE || b.getState() == Bundle.RESOLVED);
-    }
-
-    protected static void assertAllBundlesActiveOrResolved(BundleContext bundleContext)
-    {
+        System.err.println("ACTIVE: " + Bundle.ACTIVE);
+        System.err.println("RESOLVED: " + Bundle.RESOLVED);
+        System.err.println("INSTALLED: " + Bundle.INSTALLED);
         for (Bundle b : bundleContext.getBundles())
         {
-            if (b.getState() == Bundle.INSTALLED)
+            switch (b.getState())
             {
-                diagnoseNonActiveOrNonResolvedBundle(b);
+                case Bundle.INSTALLED:
+                {
+                    //can't start a fragment bundle
+                    if (b.getHeaders().get("Fragment-Host") == null)
+                    {
+                        diagnoseNonActiveOrNonResolvedBundle(b);
+                    }
+                    dumpBundle(b);
+                    break;
+                }
+                default:
+                {
+                    dumpBundle(b);
+                }
             }
-            assertTrue("Bundle: " + b +
-                    " (state should be " +
-                    "ACTIVE[" +
-                    Bundle.ACTIVE +
-                    "] or RESOLVED[" +
-                    Bundle.RESOLVED +
-                    "]" +
-                    ", but was [" +
-                    b.getState() +
-                    "])", (b.getState() == Bundle.ACTIVE) || (b.getState() == Bundle.RESOLVED));
         }
     }
-
-    protected static boolean diagnoseNonActiveOrNonResolvedBundle(Bundle b)
+    
+    protected static void dumpBundle(Bundle b)
     {
+        System.err.println("    " + b.getBundleId() + " " + b.getSymbolicName() + " " + b.getLocation() + " " + b.getVersion() + " " + b.getState());
+    }
+
+    protected static void diagnoseNonActiveOrNonResolvedBundle(Bundle b)
+    {        
         if (b.getState() != Bundle.ACTIVE && b.getHeaders().get("Fragment-Host") == null)
         {
             try
@@ -257,30 +283,22 @@ public class TestOSGiUtil
                 System.err.println("Trying to start the bundle " + b.getSymbolicName() + " that was supposed to be active or resolved.");
                 b.start();
                 System.err.println(b.getSymbolicName() + " did start");
-                return true;
             }
             catch (Throwable t)
             {
                 System.err.println(b.getSymbolicName() + " failed to start");
                 t.printStackTrace(System.err);
-                return false;
             }
         }
-        System.err.println(b.getSymbolicName() + " was already started");
-        return false;
     }
 
-    protected static void debugBundles(BundleContext bundleContext)
+    protected static void dumpBundles(BundleContext bundleContext)
     {
-        Map<String, Bundle> bundlesIndexedBySymbolicName = new HashMap<String, Bundle>();
-        System.err.println("Active " + Bundle.ACTIVE);
-        System.err.println("RESOLVED " + Bundle.RESOLVED);
-        System.err.println("INSTALLED " + Bundle.INSTALLED);
+        System.err.println("ACTIVE: " + Bundle.ACTIVE);
+        System.err.println("RESOLVED: " + Bundle.RESOLVED);
+        System.err.println("INSTALLED: " + Bundle.INSTALLED);
         for (Bundle b : bundleContext.getBundles())
-        {
-            bundlesIndexedBySymbolicName.put(b.getSymbolicName(), b);
-            System.err.println("    " + b.getBundleId() + " " + b.getSymbolicName() + " " + b.getLocation() + " " + b.getVersion() + " " + b.getState());
-        }
+            dumpBundle(b);
     }
 
     @SuppressWarnings("rawtypes")
@@ -296,67 +314,8 @@ public class TestOSGiUtil
         return sslContextFactory;
     }
 
-    public static List<Option> jettyLogging()
-    {
-        List<Option> options = new ArrayList<>();
-        // SLF4J Specific (possible set of options)
-        /*
-        options.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-api").versionAsInProject().start());
-        options.add(mavenBundle().groupId("org.slf4j").artifactId("jul-to-slf4j").versionAsInProject().start());
-        options.add(mavenBundle().groupId("org.slf4j").artifactId("slf4j-log4j12").versionAsInProject().start());
-        options.add(mavenBundle().groupId("log4j").artifactId("log4j").versionAsInProject().start());
-         */
-        options.add(systemProperty("org.eclipse.jetty.LEVEL").value("INFO"));
-        return options;
-    }
-
     public static void assertContains(String message, String haystack, String needle)
     {
         assertTrue(message + "\nContains: <" + needle + ">\nIn:\n" + haystack, haystack.contains(needle));
-    }
-
-    protected static void testHttpServiceGreetings(BundleContext bundleContext, String protocol, int port) throws Exception
-    {
-        assertActiveBundle(bundleContext, "org.eclipse.jetty.osgi.boot");
-
-        assertActiveBundle(bundleContext, "org.eclipse.jetty.osgi.httpservice");
-        assertActiveBundle(bundleContext, "org.eclipse.equinox.http.servlet");
-
-        // in the OSGi world this would be bad code and we should use a bundle
-        // tracker.
-        // here we purposely want to make sure that the httpService is actually
-        // ready.
-        ServiceReference<?> sr = bundleContext.getServiceReference(HttpService.class.getName());
-        assertNotNull("The httpServiceOSGiBundle is started and should " + "have deployed a service reference for HttpService", sr);
-        HttpService http = (HttpService)bundleContext.getService(sr);
-        http.registerServlet("/greetings", new HttpServlet()
-        {
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-            {
-                resp.getWriter().write("Hello");
-            }
-        }, null, null);
-
-        // now test the servlet
-        ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSelectors(1);
-        clientConnector.setSslContextFactory(newClientSslContextFactory());
-        HttpClient client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
-        try
-        {
-            client.start();
-            ContentResponse response = client.GET(protocol + "://127.0.0.1:" + port + "/greetings");
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-
-            String content = new String(response.getContent());
-            assertEquals("Hello", content);
-        }
-        finally
-        {
-            client.stop();
-        }
     }
 }

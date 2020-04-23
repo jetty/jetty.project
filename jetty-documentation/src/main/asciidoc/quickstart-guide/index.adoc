@@ -23,14 +23,13 @@
 :revdate: {TIMESTAMP}
 :toc: left
 :toc-title: Quickstart Guide
-:toc-image: ../../common/images/jetty-logo.svg
-:toc-image-url: /jetty/index.html
+:toc-style:
+
+:header-style: eclipse-thin
+:breadcrumb-style: eclipse-thin
+:footer-style: default
+
 :breadcrumb: Home:../index.html | Quickstart Guide:./index.html
-
-
-// docinfo lets you pull in shared content and/or influence via render type
-//:docinfodir: {DOCINFODIR}/documentation
-//:docinfo1:
 
 // html specific directives
 ifdef::backend-html5[]
@@ -43,10 +42,6 @@ endif::[]
 
 // options for special blocks, code snippets, screen, etc
 :sub-order: attributes+
-
-// suppress document footer generation
-//:nofooter:
-:no-eclipse-footer:
 
 // uncomment to allow include::https:// style content inclusion
 //:allow-uri-read: true

@@ -1,0 +1,181 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[eg-arch-io]]
+=== Jetty I/O Architecture
+
+Jetty libraries (both client and server) use Java NIO to handle I/O, so that at its core Jetty I/O is completely non-blocking.
+
+[[eg-arch-io-selector-manager]]
+==== Jetty I/O: `SelectorManager`
+
+The core class of Jetty I/O is link:{JDURL}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`].
+
+`SelectorManager` manages internally a configurable number of link:{JDURL}/org/eclipse/jetty/io/ManagedSelector.html[`ManagedSelector`]s.
+Each `ManagedSelector` wraps an instance of `java.nio.channels.Selector` that in turn manages a number of `java.nio.channels.SocketChannel` instances.
+
+NOTE: TODO: add image
+
+`SocketChannel` instances can be created by network clients when connecting to a server and by a network server when accepting connections from network clients.
+In both cases the `SocketChannel` instance is passed to `SelectorManager` (which passes it to `ManagedSelector` and eventually to `java.nio.channels.Selector`) to be registered for use within Jetty.
+
+It is possible for an application to create the `SocketChannel` instances outside Jetty, even perform some initial network traffic also outside Jetty (for example for authentication purposes), and then pass the `SocketChannel` instance to `SelectorManager` for use within Jetty.
+
+This example shows how a client can connect to a server:
+
+[source,java,indent=0]
+----
+include::{doc_code}/embedded/SelectorManagerDocs.java[tags=connect]
+----
+
+This example shows how a server accepts a client connection:
+
+[source,java,indent=0]
+----
+include::{doc_code}/embedded/SelectorManagerDocs.java[tags=accept]
+----
+
+[[eg-arch-io-endpoint-connection]]
+==== Jetty I/O: `EndPoint` and `Connection`
+
+``SocketChannel``s that are passed to `SelectorManager` are wrapped into two related components: an link:{JDURL}/org/eclipse/jetty/io/EndPoint.html[`EndPoint`] and a link:{JDURL}/org/eclipse/jetty/io/Connection.html[`Connection`].
+
+`EndPoint` is the Jetty abstraction for a `SocketChannel`: you can read bytes from an `EndPoint` via `EndPoint.fill(ByteBuffer)`, you can write bytes to an `EndPoint` via `EndPoint.flush(ByteBuffer...)` and `EndPoint.write(Callback, ByteBuffer...)`, you can close an `EndPoint` via `EndPoint.close()`, etc.
+
+`Connection` is the Jetty abstraction that is responsible to read bytes from the `EndPoint` and to deserialize the read bytes into objects.
+For example, a HTTP/1.1 server-side `Connection` implementation is responsible to deserialize HTTP/1.1 request bytes into a HTTP request object.
+Conversely, a HTTP/1.1 client-side `Connection` implementation is responsible to deserialize HTTP/1.1 response bytes into a HTTP response object.
+
+`Connection` is the abstraction that implements the reading side of a specific protocol such as HTTP/1.1, or HTTP/2, or WebSocket: it is able to read incoming communication in that protocol.
+
+The writing side for a specific protocol _may_ be implemented in the `Connection` but may also be implemented in other components, although eventually the bytes to be written will be written through the `EndPoint`.
+
+While there is primarily just one implementation of `EndPoint`,link:{JDURL}/org/eclipse/jetty/io/SocketChannelEndPoint.html[`SocketChannelEndPoint`] (used both on the client-side and on the server-side), there are many implementations of `Connection`, typically two for each protocol (one for the client-side and one for the server-side).
+
+The `EndPoint` and `Connection` pairs can be chained, for example in case of encrypted communication using the TLS protocol.
+There is an `EndPoint` and `Connection` TLS pair where the `EndPoint` reads the encrypted bytes from the network and the `Connection` decrypts them; next in the chain there is an `EndPoint` and `Connection` pair where the `EndPoint` "reads" decrypted bytes (provided by the previous `Connection`) and the `Connection` deserializes them into specific protocol objects (for example HTTP/2 frame objects).
+
+Certain protocols, such as WebSocket, start the communication with the server using one protocol (e.g. HTTP/1.1), but then change the communication to use another protocol (e.g. WebSocket).
+`EndPoint` supports changing the `Connection` object on-the-fly via `EndPoint.upgrade(Connection)`.
+This allows to use the HTTP/1.1 `Connection` during the initial communication and later to replace it with a WebSocket `Connection`.
+
+NOTE: TODO: add a section on `UpgradeFrom` and `UpgradeTo`?
+
+`SelectorManager` is an abstract class because while it knows how to create concrete `EndPoint` instances, it does not know how to create protocol specific `Connection` instances.
+
+Creating `Connection` instances is performed on the server-side by link:{JDURL}/org/eclipse/jetty/server/ConnectionFactory.html[`ConnectionFactory`]s and on the client-side by link:{JDURL}/org/eclipse/jetty/io/ClientConnectionFactory.html[`ClientConnectionFactory`]s
+
+On the server-side, the component that aggregates a `SelectorManager` with a set of ``ConnectionFactory``s is link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`]s, see xref:eg-server-io-arch[].
+
+On the client-side, the components that aggregates a `SelectorManager` with a set of ``ClientConnectionFactory``s are link:{JDURL}/org/eclipse/jetty/client/HttpClientTransport.html[`HttpClientTransport`] subclasses, see xref:eg-client-io-arch[].
+
+[[eg-arch-io-endpoint]]
+==== Jetty I/O: `EndPoint`
+
+The Jetty I/O library use Java NIO to handle I/O, so that I/O is non-blocking.
+
+At the Java NIO level, in order to be notified when a `SocketChannel` has data to be read, the `SelectionKey.OP_READ` flag must be set.
+
+In the Jetty I/O library, you can call `EndPoint.fillInterested(Callback)` to declare interest in the "read" (or "fill") event, and the `Callback` parameter is the object that is notified when such event occurs.
+
+At the Java NIO level, a `SocketChannel` is always writable, unless it becomes TCP congested.
+In order to be notified when a `SocketChannel` uncongests and it is therefore writable again, the `SelectionKey.OP_WRITE` flag must be set.
+
+In the Jetty I/O library, you can call `EndPoint.write(Callback, ByteBuffer...)` to write the ``ByteBuffer``s and the `Callback` parameter is the object that is notified when the whole write is finished (i.e. _all_ ``ByteBuffer``s have been fully written, even if they are delayed by TCP congestion/uncongestion).
+
+The `EndPoint` APIs abstract out the Java NIO details by providing non-blocking APIs based on `Callback` objects for I/O operations.
+The `EndPoint` APIs are typically called by `Connection` implementations, see xref:eg-arch-io-connection[this section].
+
+[[eg-arch-io-connection]]
+==== Jetty I/O: `Connection`
+
+`Connection` is the abstraction that deserializes incoming bytes into objects, for example a HTTP request object or a WebSocket frame object, that can be used by more abstract layers.
+
+`Connection` instances have two lifecycle methods:
+
+* `Connection.onOpen()`, invoked when the `Connection` is associated with the `EndPoint`
+* `Connection.onClose(Throwable)`, invoked when the `Connection` is disassociated from the `EndPoint`, where the `Throwable` parameter indicates whether the disassociation was normal (when the parameter is `null`) or was due to an error (when the parameter is not `null`)
+
+When a `Connection` is first created, it is not registered for any Java NIO event.
+It is therefore typical to implement `onOpen()` to call `EndPoint.fillInterested(Callback)` so that the `Connection` declares interest for read events and it is invoked (via the `Callback`) when the read event happens.
+
+Abstract class `AbstractConnection` partially implements `Connection` and provides simpler APIs.
+The example below shows a typical implementation that extends `AbstractConnection`:
+
+[source,java,indent=0]
+----
+include::{doc_code}/embedded/SelectorManagerDocs.java[tags=connection]
+----
+
+[[eg-arch-io-connection-listener]]
+===== Jetty I/O: `Connection.Listener`
+
+// TODO: Introduce Connection.Listener
+
+[[eg-arch-io-echo]]
+==== Jetty I/O: Network Echo
+
+With the concepts above it is now possible to write a simple, fully non-blocking, `Connection` implementation that simply echoes the bytes that it reads back to the other peer.
+
+A naive, but wrong, implementation may be the following:
+
+[source,java,indent=0]
+----
+include::{doc_code}/embedded/SelectorManagerDocs.java[tags=echo-wrong]
+----
+
+WARNING: The implementation above is wrong and leads to `StackOverflowError`.
+
+The problem with this implementation is that if the writes always complete synchronously (i.e. without being delayed by TCP congestion), you end up with this sequence of calls:
+
+----
+Connection.onFillable()
+  EndPoint.write()
+    Callback.succeeded()
+      Connection.onFillable()
+        EndPoint.write()
+          Callback.succeeded()
+          ...
+----
+
+which leads to `StackOverflowError`.
+
+This is a typical side effect of asynchronous programming using non-blocking APIs, and happens in the Jetty I/O library as well.
+
+NOTE: The callback is invoked synchronously for efficiency reasons.
+Submitting the invocation of the callback to an `Executor` to be invoked in a different thread would cause a context switch and make simple writes extremely inefficient.
+
+A correct implementation is the following:
+
+[source,java,indent=0]
+----
+include::{doc_code}/embedded/SelectorManagerDocs.java[tags=echo-correct]
+----
+
+The correct implementation performs consecutive reads in a loop (rather than recursively), but _only_ if the correspondent write is completed successfully.
+
+In order to detect whether the write is completed, a concurrent state machine is used.
+This is necessary because the notification of the completion of the write may happen in a different thread, while the original writing thread may still be changing the state.
+
+The original writing thread starts moves the state from `IDLE` to `WRITING`, then issues the actual `write()` call.
+The original writing thread then assumes that the `write()` did not complete and tries to move to the `PENDING` state just after the `write()`.
+If it fails to move from the `WRITING` state to the `PENDING` state, it means that the write was completed.
+Otherwise, the write is now `PENDING` and waiting for the callback to be notified of the completion at a later time.
+When the callback is notified of the `write()` completion, it checks whether the `write()` was `PENDING`, and if it was it resumes reading.
+
+NOTE: TODO: Introduce IteratingCallback?

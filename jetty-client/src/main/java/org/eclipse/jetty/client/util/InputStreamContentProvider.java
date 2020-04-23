@@ -50,7 +50,10 @@ import org.slf4j.LoggerFactory;
  * The {@link InputStream} passed to the constructor is by default closed when is it fully
  * consumed (or when an exception is thrown while reading it), unless otherwise specified
  * to the {@link #InputStreamContentProvider(java.io.InputStream, int, boolean) constructor}.
+ *
+ * @deprecated use {@link InputStreamRequestContent} instead
  */
+@Deprecated
 public class InputStreamContentProvider implements ContentProvider, Callback, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamContentProvider.class);
