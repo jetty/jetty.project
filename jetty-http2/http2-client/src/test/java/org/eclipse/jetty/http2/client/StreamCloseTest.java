@@ -196,7 +196,7 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), 0, newRequest("GET", new HttpFields()));
+                PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), newRequest("GET", new HttpFields()));
                 stream.push(pushFrame, new Promise.Adapter<Stream>()
                 {
                     @Override
