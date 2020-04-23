@@ -42,6 +42,12 @@ public class JavaxServerUpgradeRequest implements UpgradeRequest
     @Override
     public URI getRequestURI()
     {
-        return this.servletRequest.getRequestURI();
+        return servletRequest.getRequestURI();
+    }
+
+    @Override
+    public String getPathInContext()
+    {
+        return servletRequest.getPathInContext();
     }
 }
