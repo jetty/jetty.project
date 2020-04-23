@@ -488,7 +488,7 @@ public class ResourceService
             if (request instanceof Request)
             {
                 // Find multiple fields by iteration as an optimization 
-                for (HttpField field :  ((Request)request).getHttpFields())
+                for (HttpField field : ((Request)request).getHttpFields())
                 {
                     if (field.getHeader() != null)
                     {

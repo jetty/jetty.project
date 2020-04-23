@@ -1123,7 +1123,7 @@ public class Request implements HttpServletRequest
 
     public String getQueryEncoding()
     {
-        return _queryEncoding == null ? null : _queryEncoding.toString();
+        return _queryEncoding == null ? null : _queryEncoding.name();
     }
 
     Charset getQueryCharset()

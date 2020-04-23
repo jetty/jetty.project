@@ -50,7 +50,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
         _fooContainerRule.setRules(new Rule[]{_fooRule});
 
         start(false);
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar").asImmutable());
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar"));
 
         _handler.setServer(_server);
         _handler.start();
@@ -59,7 +59,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testArbitraryHost() throws Exception
     {
-        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority("cheese.com", 0).asImmutable());
+        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority("cheese.com", 0));
         _handler.setRules(new Rule[]{_rule, _fooContainerRule});
         handleRequest();
         assertEquals("/rule/bar", _request.getRequestURI(), "{_rule, _fooContainerRule, Host: cheese.com}: applied _rule");
@@ -68,7 +68,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testVirtualHost() throws Exception
     {
-        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority("foo.com", 0).asImmutable());
+        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority("foo.com", 0));
         _handler.setRules(new Rule[]{_fooContainerRule});
         handleRequest();
         assertEquals("/cheese/fooRule", _request.getRequestURI(), "{_fooContainerRule, Host: foo.com}: applied _fooRule");
@@ -77,8 +77,8 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testCascadingRules() throws Exception
     {
-        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority("foo.com", 0).asImmutable());
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar").asImmutable());
+        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority("foo.com", 0));
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar"));
 
         _rule.setTerminating(false);
         _fooRule.setTerminating(false);
@@ -88,17 +88,17 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
         handleRequest();
         assertEquals("/rule/bar", _request.getRequestURI(), "{_rule, _fooContainerRule}: applied _rule, didn't match _fooRule");
 
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar").asImmutable());
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar"));
         _handler.setRules(new Rule[]{_fooContainerRule, _rule});
         handleRequest();
         assertEquals("/rule/fooRule", _request.getRequestURI(), "{_fooContainerRule, _rule}: applied _fooRule, _rule");
 
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar").asImmutable());
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar"));
         _fooRule.setTerminating(true);
         handleRequest();
         assertEquals("/rule/fooRule", _request.getRequestURI(), "{_fooContainerRule, _rule}: (_fooRule is terminating); applied _fooRule, _rule");
 
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar").asImmutable());
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar"));
         _fooRule.setTerminating(false);
         _fooContainerRule.setTerminating(true);
         handleRequest();
@@ -108,7 +108,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testCaseInsensitiveHostname() throws Exception
     {
-        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority("Foo.com", 0).asImmutable());
+        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority("Foo.com", 0));
         _fooContainerRule.setVirtualHosts(new String[]{"foo.com"});
 
         _handler.setRules(new Rule[]{_fooContainerRule});
@@ -119,21 +119,21 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testEmptyVirtualHost() throws Exception
     {
-        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority("cheese.com", 0).asImmutable());
+        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority("cheese.com", 0));
 
         _handler.setRules(new Rule[]{_fooContainerRule});
         _fooContainerRule.setVirtualHosts(null);
         handleRequest();
         assertEquals("/cheese/fooRule", _request.getRequestURI(), "{_fooContainerRule: virtual hosts array is null, Host: cheese.com}: apply _fooRule");
 
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar").asImmutable());
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar").asImmutable());
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar"));
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar"));
         _fooContainerRule.setVirtualHosts(new String[]{});
         handleRequest();
         assertEquals("/cheese/fooRule", _request.getRequestURI(), "{_fooContainerRule: virtual hosts array is empty, Host: cheese.com}: apply _fooRule");
 
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar").asImmutable());
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar").asImmutable());
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar"));
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar"));
         _fooContainerRule.setVirtualHosts(new String[]{null});
         handleRequest();
         assertEquals("/cheese/fooRule", _request.getRequestURI(), "{_fooContainerRule: virtual host is null, Host: cheese.com}: apply _fooRule");
@@ -142,14 +142,14 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testMultipleVirtualHosts() throws Exception
     {
-        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority("foo.com", 0).asImmutable());
+        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority("foo.com", 0));
         _handler.setRules(new Rule[]{_fooContainerRule});
 
         _fooContainerRule.setVirtualHosts(new String[]{"cheese.com"});
         handleRequest();
         assertEquals("/cheese/bar", _request.getRequestURI(), "{_fooContainerRule: vhosts[cheese.com], Host: foo.com}: no effect");
 
-        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar").asImmutable());
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar"));
         _fooContainerRule.addVirtualHost("foo.com");
         handleRequest();
         assertEquals("/cheese/fooRule", _request.getRequestURI(), "{_fooContainerRule: vhosts[cheese.com, foo.com], Host: foo.com}: apply _fooRule");
@@ -186,8 +186,8 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
 
         for (String host : requestHosts)
         {
-            _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority(host, 0).asImmutable());
-            _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar").asImmutable());
+            _request.setHttpURI(HttpURI.build(_request.getRequestURI()).authority(host, 0));
+            _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/cheese/bar"));
             handleRequest();
             if (succeed)
                 assertEquals("/cheese/fooRule", _request.getRequestURI(), "{_fooContainerRule, Host: " + host + "}: should apply _fooRule");

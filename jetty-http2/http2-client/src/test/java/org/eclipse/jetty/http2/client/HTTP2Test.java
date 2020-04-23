@@ -266,7 +266,7 @@ public class HTTP2Test extends AbstractTest
         Session session = newClient(new Session.Listener.Adapter());
 
         Random random = new Random();
-        HttpFields.Mutable fields = HttpFields.build()
+        HttpFields fields = HttpFields.build()
             .putLongField(downloadBytes, random.nextInt(128 * 1024))
             .put("User-Agent", "HTTP2Client/" + Jetty.VERSION);
         MetaData.Request metaData = newRequest("GET", fields);
@@ -806,7 +806,7 @@ public class HTTP2Test extends AbstractTest
 
         // A bad header in the request should fail on the client.
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFields.Mutable requestFields = HttpFields.build()
+        HttpFields requestFields = HttpFields.build()
             .put(":custom", "special");
         MetaData.Request metaData = newRequest("GET", requestFields);
         HeadersFrame request = new HeadersFrame(metaData, null, true);

@@ -72,7 +72,7 @@ public class DataConstraintsTest
             @Override
             public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
             {
-                request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS).asImmutable());
+                request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS));
                 request.setSecure(true);
             }
         });

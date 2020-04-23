@@ -92,7 +92,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     public void applyURI(Request request, String oldURI, String newURI) throws IOException
     {
         HttpURI baseURI = request.getHttpURI();
-        String query = URIUtil.addQueries(baseURI.getQuery(),_query);
+        String query = URIUtil.addQueries(baseURI.getQuery(), _query);
         request.setHttpURI(HttpURI.build(baseURI, newURI, baseURI.getParam(), query));
     }
 

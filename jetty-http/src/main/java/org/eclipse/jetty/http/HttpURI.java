@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.UrlEncoded;
 /**
  * Http URI.
  *
- * Both {@link HttpFields.Mutable} and {@link HttpFields.Immutable} implementations are available
+ * Both {@link Mutable} and {@link Immutable} implementations are available
  * via the static methods such as {@link #build()} and {@link #from(String)}.
  *
  * A URI such as
@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.UrlEncoded;
  * </ul>
  * <p>Any parameters will be returned from {@link #getPath()}, but are excluded from the
  * return value of {@link #getDecodedPath()}.   If there are multiple parameters, the
- * {@link #getParam()} method returns only the last one. Fragments are ignored.
+ * {@link #getParam()} method returns only the last one.
  */
 public interface HttpURI
 {
@@ -107,6 +107,8 @@ public interface HttpURI
 
     Immutable asImmutable();
 
+    String asString();
+
     String getAuthority();
 
     String getDecodedPath();
@@ -161,30 +163,30 @@ public interface HttpURI
 
         private Immutable(Mutable builder)
         {
-            _uri = builder._uri;
             _scheme = builder._scheme;
             _user = builder._user;
             _host = builder._host;
             _port = builder._port;
             _path = builder._path;
-            _decodedPath = builder._decodedPath;
             _param = builder._param;
             _query = builder._query;
             _fragment = builder._fragment;
+            _uri = builder._uri;
+            _decodedPath = builder._decodedPath;
         }
 
         private Immutable(String uri)
         {
-            _uri = uri;
             _scheme = null;
             _user = null;
             _host = null;
             _port = -1;
             _path = uri;
-            _decodedPath = null;
             _param = null;
             _query = null;
             _fragment = null;
+            _uri = uri;
+            _decodedPath = null;
         }
 
         @Override
@@ -194,13 +196,51 @@ public interface HttpURI
         }
 
         @Override
+        public String asString()
+        {
+            if (_uri == null)
+            {
+                StringBuilder out = new StringBuilder();
+
+                if (_scheme != null)
+                    out.append(_scheme).append(':');
+
+                if (_host != null)
+                {
+                    out.append("//");
+                    if (_user != null)
+                        out.append(_user).append('@');
+                    out.append(_host);
+                }
+
+                if (_port > 0)
+                    out.append(':').append(_port);
+
+                if (_path != null)
+                    out.append(_path);
+
+                if (_query != null)
+                    out.append('?').append(_query);
+
+                if (_fragment != null)
+                    out.append('#').append(_fragment);
+
+                if (out.length() > 0)
+                    _uri = out.toString();
+                else
+                    _uri = "";
+            }
+            return _uri;
+        }
+
+        @Override
         public boolean equals(Object o)
         {
             if (o == this)
                 return true;
             if (!(o instanceof HttpURI))
                 return false;
-            return toString().equals(o.toString());
+            return asString().equals(((HttpURI)o).asString());
         }
 
         @Override
@@ -285,6 +325,12 @@ public interface HttpURI
         }
 
         @Override
+        public int hashCode()
+        {
+            return asString().hashCode();
+        }
+
+        @Override
         public boolean isAbsolute()
         {
             return !StringUtil.isEmpty(_scheme);
@@ -293,39 +339,7 @@ public interface HttpURI
         @Override
         public String toString()
         {
-            if (_uri == null)
-            {
-                StringBuilder out = new StringBuilder();
-
-                if (_scheme != null)
-                    out.append(_scheme).append(':');
-
-                if (_host != null)
-                {
-                    out.append("//");
-                    if (_user != null)
-                        out.append(_user).append('@');
-                    out.append(_host);
-                }
-
-                if (_port > 0)
-                    out.append(':').append(_port);
-
-                if (_path != null)
-                    out.append(_path);
-
-                if (_query != null)
-                    out.append('?').append(_query);
-
-                if (_fragment != null)
-                    out.append('#').append(_fragment);
-
-                if (out.length() > 0)
-                    _uri = out.toString();
-                else
-                    _uri = "";
-            }
-            return _uri;
+            return asString();
         }
 
         @Override
@@ -359,8 +373,6 @@ public interface HttpURI
             ASTERISK
         }
 
-        private String _uri;
-        private String _decodedPath;
         private String _scheme;
         private String _user;
         private String _host;
@@ -369,6 +381,8 @@ public interface HttpURI
         private String _param;
         private String _query;
         private String _fragment;
+        private String _uri;
+        private String _decodedPath;
 
         private Mutable()
         {
@@ -452,6 +466,12 @@ public interface HttpURI
             return new Immutable(this);
         }
 
+        @Override
+        public String asString()
+        {
+            return asImmutable().toString();
+        }
+
         /**
          * @param host the host
          * @param port the port
@@ -482,16 +502,17 @@ public interface HttpURI
 
         public Mutable clear()
         {
-            _uri = null;
             _scheme = null;
+            _user = null;
             _host = null;
             _port = -1;
             _path = null;
             _param = null;
             _query = null;
             _fragment = null;
+            _uri = null;
             _decodedPath = null;
-            _user = null;
+
             return this;
         }
 
@@ -501,6 +522,16 @@ public interface HttpURI
             _path = URIUtil.encodePath(path);
             _decodedPath = path;
             return this;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (o == this)
+                return true;
+            if (!(o instanceof HttpURI))
+                return false;
+            return asString().equals(((HttpURI)o).asString());
         }
 
         public Mutable fragment(String fragment)
@@ -584,6 +615,12 @@ public interface HttpURI
         public boolean hasAuthority()
         {
             return _host != null;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return asString().hashCode();
         }
 
         public Mutable host(String host)
@@ -672,7 +709,7 @@ public interface HttpURI
         @Override
         public String toString()
         {
-            return asImmutable().toString();
+            return asString();
         }
 
         public URI toURI()
@@ -689,15 +726,15 @@ public interface HttpURI
 
         public Mutable uri(HttpURI uri)
         {
-            _uri = null;
             _scheme = uri.getScheme();
             _user = uri.getUser();
             _host = uri.getHost();
             _port = uri.getPort();
             _path = uri.getPath();
-            _decodedPath = uri.getDecodedPath();
             _param = uri.getParam();
             _query = uri.getQuery();
+            _uri = null;
+            _decodedPath = uri.getDecodedPath();
             return this;
         }
 
@@ -1096,7 +1133,7 @@ public interface HttpURI
                     break;
 
                 case FRAGMENT:
-                    _fragment =  uri.substring(mark, end);
+                    _fragment = uri.substring(mark, end);
                     break;
 
                 default:

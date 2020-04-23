@@ -194,7 +194,6 @@ public class MetaData implements Iterable<HttpField>
 
         public ConnectRequest(String scheme, HostPortHttpField authority, String path, HttpFields fields, String protocol)
         {
-            // TODO should connect requests have paths?
             super(HttpMethod.CONNECT.asString(),
                 HttpURI.build().scheme(scheme).host(authority == null ? null : authority.getHost()).port(authority == null ? -1 : authority.getPort()).pathQuery(path),
                 HttpVersion.HTTP_2, fields, Long.MIN_VALUE, null);
