@@ -60,7 +60,7 @@ public class HttpSenderOverFCGI extends HttpSender
     {
         Request request = exchange.getRequest();
         // Copy the request headers to be able to convert them properly
-        HttpFields.Mutable headers = HttpFields.build(request.getHeaders());
+        HttpFields headers = request.getHeaders();
         HttpFields.Mutable fcgiHeaders = HttpFields.build();
 
         // FastCGI headers based on the URI
@@ -72,13 +72,15 @@ public class HttpSenderOverFCGI extends HttpSender
 
         // FastCGI headers based on HTTP headers
         HttpField httpField = headers.getField(HttpHeader.AUTHORIZATION);
+        EnumSet<HttpHeader> toRemove = EnumSet.of(HttpHeader.AUTHORIZATION);
         if (httpField != null)
             fcgiHeaders.put(FCGI.Headers.AUTH_TYPE, httpField.getValue());
         httpField = headers.getField(HttpHeader.CONTENT_LENGTH);
+        toRemove.add(HttpHeader.CONTENT_LENGTH);
         fcgiHeaders.put(FCGI.Headers.CONTENT_LENGTH, httpField == null ? "" : httpField.getValue());
         httpField = headers.getField(HttpHeader.CONTENT_TYPE);
+        toRemove.add(HttpHeader.CONTENT_TYPE);
         fcgiHeaders.put(FCGI.Headers.CONTENT_TYPE, httpField == null ? "" : httpField.getValue());
-        headers.remove(EnumSet.of(HttpHeader.AUTHORIZATION, HttpHeader.CONTENT_LENGTH, HttpHeader.CONTENT_TYPE));
 
         // FastCGI headers that are not based on HTTP headers nor URI
         fcgiHeaders.put(FCGI.Headers.REQUEST_METHOD, request.getMethod());
@@ -89,6 +91,8 @@ public class HttpSenderOverFCGI extends HttpSender
         // Translate remaining HTTP header into the HTTP_* format
         for (HttpField field : headers)
         {
+            if (toRemove.contains(field.getHeader()))
+                continue;
             String name = field.getName();
             String fcgiName = "HTTP_" + StringUtil.replace(name, '-', '_').toUpperCase(Locale.ENGLISH);
             fcgiHeaders.add(fcgiName, field.getValue());
