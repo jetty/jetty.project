@@ -91,7 +91,7 @@ public class HttpResponse implements Response
         return headers.asImmutable();
     }
 
-    public HttpFields.Mutable getHeadersBuilder()
+    public HttpFields.Mutable getHeaderFieldsMutable()
     {
         return headers;
     }

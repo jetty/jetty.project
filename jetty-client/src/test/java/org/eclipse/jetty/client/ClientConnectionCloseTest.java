@@ -249,6 +249,10 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
                 DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
                 HttpConnectionOverHTTP connection = (HttpConnectionOverHTTP)connectionPool.getActiveConnections().iterator().next();
                 assertFalse(connection.getEndPoint().isOutputShutdown());
+            })
+            .onResponseHeaders(r ->
+            {
+                ((HttpResponse)r).getHeaderFieldsMutable().remove(HttpHeader.CONNECTION);
             });
         ContentResponse response = request.send();
 
