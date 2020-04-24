@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.javax.tests;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 
@@ -28,6 +29,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
+import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.PathResource;
@@ -37,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 /**
@@ -70,8 +73,9 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
     {
         private final WebAppContext context;
         private final Path contextDir;
-        private Path classesDir;
         private final Path webInf;
+        private final Path classesDir;
+        private final Path libDir;
 
         private WebApp(String contextName)
         {
@@ -79,11 +83,13 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             contextDir = testDir.resolve(contextName);
             FS.ensureEmpty(contextDir);
 
-            // Ensure WEB-INF.
+            // Ensure WEB-INF directories.
             webInf = contextDir.resolve("WEB-INF");
             FS.ensureDirExists(webInf);
             classesDir = webInf.resolve("classes");
             FS.ensureDirExists(classesDir);
+            libDir = webInf.resolve("lib");
+            FS.ensureDirExists(libDir);
 
             // Configure the WebAppContext.
             context = new WebAppContext();
@@ -130,6 +136,26 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             FS.ensureDirExists(destFile.getParent());
             File srcFile = new File(classUrl.toURI());
             IO.copy(srcFile, destFile.toFile());
+        }
+
+        public void copyLib(Class<?> clazz, String jarFileName) throws URISyntaxException, IOException
+        {
+            Path jarFile = libDir.resolve(jarFileName);
+
+            URL codeSourceURL = clazz.getProtectionDomain().getCodeSource().getLocation();
+            assertThat("Class CodeSource URL is file scheme", codeSourceURL.getProtocol(), is("file"));
+
+            File sourceCodeSourceFile = new File(codeSourceURL.toURI());
+            if (sourceCodeSourceFile.isDirectory())
+            {
+                LOG.info("Creating " + jarFile + " from " + sourceCodeSourceFile);
+                JAR.create(sourceCodeSourceFile, jarFile.toFile());
+            }
+            else
+            {
+                LOG.info("Copying " + sourceCodeSourceFile + " to " + jarFile);
+                IO.copy(sourceCodeSourceFile, jarFile.toFile());
+            }
         }
 
         public void deploy()
