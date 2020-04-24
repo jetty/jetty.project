@@ -141,7 +141,6 @@ public class MetaDataBuilder
                         else if (value != null)
                             _authority = new AuthorityHttpField(value);
                     }
-
                     _request = true;
                     break;
 

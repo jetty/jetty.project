@@ -1682,6 +1682,7 @@ public class Request implements HttpServletRequest
             {
                 if (uri.getPath() == null)
                     builder.path("/");
+                setSecure(HttpScheme.HTTPS.is(uri.getScheme()));
             }
             else
             {

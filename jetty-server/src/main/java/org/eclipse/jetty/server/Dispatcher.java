@@ -61,7 +61,7 @@ public class Dispatcher implements RequestDispatcher
     public Dispatcher(ContextHandler contextHandler, HttpURI uri, String pathInContext)
     {
         _contextHandler = contextHandler;
-        _uri = uri;
+        _uri = uri.asImmutable();
         _pathInContext = pathInContext;
         _named = null;
     }
