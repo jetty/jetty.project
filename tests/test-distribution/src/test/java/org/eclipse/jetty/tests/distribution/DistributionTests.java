@@ -40,7 +40,6 @@ import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
@@ -441,7 +440,7 @@ public class DistributionTests extends AbstractDistributionTest
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
                 // we do not test that anymore because it doesn't work for java14
-                //assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
+                assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + port + "/test1/index.jsp");
