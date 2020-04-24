@@ -22,6 +22,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import javax.websocket.server.PathParam;
 
+import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.util.InvokerUtils;
 
 /**
@@ -40,11 +41,30 @@ public class PathParamIdentifier implements InvokerUtils.ParamIdentifier
             {
                 if (anno.annotationType().equals(PathParam.class))
                 {
+                    validateType(paramType);
                     PathParam pathParam = (PathParam)anno;
                     return new InvokerUtils.Arg(paramType, pathParam.value());
                 }
             }
         }
         return new InvokerUtils.Arg(paramType);
+    }
+
+    /**
+     * The JSR356 rules for @PathParam only support
+     * String, Primitive Types (and their Boxed version)
+     */
+    public static void validateType(Class<?> type)
+    {
+        if (!String.class.isAssignableFrom(type) &&
+            !Integer.TYPE.isAssignableFrom(type) &&
+            !Long.TYPE.isAssignableFrom(type) &&
+            !Short.TYPE.isAssignableFrom(type) &&
+            !Float.TYPE.isAssignableFrom(type) &&
+            !Double.TYPE.isAssignableFrom(type) &&
+            !Boolean.TYPE.isAssignableFrom(type) &&
+            !Character.TYPE.isAssignableFrom(type) &&
+            !Byte.TYPE.isAssignableFrom(type))
+            throw new InvalidSignatureException("Unsupported PathParam Type: " + type);
     }
 }

@@ -18,21 +18,25 @@
 
 package org.eclipse.jetty.websocket.javax.tests;
 
+import java.io.IOException;
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 import javax.websocket.ContainerProvider;
-import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.annotations.ServletContainerInitializersStarter;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.tests.webapp.websocket.bad.BadOnCloseServerEndpoint;
 import org.eclipse.jetty.tests.webapp.websocket.bad.BadOnOpenServerEndpoint;
 import org.eclipse.jetty.tests.webapp.websocket.bad.StringSequence;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DoubleDeployTest
 {
@@ -60,7 +64,13 @@ public class DoubleDeployTest
         app2.copyClass(StringSequence.class);
         app2.deploy();
 
-        server.start();
+        app1.getWebAppContext().setThrowUnavailableOnStartupException(false);
+        app2.getWebAppContext().setThrowUnavailableOnStartupException(false);
+
+        try (StacklessLogging ignore = new StacklessLogging(ServletContainerInitializersStarter.class, WebAppContext.class))
+        {
+            server.start();
+        }
     }
 
     @AfterEach
@@ -70,22 +80,19 @@ public class DoubleDeployTest
     }
 
     @Test
-    public void test() throws Exception
+    public void test()
     {
-        // Initially just test deployment. (We should fail at deployment anyway).
-        if (true) return;
-
         WebSocketContainer client = ContainerProvider.getWebSocketContainer();
         EventSocket clientSocket = new EventSocket();
-        Session session = client.connectToServer(clientSocket, server.getWsUri().resolve(app1.getContextPath() + "/badonclose/a"));
-        session.getBasicRemote().sendText("test");
-        session.close();
-        assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
 
-        clientSocket = new EventSocket();
-        session = client.connectToServer(clientSocket, server.getWsUri().resolve(app2.getContextPath() + "/badonopen/b"));
-        session.getBasicRemote().sendText("test");
-        session.close();
-        assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        Throwable error = assertThrows(Throwable.class, () ->
+            client.connectToServer(clientSocket, server.getWsUri().resolve(app1.getContextPath() + "/badonclose/a")));
+        assertThat(error, Matchers.instanceOf(IOException.class));
+        assertThat(error.getMessage(), Matchers.containsString("503 Service Unavailable"));
+
+        error = assertThrows(Throwable.class, () ->
+            client.connectToServer(clientSocket, server.getWsUri().resolve(app2.getContextPath() + "/badonclose/a")));
+        assertThat(error, Matchers.instanceOf(IOException.class));
+        assertThat(error.getMessage(), Matchers.containsString("503 Service Unavailable"));
     }
 }
