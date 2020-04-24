@@ -134,7 +134,6 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
             {
                 if (error != null)
                 {
-
                     futureSession.completeExceptionally(convertCause(error));
                     return;
                 }
