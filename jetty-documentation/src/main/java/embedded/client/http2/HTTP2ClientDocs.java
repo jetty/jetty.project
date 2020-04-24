@@ -267,7 +267,7 @@ public class HTTP2ClientDocs
         Session session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
-            .add(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
+            .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
@@ -297,7 +297,7 @@ public class HTTP2ClientDocs
         Session session = sessionCF.get();
 
         HttpFields requestHeaders = HttpFields.build()
-            .add(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
+            .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
