@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.javax.tests;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 
@@ -29,7 +28,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
-import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.PathResource;
@@ -39,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 /**
@@ -50,112 +47,98 @@ import static org.hamcrest.Matchers.notNullValue;
 public class WSServer extends LocalServer implements LocalFuzzer.Provider
 {
     private static final Logger LOG = LoggerFactory.getLogger(WSServer.class);
-    private final Path contextDir;
-    private final String contextPath;
-    private ContextHandlerCollection contexts;
-    private Path webinf;
-    private Path classesDir;
+    private final Path testDir;
+    private ContextHandlerCollection contexts = new ContextHandlerCollection();
 
-    public WSServer(File testdir, String contextName)
+    public WSServer(Path testDir)
     {
-        this(testdir.toPath(), contextName);
+        this.testDir = testDir;
     }
 
-    public WSServer(Path testdir, String contextName)
+    public WebApp createWebApp(String contextName)
     {
-        this.contextDir = testdir.resolve(contextName);
-        this.contextPath = "/" + contextName;
-        FS.ensureEmpty(contextDir);
-    }
-
-    public void copyClass(Class<?> clazz) throws Exception
-    {
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        String endpointPath = TypeUtil.toClassReference(clazz);
-        URL classUrl = cl.getResource(endpointPath);
-        assertThat("Class URL for: " + clazz, classUrl, notNullValue());
-        Path destFile = classesDir.resolve(endpointPath);
-        FS.ensureDirExists(destFile.getParent());
-        File srcFile = new File(classUrl.toURI());
-        IO.copy(srcFile, destFile.toFile());
-    }
-
-    public void copyEndpoint(Class<?> endpointClass) throws Exception
-    {
-        copyClass(endpointClass);
-    }
-
-    public void copyLib(Class<?> clazz, String jarFileName) throws URISyntaxException, IOException
-    {
-        webinf = contextDir.resolve("WEB-INF");
-        FS.ensureDirExists(webinf);
-        Path libDir = webinf.resolve("lib");
-        FS.ensureDirExists(libDir);
-        Path jarFile = libDir.resolve(jarFileName);
-
-        URL codeSourceURL = clazz.getProtectionDomain().getCodeSource().getLocation();
-        assertThat("Class CodeSource URL is file scheme", codeSourceURL.getProtocol(), is("file"));
-
-        File sourceCodeSourceFile = new File(codeSourceURL.toURI());
-        if (sourceCodeSourceFile.isDirectory())
-        {
-            LOG.info("Creating " + jarFile + " from " + sourceCodeSourceFile);
-            JAR.create(sourceCodeSourceFile, jarFile.toFile());
-        }
-        else
-        {
-            LOG.info("Copying " + sourceCodeSourceFile + " to " + jarFile);
-            IO.copy(sourceCodeSourceFile, jarFile.toFile());
-        }
-    }
-
-    public void copyWebInf(String testResourceName) throws IOException
-    {
-        webinf = contextDir.resolve("WEB-INF");
-        FS.ensureDirExists(webinf);
-        classesDir = webinf.resolve("classes");
-        FS.ensureDirExists(classesDir);
-        Path webxml = webinf.resolve("web.xml");
-        File testWebXml = MavenTestingUtils.getTestResourceFile(testResourceName);
-        IO.copy(testWebXml, webxml.toFile());
-    }
-
-    public WebAppContext createWebAppContext() throws IOException
-    {
-        WebAppContext context = new WebAppContext();
-        context.setContextPath(this.contextPath);
-        context.setBaseResource(new PathResource(this.contextDir));
-        context.setAttribute("org.eclipse.jetty.websocket.javax", Boolean.TRUE);
-        context.addConfiguration(new JavaxWebSocketConfiguration());
-        return context;
-    }
-
-    public void createWebInf() throws IOException
-    {
-        copyWebInf("empty-web.xml");
-    }
-
-    public void deployWebapp(WebAppContext webapp) throws Exception
-    {
-        contexts.addHandler(webapp);
-        contexts.manage(webapp);
-        webapp.setThrowUnavailableOnStartupException(true);
-        webapp.start();
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("{}", webapp.dump());
-        }
-    }
-
-    public Path getWebAppDir()
-    {
-        return this.contextDir;
+        return new WebApp(contextName);
     }
 
     @Override
-    protected Handler createRootHandler(Server server) throws Exception
+    protected Handler createRootHandler(Server server)
     {
-        contexts = new ContextHandlerCollection();
         return contexts;
+    }
+
+    public class WebApp
+    {
+        private final WebAppContext context;
+        private final Path contextDir;
+        private Path classesDir;
+        private final Path webInf;
+
+        private WebApp(String contextName)
+        {
+            // Ensure context directory.
+            contextDir = testDir.resolve(contextName);
+            FS.ensureEmpty(contextDir);
+
+            // Ensure WEB-INF.
+            webInf = contextDir.resolve("WEB-INF");
+            FS.ensureDirExists(webInf);
+            classesDir = webInf.resolve("classes");
+            FS.ensureDirExists(classesDir);
+
+            // Configure the WebAppContext.
+            context = new WebAppContext();
+            context.setContextPath("/" + contextName);
+            context.setBaseResource(new PathResource(contextDir));
+            context.setAttribute("org.eclipse.jetty.websocket.javax", Boolean.TRUE);
+            context.addConfiguration(new JavaxWebSocketConfiguration());
+        }
+
+        public WebAppContext getWebAppContext()
+        {
+            return context;
+        }
+
+        public String getContextPath()
+        {
+            return context.getContextPath();
+        }
+
+        public Path getContextDir()
+        {
+            return contextDir;
+        }
+
+        public void createWebInf() throws IOException
+        {
+            copyWebInf("empty-web.xml");
+        }
+
+        public void copyWebInf(String testResourceName) throws IOException
+        {
+            File testWebXml = MavenTestingUtils.getTestResourceFile(testResourceName);
+            Path webXml = webInf.resolve("web.xml");
+            IO.copy(testWebXml, webXml.toFile());
+        }
+
+        public void copyClass(Class<?> clazz) throws Exception
+        {
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            String endpointPath = TypeUtil.toClassReference(clazz);
+            URL classUrl = cl.getResource(endpointPath);
+            assertThat("Class URL for: " + clazz, classUrl, notNullValue());
+            Path destFile = classesDir.resolve(endpointPath);
+            FS.ensureDirExists(destFile.getParent());
+            File srcFile = new File(classUrl.toURI());
+            IO.copy(srcFile, destFile.toFile());
+        }
+
+        public void deploy()
+        {
+            contexts.addHandler(context);
+            contexts.manage(context);
+            context.setThrowUnavailableOnStartupException(true);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}", context.dump());
+        }
     }
 }

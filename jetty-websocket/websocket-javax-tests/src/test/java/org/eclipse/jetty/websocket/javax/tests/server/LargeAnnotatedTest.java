@@ -29,7 +29,6 @@ import javax.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -63,17 +62,16 @@ public class LargeAnnotatedTest
     @Test
     public void testEcho() throws Exception
     {
-        WSServer wsb = new WSServer(testdir.getPath(), "app");
-        wsb.createWebInf();
-        wsb.copyEndpoint(LargeEchoConfiguredSocket.class);
+        WSServer wsb = new WSServer(testdir.getPath());
+        WSServer.WebApp app = wsb.createWebApp("app");
+        app.createWebInf();
+        app.copyClass(LargeEchoConfiguredSocket.class);
+        app.deploy();
 
         try
         {
             wsb.start();
             URI uri = wsb.getWsUri();
-
-            WebAppContext webapp = wsb.createWebAppContext();
-            wsb.deployWebapp(webapp);
 
             WebSocketCoreClient client = new WebSocketCoreClient();
             try

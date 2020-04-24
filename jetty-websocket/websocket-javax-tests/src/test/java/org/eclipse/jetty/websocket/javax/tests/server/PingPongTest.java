@@ -30,7 +30,6 @@ import com.acme.websocket.PongMessageEndpoint;
 import com.acme.websocket.PongSocket;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -55,17 +54,16 @@ public class PingPongTest
     public static void startServer() throws Exception
     {
         Path testdir = MavenTestingUtils.getTargetTestingPath(PingPongTest.class.getName());
-        server = new WSServer(testdir, "app");
-        server.copyWebInf("pong-config-web.xml");
+        server = new WSServer(testdir);
 
-        server.copyClass(PongContextListener.class);
-        server.copyClass(PongMessageEndpoint.class);
-        server.copyClass(PongSocket.class);
+        WSServer.WebApp app = server.createWebApp("app");
+        app.copyWebInf("pong-config-web.xml");
+        app.copyClass(PongContextListener.class);
+        app.copyClass(PongMessageEndpoint.class);
+        app.copyClass(PongSocket.class);
+        app.deploy();
 
         server.start();
-
-        WebAppContext webapp = server.createWebAppContext();
-        server.deployWebapp(webapp);
     }
 
     @BeforeAll

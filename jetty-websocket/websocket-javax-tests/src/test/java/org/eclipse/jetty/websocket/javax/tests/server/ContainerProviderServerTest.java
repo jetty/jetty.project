@@ -28,7 +28,6 @@ import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.javax.tests.EventSocket;
 import org.eclipse.jetty.websocket.javax.tests.WSServer;
 import org.junit.jupiter.api.AfterEach;
@@ -61,12 +60,13 @@ public class ContainerProviderServerTest
     public void startServer() throws Exception
     {
         Path testdir = MavenTestingUtils.getTargetTestingPath(ContainerProviderServerTest.class.getName());
-        server = new WSServer(testdir, "app");
-        server.createWebInf();
-        server.copyEndpoint(MySocket.class);
+        server = new WSServer(testdir);
+        WSServer.WebApp app = server.createWebApp("app");
+        app.createWebInf();
+        app.copyClass(MySocket.class);
+        app.deploy();
+
         server.start();
-        WebAppContext webapp = server.createWebAppContext();
-        server.deployWebapp(webapp);
     }
 
     @AfterEach

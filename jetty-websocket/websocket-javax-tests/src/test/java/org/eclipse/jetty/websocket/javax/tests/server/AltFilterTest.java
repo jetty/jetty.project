@@ -24,7 +24,6 @@ import java.util.List;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -50,22 +49,21 @@ public class AltFilterTest
     @Test
     public void testEcho() throws Exception
     {
-        WSServer wsb = new WSServer(testdir.getPath(), "app");
-        wsb.copyWebInf("alt-filter-web.xml");
+        WSServer wsb = new WSServer(testdir.getPath());
+        WSServer.WebApp app = wsb.createWebApp("app");
+        app.copyWebInf("alt-filter-web.xml");
         // the endpoint (extends javax.websocket.Endpoint)
-        wsb.copyClass(BasicEchoSocket.class);
+        app.copyClass(BasicEchoSocket.class);
+        app.deploy();
 
         try
         {
             wsb.start();
 
-            WebAppContext webapp = wsb.createWebAppContext();
-            wsb.deployWebapp(webapp);
-
-            FilterHolder filterWebXml = webapp.getServletHandler().getFilter("wsuf-test");
+            FilterHolder filterWebXml = app.getWebAppContext().getServletHandler().getFilter("wsuf-test");
             assertThat("Filter[wsuf-test]", filterWebXml, notNullValue());
 
-            FilterHolder filterSCI = webapp.getServletHandler().getFilter("Jetty_WebSocketUpgradeFilter");
+            FilterHolder filterSCI = app.getWebAppContext().getServletHandler().getFilter("Jetty_WebSocketUpgradeFilter");
             assertThat("Filter[Jetty_WebSocketUpgradeFilter]", filterSCI, nullValue());
 
             List<Frame> send = new ArrayList<>();
