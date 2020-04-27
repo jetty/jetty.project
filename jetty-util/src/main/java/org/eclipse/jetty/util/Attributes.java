@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.util.Enumeration;
+import java.util.Set;
 
 /**
  * Attributes.
@@ -31,6 +32,8 @@ public interface Attributes
     void setAttribute(String name, Object attribute);
 
     Object getAttribute(String name);
+
+    Set<String> getAttributeNameSet();
 
     Enumeration<String> getAttributeNames();
 
@@ -81,6 +84,12 @@ public interface Attributes
         public Enumeration<String> getAttributeNames()
         {
             return _attributes.getAttributeNames();
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return _attributes.getAttributeNameSet();
         }
 
         @Override

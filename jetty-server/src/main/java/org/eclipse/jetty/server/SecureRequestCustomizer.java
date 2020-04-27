@@ -365,11 +365,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            Set<String> names = new HashSet<>();
-            for (Enumeration<String> e = _attributes.getAttributeNames(); e.hasMoreElements(); )
-            {
-                names.add(e.nextElement());
-            }
+            Set<String> names = new HashSet<>(_attributes.getAttributeNameSet());
             names.add(JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE);
             names.add(JAVAX_SERVLET_REQUEST_CIPHER_SUITE);
             names.add(JAVAX_SERVLET_REQUEST_KEY_SIZE);
