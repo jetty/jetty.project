@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Set;
 
@@ -35,7 +36,10 @@ public interface Attributes
 
     Set<String> getAttributeNameSet();
 
-    Enumeration<String> getAttributeNames();
+    default Enumeration<String> getAttributeNames()
+    {
+        return Collections.enumeration(getAttributeNameSet());
+    }
 
     void clearAttributes();
 
@@ -78,12 +82,6 @@ public interface Attributes
         public Object getAttribute(String name)
         {
             return _attributes.getAttribute(name);
-        }
-
-        @Override
-        public Enumeration<String> getAttributeNames()
-        {
-            return _attributes.getAttributeNames();
         }
 
         @Override

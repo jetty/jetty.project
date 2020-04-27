@@ -19,8 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.security.cert.X509Certificate;
-import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -363,7 +361,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         @Override
-        public Enumeration<String> getAttributeNames()
+        public Set<String> getAttributeNameSet()
         {
             Set<String> names = new HashSet<>(_attributes.getAttributeNameSet());
             names.add(JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE);
@@ -373,7 +371,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             String sessionAttribute = getSslSessionAttribute();
             if (!StringUtil.isEmpty(sessionAttribute))
                 names.add(sessionAttribute);
-            return Collections.enumeration(names);
+            return names;
         }
     }
 }

@@ -19,9 +19,8 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Set;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -294,13 +293,11 @@ public class Dispatcher implements RequestDispatcher
         }
 
         @Override
-        public Enumeration<String> getAttributeNames()
+        public Set<String> getAttributeNameSet()
         {
             HashSet<String> set = new HashSet<>();
-            Enumeration<String> e = _attributes.getAttributeNames();
-            while (e.hasMoreElements())
+            for (String name : _attributes.getAttributeNameSet())
             {
-                String name = e.nextElement();
                 if (!name.startsWith(__INCLUDE_PREFIX) &&
                     !name.startsWith(__FORWARD_PREFIX))
                     set.add(name);
@@ -321,7 +318,7 @@ public class Dispatcher implements RequestDispatcher
                     set.remove(FORWARD_QUERY_STRING);
             }
 
-            return Collections.enumeration(set);
+            return set;
         }
 
         @Override
@@ -419,13 +416,11 @@ public class Dispatcher implements RequestDispatcher
         }
 
         @Override
-        public Enumeration<String> getAttributeNames()
+        public Set<String> getAttributeNameSet()
         {
             HashSet<String> set = new HashSet<>();
-            Enumeration<String> e = _attributes.getAttributeNames();
-            while (e.hasMoreElements())
+            for (String name : _attributes.getAttributeNameSet())
             {
-                String name = e.nextElement();
                 if (!name.startsWith(__INCLUDE_PREFIX))
                     set.add(name);
             }
@@ -445,7 +440,7 @@ public class Dispatcher implements RequestDispatcher
                     set.remove(INCLUDE_QUERY_STRING);
             }
 
-            return Collections.enumeration(set);
+            return set;
         }
 
         @Override
