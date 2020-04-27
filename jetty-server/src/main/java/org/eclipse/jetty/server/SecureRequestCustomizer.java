@@ -330,6 +330,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         @Override
         public Object getAttribute(String name)
         {
+            Object value = _attributes.getAttribute(name);
+            if (value != null)
+                return value;
             try
             {
                 switch (name)
@@ -350,14 +353,14 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                         String sessionAttribute = getSslSessionAttribute();
                         if (!StringUtil.isEmpty(sessionAttribute) && sessionAttribute.equals(name))
                             return _session;
-                        return _attributes.getAttribute(name);
                 }
             }
             catch (Exception e)
             {
-                LOG.warn("Unable to customize request with encryption details", e);
-                return null;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to get secure details ", e);
             }
+            return null;
         }
 
         @Override
