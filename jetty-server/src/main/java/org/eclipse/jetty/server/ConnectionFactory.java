@@ -125,4 +125,16 @@ public interface ConnectionFactory
          */
         Detection detect(ByteBuffer buffer);
     }
+
+    /**
+     * A ConnectionFactory that can configure the connector.
+     */
+    interface Configuring
+    {
+        /**
+         * Called during {@link Connector#start()}.
+         * @param connector The connector to configure
+         */
+        void configure(Connector connector);
+    }
 }
