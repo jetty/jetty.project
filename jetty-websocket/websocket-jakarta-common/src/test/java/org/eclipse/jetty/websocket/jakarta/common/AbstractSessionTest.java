@@ -40,7 +40,7 @@ public abstract class AbstractSessionTest
         JakartaWebSocketFrameHandler frameHandler = container.newFrameHandler(websocketPojo, upgradeRequest);
         CoreSession coreSession = new CoreSession.Empty();
         session = new JakartaWebSocketSession(container, coreSession, frameHandler, container.getFrameHandlerFactory()
-            .newDefaultEndpointConfig(websocketPojo.getClass(), null));
+            .newDefaultEndpointConfig(websocketPojo.getClass()));
     }
 
     @AfterAll

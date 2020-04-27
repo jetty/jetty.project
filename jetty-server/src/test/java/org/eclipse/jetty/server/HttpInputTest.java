@@ -138,11 +138,11 @@ public class HttpInputTest
         }
 
         @Override
-        public boolean isAsync()
+        public boolean isAsyncStarted()
         {
             if (isFakeAsyncState())
                 return true;
-            return super.isAsync();
+            return super.isAsyncStarted();
         }
 
         @Override

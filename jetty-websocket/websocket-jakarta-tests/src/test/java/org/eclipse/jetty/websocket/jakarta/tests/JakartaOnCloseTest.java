@@ -190,10 +190,21 @@ public class JakartaOnCloseTest
         assertThat(clientEndpoint.closeReason.getReasonPhrase(), is("abnormal close 1"));
     }
 
+    @ClientEndpoint
+    public class ThrowOnCloseSocket extends EventSocket
+    {
+        @Override
+        public void onClose(CloseReason reason)
+        {
+            super.onClose(reason);
+            throw new RuntimeException("trigger onError from client onClose");
+        }
+    }
+
     @Test
     public void onErrorOccurringAfterOnClose() throws Exception
     {
-        EventSocket clientEndpoint = new EventSocket();
+        EventSocket clientEndpoint = new ThrowOnCloseSocket();
         URI uri = new URI("ws://localhost:" + connector.getLocalPort() + "/");
         client.connectToServer(clientEndpoint, uri);
 
@@ -201,16 +212,25 @@ public class JakartaOnCloseTest
         assertTrue(serverEndpoint.openLatch.await(5, TimeUnit.SECONDS));
         serverEndpoint.setOnClose((session) ->
         {
-            throw new RuntimeException("trigger onError from onClose");
+            throw new RuntimeException("trigger onError from server onClose");
         });
 
+        // Initiate close on client to cause the server to throw in onClose.
         clientEndpoint.session.close();
-        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.closeReason.getCloseCode(), is(CloseCodes.UNEXPECTED_CONDITION));
-        assertThat(clientEndpoint.closeReason.getReasonPhrase(), containsString("trigger onError from onClose"));
 
+        // Test the receives the normal close, and throws in onClose.
+        assertTrue(serverEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(serverEndpoint.closeReason.getCloseCode(), is(CloseCodes.NORMAL_CLOSURE));
         assertTrue(serverEndpoint.errorLatch.await(5, TimeUnit.SECONDS));
         assertThat(serverEndpoint.error, instanceOf(RuntimeException.class));
-        assertThat(serverEndpoint.error.getMessage(), containsString("trigger onError from onClose"));
+        assertThat(serverEndpoint.error.getMessage(), containsString("trigger onError from server onClose"));
+
+
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.closeReason.getCloseCode(), is(CloseCodes.UNEXPECTED_CONDITION));
+        assertThat(clientEndpoint.closeReason.getReasonPhrase(), containsString("trigger onError from server onClose"));
+        assertTrue(clientEndpoint.errorLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.error, instanceOf(RuntimeException.class));
+        assertThat(clientEndpoint.error.getMessage(), containsString("trigger onError from client onClose"));
     }
 }

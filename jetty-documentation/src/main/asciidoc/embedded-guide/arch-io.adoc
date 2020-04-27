@@ -16,14 +16,13 @@
 // ========================================================================
 //
 
-[appendix]
-[[eg-io-arch]]
-== Jetty I/O Architecture
+[[eg-arch-io]]
+=== Jetty I/O Architecture
 
 Jetty libraries (both client and server) use Java NIO to handle I/O, so that at its core Jetty I/O is completely non-blocking.
 
-[[eg-io-arch-selector-manager]]
-=== Jetty I/O: `SelectorManager`
+[[eg-arch-io-selector-manager]]
+==== Jetty I/O: `SelectorManager`
 
 The core class of Jetty I/O is link:{JDURL}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`].
 
@@ -51,8 +50,8 @@ This example shows how a server accepts a client connection:
 include::{doc_code}/embedded/SelectorManagerDocs.java[tags=accept]
 ----
 
-[[eg-io-arch-endpoint-connection]]
-=== Jetty I/O: `EndPoint` and `Connection`
+[[eg-arch-io-endpoint-connection]]
+==== Jetty I/O: `EndPoint` and `Connection`
 
 ``SocketChannel``s that are passed to `SelectorManager` are wrapped into two related components: an link:{JDURL}/org/eclipse/jetty/io/EndPoint.html[`EndPoint`] and a link:{JDURL}/org/eclipse/jetty/io/Connection.html[`Connection`].
 
@@ -85,8 +84,8 @@ On the server-side, the component that aggregates a `SelectorManager` with a set
 
 On the client-side, the components that aggregates a `SelectorManager` with a set of ``ClientConnectionFactory``s are link:{JDURL}/org/eclipse/jetty/client/HttpClientTransport.html[`HttpClientTransport`] subclasses, see xref:eg-client-io-arch[].
 
-[[eg-io-arch-endpoint]]
-=== Jetty I/O: `EndPoint`
+[[eg-arch-io-endpoint]]
+==== Jetty I/O: `EndPoint`
 
 The Jetty I/O library use Java NIO to handle I/O, so that I/O is non-blocking.
 
@@ -100,10 +99,10 @@ In order to be notified when a `SocketChannel` uncongests and it is therefore wr
 In the Jetty I/O library, you can call `EndPoint.write(Callback, ByteBuffer...)` to write the ``ByteBuffer``s and the `Callback` parameter is the object that is notified when the whole write is finished (i.e. _all_ ``ByteBuffer``s have been fully written, even if they are delayed by TCP congestion/uncongestion).
 
 The `EndPoint` APIs abstract out the Java NIO details by providing non-blocking APIs based on `Callback` objects for I/O operations.
-The `EndPoint` APIs are typically called by `Connection` implementations, see xref:eg-io-arch-connection[this section].
+The `EndPoint` APIs are typically called by `Connection` implementations, see xref:eg-arch-io-connection[this section].
 
-[[eg-io-arch-connection]]
-=== Jetty I/O: `Connection`
+[[eg-arch-io-connection]]
+==== Jetty I/O: `Connection`
 
 `Connection` is the abstraction that deserializes incoming bytes into objects, for example a HTTP request object or a WebSocket frame object, that can be used by more abstract layers.
 
@@ -123,10 +122,13 @@ The example below shows a typical implementation that extends `AbstractConnectio
 include::{doc_code}/embedded/SelectorManagerDocs.java[tags=connection]
 ----
 
+[[eg-arch-io-connection-listener]]
+===== Jetty I/O: `Connection.Listener`
+
 // TODO: Introduce Connection.Listener
 
-[[eg-io-arch-echo]]
-=== Jetty I/O: Network Echo
+[[eg-arch-io-echo]]
+==== Jetty I/O: Network Echo
 
 With the concepts above it is now possible to write a simple, fully non-blocking, `Connection` implementation that simply echoes the bytes that it reads back to the other peer.
 

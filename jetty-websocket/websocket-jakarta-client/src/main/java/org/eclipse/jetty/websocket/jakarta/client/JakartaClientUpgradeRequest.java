@@ -64,4 +64,10 @@ public class JakartaClientUpgradeRequest extends ClientUpgradeRequest implements
     {
         return getURI();
     }
+
+    @Override
+    public String getPathInContext()
+    {
+        throw new UnsupportedOperationException();
+    }
 }

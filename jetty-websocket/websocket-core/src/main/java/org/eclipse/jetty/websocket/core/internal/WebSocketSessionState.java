@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.core.internal;
 
 import java.nio.channels.ClosedChannelException;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -120,6 +121,39 @@ public class WebSocketSessionState
             _closeStatus = closeStatus;
             _sessionState = State.CLOSED;
             return true;
+        }
+    }
+
+    /**
+     * <p>
+     * If no error is set in the CloseStatus this will either, replace the current close status with
+     * a {@link CloseStatus#SERVER_ERROR} status if we had a NORMAL close code, or, it will set the cause
+     * of the CloseStatus if the previous cause was null, this allows onError to be notified after the connection is closed.
+     * </p>
+     * <p>
+     * This should only be called if there is an error directly before the call to
+     * {@link WebSocketCoreSession#closeConnection(CloseStatus, Callback)}.
+     * </p>
+     * <p>
+     * This could occur if the FrameHandler throws an exception in onFrame after receiving a close frame reply, in this
+     * case to notify onError we must set the cause in the closeStatus.
+     * </p>
+     * @param t the error which occurred.
+     */
+    public void onError(Throwable t)
+    {
+        synchronized (this)
+        {
+            if (_sessionState != State.CLOSED || _closeStatus == null)
+                throw new IllegalArgumentException();
+
+            // Override any normal close status.
+            if (!_closeStatus.isAbnormal())
+                _closeStatus = new CloseStatus(CloseStatus.SERVER_ERROR, t);
+
+            // Otherwise set the error if it wasn't already set to notify onError as well as onClose.
+            if (_closeStatus.getCause() == null)
+                _closeStatus = new CloseStatus(_closeStatus.getCode(), _closeStatus.getReason(), t);
         }
     }
 

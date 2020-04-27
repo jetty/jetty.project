@@ -409,8 +409,6 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
         // Verify the negotiated subprotocol
         List<String> offeredSubProtocols = getSubProtocols();
-        if (negotiatedSubProtocol == null && !offeredSubProtocols.isEmpty())
-            throw new WebSocketException("Upgrade failed: no subprotocol selected from offered subprotocols ");
         if (negotiatedSubProtocol != null && !offeredSubProtocols.contains(negotiatedSubProtocol))
             throw new WebSocketException("Upgrade failed: subprotocol [" + negotiatedSubProtocol + "] not found in offered subprotocols " + offeredSubProtocols);
 

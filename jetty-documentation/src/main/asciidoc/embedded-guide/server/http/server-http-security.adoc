@@ -16,29 +16,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.common;
+[[eg-server-http-security]]
+==== Securing HTTP Server Applications
 
-import java.net.URI;
-import java.security.Principal;
+// TODO: ConstraintSecurityHandler and Authenticators and LoginServices
+TODO
 
-public interface UpgradeRequest
-{
-    /**
-     * For {@link jakarta.websocket.Session#getUserPrincipal()}
-     *
-     * @return the User {@link Principal} present during the Upgrade Request
-     */
-    Principal getUserPrincipal();
-
-    /**
-     * @return the full URI of this request.
-     */
-    URI getRequestURI();
-
-    /**
-     * For obtaining {@link jakarta.websocket.server.PathParam} values from the Request context path.
-     *
-     * @return the path in Context.
-     */
-    String getPathInContext();
-}

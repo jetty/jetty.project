@@ -32,7 +32,7 @@ public class DummyFrameHandlerFactory extends JakartaWebSocketFrameHandlerFactor
     }
 
     @Override
-    public EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass, String path)
+    public EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass)
     {
         return ClientEndpointConfig.Builder.create().build();
     }

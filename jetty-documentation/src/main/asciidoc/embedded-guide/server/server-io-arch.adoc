@@ -21,7 +21,7 @@
 
 The Jetty server libraries provide the basic components and APIs to implement a network server.
 
-They build on the common xref:eg-io-arch[Jetty I/O Architecture] and provide server specific concepts.
+They build on the common xref:eg-arch-io[Jetty I/O Architecture] and provide server specific concepts.
 
 The main I/O server-side class is `org.eclipse.jetty.server.ServerConnector`.
 

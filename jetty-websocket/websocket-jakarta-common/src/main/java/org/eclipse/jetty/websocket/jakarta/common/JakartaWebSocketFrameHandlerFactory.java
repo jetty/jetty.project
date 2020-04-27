@@ -146,7 +146,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
 
     public abstract JakartaWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig);
 
-    public abstract EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass, String path);
+    public abstract EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass);
 
     public JakartaWebSocketFrameHandler newJakartaWebSocketFrameHandler(Object endpointInstance, UpgradeRequest upgradeRequest)
     {
@@ -162,8 +162,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         else
         {
             endpoint = endpointInstance;
-            String path = (upgradeRequest.getRequestURI() == null) ? null : upgradeRequest.getRequestURI().getPath();
-            config = newDefaultEndpointConfig(endpoint.getClass(), path);
+            config = newDefaultEndpointConfig(endpoint.getClass());
         }
 
         JakartaWebSocketFrameHandlerMetadata metadata = getMetadata(endpoint.getClass(), config);
@@ -182,7 +181,7 @@ public abstract class JakartaWebSocketFrameHandlerFactory
         if (templatePathSpec != null)
         {
             String[] namedVariables = templatePathSpec.getVariables();
-            Map<String, String> pathParams = templatePathSpec.getPathParams(upgradeRequest.getRequestURI().getRawPath());
+            Map<String, String> pathParams = templatePathSpec.getPathParams(upgradeRequest.getPathInContext());
 
             // Handle parameterized @PathParam entries
             openHandle = bindTemplateVariables(openHandle, namedVariables, pathParams);

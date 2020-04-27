@@ -26,13 +26,14 @@ import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 
 public class WebSocketServer
 {
-    private final Server server;
+    private final Server server = new Server();
     private URI serverUri;
 
     public void start() throws Exception
@@ -58,13 +59,26 @@ public class WebSocketServer
 
     public WebSocketServer(FrameHandler frameHandler)
     {
-        this(new DefaultNegotiator(frameHandler));
+        this(new DefaultNegotiator(frameHandler), false);
     }
 
     public WebSocketServer(WebSocketNegotiator negotiator)
     {
-        server = new Server();
-        ServerConnector connector = new ServerConnector(server);
+        this(negotiator, false);
+    }
+
+    public WebSocketServer(FrameHandler frameHandler, boolean tls)
+    {
+        this(new DefaultNegotiator(frameHandler), tls);
+    }
+
+    public WebSocketServer(WebSocketNegotiator negotiator, boolean tls)
+    {
+        ServerConnector connector;
+        if (tls)
+            connector = new ServerConnector(server, createServerSslContextFactory());
+        else
+            connector = new ServerConnector(server);
         server.addConnector(connector);
 
         ContextHandler context = new ContextHandler("/");
@@ -72,6 +86,14 @@ public class WebSocketServer
 
         WebSocketUpgradeHandler upgradeHandler = new WebSocketUpgradeHandler(negotiator);
         context.setHandler(upgradeHandler);
+    }
+
+    private SslContextFactory.Server createServerSslContextFactory()
+    {
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
+        sslContextFactory.setKeyStorePassword("storepwd");
+        return sslContextFactory;
     }
 
     public URI getUri()

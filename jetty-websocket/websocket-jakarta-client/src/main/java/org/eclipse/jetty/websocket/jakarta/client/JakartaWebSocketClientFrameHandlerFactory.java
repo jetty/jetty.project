@@ -40,7 +40,7 @@ public class JakartaWebSocketClientFrameHandlerFactory extends JakartaWebSocketF
     }
 
     @Override
-    public EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass, String path)
+    public EndpointConfig newDefaultEndpointConfig(Class<?> endpointClass)
     {
         return new BasicClientEndpointConfig();
     }
