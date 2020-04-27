@@ -25,6 +25,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -43,7 +44,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
 
     private final SocketChannel _channel;
     private final ManagedSelector _selector;
-    private final SelectionKey _key;
+    private SelectionKey _key;
     private boolean _updatePending;
     // The current value for interestOps.
     private int _currentInterestOps;
@@ -87,7 +88,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     }
 
-    private final ManagedSelector.SelectorUpdate _updateKeyAction = selector -> updateKey();
+    private final ManagedSelector.SelectorUpdate _updateKeyAction = this::updateKey;
 
     private final Runnable _runFillable = new RunnableCloseable("runFillable")
     {
@@ -314,12 +315,12 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     }
 
     @Override
-    public Runnable onSelected()
+    public Runnable onSelected(SelectionKey key)
     {
         // This method runs from the selector thread,
         // possibly concurrently with changeInterests(int).
 
-        int readyOps = _key.readyOps();
+        int readyOps = key.readyOps();
         int oldInterestOps;
         int newInterestOps;
         synchronized (this)
@@ -351,8 +352,13 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         return task;
     }
 
+    private void updateKey(Selector selector)
+    {
+        _selector.compute(selector, _channel, _key, this::updateKey);
+    }
+
     @Override
-    public void updateKey()
+    public void updateKey(SelectionKey key)
     {
         // This method runs from the selector thread,
         // possibly concurrently with changeInterests(int).
@@ -369,7 +375,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
                 if (oldInterestOps != newInterestOps)
                 {
                     _currentInterestOps = newInterestOps;
-                    _key.interestOps(newInterestOps);
+                    key.interestOps(newInterestOps);
                 }
             }
 
@@ -387,6 +393,12 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             LOG.warn("Ignoring key update for {}", this, x);
             close();
         }
+    }
+
+    @Override
+    public void replaceKey(SelectionKey oldKey, SelectionKey newKey)
+    {
+        _key = newKey;
     }
 
     private void changeInterests(int operation)

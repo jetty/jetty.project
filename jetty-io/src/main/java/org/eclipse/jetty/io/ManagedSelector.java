@@ -42,6 +42,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -144,6 +145,95 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         super.doStop();
     }
 
+    void compute(Selector selector, SelectableChannel channel, SelectionKey selectionKey, Consumer<SelectionKey> action)
+    {
+        SelectionKey key = selectionKey;
+        // Refresh the key if the selector has been recreated.
+        if (selector != key.selector())
+            key = channel.keyFor(selector);
+        // The key may be null if the channel is closed.
+        if (key != null)
+            action.accept(key);
+    }
+
+    protected int nioSelect(Selector selector, boolean now) throws IOException
+    {
+        return now ? selector.selectNow() : selector.select();
+    }
+
+    protected int select(Selector selector) throws IOException
+    {
+        try
+        {
+            int selected = nioSelect(selector, false);
+            if (selected == 0)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Selector {} woken with none selected", selector);
+
+                if (Thread.interrupted() && !isRunning())
+                    throw new ClosedSelectorException();
+
+                if (FORCE_SELECT_NOW)
+                    selected = nioSelect(selector, true);
+            }
+            return selected;
+        }
+        catch (ClosedSelectorException x)
+        {
+            throw x;
+        }
+        catch (Throwable x)
+        {
+            handleSelectFailure(selector, x);
+            return 0;
+        }
+    }
+
+    protected void handleSelectFailure(Selector selector, Throwable failure) throws IOException
+    {
+        LOG.info("Caught select() failure, trying to recover: {}", failure.toString());
+        if (LOG.isDebugEnabled())
+            LOG.debug(failure);
+
+        Selector newSelector = _selectorManager.newSelector();
+        for (SelectionKey oldKey : selector.keys())
+        {
+            SelectableChannel channel = oldKey.channel();
+            int interestOps = safeInterestOps(oldKey);
+            if (interestOps >= 0)
+            {
+                try
+                {
+                    Object attachment = oldKey.attachment();
+                    SelectionKey newKey = channel.register(newSelector, interestOps, attachment);
+
+                    if (attachment instanceof Selectable)
+                        ((Selectable)attachment).replaceKey(oldKey, newKey);
+
+                    oldKey.cancel();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Transferred {} iOps={} att={}", channel, interestOps, attachment);
+                }
+                catch (Throwable t)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Could not transfer {}", channel, t);
+                    IO.close(channel);
+                }
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Invalid interestOps for {}", channel);
+                IO.close(channel);
+            }
+        }
+
+        IO.close(selector);
+        _selector = newSelector;
+    }
+
     protected void onSelectFailed(Throwable cause)
     {
         // override to change behavior
@@ -167,15 +257,20 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
      */
     public void submit(SelectorUpdate update)
     {
+        submit(update, false);
+    }
+
+    private void submit(SelectorUpdate update, boolean lazy)
+    {
         if (LOG.isDebugEnabled())
-            LOG.debug("Queued change {} on {}", update, this);
+            LOG.debug("Queued change lazy={} {} on {}", lazy, update, this);
 
         Selector selector = null;
         synchronized (ManagedSelector.this)
         {
             _updates.offer(update);
 
-            if (_selecting)
+            if (_selecting && !lazy)
             {
                 selector = _selector;
                 // To avoid the extra select wakeup.
@@ -270,7 +365,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
         Connection connection = _selectorManager.newConnection(channel, endPoint, selectionKey.attachment());
         endPoint.setConnection(connection);
-        selectionKey.attach(endPoint);
+        submit(selector -> compute(selector, channel, selectionKey, key -> key.attach(endPoint)), true);
         endPoint.onOpen();
         endPointOpened(endPoint);
         _selectorManager.connectionOpened(connection);
@@ -378,14 +473,25 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
          * detected by the {@link ManagedSelector} for this endpoint.
          *
          * @return a job that may block or null
+         * @param key the selected SelectionKey
          */
-        Runnable onSelected();
+        Runnable onSelected(SelectionKey key);
 
         /**
          * Callback method invoked when all the keys selected by the
          * {@link ManagedSelector} for this endpoint have been processed.
+         * @param key the SelectionKey to update
          */
-        void updateKey();
+        void updateKey(SelectionKey key);
+
+        /**
+         * Callback method invoked when a selectable is transferred
+         * from one selector to a new selector.
+         *
+         * @param oldKey the old SelectionKey
+         * @param newKey the new SelectionKey
+         */
+        void replaceKey(SelectionKey oldKey, SelectionKey newKey);
     }
 
     private class SelectorProducer implements ExecutionStrategy.Producer
@@ -465,39 +571,33 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             try
             {
                 Selector selector = _selector;
-                if (selector != null && selector.isOpen())
+                if (selector != null)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector {} waiting with {} keys", selector, selector.keys().size());
-                    int selected = selector.select();
-                    if (selected == 0)
+                    int selected = ManagedSelector.this.select(selector);
+                    // The selector may have been recreated.
+                    selector = _selector;
+                    if (selector != null)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Selector {} woken with none selected", selector);
+                            LOG.debug("Selector {} woken up from select, {}/{}/{} selected", selector, selected, selector.selectedKeys().size(), selector.keys().size());
 
-                        if (Thread.interrupted() && !isRunning())
-                            throw new ClosedSelectorException();
+                        int updates;
+                        synchronized (ManagedSelector.this)
+                        {
+                            // finished selecting
+                            _selecting = false;
+                            updates = _updates.size();
+                        }
 
-                        if (FORCE_SELECT_NOW)
-                            selected = selector.selectNow();
+                        _keys = selector.selectedKeys();
+                        _cursor = _keys.isEmpty() ? Collections.emptyIterator() : _keys.iterator();
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Selector {} processing {} keys, {} updates", selector, _keys.size(), updates);
+
+                        return true;
                     }
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Selector {} woken up from select, {}/{}/{} selected", selector, selected, selector.selectedKeys().size(), selector.keys().size());
-
-                    int updates;
-                    synchronized (ManagedSelector.this)
-                    {
-                        // finished selecting
-                        _selecting = false;
-                        updates = _updates.size();
-                    }
-
-                    _keys = selector.selectedKeys();
-                    _cursor = _keys.isEmpty() ? Collections.emptyIterator() : _keys.iterator();
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Selector {} processing {} keys, {} updates", selector, _keys.size(), updates);
-
-                    return true;
                 }
             }
             catch (Throwable x)
@@ -536,7 +636,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                         if (attachment instanceof Selectable)
                         {
                             // Try to produce a task
-                            Runnable task = ((Selectable)attachment).onSelected();
+                            Runnable task = ((Selectable)attachment).onSelected(key);
                             if (task != null)
                                 return task;
                         }
@@ -580,7 +680,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             {
                 Object attachment = key.attachment();
                 if (attachment instanceof Selectable)
-                    ((Selectable)attachment).updateKey();
+                    ((Selectable)attachment).updateKey(key);
             }
             _keys.clear();
         }
@@ -672,7 +772,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
 
         @Override
-        public Runnable onSelected()
+        public Runnable onSelected(SelectionKey key)
         {
             SelectableChannel channel = null;
             try
@@ -694,16 +794,22 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
 
         @Override
-        public void updateKey()
+        public void updateKey(SelectionKey key)
         {
+        }
+
+        @Override
+        public void replaceKey(SelectionKey oldKey, SelectionKey newKey)
+        {
+            _key = newKey;
         }
 
         @Override
         public void close() throws IOException
         {
-            SelectionKey key = _key;
-            if (key != null)
-                key.cancel();
+            // May be called from any thread.
+            // Implements AbstractConnector.setAccepting(boolean).
+            submit(selector -> compute(selector, _channel, _key, SelectionKey::cancel));
         }
     }
 
