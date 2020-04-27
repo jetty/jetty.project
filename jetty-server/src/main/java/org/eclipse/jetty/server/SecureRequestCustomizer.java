@@ -19,6 +19,10 @@
 package org.eclipse.jetty.server;
 
 import java.security.cert.X509Certificate;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -33,6 +37,8 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
+import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
@@ -49,11 +55,10 @@ import org.eclipse.jetty.util.ssl.X509;
 public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
     private static final Logger LOG = Log.getLogger(SecureRequestCustomizer.class);
-
-    /**
-     * The name of the SSLSession attribute that will contain any cached information.
-     */
-    public static final String CACHED_INFO_ATTR = CachedInfo.class.getName();
+    public static final String JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE = "javax.servlet.request.X509Certificate";
+    public static final String JAVAX_SERVLET_REQUEST_CIPHER_SUITE = "javax.servlet.request.cipher_suite";
+    public static final String JAVAX_SERVLET_REQUEST_KEY_SIZE = "javax.servlet.request.key_size";
+    public static final String JAVAX_SERVLET_REQUEST_SSL_SESSION_ID = "javax.servlet.request.ssl_session_id";
 
     private String sslSessionAttribute = "org.eclipse.jetty.servlet.request.ssl_session";
 
@@ -262,61 +267,22 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
         if (_sniHostCheck || _sniRequired)
         {
-            String name = request.getServerName();
             X509 x509 = (X509)sslSession.getValue(SniX509ExtendedKeyManager.SNI_X509);
-
             if (LOG.isDebugEnabled())
-                LOG.debug("Host {} with SNI {}", name, x509);
+                LOG.debug("Host {} with SNI {}", request.getServerName(), x509);
 
             if (x509 == null)
             {
                 if (_sniRequired)
                     throw new BadMessageException(400, "SNI required");
             }
-            else if (_sniHostCheck && !x509.matches(name))
+            else if (_sniHostCheck && !x509.matches(request.getServerName()))
             {
                 throw new BadMessageException(400, "Host does not match SNI");
             }
         }
 
-        try
-        {
-            String cipherSuite = sslSession.getCipherSuite();
-            Integer keySize;
-            X509Certificate[] certs;
-            String idStr;
-
-            CachedInfo cachedInfo = (CachedInfo)sslSession.getValue(CACHED_INFO_ATTR);
-            if (cachedInfo != null)
-            {
-                keySize = cachedInfo.getKeySize();
-                certs = cachedInfo.getCerts();
-                idStr = cachedInfo.getIdStr();
-            }
-            else
-            {
-                keySize = SslContextFactory.deduceKeyLength(cipherSuite);
-                certs = getCertChain(request, sslSession);
-                byte[] bytes = sslSession.getId();
-                idStr = TypeUtil.toHexString(bytes);
-                cachedInfo = new CachedInfo(keySize, certs, idStr);
-                sslSession.putValue(CACHED_INFO_ATTR, cachedInfo);
-            }
-
-            if (certs != null)
-                request.setAttribute("javax.servlet.request.X509Certificate", certs);
-
-            request.setAttribute("javax.servlet.request.cipher_suite", cipherSuite);
-            request.setAttribute("javax.servlet.request.key_size", keySize);
-            request.setAttribute("javax.servlet.request.ssl_session_id", idStr);
-            String sessionAttribute = getSslSessionAttribute();
-            if (sessionAttribute != null && !sessionAttribute.isEmpty())
-                request.setAttribute(sessionAttribute, sslSession);
-        }
-        catch (Exception e)
-        {
-            LOG.warn(Log.EXCEPTION, e);
-        }
+        request.setAttributes(new SslAttributes(request, sslSession, request.getAttributes()));
     }
 
     private X509Certificate[] getCertChain(Request request, SSLSession sslSession)
@@ -327,10 +293,8 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         if (sslConnectionFactory != null)
         {
             SslContextFactory sslContextFactory = sslConnectionFactory.getSslContextFactory();
-            if (sslConnectionFactory != null)
-            {
+            if (sslContextFactory != null)
                 return sslContextFactory.getX509CertChain(sslSession);
-            }
         }
 
         // Fallback, either no SslConnectionFactory or no SslContextFactory instance found
@@ -353,36 +317,67 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         return String.format("%s@%x", this.getClass().getSimpleName(), hashCode());
     }
 
-    /**
-     * Simple bundle of information that is cached in the SSLSession. Stores the
-     * effective keySize and the client certificate chain.
-     */
-    private static class CachedInfo
+    private class SslAttributes extends Attributes.Wrapper
     {
-        private final X509Certificate[] _certs;
-        private final Integer _keySize;
-        private final String _idStr;
+        private final Request _request;
+        private final SSLSession _session;
 
-        CachedInfo(Integer keySize, X509Certificate[] certs, String idStr)
+        public SslAttributes(Request request, SSLSession sslSession, Attributes attributes)
         {
-            this._keySize = keySize;
-            this._certs = certs;
-            this._idStr = idStr;
+            super(attributes);
+            this._request = request;
+            this._session = sslSession;
         }
 
-        X509Certificate[] getCerts()
+        @Override
+        public Object getAttribute(String name)
         {
-            return _certs;
+            try
+            {
+                switch (name)
+                {
+                    case JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE:
+                        return SecureRequestCustomizer.this.getCertChain(_request, _session);
+
+                    case JAVAX_SERVLET_REQUEST_CIPHER_SUITE:
+                        return _session.getCipherSuite();
+
+                    case JAVAX_SERVLET_REQUEST_KEY_SIZE:
+                        return SslContextFactory.deduceKeyLength(_session.getCipherSuite());
+
+                    case JAVAX_SERVLET_REQUEST_SSL_SESSION_ID:
+                        return TypeUtil.toHexString(_session.getId());
+
+                    default:
+                        String sessionAttribute = getSslSessionAttribute();
+                        if (!StringUtil.isEmpty(sessionAttribute) && sessionAttribute.equals(name))
+                            return _session;
+                        return _attributes.getAttribute(name);
+                }
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Unable to customize request with encryption details", e);
+                return null;
+            }
         }
 
-        Integer getKeySize()
+        @Override
+        public Enumeration<String> getAttributeNames()
         {
-            return _keySize;
-        }
-
-        String getIdStr()
-        {
-            return _idStr;
+            Set<String> names = new HashSet<>();
+            for (Enumeration<String> e = _attributes.getAttributeNames(); e.hasMoreElements(); )
+            {
+                names.add(e.nextElement());
+            }
+            names.add(JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE);
+            names.add(JAVAX_SERVLET_REQUEST_CIPHER_SUITE);
+            names.add(JAVAX_SERVLET_REQUEST_KEY_SIZE);
+            names.add(JAVAX_SERVLET_REQUEST_SSL_SESSION_ID);
+            String sessionAttribute = getSslSessionAttribute();
+            if (!StringUtil.isEmpty(sessionAttribute))
+                names.add(sessionAttribute);
+            return Collections.enumeration(names);
         }
     }
 }

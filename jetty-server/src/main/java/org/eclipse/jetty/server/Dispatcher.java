@@ -252,10 +252,8 @@ public class Dispatcher implements RequestDispatcher
         return String.format("Dispatcher@0x%x{%s,%s}", hashCode(), _named, _uri);
     }
 
-    private class ForwardAttributes implements Attributes
+    private class ForwardAttributes extends Attributes.Wrapper
     {
-        final Attributes _attr;
-
         String _requestURI;
         String _contextPath;
         String _servletPath;
@@ -264,7 +262,7 @@ public class Dispatcher implements RequestDispatcher
 
         ForwardAttributes(Attributes attributes)
         {
-            _attr = attributes;
+            super(attributes);
         }
 
         @Override
@@ -272,29 +270,34 @@ public class Dispatcher implements RequestDispatcher
         {
             if (Dispatcher.this._named == null)
             {
-                if (key.equals(FORWARD_PATH_INFO))
-                    return _pathInfo;
-                if (key.equals(FORWARD_REQUEST_URI))
-                    return _requestURI;
-                if (key.equals(FORWARD_SERVLET_PATH))
-                    return _servletPath;
-                if (key.equals(FORWARD_CONTEXT_PATH))
-                    return _contextPath;
-                if (key.equals(FORWARD_QUERY_STRING))
-                    return _query;
+                switch (key)
+                {
+                    case FORWARD_PATH_INFO:
+                        return _pathInfo;
+                    case FORWARD_REQUEST_URI:
+                        return _requestURI;
+                    case FORWARD_SERVLET_PATH:
+                        return _servletPath;
+                    case FORWARD_CONTEXT_PATH:
+                        return _contextPath;
+                    case FORWARD_QUERY_STRING:
+                        return _query;
+                    default:
+                        break;
+                }
             }
 
             if (key.startsWith(__INCLUDE_PREFIX))
                 return null;
 
-            return _attr.getAttribute(key);
+            return _attributes.getAttribute(key);
         }
 
         @Override
         public Enumeration<String> getAttributeNames()
         {
             HashSet<String> set = new HashSet<>();
-            Enumeration<String> e = _attr.getAttributeNames();
+            Enumeration<String> e = _attributes.getAttributeNames();
             while (e.hasMoreElements())
             {
                 String name = e.nextElement();
@@ -326,32 +329,40 @@ public class Dispatcher implements RequestDispatcher
         {
             if (_named == null && key.startsWith("javax.servlet."))
             {
-                if (key.equals(FORWARD_PATH_INFO))
-                    _pathInfo = (String)value;
-                else if (key.equals(FORWARD_REQUEST_URI))
-                    _requestURI = (String)value;
-                else if (key.equals(FORWARD_SERVLET_PATH))
-                    _servletPath = (String)value;
-                else if (key.equals(FORWARD_CONTEXT_PATH))
-                    _contextPath = (String)value;
-                else if (key.equals(FORWARD_QUERY_STRING))
-                    _query = (String)value;
-
-                else if (value == null)
-                    _attr.removeAttribute(key);
-                else
-                    _attr.setAttribute(key, value);
+                switch (key)
+                {
+                    case FORWARD_PATH_INFO:
+                        _pathInfo = (String)value;
+                        return;
+                    case FORWARD_REQUEST_URI:
+                        _requestURI = (String)value;
+                        return;
+                    case FORWARD_SERVLET_PATH:
+                        _servletPath = (String)value;
+                        return;
+                    case FORWARD_CONTEXT_PATH:
+                        _contextPath = (String)value;
+                        return;
+                    case FORWARD_QUERY_STRING:
+                        _query = (String)value;
+                        return;
+                    default:
+                        if (value == null)
+                            _attributes.removeAttribute(key);
+                        else
+                            _attributes.setAttribute(key, value);
+                }
             }
             else if (value == null)
-                _attr.removeAttribute(key);
+                _attributes.removeAttribute(key);
             else
-                _attr.setAttribute(key, value);
+                _attributes.setAttribute(key, value);
         }
 
         @Override
         public String toString()
         {
-            return "FORWARD+" + _attr.toString();
+            return "FORWARD+" + _attributes.toString();
         }
 
         @Override
@@ -367,10 +378,8 @@ public class Dispatcher implements RequestDispatcher
         }
     }
 
-    private class IncludeAttributes implements Attributes
+    private class IncludeAttributes extends Attributes.Wrapper
     {
-        final Attributes _attr;
-
         String _requestURI;
         String _contextPath;
         String _servletPath;
@@ -379,7 +388,7 @@ public class Dispatcher implements RequestDispatcher
 
         IncludeAttributes(Attributes attributes)
         {
-            _attr = attributes;
+            super(attributes);
         }
 
         @Override
@@ -387,28 +396,33 @@ public class Dispatcher implements RequestDispatcher
         {
             if (Dispatcher.this._named == null)
             {
-                if (key.equals(INCLUDE_PATH_INFO))
-                    return _pathInfo;
-                if (key.equals(INCLUDE_SERVLET_PATH))
-                    return _servletPath;
-                if (key.equals(INCLUDE_CONTEXT_PATH))
-                    return _contextPath;
-                if (key.equals(INCLUDE_QUERY_STRING))
-                    return _query;
-                if (key.equals(INCLUDE_REQUEST_URI))
-                    return _requestURI;
+                switch (key)
+                {
+                    case INCLUDE_PATH_INFO:
+                        return _pathInfo;
+                    case INCLUDE_SERVLET_PATH:
+                        return _servletPath;
+                    case INCLUDE_CONTEXT_PATH:
+                        return _contextPath;
+                    case INCLUDE_QUERY_STRING:
+                        return _query;
+                    case INCLUDE_REQUEST_URI:
+                        return _requestURI;
+                    default:
+                        break;
+                }
             }
             else if (key.startsWith(__INCLUDE_PREFIX))
                 return null;
 
-            return _attr.getAttribute(key);
+            return _attributes.getAttribute(key);
         }
 
         @Override
         public Enumeration<String> getAttributeNames()
         {
             HashSet<String> set = new HashSet<>();
-            Enumeration<String> e = _attr.getAttributeNames();
+            Enumeration<String> e = _attributes.getAttributeNames();
             while (e.hasMoreElements())
             {
                 String name = e.nextElement();
@@ -439,31 +453,40 @@ public class Dispatcher implements RequestDispatcher
         {
             if (_named == null && key.startsWith("javax.servlet."))
             {
-                if (key.equals(INCLUDE_PATH_INFO))
-                    _pathInfo = (String)value;
-                else if (key.equals(INCLUDE_REQUEST_URI))
-                    _requestURI = (String)value;
-                else if (key.equals(INCLUDE_SERVLET_PATH))
-                    _servletPath = (String)value;
-                else if (key.equals(INCLUDE_CONTEXT_PATH))
-                    _contextPath = (String)value;
-                else if (key.equals(INCLUDE_QUERY_STRING))
-                    _query = (String)value;
-                else if (value == null)
-                    _attr.removeAttribute(key);
-                else
-                    _attr.setAttribute(key, value);
+                switch (key)
+                {
+                    case INCLUDE_PATH_INFO:
+                        _pathInfo = (String)value;
+                        return;
+                    case INCLUDE_REQUEST_URI:
+                        _requestURI = (String)value;
+                        return;
+                    case INCLUDE_SERVLET_PATH:
+                        _servletPath = (String)value;
+                        return;
+                    case INCLUDE_CONTEXT_PATH:
+                        _contextPath = (String)value;
+                        return;
+                    case INCLUDE_QUERY_STRING:
+                        _query = (String)value;
+                        return;
+                    default:
+                        if (value == null)
+                            _attributes.removeAttribute(key);
+                        else
+                            _attributes.setAttribute(key, value);
+                }
             }
             else if (value == null)
-                _attr.removeAttribute(key);
+                _attributes.removeAttribute(key);
             else
-                _attr.setAttribute(key, value);
+                _attributes.setAttribute(key, value);
         }
 
         @Override
         public String toString()
         {
-            return "INCLUDE+" + _attr.toString();
+            return "INCLUDE+" + _attributes.toString();
         }
 
         @Override
