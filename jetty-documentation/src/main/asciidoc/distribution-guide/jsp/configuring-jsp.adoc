@@ -213,7 +213,7 @@ If you are using the Jetty distribution, and you want to change the JSP settings
 ----
  <Configure class="org.eclipse.jetty.webapp.WebAppContext">
    <Set name="contextPath">/foo</Set>
-   <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/foobar.war</Set>
+   <Set name="war"><Property name="jetty.home" default="."/>/webapps/foobar.war</Set>
    <Set name="defaultsDescriptor">/home/smith/dev/webdefault.xml</Set>
  </Configure>
 ----
