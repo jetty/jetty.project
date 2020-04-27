@@ -20,12 +20,12 @@ package org.eclipse.jetty.io;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
 import java.nio.channels.CancelledKeyException;
-import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -41,21 +41,14 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
 {
     private static final Logger LOG = Log.getLogger(ChannelEndPoint.class);
 
-    private final ByteChannel _channel;
-    private final GatheringByteChannel _gather;
-    protected final ManagedSelector _selector;
-    protected final SelectionKey _key;
+    private final SocketChannel _channel;
+    private final ManagedSelector _selector;
+    private final SelectionKey _key;
     private boolean _updatePending;
-
-    /**
-     * The current value for {@link SelectionKey#interestOps()}.
-     */
-    protected int _currentInterestOps;
-
-    /**
-     * The desired value for {@link SelectionKey#interestOps()}.
-     */
-    protected int _desiredInterestOps;
+    // The current value for interestOps.
+    private int _currentInterestOps;
+    // The desired value for interestOps.
+    private int _desiredInterestOps;
 
     private abstract class RunnableTask implements Runnable, Invocable
     {
@@ -94,14 +87,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     }
 
-    private final ManagedSelector.SelectorUpdate _updateKeyAction = new ManagedSelector.SelectorUpdate()
-    {
-        @Override
-        public void update(Selector selector)
-        {
-            updateKey();
-        }
-    };
+    private final ManagedSelector.SelectorUpdate _updateKeyAction = selector -> updateKey();
 
     private final Runnable _runFillable = new RunnableCloseable("runFillable")
     {
@@ -166,13 +152,24 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     };
 
-    public ChannelEndPoint(ByteChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
+    public ChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
         super(scheduler);
         _channel = channel;
         _selector = selector;
         _key = key;
-        _gather = (channel instanceof GatheringByteChannel) ? (GatheringByteChannel)channel : null;
+    }
+
+    @Override
+    public InetSocketAddress getLocalAddress()
+    {
+        return (InetSocketAddress)_channel.socket().getLocalSocketAddress();
+    }
+
+    @Override
+    public InetSocketAddress getRemoteAddress()
+    {
+        return (InetSocketAddress)_channel.socket().getRemoteSocketAddress();
     }
 
     @Override
@@ -185,6 +182,21 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     public boolean isOpen()
     {
         return _channel.isOpen();
+    }
+
+    @Override
+    protected void doShutdownOutput()
+    {
+        try
+        {
+            Socket socket = _channel.socket();
+            if (!socket.isOutputShutdown())
+                socket.shutdownOutput();
+        }
+        catch (IOException e)
+        {
+            LOG.debug(e);
+        }
     }
 
     @Override
@@ -254,27 +266,10 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     @Override
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
-        long flushed = 0;
+        long flushed;
         try
         {
-            if (buffers.length == 1)
-                flushed = _channel.write(buffers[0]);
-            else if (_gather != null && buffers.length > 1)
-                flushed = _gather.write(buffers, 0, buffers.length);
-            else
-            {
-                for (ByteBuffer b : buffers)
-                {
-                    if (b.hasRemaining())
-                    {
-                        int l = _channel.write(b);
-                        if (l > 0)
-                            flushed += l;
-                        if (b.hasRemaining())
-                            break;
-                    }
-                }
-            }
+            flushed = _channel.write(buffers);
             if (LOG.isDebugEnabled())
                 LOG.debug("flushed {} {}", flushed, this);
         }
@@ -295,7 +290,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         return true;
     }
 
-    public ByteChannel getChannel()
+    public SocketChannel getChannel()
     {
         return _channel;
     }
@@ -321,9 +316,8 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     @Override
     public Runnable onSelected()
     {
-        /**
-         * This method may run concurrently with {@link #changeInterests(int)}.
-         */
+        // This method runs from the selector thread,
+        // possibly concurrently with changeInterests(int).
 
         int readyOps = _key.readyOps();
         int oldInterestOps;
@@ -360,9 +354,8 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     @Override
     public void updateKey()
     {
-        /**
-         * This method may run concurrently with {@link #changeInterests(int)}.
-         */
+        // This method runs from the selector thread,
+        // possibly concurrently with changeInterests(int).
 
         try
         {
@@ -385,22 +378,21 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
         catch (CancelledKeyException x)
         {
-            LOG.debug("Ignoring key update for concurrently closed channel {}", this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Ignoring key update for cancelled key {}", this, x);
             close();
         }
         catch (Throwable x)
         {
-            LOG.warn("Ignoring key update for " + this, x);
+            LOG.warn("Ignoring key update for {}", this, x);
             close();
         }
     }
 
     private void changeInterests(int operation)
     {
-        /**
-         * This method may run concurrently with
-         * {@link #updateKey()} and {@link #onSelected()}.
-         */
+        // This method runs from any thread, possibly
+        // concurrently with updateKey() and onSelected().
 
         int oldInterestOps;
         int newInterestOps;
