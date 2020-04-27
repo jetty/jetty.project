@@ -81,87 +81,75 @@ If you wish to use a different compiler, you will need to configure the `compile
 |init param |Description |Default |`webdefault.xml`
 |classpath |`Classpath used for jsp compilation. Only used if
                 org.apache.catalina.jsp_classpath context attribute is not
-                set, which it is in Jetty.` |- |–
+                set, which it is in Jetty.` |- |-
 
-|classdebuginfo |Include debugging info in class file. |TRUE |–
+|classdebuginfo |Include debugging info in class file. |TRUE |-
 
 |checkInterval |Interval in seconds between background recompile checks.
 Only relevant if `
-                development=false`. |0 |–
+                development=false`. |0 |-
 
 |development |`development=true`, recompilation checks occur on each
 request. See also `
-                modificationTestInterval`. |TRUE |–
+                modificationTestInterval`. |TRUE |-
 
 |displaySourceFragment |Should a source fragment be included in
-exception messages |TRUE |–
+exception messages |TRUE |-
 
 |errorOnUseBeanInvalidClassAttribute |Should Jasper issue an error when
 the value of the class attribute in an useBean action is not a valid
-bean class |TRUE |–
+bean class |TRUE |-
 
 |fork |Should Ant fork its Java compiles of JSP pages? |TRUE |FALSE
 
 |keepgenerated |Do you want to keep the generated Java files around?
-|TRUE |–
+|TRUE |-
 
 |trimSpaces |Should white spaces between directives or actions be
-trimmed? |FALSE |–
+trimmed? |FALSE |-
 
-|enablePooling |Determines whether tag handler pooling is enabled. |TRUE
-|–
+|enablePooling |Determines whether tag handler pooling is enabled. |TRUE |-
 
-|engineOptionsClass |Allows specifying the Options class used to
-configure Jasper. If not present, the default EmbeddedServletOptions
-will be used. |–
+|engineOptionsClass |Allows specifying the Options class used to configure Jasper. If not present, the default EmbeddedServletOptions
+will be used. |- |-
 
 |mappedFile |Support for mapped Files. Generates a servlet that has a
-print statement per line of the JSP file  |TRUE |–
+print statement per line of the JSP file  |TRUE |-
 
-|suppressSmap |Generation of SMAP info for JSR45 debugging. |FALSE |–
+|suppressSmap |Generation of SMAP info for JSR45 debugging. |FALSE |-
 
-|dumpSmap |Dump SMAP JSR45 info to a file. |FALSE |–
+|dumpSmap |Dump SMAP JSR45 info to a file. |FALSE |-
 
-|genStrAsCharArray |Option for generating Strings. |FALSE |–
+|genStrAsCharArray |Option for generating Strings. |FALSE |-
 
-|ieClassId |The class-id value to be sent to Internet Explorer when
-using <jsp:plugin> tags. |clsid:8AD9C840-044E-11D1-B3E9-00805F499D93 |–
+|ieClassId |The class-id value to be sent to Internet Explorer when using <jsp:plugin> tags. |clsid:8AD9C840-044E-11D1-B3E9-00805F499D93 |-
 
-|maxLoadedJsps |The maximum number of JSPs that will be loaded for a web
-application. If more than this number of JSPs are loaded, the least
-recently used JSPs will be unloaded so that the number of JSPs loaded at
-any one time does not exceed this limit. A value of zero or less
-indicates no limit. |-1 |–
+|maxLoadedJsps |The maximum number of JSPs that will be loaded for a web application. If more than this number of JSPs are loaded, the least
+recently used JSPs will be unloaded so that the number of JSPs loaded at any one time does not exceed this limit. A value of zero or less
+indicates no limit. |-1 |-
 
-|jspIdleTimeout |The amount of time in seconds a JSP can be idle before
-it is unloaded. A value of zero or less indicates never unload. |-1 |–
+|jspIdleTimeout |The amount of time in seconds a JSP can be idle before it is unloaded. A value of zero or less indicates never unload. |-1 |-
 
-|scratchDir |Directory where servlets are generated. See |– |–
+|scratchDir |Directory where servlets are generated.|- |-
 
-|compilerClassName |If not set, defaults to the Eclipse jdt compiler. |–
+|compilerClassName |If not set, defaults to the Eclipse jdt compiler. |- |-
 
-|compiler |Used if the Eclipse jdt compiler cannot be found on the
-classpath. It is the classname of a compiler that Ant should invoke. |–
-|–
+|compiler |Used if the Eclipse jdt compiler cannot be found on the classpath. It is the classname of a compiler that Ant should invoke. |-
+|-
 
-|compilerTargetVM |Target vm to compile for. |1.7 |–
+|compilerTargetVM |Target vm to compile for. |1.7 |-
 
-|compilerSourceVM |Sets source compliance level for the jdt compiler.
-|1.7 |–
+|compilerSourceVM |Sets source compliance level for the jdt compiler.  |1.7 |-
 
-|javaEncoding |Pass through the encoding to use for the compilation.
-|UTF8 |–
+|javaEncoding |Pass through the encoding to use for the compilation.  |UTF8 |- 
 
-|modificationTestInterval |If `development=true`, interval between
-recompilation checks, triggered by a request. |4 |–
+|modificationTestInterval |If `development=true`, interval between recompilation checks, triggered by a request. |4 |-
 
 |xpoweredBy |Generate an X-Powered-By response header. |FALSE |FALSE
 
-|recompileOnFail |If a JSP compilation fails should the
-modificationTestInterval be ignored and the next access trigger a
-re-compilation attempt? Used in development mode only and is disabled by
-default as compilation may be expensive and could lead to excessive
-resource usage. |- |–
+|recompileOnFail |If a JSP compilation fails should the modificationTestInterval be ignored and the next access trigger a
+re-compilation attempt? Used in development mode only and is disabled by default as compilation may be expensive and could lead to excessive
+resource usage. |- |-
 |=======================================================================
 
 [[configuring-jsp-for-jetty]]
@@ -225,7 +213,7 @@ You can use the entry in link:#webdefault-xml[{$jetty.home}/etc/webdefault.xml] 
 ----
  <servlet id="jsp">
      <servlet-name>jsp</servlet-name>
-     <servlet-class>org.apache.jasper.servlet.JspServlet</servlet-class>
+     <servlet-class>org.eclipse.jetty.jsp.JettyJspServlet</servlet-class>
      <init-param>
          <param-name>logVerbosityLevel</param-name>
          <param-value>DEBUG</param-value>
