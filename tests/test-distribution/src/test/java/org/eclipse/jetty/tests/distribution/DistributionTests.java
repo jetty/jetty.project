@@ -20,12 +20,14 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -40,6 +42,9 @@ import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
@@ -48,6 +53,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -426,9 +432,13 @@ public class DistributionTests extends AbstractDistributionTest
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-bad-websocket-webapp:war:" + jettyVersion);
-            distribution.installWarFile(war, "test1");
-            distribution.installWarFile(war, "test2");
+            File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-webapp:war:" + jettyVersion);
+            File badWebApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-bad-websocket-webapp:war:" + jettyVersion);
+
+            distribution.installWarFile(webApp, "test1");
+            distribution.installWarFile(badWebApp, "test2");
+            distribution.installWarFile(badWebApp, "test3");
+            distribution.installWarFile(webApp, "test4");
 
             int port = distribution.freePort();
             String[] args2 = {
@@ -436,18 +446,47 @@ public class DistributionTests extends AbstractDistributionTest
                 "jetty.http.port=" + port//,
                 //"jetty.server.dumpAfterStart=true"
             };
+
             try (DistributionTester.Run run2 = distribution.start(args2))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
                 assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
 
                 startHttpClient();
-                ContentResponse response = client.GET("http://localhost:" + port + "/test1/index.jsp");
+                WebSocketClient wsClient = new WebSocketClient(client);
+                wsClient.start();
+                URI serverUri = URI.create("ws://localhost:" + port);
+
+                // Verify /test1 is able to establish a WebSocket connection.
+                WsListener webSocketListener = new WsListener();
+                wsClient.connect(webSocketListener, serverUri.resolve("/test1/onopen/a")).get(5, TimeUnit.SECONDS).close();
+                assertTrue(webSocketListener.closeLatch.await(5, TimeUnit.SECONDS));
+                assertThat(webSocketListener.closeCode, is(StatusCode.NORMAL));
+
+                // Verify that /test2 and /test3 could not be started.
+                ContentResponse response = client.GET(serverUri.resolve("/test2/badonopen/a"));
+                assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
+                client.GET("http://localhost:" + port + "/test3/badonopen/a");
                 assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
 
-                client.GET("http://localhost:" + port + "/test2/index.jsp");
-                assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
+                // Verify /test4 is able to establish a WebSocket connection.
+                webSocketListener = new WsListener();
+                wsClient.connect(webSocketListener, serverUri.resolve("/test4/onopen/a")).get(5, TimeUnit.SECONDS).close();
+                assertTrue(webSocketListener.closeLatch.await(5, TimeUnit.SECONDS));
+                assertThat(webSocketListener.closeCode, is(StatusCode.NORMAL));
             }
+        }
+    }
+
+    public static class WsListener implements WebSocketListener
+    {
+        private CountDownLatch closeLatch = new CountDownLatch(1);
+        private int closeCode;
+
+        @Override
+        public void onWebSocketClose(int statusCode, String reason)
+        {
+            this.closeCode = statusCode;
         }
     }
 
