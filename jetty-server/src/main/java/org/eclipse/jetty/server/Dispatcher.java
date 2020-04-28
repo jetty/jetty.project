@@ -287,7 +287,7 @@ public class Dispatcher implements RequestDispatcher
                     case FORWARD_QUERY_STRING:
                         return _query;
                     case FORWARD_MAPPING:
-	                return _mapping;
+                        return _mapping;
                     default:
                         break;
                 }
