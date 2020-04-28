@@ -107,7 +107,7 @@ Where `/opt/custom/jetty` contains:
 
 etc/jetty.xml
 etc/jetty-selector.xml
-etc/jetty-deployer.xml
+etc/jetty-deploy.xml
 etc/jetty-special.xml
 ----
 
@@ -130,7 +130,7 @@ Here's a partial listing of that jar that shows you the names of the xml files c
 ----
 META-INF/MANIFEST.MF
 jettyhome/etc/jetty.xml
-jettyhome/etc/jetty-deployer.xml
+jettyhome/etc/jetty-deploy.xml
 jettyhome/etc/jetty-http.xml
 ----
 
@@ -140,7 +140,7 @@ If not specified, they default to:
 +
 [source, plain, subs="{sub-order}"]
 ----
-etc/jetty.xml,etc/jetty-http.xml,etc/jetty-deployer.xml
+etc/jetty.xml,etc/jetty-http.xml,etc/jetty-deploy.xml
 ----
 
 +
@@ -150,7 +150,7 @@ You can use this ability to mix and match jetty configuration files to add funct
 Here's an example of adding a HTTPS connector, using the relevant files from the jetty-distribution:
 +
 ....
-etc/jetty.xml, etc/jetty-http.xml, /opt/jetty/etc/jetty-ssl.xml, /opt/jetty/etc/jetty-https.xml, etc/jetty-deployer.xml
+etc/jetty.xml, etc/jetty-http.xml, /opt/jetty/etc/jetty-ssl.xml, /opt/jetty/etc/jetty-https.xml, etc/jetty-deploy.xml
 ....
 +
 
@@ -203,7 +203,7 @@ public class Activator implements BundleActivator
         serverProps.put("managedServerName", serverName);
         serverProps.put("jetty.http.port", "9999");
         //let Jetty apply some configuration files to the Server instance
-        serverProps.put("jetty.etc.config.urls", "file:/opt/jetty/etc/jetty.xml,file:/opt/jetty/etc/jetty-selector.xml,file:/opt/jetty/etc/jetty-deployer.xml");
+        serverProps.put("jetty.etc.config.urls", "file:/opt/jetty/etc/jetty.xml,file:/opt/jetty/etc/jetty-selector.xml,file:/opt/jetty/etc/jetty-deploy.xml");
         //register as an OSGi Service for Jetty to find
         context.registerService(Server.class.getName(), server, serverProps);
 
