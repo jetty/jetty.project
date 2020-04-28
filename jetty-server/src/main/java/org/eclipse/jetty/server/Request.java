@@ -34,13 +34,14 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
@@ -149,6 +150,7 @@ public class Request implements HttpServletRequest
     private static final int INPUT_READER = 2;
 
     private static final MultiMap<String> NO_PARAMS = new MultiMap<>();
+    private static final MultiMap<String> BAD_PARAMS = new MultiMap<>();
 
     /**
      * Compare inputParameters to NO_PARAMS by Reference
@@ -196,7 +198,7 @@ public class Request implements HttpServletRequest
         final String mapping;
         if (pathSpec instanceof ServletPathSpec)
         {
-            switch (((ServletPathSpec)pathSpec).getGroup())
+            switch (pathSpec.getGroup())
             {
                 case ROOT:
                     match = MappingMatch.CONTEXT_ROOT;
@@ -273,7 +275,10 @@ public class Request implements HttpServletRequest
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final HttpInput _input;
     private MetaData.Request _metaData;
-    private String _originalUri;
+    private HttpFields _httpFields;
+    private HttpFields _trailers;
+    private HttpURI _uri;
+    private String _method;
     private String _contextPath;
     private String _servletPath;
     private String _pathInfo;
@@ -297,7 +302,7 @@ public class Request implements HttpServletRequest
     private MultiMap<String> _queryParameters;
     private MultiMap<String> _contentParameters;
     private MultiMap<String> _parameters;
-    private String _queryEncoding;
+    private Charset _queryEncoding;
     private BufferedReader _reader;
     private String _readerEncoding;
     private InetSocketAddress _remote;
@@ -318,8 +323,12 @@ public class Request implements HttpServletRequest
 
     public HttpFields getHttpFields()
     {
-        MetaData.Request metadata = _metaData;
-        return metadata == null ? null : metadata.getFields();
+        return _httpFields;
+    }
+
+    public void setHttpFields(HttpFields fields)
+    {
+        _httpFields = fields.asImmutable();
     }
 
     @Override
@@ -338,11 +347,14 @@ public class Request implements HttpServletRequest
         return trailers;
     }
 
+    public void setTrailerHttpFields(HttpFields trailers)
+    {
+        _trailers = trailers == null ? null : trailers.asImmutable();
+    }
+
     public HttpFields getTrailerHttpFields()
     {
-        MetaData.Request metadata = _metaData;
-        Supplier<HttpFields> trailers = metadata == null ? null : metadata.getTrailerSupplier();
-        return trailers == null ? null : trailers.get();
+        return _trailers;
     }
 
     public HttpInput getHttpInput()
@@ -360,47 +372,28 @@ public class Request implements HttpServletRequest
         return !isPush() && getHttpChannel().getHttpTransport().isPushSupported();
     }
 
+    private static EnumSet<HttpHeader> NOT_PUSHED_HEADERS = EnumSet.of(
+        HttpHeader.IF_MATCH,
+        HttpHeader.IF_RANGE,
+        HttpHeader.IF_UNMODIFIED_SINCE,
+        HttpHeader.RANGE,
+        HttpHeader.EXPECT,
+        HttpHeader.REFERER,
+        HttpHeader.COOKIE,
+        HttpHeader.AUTHORIZATION,
+        HttpHeader.IF_NONE_MATCH,
+        HttpHeader.IF_MODIFIED_SINCE
+    );
+
     @Override
     public PushBuilder newPushBuilder()
     {
         if (!isPushSupported())
             return null;
 
-        HttpFields fields = new HttpFields(getHttpFields().size() + 5);
+        HttpFields.Mutable fields = HttpFields.build(getHttpFields(), NOT_PUSHED_HEADERS);
 
-        for (HttpField field : getHttpFields())
-        {
-            HttpHeader header = field.getHeader();
-            if (header == null)
-                fields.add(field);
-            else
-            {
-                switch (header)
-                {
-                    case IF_MATCH:
-                    case IF_RANGE:
-                    case IF_UNMODIFIED_SINCE:
-                    case RANGE:
-                    case EXPECT:
-                    case REFERER:
-                    case COOKIE:
-                        continue;
-
-                    case AUTHORIZATION:
-                        continue;
-
-                    case IF_NONE_MATCH:
-                    case IF_MODIFIED_SINCE:
-                        // TODO
-                        continue;
-
-                    default:
-                        fields.add(field);
-                }
-            }
-        }
-
-        String id = null;
+        String id;
         try
         {
             HttpSession session = getSession();
@@ -433,10 +426,10 @@ public class Request implements HttpServletRequest
         if (listener instanceof AsyncListener)
             throw new IllegalArgumentException(listener.getClass().toString());
     }
-    
+
     /**
      * Remember a session that this request has just entered.
-     * 
+     *
      * @param s the session
      */
     public void enterSession(HttpSession s)
@@ -464,7 +457,7 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * A response is being committed for a session, 
+     * A response is being committed for a session,
      * potentially write the session out before the
      * client receives the response.
      * @param session the session
@@ -503,16 +496,7 @@ public class Request implements HttpServletRequest
         // Extract query string parameters; these may be replaced by a forward()
         // and may have already been extracted by mergeQueryParameters().
         if (_queryParameters == null)
-        {
-            try
-            {
-                extractQueryParameters();
-            }
-            catch (IllegalStateException | IllegalArgumentException e)
-            {
-                throw new BadMessageException("Unable to parse URI query", e);
-            }
-        }
+            extractQueryParameters();
 
         // Do parameters need to be combined?
         if (isNoParams(_queryParameters) || _queryParameters.size() == 0)
@@ -527,35 +511,26 @@ public class Request implements HttpServletRequest
         }
 
         // protect against calls to recycled requests (which is illegal, but
-        // this gives better failures 
+        // this gives better failures
         MultiMap<String> parameters = _parameters;
         return parameters == null ? NO_PARAMS : parameters;
     }
 
     private void extractQueryParameters()
     {
-        MetaData.Request metadata = _metaData;
-        HttpURI uri = metadata == null ? null : metadata.getURI();
-        if (uri == null || !uri.hasQuery())
+        if (_uri == null || StringUtil.isEmpty(_uri.getQuery()))
             _queryParameters = NO_PARAMS;
         else
         {
-            _queryParameters = new MultiMap<>();
-            if (_queryEncoding == null)
-                uri.decodeQueryTo(_queryParameters);
-            else
+            try
             {
-                try
-                {
-                    uri.decodeQueryTo(_queryParameters, _queryEncoding);
-                }
-                catch (UnsupportedEncodingException e)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.warn("Unable to decode query", e);
-                    else
-                        LOG.warn("Unable to decode query - {}", e.toString());
-                }
+                _queryParameters = new MultiMap<>();
+                UrlEncoded.decodeTo(_uri.getQuery(), _queryParameters, _queryEncoding);
+            }
+            catch (IllegalStateException | IllegalArgumentException e)
+            {
+                _queryParameters = BAD_PARAMS;
+                throw new BadMessageException("Unable to parse URI query", e);
             }
         }
     }
@@ -571,7 +546,7 @@ public class Request implements HttpServletRequest
             int contentLength = getContentLength();
             if (contentLength != 0 && _inputState == INPUT_NONE)
             {
-                String baseType = HttpFields.valueParameters(contentType, null);
+                String baseType = HttpField.valueParameters(contentType, null);
                 if (MimeTypes.Type.FORM_ENCODED.is(baseType) &&
                     _channel.getHttpConfiguration().isFormEncodedMethod(getMethod()))
                 {
@@ -715,7 +690,7 @@ public class Request implements HttpServletRequest
     public Enumeration<String> getAttributeNames()
     {
         if (_attributes == null)
-            return Collections.enumeration(Collections.<String>emptyList());
+            return Collections.enumeration(Collections.emptyList());
 
         return AttributesMap.getAttributeNamesCopy(_attributes);
     }
@@ -755,7 +730,7 @@ public class Request implements HttpServletRequest
         {
             if (_context != null)
                 _characterEncoding = _context.getRequestCharacterEncoding();
-            
+
             if (_characterEncoding == null)
             {
                 String contentType = getContentType();
@@ -782,35 +757,22 @@ public class Request implements HttpServletRequest
     @Override
     public int getContentLength()
     {
-        MetaData.Request metadata = _metaData;
-        if (metadata == null)
+        long contentLength = getContentLengthLong();
+        if (contentLength > Integer.MAX_VALUE)
+            // Per ServletRequest#getContentLength() javadoc this must return -1 for values exceeding Integer.MAX_VALUE
             return -1;
-
-        long contentLength = metadata.getContentLength();
-        if (contentLength != Long.MIN_VALUE)
-        {
-            if (contentLength > Integer.MAX_VALUE)
-            {
-                // Per ServletRequest#getContentLength() javadoc this must return -1 for values exceeding Integer.MAX_VALUE
-                return -1;
-            }
-            else
-            {
-                return (int)contentLength;
-            }
-        }
-        return (int)metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.asString());
+        return (int)contentLength;
     }
 
     @Override
     public long getContentLengthLong()
     {
-        MetaData.Request metadata = _metaData;
-        if (metadata == null)
-            return -1L;
-        if (metadata.getContentLength() != Long.MIN_VALUE)
-            return metadata.getContentLength();
-        return metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.asString());
+        // Even thought the metadata might know the real content length,
+        // we always look at the headers because the length may be changed by interceptors.
+        if (_httpFields == null)
+            return -1;
+
+        return _httpFields.getLongField(HttpHeader.CONTENT_LENGTH);
     }
 
     public long getContentRead()
@@ -893,8 +855,8 @@ public class Request implements HttpServletRequest
     @Override
     public long getDateHeader(String name)
     {
-        MetaData.Request metadata = _metaData;
-        return metadata == null ? -1 : metadata.getFields().getDateField(name);
+        HttpFields fields = _httpFields;
+        return fields == null ? null : fields.getDateField(name);
     }
 
     @Override
@@ -906,26 +868,26 @@ public class Request implements HttpServletRequest
     @Override
     public String getHeader(String name)
     {
-        MetaData.Request metadata = _metaData;
-        return metadata == null ? null : metadata.getFields().get(name);
+        HttpFields fields = _httpFields;
+        return fields == null ? null : fields.get(name);
     }
 
     @Override
     public Enumeration<String> getHeaderNames()
     {
-        MetaData.Request metadata = _metaData;
-        return metadata == null ? Collections.emptyEnumeration() : metadata.getFields().getFieldNames();
+        HttpFields fields = _httpFields;
+        return fields == null ? Collections.emptyEnumeration() : fields.getFieldNames();
     }
 
     @Override
     public Enumeration<String> getHeaders(String name)
     {
-        MetaData.Request metadata = _metaData;
-        if (metadata == null)
+        HttpFields fields = _httpFields;
+        if (fields == null)
             return Collections.emptyEnumeration();
-        Enumeration<String> e = metadata.getFields().getValues(name);
+        Enumeration<String> e = fields.getValues(name);
         if (e == null)
-            return Collections.enumeration(Collections.<String>emptyList());
+            return Collections.enumeration(Collections.emptyList());
         return e;
     }
 
@@ -953,25 +915,25 @@ public class Request implements HttpServletRequest
     @Override
     public int getIntHeader(String name)
     {
-        MetaData.Request metadata = _metaData;
-        return metadata == null ? -1 : (int)metadata.getFields().getLongField(name);
+        HttpFields fields = _httpFields;
+        return fields == null ? -1 : (int)fields.getLongField(name);
     }
 
     @Override
     public Locale getLocale()
     {
-        MetaData.Request metadata = _metaData;
-        if (metadata == null)
+        HttpFields fields = _httpFields;
+        if (fields == null)
             return Locale.getDefault();
 
-        List<String> acceptable = metadata.getFields().getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
+        List<String> acceptable = fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
 
         // handle no locale
         if (acceptable.isEmpty())
             return Locale.getDefault();
 
         String language = acceptable.get(0);
-        language = HttpFields.stripParameters(language);
+        language = HttpField.stripParameters(language);
         String country = "";
         int dash = language.indexOf('-');
         if (dash > -1)
@@ -985,11 +947,11 @@ public class Request implements HttpServletRequest
     @Override
     public Enumeration<Locale> getLocales()
     {
-        MetaData.Request metadata = _metaData;
-        if (metadata == null)
+        HttpFields fields = _httpFields;
+        if (fields == null)
             return Collections.enumeration(__defaultLocale);
 
-        List<String> acceptable = metadata.getFields().getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
+        List<String> acceptable = fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
 
         // handle no locale
         if (acceptable.isEmpty())
@@ -997,7 +959,7 @@ public class Request implements HttpServletRequest
 
         List<Locale> locales = acceptable.stream().map(language ->
         {
-            language = HttpFields.stripParameters(language);
+            language = HttpField.stripParameters(language);
             String country = "";
             int dash = language.indexOf('-');
             if (dash > -1)
@@ -1074,10 +1036,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getMethod()
     {
-        MetaData.Request metadata = _metaData;
-        if (metadata != null)
-            return metadata.getMethod();
-        return null;
+        return _method;
     }
 
     @Override
@@ -1164,14 +1123,18 @@ public class Request implements HttpServletRequest
 
     public String getQueryEncoding()
     {
+        return _queryEncoding == null ? null : _queryEncoding.name();
+    }
+
+    Charset getQueryCharset()
+    {
         return _queryEncoding;
     }
 
     @Override
     public String getQueryString()
     {
-        MetaData.Request metadata = _metaData;
-        return metadata == null ? null : metadata.getURI().getQuery();
+        return _uri == null ? null : _uri.getQuery();
     }
 
     @Override
@@ -1306,8 +1269,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getRequestURI()
     {
-        MetaData.Request metadata = _metaData;
-        return metadata == null ? null : metadata.getURI().getPath();
+        return _uri == null ? null : _uri.getPath();
     }
 
     @Override
@@ -1344,22 +1306,13 @@ public class Request implements HttpServletRequest
     @Override
     public String getScheme()
     {
-        MetaData.Request metadata = _metaData;
-        String scheme = metadata == null ? null : metadata.getURI().getScheme();
-        return scheme == null ? HttpScheme.HTTP.asString() : scheme;
+        return _uri == null ? "http" : _uri.getScheme();
     }
 
     @Override
     public String getServerName()
     {
-        MetaData.Request metadata = _metaData;
-        String name = metadata == null ? null : metadata.getURI().getHost();
-
-        // Return already determined host
-        if (name != null)
-            return name;
-
-        return findServerName();
+        return _uri == null ? findServerName() : _uri.getHost();
     }
 
     private String findServerName()
@@ -1384,9 +1337,7 @@ public class Request implements HttpServletRequest
     @Override
     public int getServerPort()
     {
-        MetaData.Request metadata = _metaData;
-        HttpURI uri = metadata == null ? null : metadata.getURI();
-        int port = (uri == null || uri.getHost() == null) ? findServerPort() : uri.getPort();
+        int port = _uri == null ? -1 : _uri.getPort();
 
         // If no port specified, return the default port for the scheme
         if (port <= 0)
@@ -1481,7 +1432,7 @@ public class Request implements HttpServletRequest
             }
         }
     }
-    
+
     /**
      * Called when a response is about to be committed, ie sent
      * back to the client
@@ -1497,21 +1448,21 @@ public class Request implements HttpServletRequest
 
     /**
      * Find a session that this request has already entered for the
-     * given SessionHandler 
+     * given SessionHandler
      *
      * @param sessionHandler the SessionHandler (ie context) to check
-     * @return
+     * @return the session for the passed session handler or null
      */
     public HttpSession getSession(SessionHandler sessionHandler)
     {
         if (_sessions == null || _sessions.size() == 0 || sessionHandler == null)
             return null;
-        
+
         HttpSession session = null;
-        
+
         for (HttpSession s:_sessions)
         {
-            Session ss =  Session.class.cast(s);
+            Session ss = (Session)s;
             if (sessionHandler == ss.getSessionHandler())
             {
                 session = s;
@@ -1521,7 +1472,7 @@ public class Request implements HttpServletRequest
         }
         return session;
     }
-    
+
     @Override
     public HttpSession getSession()
     {
@@ -1574,13 +1525,16 @@ public class Request implements HttpServletRequest
         return _timeStamp;
     }
 
-    /**
-     * @return Returns the uri.
-     */
     public HttpURI getHttpURI()
     {
-        MetaData.Request metadata = _metaData;
-        return metadata == null ? null : metadata.getURI();
+        return _uri;
+    }
+
+    public void setHttpURI(HttpURI uri)
+    {
+        if (_uri != null && !Objects.equals(_uri.getQuery(), uri.getQuery()) && _queryParameters != BAD_PARAMS)
+            _parameters = _queryParameters = null;
+        _uri = uri.asImmutable();
     }
 
     /**
@@ -1588,20 +1542,15 @@ public class Request implements HttpServletRequest
      */
     public String getOriginalURI()
     {
-        return _originalUri;
-    }
-
-    /**
-     * @param uri the URI to set
-     */
-    public void setHttpURI(HttpURI uri)
-    {
         MetaData.Request metadata = _metaData;
-        if (metadata != null)
-        {
-            metadata.setURI(uri);
-            _queryParameters = null;
-        }
+        if (metadata == null)
+            return null;
+        HttpURI uri = metadata.getURI();
+        if (uri == null)
+            return null;
+        return uri.isAbsolute() && metadata.getHttpVersion() == HttpVersion.HTTP_2
+            ? uri.getPathQuery()
+            : uri.toString();
     }
 
     public UserIdentity getUserIdentity()
@@ -1716,46 +1665,57 @@ public class Request implements HttpServletRequest
     /**
      * @param request the Request metadata
      */
-    public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
+    public void setMetaData(MetaData.Request request)
     {
         _metaData = request;
-        HttpURI uri = request.getURI();
-        _originalUri = uri.isAbsolute() && request.getHttpVersion() != HttpVersion.HTTP_2
-            ? uri.toString()
-            : uri.getPathQuery();
+        _method = request.getMethod();
+        _httpFields = request.getFields();
+        final HttpURI uri = request.getURI();
 
-        if (uri.getScheme() == null)
-            uri.setScheme("http");
-
-        if (!uri.hasAuthority())
-        {
-            HttpField field = getHttpFields().getField(HttpHeader.HOST);
-            if (field instanceof HostPortHttpField)
-            {
-                HostPortHttpField authority = (HostPortHttpField)field;
-                uri.setAuthority(authority.getHost(), authority.getPort());
-            }
-        }
-
-        String encoded = uri.getPath();
-        String path;
-        if (encoded == null)
-        {
-            path = uri.isAbsolute() ? "/" : null;
-            uri.setPath(path);
-        }
-        else if (encoded.startsWith("/"))
-        {
-            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(URIUtil.decodePath(encoded));
-        }
-        else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
-        {
-            path = encoded;
-        }
+        if (uri.isAbsolute() && uri.hasAuthority() && uri.getPath() != null)
+            _uri = uri;
         else
         {
-            path = null;
+            HttpURI.Mutable builder = HttpURI.build(uri);
+
+            if (uri.isAbsolute())
+            {
+                if (uri.getPath() == null)
+                    builder.path("/");
+                setSecure(HttpScheme.HTTPS.is(uri.getScheme()));
+            }
+            else
+            {
+                builder.scheme(HttpScheme.HTTP.asString());
+            }
+
+            if (!uri.hasAuthority())
+            {
+                HttpField field = getHttpFields().getField(HttpHeader.HOST);
+                if (field instanceof HostPortHttpField)
+                {
+                    HostPortHttpField authority = (HostPortHttpField)field;
+                    builder.host(authority.getHost()).port(authority.getPort());
+                }
+                else
+                {
+                    builder.host(findServerName()).port(findServerPort());
+                }
+            }
+            _uri = builder.asImmutable();
         }
+
+        String encoded = _uri.getPath();
+        String path;
+        if (encoded == null)
+            // TODO this is not really right for CONNECT
+            path = _uri.isAbsolute() ? "/" : null;
+        else if (encoded.startsWith("/"))
+            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(URIUtil.decodePath(encoded));
+        else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
+            path = encoded;
+        else
+            path = null;
 
         if (path == null || path.isEmpty())
         {
@@ -1778,7 +1738,10 @@ public class Request implements HttpServletRequest
     protected void recycle()
     {
         _metaData = null;
-        _originalUri = null;
+        _httpFields = null;
+        _trailers = null;
+        _method = null;
+        _uri = null;
 
         if (_context != null)
             throw new IllegalStateException("Request in context!");
@@ -2027,16 +1990,7 @@ public class Request implements HttpServletRequest
      */
     public void setMethod(String method)
     {
-        MetaData.Request metadata = _metaData;
-        if (metadata != null)
-            metadata.setMethod(method);
-    }
-
-    public void setHttpVersion(HttpVersion version)
-    {
-        MetaData.Request metadata = _metaData;
-        if (metadata != null)
-            metadata.setHttpVersion(version);
+        _method = method;
     }
 
     public boolean isHead()
@@ -2062,19 +2016,7 @@ public class Request implements HttpServletRequest
      */
     public void setQueryEncoding(String queryEncoding)
     {
-        _queryEncoding = queryEncoding;
-    }
-
-    /**
-     * @param queryString The queryString to set.
-     */
-    public void setQueryString(String queryString)
-    {
-        MetaData.Request metadata = _metaData;
-        HttpURI uri = metadata == null ? null : metadata.getURI();
-        if (uri != null)
-            uri.setQuery(queryString);
-        _queryEncoding = null; //assume utf-8
+        _queryEncoding = Charset.forName(queryEncoding);
     }
 
     /**
@@ -2099,37 +2041,6 @@ public class Request implements HttpServletRequest
     public void setRequestedSessionIdFromCookie(boolean requestedSessionIdCookie)
     {
         _requestedSessionIdFromCookie = requestedSessionIdCookie;
-    }
-
-    public void setURIPathQuery(String requestURI)
-    {
-        MetaData.Request metadata = _metaData;
-        HttpURI uri = metadata == null ? null : metadata.getURI();
-        if (uri != null)
-            uri.setPathQuery(requestURI);
-    }
-
-    /**
-     * @param scheme The scheme to set.
-     */
-    public void setScheme(String scheme)
-    {
-        MetaData.Request metadata = _metaData;
-        HttpURI uri = metadata == null ? null : metadata.getURI();
-        if (uri != null)
-            uri.setScheme(scheme);
-    }
-
-    /**
-     * @param host The host to set.
-     * @param port the port to set
-     */
-    public void setAuthority(String host, int port)
-    {
-        MetaData.Request metadata = _metaData;
-        HttpURI uri = metadata == null ? null : metadata.getURI();
-        if (uri != null)
-            uri.setAuthority(host, port);
     }
 
     /**
@@ -2224,21 +2135,21 @@ public class Request implements HttpServletRequest
         //if already authenticated, return true
         if (getUserPrincipal() != null && getRemoteUser() != null && getAuthType() != null)
             return true;
-        
+
         //do the authentication
         if (_authentication instanceof Authentication.Deferred)
         {
             setAuthentication(((Authentication.Deferred)_authentication).authenticate(this, response));
         }
-        
+
         //if the authentication did not succeed
         if (_authentication instanceof Authentication.Deferred)
             response.sendError(HttpStatus.UNAUTHORIZED_401);
-        
+
         //if the authentication is incomplete, return false
         if (!(_authentication instanceof Authentication.ResponseSent))
             return false;
-        
+
         //something has gone wrong
         throw new ServletException("Authentication failed");
     }
@@ -2254,7 +2165,7 @@ public class Request implements HttpServletRequest
     public Collection<Part> getParts() throws IOException, ServletException
     {
         String contentType = getContentType();
-        if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpFields.valueParameters(contentType, null)))
+        if (contentType == null || !MimeTypes.Type.MULTIPART_FORM_DATA.is(HttpField.valueParameters(contentType, null)))
             throw new ServletException("Unsupported Content-Type [" + contentType + "], expected [multipart/form-data]");
         return getParts(null);
     }
@@ -2359,7 +2270,7 @@ public class Request implements HttpServletRequest
             _authentication = ((Authentication.LogoutAuthentication)_authentication).logout(this);
     }
 
-    public void mergeQueryParameters(String oldQuery, String newQuery, boolean updateQueryString)
+    public void mergeQueryParameters(String oldQuery, String newQuery)
     {
         MultiMap<String> newQueryParams = null;
         // Have to assume ENCODING because we can't know otherwise.
@@ -2375,10 +2286,11 @@ public class Request implements HttpServletRequest
             oldQueryParams = new MultiMap<>();
             try
             {
-                UrlEncoded.decodeTo(oldQuery, oldQueryParams, getQueryEncoding());
+                UrlEncoded.decodeTo(oldQuery, oldQueryParams, getQueryCharset());
             }
             catch (Throwable th)
             {
+                _queryParameters = BAD_PARAMS;
                 throw new BadMessageException(400, "Bad query encoding", th);
             }
         }
@@ -2397,9 +2309,6 @@ public class Request implements HttpServletRequest
 
         setQueryParameters(mergedQueryParams);
         resetParameters();
-
-        if (updateQueryString)
-            setQueryString(newQuery == null ? oldQuery : newQuery);
     }
 
     @Override

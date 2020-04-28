@@ -86,8 +86,7 @@ public class AsyncIOTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
         FuturePromise<Stream> promise = new FuturePromise<>();
@@ -137,8 +136,7 @@ public class AsyncIOTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
         FuturePromise<Stream> promise = new FuturePromise<>();
@@ -193,8 +191,7 @@ public class AsyncIOTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         final CountDownLatch latch = new CountDownLatch(1);
         FuturePromise<Stream> promise = new FuturePromise<>();
@@ -266,8 +263,7 @@ public class AsyncIOTest extends AbstractTest
             }
         });
 
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);
         FuturePromise<Stream> promise = new FuturePromise<>();

@@ -83,7 +83,7 @@ public class AbstractServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        return new MetaData.Request(method, HttpScheme.HTTP, new HostPortHttpField(authority), path, HttpVersion.HTTP_2, fields);
+        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), path, HttpVersion.HTTP_2, fields, -1);
     }
 
     @AfterEach

@@ -65,7 +65,7 @@ public class CloseTest extends AbstractServerTest
                 try
                 {
                     sessionRef.set(stream.getSession());
-                    MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                    MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                     // Reply with HEADERS.
                     stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                     closeLatch.await(5, TimeUnit.SECONDS);
@@ -81,7 +81,7 @@ public class CloseTest extends AbstractServerTest
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
@@ -133,7 +133,7 @@ public class CloseTest extends AbstractServerTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 sessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 return null;
             }
@@ -142,7 +142,7 @@ public class CloseTest extends AbstractServerTest
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
         generator.control(lease, new GoAwayFrame(1, ErrorCode.NO_ERROR.code, "OK".getBytes("UTF-8")));
 
@@ -198,7 +198,7 @@ public class CloseTest extends AbstractServerTest
             {
                 stream.setIdleTimeout(10 * idleTimeout);
                 sessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 stream.getSession().close(ErrorCode.NO_ERROR.code, "OK", Callback.NOOP);
                 return null;
@@ -209,7 +209,7 @@ public class CloseTest extends AbstractServerTest
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))

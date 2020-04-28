@@ -86,17 +86,17 @@ public class WebSocketTester
         return newClient(port, false, extensions);
     }
 
-    protected static HttpFields newUpgradeRequest(String extensions)
+    protected static HttpFields.Mutable newUpgradeRequest(String extensions)
     {
-        HttpFields fields = new HttpFields();
-        fields.add(HttpHeader.HOST, "127.0.0.1");
-        fields.add(HttpHeader.UPGRADE, "websocket");
-        fields.add(HttpHeader.CONNECTION, "Upgrade");
-        fields.add(HttpHeader.SEC_WEBSOCKET_KEY, NON_RANDOM_KEY);
-        fields.add(HttpHeader.SEC_WEBSOCKET_VERSION, "13");
-        fields.add(HttpHeader.PRAGMA, "no-cache");
-        fields.add(HttpHeader.CACHE_CONTROL, "no-cache");
-        fields.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "test");
+        HttpFields.Mutable fields = HttpFields.build()
+            .add(HttpHeader.HOST, "127.0.0.1")
+            .add(HttpHeader.UPGRADE, "websocket")
+            .add(HttpHeader.CONNECTION, "Upgrade")
+            .add(HttpHeader.SEC_WEBSOCKET_KEY, NON_RANDOM_KEY)
+            .add(HttpHeader.SEC_WEBSOCKET_VERSION, "13")
+            .add(HttpHeader.PRAGMA, "no-cache")
+            .add(HttpHeader.CACHE_CONTROL, "no-cache")
+            .add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, "test");
         if (extensions != null)
             fields.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensions);
 

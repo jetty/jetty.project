@@ -83,8 +83,7 @@ public class HTTP2Test extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -115,7 +114,7 @@ public class HTTP2Test extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, false), new Callback()
                 {
                     @Override
@@ -130,8 +129,7 @@ public class HTTP2Test extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -172,8 +170,7 @@ public class HTTP2Test extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(2);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -221,7 +218,7 @@ public class HTTP2Test extends AbstractTest
         Session session = newClient(new Session.Listener.Adapter());
 
         CountDownLatch latch = new CountDownLatch(1);
-        MetaData.Request metaData = newRequest("POST", new HttpFields());
+        MetaData.Request metaData = newRequest("POST", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         Promise.Completable<Stream> streamCompletable = new Promise.Completable<>();
         session.newStream(frame, streamCompletable, new Stream.Listener.Adapter()
@@ -269,9 +266,9 @@ public class HTTP2Test extends AbstractTest
         Session session = newClient(new Session.Listener.Adapter());
 
         Random random = new Random();
-        HttpFields fields = new HttpFields();
-        fields.putLongField(downloadBytes, random.nextInt(128 * 1024));
-        fields.put("User-Agent", "HTTP2Client/" + Jetty.VERSION);
+        HttpFields fields = HttpFields.build()
+            .putLongField(downloadBytes, random.nextInt(128 * 1024))
+            .put("User-Agent", "HTTP2Client/" + Jetty.VERSION);
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(requests);
@@ -306,8 +303,7 @@ public class HTTP2Test extends AbstractTest
         });
 
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -338,13 +334,12 @@ public class HTTP2Test extends AbstractTest
             {
                 assertEquals(host, request.getServerName());
                 assertEquals(port, request.getServerPort());
-                assertEquals(authority, request.getHeader("Host"));
             }
         });
 
         Session session = newClient(new Session.Listener.Adapter());
         HostPortHttpField hostHeader = new HostPortHttpField(authority);
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, hostHeader, servletPath, HttpVersion.HTTP_2, new HttpFields());
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), hostHeader, servletPath, HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -423,7 +418,7 @@ public class HTTP2Test extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields(), 0);
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY, 0);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 return null;
             }
@@ -440,7 +435,7 @@ public class HTTP2Test extends AbstractTest
         });
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        MetaData.Request request1 = newRequest("GET", new HttpFields());
+        MetaData.Request request1 = newRequest("GET", HttpFields.EMPTY);
         FuturePromise<Stream> promise1 = new FuturePromise<>();
         CountDownLatch exchangeLatch1 = new CountDownLatch(2);
         session.newStream(new HeadersFrame(request1, null, false), promise1, new Stream.Listener.Adapter()
@@ -454,7 +449,7 @@ public class HTTP2Test extends AbstractTest
         });
         Stream stream1 = promise1.get(5, TimeUnit.SECONDS);
 
-        MetaData.Request request2 = newRequest("GET", new HttpFields());
+        MetaData.Request request2 = newRequest("GET", HttpFields.EMPTY);
         FuturePromise<Stream> promise2 = new FuturePromise<>();
         CountDownLatch exchangeLatch2 = new CountDownLatch(2);
         session.newStream(new HeadersFrame(request2, null, false), promise2, new Stream.Listener.Adapter()
@@ -469,7 +464,7 @@ public class HTTP2Test extends AbstractTest
         Stream stream2 = promise2.get(5, TimeUnit.SECONDS);
 
         // The third stream must not be created.
-        MetaData.Request request3 = newRequest("GET", new HttpFields());
+        MetaData.Request request3 = newRequest("GET", HttpFields.EMPTY);
         CountDownLatch maxStreamsLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(request3, null, false), new Promise.Adapter<>()
         {
@@ -497,7 +492,7 @@ public class HTTP2Test extends AbstractTest
         assertEquals(1, session.getStreams().size());
 
         // Create a fourth stream.
-        MetaData.Request request4 = newRequest("GET", new HttpFields());
+        MetaData.Request request4 = newRequest("GET", HttpFields.EMPTY);
         CountDownLatch exchangeLatch4 = new CountDownLatch(2);
         session.newStream(new HeadersFrame(request4, null, true), new Promise.Adapter<>()
         {
@@ -540,7 +535,7 @@ public class HTTP2Test extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 Callback.Completable completable = new Callback.Completable();
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, false), completable);
                 return new Stream.Listener.Adapter()
                 {
@@ -563,7 +558,7 @@ public class HTTP2Test extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, false);
         Promise.Completable<Stream> completable = new Promise.Completable<>();
         CountDownLatch completeLatch = new CountDownLatch(2);
@@ -635,7 +630,7 @@ public class HTTP2Test extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                 DataFrame dataFrame = new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true);
                 // The call to headers() is legal, but slow.
                 new Thread(() ->
@@ -682,7 +677,7 @@ public class HTTP2Test extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
@@ -706,7 +701,7 @@ public class HTTP2Test extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                 HeadersFrame response = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(response, Callback.NOOP);
                 // Close cleanly.
@@ -731,7 +726,7 @@ public class HTTP2Test extends AbstractTest
                 failureLatch.countDown();
             }
         });
-        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame request = new HeadersFrame(metaData, null, true);
         session.newStream(request, new Promise.Adapter<>(), new Stream.Listener.Adapter());
 
@@ -748,7 +743,7 @@ public class HTTP2Test extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                 HeadersFrame response = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(response, Callback.NOOP);
                 stream.getSession().close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
@@ -787,7 +782,7 @@ public class HTTP2Test extends AbstractTest
                 closeLatch.countDown();
             }
         });
-        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame request = new HeadersFrame(metaData, null, true);
         CountDownLatch responseLatch = new CountDownLatch(1);
         session.newStream(request, new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -811,8 +806,8 @@ public class HTTP2Test extends AbstractTest
 
         // A bad header in the request should fail on the client.
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFields requestFields = new HttpFields();
-        requestFields.put(":custom", "special");
+        HttpFields requestFields = HttpFields.build()
+            .put(":custom", "special");
         MetaData.Request metaData = newRequest("GET", requestFields);
         HeadersFrame request = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
@@ -835,7 +830,7 @@ public class HTTP2Test extends AbstractTest
 
         // Good request with bad header in the response.
         Session session = newClient(new Session.Listener.Adapter());
-        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame request = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         CountDownLatch resetLatch = new CountDownLatch(1);
@@ -878,7 +873,7 @@ public class HTTP2Test extends AbstractTest
 
         // Good request with bad header in the response.
         Session session = newClient(new Session.Listener.Adapter());
-        MetaData.Request metaData = newRequest("GET", "/flush", new HttpFields());
+        MetaData.Request metaData = newRequest("GET", "/flush", HttpFields.EMPTY);
         HeadersFrame request = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         CountDownLatch resetLatch = new CountDownLatch(1);
@@ -925,7 +920,7 @@ public class HTTP2Test extends AbstractTest
                         dataLatch.countDown();
                         if (frame.isEndStream())
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                         }
                     }
@@ -949,7 +944,7 @@ public class HTTP2Test extends AbstractTest
 
         // Start 2 requests without completing them yet.
         CountDownLatch responseLatch = new CountDownLatch(2);
-        MetaData.Request metaData1 = newRequest("GET", new HttpFields());
+        MetaData.Request metaData1 = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame request1 = new HeadersFrame(metaData1, null, false);
         FuturePromise<Stream> promise1 = new FuturePromise<>();
         Stream.Listener.Adapter listener = new Stream.Listener.Adapter()
@@ -969,7 +964,7 @@ public class HTTP2Test extends AbstractTest
         Stream stream1 = promise1.get(5, TimeUnit.SECONDS);
         stream1.data(new DataFrame(stream1.getId(), ByteBuffer.allocate(1), false), Callback.NOOP);
 
-        MetaData.Request metaData2 = newRequest("GET", new HttpFields());
+        MetaData.Request metaData2 = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame request2 = new HeadersFrame(metaData2, null, false);
         FuturePromise<Stream> promise2 = new FuturePromise<>();
         clientSession.newStream(request2, promise2, listener);
@@ -987,7 +982,7 @@ public class HTTP2Test extends AbstractTest
 
         // New requests should be immediately rejected.
         HostPortHttpField authority3 = new HostPortHttpField("localhost" + ":" + port);
-        MetaData.Request metaData3 = new MetaData.Request("GET", HttpScheme.HTTP, authority3, servletPath, HttpVersion.HTTP_2, new HttpFields());
+        MetaData.Request metaData3 = new MetaData.Request("GET", HttpScheme.HTTP.asString(), authority3, servletPath, HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         HeadersFrame request3 = new HeadersFrame(metaData3, null, false);
         FuturePromise<Stream> promise3 = new FuturePromise<>();
         CountDownLatch resetLatch = new CountDownLatch(1);

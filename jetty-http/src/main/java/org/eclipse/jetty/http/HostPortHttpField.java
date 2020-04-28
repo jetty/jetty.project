@@ -58,6 +58,12 @@ public class HostPortHttpField extends HttpField
         _hostPort = hostport;
     }
 
+    public HostPortHttpField(HttpHeader header, String headerString, HostPort hostport)
+    {
+        super(header, headerString, hostport.toString());
+        _hostPort = hostport;
+    }
+
     /**
      * Get the host.
      *

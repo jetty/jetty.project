@@ -289,7 +289,7 @@ public class HttpTester
         }
     }
 
-    public abstract static class Message extends HttpFields implements HttpParser.HttpHandler
+    public abstract static class Message extends HttpFields.Mutable implements HttpParser.HttpHandler
     {
         boolean _earlyEOF;
         boolean _complete = false;
@@ -548,7 +548,7 @@ public class HttpTester
         @Override
         public MetaData.Request getInfo()
         {
-            return new MetaData.Request(_method, new HttpURI(_uri), _version, this, _content == null ? 0 : _content.size());
+            return new MetaData.Request(_method, HttpURI.from(_uri), _version, this, _content == null ? 0 : _content.size());
         }
 
         @Override

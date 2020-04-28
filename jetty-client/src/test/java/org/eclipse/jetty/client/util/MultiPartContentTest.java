@@ -144,7 +144,7 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         });
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put(HttpHeader.CONTENT_TYPE, "text/plain;charset=" + encoding.name());
         BytesRequestContent content = new BytesRequestContent(value.getBytes(encoding));
         multiPart.addFieldPart(name, content, fields);
@@ -240,7 +240,7 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
                 closeLatch.countDown();
             }
         });
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put(HttpHeader.CONTENT_TYPE, contentType);
         multiPart.addFilePart(name, fileName, content, fields);
         multiPart.close();
@@ -354,7 +354,7 @@ public class MultiPartContentTest extends AbstractHttpClientServerTest
         });
 
         MultiPartRequestContent multiPart = new MultiPartRequestContent();
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put(headerName, headerValue);
         multiPart.addFieldPart(field, new StringRequestContent(value, encoding), fields);
         multiPart.addFilePart(fileField, tmpPath.getFileName().toString(), new PathRequestContent(tmpPath), null);

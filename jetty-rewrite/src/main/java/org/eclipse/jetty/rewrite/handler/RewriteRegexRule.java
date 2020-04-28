@@ -23,7 +23,9 @@ import java.util.regex.Matcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
@@ -105,18 +107,19 @@ public class RewriteRegexRule extends RegexRule implements Rule.ApplyURI
     @Override
     public void applyURI(Request request, String oldURI, String newURI) throws IOException
     {
+        HttpURI baseURI = request.getHttpURI();
         if (_query == null)
         {
-            request.setURIPathQuery(newURI);
+            request.setHttpURI(HttpURI.build(baseURI, newURI, baseURI.getParam(), baseURI.getQuery()));
         }
         else
         {
+            // TODO why isn't _query used?
             String query = (String)request.getAttribute("org.eclipse.jetty.rewrite.handler.RewriteRegexRule.Q");
+            if (!_queryGroup)
+                query = URIUtil.addQueries(baseURI.getQuery(), query);
 
-            if (!_queryGroup && request.getQueryString() != null)
-                query = request.getQueryString() + "&" + query;
-            request.setURIPathQuery(newURI);
-            request.setQueryString(query);
+            request.setHttpURI(HttpURI.build(baseURI, newURI, baseURI.getParam(), query));
         }
     }
 

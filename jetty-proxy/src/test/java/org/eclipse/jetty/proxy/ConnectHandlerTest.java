@@ -308,7 +308,7 @@ public class ConnectHandlerTest extends AbstractConnectHandlerTest
             HttpTester.Input in = HttpTester.from(input);
             HttpTester.Response response = HttpTester.parseResponse(in);
             assertEquals(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407, response.getStatus());
-            assertTrue(response.containsKey("Proxy-Authenticate".toLowerCase(Locale.ENGLISH)));
+            assertTrue(response.contains("Proxy-Authenticate".toLowerCase(Locale.ENGLISH)));
 
             // Socket should be closed
             assertEquals(-1, input.read());

@@ -62,15 +62,12 @@ import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * <p>{@link Response} provides the implementation for {@link HttpServletResponse}.</p>
  */
 public class Response implements HttpServletResponse
 {
-    private static final Logger LOG = LoggerFactory.getLogger(Response.class);
     private static final int __MIN_BUFFER_SIZE = 1;
     private static final HttpField __EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
 
@@ -87,7 +84,7 @@ public class Response implements HttpServletResponse
     public static final String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
     private final HttpChannel _channel;
-    private final HttpFields _fields = new HttpFields();
+    private final HttpFields.Mutable _fields = HttpFields.build();
     private final AtomicBiInteger _errorSentAndIncludes = new AtomicBiInteger(); // hi is errorSent flag, lo is include count
     private final HttpOutput _out;
     private int _status = HttpStatus.OK_200;
@@ -247,7 +244,7 @@ public class Response implements HttpServletResponse
             cookie.getValue(),
             cookie.getDomain(),
             cookie.getPath(),
-            (long)cookie.getMaxAge(),
+            cookie.getMaxAge(),
             httpOnly,
             cookie.getSecure(),
             comment,
@@ -308,7 +305,7 @@ public class Response implements HttpServletResponse
     @Override
     public boolean containsHeader(String name)
     {
-        return _fields.containsKey(name);
+        return _fields.contains(name);
     }
 
     @Override
@@ -323,7 +320,7 @@ public class Response implements HttpServletResponse
         HttpURI uri = null;
         if (sessionManager.isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(url))
         {
-            uri = new HttpURI(url);
+            uri = HttpURI.from(url);
             String path = uri.getPath();
             path = (path == null ? "" : path);
             int port = uri.getPort();
@@ -377,7 +374,7 @@ public class Response implements HttpServletResponse
         String id = sessionManager.getExtendedId(session);
 
         if (uri == null)
-            uri = new HttpURI(url);
+            uri = HttpURI.from(url);
 
         // Already encoded
         int prefix = url.indexOf(sessionURLPrefix);
@@ -543,7 +540,13 @@ public class Response implements HttpServletResponse
     public void setDateHeader(String name, long date)
     {
         if (isMutable())
-            _fields.putDateField(name, date);
+        {
+            HttpHeader header = HttpHeader.CACHE.get(name);
+            if (header == null)
+                _fields.putDateField(name, date);
+            else
+                _fields.putDateField(header, date);
+        }
     }
 
     @Override
@@ -1238,8 +1241,7 @@ public class Response implements HttpServletResponse
 
     protected MetaData.Response newResponseMetaData()
     {
-        MetaData.Response info = new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength());
-        info.setTrailerSupplier(getTrailers());
+        MetaData.Response info = new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength(), getTrailers());
         return info;
     }
 
@@ -1310,7 +1312,7 @@ public class Response implements HttpServletResponse
         return _reason;
     }
 
-    public HttpFields getHttpFields()
+    public HttpFields.Mutable getHttpFields()
     {
         return _fields;
     }
@@ -1434,12 +1436,12 @@ public class Response implements HttpServletResponse
             Map<String, String> t = _supplier.get();
             if (t == null)
                 return null;
-            HttpFields fields = new HttpFields();
+            HttpFields.Mutable fields = HttpFields.build();
             for (Map.Entry<String, String> e : t.entrySet())
             {
                 fields.add(e.getKey(), e.getValue());
             }
-            return fields;
+            return fields.asImmutable();
         }
 
         public Supplier<Map<String, String>> getSupplier()

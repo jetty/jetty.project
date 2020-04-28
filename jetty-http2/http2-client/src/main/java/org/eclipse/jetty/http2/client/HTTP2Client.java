@@ -68,7 +68,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * HttpFields requestFields = new HttpFields();
  * requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
  * // Prepare the HTTP request object.
- * MetaData.Request request = new MetaData.Request("PUT", new HttpURI("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
+ * MetaData.Request request = new MetaData.Request("PUT", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
  * // Create the HTTP/2 HEADERS frame representing the HTTP request.
  * HeadersFrame headersFrame = new HeadersFrame(request, null, false);
  *

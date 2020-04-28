@@ -20,6 +20,7 @@ package org.eclipse.jetty.fcgi.client.http;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.EnumSet;
 import java.util.Locale;
 
 import org.eclipse.jetty.client.HttpChannel;
@@ -59,12 +60,8 @@ public class HttpSenderOverFCGI extends HttpSender
     {
         Request request = exchange.getRequest();
         // Copy the request headers to be able to convert them properly
-        HttpFields headers = new HttpFields();
-        for (HttpField field : request.getHeaders())
-        {
-            headers.put(field);
-        }
-        HttpFields fcgiHeaders = new HttpFields();
+        HttpFields headers = request.getHeaders();
+        HttpFields.Mutable fcgiHeaders = HttpFields.build();
 
         // FastCGI headers based on the URI
         URI uri = request.getURI();
@@ -74,12 +71,15 @@ public class HttpSenderOverFCGI extends HttpSender
         fcgiHeaders.put(FCGI.Headers.QUERY_STRING, query == null ? "" : query);
 
         // FastCGI headers based on HTTP headers
-        HttpField httpField = headers.remove(HttpHeader.AUTHORIZATION);
+        HttpField httpField = headers.getField(HttpHeader.AUTHORIZATION);
+        EnumSet<HttpHeader> toRemove = EnumSet.of(HttpHeader.AUTHORIZATION);
         if (httpField != null)
             fcgiHeaders.put(FCGI.Headers.AUTH_TYPE, httpField.getValue());
-        httpField = headers.remove(HttpHeader.CONTENT_LENGTH);
+        httpField = headers.getField(HttpHeader.CONTENT_LENGTH);
+        toRemove.add(HttpHeader.CONTENT_LENGTH);
         fcgiHeaders.put(FCGI.Headers.CONTENT_LENGTH, httpField == null ? "" : httpField.getValue());
-        httpField = headers.remove(HttpHeader.CONTENT_TYPE);
+        httpField = headers.getField(HttpHeader.CONTENT_TYPE);
+        toRemove.add(HttpHeader.CONTENT_TYPE);
         fcgiHeaders.put(FCGI.Headers.CONTENT_TYPE, httpField == null ? "" : httpField.getValue());
 
         // FastCGI headers that are not based on HTTP headers nor URI
@@ -91,6 +91,8 @@ public class HttpSenderOverFCGI extends HttpSender
         // Translate remaining HTTP header into the HTTP_* format
         for (HttpField field : headers)
         {
+            if (toRemove.contains(field.getHeader()))
+                continue;
             String name = field.getName();
             String fcgiName = "HTTP_" + StringUtil.replace(name, '-', '_').toUpperCase(Locale.ENGLISH);
             fcgiHeaders.add(fcgiName, field.getValue());
