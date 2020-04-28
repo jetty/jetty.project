@@ -60,7 +60,7 @@ public class Dispatcher implements RequestDispatcher
     public Dispatcher(ContextHandler contextHandler, HttpURI uri, String pathInContext)
     {
         _contextHandler = contextHandler;
-        _uri = uri;
+        _uri = uri.asImmutable();
         _pathInContext = pathInContext;
         _named = null;
     }
@@ -110,7 +110,7 @@ public class Dispatcher implements RequestDispatcher
                 attr._query = _uri.getQuery();
                 attr._mapping = null; //set by ServletHandler
                 if (attr._query != null)
-                    baseRequest.mergeQueryParameters(baseRequest.getQueryString(), attr._query, false);
+                    baseRequest.mergeQueryParameters(baseRequest.getQueryString(), attr._query);
                 baseRequest.setAttributes(attr);
 
                 _contextHandler.handle(_pathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
@@ -188,11 +188,11 @@ public class Dispatcher implements RequestDispatcher
                     attr._mapping = old_mapping;
                 }
 
-                HttpURI uri = new HttpURI(old_uri.getScheme(), old_uri.getHost(), old_uri.getPort(),
-                    _uri.getPath(), _uri.getParam(), _uri.getQuery(), _uri.getFragment());
+                String query = _uri.getQuery();
+                if (query == null)
+                    query = old_uri.getQuery();
 
-                baseRequest.setHttpURI(uri);
-
+                baseRequest.setHttpURI(HttpURI.build(old_uri, _uri.getPath(), _uri.getParam(), query));
                 baseRequest.setContextPath(_contextHandler.getContextPath());
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(_pathInContext);
@@ -201,7 +201,7 @@ public class Dispatcher implements RequestDispatcher
                 {
                     try
                     {
-                        baseRequest.mergeQueryParameters(old_uri.getQuery(), _uri.getQuery(), true);
+                        baseRequest.mergeQueryParameters(old_uri.getQuery(), _uri.getQuery());
                     }
                     catch (BadMessageException e)
                     {

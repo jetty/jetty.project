@@ -110,21 +110,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
             HttpFields fields = request.getFields();
 
-            // HTTP/2 sends the Host header as the :authority
-            // pseudo-header, so we need to synthesize a Host header.
-            if (!fields.contains(HttpHeader.HOST))
-            {
-                String authority = request.getURI().getAuthority();
-                if (authority != null)
-                {
-                    // Lower-case to be consistent with other HTTP/2 headers.
-                    fields.put("host", authority);
-                }
-            }
-
             _expect100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
-            HttpFields response = getResponse().getHttpFields();
+            HttpFields.Mutable response = getResponse().getHttpFields();
             if (getHttpConfiguration().getSendServerVersion())
                 response.add(SERVER_VERSION);
             if (getHttpConfiguration().getSendXPoweredBy())
@@ -161,6 +149,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         }
         catch (BadMessageException x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onRequest", x);
             onBadMessage(x);
             return null;
         }

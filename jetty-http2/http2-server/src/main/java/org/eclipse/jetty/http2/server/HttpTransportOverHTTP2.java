@@ -114,7 +114,14 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                         long contentLength = response.getContentLength();
                         if (contentLength < 0)
                         {
-                            response.setContentLength(realContentLength);
+                            response = new MetaData.Response(
+                                response.getHttpVersion(),
+                                response.getStatus(),
+                                response.getReason(),
+                                response.getFields(),
+                                realContentLength,
+                                response.getTrailerSupplier()
+                            );
                         }
                         else if (hasContent && contentLength != realContentLength)
                         {

@@ -48,7 +48,7 @@ public class PriorityTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
                 return null;
@@ -60,7 +60,7 @@ public class PriorityTest extends AbstractTest
         assertTrue(streamId > 0);
 
         CountDownLatch latch = new CountDownLatch(2);
-        MetaData metaData = newRequest("GET", new HttpFields());
+        MetaData metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame headersFrame = new HeadersFrame(streamId, metaData, null, true);
         session.newStream(headersFrame, new Promise.Adapter<Stream>()
         {
@@ -96,7 +96,7 @@ public class PriorityTest extends AbstractTest
                 try
                 {
                     beforeRequests.await(5, TimeUnit.SECONDS);
-                    MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                    MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                     HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                     stream.headers(responseFrame, Callback.NOOP);
                     afterRequests.countDown();
@@ -122,13 +122,13 @@ public class PriorityTest extends AbstractTest
         };
 
         Session session = newClient(new Session.Listener.Adapter());
-        MetaData metaData1 = newRequest("GET", "/one", new HttpFields());
+        MetaData metaData1 = newRequest("GET", "/one", HttpFields.EMPTY);
         HeadersFrame headersFrame1 = new HeadersFrame(metaData1, null, true);
         FuturePromise<Stream> promise1 = new FuturePromise<>();
         session.newStream(headersFrame1, promise1, listener);
         Stream stream1 = promise1.get(5, TimeUnit.SECONDS);
 
-        MetaData metaData2 = newRequest("GET", "/two", new HttpFields());
+        MetaData metaData2 = newRequest("GET", "/two", HttpFields.EMPTY);
         HeadersFrame headersFrame2 = new HeadersFrame(metaData2, null, true);
         FuturePromise<Stream> promise2 = new FuturePromise<>();
         session.newStream(headersFrame2, promise2, listener);
@@ -162,7 +162,7 @@ public class PriorityTest extends AbstractTest
                 assertEquals(priorityFrame.isExclusive(), priority.isExclusive());
                 latch.countDown();
 
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.NOOP);
                 return null;
@@ -170,7 +170,7 @@ public class PriorityTest extends AbstractTest
         });
 
         Session session = newClient(new Session.Listener.Adapter());
-        MetaData metaData = newRequest("GET", "/one", new HttpFields());
+        MetaData metaData = newRequest("GET", "/one", HttpFields.EMPTY);
         HeadersFrame headersFrame = new HeadersFrame(metaData, priorityFrame, true);
         session.newStream(headersFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {

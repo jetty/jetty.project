@@ -23,6 +23,7 @@ import java.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,7 +84,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setOriginalPathAttribute("/before");
         _handler.setRewriteRequestURI(true);
         _handler.setRewritePathInfo(true);
-        _request.setURIPathQuery("/xxx/bar");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/xxx/bar"));
         _request.setPathInfo("/xxx/bar");
         _handler.handle("/xxx/bar", _request, _request, _response);
         assertEquals(201, _response.getStatus());
@@ -97,7 +98,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setOriginalPathAttribute("/before");
         _handler.setRewriteRequestURI(false);
         _handler.setRewritePathInfo(false);
-        _request.setURIPathQuery("/foo/bar");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/foo/bar"));
         _request.setPathInfo("/foo/bar");
 
         _handler.handle("/foo/bar", _request, _request, _response);
@@ -110,7 +111,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _response.setStatus(200);
         _request.setHandled(false);
         _handler.setOriginalPathAttribute(null);
-        _request.setURIPathQuery("/aaa/bar");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/aaa/bar"));
         _request.setPathInfo("/aaa/bar");
         _handler.handle("/aaa/bar", _request, _request, _response);
         assertEquals(201, _response.getStatus());
@@ -124,7 +125,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setOriginalPathAttribute("before");
         _handler.setRewriteRequestURI(true);
         _handler.setRewritePathInfo(true);
-        _request.setURIPathQuery("/aaa/bar");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/aaa/bar"));
         _request.setPathInfo("/aaa/bar");
         _handler.handle("/aaa/bar", _request, _request, _response);
         assertEquals(201, _response.getStatus());
@@ -136,7 +137,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _response.setStatus(200);
         _request.setHandled(false);
         _rule2.setTerminating(true);
-        _request.setURIPathQuery("/aaa/bar");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/aaa/bar"));
         _request.setPathInfo("/aaa/bar");
         _handler.handle("/aaa/bar", _request, _request, _response);
         assertEquals(201, _response.getStatus());
@@ -152,7 +153,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _request.setAttribute("target", null);
         _request.setAttribute("URI", null);
         _request.setAttribute("info", null);
-        _request.setURIPathQuery("/aaa/bar");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/aaa/bar"));
         _request.setPathInfo("/aaa/bar");
         _handler.handle("/aaa/bar", _request, _request, _response);
         assertEquals(200, _response.getStatus());
@@ -171,7 +172,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setOriginalPathAttribute("/before");
         _handler.setRewriteRequestURI(true);
         _handler.setRewritePathInfo(false);
-        _request.setURIPathQuery("/ccc/x%20y");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/ccc/x%20y"));
         _request.setPathInfo("/ccc/x y");
         _handler.handle("/ccc/x y", _request, _request, _response);
         assertEquals(201, _response.getStatus());
@@ -188,7 +189,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setOriginalPathAttribute("/before");
         _handler.setRewriteRequestURI(true);
         _handler.setRewritePathInfo(false);
-        _request.setURIPathQuery("/xxx/x%20y");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/xxx/x%20y"));
         _request.setPathInfo("/xxx/x y");
         _handler.handle("/xxx/x y", _request, _request, _response);
         assertEquals(201, _response.getStatus());

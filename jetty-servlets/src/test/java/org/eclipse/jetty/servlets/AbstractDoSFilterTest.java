@@ -72,7 +72,7 @@ public abstract class AbstractDoSFilterTest
 
         _tester.getContext().getSessionHandler().setSessionCache(sessionCache);
 
-        HttpURI uri = new HttpURI(_tester.createConnector(true));
+        HttpURI uri = HttpURI.from(_tester.createConnector(true));
         _host = uri.getHost();
         _port = uri.getPort();
 

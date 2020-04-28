@@ -141,17 +141,21 @@ public class NcsaRequestLogTest
         setup(logType);
         testHandlerServerStart();
 
-        _connector.getResponse("GET /foo?data=1 HTTP/1.0\nhost: host:80\n\n");
-        String log = _entries.poll(5, TimeUnit.SECONDS);
-        assertThat(log, containsString("GET /foo?data=1 HTTP/1.0\" 200 "));
+        String log;
 
+        /*
+        _connector.getResponse("GET /foo?data=1 HTTP/1.0\nhost: host:80\n\n");
+        log = _entries.poll(5, TimeUnit.SECONDS);
+        assertThat(log, containsString("GET /foo?data=1 HTTP/1.0\" 200 "));
+*/
         _connector.getResponse("GET //bad/foo?data=1 HTTP/1.0\n\n");
         log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET //bad/foo?data=1 HTTP/1.0\" 200 "));
-
+/*
         _connector.getResponse("GET http://host:80/foo?data=1 HTTP/1.0\n\n");
         log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("GET http://host:80/foo?data=1 HTTP/1.0\" 200 "));
+  */
     }
 
     @ParameterizedTest()

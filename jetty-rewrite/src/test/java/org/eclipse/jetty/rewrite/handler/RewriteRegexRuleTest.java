@@ -21,6 +21,7 @@ package org.eclipse.jetty.rewrite.handler;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -62,12 +63,12 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
         RewriteRegexRule rule = new RewriteRegexRule();
 
         reset();
-        _request.setURIPathQuery(null);
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI()));
 
         rule.setRegex(scenario.regex);
         rule.setReplacement(scenario.replacement);
 
-        _request.setURIPathQuery(scenario.uriPathQuery + (scenario.queryString == null ? "" : ("?" + scenario.queryString)));
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), scenario.uriPathQuery, null, scenario.queryString));
 
         String result = rule.matchAndApply(scenario.uriPathQuery, _request, _response);
         assertEquals(scenario.expectedRequestURI, result);
@@ -106,8 +107,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
         rule.setRegex(scenario.regex);
         rule.setReplacement(scenario.replacement);
 
-        _request.setURIPathQuery(scenario.uriPathQuery);
-        _request.setQueryString(scenario.queryString);
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), scenario.uriPathQuery, null, scenario.queryString));
         _request.getAttributes().clearAttributes();
 
         String result = container.apply(URIUtil.decodePath(scenario.uriPathQuery), _request, _response);

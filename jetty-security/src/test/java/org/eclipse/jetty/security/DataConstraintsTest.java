@@ -27,6 +27,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -71,7 +72,7 @@ public class DataConstraintsTest
             @Override
             public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
             {
-                request.setScheme(HttpScheme.HTTPS.asString());
+                request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS));
                 request.setSecure(true);
             }
         });

@@ -149,9 +149,10 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         int contentLength = random.nextInt(maxContentLength) + 1;
 
         long requestId = requestIds.incrementAndGet();
-        MetaData.Request request = newRequest(method.asString(), "/" + requestId, new HttpFields());
-        if (download)
-            request.getFields().put("X-Download", String.valueOf(contentLength));
+
+        MetaData.Request request = newRequest(method.asString(), "/" + requestId,
+            download ? HttpFields.build().put("X-Download", String.valueOf(contentLength)) : HttpFields.EMPTY);
+
         HeadersFrame requestFrame = new HeadersFrame(request, null, download);
         FuturePromise<Stream> promise = new FuturePromise<>();
         CountDownLatch requestLatch = new CountDownLatch(1);

@@ -25,7 +25,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayUtil;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.slf4j.Logger;
@@ -188,16 +187,10 @@ public class RuleContainer extends Rule implements Dumpable
                         ((Rule.ApplyURI)rule).applyURI(baseRequest, baseRequest.getRequestURI(), encoded);
                     else
                     {
-                        String uriPathQuery = encoded;
                         HttpURI baseUri = baseRequest.getHttpURI();
-                        // Copy path params from original URI if present
-                        if ((baseUri != null) && StringUtil.isNotBlank(baseUri.getParam()))
-                        {
-                            HttpURI uri = new HttpURI(uriPathQuery);
-                            uri.setParam(baseUri.getParam());
-                            uriPathQuery = uri.toString();
-                        }
-                        baseRequest.setURIPathQuery(uriPathQuery);
+                        baseRequest.setHttpURI(HttpURI.build(baseUri,encoded)
+                            .param(baseUri.getParam())
+                            .query(baseUri.getQuery()));
                     }
                 }
 

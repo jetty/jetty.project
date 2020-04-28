@@ -41,7 +41,7 @@ public class PushBuilderImpl implements PushBuilder
     private static final HttpField JettyPush = new HttpField("x-http2-push", "PushBuilder");
 
     private final Request _request;
-    private final HttpFields _fields;
+    private final HttpFields.Mutable _fields;
     private String _method;
     private String _queryString;
     private String _sessionId;
@@ -52,7 +52,7 @@ public class PushBuilderImpl implements PushBuilder
     {
         super();
         _request = request;
-        _fields = fields;
+        _fields = HttpFields.build(fields);
         _method = method;
         _queryString = queryString;
         _sessionId = sessionId;
@@ -176,7 +176,7 @@ public class PushBuilderImpl implements PushBuilder
             //      _rawFields.add("Cookie","JSESSIONID="+_sessionId);
         }
 
-        HttpURI uri = HttpURI.createHttpURI(_request.getScheme(), _request.getServerName(), _request.getServerPort(), path, param, query, null);
+        HttpURI uri = HttpURI.build(_request.getHttpURI(), path, param, query).normalize();
         MetaData.Request push = new MetaData.Request(_method, uri, _request.getHttpVersion(), _fields);
 
         if (LOG.isDebugEnabled())

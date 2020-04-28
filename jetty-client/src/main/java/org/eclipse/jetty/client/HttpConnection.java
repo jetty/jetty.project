@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
@@ -151,8 +152,8 @@ public abstract class HttpConnection implements IConnection
         HttpFields headers = request.getHeaders();
         if (version.getVersion() <= 11)
         {
-            if (!headers.containsKey(HttpHeader.HOST.asString()))
-                headers.put(getHttpDestination().getHostField());
+            if (!headers.contains(HttpHeader.HOST))
+                request.put(getHttpDestination().getHostField());
         }
 
         // Add content headers
@@ -163,25 +164,25 @@ public abstract class HttpConnection implements IConnection
         }
         else
         {
-            if (!headers.containsKey(HttpHeader.CONTENT_TYPE.asString()))
+            if (!headers.contains(HttpHeader.CONTENT_TYPE))
             {
                 String contentType = content.getContentType();
                 if (contentType != null)
                 {
-                    headers.put(HttpHeader.CONTENT_TYPE, contentType);
+                    request.put(new HttpField(HttpHeader.CONTENT_TYPE, contentType));
                 }
                 else
                 {
                     contentType = getHttpClient().getDefaultRequestContentType();
                     if (contentType != null)
-                        headers.put(HttpHeader.CONTENT_TYPE, contentType);
+                        request.put(new HttpField(HttpHeader.CONTENT_TYPE, contentType));
                 }
             }
             long contentLength = content.getLength();
             if (contentLength >= 0)
             {
-                if (!headers.containsKey(HttpHeader.CONTENT_LENGTH.asString()))
-                    headers.put(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength));
+                if (!headers.contains(HttpHeader.CONTENT_LENGTH))
+                    request.put(new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, contentLength));
             }
         }
 
@@ -194,7 +195,7 @@ public abstract class HttpConnection implements IConnection
                 cookies = convertCookies(HttpCookieStore.matchPath(uri, cookieStore.get(uri)), null);
             cookies = convertCookies(request.getCookies(), cookies);
             if (cookies != null)
-                request.header(HttpHeader.COOKIE.asString(), cookies.toString());
+                request.header(HttpHeader.COOKIE, cookies.toString());
         }
 
         // Authentication

@@ -64,7 +64,7 @@ public class HttpRequest implements Request
 {
     private static final URI NULL_URI = URI.create("null:0");
 
-    private final HttpFields headers = new HttpFields();
+    private final HttpFields.Mutable headers = HttpFields.build();
     private final Fields params = new Fields(true);
     private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
@@ -306,6 +306,34 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request set(HttpFields fields)
+    {
+        headers.clear().add(fields);
+        return this;
+    }
+
+    @Override
+    public Request remove(HttpHeader header)
+    {
+        headers.remove(header);
+        return this;
+    }
+
+    @Override
+    public Request put(HttpField field)
+    {
+        headers.put(field);
+        return this;
+    }
+
+    @Override
+    public Request add(HttpField field)
+    {
+        headers.add(field);
+        return this;
+    }
+
+    @Override
     public Request header(String name, String value)
     {
         if (value == null)
@@ -369,7 +397,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public HttpFields getHeaders()
+    public HttpFields.Mutable getHeaders()
     {
         return headers;
     }

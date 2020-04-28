@@ -771,7 +771,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(headerName));
+        assertFalse(response.getHeaders().contains(headerName));
     }
 
     @ParameterizedTest

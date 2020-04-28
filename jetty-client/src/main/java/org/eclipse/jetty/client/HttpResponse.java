@@ -29,13 +29,13 @@ import org.eclipse.jetty.http.HttpVersion;
 
 public class HttpResponse implements Response
 {
-    private final HttpFields headers = new HttpFields();
+    private final HttpFields.Mutable headers = HttpFields.build();
     private final Request request;
     private final List<ResponseListener> listeners;
     private HttpVersion version;
     private int status;
     private String reason;
-    private HttpFields trailers;
+    private HttpFields.Mutable trailers;
 
     public HttpResponse(Request request, List<ResponseListener> listeners)
     {
@@ -88,6 +88,11 @@ public class HttpResponse implements Response
     @Override
     public HttpFields getHeaders()
     {
+        return headers.asImmutable();
+    }
+
+    public HttpFields.Mutable getHeaderFieldsMutable()
+    {
         return headers;
     }
 
@@ -111,7 +116,7 @@ public class HttpResponse implements Response
     public HttpResponse trailer(HttpField trailer)
     {
         if (trailers == null)
-            trailers = new HttpFields();
+            trailers = HttpFields.build();
         trailers.add(trailer);
         return this;
     }

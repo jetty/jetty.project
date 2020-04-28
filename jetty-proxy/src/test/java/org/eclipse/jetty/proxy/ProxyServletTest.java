@@ -246,7 +246,7 @@ public class ProxyServletTest
 
         assertEquals("OK", response.getReason());
         assertEquals(200, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertTrue(response.getHeaders().contains(PROXIED_HEADER));
     }
 
     @ParameterizedTest
@@ -280,7 +280,7 @@ public class ProxyServletTest
         for (int i = 0; i < 10; ++i)
         {
             assertEquals(200, responses[i].getStatus());
-            assertTrue(responses[i].getHeaders().containsKey(PROXIED_HEADER));
+            assertTrue(responses[i].getHeaders().contains(PROXIED_HEADER));
             assertArrayEquals(content, responses[i].getContent());
         }
     }
@@ -311,7 +311,7 @@ public class ProxyServletTest
             .send();
 
         assertEquals(200, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertTrue(response.getHeaders().contains(PROXIED_HEADER));
         assertArrayEquals(content, response.getContent());
     }
 
@@ -350,7 +350,7 @@ public class ProxyServletTest
             .send();
 
         assertEquals(200, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertTrue(response.getHeaders().contains(PROXIED_HEADER));
     }
 
     @ParameterizedTest
@@ -393,7 +393,7 @@ public class ProxyServletTest
             .send();
 
         assertEquals(200, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertTrue(response.getHeaders().contains(PROXIED_HEADER));
     }
 
     @ParameterizedTest
@@ -531,7 +531,7 @@ public class ProxyServletTest
             .timeout(2 * timeout, TimeUnit.MILLISECONDS)
             .send();
         assertEquals(200, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertTrue(response.getHeaders().contains(PROXIED_HEADER));
     }
 
     @ParameterizedTest
@@ -626,14 +626,14 @@ public class ProxyServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertTrue(response.getHeaders().contains(PROXIED_HEADER));
 
         // Try again with an excluded host
         response = client.newRequest("127.0.0.1", port)
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertFalse(response.getHeaders().contains(PROXIED_HEADER));
     }
 
     public static Stream<Arguments> transparentImpls()
@@ -685,7 +685,7 @@ public class ProxyServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertTrue(response.getHeaders().contains(PROXIED_HEADER));
     }
 
     @ParameterizedTest
@@ -797,7 +797,7 @@ public class ProxyServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertTrue(response.getHeaders().contains(PROXIED_HEADER));
     }
 
     @ParameterizedTest
@@ -827,7 +827,7 @@ public class ProxyServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertTrue(response.getHeaders().contains(PROXIED_HEADER));
     }
 
     /**
@@ -891,7 +891,7 @@ public class ProxyServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(302, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertTrue(response.getHeaders().contains(PROXIED_HEADER));
     }
 
     @ParameterizedTest
@@ -920,7 +920,7 @@ public class ProxyServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertTrue(response.getHeaders().contains(PROXIED_HEADER));
         assertArrayEquals(content, response.getContent());
     }
 
@@ -992,7 +992,7 @@ public class ProxyServletTest
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response1.getStatus());
-        assertTrue(response1.getHeaders().containsKey(PROXIED_HEADER));
+        assertTrue(response1.getHeaders().contains(PROXIED_HEADER));
         List<HttpCookie> cookies = client.getCookieStore().getCookies();
         assertEquals(1, cookies.size());
         assertEquals(name, cookies.get(0).getName());
@@ -1007,7 +1007,7 @@ public class ProxyServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
             assertEquals(200, response2.getStatus());
-            assertTrue(response2.getHeaders().containsKey(PROXIED_HEADER));
+            assertTrue(response2.getHeaders().contains(PROXIED_HEADER));
             cookies = client2.getCookieStore().getCookies();
             assertEquals(1, cookies.size());
             assertEquals(name, cookies.get(0).getName());
@@ -1018,7 +1018,7 @@ public class ProxyServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
             assertEquals(200, response3.getStatus());
-            assertTrue(response3.getHeaders().containsKey(PROXIED_HEADER));
+            assertTrue(response3.getHeaders().contains(PROXIED_HEADER));
         }
         finally
         {

@@ -88,8 +88,8 @@ public class ResponseTrailerTest extends AbstractTest
             http2Client.connect(address, new Session.Listener.Adapter(), sessionPromise);
             Session session = sessionPromise.get(5, TimeUnit.SECONDS);
 
-            HttpURI uri = new HttpURI("http://" + host + ":" + port + "/");
-            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, new HttpFields());
+            HttpURI uri = HttpURI.from("http://" + host + ":" + port + "/");
+            MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
             HeadersFrame frame = new HeadersFrame(request, null, true);
             BlockingQueue<HeadersFrame> headers = new LinkedBlockingQueue<>();
             CountDownLatch latch = new CountDownLatch(1);

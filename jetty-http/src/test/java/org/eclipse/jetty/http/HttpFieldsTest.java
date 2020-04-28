@@ -20,11 +20,14 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -36,6 +39,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -47,10 +51,9 @@ public class HttpFieldsTest
     @Test
     public void testPut() throws Exception
     {
-        HttpFields header = new HttpFields();
-
-        header.put("name0", "value:0");
-        header.put("name1", "value1");
+        HttpFields.Mutable header = HttpFields.build()
+            .put("name0", "value:0")
+            .put("name1", "value1");
 
         assertEquals(2, header.size());
         assertEquals("value:0", header.get("name0"));
@@ -78,12 +81,11 @@ public class HttpFieldsTest
     @Test
     public void testPutTo() throws Exception
     {
-        HttpFields header = new HttpFields();
-
-        header.put("name0", "value0");
-        header.put("name1", "value:A");
-        header.add("name1", "value:B");
-        header.add("name2", "");
+        HttpFields.Mutable header = HttpFields.build()
+            .put("name0", "value0")
+            .put("name1", "value:A")
+            .add("name1", "value:B")
+            .add("name2", "");
 
         ByteBuffer buffer = BufferUtil.allocate(1024);
         BufferUtil.flipToFill(buffer);
@@ -97,12 +99,72 @@ public class HttpFieldsTest
     }
 
     @Test
+    public void testImmutable() throws Exception
+    {
+        HttpFields header = HttpFields.build()
+            .put("name0", "value0")
+            .put("name1", "value1").asImmutable();
+
+        assertEquals("value0", header.get("name0"));
+        assertEquals("value0", header.get("Name0"));
+        assertEquals("value1", header.get("name1"));
+        assertEquals("value1", header.get("Name1"));
+        assertEquals(null, header.get("Name2"));
+
+        assertEquals("value0", header.getField("name0").getValue());
+        assertEquals("value0", header.getField("Name0").getValue());
+        assertEquals("value1", header.getField("name1").getValue());
+        assertEquals("value1", header.getField("Name1").getValue());
+        assertEquals(null, header.getField("Name2"));
+
+        assertEquals("value0", header.getField(0).getValue());
+        assertEquals("value1", header.getField(1).getValue());
+        assertThrows(NoSuchElementException.class, () ->
+        {
+            header.getField(2);
+        });
+    }
+
+    @Test
+    public void testMutable() throws Exception
+    {
+        HttpFields headers = HttpFields.build()
+            .add(HttpHeader.ETAG, "tag")
+            .add("name0", "value0")
+            .add("name1", "value1").asImmutable();
+
+        headers = HttpFields.build(headers, EnumSet.of(HttpHeader.ETAG, HttpHeader.CONTENT_RANGE))
+            .add(new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
+            .addDateField("name2", System.currentTimeMillis()).asImmutable();
+
+        headers = HttpFields.build(headers, new HttpField(HttpHeader.CONNECTION, "open"));
+
+        assertThat(headers.size(), is(4));
+        assertThat(headers.getField(0).getValue(), is("value0"));
+        assertThat(headers.getField(1).getValue(), is("value1"));
+        assertThat(headers.getField(2).getValue(), is("open"));
+        assertThat(headers.getField(3).getName(), is("name2"));
+    }
+
+    @Test
+    public void testMap() throws Exception
+    {
+        Map<HttpFields.Immutable,String> map = new HashMap<>();
+        map.put(HttpFields.build().add("X","1").add(HttpHeader.ETAG,"tag").asImmutable(),"1");
+        map.put(HttpFields.build().add("X","2").add(HttpHeader.ETAG,"other").asImmutable(),"2");
+
+        assertThat(map.get(HttpFields.build().add("X","1").add(HttpHeader.ETAG,"tag").asImmutable()), is("1"));
+        assertThat(map.get(HttpFields.build().add("X","2").add(HttpHeader.ETAG,"other").asImmutable()), is("2"));
+        assertThat(map.get(HttpFields.build().add("X","2").asImmutable()), nullValue());
+        assertThat(map.get(HttpFields.build().add("X","2").add(HttpHeader.ETAG,"tag").asImmutable()), nullValue());
+    }
+
+    @Test
     public void testGet() throws Exception
     {
-        HttpFields header = new HttpFields();
-
-        header.put("name0", "value0");
-        header.put("name1", "value1");
+        HttpFields header = HttpFields.build()
+            .put("name0", "value0")
+            .put("name1", "value1");
 
         assertEquals("value0", header.get("name0"));
         assertEquals("value0", header.get("Name0"));
@@ -127,7 +189,7 @@ public class HttpFieldsTest
     @Test
     public void testGetKnown() throws Exception
     {
-        HttpFields header = new HttpFields();
+        HttpFields.Mutable header = HttpFields.build();
 
         header.put("Connection", "value0");
         header.put(HttpHeader.ACCEPT, "value1");
@@ -145,7 +207,7 @@ public class HttpFieldsTest
     @Test
     public void testCRLF() throws Exception
     {
-        HttpFields header = new HttpFields();
+        HttpFields.Mutable header = HttpFields.build();
 
         header.put("name0", "value\r\n0");
         header.put("name\r\n1", "value1");
@@ -164,7 +226,7 @@ public class HttpFieldsTest
     @Test
     public void testCachedPut() throws Exception
     {
-        HttpFields header = new HttpFields();
+        HttpFields.Mutable header = HttpFields.build();
 
         header.put("Connection", "Keep-Alive");
         header.put("tRansfer-EncOding", "CHUNKED");
@@ -184,7 +246,7 @@ public class HttpFieldsTest
     @Test
     public void testRePut() throws Exception
     {
-        HttpFields header = new HttpFields();
+        HttpFields.Mutable header = HttpFields.build();
 
         header.put("name0", "value0");
         header.put("name1", "xxxxxx");
@@ -222,19 +284,27 @@ public class HttpFieldsTest
     }
 
     @Test
-    public void testRemovePut() throws Exception
+    public void testRemove() throws Exception
     {
-        HttpFields header = new HttpFields(1);
-
-        header.put("name0", "value0");
-        header.put("name1", "value1");
-        header.put("name2", "value2");
+        HttpFields.Mutable header = HttpFields.build(1)
+            .put("name0", "value0")
+            .add(HttpHeader.CONTENT_TYPE, "text")
+            .add("name1", "WRONG")
+            .add(HttpHeader.EXPECT, "spanish inquisition")
+            .put("name1", "value1")
+            .add(HttpHeader.ETAG, "tag")
+            .put("name2", "value2");
 
         assertEquals("value0", header.get("name0"));
+        assertEquals("text", header.get(HttpHeader.CONTENT_TYPE));
         assertEquals("value1", header.get("name1"));
+        assertEquals("spanish inquisition", header.get(HttpHeader.EXPECT));
+        assertEquals("tag", header.get(HttpHeader.ETAG));
         assertEquals("value2", header.get("name2"));
 
         header.remove("name1");
+        header.remove(HttpHeader.ETAG);
+        header.remove(EnumSet.of(HttpHeader.CONTENT_TYPE, HttpHeader.EXPECT, HttpHeader.EXPIRES));
 
         assertEquals("value0", header.get("name0"));
         assertNull(header.get("name1"));
@@ -262,7 +332,7 @@ public class HttpFieldsTest
     @Test
     public void testAdd() throws Exception
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
 
         fields.add("name0", "value0");
         fields.add("name1", "valueA");
@@ -324,7 +394,7 @@ public class HttpFieldsTest
     {
         final PreEncodedHttpField X_XSS_PROTECTION_FIELD = new PreEncodedHttpField("X-XSS-Protection", "1; mode=block");
 
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.add(X_XSS_PROTECTION_FIELD);
 
         assertThat("Fields output", fields.toString(), containsString("X-XSS-Protection: 1; mode=block"));
@@ -335,7 +405,7 @@ public class HttpFieldsTest
     {
         final HttpField X_XSS_PROTECTION_FIELD = new HttpField("X-XSS-Protection", "1; mode=block");
 
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.add(X_XSS_PROTECTION_FIELD);
 
         assertThat("Fields output", fields.toString(), containsString("X-XSS-Protection: 1; mode=block"));
@@ -344,7 +414,7 @@ public class HttpFieldsTest
     @Test
     public void testGetValues() throws Exception
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
 
         fields.put("name0", "value0A,value0B");
         fields.add("name0", "value0C,value0D");
@@ -384,7 +454,7 @@ public class HttpFieldsTest
     @Test
     public void testGetCSV() throws Exception
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
 
         fields.put("name0", "value0A,value0B");
         fields.add("name0", "value0C,value0D");
@@ -424,7 +494,7 @@ public class HttpFieldsTest
     @Test
     public void testAddQuotedCSV() throws Exception
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
 
         fields.put("some", "value");
         fields.add("name", "\"zero\"");
@@ -434,39 +504,45 @@ public class HttpFieldsTest
         fields.add("name", "four, I V");
 
         List<String> list = fields.getCSV("name", false);
-        assertEquals(HttpFields.valueParameters(list.get(0), null), "zero");
-        assertEquals(HttpFields.valueParameters(list.get(1), null), "one");
-        assertEquals(HttpFields.valueParameters(list.get(2), null), "1 + 1");
-        assertEquals(HttpFields.valueParameters(list.get(3), null), "three");
-        assertEquals(HttpFields.valueParameters(list.get(4), null), "four");
-        assertEquals(HttpFields.valueParameters(list.get(5), null), "I V");
+        assertEquals(HttpField.valueParameters(list.get(0), null), "zero");
+        assertEquals(HttpField.valueParameters(list.get(1), null), "one");
+        assertEquals(HttpField.valueParameters(list.get(2), null), "1 + 1");
+        assertEquals(HttpField.valueParameters(list.get(3), null), "three");
+        assertEquals(HttpField.valueParameters(list.get(4), null), "four");
+        assertEquals(HttpField.valueParameters(list.get(5), null), "I V");
 
         fields.addCSV("name", "six");
         list = fields.getCSV("name", false);
-        assertEquals(HttpFields.valueParameters(list.get(0), null), "zero");
-        assertEquals(HttpFields.valueParameters(list.get(1), null), "one");
-        assertEquals(HttpFields.valueParameters(list.get(2), null), "1 + 1");
-        assertEquals(HttpFields.valueParameters(list.get(3), null), "three");
-        assertEquals(HttpFields.valueParameters(list.get(4), null), "four");
-        assertEquals(HttpFields.valueParameters(list.get(5), null), "I V");
-        assertEquals(HttpFields.valueParameters(list.get(6), null), "six");
+        assertEquals(HttpField.valueParameters(list.get(0), null), "zero");
+        assertEquals(HttpField.valueParameters(list.get(1), null), "one");
+        assertEquals(HttpField.valueParameters(list.get(2), null), "1 + 1");
+        assertEquals(HttpField.valueParameters(list.get(3), null), "three");
+        assertEquals(HttpField.valueParameters(list.get(4), null), "four");
+        assertEquals(HttpField.valueParameters(list.get(5), null), "I V");
+        assertEquals(HttpField.valueParameters(list.get(6), null), "six");
 
         fields.addCSV("name", "1 + 1", "7", "zero");
         list = fields.getCSV("name", false);
-        assertEquals(HttpFields.valueParameters(list.get(0), null), "zero");
-        assertEquals(HttpFields.valueParameters(list.get(1), null), "one");
-        assertEquals(HttpFields.valueParameters(list.get(2), null), "1 + 1");
-        assertEquals(HttpFields.valueParameters(list.get(3), null), "three");
-        assertEquals(HttpFields.valueParameters(list.get(4), null), "four");
-        assertEquals(HttpFields.valueParameters(list.get(5), null), "I V");
-        assertEquals(HttpFields.valueParameters(list.get(6), null), "six");
-        assertEquals(HttpFields.valueParameters(list.get(7), null), "7");
+        assertEquals(HttpField.valueParameters(list.get(0), null), "zero");
+        assertEquals(HttpField.valueParameters(list.get(1), null), "one");
+        assertEquals(HttpField.valueParameters(list.get(2), null), "1 + 1");
+        assertEquals(HttpField.valueParameters(list.get(3), null), "three");
+        assertEquals(HttpField.valueParameters(list.get(4), null), "four");
+        assertEquals(HttpField.valueParameters(list.get(5), null), "I V");
+        assertEquals(HttpField.valueParameters(list.get(6), null), "six");
+        assertEquals(HttpField.valueParameters(list.get(7), null), "7");
+
+        fields.addCSV(HttpHeader.ACCEPT, "en", "it");
+        list = fields.getCSV(HttpHeader.ACCEPT, false);
+        assertEquals(HttpField.valueParameters(list.get(0), null), "en");
+        assertEquals(HttpField.valueParameters(list.get(1), null), "it");
+        fields.addCSV(HttpHeader.ACCEPT, "en", "it");
     }
 
     @Test
     public void testGetQualityCSV() throws Exception
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
 
         fields.put("some", "value");
         fields.add("name", "zero;q=0.9,four;q=0.1");
@@ -477,18 +553,18 @@ public class HttpFieldsTest
         fields.add("name", "first;");
 
         List<String> list = fields.getQualityCSV("name");
-        assertEquals(HttpFields.valueParameters(list.get(0), null), "first");
-        assertEquals(HttpFields.valueParameters(list.get(1), null), "zero");
-        assertEquals(HttpFields.valueParameters(list.get(2), null), "one");
-        assertEquals(HttpFields.valueParameters(list.get(3), null), "two");
-        assertEquals(HttpFields.valueParameters(list.get(4), null), "three");
-        assertEquals(HttpFields.valueParameters(list.get(5), null), "four");
+        assertEquals(HttpField.valueParameters(list.get(0), null), "first");
+        assertEquals(HttpField.valueParameters(list.get(1), null), "zero");
+        assertEquals(HttpField.valueParameters(list.get(2), null), "one");
+        assertEquals(HttpField.valueParameters(list.get(3), null), "two");
+        assertEquals(HttpField.valueParameters(list.get(4), null), "three");
+        assertEquals(HttpField.valueParameters(list.get(5), null), "four");
     }
 
     @Test
     public void testGetQualityCSVHeader() throws Exception
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
 
         fields.put("some", "value");
         fields.add("Accept", "zero;q=0.9,four;q=0.1");
@@ -499,18 +575,18 @@ public class HttpFieldsTest
         fields.add("Accept", "first;");
 
         List<String> list = fields.getQualityCSV(HttpHeader.ACCEPT);
-        assertEquals(HttpFields.valueParameters(list.get(0), null), "first");
-        assertEquals(HttpFields.valueParameters(list.get(1), null), "zero");
-        assertEquals(HttpFields.valueParameters(list.get(2), null), "one");
-        assertEquals(HttpFields.valueParameters(list.get(3), null), "two");
-        assertEquals(HttpFields.valueParameters(list.get(4), null), "three");
-        assertEquals(HttpFields.valueParameters(list.get(5), null), "four");
+        assertEquals(HttpField.valueParameters(list.get(0), null), "first");
+        assertEquals(HttpField.valueParameters(list.get(1), null), "zero");
+        assertEquals(HttpField.valueParameters(list.get(2), null), "one");
+        assertEquals(HttpField.valueParameters(list.get(3), null), "two");
+        assertEquals(HttpField.valueParameters(list.get(4), null), "three");
+        assertEquals(HttpField.valueParameters(list.get(5), null), "four");
     }
 
     @Test
     public void testDateFields() throws Exception
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
 
         fields.put("D0", "Wed, 31 Dec 1969 23:59:59 GMT");
         fields.put("D1", "Fri, 31 Dec 1999 23:59:59 GMT");
@@ -552,7 +628,7 @@ public class HttpFieldsTest
     @Test
     public void testNegDateFields() throws Exception
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
 
         fields.putDateField("Dzero", 0);
         assertEquals("Thu, 01 Jan 1970 00:00:00 GMT", fields.get("Dzero"));
@@ -570,7 +646,7 @@ public class HttpFieldsTest
     @Test
     public void testLongFields() throws Exception
     {
-        HttpFields header = new HttpFields();
+        HttpFields.Mutable header = HttpFields.build();
 
         header.put("I1", "42");
         header.put("I2", " 43 99");
@@ -634,7 +710,7 @@ public class HttpFieldsTest
     @Test
     public void testContains() throws Exception
     {
-        HttpFields header = new HttpFields();
+        HttpFields.Mutable header = HttpFields.build();
 
         header.add("n0", "");
         header.add("n1", ",");
@@ -651,8 +727,8 @@ public class HttpFieldsTest
 
         for (int i = 0; i < 8; i++)
         {
-            assertTrue(header.containsKey("n" + i));
-            assertTrue(header.containsKey("N" + i));
+            assertTrue(header.contains("n" + i));
+            assertTrue(header.contains("N" + i));
             assertFalse(header.contains("n" + i, "xyz"), "" + i);
             assertEquals(i >= 4, header.contains("n" + i, "def"), "" + i);
         }
@@ -665,37 +741,37 @@ public class HttpFieldsTest
         assertFalse(header.contains(HttpHeader.ACCEPT, "def"));
         assertFalse(header.contains(HttpHeader.AGE, "abc"));
 
-        assertFalse(header.containsKey("n11"));
+        assertFalse(header.contains("n11"));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"Host", "host", "HOST", "HoSt", "Connection", "CONNECTION", "connection", "CoNnEcTiOn"})
     public void testContainsKeyTrue(String keyName)
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put("Host", "localhost");
         HttpField namelessField = new HttpField(HttpHeader.CONNECTION, null, "bogus");
         fields.put(namelessField);
 
-        assertTrue(fields.containsKey(keyName), "containsKey('" + keyName + "')");
+        assertTrue(fields.contains(keyName), "containsKey('" + keyName + "')");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"Content-Type", "Content-Length", "X-Bogus", ""})
     public void testContainsKeyFalse(String keyName)
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.add("Host", "localhost");
         HttpField namelessField = new HttpField(HttpHeader.CONNECTION, null, "bogus");
         fields.put(namelessField);
 
-        assertFalse(fields.containsKey(keyName), "containsKey('" + keyName + "')");
+        assertFalse(fields.contains(keyName), "containsKey('" + keyName + "')");
     }
 
     @Test
     public void testPreventNullField()
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
         assertThrows(NullPointerException.class, () ->
         {
             HttpField nullNullField = new HttpField(null, null, "bogus");
@@ -706,15 +782,21 @@ public class HttpFieldsTest
     @Test
     public void testIteration() throws Exception
     {
-        HttpFields header = new HttpFields();
+        HttpFields.Mutable header = HttpFields.build();
         Iterator<HttpField> i = header.iterator();
         assertThat(i.hasNext(), is(false));
 
-        header.put("name1", "valueA");
-        header.put("name2", "valueB");
-        header.add("name3", "valueC");
+        header.add("REMOVE", "ME")
+            .add("name1", "valueA")
+            .add("name2", "valueB")
+            .add("name3", "valueC");
 
         i = header.iterator();
+
+        assertThat(i.hasNext(), is(true));
+        assertThat(i.next().getName(), is("REMOVE"));
+        i.remove();
+
         assertThat(i.hasNext(), is(true));
         assertThat(i.next().getName(), is("name1"));
         assertThat(i.next().getName(), is("name2"));
@@ -728,6 +810,7 @@ public class HttpFieldsTest
         assertThat(i.next().getName(), is("name3"));
         assertThat(i.hasNext(), is(false));
 
+        header.add("REMOVE", "ME");
         ListIterator<HttpField> l = header.listIterator();
         assertThat(l.hasNext(), is(true));
         l.add(new HttpField("name0", "value"));
@@ -748,6 +831,11 @@ public class HttpFieldsTest
         assertThat(l.next().getName(), is("NAME1"));
         l.add(new HttpField("name2", "value"));
         assertThat(l.next().getName(), is("name3"));
+
+        assertThat(l.hasNext(), is(true));
+        assertThat(l.next().getName(), is("REMOVE"));
+        l.remove();
+
         assertThat(l.hasNext(), is(false));
         assertThat(l.hasPrevious(), is(true));
         l.add(new HttpField("name4", "value"));

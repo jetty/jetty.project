@@ -488,10 +488,8 @@ public class ResourceService
             if (request instanceof Request)
             {
                 // Find multiple fields by iteration as an optimization 
-                HttpFields fields = ((Request)request).getHttpFields();
-                for (int i = fields.size(); i-- > 0; )
+                for (HttpField field : ((Request)request).getHttpFields())
                 {
-                    HttpField field = fields.getField(i);
                     if (field.getHeader() != null)
                     {
                         switch (field.getHeader())
@@ -848,7 +846,7 @@ public class ResourceService
         {
             Response r = (Response)response;
             r.putHeaders(content, contentLength, _etags);
-            HttpFields f = r.getHttpFields();
+            HttpFields.Mutable f = r.getHttpFields();
             if (_acceptRanges)
                 f.put(ACCEPT_RANGES);
 

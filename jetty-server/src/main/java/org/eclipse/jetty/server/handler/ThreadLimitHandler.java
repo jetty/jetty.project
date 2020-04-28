@@ -35,7 +35,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
@@ -296,8 +295,7 @@ public class ThreadLimitHandler extends HandlerWrapper
         // This is the value from the closest proxy and the only one that
         // can be trusted.
         RFC7239 rfc7239 = new RFC7239();
-        HttpFields httpFields = request.getHttpFields();
-        for (HttpField field : httpFields)
+        for (HttpField field : request.getHttpFields())
         {
             if (_forwardedHeader.equalsIgnoreCase(field.getName()))
                 rfc7239.addValue(field.getValue());
@@ -315,8 +313,7 @@ public class ThreadLimitHandler extends HandlerWrapper
         // This is the value from the closest proxy and the only one that
         // can be trusted.
         String forwardedFor = null;
-        HttpFields httpFields = request.getHttpFields();
-        for (HttpField field : httpFields)
+        for (HttpField field : request.getHttpFields())
         {
             if (_forwardedHeader.equalsIgnoreCase(field.getName()))
                 forwardedFor = field.getValue();

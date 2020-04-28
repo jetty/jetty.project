@@ -180,7 +180,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             proxyRequest.attribute(REQUEST_QUERY_ATTRIBUTE, originalQuery);
 
         // If the Host header is missing, add it.
-        if (!proxyRequest.getHeaders().containsKey(HttpHeader.HOST.asString()))
+        if (!proxyRequest.getHeaders().contains(HttpHeader.HOST))
         {
             String host = request.getServerName();
             int port = request.getServerPort();
@@ -209,7 +209,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         super.sendProxyRequest(request, proxyResponse, proxyRequest);
     }
 
-    protected void customizeFastCGIHeaders(Request proxyRequest, HttpFields fastCGIHeaders)
+    protected void customizeFastCGIHeaders(Request proxyRequest, HttpFields.Mutable fastCGIHeaders)
     {
         for (String envName : fcgiEnvNames)
         {
@@ -271,7 +271,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         }
 
         @Override
-        protected void customize(Request request, HttpFields fastCGIHeaders)
+        protected void customize(Request request, HttpFields.Mutable fastCGIHeaders)
         {
             super.customize(request, fastCGIHeaders);
             customizeFastCGIHeaders(request, fastCGIHeaders);

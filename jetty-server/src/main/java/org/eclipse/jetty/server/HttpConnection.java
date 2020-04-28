@@ -736,7 +736,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (reset())
             {
                 _info = info;
-                _head = HttpMethod.HEAD.is(request.getMethod());
+                _head = request != null && HttpMethod.HEAD.is(request.getMethod());
                 _content = content;
                 _lastContent = last;
                 _callback = callback;
