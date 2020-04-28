@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server.handler.jmx;
 
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,10 +41,8 @@ public class ContextHandlerMBean extends AbstractHandlerMBean
     {
         Map<String, Object> map = new HashMap<String, Object>();
         Attributes attrs = ((ContextHandler)_managed).getAttributes();
-        Enumeration<String> en = attrs.getAttributeNames();
-        while (en.hasMoreElements())
+        for (String name : attrs.getAttributeNameSet())
         {
-            String name = en.nextElement();
             Object value = attrs.getAttribute(name);
             map.put(name, value);
         }

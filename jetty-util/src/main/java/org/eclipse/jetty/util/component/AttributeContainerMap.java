@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jetty.util.Attributes;
 
@@ -58,6 +59,12 @@ public class AttributeContainerMap extends ContainerLifeCycle implements Attribu
     public synchronized Enumeration<String> getAttributeNames()
     {
         return Collections.enumeration(_map.keySet());
+    }
+
+    @Override
+    public Set<String> getAttributeNameSet()
+    {
+        return _map.keySet();
     }
 
     @Override
