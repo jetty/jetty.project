@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -78,10 +77,8 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
     public void contextInitialized(ServletContextEvent event)
     {
         // Update existing attributes
-        Enumeration<String> e = event.getServletContext().getAttributeNames();
-        while (e.hasMoreElements())
+        for (String name : _context.getServletContext().getAttributeNameSet())
         {
-            String name = e.nextElement();
             if (_managedAttributes.contains(name))
                 updateBean(name, null, event.getServletContext().getAttribute(name));
         }
@@ -90,10 +87,8 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
     @Override
     public void contextDestroyed(ServletContextEvent event)
     {
-        Enumeration<String> e = _context.getServletContext().getAttributeNames();
-        while (e.hasMoreElements())
+        for (String name : _context.getServletContext().getAttributeNameSet())
         {
-            String name = e.nextElement();
             if (_managedAttributes.contains(name))
                 updateBean(name, event.getServletContext().getAttribute(name), null);
         }

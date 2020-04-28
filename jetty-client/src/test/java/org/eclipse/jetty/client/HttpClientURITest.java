@@ -133,6 +133,26 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
+    public void testHostPort(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        Request request = client.newRequest("domain.com", 80)
+            .scheme(scenario.getScheme())
+            .host("localhost")
+            .port(connector.getLocalPort())
+            .timeout(1, TimeUnit.SECONDS);
+
+        assertEquals("localhost", request.getHost());
+        assertEquals(connector.getLocalPort(), request.getPort());
+
+        ContentResponse response = request.send();
+
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
     public void testPath(Scenario scenario) throws Exception
     {
         final String path = "/path";
