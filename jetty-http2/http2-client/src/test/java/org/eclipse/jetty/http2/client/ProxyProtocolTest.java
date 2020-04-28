@@ -119,9 +119,8 @@ public class ProxyProtocolTest
         client.accept(null, channel, new Session.Listener.Adapter(), promise);
         Session session = promise.get(5, TimeUnit.SECONDS);
 
-        HttpFields fields = new HttpFields();
         String uri = "http://localhost:" + connector.getLocalPort() + "/";
-        MetaData.Request metaData = new MetaData.Request("GET", new HttpURI(uri), HttpVersion.HTTP_2, fields);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from(uri), HttpVersion.HTTP_2, HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -177,9 +176,8 @@ public class ProxyProtocolTest
         client.accept(null, channel, new Session.Listener.Adapter(), promise);
         Session session = promise.get(5, TimeUnit.SECONDS);
 
-        HttpFields fields = new HttpFields();
         String uri = "http://localhost:" + connector.getLocalPort() + "/";
-        MetaData.Request metaData = new MetaData.Request("GET", new HttpURI(uri), HttpVersion.HTTP_2, fields);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from(uri), HttpVersion.HTTP_2, HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch latch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()

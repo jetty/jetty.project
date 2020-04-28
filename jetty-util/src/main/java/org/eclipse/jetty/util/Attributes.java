@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.util;
 
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Set;
 
 /**
  * Attributes.
@@ -26,13 +28,72 @@ import java.util.Enumeration;
  */
 public interface Attributes
 {
-    public void removeAttribute(String name);
+    void removeAttribute(String name);
 
-    public void setAttribute(String name, Object attribute);
+    void setAttribute(String name, Object attribute);
 
-    public Object getAttribute(String name);
+    Object getAttribute(String name);
 
-    public Enumeration<String> getAttributeNames();
+    Set<String> getAttributeNameSet();
 
-    public void clearAttributes();
+    default Enumeration<String> getAttributeNames()
+    {
+        return Collections.enumeration(getAttributeNameSet());
+    }
+
+    void clearAttributes();
+
+    static Attributes unwrap(Attributes attributes)
+    {
+        while (attributes instanceof Wrapper)
+        {
+            attributes = ((Wrapper)attributes).getAttributes();
+        }
+        return attributes;
+    }
+
+    abstract class Wrapper implements Attributes
+    {
+        protected final Attributes _attributes;
+
+        public Wrapper(Attributes attributes)
+        {
+            _attributes = attributes;
+        }
+
+        public Attributes getAttributes()
+        {
+            return _attributes;
+        }
+
+        @Override
+        public void removeAttribute(String name)
+        {
+            _attributes.removeAttribute(name);
+        }
+
+        @Override
+        public void setAttribute(String name, Object attribute)
+        {
+            _attributes.setAttribute(name, attribute);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return _attributes.getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return _attributes.getAttributeNameSet();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            _attributes.clearAttributes();
+        }
+    }
 }

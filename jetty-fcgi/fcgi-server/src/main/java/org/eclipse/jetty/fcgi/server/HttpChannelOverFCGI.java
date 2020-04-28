@@ -43,7 +43,7 @@ public class HttpChannelOverFCGI extends HttpChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverFCGI.class);
 
-    private final HttpFields fields = new HttpFields();
+    private final HttpFields.Mutable fields = HttpFields.build();
     private final Dispatcher dispatcher;
     private String method;
     private String path;

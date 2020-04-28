@@ -146,7 +146,7 @@ public class JettySpecificConfigTest
         // Close the Session.
         session.close();
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.closeReason.getCloseCode(), is(CloseReason.CloseCodes.NO_STATUS_CODE));
+        assertThat(clientEndpoint.closeReason.getCloseCode(), is(CloseReason.CloseCodes.NORMAL_CLOSURE));
         assertNull(clientEndpoint.error);
     }
 }

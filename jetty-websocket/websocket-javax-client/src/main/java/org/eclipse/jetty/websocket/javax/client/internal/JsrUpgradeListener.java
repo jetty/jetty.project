@@ -19,10 +19,10 @@
 package org.eclipse.jetty.websocket.javax.client.internal;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 import javax.websocket.ClientEndpointConfig.Configurator;
 import javax.websocket.HandshakeResponse;
 
@@ -44,18 +44,15 @@ public class JsrUpgradeListener implements UpgradeListener
     public void onHandshakeRequest(HttpRequest request)
     {
         if (configurator == null)
-        {
             return;
-        }
 
-        HttpFields fields = request.getHeaders();
-
+        HttpFields.Mutable fields = request.getHeaders();
         Map<String, List<String>> originalHeaders = new HashMap<>();
-        fields.forEach((field) ->
+        fields.forEach(field ->
         {
-            List<String> values = new ArrayList<>();
-            Stream.of(field.getValues()).forEach((val) -> values.add(val));
-            originalHeaders.put(field.getName(), values);
+            originalHeaders.putIfAbsent(field.getName(), new ArrayList<>());
+            List<String> values = originalHeaders.get(field.getName());
+            Collections.addAll(values, field.getValues());
         });
 
         // Give headers to configurator
@@ -63,26 +60,23 @@ public class JsrUpgradeListener implements UpgradeListener
 
         // Reset headers on HttpRequest per configurator
         fields.clear();
-        originalHeaders.forEach((name, values) -> fields.put(name, values));
+        originalHeaders.forEach(fields::put);
     }
 
     @Override
     public void onHandshakeResponse(HttpRequest request, HttpResponse response)
     {
         if (configurator == null)
-        {
             return;
-        }
 
         HandshakeResponse handshakeResponse = () ->
         {
-            HttpFields fields = response.getHeaders();
             Map<String, List<String>> ret = new HashMap<>();
-            fields.forEach((field) ->
+            response.getHeaders().forEach(field ->
             {
-                List<String> values = new ArrayList<>();
-                Stream.of(field.getValues()).forEach((val) -> values.add(val));
-                ret.put(field.getName(), values);
+                ret.putIfAbsent(field.getName(), new ArrayList<>());
+                List<String> values = ret.get(field.getName());
+                Collections.addAll(values, field.getValues());
             });
             return ret;
         };

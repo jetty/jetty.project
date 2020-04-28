@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -39,7 +38,6 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -83,8 +81,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final HttpChannel.Listener _combinedListener;
     @Deprecated
     private final List<Listener> _transientListeners = new ArrayList<>();
-    private HttpFields _trailers;
-    private final Supplier<HttpFields> _trailerSupplier = () -> _trailers;
     private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
     private long _oldIdleTimeout;
@@ -303,7 +299,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _committedMetaData = null;
         _requestLog = _connector == null ? null : _connector.getServer().getRequestLog();
         _written = 0;
-        _trailers = null;
         _oldIdleTimeout = 0;
         _transientListeners.clear();
     }
@@ -678,7 +673,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         _requests.incrementAndGet();
         _request.setTimeStamp(System.currentTimeMillis());
-        HttpFields fields = _response.getHttpFields();
+        HttpFields.Mutable fields = _response.getHttpFields();
         if (_configuration.getSendDateHeader() && !fields.contains(HttpHeader.DATE))
             fields.put(_connector.getServer().getDateField());
 
@@ -687,10 +682,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (idleTO >= 0 && _oldIdleTimeout != idleTO)
             setIdleTimeout(idleTO);
 
-        request.setTrailerSupplier(_trailerSupplier);
         _request.setMetaData(request);
-
-        _request.setSecure(HttpScheme.HTTPS.is(request.getURI().getScheme()));
 
         _combinedListener.onRequestBegin(_request);
 
@@ -720,7 +712,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onTrailers {} {}", this, trailers);
-        _trailers = trailers;
+        _request.setTrailerHttpFields(trailers);
         _combinedListener.onRequestTrailers(_request);
     }
 
@@ -796,7 +788,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (action == Action.DISPATCH)
             {
                 ByteBuffer content = null;
-                HttpFields fields = new HttpFields();
+                HttpFields.Mutable fields = HttpFields.build();
 
                 ErrorHandler handler = getServer().getBean(ErrorHandler.class);
                 if (handler != null)

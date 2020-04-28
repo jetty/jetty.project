@@ -306,7 +306,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             HttpFields fields = metaData.getFields();
             long length = -1;
             if (fields != null && !HttpMethod.CONNECT.is(request.getMethod()))
-                length = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
+                length = fields.getLongField(HttpHeader.CONTENT_LENGTH);
             dataLength = length >= 0 ? length : Long.MIN_VALUE;
         }
 

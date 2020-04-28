@@ -41,7 +41,7 @@ public abstract class AbstractSessionTest
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(websocketPojo, upgradeRequest);
         CoreSession coreSession = new CoreSession.Empty();
         session = new JavaxWebSocketSession(container, coreSession, frameHandler, container.getFrameHandlerFactory()
-            .newDefaultEndpointConfig(websocketPojo.getClass(), null));
+            .newDefaultEndpointConfig(websocketPojo.getClass()));
     }
 
     @AfterAll

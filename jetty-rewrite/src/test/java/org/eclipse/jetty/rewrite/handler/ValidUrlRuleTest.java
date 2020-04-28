@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Dispatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -43,7 +44,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     public void testValidUrl() throws Exception
     {
         _rule.setCode("404");
-        _request.setURIPathQuery("/valid/uri.html");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/valid/uri.html"));
 
         _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -54,7 +55,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     public void testInvalidUrl() throws Exception
     {
         _rule.setCode("404");
-        _request.setURIPathQuery("/invalid%0c/uri.html");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/invalid%0c/uri.html"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -66,7 +67,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     {
         _rule.setCode("405");
         _rule.setMessage("foo");
-        _request.setURIPathQuery("/%00/");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/%00/"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -79,7 +80,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     {
         _rule.setCode("405");
         _rule.setMessage("foo");
-        _request.setURIPathQuery("/jsp/bean1.jsp%00");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/jsp/bean1.jsp%00"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -93,7 +94,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     {
         _rule.setCode("405");
         _rule.setMessage("foo");
-        _request.setURIPathQuery("/jsp/shamrock-%00%E2%98%98.jsp");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/jsp/shamrock-%00%E2%98%98.jsp"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -107,7 +108,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     {
         _rule.setCode("405");
         _rule.setMessage("foo");
-        _request.setURIPathQuery("/jsp/shamrock-%E2%98%98.jsp");
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/jsp/shamrock-%E2%98%98.jsp"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 

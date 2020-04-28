@@ -679,6 +679,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
         @Override
         public void onFrame(Frame frame, final Callback callback)
         {
+            Callback closeCallback = null;
             try
             {
                 if (LOG.isDebugEnabled())
@@ -695,11 +696,13 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
 
                 // Handle inbound CLOSE
                 connection.cancelDemand();
-                Callback closeCallback;
-
                 if (closeConnection)
                 {
-                    closeCallback = Callback.from(() -> closeConnection(sessionState.getCloseStatus(), callback));
+                    closeCallback = Callback.from(() -> closeConnection(sessionState.getCloseStatus(), callback), t ->
+                    {
+                        sessionState.onError(t);
+                        closeConnection(sessionState.getCloseStatus(), callback);
+                    });
                 }
                 else
                 {
@@ -725,7 +728,10 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
             }
             catch (Throwable t)
             {
-                callback.failed(t);
+                if (closeCallback != null)
+                    closeCallback.failed(t);
+                else
+                    callback.failed(t);
             }
         }
     }

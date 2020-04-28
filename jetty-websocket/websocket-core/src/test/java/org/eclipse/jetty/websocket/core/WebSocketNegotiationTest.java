@@ -255,7 +255,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         Socket client = new Socket();
         client.connect(new InetSocketAddress("127.0.0.1", server.getLocalPort()));
 
-        HttpFields httpFields = newUpgradeRequest("nonExistentExtensionName");
+        HttpFields.Mutable httpFields = newUpgradeRequest("nonExistentExtensionName");
         String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;
         client.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
         String response = getUpgradeResponse(client.getInputStream());
@@ -317,17 +317,28 @@ public class WebSocketNegotiationTest extends WebSocketTester
     public void testNoSubProtocolSelected() throws Exception
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
-
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("testNoSubProtocolSelected");
-
-        try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannel.class))
+        CompletableFuture<HttpFields> headers = new CompletableFuture<>();
+        upgradeRequest.addListener(new UpgradeListener()
         {
-            CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
-            Throwable t = assertThrows(ExecutionException.class, () -> connect.get(5, TimeUnit.SECONDS));
-            assertThat(t.getMessage(), containsString("Failed to upgrade to websocket:"));
-            assertThat(t.getMessage(), containsString("500 Server Error"));
-        }
+            @Override
+            public void onHandshakeResponse(HttpRequest request, HttpResponse response)
+            {
+                headers.complete(response.getHeaders());
+            }
+        });
+
+        CoreSession session = client.connect(upgradeRequest).get(5, TimeUnit.SECONDS);
+        session.close(Callback.NOOP);
+        assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
+        assertThat(clientHandler.closeStatus.getCode(), is(CloseStatus.NO_CODE));
+
+        // RFC6455: If the server does not agree to any of the client's requested subprotocols, the only acceptable
+        // value is null. It MUST NOT send back a |Sec-WebSocket-Protocol| header field in its response.
+        HttpFields httpFields = headers.get();
+        assertThat(httpFields.get(HttpHeader.UPGRADE), is("WebSocket"));
+        assertNull(httpFields.get(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL));
     }
 
     @Test
@@ -336,7 +347,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         Socket client = new Socket();
         client.connect(new InetSocketAddress("127.0.0.1", server.getLocalPort()));
 
-        HttpFields httpFields = newUpgradeRequest(null);
+        HttpFields.Mutable httpFields = newUpgradeRequest(null);
         String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;
         client.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
         String response = getUpgradeResponse(client.getInputStream());
@@ -352,7 +363,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         Socket client = new Socket();
         client.connect(new InetSocketAddress("127.0.0.1", server.getLocalPort()));
 
-        HttpFields httpFields = newUpgradeRequest(null);
+        HttpFields.Mutable httpFields = newUpgradeRequest(null);
         httpFields.remove(HttpHeader.SEC_WEBSOCKET_KEY);
 
         String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;

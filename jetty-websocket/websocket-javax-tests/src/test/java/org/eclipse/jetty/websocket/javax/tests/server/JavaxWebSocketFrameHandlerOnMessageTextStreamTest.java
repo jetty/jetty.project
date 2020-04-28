@@ -46,7 +46,8 @@ public class JavaxWebSocketFrameHandlerOnMessageTextStreamTest extends AbstractJ
     @SuppressWarnings("Duplicates")
     private <T extends WSEventTracker> T performOnMessageInvocation(T socket, Consumer<JavaxWebSocketFrameHandler> func) throws Exception
     {
-        UpgradeRequest request = new UpgradeRequestAdapter(URI.create("http://localhost:8080/msg/foo"));
+        URI uri = URI.create("http://localhost:8080/msg/foo");
+        UpgradeRequest request = new UpgradeRequestAdapter(uri, uri.getPath());
 
         // Establish endpoint function
         JavaxWebSocketFrameHandler frameHandler = container.newFrameHandler(socket, request);

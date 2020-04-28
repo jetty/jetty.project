@@ -24,16 +24,18 @@ import java.security.Principal;
 public class UpgradeRequestAdapter implements UpgradeRequest
 {
     private final URI requestURI;
+    private final String pathInContext;
 
     public UpgradeRequestAdapter()
     {
         /* anonymous, no requestURI, upgrade request */
-        this(null);
+        this(null, null);
     }
 
-    public UpgradeRequestAdapter(URI uri)
+    public UpgradeRequestAdapter(URI uri, String pathInContext)
     {
         this.requestURI = uri;
+        this.pathInContext = pathInContext;
     }
 
     @Override
@@ -46,5 +48,11 @@ public class UpgradeRequestAdapter implements UpgradeRequest
     public URI getRequestURI()
     {
         return requestURI;
+    }
+
+    @Override
+    public String getPathInContext()
+    {
+        return pathInContext;
     }
 }

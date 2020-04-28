@@ -33,16 +33,21 @@ public class HttpGeneratorClientTest
 {
     public static final String[] connect = {null, "keep-alive", "close"};
 
-    class Info extends MetaData.Request
+    class RequestInfo extends MetaData.Request
     {
-        Info(String method, String uri)
+        RequestInfo(String method, String uri, HttpFields fields)
         {
-            super(method, new HttpURI(uri), HttpVersion.HTTP_1_1, new HttpFields(), -1);
+            super(method, HttpURI.from(method,uri), HttpVersion.HTTP_1_1, fields, -1);
         }
 
-        public Info(String method, String uri, int contentLength)
+        RequestInfo(String method, String uri, HttpVersion version, HttpFields fields)
         {
-            super(method, new HttpURI(uri), HttpVersion.HTTP_1_1, new HttpFields(), contentLength);
+            super(method, HttpURI.from(method,uri), version, fields, -1);
+        }
+
+        RequestInfo(String method, String uri, int contentLength, HttpFields fields)
+        {
+            super(method, HttpURI.from(method,uri), HttpVersion.HTTP_1_1, fields, contentLength);
         }
     }
 
@@ -57,9 +62,10 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        Info info = new Info("GET", "/index.html");
-        info.getFields().add("Host", "something");
-        info.getFields().add("User-Agent", "test");
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Host", "something");
+        fields.add("User-Agent", "test");
+        RequestInfo info = new RequestInfo("GET", "/index.html", fields);
         assertTrue(!gen.isChunking());
 
         result = gen.generateRequest(info, null, null, null, true);
@@ -94,27 +100,29 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        Info info = new Info("GET", "/index.html");
-        info.getFields().add("Host", "something");
-        info.getFields().add("Null", null);
-        info.getFields().add("Empty", "");
-        assertTrue(!gen.isChunking());
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Host", "something");
+        fields.add("Null", null);
+        fields.add("Empty", "");
+        RequestInfo info = new RequestInfo("GET", "/index.html", fields);
+        assertFalse(gen.isChunking());
 
         result = gen.generateRequest(info, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
+        assertFalse(gen.isChunking());
 
         result = gen.generateRequest(info, header, null, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        assertTrue(!gen.isChunking());
+        assertFalse(gen.isChunking());
         String out = BufferUtil.toString(header);
         BufferUtil.clear(header);
 
         result = gen.generateResponse(null, false, null, null, null, false);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
-        assertTrue(!gen.isChunking());
+        assertFalse(gen.isChunking());
 
         assertEquals(0, gen.getContentPrepared());
         assertThat(out, Matchers.containsString("GET /index.html HTTP/1.1"));
@@ -128,10 +136,10 @@ public class HttpGeneratorClientTest
     {
         HttpGenerator gen = new HttpGenerator();
 
-        Info info = new Info("GET", "/index.html");
-        info.getFields().add("Host", "localhost");
-        info.getFields().add("Field", "SomeWhatLongValue");
-        info.setHttpVersion(HttpVersion.HTTP_1_0);
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Host", "localhost");
+        fields.add("Field", "SomeWhatLongValue");
+        RequestInfo info = new RequestInfo("GET", "/index.html", HttpVersion.HTTP_1_0, fields);
 
         HttpGenerator.Result result = gen.generateRequest(info, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -170,9 +178,10 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        Info info = new Info("POST", "/index.html");
-        info.getFields().add("Host", "something");
-        info.getFields().add("User-Agent", "test");
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Host", "something");
+        fields.add("User-Agent", "test");
+        RequestInfo info = new RequestInfo("POST", "/index.html", fields);
         assertTrue(!gen.isChunking());
 
         result = gen.generateRequest(info, null, null, null, true);
@@ -209,9 +218,10 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        Info info = new Info("POST", "/index.html");
-        info.getFields().add("Host", "something");
-        info.getFields().add("User-Agent", "test");
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Host", "something");
+        fields.add("User-Agent", "test");
+        RequestInfo info = new RequestInfo("POST", "/index.html", fields);
 
         result = gen.generateRequest(info, null, null, content0, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -254,9 +264,10 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        Info info = new Info("POST", "/index.html");
-        info.getFields().add("Host", "something");
-        info.getFields().add("User-Agent", "test");
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Host", "something");
+        fields.add("User-Agent", "test");
+        RequestInfo info = new RequestInfo("POST", "/index.html", fields);
 
         result = gen.generateRequest(info, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -325,9 +336,10 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        Info info = new Info("POST", "/index.html", 58);
-        info.getFields().add("Host", "something");
-        info.getFields().add("User-Agent", "test");
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Host", "something");
+        fields.add("User-Agent", "test");
+        RequestInfo info = new RequestInfo("POST", "/index.html", 58, fields);
 
         result = gen.generateRequest(info, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
