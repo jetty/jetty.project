@@ -53,25 +53,38 @@ import org.eclipse.jetty.util.Fields;
 public interface Request
 {
     /**
-     * @return the scheme of this request, such as "http" or "https"
+     * @return the URI scheme of this request, such as "http" or "https"
      */
     String getScheme();
 
     /**
-     * @param scheme the scheme of this request, such as "http" or "https"
+     * @param scheme the URI scheme of this request, such as "http" or "https"
      * @return this request object
      */
     Request scheme(String scheme);
 
     /**
-     * @return the host of this request, such as "127.0.0.1" or "google.com"
+     * @return the URI host of this request, such as "127.0.0.1" or "google.com"
      */
     String getHost();
 
     /**
-     * @return the port of this request such as 80 or 443
+     * @param host the URI host of this request, such as "127.0.0.1" or "google.com"
+     * @return this request object
+     */
+    Request host(String host);
+
+    /**
+     * @return the URI port of this request such as 80 or 443
      */
     int getPort();
+
+    /**
+     *
+     * @param port the URI port of this request such as 80 or 443
+     * @return this request object
+     */
+    Request port(int port);
 
     /**
      * @return the method of this request, such as GET or POST, as a String
@@ -91,26 +104,26 @@ public interface Request
     Request method(String method);
 
     /**
-     * @return the path of this request, such as "/" or "/path" - without the query
+     * @return the URI path of this request, such as "/" or "/path" - without the query
      * @see #getQuery()
      */
     String getPath();
 
     /**
-     * Specifies the path - and possibly the query - of this request.
+     * Specifies the URI path - and possibly the query - of this request.
      * If the query part is specified, parameter values must be properly
      * {@link URLEncoder#encode(String, String) UTF-8 URL encoded}.
      * For example, if the value for parameter "currency" is the euro symbol &euro; then the
      * query string for this parameter must be "currency=%E2%82%AC".
      * For transparent encoding of parameter values, use {@link #param(String, String)}.
      *
-     * @param path the path of this request, such as "/" or "/path?param=1"
+     * @param path the URI path of this request, such as "/" or "/path?param=1"
      * @return this request object
      */
     Request path(String path);
 
     /**
-     * @return the query string of this request such as "param=1"
+     * @return the URI query string of this request such as "param=1"
      * @see #getPath()
      * @see #getParams()
      */
@@ -133,12 +146,12 @@ public interface Request
     Request version(HttpVersion version);
 
     /**
-     * @return the query parameters of this request
+     * @return the URI query parameters of this request
      */
     Fields getParams();
 
     /**
-     * Adds a query parameter with the given name and value.
+     * Adds a URI query parameter with the given name and value.
      * The value is {@link URLEncoder#encode(String, String) UTF-8 URL encoded}.
      *
      * @param name the name of the query parameter

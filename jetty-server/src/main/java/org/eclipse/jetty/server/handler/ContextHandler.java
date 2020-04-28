@@ -502,6 +502,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return AttributesMap.getAttributeNamesCopy(_attributes);
     }
 
+    @Override
+    public Set<String> getAttributeNameSet()
+    {
+        return _attributes.getAttributeNameSet();
+    }
+
     /**
      * @return Returns the attributes.
      */

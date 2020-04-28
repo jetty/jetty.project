@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletContext;
@@ -682,6 +683,12 @@ public class Server extends HandlerWrapper implements Attributes
     public Enumeration<String> getAttributeNames()
     {
         return _attributes.getAttributeNames();
+    }
+
+    @Override
+    public Set<String> getAttributeNameSet()
+    {
+        return _attributes.getAttributeNameSet();
     }
 
     @Override
