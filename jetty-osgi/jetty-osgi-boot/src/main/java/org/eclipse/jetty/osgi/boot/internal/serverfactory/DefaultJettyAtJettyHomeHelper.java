@@ -64,7 +64,7 @@ public class DefaultJettyAtJettyHomeHelper
     /**
      * Set of config files to apply to a jetty Server instance if none are supplied by SYS_PROP_JETTY_ETC_FILES
      */
-    public static final String DEFAULT_JETTY_ETC_FILES = "etc/jetty.xml,etc/jetty-http.xml,etc/jetty-deployer.xml";
+    public static final String DEFAULT_JETTY_ETC_FILES = "etc/jetty.xml,etc/jetty-http.xml,etc/jetty-deploy.xml";
 
     /**
      * Default location within bundle of a jetty home dir.
