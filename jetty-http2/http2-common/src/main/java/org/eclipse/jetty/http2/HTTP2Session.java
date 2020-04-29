@@ -21,10 +21,12 @@ package org.eclipse.jetty.http2;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -74,6 +76,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private static final Logger LOG = Log.getLogger(HTTP2Session.class);
 
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
+    private final StreamCreator streamCreator = new StreamCreator();
     private final AtomicInteger localStreamIds = new AtomicInteger();
     private final AtomicInteger lastRemoteStreamId = new AtomicInteger();
     private final AtomicInteger localStreamCount = new AtomicInteger();
@@ -516,80 +519,19 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void newStream(HeadersFrame frame, Promise<Stream> promise, Stream.Listener listener)
     {
-        try
-        {
-            // Synchronization is necessary to atomically create
-            // the stream id and enqueue the frame to be sent.
-            boolean queued;
-            synchronized (this)
-            {
-                int streamId = frame.getStreamId();
-                if (streamId <= 0)
-                {
-                    streamId = localStreamIds.getAndAdd(2);
-                    PriorityFrame priority = frame.getPriority();
-                    priority = priority == null ? null : new PriorityFrame(streamId, priority.getParentStreamId(),
-                        priority.getWeight(), priority.isExclusive());
-                    frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
-                }
-                IStream stream = createLocalStream(streamId);
-                stream.setListener(listener);
-
-                ControlEntry entry = new ControlEntry(frame, stream, new StreamPromiseCallback(promise, stream));
-                queued = flusher.append(entry);
-            }
-            // Iterate outside the synchronized block.
-            if (queued)
-                flusher.iterate();
-        }
-        catch (Throwable x)
-        {
-            promise.failed(x);
-        }
+        streamCreator.newStream(frame, promise, listener);
     }
 
     @Override
     public int priority(PriorityFrame frame, Callback callback)
     {
-        int streamId = frame.getStreamId();
-        IStream stream = streams.get(streamId);
-        if (stream == null)
-        {
-            streamId = localStreamIds.getAndAdd(2);
-            frame = new PriorityFrame(streamId, frame.getParentStreamId(),
-                frame.getWeight(), frame.isExclusive());
-        }
-        control(stream, callback, frame);
-        return streamId;
+        return streamCreator.priority(frame, callback);
     }
 
     @Override
     public void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame, Stream.Listener listener)
     {
-        try
-        {
-            // Synchronization is necessary to atomically create
-            // the stream id and enqueue the frame to be sent.
-            boolean queued;
-            synchronized (this)
-            {
-                int streamId = localStreamIds.getAndAdd(2);
-                frame = new PushPromiseFrame(frame.getStreamId(), streamId, frame.getMetaData());
-
-                IStream pushStream = createLocalStream(streamId);
-                pushStream.setListener(listener);
-
-                ControlEntry entry = new ControlEntry(frame, pushStream, new StreamPromiseCallback(promise, pushStream));
-                queued = flusher.append(entry);
-            }
-            // Iterate outside the synchronized block.
-            if (queued)
-                flusher.iterate();
-        }
-        catch (Throwable x)
-        {
-            promise.failed(x);
-        }
+        streamCreator.push(frame, promise, listener);
     }
 
     @Override
@@ -1646,6 +1588,159 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         private void complete()
         {
             terminate(failure);
+        }
+    }
+
+    /**
+     * SPEC: It is required that stream ids are monotonically increasing.
+     * Here we use a queue to atomically create the stream id and
+     * claim the slot in the queue. Concurrent threads will only
+     * flush up to the slot with a non-null entry to make sure
+     * frames are sent strictly in their stream id order.
+     * See https://tools.ietf.org/html/rfc7540#section-5.1.1.
+     */
+    private class StreamCreator
+    {
+        private final Queue<Slot> slots = new ArrayDeque<>();
+        private Thread flushing;
+
+        private int priority(PriorityFrame frame, Callback callback)
+        {
+            Slot slot = new Slot();
+            int currentStreamId = frame.getStreamId();
+            int streamId = reserveSlot(slot, currentStreamId);
+
+            if (currentStreamId <= 0)
+                frame = new PriorityFrame(streamId, frame.getParentStreamId(), frame.getWeight(), frame.isExclusive());
+
+            slot.entry = new ControlEntry(frame, null, callback);
+            flush();
+            return streamId;
+        }
+
+        private void newStream(HeadersFrame frame, Promise<Stream> promise, Stream.Listener listener)
+        {
+            Slot slot = new Slot();
+            int currentStreamId = frame.getStreamId();
+            int streamId = reserveSlot(slot, currentStreamId);
+
+            if (currentStreamId <= 0)
+            {
+                PriorityFrame priority = frame.getPriority();
+                priority = priority == null ? null : new PriorityFrame(streamId, priority.getParentStreamId(), priority.getWeight(), priority.isExclusive());
+                frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
+            }
+
+            try
+            {
+                createLocalStream(slot, frame, promise, listener, streamId);
+            }
+            catch (Throwable x)
+            {
+                freeSlotAndFailPromise(slot, promise, x);
+            }
+        }
+
+        private void push(PushPromiseFrame frame, Promise<Stream> promise, Stream.Listener listener)
+        {
+            Slot slot = new Slot();
+            int streamId = reserveSlot(slot, 0);
+            frame = new PushPromiseFrame(frame.getStreamId(), streamId, frame.getMetaData());
+
+            try
+            {
+                createLocalStream(slot, frame, promise, listener, streamId);
+            }
+            catch (Throwable x)
+            {
+                freeSlotAndFailPromise(slot, promise, x);
+            }
+        }
+
+        private int reserveSlot(Slot slot, int streamId)
+        {
+            if (streamId <= 0)
+            {
+                synchronized (this)
+                {
+                    streamId = localStreamIds.getAndAdd(2);
+                    slots.offer(slot);
+                }
+            }
+            else
+            {
+                synchronized (this)
+                {
+                    slots.offer(slot);
+                }
+            }
+            return streamId;
+        }
+
+        private void createLocalStream(Slot slot, Frame frame, Promise<Stream> promise, Stream.Listener listener, int streamId)
+        {
+            IStream stream = HTTP2Session.this.createLocalStream(streamId);
+            stream.setListener(listener);
+            slot.entry = new ControlEntry(frame, stream, new StreamPromiseCallback(promise, stream));
+            flush();
+        }
+
+        private void freeSlotAndFailPromise(Slot slot, Promise<Stream> promise, Throwable x)
+        {
+            synchronized (this)
+            {
+                slots.remove(slot);
+            }
+            flush();
+            promise.failed(x);
+        }
+
+        /**
+         * Flush goes over the entries of the slots queue to flush the entries,
+         * until either one of the following two conditions is true:
+         *  - The queue is empty.
+         *  - It reaches a slot with a null entry.
+         *  When a slot with a null entry is encountered, this means a concurrent thread reserved a slot
+         *  but hasn't set its entry yet. Since entries must be flushed in order, the thread encountering
+         *  the null entry must bail out and it is up to the concurrent thread to finish up flushing.
+         *  Note that only one thread can flush at any one time, if two threads happen to call flush
+         *  concurrently, one will do the work while the other will bail out, so it is safe that all
+         *  threads call flush after they're done reserving a slot and setting the entry.
+         */
+        private void flush()
+        {
+            Thread thread = Thread.currentThread();
+            boolean queued = false;
+            while (true)
+            {
+                ControlEntry entry;
+                synchronized (this)
+                {
+                    if (flushing == null)
+                        flushing = thread;
+                    else if (flushing != thread)
+                        return; // another thread is flushing
+
+                    Slot slot = slots.peek();
+                    entry = slot == null ? null : slot.entry;
+
+                    if (entry == null)
+                    {
+                        flushing = null;
+                        break; // No more slots or null entry, so we may iterate on the flusher
+                    }
+
+                    slots.poll();
+                }
+                queued |= flusher.append(entry);
+            }
+            if (queued)
+                flusher.iterate();
+        }
+
+        private class Slot
+        {
+            private volatile ControlEntry entry;
         }
     }
 }

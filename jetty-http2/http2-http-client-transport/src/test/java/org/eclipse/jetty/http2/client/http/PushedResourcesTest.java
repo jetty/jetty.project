@@ -65,7 +65,7 @@ public class PushedResourcesTest extends AbstractTest
             {
                 HttpURI pushURI = new HttpURI("http://localhost:" + connector.getLocalPort() + pushPath);
                 MetaData.Request pushRequest = new MetaData.Request(HttpMethod.GET.asString(), pushURI, HttpVersion.HTTP_2, new HttpFields());
-                stream.push(new PushPromiseFrame(stream.getId(), 0, pushRequest), new Promise.Adapter<Stream>()
+                stream.push(new PushPromiseFrame(stream.getId(), pushRequest), new Promise.Adapter<Stream>()
                 {
                     @Override
                     public void succeeded(Stream pushStream)

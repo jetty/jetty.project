@@ -255,7 +255,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP/2 Push {}", request);
 
-        stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Promise<Stream>()
+        stream.push(new PushPromiseFrame(stream.getId(), request), new Promise<Stream>()
         {
             @Override
             public void succeeded(Stream pushStream)
