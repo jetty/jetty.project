@@ -26,6 +26,11 @@ public class PushPromiseFrame extends Frame
     private final int promisedStreamId;
     private final MetaData.Request metaData;
 
+    public PushPromiseFrame(int streamId, MetaData.Request metaData)
+    {
+        this(streamId, 0, metaData);
+    }
+
     public PushPromiseFrame(int streamId, int promisedStreamId, MetaData.Request metaData)
     {
         super(FrameType.PUSH_PROMISE);

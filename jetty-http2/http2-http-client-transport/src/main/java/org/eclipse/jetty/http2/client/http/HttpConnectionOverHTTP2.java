@@ -61,7 +61,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicInteger sweeps = new AtomicInteger();
     private final Session session;
-    private boolean recycleHttpChannels;
+    private boolean recycleHttpChannels = true;
 
     public HttpConnectionOverHTTP2(HttpDestination destination, Session session)
     {
