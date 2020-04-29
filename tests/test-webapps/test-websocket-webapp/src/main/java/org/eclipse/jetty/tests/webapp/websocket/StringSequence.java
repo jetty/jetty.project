@@ -18,39 +18,37 @@
 
 package org.eclipse.jetty.tests.webapp.websocket;
 
-import java.io.IOException;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-@ServerEndpoint("/onclose/{arg}")
-public class OnCloseServerEndpoint
+public class StringSequence
+    implements CharSequence
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(OnCloseServerEndpoint.class);
-    private static String close = "";
+    public String stringBuffer;
 
-    @OnMessage
-    public String echo(String echo)
+    public StringSequence(String hold)
     {
-        return close + echo;
+        stringBuffer = hold;
     }
 
-    @OnClose
-    public void onClose(Session session)
+    @Override
+    public int length()
     {
-        LOGGER.info("Session close");
+        return stringBuffer.length();
     }
 
-    @OnError
-    public void onError(Session session, Throwable t)
-        throws IOException
+    @Override
+    public char charAt(int index)
     {
-        String message = "Error happened:" + t.getMessage();
-        session.getBasicRemote().sendText(message);
+        return stringBuffer.charAt(index);
+    }
+
+    @Override
+    public CharSequence subSequence(int start, int end)
+    {
+        return stringBuffer.subSequence(start, end);
+    }
+
+    @Override
+    public String toString()
+    {
+        return stringBuffer;
     }
 }

@@ -473,10 +473,10 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
      * For lookups on server classes use {@link #getServerMethodHandleLookup()} instead.
      * </p>
      * <p>
-     * This method needs to return a Lookup instance which has only {@link java.lang.invoke.MethodHandles.Lookup#PUBLIC}
-     * access on the lookup class only. Previously we could use {@link MethodHandles#publicLookup()}, however
-     * in JDK 14 this was changed to only include {@link java.lang.invoke.MethodHandles.Lookup#UNCONDITIONAL},
-     * so instead we use {@link MethodHandles#lookup()} and manually drop all access modes we don't want to allow.
+     * This uses {@link MethodHandles#publicLookup()} as we only need access to public method of the lookupClass.
+     * To look up a method on the lookupClass, it must be public and the class must be accessible from this
+     * module, so if the lookupClass is in a JPMS module it must be exported so that the public methods
+     * of the lookupClass are accessible outside of the module.
      * </p>
      * <p>
      * The {@link java.lang.invoke.MethodHandles.Lookup#in(Class)} allows us to search specifically
@@ -484,11 +484,6 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
      * class is present in multiple web apps. Unlike using {@link MethodHandles#publicLookup()}
      * using {@link MethodHandles#lookup()} with {@link java.lang.invoke.MethodHandles.Lookup#in(Class)}
      * will cause the lookup to lose its public access to the lookup class if they are in different modules.
-     * </p>
-     * <p>
-     * To look up a method on the lookupClass, it must be public and the class must be accessible from this
-     * module, so if the lookupClass is in a JPMS module it must be exported so that the public methods
-     * of the lookupClass are accessible outside of the module.
      * </p>
      * <p>
      * {@link MethodHandles#privateLookupIn(Class, MethodHandles.Lookup)} is also unsuitable because it
@@ -501,14 +496,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
      */
     public static MethodHandles.Lookup getApplicationMethodHandleLookup(Class<?> lookupClass)
     {
-        MethodHandles.Lookup lookup = MethodHandles.lookup();
-        lookup = lookup
-            .dropLookupMode(MethodHandles.Lookup.UNCONDITIONAL)
-            .dropLookupMode(MethodHandles.Lookup.MODULE)
-            .dropLookupMode(MethodHandles.Lookup.PRIVATE)
-            .dropLookupMode(MethodHandles.Lookup.PACKAGE)
-            .dropLookupMode(MethodHandles.Lookup.PROTECTED);
-        return lookup.in(lookupClass);
+        return MethodHandles.publicLookup().in(lookupClass);
     }
 
     @Override

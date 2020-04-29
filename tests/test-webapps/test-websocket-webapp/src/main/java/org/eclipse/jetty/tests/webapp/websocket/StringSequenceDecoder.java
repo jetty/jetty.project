@@ -18,39 +18,33 @@
 
 package org.eclipse.jetty.tests.webapp.websocket;
 
-import java.io.IOException;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
+import javax.websocket.DecodeException;
+import javax.websocket.Decoder;
+import javax.websocket.EndpointConfig;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-@ServerEndpoint("/onopen/{arg}")
-public class OnOpenServerEndpoint
+public class StringSequenceDecoder implements Decoder.Text<StringSequence>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(OnOpenServerEndpoint.class);
-    private static String open = "";
-
-    @OnMessage
-    public String echo(String echo)
+    @Override
+    public StringSequence decode(String s) throws DecodeException
     {
-        return open + echo;
+        return new StringSequence(s);
     }
 
-    @OnOpen
-    public void onOpen(Session session)
+    @Override
+    public void init(EndpointConfig config)
     {
-        LOGGER.info("Session opened");
+
     }
 
-    @OnError
-    public void onError(Session session, Throwable t)
-        throws IOException
+    @Override
+    public void destroy()
     {
-        String message = "Error happened:" + t.getMessage();
-        session.getBasicRemote().sendText(message);
+
+    }
+
+    @Override
+    public boolean willDecode(String s)
+    {
+        return true;
     }
 }

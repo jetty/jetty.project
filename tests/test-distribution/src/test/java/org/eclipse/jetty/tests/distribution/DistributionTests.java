@@ -39,9 +39,11 @@ import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -415,6 +417,7 @@ public class DistributionTests extends AbstractDistributionTest
         "",
         "--jpms",
     })
+    @DisabledOnJre(JRE.JAVA_14) // TODO: Waiting on JDK14 bug at https://bugs.openjdk.java.net/browse/JDK-8244090.
     public void testSimpleWebAppWithWebsocket(String arg) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
@@ -459,7 +462,10 @@ public class DistributionTests extends AbstractDistributionTest
 
                 // Verify /test1 is able to establish a WebSocket connection.
                 WsListener webSocketListener = new WsListener();
-                wsClient.connect(webSocketListener, serverUri.resolve("/test1/onopen/a")).get(5, TimeUnit.SECONDS).close();
+                Session session = wsClient.connect(webSocketListener, serverUri.resolve("/test1")).get(5, TimeUnit.SECONDS);
+                session.getRemote().sendString("echo message");
+                assertThat(webSocketListener.textMessages.poll(5, TimeUnit.SECONDS), is("echo message"));
+                session.close();
                 assertTrue(webSocketListener.closeLatch.await(5, TimeUnit.SECONDS));
                 assertThat(webSocketListener.closeCode, is(StatusCode.NORMAL));
 
@@ -471,7 +477,10 @@ public class DistributionTests extends AbstractDistributionTest
 
                 // Verify /test4 is able to establish a WebSocket connection.
                 webSocketListener = new WsListener();
-                wsClient.connect(webSocketListener, serverUri.resolve("/test4/onopen/a")).get(5, TimeUnit.SECONDS).close();
+                session = wsClient.connect(webSocketListener, serverUri.resolve("/test4")).get(5, TimeUnit.SECONDS);
+                session.getRemote().sendString("echo message");
+                assertThat(webSocketListener.textMessages.poll(5, TimeUnit.SECONDS), is("echo message"));
+                session.close();
                 assertTrue(webSocketListener.closeLatch.await(5, TimeUnit.SECONDS));
                 assertThat(webSocketListener.closeCode, is(StatusCode.NORMAL));
             }
@@ -480,6 +489,7 @@ public class DistributionTests extends AbstractDistributionTest
 
     public static class WsListener implements WebSocketListener
     {
+        BlockingArrayQueue<String> textMessages = new BlockingArrayQueue<>();
         private CountDownLatch closeLatch = new CountDownLatch(1);
         private int closeCode;
 
@@ -487,6 +497,13 @@ public class DistributionTests extends AbstractDistributionTest
         public void onWebSocketClose(int statusCode, String reason)
         {
             this.closeCode = statusCode;
+            closeLatch.countDown();
+        }
+
+        @Override
+        public void onWebSocketText(String message)
+        {
+            textMessages.add(message);
         }
     }
 

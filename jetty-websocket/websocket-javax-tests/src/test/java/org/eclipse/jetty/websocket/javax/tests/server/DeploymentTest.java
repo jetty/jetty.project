@@ -43,6 +43,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -73,6 +75,7 @@ public class DeploymentTest
         app1.createWebInf();
         app1.copyClass(BadPathParamEndpoint.class);
         app1.copyClass(DecodedString.class);
+        app1.copyClass(DeploymentTest.class);
         app1.deploy();
         app1.getWebAppContext().setThrowUnavailableOnStartupException(false);
 
@@ -91,6 +94,7 @@ public class DeploymentTest
     }
 
     @Test
+    @DisabledOnJre(JRE.JAVA_14) // TODO: Waiting on JDK14 bug at https://bugs.openjdk.java.net/browse/JDK-8244090.
     public void testDifferentWebAppsWithSameClassInSignature() throws Exception
     {
         WSServer.WebApp app1 = server.createWebApp("test1");
@@ -98,6 +102,7 @@ public class DeploymentTest
         app1.copyClass(DecodedEndpoint.class);
         app1.copyClass(StringDecoder.class);
         app1.copyClass(DecodedString.class);
+        app1.copyClass(DeploymentTest.class);
         app1.deploy();
 
         WSServer.WebApp app2 = server.createWebApp("test2");
@@ -105,6 +110,7 @@ public class DeploymentTest
         app2.copyClass(DecodedEndpoint.class);
         app2.copyClass(StringDecoder.class);
         app2.copyClass(DecodedString.class);
+        app2.copyClass(DeploymentTest.class);
         app2.deploy();
 
         server.start();
@@ -129,7 +135,7 @@ public class DeploymentTest
     }
 
     @ServerEndpoint("/badonopen/{arg}")
-    public class BadPathParamEndpoint
+    public static class BadPathParamEndpoint
     {
         @OnOpen
         public void onOpen(Session session, @PathParam("arg")  DecodedString arg)
