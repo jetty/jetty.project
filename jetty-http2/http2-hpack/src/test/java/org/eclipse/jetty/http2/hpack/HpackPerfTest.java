@@ -107,7 +107,7 @@ public class HpackPerfTest
                     var kase = (Map<String, Object>)c;
                     Object[] headers = (Object[])kase.get("headers");
                     // System.err.println("    "+headers);
-                    HttpFields fields = new HttpFields();
+                    HttpFields.Mutable fields = HttpFields.build();
                     for (Object header : headers)
                     {
                         @SuppressWarnings("unchecked")

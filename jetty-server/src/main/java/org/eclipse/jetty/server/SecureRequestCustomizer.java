@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
@@ -209,13 +210,13 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             SSLEngine sslEngine = sslConnection.getSSLEngine();
             customize(sslEngine, request);
 
-            request.setScheme(HttpScheme.HTTPS.asString());
+            request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS));
         }
         else if (endp instanceof ProxyConnectionFactory.ProxyEndPoint)
         {
             ProxyConnectionFactory.ProxyEndPoint proxy = (ProxyConnectionFactory.ProxyEndPoint)endp;
             if (request.getHttpURI().getScheme() == null && proxy.getAttribute(ProxyConnectionFactory.TLS_VERSION) != null)
-                request.setScheme(HttpScheme.HTTPS.asString());
+                request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS));
         }
 
         if (HttpScheme.HTTPS.is(request.getScheme()))

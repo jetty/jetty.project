@@ -46,7 +46,7 @@ public class JsrUpgradeListener implements UpgradeListener
         if (configurator == null)
             return;
 
-        HttpFields fields = request.getHeaders();
+        HttpFields.Mutable fields = request.getHeaders();
         Map<String, List<String>> originalHeaders = new HashMap<>();
         fields.forEach(field ->
         {

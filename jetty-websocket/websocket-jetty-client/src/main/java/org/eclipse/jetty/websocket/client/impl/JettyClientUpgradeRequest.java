@@ -49,18 +49,17 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
         if (request != null)
         {
             // Copy request details into actual request
-            HttpFields fields = getHeaders();
+            HttpFields.Mutable fields = getHeaders();
             request.getHeaders().forEach(fields::put);
 
             // Copy manually created Cookies into place
             List<HttpCookie> cookies = request.getCookies();
             if (cookies != null)
             {
-                HttpFields headers = getHeaders();
                 // TODO: remove existing Cookie header (if set)?
                 for (HttpCookie cookie : cookies)
                 {
-                    headers.add(HttpHeader.COOKIE, cookie.toString());
+                    fields.add(HttpHeader.COOKIE, cookie.toString());
                 }
             }
 

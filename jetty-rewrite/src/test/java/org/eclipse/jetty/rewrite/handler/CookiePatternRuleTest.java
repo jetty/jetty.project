@@ -72,6 +72,7 @@ public class CookiePatternRuleTest
                 out.printf("baseRequest.requestUri=%s%n", baseRequest.getRequestURI());
                 out.printf("baseRequest.originalUri=%s%n", baseRequest.getOriginalURI());
                 out.printf("request.requestUri=%s%n", request.getRequestURI());
+                out.printf("request.queryString=%s%n", request.getQueryString());
                 baseRequest.setHandled(true);
             }
         };
@@ -141,6 +142,40 @@ public class CookiePatternRuleTest
 
         // verify
         assertThat("response should not have Set-Cookie", response.getField(HttpHeader.SET_COOKIE), nullValue());
+    }
+
+    @Test
+    public void testUrlQuery() throws Exception
+    {
+        CookiePatternRule rule = new CookiePatternRule();
+        rule.setPattern("*");
+        rule.setName("fruit");
+        rule.setValue("banana");
+
+        startServer(rule);
+
+        StringBuilder rawRequest = new StringBuilder();
+        rawRequest.append("GET /other?fruit=apple HTTP/1.1\r\n");
+        rawRequest.append("Host: local\r\n");
+        rawRequest.append("Connection: close\r\n");
+        rawRequest.append("\r\n");
+
+        String rawResponse = localConnector.getResponse(rawRequest.toString());
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        String responseContent = response.getContent();
+        assertResponseContentLine(responseContent, "baseRequest.requestUri=", "/other");
+        assertResponseContentLine(responseContent, "request.queryString=", "fruit=apple");
+
+        // verify
+        HttpField setCookieField = response.getField(HttpHeader.SET_COOKIE);
+        assertThat("response should have Set-Cookie", setCookieField, notNullValue());
+        for (String value : setCookieField.getValues())
+        {
+            String[] result = value.split("=");
+            assertThat(result[0], is("fruit"));
+            assertThat(result[1], is("banana"));
+        }
     }
 
     @Test

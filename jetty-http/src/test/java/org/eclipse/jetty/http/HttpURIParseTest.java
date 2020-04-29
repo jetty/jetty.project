@@ -162,7 +162,7 @@ public class HttpURIParseTest
     @MethodSource("data")
     public void testParseString(String input, String scheme, String host, Integer port, String path, String param, String query, String fragment) throws Exception
     {
-        HttpURI httpUri = new HttpURI(input);
+        HttpURI httpUri = HttpURI.from(input);
 
         try
         {
@@ -210,7 +210,7 @@ public class HttpURIParseTest
         }
         assumeTrue(javaUri != null, "Skipping, not a valid input URI: " + input);
 
-        HttpURI httpUri = new HttpURI(javaUri);
+        HttpURI httpUri = HttpURI.from(javaUri);
 
         assertThat("[" + input + "] .scheme", httpUri.getScheme(), is(scheme));
         assertThat("[" + input + "] .host", httpUri.getHost(), is(host));
@@ -238,7 +238,7 @@ public class HttpURIParseTest
         }
         assumeTrue(javaUri != null, "Skipping, not a valid input URI");
 
-        HttpURI httpUri = new HttpURI(javaUri);
+        HttpURI httpUri = HttpURI.from(javaUri);
 
         assertThat("[" + input + "] .scheme", httpUri.getScheme(), is(javaUri.getScheme()));
         assertThat("[" + input + "] .host", httpUri.getHost(), is(javaUri.getHost()));
