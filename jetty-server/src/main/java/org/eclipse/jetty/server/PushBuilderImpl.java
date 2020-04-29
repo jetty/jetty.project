@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
 import javax.servlet.http.PushBuilder;
 
@@ -27,6 +29,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +42,13 @@ public class PushBuilderImpl implements PushBuilder
     private static final Logger LOG = LoggerFactory.getLogger(PushBuilderImpl.class);
 
     private static final HttpField JettyPush = new HttpField("x-http2-push", "PushBuilder");
+    private static EnumSet<HttpMethod> UNSAFE_METHODS = EnumSet.of(
+        HttpMethod.POST,
+        HttpMethod.PUT,
+        HttpMethod.DELETE,
+        HttpMethod.CONNECT,
+        HttpMethod.OPTIONS,
+        HttpMethod.TRACE);
 
     private final Request _request;
     private final HttpFields.Mutable _fields;
@@ -70,6 +80,10 @@ public class PushBuilderImpl implements PushBuilder
     @Override
     public PushBuilder method(String method)
     {
+        Objects.requireNonNull(method);
+        
+        if (StringUtil.isBlank(method) || UNSAFE_METHODS.contains(HttpMethod.fromString(method)))
+            throw new IllegalArgumentException("Method not allowed for push: " + method);
         _method = method;
         return this;
     }
@@ -149,9 +163,6 @@ public class PushBuilderImpl implements PushBuilder
     @Override
     public void push()
     {
-        if (HttpMethod.POST.is(_method) || HttpMethod.PUT.is(_method))
-            throw new IllegalStateException("Bad Method " + _method);
-
         if (_path == null || _path.length() == 0)
             throw new IllegalStateException("Bad Path " + _path);
 
