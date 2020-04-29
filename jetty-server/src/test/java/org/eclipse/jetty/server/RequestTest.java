@@ -1889,31 +1889,40 @@ public class RequestTest
         PushBuilder builder = request.newPushBuilder();
         assertNotNull(builder);
         assertEquals("GET", builder.getMethod());
-        assertThrows(NullPointerException.class, ()->{
+        assertThrows(NullPointerException.class, () ->
+        {
             builder.method(null);
         });
-        assertThrows(IllegalArgumentException.class, ()->{
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             builder.method("");
         });
-        assertThrows(IllegalArgumentException.class, ()->{
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             builder.method("   ");
         });
-        assertThrows(IllegalArgumentException.class, ()->{
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             builder.method("POST");
         });
-        assertThrows(IllegalArgumentException.class, ()->{
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             builder.method("PUT");
-        });        
-        assertThrows(IllegalArgumentException.class, ()->{
+        });
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             builder.method("DELETE");
-        });        
-        assertThrows(IllegalArgumentException.class, ()->{
+        });
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             builder.method("CONNECT");
-        });        
-        assertThrows(IllegalArgumentException.class, ()->{
+        });
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             builder.method("OPTIONS");
         });
-        assertThrows(IllegalArgumentException.class, ()->{
+        assertThrows(IllegalArgumentException.class, () ->
+        {
             builder.method("TRACE");
         });
         assertEquals(TestRequest.TEST_SESSION_ID, builder.getSessionId());
