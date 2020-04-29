@@ -311,6 +311,11 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     protected void doStart() throws Exception
     {
+        getConnectionFactories().stream()
+            .filter(ConnectionFactory.Configuring.class::isInstance)
+            .map(ConnectionFactory.Configuring.class::cast)
+            .forEach(configuring -> configuring.configure(this));
+
         _shutdown = new Graceful.Shutdown(this)
         {
             @Override
