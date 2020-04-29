@@ -152,7 +152,7 @@ public class DistributionTester
         commands.add(getJavaExecutable());
         if (!config.jvmArgs.isEmpty())
         {
-           commands.addAll(config.jvmArgs);
+            commands.addAll(config.jvmArgs);
         }
         commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
         commands.add("-jar");
