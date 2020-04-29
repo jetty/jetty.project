@@ -1889,6 +1889,33 @@ public class RequestTest
         PushBuilder builder = request.newPushBuilder();
         assertNotNull(builder);
         assertEquals("GET", builder.getMethod());
+        assertThrows(NullPointerException.class, ()->{
+            builder.method(null);
+        });
+        assertThrows(IllegalArgumentException.class, ()->{
+            builder.method("");
+        });
+        assertThrows(IllegalArgumentException.class, ()->{
+            builder.method("   ");
+        });
+        assertThrows(IllegalArgumentException.class, ()->{
+            builder.method("POST");
+        });
+        assertThrows(IllegalArgumentException.class, ()->{
+            builder.method("PUT");
+        });        
+        assertThrows(IllegalArgumentException.class, ()->{
+            builder.method("DELETE");
+        });        
+        assertThrows(IllegalArgumentException.class, ()->{
+            builder.method("CONNECT");
+        });        
+        assertThrows(IllegalArgumentException.class, ()->{
+            builder.method("OPTIONS");
+        });
+        assertThrows(IllegalArgumentException.class, ()->{
+            builder.method("TRACE");
+        });
         assertEquals(TestRequest.TEST_SESSION_ID, builder.getSessionId());
         builder.path("/foo/something-else.txt");
         assertEquals("/foo/something-else.txt", builder.getPath());
