@@ -129,7 +129,7 @@ public interface ConnectionFactory
     /**
      * A ConnectionFactory that can configure the connector.
      */
-    interface Configuring
+    interface Configuring extends ConnectionFactory
     {
         /**
          * Called during {@link Connector#start()}.

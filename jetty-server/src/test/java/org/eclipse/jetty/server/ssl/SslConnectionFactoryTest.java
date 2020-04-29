@@ -85,8 +85,10 @@ public class SslConnectionFactoryTest
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
 
+        SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
+        sslConnectionFactory.setEnsureSecureRequestCustomizer(true);
         ServerConnector https = _connector = new ServerConnector(_server,
-            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+            sslConnectionFactory,
             new HttpConnectionFactory());
         https.setPort(0);
         https.setIdleTimeout(30000);
