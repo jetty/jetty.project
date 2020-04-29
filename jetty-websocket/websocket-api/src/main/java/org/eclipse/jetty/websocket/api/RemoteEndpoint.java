@@ -142,6 +142,24 @@ public interface RemoteEndpoint
     void setBatchMode(BatchMode mode);
 
     /**
+     * Set the maximum number of frames which allowed to be waiting to be sent at any one time.
+     * The default value is -1, this indicates there is no limit on how many frames can be
+     * queued to be sent by the implementation.
+     *
+     * @param maxOutgoingFrames the max number of frames.
+     */
+    void setMaxOutgoingFrames(int maxOutgoingFrames);
+
+    /**
+     * Get the maximum number of frames which allowed to be waiting to be sent at any one time.
+     * The default value is -1, this indicates there is no limit on how many frames can be
+     * queued to be sent by the implementation.
+     *
+     * @return the max number of frames.
+     */
+    int getMaxOutgoingFrames();
+
+    /**
      * Get the InetSocketAddress for the established connection.
      *
      * @return the InetSocketAddress for the established connection. (or null, if the connection is no longer established)
