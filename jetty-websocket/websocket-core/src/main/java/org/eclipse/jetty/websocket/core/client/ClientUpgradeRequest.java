@@ -154,7 +154,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
     public void setSubProtocols(String... protocols)
     {
-        HttpFields headers = getHeaders();
+        HttpFields.Mutable headers = getHeaders();
         headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
         for (String protocol : protocols)
         {
@@ -164,7 +164,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
     public void setSubProtocols(List<String> protocols)
     {
-        HttpFields headers = getHeaders();
+        HttpFields.Mutable headers = getHeaders();
         headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
         for (String protocol : protocols)
         {

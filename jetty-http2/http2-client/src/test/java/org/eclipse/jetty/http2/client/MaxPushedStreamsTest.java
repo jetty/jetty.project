@@ -78,7 +78,7 @@ public class MaxPushedStreamsTest extends AbstractTest
                 CompletableFuture<List<Stream>> result = CompletableFuture.completedFuture(new ArrayList<>());
                 // Push maxPushed resources...
                 IntStream.range(0, maxPushed)
-                    .mapToObj(i -> new PushPromiseFrame(stream.getId(), 0, newRequest("GET", "/push_" + i, new HttpFields())))
+                    .mapToObj(i -> new PushPromiseFrame(stream.getId(), 0, newRequest("GET", "/push_" + i, HttpFields.EMPTY)))
                     .map(pushFrame ->
                     {
                         Promise.Completable<Stream> promise = new Promise.Completable<>();
@@ -91,7 +91,7 @@ public class MaxPushedStreamsTest extends AbstractTest
                     // ... then push one extra stream, the client must reject it...
                     .thenApply(streams ->
                     {
-                        PushPromiseFrame extraPushFrame = new PushPromiseFrame(stream.getId(), 0, newRequest("GET", "/push_extra", new HttpFields()));
+                        PushPromiseFrame extraPushFrame = new PushPromiseFrame(stream.getId(), 0, newRequest("GET", "/push_extra", HttpFields.EMPTY));
                         FuturePromise<Stream> extraPromise = new FuturePromise<>();
                         stream.push(extraPushFrame, extraPromise, new Stream.Listener.Adapter()
                         {
@@ -113,7 +113,7 @@ public class MaxPushedStreamsTest extends AbstractTest
                     // ... then send the response.
                     .thenRun(() ->
                     {
-                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                     });
                 return null;
@@ -122,7 +122,7 @@ public class MaxPushedStreamsTest extends AbstractTest
         client.setMaxConcurrentPushedStreams(maxPushed);
 
         Session session = newClient(new Session.Listener.Adapter());
-        MetaData.Request request = newRequest("GET", new HttpFields());
+        MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         CountDownLatch responseLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {

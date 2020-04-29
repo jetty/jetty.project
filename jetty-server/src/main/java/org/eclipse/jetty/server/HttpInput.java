@@ -733,7 +733,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 _listener = Objects.requireNonNull(readListener);
 
                 //illegal if async not started
-                if (!_channelState.isAsync())
+                if (!_channelState.isAsyncStarted())
                     throw new IllegalStateException("Async not started");
 
                 if (isError())

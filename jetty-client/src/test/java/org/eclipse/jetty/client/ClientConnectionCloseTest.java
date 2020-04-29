@@ -250,7 +250,10 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
                 HttpConnectionOverHTTP connection = (HttpConnectionOverHTTP)connectionPool.getActiveConnections().iterator().next();
                 assertFalse(connection.getEndPoint().isOutputShutdown());
             })
-            .onResponseHeaders(r -> r.getHeaders().remove(HttpHeader.CONNECTION));
+            .onResponseHeaders(r ->
+            {
+                ((HttpResponse)r).getHeaderFieldsMutable().remove(HttpHeader.CONNECTION);
+            });
         ContentResponse response = request.send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());

@@ -502,6 +502,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return AttributesMap.getAttributeNamesCopy(_attributes);
     }
 
+    @Override
+    public Set<String> getAttributeNameSet()
+    {
+        return _attributes.getAttributeNameSet();
+    }
+
     /**
      * @return Returns the attributes.
      */
@@ -2132,8 +2138,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public RequestDispatcher getRequestDispatcher(String uriInContext)
         {
-            // uriInContext is encoded, potentially with query
-
             if (uriInContext == null)
                 return null;
 
@@ -2142,16 +2146,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             try
             {
-                HttpURI uri = new HttpURI(null, null, 0, uriInContext);
+                String contextPath = getContextPath();
+                String pathInfo;
 
-                String pathInfo = URIUtil.canonicalPath(uri.getDecodedPath());
-                if (pathInfo == null)
+                HttpURI.Mutable uri = HttpURI.build(uriInContext);
+                pathInfo = URIUtil.canonicalPath(uri.getDecodedPath());
+                if (StringUtil.isEmpty(pathInfo))
                     return null;
 
-                String contextPath = getContextPath();
-                if (contextPath != null && contextPath.length() > 0)
-                    uri.setPath(URIUtil.addPaths(contextPath, uri.getPath()));
-
+                if (!StringUtil.isEmpty(contextPath))
+                {
+                    uri.path(URIUtil.addPaths(contextPath,uri.getPath()));
+                    pathInfo = uri.getDecodedPath().substring(contextPath.length());
+                }
                 return new Dispatcher(ContextHandler.this, uri, pathInfo);
             }
             catch (Exception e)

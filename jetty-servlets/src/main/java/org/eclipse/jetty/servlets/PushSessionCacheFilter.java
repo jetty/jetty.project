@@ -83,7 +83,7 @@ public class PushSessionCacheFilter implements Filter
                 if (referer != null)
                 {
                     // Is the referer from this contexts?
-                    HttpURI refererUri = new HttpURI(referer);
+                    HttpURI refererUri = HttpURI.from(referer);
                     if (request.getServerName().equals(refererUri.getHost()))
                     {
                         Target refererTarget = _cache.get(refererUri.getPath());

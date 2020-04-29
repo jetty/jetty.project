@@ -84,7 +84,7 @@ public interface ConnectionFactory
          * indicate that the upgrade should proceed.
          * @throws BadMessageException Thrown to indicate the upgrade attempt was illegal and that a bad message response should be sent.
          */
-        public Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFields responseFields) throws BadMessageException;
+        public Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest, HttpFields.Mutable responseFields) throws BadMessageException;
     }
 
     /**
@@ -124,5 +124,17 @@ public interface ConnectionFactory
          * </ul>
          */
         Detection detect(ByteBuffer buffer);
+    }
+
+    /**
+     * A ConnectionFactory that can configure the connector.
+     */
+    interface Configuring extends ConnectionFactory
+    {
+        /**
+         * Called during {@link Connector#start()}.
+         * @param connector The connector to configure
+         */
+        void configure(Connector connector);
     }
 }

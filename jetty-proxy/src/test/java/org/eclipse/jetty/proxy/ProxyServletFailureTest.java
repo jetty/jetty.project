@@ -381,7 +381,7 @@ public class ProxyServletFailureTest
             .timeout(3 * timeout, TimeUnit.MILLISECONDS)
             .send();
         assertEquals(504, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertFalse(response.getHeaders().contains(PROXIED_HEADER));
     }
 
     @ParameterizedTest

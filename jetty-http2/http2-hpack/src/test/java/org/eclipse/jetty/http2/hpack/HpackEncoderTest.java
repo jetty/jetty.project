@@ -38,7 +38,7 @@ public class HpackEncoderTest
     public void testUnknownFieldsContextManagement() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder(38 * 5);
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
 
         HttpField[] field =
             {
@@ -151,8 +151,8 @@ public class HpackEncoderTest
         HpackEncoder encoder = new HpackEncoder(38 * 5);
         ByteBuffer buffer = BufferUtil.allocate(4096);
 
-        HttpFields fields = new HttpFields();
-        fields.put("set-cookie", "some cookie value");
+        HttpFields.Mutable fields = HttpFields.build()
+            .put("set-cookie", "some cookie value");
 
         // encode
         BufferUtil.clearToFill(buffer);
@@ -180,7 +180,7 @@ public class HpackEncoderTest
     @Test
     public void testFieldLargerThanTable() throws Exception
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
 
         HpackEncoder encoder = new HpackEncoder(128);
         ByteBuffer buffer0 = BufferUtil.allocate(4096);
@@ -244,9 +244,9 @@ public class HpackEncoderTest
     @Test
     public void testResize() throws Exception
     {
-        HttpFields fields = new HttpFields();
-        fields.add("host", "localhost0");
-        fields.add("cookie", "abcdefghij");
+        HttpFields fields = HttpFields.build()
+            .add("host", "localhost0")
+            .add("cookie", "abcdefghij");
 
         HpackEncoder encoder = new HpackEncoder(4096);
 

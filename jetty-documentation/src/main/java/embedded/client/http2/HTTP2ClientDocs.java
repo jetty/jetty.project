@@ -147,11 +147,11 @@ public class HTTP2ClientDocs
         Session session = sessionCF.get();
 
         // Configure the request headers.
-        HttpFields requestHeaders = new HttpFields();
-        requestHeaders.put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
+        HttpFields requestHeaders = HttpFields.build()
+            .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
 
         // The request metadata with method, URI and headers.
-        MetaData.Request request = new MetaData.Request("GET", new HttpURI("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
 
         // The HTTP/2 HEADERS frame, with endStream=true
         // to signal that this request has no content.
@@ -172,11 +172,11 @@ public class HTTP2ClientDocs
         Session session = sessionCF.get();
 
         // Configure the request headers.
-        HttpFields requestHeaders = new HttpFields();
-        requestHeaders.put(HttpHeader.CONTENT_TYPE, "application/json");
+        HttpFields requestHeaders = HttpFields.build()
+            .put(HttpHeader.CONTENT_TYPE, "application/json");
 
         // The request metadata with method, URI and headers.
-        MetaData.Request request = new MetaData.Request("POST", new HttpURI("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
 
         // The HTTP/2 HEADERS frame, with endStream=false to
         // signal that there will be more frames in this stream.
@@ -213,9 +213,9 @@ public class HTTP2ClientDocs
         CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
         Session session = sessionCF.get();
 
-        HttpFields requestHeaders = new HttpFields();
-        requestHeaders.put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", new HttpURI("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        HttpFields requestHeaders = HttpFields.build()
+            .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // tag::responseListener[]
@@ -266,9 +266,9 @@ public class HTTP2ClientDocs
         CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
         Session session = sessionCF.get();
 
-        HttpFields requestHeaders = new HttpFields();
-        requestHeaders.put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", new HttpURI("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        HttpFields requestHeaders = HttpFields.build()
+            .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // tag::reset[]
@@ -296,9 +296,9 @@ public class HTTP2ClientDocs
         CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
         Session session = sessionCF.get();
 
-        HttpFields requestHeaders = new HttpFields();
-        requestHeaders.put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", new HttpURI("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        HttpFields requestHeaders = HttpFields.build()
+            .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // tag::push[]
@@ -358,9 +358,9 @@ public class HTTP2ClientDocs
         CompletableFuture<Session> sessionCF = http2Client.connect(serverAddress, new Session.Listener.Adapter());
         Session session = sessionCF.get();
 
-        HttpFields requestHeaders = new HttpFields();
-        requestHeaders.put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
-        MetaData.Request request = new MetaData.Request("GET", new HttpURI("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
+        HttpFields requestHeaders = HttpFields.build()
+            .put(HttpHeader.USER_AGENT, "Jetty HTTP2Client {version}");
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost:8080/path"), HttpVersion.HTTP_2, requestHeaders);
         HeadersFrame headersFrame = new HeadersFrame(request, null, true);
 
         // tag::pushReset[]

@@ -70,7 +70,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+        assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest
@@ -86,7 +86,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+        assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest
@@ -102,7 +102,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+        assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest
@@ -119,7 +119,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+        assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest
@@ -139,7 +139,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         Response response = xx.getResponse();
         assertNotNull(response);
         assertEquals(301, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+        assertTrue(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest
@@ -158,7 +158,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+        assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
         assertArrayEquals(data, response.getContent());
     }
 
@@ -179,7 +179,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         Response response = xx.getResponse();
         assertNotNull(response);
         assertEquals(302, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+        assertTrue(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest
@@ -195,7 +195,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+        assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest
@@ -212,7 +212,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             .send();
         assertNotNull(response);
         assertEquals(303, response.getStatus());
-        assertTrue(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+        assertTrue(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest
@@ -228,7 +228,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+        assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest
@@ -244,7 +244,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+        assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest
@@ -260,7 +260,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             .send();
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(HttpHeader.LOCATION.asString()));
+        assertFalse(response.getHeaders().contains(HttpHeader.LOCATION));
     }
 
     @ParameterizedTest
