@@ -41,7 +41,7 @@ public class PushBuilderImpl implements PushBuilder
 {
     private static final Logger LOG = LoggerFactory.getLogger(PushBuilderImpl.class);
 
-    private static final HttpField JettyPush = new HttpField("x-http2-push", "PushBuilder");
+    private static final HttpField JETTY_PUSH = new HttpField("x-http2-push", "PushBuilder");
     private static EnumSet<HttpMethod> UNSAFE_METHODS = EnumSet.of(
         HttpMethod.POST,
         HttpMethod.PUT,
@@ -66,7 +66,7 @@ public class PushBuilderImpl implements PushBuilder
         _method = method;
         _queryString = queryString;
         _sessionId = sessionId;
-        _fields.add(JettyPush);
+        _fields.add(JETTY_PUSH);
         if (LOG.isDebugEnabled())
             LOG.debug("PushBuilder({} {}?{} s={} c={})", _method, _request.getRequestURI(), _queryString, _sessionId);
     }

@@ -432,24 +432,16 @@ public class Request implements HttpServletRequest
         for (HttpField field : responseFields)
         {
             HttpHeader header = field.getHeader();
-            if (header == null)
-                continue;
-            switch (header)
+            if (header == HttpHeader.SET_COOKIE)
             {
-                case SET_COOKIE:
-                {
-                    HttpCookie cookie = ((SetCookieHttpField)field).getHttpCookie();
-                    if (cookie.getMaxAge() > 0)
-                        cookies.put(cookie.getName(), cookie.getValue());
-                    else
-                        cookies.remove(cookie.getName());
-                    continue;
-                }
-                default:
-                    continue;
+                HttpCookie cookie = ((SetCookieHttpField)field).getHttpCookie();
+                if (cookie.getMaxAge() > 0)
+                    cookies.put(cookie.getName(), cookie.getValue());
+                else
+                    cookies.remove(cookie.getName());
             }
         }
-        
+
         if (!cookies.isEmpty())
         {
             StringBuilder buff = new StringBuilder();
