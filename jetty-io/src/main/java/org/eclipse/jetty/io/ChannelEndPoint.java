@@ -320,6 +320,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         // This method runs from the selector thread,
         // possibly concurrently with changeInterests(int).
 
+        _key = key;
         int readyOps = key.readyOps();
         int oldInterestOps;
         int newInterestOps;
@@ -354,7 +355,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
 
     private void updateKey(Selector selector)
     {
-        _selector.compute(selector, _channel, _key, this::updateKey);
+        _selector.runKeyAction(selector, _channel, _key, this::updateKey);
     }
 
     @Override
@@ -393,12 +394,6 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             LOG.warn("Ignoring key update for {}", this, x);
             close();
         }
-    }
-
-    @Override
-    public void replaceKey(SelectionKey oldKey, SelectionKey newKey)
-    {
-        _key = newKey;
     }
 
     private void changeInterests(int operation)

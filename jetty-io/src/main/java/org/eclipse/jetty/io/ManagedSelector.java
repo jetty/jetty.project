@@ -145,7 +145,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         super.doStop();
     }
 
-    void compute(Selector selector, SelectableChannel channel, SelectionKey selectionKey, Consumer<SelectionKey> action)
+    void runKeyAction(Selector selector, SelectableChannel channel, SelectionKey selectionKey, Consumer<SelectionKey> action)
     {
         SelectionKey key = selectionKey;
         // Refresh the key if the selector has been recreated.
@@ -206,11 +206,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 try
                 {
                     Object attachment = oldKey.attachment();
-                    SelectionKey newKey = channel.register(newSelector, interestOps, attachment);
-
-                    if (attachment instanceof Selectable)
-                        ((Selectable)attachment).replaceKey(oldKey, newKey);
-
+                    channel.register(newSelector, interestOps, attachment);
                     oldKey.cancel();
                     if (LOG.isDebugEnabled())
                         LOG.debug("Transferred {} iOps={} att={}", channel, interestOps, attachment);
@@ -365,7 +361,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
         Connection connection = _selectorManager.newConnection(channel, endPoint, selectionKey.attachment());
         endPoint.setConnection(connection);
-        submit(selector -> compute(selector, channel, selectionKey, key -> key.attach(endPoint)), true);
+        submit(selector -> runKeyAction(selector, channel, selectionKey, key -> key.attach(endPoint)), true);
         endPoint.onOpen();
         endPointOpened(endPoint);
         _selectorManager.connectionOpened(connection);
@@ -483,15 +479,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
          * @param key the SelectionKey to update
          */
         void updateKey(SelectionKey key);
-
-        /**
-         * Callback method invoked when a selectable is transferred
-         * from one selector to a new selector.
-         *
-         * @param oldKey the old SelectionKey
-         * @param newKey the new SelectionKey
-         */
-        void replaceKey(SelectionKey oldKey, SelectionKey newKey);
     }
 
     private class SelectorProducer implements ExecutionStrategy.Producer
@@ -774,6 +761,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         @Override
         public Runnable onSelected(SelectionKey key)
         {
+            _key = key;
             SelectableChannel channel = null;
             try
             {
@@ -799,17 +787,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
 
         @Override
-        public void replaceKey(SelectionKey oldKey, SelectionKey newKey)
-        {
-            _key = newKey;
-        }
-
-        @Override
         public void close() throws IOException
         {
             // May be called from any thread.
             // Implements AbstractConnector.setAccepting(boolean).
-            submit(selector -> compute(selector, _channel, _key, SelectionKey::cancel));
+            submit(selector -> runKeyAction(selector, _channel, _key, SelectionKey::cancel));
         }
     }
 
