@@ -150,6 +150,10 @@ public class DistributionTester
 
         List<String> commands = new ArrayList<>();
         commands.add(getJavaExecutable());
+        if (!config.jvmArgs.isEmpty())
+        {
+           commands.addAll(config.jvmArgs);
+        }
         commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
         commands.add("-jar");
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
@@ -371,7 +375,7 @@ public class DistributionTester
         private String jettyVersion;
         private String mavenLocalRepository = System.getProperty("user.home") + "/.m2/repository";
         private Map<String, String> mavenRemoteRepositories = new HashMap<>();
-        private Path logFile;
+        private List<String> jvmArgs = new ArrayList<>();
 
         @Override
         public String toString()
@@ -698,6 +702,17 @@ public class DistributionTester
         public Builder addRemoteRepository(String id, String url)
         {
             config.mavenRemoteRepositories.put(id, url);
+            return this;
+        }
+
+        /**
+         *
+         * @param jvmArgs the jvm args to add
+         * @return the {@link Builder}
+         */
+        public Builder jvmArgs(List<String> jvmArgs)
+        {
+            config.jvmArgs = jvmArgs;
             return this;
         }
 
