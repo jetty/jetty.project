@@ -26,7 +26,6 @@ import java.security.PrivilegedAction;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.TimeZone;
-import java.util.function.Function;
 
 import org.slf4j.event.Level;
 
@@ -82,7 +81,7 @@ public class JettyLoggerConfiguration
             startName = startName.substring(0, startName.length() - SUFFIX_STACKS.length());
         }
 
-        Boolean hideStacks = walkParentLoggerNames(startName, (key) ->
+        Boolean hideStacks = JettyLoggerFactory.walkParentLoggerNames(startName, (key) ->
         {
             String stacksBool = properties.getProperty(key + SUFFIX_STACKS);
             if (stacksBool != null)
@@ -124,12 +123,12 @@ public class JettyLoggerConfiguration
             startName = startName.substring(0, startName.length() - SUFFIX_LEVEL.length());
         }
 
-        Integer level = walkParentLoggerNames(startName, (key) ->
+        Integer level = JettyLoggerFactory.walkParentLoggerNames(startName, (key) ->
         {
-            String levelStr = properties.getProperty(key + SUFFIX_LEVEL);
-            if (levelStr != null)
+            String levelStr1 = properties.getProperty(key + SUFFIX_LEVEL);
+            if (levelStr1 != null)
             {
-                return getLevelInt(key, levelStr);
+                return LevelUtils.getLevelInt(key, levelStr1);
             }
             return null;
         });
@@ -140,7 +139,7 @@ public class JettyLoggerConfiguration
             String levelStr = properties.getProperty("log" + SUFFIX_LEVEL);
             if (levelStr != null)
             {
-                level = getLevelInt("log", levelStr);
+                level = LevelUtils.getLevelInt("log", levelStr);
             }
         }
 
@@ -193,6 +192,11 @@ public class JettyLoggerConfiguration
         });
     }
 
+    public String getString(String key, String defValue)
+    {
+        return properties.getProperty(key, defValue);
+    }
+
     public boolean getBoolean(String key, boolean defValue)
     {
         String val = properties.getProperty(key, Boolean.toString(defValue));
@@ -213,36 +217,6 @@ public class JettyLoggerConfiguration
         catch (NumberFormatException e)
         {
             return defValue;
-        }
-    }
-
-    private Integer getLevelInt(String levelSegment, String levelStr)
-    {
-        if (levelStr == null)
-        {
-            return null;
-        }
-
-        String levelName = levelStr.trim().toUpperCase(Locale.ENGLISH);
-        switch (levelName)
-        {
-            case "ALL":
-                return JettyLogger.ALL;
-            case "TRACE":
-                return Level.TRACE.toInt();
-            case "DEBUG":
-                return Level.DEBUG.toInt();
-            case "INFO":
-                return Level.INFO.toInt();
-            case "WARN":
-                return Level.WARN.toInt();
-            case "ERROR":
-                return Level.ERROR.toInt();
-            case "OFF":
-                return JettyLogger.OFF;
-            default:
-                System.err.println("Unknown JettyLogger/Slf4J Level [" + levelSegment + "]=[" + levelName + "], expecting only [ALL, TRACE, DEBUG, INFO, WARN, ERROR, OFF] as values.");
-                return null;
         }
     }
 
@@ -301,32 +275,6 @@ public class JettyLoggerConfiguration
             System.err.println("[WARN] Error loading logging config: " + propsUrl);
             e.printStackTrace();
         }
-        return null;
-    }
-
-    private <T> T walkParentLoggerNames(String startName, Function<String, T> nameFunction)
-    {
-        String nameSegment = startName;
-
-        // Checking with FQCN first, then each package segment from longest to shortest.
-        while ((nameSegment != null) && (nameSegment.length() > 0))
-        {
-            T ret = nameFunction.apply(nameSegment);
-            if (ret != null)
-                return ret;
-
-            // Trim and try again.
-            int idx = nameSegment.lastIndexOf('.');
-            if (idx >= 0)
-            {
-                nameSegment = nameSegment.substring(0, idx);
-            }
-            else
-            {
-                nameSegment = null;
-            }
-        }
-
         return null;
     }
 }

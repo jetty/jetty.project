@@ -22,16 +22,16 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
-public class JettyLoggerFactory implements ILoggerFactory
+public class JettyLoggerFactory implements ILoggerFactory, JettyLoggerFactoryMBean
 {
-    private static final String ROOT_LOGGER_NAME = "";
     private final JettyLoggerConfiguration configuration;
     private final JettyLogger rootLogger;
-    private ConcurrentMap<String, JettyLogger> loggerMap;
+    private final ConcurrentMap<String, JettyLogger> loggerMap;
 
     public JettyLoggerFactory(JettyLoggerConfiguration config)
     {
@@ -41,9 +41,9 @@ public class JettyLoggerFactory implements ILoggerFactory
 
         StdErrAppender appender = new StdErrAppender(configuration);
 
-        rootLogger = new JettyLogger(this, ROOT_LOGGER_NAME, appender);
-        loggerMap.put(ROOT_LOGGER_NAME, rootLogger);
-        rootLogger.setLevel(configuration.getLevel(ROOT_LOGGER_NAME));
+        rootLogger = new JettyLogger(this, Logger.ROOT_LOGGER_NAME, appender);
+        loggerMap.put(Logger.ROOT_LOGGER_NAME, rootLogger);
+        rootLogger.setLevel(configuration.getLevel(Logger.ROOT_LOGGER_NAME));
     }
 
     /**
@@ -54,7 +54,7 @@ public class JettyLoggerFactory implements ILoggerFactory
      */
     public JettyLogger getJettyLogger(String name)
     {
-        if (name.equals(ROOT_LOGGER_NAME))
+        if (name.equals(Logger.ROOT_LOGGER_NAME))
         {
             return getRootLogger();
         }
@@ -178,5 +178,68 @@ public class JettyLoggerFactory implements ILoggerFactory
         }
 
         return dense.toString();
+    }
+
+    public static <T> T walkParentLoggerNames(String startName, Function<String, T> nameFunction)
+    {
+        String nameSegment = startName;
+
+        // Checking with FQCN first, then each package segment from longest to shortest.
+        while ((nameSegment != null) && (nameSegment.length() > 0))
+        {
+            T ret = nameFunction.apply(nameSegment);
+            if (ret != null)
+                return ret;
+
+            // Trim and try again.
+            int idx = nameSegment.lastIndexOf('.');
+            if (idx >= 0)
+            {
+                nameSegment = nameSegment.substring(0, idx);
+            }
+            else
+            {
+                nameSegment = null;
+            }
+        }
+
+        return null;
+    }
+
+    @Override
+    public String[] getLoggerNames()
+    {
+        return loggerMap.keySet().toArray(new String[0]);
+    }
+
+    @Override
+    public int getLoggerCount()
+    {
+        return loggerMap.size();
+    }
+
+    @Override
+    public String getLoggerLevel(String loggerName)
+    {
+        return walkParentLoggerNames(loggerName, (key) ->
+        {
+            JettyLogger logger = loggerMap.get(key);
+            if (key != null)
+            {
+                return LevelUtils.levelToString(logger.getLevel());
+            }
+            return null;
+        });
+    }
+
+    @Override
+    public void setLoggerLevel(String loggerName, String levelName)
+    {
+        Integer levelInt = LevelUtils.getLevelInt(loggerName, levelName);
+        if (levelInt != null)
+        {
+            JettyLogger jettyLogger = getJettyLogger(loggerName);
+            jettyLogger.setLevel(levelInt);
+        }
     }
 }

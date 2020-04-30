@@ -16,16 +16,16 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.logging.JettyLoggingServiceProvider;
-import org.slf4j.spi.SLF4JServiceProvider;
+package org.eclipse.jetty.logging;
 
-module org.eclipse.jetty.logging
+@SuppressWarnings("unused")
+public interface JettyLoggerFactoryMBean
 {
-    exports org.eclipse.jetty.logging;
+    int getLoggerCount();
 
-    requires transitive org.slf4j;
+    String[] getLoggerNames();
 
-    requires static java.management;
+    void setLoggerLevel(String loggerName, String levelName);
 
-    provides SLF4JServiceProvider with JettyLoggingServiceProvider;
+    String getLoggerLevel(String loggerName);
 }

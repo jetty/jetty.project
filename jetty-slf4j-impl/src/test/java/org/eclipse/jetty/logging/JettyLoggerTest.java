@@ -609,6 +609,6 @@ public class JettyLoggerTest
     private void assertLevel(JettyLogger log, Level expectedLevel)
     {
         assertThat("Log[" + log.getName() + "].level",
-            JettyLogger.levelToString(log.getLevel()), is(expectedLevel.toString()));
+            LevelUtils.levelToString(log.getLevel()), is(expectedLevel.toString()));
     }
 }

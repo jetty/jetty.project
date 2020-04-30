@@ -247,7 +247,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
         {
             long timestamp = System.currentTimeMillis();
             String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, intToLevel(levelInt), timestamp, threadName, throwable, message, argArray);
+            getAppender().emit(this, LevelUtils.intToLevel(levelInt), timestamp, threadName, throwable, message, argArray);
         }
     }
 
@@ -636,43 +636,9 @@ public class JettyLogger implements LocationAwareLogger, Logger
         getAppender().emit(this, level, timestamp, threadName, throwable, msg);
     }
 
-    public static Level intToLevel(int level)
-    {
-        if (level >= JettyLogger.OFF)
-            return Level.ERROR;
-        if (level >= Level.ERROR.toInt())
-            return Level.ERROR;
-        if (level >= Level.WARN.toInt())
-            return Level.WARN;
-        if (level >= Level.INFO.toInt())
-            return Level.INFO;
-        if (level >= Level.DEBUG.toInt())
-            return Level.DEBUG;
-        if (level >= Level.TRACE.toInt())
-            return Level.TRACE;
-        return Level.TRACE; // everything else
-    }
-
-    public static String levelToString(int level)
-    {
-        if (level >= JettyLogger.OFF)
-            return "OFF";
-        if (level >= Level.ERROR.toInt())
-            return "ERROR";
-        if (level >= Level.WARN.toInt())
-            return "WARN";
-        if (level >= Level.INFO.toInt())
-            return "INFO";
-        if (level >= Level.DEBUG.toInt())
-            return "DEBUG";
-        if (level >= Level.TRACE.toInt())
-            return "TRACE";
-        return "OFF"; // everything else
-    }
-
     @Override
     public String toString()
     {
-        return String.format("%s:%s:LEVEL=%s", JettyLogger.class.getSimpleName(), name, levelToString(level));
+        return String.format("%s:%s:LEVEL=%s", JettyLogger.class.getSimpleName(), name, LevelUtils.levelToString(level));
     }
 }
