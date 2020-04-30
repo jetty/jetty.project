@@ -178,6 +178,11 @@
     <!-- websocket support -->
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>websocket-util-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-javax-server</artifactId>
       <version>${project.version}</version>
     </dependency>

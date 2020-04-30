@@ -62,8 +62,7 @@ public class JettyWebSocketConfiguration extends AbstractConfiguration
             "org.eclipse.jetty.websocket.util.server."); // For WebSocketUpgradeFilter
 
         hide("org.eclipse.jetty.server.internal.",
-            "org.eclipse.jetty.server.config.",
-            "org.eclipse.jetty.websocket.util.server.internal.");
+            "org.eclipse.jetty.server.config.");
     }
 
     @Override
