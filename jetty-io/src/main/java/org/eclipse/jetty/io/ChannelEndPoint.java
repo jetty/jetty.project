@@ -88,7 +88,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         }
     }
 
-    private final ManagedSelector.SelectorUpdate _updateKeyAction = this::updateKey;
+    private final ManagedSelector.SelectorUpdate _updateKeyAction = this::updateKeyAction;
 
     private final Runnable _runFillable = new RunnableCloseable("runFillable")
     {
@@ -315,13 +315,12 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
     }
 
     @Override
-    public Runnable onSelected(SelectionKey key)
+    public Runnable onSelected()
     {
         // This method runs from the selector thread,
         // possibly concurrently with changeInterests(int).
 
-        _key = key;
-        int readyOps = key.readyOps();
+        int readyOps = _key.readyOps();
         int oldInterestOps;
         int newInterestOps;
         synchronized (this)
@@ -353,13 +352,13 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
         return task;
     }
 
-    private void updateKey(Selector selector)
+    private void updateKeyAction(Selector selector)
     {
-        _selector.runKeyAction(selector, _channel, _key, this::updateKey);
+        updateKey();
     }
 
     @Override
-    public void updateKey(SelectionKey key)
+    public void updateKey()
     {
         // This method runs from the selector thread,
         // possibly concurrently with changeInterests(int).
@@ -376,7 +375,7 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
                 if (oldInterestOps != newInterestOps)
                 {
                     _currentInterestOps = newInterestOps;
-                    key.interestOps(newInterestOps);
+                    _key.interestOps(newInterestOps);
                 }
             }
 
@@ -394,6 +393,12 @@ public abstract class ChannelEndPoint extends AbstractEndPoint implements Manage
             LOG.warn("Ignoring key update for {}", this, x);
             close();
         }
+    }
+
+    @Override
+    public void replaceKey(SelectionKey newKey)
+    {
+        _key = newKey;
     }
 
     private void changeInterests(int operation)

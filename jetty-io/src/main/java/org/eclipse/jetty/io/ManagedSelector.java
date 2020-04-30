@@ -42,7 +42,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -145,17 +144,6 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         super.doStop();
     }
 
-    void runKeyAction(Selector selector, SelectableChannel channel, SelectionKey selectionKey, Consumer<SelectionKey> action)
-    {
-        SelectionKey key = selectionKey;
-        // Refresh the key if the selector has been recreated.
-        if (selector != key.selector())
-            key = channel.keyFor(selector);
-        // The key may be null if the channel is closed.
-        if (key != null)
-            action.accept(key);
-    }
-
     protected int nioSelect(Selector selector, boolean now) throws IOException
     {
         return now ? selector.selectNow() : selector.select();
@@ -206,7 +194,9 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 try
                 {
                     Object attachment = oldKey.attachment();
-                    channel.register(newSelector, interestOps, attachment);
+                    SelectionKey newKey = channel.register(newSelector, interestOps, attachment);
+                    if (attachment instanceof Selectable)
+                        ((Selectable)attachment).replaceKey(newKey);
                     oldKey.cancel();
                     if (LOG.isDebugEnabled())
                         LOG.debug("Transferred {} iOps={} att={}", channel, interestOps, attachment);
@@ -361,7 +351,18 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
         Connection connection = _selectorManager.newConnection(channel, endPoint, selectionKey.attachment());
         endPoint.setConnection(connection);
-        submit(selector -> runKeyAction(selector, channel, selectionKey, key -> key.attach(endPoint)), true);
+        submit(selector ->
+        {
+            SelectionKey key = selectionKey;
+            if (key.selector() != selector)
+            {
+                key = channel.keyFor(selector);
+                if (key != null && endPoint instanceof Selectable)
+                    ((Selectable)endPoint).replaceKey(key);
+            }
+            if (key != null)
+                key.attach(endPoint);
+        }, true);
         endPoint.onOpen();
         endPointOpened(endPoint);
         _selectorManager.connectionOpened(connection);
@@ -469,16 +470,22 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
          * detected by the {@link ManagedSelector} for this endpoint.
          *
          * @return a job that may block or null
-         * @param key the selected SelectionKey
          */
-        Runnable onSelected(SelectionKey key);
+        Runnable onSelected();
 
         /**
          * Callback method invoked when all the keys selected by the
          * {@link ManagedSelector} for this endpoint have been processed.
-         * @param key the SelectionKey to update
          */
-        void updateKey(SelectionKey key);
+        void updateKey();
+
+        /**
+         * Callback method invoked when the SelectionKey is replaced
+         * because the channel has been moved to a new selector.
+         *
+         * @param newKey the new SelectionKey
+         */
+        void replaceKey(SelectionKey newKey);
     }
 
     private class SelectorProducer implements ExecutionStrategy.Producer
@@ -623,7 +630,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                         if (attachment instanceof Selectable)
                         {
                             // Try to produce a task
-                            Runnable task = ((Selectable)attachment).onSelected(key);
+                            Runnable task = ((Selectable)attachment).onSelected();
                             if (task != null)
                                 return task;
                         }
@@ -667,7 +674,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             {
                 Object attachment = key.attachment();
                 if (attachment instanceof Selectable)
-                    ((Selectable)attachment).updateKey(key);
+                    ((Selectable)attachment).updateKey();
             }
             _keys.clear();
         }
@@ -759,9 +766,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
 
         @Override
-        public Runnable onSelected(SelectionKey key)
+        public Runnable onSelected()
         {
-            _key = key;
             SelectableChannel channel = null;
             try
             {
@@ -782,8 +788,14 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
 
         @Override
-        public void updateKey(SelectionKey key)
+        public void updateKey()
         {
+        }
+
+        @Override
+        public void replaceKey(SelectionKey newKey)
+        {
+            _key = newKey;
         }
 
         @Override
@@ -791,7 +803,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             // May be called from any thread.
             // Implements AbstractConnector.setAccepting(boolean).
-            submit(selector -> runKeyAction(selector, _channel, _key, SelectionKey::cancel));
+            submit(selector -> _key.cancel());
         }
     }
 

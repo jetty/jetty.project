@@ -79,10 +79,10 @@ public class ExtendedServerTest extends HttpServerTestBase
         }
 
         @Override
-        public Runnable onSelected(SelectionKey key)
+        public Runnable onSelected()
         {
             _lastSelected = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            return super.onSelected(key);
+            return super.onSelected();
         }
 
         long getLastSelected()
