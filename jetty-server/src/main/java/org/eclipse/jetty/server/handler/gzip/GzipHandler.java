@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.handler.gzip;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.ListIterator;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
@@ -151,6 +150,7 @@ import org.slf4j.LoggerFactory;
  */
 public class GzipHandler extends HandlerWrapper implements GzipFactory
 {
+    public static final EnumSet<HttpHeader> ETAG_HEADERS = EnumSet.of(HttpHeader.IF_MATCH, HttpHeader.IF_NONE_MATCH);
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
     public static final int DEFAULT_MIN_GZIP_SIZE = 32;
@@ -421,8 +421,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Override
     public Deflater getDeflater(Request request, long contentLength)
     {
-        HttpFields httpFields = request.getHttpFields();
-        String ua = httpFields.get(HttpHeader.USER_AGENT);
+        String ua = request.getHttpFields().get(HttpHeader.USER_AGENT);
         if (ua != null && !isAgentGzipable(ua))
         {
             LOG.debug("{} excluded user agent {}", this, request);
@@ -436,7 +435,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // check the accept encoding header
-        if (!httpFields.contains(HttpHeader.ACCEPT_ENCODING, "gzip"))
+        if (!request.getHttpFields().contains(HttpHeader.ACCEPT_ENCODING, "gzip"))
         {
             LOG.debug("{} excluded not gzip accept {}", this, request);
             return null;
@@ -594,87 +593,99 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // Handle request inflation
-        if (_inflateBufferSize > 0)
+        HttpFields httpFields = baseRequest.getHttpFields();
+        boolean inflated = _inflateBufferSize > 0 && httpFields.contains(HttpHeader.CONTENT_ENCODING, "gzip");
+        if (inflated)
         {
-            boolean inflate = false;
-            for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext(); )
-            {
-                HttpField field = i.next();
-
-                if (field.getHeader() == HttpHeader.CONTENT_ENCODING)
-                {
-                    if (field.getValue().equalsIgnoreCase("gzip"))
-                    {
-                        i.set(X_CE_GZIP);
-                        inflate = true;
-                        break;
-                    }
-
-                    if (COMMA_GZIP.matcher(field.getValue()).matches())
-                    {
-                        String v = field.getValue();
-                        v = v.substring(0, v.lastIndexOf(','));
-                        i.set(new HttpField(HttpHeader.CONTENT_ENCODING, v));
-                        i.add(X_CE_GZIP);
-                        inflate = true;
-                        break;
-                    }
-                }
-            }
-
-            if (inflate)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} inflate {}", this, request);
-
-                baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(), _inflateBufferSize));
-
-                for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext(); )
-                {
-                    HttpField field = i.next();
-                    if (field.getHeader() == HttpHeader.CONTENT_LENGTH)
-                    {
-                        i.set(new HttpField("X-Content-Length", field.getValue()));
-                        break;
-                    }
-                }
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} inflate {}", this, request);
+            baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(), _inflateBufferSize));
         }
 
         // Are we already being gzipped?
         HttpOutput out = baseRequest.getResponse().getHttpOutput();
         HttpOutput.Interceptor interceptor = out.getInterceptor();
+        boolean alreadyGzipped = false;
         while (interceptor != null)
         {
             if (interceptor instanceof GzipHttpOutputInterceptor)
             {
-                LOG.debug("{} already intercepting {}", this, request);
-                _handler.handle(target, baseRequest, request, response);
-                return;
+                alreadyGzipped = true;
+                break;
             }
             interceptor = interceptor.getNextInterceptor();
         }
 
-        // Special handling for etags
-        for (ListIterator<HttpField> fields = baseRequest.getHttpFields().listIterator(); fields.hasNext(); )
+        // Update headers for etags and inflation
+        if (inflated || httpFields.contains(ETAG_HEADERS))
         {
-            HttpField field = fields.next();
-            if (field.getHeader() == HttpHeader.IF_NONE_MATCH || field.getHeader() == HttpHeader.IF_MATCH)
+            HttpFields.Mutable newFields = HttpFields.build(httpFields.size() + 1);
+            for (HttpField field : httpFields)
             {
-                String etag = field.getValue();
-                int i = etag.indexOf(CompressedContentFormat.GZIP._etagQuote);
-                if (i > 0)
+                if (field.getHeader() == null)
                 {
-                    baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag", etag);
-                    while (i >= 0)
+                    newFields.add(field);
+                    continue;
+                }
+
+                switch (field.getHeader())
+                {
+                    case IF_MATCH:
+                    case IF_NONE_MATCH:
                     {
-                        etag = etag.substring(0, i) + etag.substring(i + CompressedContentFormat.GZIP._etag.length());
-                        i = etag.indexOf(CompressedContentFormat.GZIP._etagQuote, i);
+                        String etag = field.getValue();
+                        int i = etag.indexOf(CompressedContentFormat.GZIP._etagQuote);
+                        if (i <= 0 || alreadyGzipped)
+                            newFields.add(field);
+                        else
+                        {
+                            baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag", etag);
+                            while (i >= 0)
+                            {
+                                etag = etag.substring(0, i) + etag.substring(i + CompressedContentFormat.GZIP._etag.length());
+                                i = etag.indexOf(CompressedContentFormat.GZIP._etagQuote, i);
+                            }
+                            newFields.add(new HttpField(field.getHeader(), etag));
+                        }
+                        break;
                     }
 
-                    fields.set(new HttpField(field.getHeader(), etag));
+                    case CONTENT_LENGTH:
+                        newFields.add(inflated ? new HttpField("X-Content-Length", field.getValue()) : field);
+                        break;
+
+                    case CONTENT_ENCODING:
+                        if (inflated)
+                        {
+                            if (field.getValue().equalsIgnoreCase("gzip"))
+                                newFields.add(X_CE_GZIP);
+                            else if (COMMA_GZIP.matcher(field.getValue()).matches())
+                            {
+                                String v = field.getValue();
+                                v = v.substring(0, v.lastIndexOf(','));
+                                newFields.add(X_CE_GZIP);
+                                newFields.add(new HttpField(HttpHeader.CONTENT_ENCODING, v));
+                            }
+                        }
+                        else
+                        {
+                            newFields.add(field);
+                        }
+                        break;
+
+                    default:
+                        newFields.add(field);
                 }
             }
+            baseRequest.setHttpFields(newFields);
+        }
+
+        // Don't gzip if already gzipped;
+        if (alreadyGzipped)
+        {
+            LOG.debug("{} already intercepting {}", this, request);
+            _handler.handle(target, baseRequest, request, response);
+            return;
         }
 
         // If not a supported method - no Vary because no matter what client, this URI is always excluded

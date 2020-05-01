@@ -94,7 +94,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
     private final AtomicLong totalResponses = new AtomicLong();
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
-    private boolean recycleHttpChannels;
+    private boolean recycleHttpChannels = true;
 
     public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
@@ -320,7 +320,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
         }
     }
 
-    public boolean upgrade(Request request, HttpFields responseFields)
+    public boolean upgrade(Request request, HttpFields.Mutable responseFields)
     {
         if (HttpMethod.PRI.is(request.getMethod()))
         {
@@ -356,7 +356,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
             // This is the settings from the HTTP2-Settings header.
             upgradeFrames.add(settingsFrame);
             // Remember the request to send a response.
-            upgradeFrames.add(new HeadersFrame(1, new Request(request), null, true));
+            upgradeFrames.add(new HeadersFrame(1, request, null, true));
         }
         return true;
     }

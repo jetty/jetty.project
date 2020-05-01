@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTrie;
@@ -52,12 +51,7 @@ public class HttpGenerator
     public static final MetaData.Response CONTINUE_100_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 100, null, null, -1);
     public static final MetaData.Response PROGRESS_102_INFO = new MetaData.Response(HttpVersion.HTTP_1_1, 102, null, null, -1);
     public static final MetaData.Response RESPONSE_500_INFO =
-        new MetaData.Response(HttpVersion.HTTP_1_1, INTERNAL_SERVER_ERROR_500, null, new HttpFields()
-        {
-            {
-                put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-            }
-        }, 0);
+        new MetaData.Response(HttpVersion.HTTP_1_1, INTERNAL_SERVER_ERROR_500, null, HttpFields.build().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE), 0);
 
     // states
     public enum State
@@ -87,11 +81,11 @@ public class HttpGenerator
 
     private State _state = State.START;
     private EndOfContent _endOfContent = EndOfContent.UNKNOWN_CONTENT;
+    private MetaData _info;
 
     private long _contentPrepared = 0;
     private boolean _noContentResponse = false;
     private Boolean _persistent = null;
-    private Supplier<HttpFields> _trailers = null;
 
     private final int _send;
     private static final int SEND_SERVER = 0x01;
@@ -127,12 +121,12 @@ public class HttpGenerator
     public void reset()
     {
         _state = State.START;
+        _info = null;
         _endOfContent = EndOfContent.UNKNOWN_CONTENT;
         _noContentResponse = false;
         _persistent = null;
         _contentPrepared = 0;
         _needCRLF = false;
-        _trailers = null;
     }
 
     public State getState()
@@ -208,6 +202,7 @@ public class HttpGenerator
             {
                 if (info == null)
                     return Result.NEED_INFO;
+                _info = info;
 
                 if (header == null)
                     return Result.NEED_HEADER;
@@ -222,7 +217,7 @@ public class HttpGenerator
                     if (info.getHttpVersion() == HttpVersion.HTTP_0_9)
                         throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "HTTP/0.9 not supported");
 
-                    generateHeaders(info, header, content, last);
+                    generateHeaders(header, content, last);
 
                     boolean expect100 = info.getFields().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
@@ -325,13 +320,13 @@ public class HttpGenerator
 
         if (isChunking())
         {
-            if (_trailers != null)
+            if (_info.getTrailerSupplier() != null)
             {
                 // Do we need a chunk buffer?
                 if (chunk == null || chunk.capacity() <= CHUNK_SIZE)
                     return Result.NEED_CHUNK_TRAILER;
 
-                HttpFields trailers = _trailers.get();
+                HttpFields trailers = _info.getTrailerSupplier().get();
 
                 if (trailers != null)
                 {
@@ -368,6 +363,8 @@ public class HttpGenerator
             {
                 if (info == null)
                     return Result.NEED_INFO;
+                _info = info;
+
                 HttpVersion version = info.getHttpVersion();
                 if (version == null)
                     throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "No version");
@@ -411,7 +408,7 @@ public class HttpGenerator
                         _noContentResponse = true;
                     }
 
-                    generateHeaders(info, header, content, last);
+                    generateHeaders(header, content, last);
 
                     // handle the content.
                     int len = BufferUtil.length(content);
@@ -573,30 +570,29 @@ public class HttpGenerator
         return bytes;
     }
 
-    private void generateHeaders(MetaData info, ByteBuffer header, ByteBuffer content, boolean last)
+    private void generateHeaders(ByteBuffer header, ByteBuffer content, boolean last)
     {
-        final MetaData.Request request = (info instanceof MetaData.Request) ? (MetaData.Request)info : null;
-        final MetaData.Response response = (info instanceof MetaData.Response) ? (MetaData.Response)info : null;
+        final MetaData.Request request = (_info instanceof MetaData.Request) ? (MetaData.Request)_info : null;
+        final MetaData.Response response = (_info instanceof MetaData.Response) ? (MetaData.Response)_info : null;
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("generateHeaders {} last={} content={}", info, last, BufferUtil.toDetailString(content));
-            LOG.debug(info.getFields().toString());
+            LOG.debug("generateHeaders {} last={} content={}", _info, last, BufferUtil.toDetailString(content));
+            LOG.debug(_info.getFields().toString());
         }
 
         // default field values
         int send = _send;
         HttpField transferEncoding = null;
-        boolean http11 = info.getHttpVersion() == HttpVersion.HTTP_1_1;
+        boolean http11 = _info.getHttpVersion() == HttpVersion.HTTP_1_1;
         boolean close = false;
-        _trailers = http11 ? info.getTrailerSupplier() : null;
-        boolean chunkedHint = _trailers != null;
+        boolean chunkedHint = _info.getTrailerSupplier() != null;
         boolean contentType = false;
-        long contentLength = info.getContentLength();
+        long contentLength = _info.getContentLength();
         boolean contentLengthField = false;
 
         // Generate fields
-        HttpFields fields = info.getFields();
+        HttpFields fields = _info.getFields();
         if (fields != null)
         {
             int n = fields.size();
@@ -647,7 +643,7 @@ public class HttpGenerator
                                 _persistent = false;
                             }
 
-                            if (info.getHttpVersion() == HttpVersion.HTTP_1_0 && _persistent == null && field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
+                            if (_info.getHttpVersion() == HttpVersion.HTTP_1_0 && _persistent == null && field.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
                             {
                                 _persistent = true;
                             }
@@ -669,7 +665,7 @@ public class HttpGenerator
         }
 
         // Can we work out the content length?
-        if (last && contentLength < 0 && _trailers == null)
+        if (last && contentLength < 0 && _info.getTrailerSupplier() == null)
             contentLength = _contentPrepared + BufferUtil.length(content);
 
         // Calculate how to end _content and connection, _content length and transfer encoding
@@ -677,13 +673,13 @@ public class HttpGenerator
 
         boolean assumedContentRequest = request != null && Boolean.TRUE.equals(ASSUMED_CONTENT_METHODS.get(request.getMethod()));
         boolean assumedContent = assumedContentRequest || contentType || chunkedHint;
-        boolean nocontentRequest = request != null && contentLength <= 0 && !assumedContent;
+        boolean noContentRequest = request != null && contentLength <= 0 && !assumedContent;
 
         if (_persistent == null)
             _persistent = http11 || (request != null && HttpMethod.CONNECT.is(request.getMethod()));
 
         // If the message is known not to have content
-        if (_noContentResponse || nocontentRequest)
+        if (_noContentResponse || noContentRequest)
         {
             // We don't need to indicate a body length
             _endOfContent = EndOfContent.NO_CONTENT;
@@ -923,7 +919,7 @@ public class HttpGenerator
         }
     }
 
-    public static void putTo(HttpFields fields, ByteBuffer bufferInFillMode)
+    public static void putTo(HttpFields.Mutable fields, ByteBuffer bufferInFillMode)
     {
         for (HttpField field : fields)
         {

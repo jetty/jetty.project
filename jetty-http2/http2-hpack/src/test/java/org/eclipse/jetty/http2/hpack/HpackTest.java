@@ -52,23 +52,25 @@ public class HpackTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
-        HttpFields fields0 = new HttpFields();
-        fields0.add(HttpHeader.CONTENT_TYPE, "text/html");
-        fields0.add(HttpHeader.CONTENT_LENGTH, "1024");
-        fields0.add(new HttpField(HttpHeader.CONTENT_ENCODING, (String)null));
-        fields0.add(ServerJetty);
-        fields0.add(XPowerJetty);
-        fields0.add(Date);
-        fields0.add(HttpHeader.SET_COOKIE, "abcdefghijklmnopqrstuvwxyz");
-        fields0.add("custom-key", "custom-value");
+        HttpFields.Mutable fields0 = HttpFields.build()
+            .add(HttpHeader.CONTENT_TYPE, "text/html")
+            .add(HttpHeader.CONTENT_LENGTH, "1024")
+            .add(new HttpField(HttpHeader.CONTENT_ENCODING, (String)null))
+            .add(ServerJetty)
+            .add(XPowerJetty)
+            .add(Date)
+            .add(HttpHeader.SET_COOKIE, "abcdefghijklmnopqrstuvwxyz")
+            .add("custom-key", "custom-value");
         Response original0 = new MetaData.Response(HttpVersion.HTTP_2, 200, fields0);
 
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer, original0);
         BufferUtil.flipToFlush(buffer, 0);
         Response decoded0 = (Response)decoder.decode(buffer);
-        original0.getFields().put(new HttpField(HttpHeader.CONTENT_ENCODING, ""));
-        assertMetaDataResponseSame(original0, decoded0);
+        
+        Response nullToEmpty = new MetaData.Response(HttpVersion.HTTP_2, 200, 
+            fields0.put(new HttpField(HttpHeader.CONTENT_ENCODING, "")));
+        assertMetaDataResponseSame(nullToEmpty, decoded0);
 
         // Same again?
         BufferUtil.clearToFill(buffer);
@@ -76,16 +78,16 @@ public class HpackTest
         BufferUtil.flipToFlush(buffer, 0);
         Response decoded0b = (Response)decoder.decode(buffer);
 
-        assertMetaDataResponseSame(original0, decoded0b);
+        assertMetaDataResponseSame(nullToEmpty, decoded0b);
 
-        HttpFields fields1 = new HttpFields();
-        fields1.add(HttpHeader.CONTENT_TYPE, "text/plain");
-        fields1.add(HttpHeader.CONTENT_LENGTH, "1234");
-        fields1.add(HttpHeader.CONTENT_ENCODING, " ");
-        fields1.add(ServerJetty);
-        fields1.add(XPowerJetty);
-        fields1.add(Date);
-        fields1.add("Custom-Key", "Other-Value");
+        HttpFields.Mutable fields1 = HttpFields.build()
+            .add(HttpHeader.CONTENT_TYPE, "text/plain")
+            .add(HttpHeader.CONTENT_LENGTH, "1234")
+            .add(HttpHeader.CONTENT_ENCODING, " ")
+            .add(ServerJetty)
+            .add(XPowerJetty)
+            .add(Date)
+            .add("Custom-Key", "Other-Value");
         Response original1 = new MetaData.Response(HttpVersion.HTTP_2, 200, fields1);
 
         // Same again?
@@ -105,9 +107,9 @@ public class HpackTest
         HpackDecoder decoder = new HpackDecoder(4096, 164);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
-        HttpFields fields0 = new HttpFields();
-        fields0.add("1234567890", "1234567890123456789012345678901234567890");
-        fields0.add("Cookie", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
+        HttpFields fields0 = HttpFields.build()
+            .add("1234567890", "1234567890123456789012345678901234567890")
+            .add("Cookie", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
         MetaData original0 = new MetaData(HttpVersion.HTTP_2, fields0);
 
         BufferUtil.clearToFill(buffer);
@@ -117,10 +119,10 @@ public class HpackTest
 
         assertMetaDataSame(original0, decoded0);
 
-        HttpFields fields1 = new HttpFields();
-        fields1.add("1234567890", "1234567890123456789012345678901234567890");
-        fields1.add("Cookie", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
-        fields1.add("x", "y");
+        HttpFields fields1 = HttpFields.build()
+            .add("1234567890", "1234567890123456789012345678901234567890")
+            .add("Cookie", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR")
+            .add("x", "y");
         MetaData original1 = new MetaData(HttpVersion.HTTP_2, fields1);
 
         BufferUtil.clearToFill(buffer);
@@ -144,10 +146,10 @@ public class HpackTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
         ByteBuffer buffer = BufferUtil.allocate(16 * 1024);
 
-        HttpFields fields0 = new HttpFields();
+        HttpFields fields0 = HttpFields.build()
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
-        fields0.add("Cookie", "[\uD842\uDF9F]");
-        fields0.add("custom-key", "[\uD842\uDF9F]");
+            .add("Cookie", "[\uD842\uDF9F]")
+            .add("custom-key", "[\uD842\uDF9F]");
         Response original0 = new MetaData.Response(HttpVersion.HTTP_2, 200, fields0);
 
         BufferUtil.clearToFill(buffer);
@@ -167,9 +169,9 @@ public class HpackTest
 
         String longEnoughToBeEvicted = "012345678901234567890123456789012345678901234567890";
 
-        HttpFields fields0 = new HttpFields();
-        fields0.add(longEnoughToBeEvicted, "value");
-        fields0.add("foo", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+        HttpFields fields0 = HttpFields.build()
+            .add(longEnoughToBeEvicted, "value")
+            .add("foo", "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
         MetaData original0 = new MetaData(HttpVersion.HTTP_2, fields0);
 
         BufferUtil.clearToFill(buffer);
@@ -184,9 +186,9 @@ public class HpackTest
 
         assertMetaDataSame(original0, decoded0);
 
-        HttpFields fields1 = new HttpFields();
-        fields1.add(longEnoughToBeEvicted, "other_value");
-        fields1.add("x", "y");
+        HttpFields fields1 = HttpFields.build()
+            .add(longEnoughToBeEvicted, "other_value")
+            .add("x", "y");
         MetaData original1 = new MetaData(HttpVersion.HTTP_2, fields1);
 
         BufferUtil.clearToFill(buffer);
@@ -207,15 +209,15 @@ public class HpackTest
         HpackEncoder encoder = new HpackEncoder();
         HpackDecoder decoder = new HpackDecoder(4096, 16384);
 
-        HttpFields input = new HttpFields();
-        input.put(HttpHeader.ACCEPT, "*");
-        input.put(HttpHeader.CONNECTION, "TE, Upgrade, Custom");
-        input.put("Custom", "Pizza");
-        input.put(HttpHeader.KEEP_ALIVE, "true");
-        input.put(HttpHeader.PROXY_CONNECTION, "foo");
-        input.put(HttpHeader.TE, "1234567890abcdef");
-        input.put(HttpHeader.TRANSFER_ENCODING, "chunked");
-        input.put(HttpHeader.UPGRADE, "gold");
+        HttpFields input = HttpFields.build()
+            .add(HttpHeader.ACCEPT, "*")
+            .add(HttpHeader.CONNECTION, "TE, Upgrade, Custom")
+            .add("Custom", "Pizza")
+            .add(HttpHeader.KEEP_ALIVE, "true")
+            .add(HttpHeader.PROXY_CONNECTION, "foo")
+            .add(HttpHeader.TE, "1234567890abcdef")
+            .add(HttpHeader.TRANSFER_ENCODING, "chunked")
+            .add(HttpHeader.UPGRADE, "gold");
 
         ByteBuffer buffer = BufferUtil.allocate(2048);
         BufferUtil.clearToFill(buffer);
@@ -234,12 +236,12 @@ public class HpackTest
         HpackEncoder encoder = new HpackEncoder();
         HpackDecoder decoder = new HpackDecoder(4096, 16384);
 
-        HttpFields input = new HttpFields();
-        input.put(HttpHeader.CONNECTION, "TE");
         String teValue = "trailers";
-        input.put(HttpHeader.TE, teValue);
         String trailerValue = "Custom";
-        input.put(HttpHeader.TRAILER, trailerValue);
+        HttpFields input = HttpFields.build()
+            .add(HttpHeader.CONNECTION, "TE")
+            .add(HttpHeader.TE, teValue)
+            .add(HttpHeader.TRAILER, trailerValue);
 
         ByteBuffer buffer = BufferUtil.allocate(2048);
         BufferUtil.clearToFill(buffer);
@@ -259,9 +261,9 @@ public class HpackTest
         HpackEncoder encoder = new HpackEncoder();
         HpackDecoder decoder = new HpackDecoder(4096, 16384);
 
-        HttpFields input = new HttpFields();
-        input.put(":status", "200");
-        input.put(":custom", "special");
+        HttpFields input = HttpFields.build()
+            .add(":status", "200")
+            .add(":custom", "special");
 
         ByteBuffer buffer = BufferUtil.allocate(2048);
         BufferUtil.clearToFill(buffer);

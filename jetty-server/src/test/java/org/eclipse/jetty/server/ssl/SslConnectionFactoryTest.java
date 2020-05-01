@@ -43,7 +43,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SocketCustomizationListener;
@@ -81,16 +80,16 @@ public class SslConnectionFactoryTest
         httpConfig.setSecureScheme("https");
         httpConfig.setSecurePort(8443);
         httpConfig.setOutputBufferSize(32768);
-        HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
-        httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
 
+        SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
+        sslConnectionFactory.setEnsureSecureRequestCustomizer(true);
         ServerConnector https = _connector = new ServerConnector(_server,
-            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-            new HttpConnectionFactory(httpsConfig));
+            sslConnectionFactory,
+            new HttpConnectionFactory());
         https.setPort(0);
         https.setIdleTimeout(30000);
 

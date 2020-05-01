@@ -31,6 +31,7 @@ import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 public class MetaDataBuilder
 {
     private final int _maxSize;
+    private final HttpFields.Mutable _fields = HttpFields.build();
     private int _size;
     private Integer _status;
     private String _method;
@@ -39,7 +40,6 @@ public class MetaDataBuilder
     private String _path;
     private String _protocol;
     private long _contentLength = Long.MIN_VALUE;
-    private HttpFields _fields = new HttpFields();
     private HpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;
@@ -162,14 +162,6 @@ public class MetaDataBuilder
                     break;
 
                 case HOST:
-                    // :authority fields must come first.  If we have one, ignore the host header as far as authority goes.
-                    if (_authority == null)
-                    {
-                        if (field instanceof HostPortHttpField)
-                            _authority = (HostPortHttpField)field;
-                        else if (value != null)
-                            _authority = new AuthorityHttpField(value);
-                    }
                     _fields.add(field);
                     break;
 
@@ -242,7 +234,7 @@ public class MetaDataBuilder
         if (_request && _response)
             throw new HpackException.StreamException("Request and Response headers");
 
-        HttpFields fields = _fields;
+        HttpFields.Mutable fields = _fields;
         try
         {
             if (_request)
@@ -260,7 +252,14 @@ public class MetaDataBuilder
                 if (isConnect)
                     return new MetaData.ConnectRequest(_scheme, _authority, _path, fields, _protocol);
                 else
-                    return new MetaData.Request(_method, _scheme, _authority, _path, HttpVersion.HTTP_2, fields, _contentLength);
+                    return new MetaData.Request(
+                        _method,
+                        _scheme == null ? HttpScheme.HTTP.asString() : _scheme.asString(),
+                        _authority,
+                        _path,
+                        HttpVersion.HTTP_2,
+                        fields,
+                        _contentLength);
             }
             if (_response)
             {
@@ -273,7 +272,7 @@ public class MetaDataBuilder
         }
         finally
         {
-            _fields = new HttpFields(Math.max(16, fields.size() + 5));
+            _fields.clear();
             _request = false;
             _response = false;
             _status = null;

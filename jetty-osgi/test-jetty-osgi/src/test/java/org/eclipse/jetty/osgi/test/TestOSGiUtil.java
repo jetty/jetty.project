@@ -104,7 +104,7 @@ public class TestOSGiUtil
         }
         xmlConfigs.append(new File(etc, jettySelectorFileName).toURI());
         xmlConfigs.append(";");
-        xmlConfigs.append(new File(etc, "jetty-deployer.xml").toURI());
+        xmlConfigs.append(new File(etc, "jetty-deploy.xml").toURI());
         xmlConfigs.append(";");
         xmlConfigs.append(new File(etc, "jetty-testrealm.xml").toURI());
 

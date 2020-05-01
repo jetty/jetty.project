@@ -160,7 +160,7 @@ public class PushCacheFilter implements Filter
             path += "?" + query;
         if (referrer != null)
         {
-            HttpURI referrerURI = new HttpURI(referrer);
+            HttpURI referrerURI = HttpURI.from(referrer);
             String host = referrerURI.getHost();
             int port = referrerURI.getPort();
             if (port <= 0)

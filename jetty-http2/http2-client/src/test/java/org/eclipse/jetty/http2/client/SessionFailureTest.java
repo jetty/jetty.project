@@ -114,7 +114,7 @@ public class SessionFailureTest extends AbstractTest
                 clientFailureLatch.countDown();
             }
         });
-        HeadersFrame frame = new HeadersFrame(newRequest("GET", new HttpFields()), null, true);
+        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         Promise<Stream> promise = new Promise.Adapter<>();
         session.newStream(frame, promise, null);
 

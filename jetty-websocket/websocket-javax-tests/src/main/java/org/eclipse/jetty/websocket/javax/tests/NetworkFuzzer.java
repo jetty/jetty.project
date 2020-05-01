@@ -72,7 +72,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         this.upgradeRequest = new RawUpgradeRequest(client, wsURI);
         if (requestHeaders != null)
         {
-            HttpFields fields = this.upgradeRequest.getHeaders();
+            HttpFields.Mutable fields = this.upgradeRequest.getHeaders();
             requestHeaders.forEach((name, value) ->
             {
                 fields.remove(name);

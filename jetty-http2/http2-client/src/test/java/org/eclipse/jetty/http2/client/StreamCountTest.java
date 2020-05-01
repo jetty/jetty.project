@@ -73,8 +73,7 @@ public class StreamCountTest extends AbstractTest
                     {
                         if (frame.isEndStream())
                         {
-                            HttpFields fields = new HttpFields();
-                            MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, fields);
+                            MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), callback);
                         }
                         else
@@ -98,8 +97,7 @@ public class StreamCountTest extends AbstractTest
 
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame1 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
         CountDownLatch responseLatch = new CountDownLatch(1);
@@ -143,8 +141,7 @@ public class StreamCountTest extends AbstractTest
                     {
                         if (frame.isEndStream())
                         {
-                            HttpFields fields = new HttpFields();
-                            MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, fields);
+                            MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), metaData, null, true), callback);
                         }
                         else
@@ -166,8 +163,7 @@ public class StreamCountTest extends AbstractTest
             }
         });
 
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame1 = new HeadersFrame(metaData, null, false);
         FuturePromise<Stream> streamPromise1 = new FuturePromise<>();
         CountDownLatch responseLatch = new CountDownLatch(1);

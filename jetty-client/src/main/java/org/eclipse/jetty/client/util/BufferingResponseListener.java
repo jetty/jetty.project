@@ -75,7 +75,7 @@ public abstract class BufferingResponseListener extends Listener.Adapter
 
         Request request = response.getRequest();
         HttpFields headers = response.getHeaders();
-        long length = headers.getLongField(HttpHeader.CONTENT_LENGTH.asString());
+        long length = headers.getLongField(HttpHeader.CONTENT_LENGTH);
         if (HttpMethod.HEAD.is(request.getMethod()))
             length = 0;
         if (length > maxLength)

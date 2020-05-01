@@ -30,10 +30,11 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeader()
     {
-        HttpFields fields = new HttpFields();
-        fields.put("a", "foo");
-        fields.put("b", "bar");
-        fields.put("c", "fizz");
+        HttpFields fields = HttpFields.build()
+            .put("a", "foo")
+            .put("b", "bar")
+            .put("c", "fizz")
+            .asImmutable();
 
         MatcherAssert.assertThat(fields, HttpFieldsMatchers.containsHeader("a"));
     }
@@ -41,10 +42,10 @@ public class HttpFieldsMatchersTest
     @Test
     public void testNotContainsHeader()
     {
-        HttpFields fields = new HttpFields();
-        fields.put("a", "foo");
-        fields.put("b", "bar");
-        fields.put("c", "fizz");
+        HttpFields.Mutable fields = HttpFields.build()
+            .put("a", "foo")
+            .put("b", "bar")
+            .put("c", "fizz");
 
         AssertionError x = Assertions.assertThrows(AssertionError.class, () ->
         {
@@ -57,7 +58,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderMisMatch()
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");
@@ -73,7 +74,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderValueMisMatchNoSuchHeader()
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");
@@ -89,7 +90,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderValueMisMatchNoSuchValue()
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");
@@ -105,7 +106,7 @@ public class HttpFieldsMatchersTest
     @Test
     public void testContainsHeaderValue()
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put("a", "foo");
         fields.put("b", "bar");
         fields.put("c", "fizz");

@@ -114,7 +114,14 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                         long contentLength = response.getContentLength();
                         if (contentLength < 0)
                         {
-                            response.setContentLength(realContentLength);
+                            response = new MetaData.Response(
+                                response.getHttpVersion(),
+                                response.getStatus(),
+                                response.getReason(),
+                                response.getFields(),
+                                realContentLength,
+                                response.getTrailerSupplier()
+                            );
                         }
                         else if (hasContent && contentLength != realContentLength)
                         {
@@ -265,7 +272,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP/2 Push {}", request);
 
-        stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Promise<>()
+        stream.push(new PushPromiseFrame(stream.getId(), request), new Promise<>()
         {
             @Override
             public void succeeded(Stream pushStream)

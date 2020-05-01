@@ -61,7 +61,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicInteger sweeps = new AtomicInteger();
     private final Session session;
-    private boolean recycleHttpChannels;
+    private boolean recycleHttpChannels = true;
 
     public HttpConnectionOverHTTP2(HttpDestination destination, Session session)
     {
@@ -105,7 +105,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         // In case of HTTP/1.1 upgrade to HTTP/2, the request is HTTP/1.1
         // (with upgrade) for a resource, and the response is HTTP/2.
         // Create the implicit stream#1 so that it can receive the HTTP/2 response.
-        MetaData.Request metaData = new MetaData.Request(request.getMethod(), new HttpURI(request.getURI()), HttpVersion.HTTP_2, request.getHeaders());
+        MetaData.Request metaData = new MetaData.Request(request.getMethod(), HttpURI.from(request.getURI()), HttpVersion.HTTP_2, request.getHeaders());
         // We do not support upgrade requests with content, so endStream=true.
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         IStream stream = ((HTTP2Session)session).newLocalStream(frame, null);
