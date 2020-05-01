@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,10 +46,19 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
+import javax.servlet.http.PushBuilder;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.http.tools.HttpTester;
@@ -57,6 +67,9 @@ import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.session.Session;
+import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -1860,10 +1873,127 @@ public class RequestTest
         assertNotNull(request.getParameterMap());
         assertEquals(0, request.getParameterMap().size());
     }
+    
+    @Test
+    public void testPushBuilder() throws Exception
+    {
+        String uri = "/foo/something";
+        Request request = new TestRequest(null, null);
+        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("good","thumbsup", 100), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bonza","bewdy", 1), CookieCompliance.RFC6265));
+        request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bad", "thumbsdown", 0), CookieCompliance.RFC6265));
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add(HttpHeader.AUTHORIZATION, "Basic foo");
+        request.setMetaData(new MetaData.Request("GET", HttpURI.from(uri), HttpVersion.HTTP_1_0, fields));
+        assertTrue(request.isPushSupported());
+        PushBuilder builder = request.newPushBuilder();
+        assertNotNull(builder);
+        assertEquals("GET", builder.getMethod());
+        assertThrows(NullPointerException.class, () ->
+        {
+            builder.method(null);
+        });
+        assertThrows(IllegalArgumentException.class, () ->
+        {
+            builder.method("");
+        });
+        assertThrows(IllegalArgumentException.class, () ->
+        {
+            builder.method("   ");
+        });
+        assertThrows(IllegalArgumentException.class, () ->
+        {
+            builder.method("POST");
+        });
+        assertThrows(IllegalArgumentException.class, () ->
+        {
+            builder.method("PUT");
+        });
+        assertThrows(IllegalArgumentException.class, () ->
+        {
+            builder.method("DELETE");
+        });
+        assertThrows(IllegalArgumentException.class, () ->
+        {
+            builder.method("CONNECT");
+        });
+        assertThrows(IllegalArgumentException.class, () ->
+        {
+            builder.method("OPTIONS");
+        });
+        assertThrows(IllegalArgumentException.class, () ->
+        {
+            builder.method("TRACE");
+        });
+        assertEquals(TestRequest.TEST_SESSION_ID, builder.getSessionId());
+        builder.path("/foo/something-else.txt");
+        assertEquals("/foo/something-else.txt", builder.getPath());
+        assertEquals("Basic foo", builder.getHeader("Authorization"));
+        assertThat(builder.getHeader("Cookie"), containsString("bonza"));
+        assertThat(builder.getHeader("Cookie"), containsString("good"));
+        assertThat(builder.getHeader("Cookie"), containsString("maxpos"));
+        assertThat(builder.getHeader("Cookie"), not(containsString("bad")));
+    }
 
     interface RequestTester
     {
         boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException;
+    }
+    
+    private class TestRequest extends Request
+    {
+        public static final String TEST_SESSION_ID = "abc123";
+        Response _response = new Response(null, null);
+        Cookie c1;
+        Cookie c2;
+        
+        public TestRequest(HttpChannel channel, HttpInput input)
+        {
+            super(channel, input);
+            c1 = new Cookie("maxpos", "xxx");
+            c1.setMaxAge(1);
+            c2 = new Cookie("maxneg", "yyy");
+            c2.setMaxAge(-1);
+        }
+
+        @Override
+        public boolean isPushSupported()
+        {
+            return true;
+        }
+
+        @Override
+        public HttpSession getSession()
+        {
+            return new Session(new SessionHandler(), new SessionData(TEST_SESSION_ID,  "", "0.0.0.0", 0, 0, 0, 300));
+        }
+
+        @Override
+        public Principal getUserPrincipal()
+        {
+            return new Principal()
+            {
+
+                @Override
+                public String getName()
+                {
+                    return "user";
+                }
+
+            };
+        }
+
+        @Override
+        public Response getResponse()
+        {
+            return _response;
+        }
+
+        @Override
+        public Cookie[] getCookies()
+        {
+            return new Cookie[] {c1,c2};
+        }
     }
 
     private class RequestHandler extends AbstractHandler
