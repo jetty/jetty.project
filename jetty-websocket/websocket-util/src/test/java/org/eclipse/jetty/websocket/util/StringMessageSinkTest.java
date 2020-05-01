@@ -90,7 +90,7 @@ public class StringMessageSinkTest
         messageSink.accept(new Frame(OpCode.TEXT, continuationUtf8Payload).setFin(true), callback);
         callback.block(5, TimeUnit.SECONDS);
 
-        assertThat(endpoint.messages.poll(5, TimeUnit.SECONDS), is('\uD800' + '\uDF48')); // UTF-8 encoded payload.
+        assertThat(endpoint.messages.poll(5, TimeUnit.SECONDS), is("\uD800\uDF48")); // UTF-8 encoded payload.
     }
 
     @Test
