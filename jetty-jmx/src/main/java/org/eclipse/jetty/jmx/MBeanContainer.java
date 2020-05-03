@@ -172,7 +172,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             }
             klass = klass.getSuperclass();
         }
-        Object mbean = findMetaData(container, klass).newInstance(o);
+        Object mbean = findMetaData(container, o.getClass()).newInstance(o);
         if (mbean instanceof ObjectMBean)
             ((ObjectMBean)mbean).setMBeanContainer(container);
         if (LOG.isDebugEnabled())

@@ -130,7 +130,8 @@ public class JettyLoggerFactory implements ILoggerFactory, JettyLoggerFactoryMBe
             else
                 break;
         }
-        return null;
+
+        return nameFunction.apply(Logger.ROOT_LOGGER_NAME);
     }
 
     @Override
