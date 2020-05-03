@@ -32,18 +32,18 @@ public class JettyLogger implements LocationAwareLogger, Logger
     /**
      * The Level to set if you want this logger to be "OFF"
      */
-    public static final int OFF = 999;
+    static final int OFF = 999;
     /**
      * The Level to set if you want this logger to show all events from all levels.
      */
-    public static final int ALL = -1;
+    static final int ALL = Level.TRACE.toInt();
 
     private final JettyLoggerFactory factory;
     private final String name;
     private final String condensedName;
     private final JettyAppender appender;
     private int level;
-    private boolean hideStacks = false;
+    private boolean hideStacks;
 
     public JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender)
     {
@@ -54,10 +54,70 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         this.factory = factory;
         this.name = name;
-        this.condensedName = JettyLoggerFactory.condensePackageString(name);
+        this.condensedName = condensePackageString(name);
         this.appender = appender;
         this.level = level;
         this.hideStacks = hideStacks;
+    }
+
+    /**
+     * Condenses a classname by stripping down the package name to just the first character of each package name
+     * segment.Configured
+     *
+     * <pre>
+     * Examples:
+     * "org.eclipse.jetty.test.FooTest"           = "oejt.FooTest"
+     * "org.eclipse.jetty.server.logging.LogTest" = "orjsl.LogTest"
+     * </pre>
+     *
+     * @param classname the fully qualified class name
+     * @return the condensed name
+     */
+    private static String condensePackageString(String classname)
+    {
+        if (classname == null || classname.isEmpty())
+            return "";
+
+        int rawLen = classname.length();
+        StringBuilder dense = new StringBuilder(rawLen);
+        boolean foundStart = false;
+        boolean hasPackage = false;
+        int startIdx = -1;
+        int endIdx = -1;
+        for (int i = 0; i < rawLen; i++)
+        {
+            char c = classname.charAt(i);
+            if (!foundStart)
+            {
+                foundStart = Character.isJavaIdentifierStart(c);
+                if (foundStart)
+                {
+                    if (startIdx >= 0)
+                    {
+                        dense.append(classname.charAt(startIdx));
+                        hasPackage = true;
+                    }
+                    startIdx = i;
+                }
+            }
+
+            if (foundStart)
+            {
+                if (Character.isJavaIdentifierPart(c))
+                    endIdx = i;
+                else
+                    foundStart = false;
+            }
+        }
+        // append remaining from startIdx
+        if ((startIdx >= 0) && (endIdx >= startIdx))
+        {
+            if (hasPackage)
+                dense.append('.');
+            dense.append(classname, startIdx, endIdx + 1);
+        }
+
+        return dense.toString();
     }
 
     @Override
@@ -285,7 +345,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
         this.level = lvlInt;
 
         // apply setLevel to children too.
-        factory.walkChildLoggers(this.getName(), (logger) -> logger.setLevel(lvlInt));
+        factory.walkChildrenLoggers(this.getName(), (logger) -> logger.setLevel(lvlInt));
     }
 
     @Override
@@ -402,7 +462,7 @@ public class JettyLogger implements LocationAwareLogger, Logger
         this.hideStacks = hideStacks;
 
         // apply setHideStacks to children too.
-        factory.walkChildLoggers(this.getName(), (logger) -> logger.setHideStacks(hideStacks));
+        factory.walkChildrenLoggers(this.getName(), (logger) -> logger.setHideStacks(hideStacks));
     }
 
     @Override
@@ -639,6 +699,6 @@ public class JettyLogger implements LocationAwareLogger, Logger
     @Override
     public String toString()
     {
-        return String.format("%s:%s:LEVEL=%s", JettyLogger.class.getSimpleName(), name, LevelUtils.levelToString(level));
+        return String.format("%s:%s:LEVEL=%s", JettyLogger.class.getSimpleName(), name, LevelUtils.intToLevel(level));
     }
 }

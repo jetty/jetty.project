@@ -18,14 +18,13 @@
 
 package org.eclipse.jetty.logging;
 
-@SuppressWarnings("unused")
 public interface JettyLoggerFactoryMBean
 {
     int getLoggerCount();
 
     String[] getLoggerNames();
 
-    void setLoggerLevel(String loggerName, String levelName);
+    boolean setLoggerLevel(String loggerName, String levelName);
 
     String getLoggerLevel(String loggerName);
 }

@@ -45,8 +45,6 @@ public class JettyLoggingServiceProvider implements SLF4JServiceProvider
         loggerFactory = new JettyLoggerFactory(config);
         markerFactory = new BasicMarkerFactory();
         mdcAdapter = new NOPMDCAdapter(); // TODO: Provide Jetty Implementation?
-
-        JettyLoggingJmx.initialize(config, loggerFactory);
     }
 
     public JettyLoggerFactory getJettyLoggerFactory()

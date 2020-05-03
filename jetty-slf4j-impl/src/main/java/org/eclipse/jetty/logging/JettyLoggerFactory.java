@@ -19,6 +19,7 @@
 package org.eclipse.jetty.logging;
 
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
@@ -46,6 +47,13 @@ public class JettyLoggerFactory implements ILoggerFactory, JettyLoggerFactoryMBe
         rootLogger.setLevel(configuration.getLevel(Logger.ROOT_LOGGER_NAME));
     }
 
+    @SuppressWarnings("unused")
+    public String jmxContext()
+    {
+        // Used to build the ObjectName.
+        return configuration.getString("org.eclipse.jetty.logging.jmx.context", null);
+    }
+
     /**
      * Get a {@link JettyLogger} instance, creating if not yet existing.
      *
@@ -55,10 +63,7 @@ public class JettyLoggerFactory implements ILoggerFactory, JettyLoggerFactoryMBe
     public JettyLogger getJettyLogger(String name)
     {
         if (name.equals(Logger.ROOT_LOGGER_NAME))
-        {
             return getRootLogger();
-        }
-
         return loggerMap.computeIfAbsent(name, this::createLogger);
     }
 
@@ -74,118 +79,45 @@ public class JettyLoggerFactory implements ILoggerFactory, JettyLoggerFactoryMBe
         return getJettyLogger(name);
     }
 
-    protected void walkChildLoggers(String parentName, Consumer<JettyLogger> childConsumer)
+    void walkChildrenLoggers(String parentName, Consumer<JettyLogger> childConsumer)
     {
         String prefix = parentName;
         if (parentName.length() > 0 && !prefix.endsWith("."))
-        {
             prefix += ".";
-        }
 
         for (JettyLogger logger : loggerMap.values())
         {
+            // Skip self.
             if (logger.getName().equals(parentName))
-            {
-                // skip self
                 continue;
-            }
 
-            // is child, and is not itself
+            // It is a child, and is not itself.
             if (logger.getName().startsWith(prefix))
-            {
                 childConsumer.accept(logger);
-            }
         }
     }
 
-    public JettyLogger getRootLogger()
+    JettyLogger getRootLogger()
     {
         return rootLogger;
     }
 
     private JettyLogger createLogger(String name)
     {
-        // or is that handled by slf4j itself?
         JettyAppender appender = rootLogger.getAppender();
         int level = this.configuration.getLevel(name);
         boolean hideStacks = this.configuration.getHideStacks(name);
         return new JettyLogger(this, name, appender, level, hideStacks);
     }
 
-    /**
-     * Condenses a classname by stripping down the package name to just the first character of each package name
-     * segment.Configured
-     *
-     * <pre>
-     * Examples:
-     * "org.eclipse.jetty.test.FooTest"           = "oejt.FooTest"
-     * "org.eclipse.jetty.server.logging.LogTest" = "orjsl.LogTest"
-     * </pre>
-     *
-     * @param classname the fully qualified class name
-     * @return the condensed name
-     */
-    protected static String condensePackageString(String classname)
+    static <T> T walkParentLoggerNames(String startName, Function<String, T> nameFunction)
     {
-        if (classname == null || classname.isEmpty())
-        {
-            return "";
-        }
-
-        int rawLen = classname.length();
-        StringBuilder dense = new StringBuilder(rawLen);
-        boolean foundStart = false;
-        boolean hasPackage = false;
-        int startIdx = -1;
-        int endIdx = -1;
-        for (int i = 0; i < rawLen; i++)
-        {
-            char c = classname.charAt(i);
-            if (!foundStart)
-            {
-                foundStart = Character.isJavaIdentifierStart(c);
-                if (foundStart)
-                {
-                    if (startIdx >= 0)
-                    {
-                        dense.append(classname.charAt(startIdx));
-                        hasPackage = true;
-                    }
-                    startIdx = i;
-                }
-            }
-
-            if (foundStart)
-            {
-                if (!Character.isJavaIdentifierPart(c))
-                {
-                    foundStart = false;
-                }
-                else
-                {
-                    endIdx = i;
-                }
-            }
-        }
-        // append remaining from startIdx
-        if ((startIdx >= 0) && (endIdx >= startIdx))
-        {
-            if (hasPackage)
-            {
-                dense.append('.');
-            }
-            dense.append(classname, startIdx, endIdx + 1);
-        }
-
-        return dense.toString();
-    }
-
-    public static <T> T walkParentLoggerNames(String startName, Function<String, T> nameFunction)
-    {
-        String nameSegment = startName;
+        if (startName == null)
+            return null;
 
         // Checking with FQCN first, then each package segment from longest to shortest.
-        while ((nameSegment != null) && (nameSegment.length() > 0))
+        String nameSegment = startName;
+        while (nameSegment.length() > 0)
         {
             T ret = nameFunction.apply(nameSegment);
             if (ret != null)
@@ -194,22 +126,18 @@ public class JettyLoggerFactory implements ILoggerFactory, JettyLoggerFactoryMBe
             // Trim and try again.
             int idx = nameSegment.lastIndexOf('.');
             if (idx >= 0)
-            {
                 nameSegment = nameSegment.substring(0, idx);
-            }
             else
-            {
-                nameSegment = null;
-            }
+                break;
         }
-
         return null;
     }
 
     @Override
     public String[] getLoggerNames()
     {
-        return loggerMap.keySet().toArray(new String[0]);
+        TreeSet<String> names = new TreeSet<>(loggerMap.keySet());
+        return names.toArray(new String[0]);
     }
 
     @Override
@@ -221,25 +149,23 @@ public class JettyLoggerFactory implements ILoggerFactory, JettyLoggerFactoryMBe
     @Override
     public String getLoggerLevel(String loggerName)
     {
-        return walkParentLoggerNames(loggerName, (key) ->
+        return walkParentLoggerNames(loggerName, key ->
         {
             JettyLogger logger = loggerMap.get(key);
-            if (key != null)
-            {
-                return LevelUtils.levelToString(logger.getLevel());
-            }
+            if (logger != null)
+                return LevelUtils.intToLevel(logger.getLevel()).toString();
             return null;
         });
     }
 
     @Override
-    public void setLoggerLevel(String loggerName, String levelName)
+    public boolean setLoggerLevel(String loggerName, String levelName)
     {
-        Integer levelInt = LevelUtils.getLevelInt(loggerName, levelName);
-        if (levelInt != null)
-        {
-            JettyLogger jettyLogger = getJettyLogger(loggerName);
-            jettyLogger.setLevel(levelInt);
-        }
+        Integer levelInt = LevelUtils.getLevelInt(levelName);
+        if (levelInt == null)
+            return false;
+        JettyLogger jettyLogger = getJettyLogger(loggerName);
+        jettyLogger.setLevel(levelInt);
+        return true;
     }
 }

@@ -526,7 +526,7 @@ public class JettyLoggerTest
         assertThat("Logger.toString", log.toString(), is("JettyLogger:xxx:LEVEL=ERROR"));
 
         log.setLevel(JettyLogger.OFF);
-        assertThat("Logger.toString", log.toString(), is("JettyLogger:xxx:LEVEL=OFF"));
+        assertThat("Logger.toString", log.toString(), is("JettyLogger:xxx:LEVEL=ERROR"));
     }
 
     @Test
@@ -556,7 +556,7 @@ public class JettyLoggerTest
         assertLevel(log, Level.DEBUG); // as stomped
 
         // Restore configured
-        factory.walkChildLoggers(root.getName(), (logger) ->
+        factory.walkChildrenLoggers(root.getName(), (logger) ->
         {
             int configuredLevel = config.getLevel(logger.getName());
             logger.setLevel(configuredLevel);
@@ -609,6 +609,6 @@ public class JettyLoggerTest
     private void assertLevel(JettyLogger log, Level expectedLevel)
     {
         assertThat("Log[" + log.getName() + "].level",
-            LevelUtils.levelToString(log.getLevel()), is(expectedLevel.toString()));
+            LevelUtils.intToLevel(log.getLevel()), is(expectedLevel));
     }
 }

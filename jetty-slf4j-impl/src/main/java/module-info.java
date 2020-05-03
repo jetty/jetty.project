@@ -25,7 +25,5 @@ module org.eclipse.jetty.logging
 
     requires transitive org.slf4j;
 
-    requires static java.management;
-
     provides SLF4JServiceProvider with JettyLoggingServiceProvider;
 }

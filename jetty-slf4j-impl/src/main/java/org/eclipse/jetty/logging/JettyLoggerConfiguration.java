@@ -77,29 +77,22 @@ public class JettyLoggerConfiguration
 
         // strip ".STACKS" suffix (if present)
         if (startName.endsWith(SUFFIX_STACKS))
-        {
             startName = startName.substring(0, startName.length() - SUFFIX_STACKS.length());
-        }
 
-        Boolean hideStacks = JettyLoggerFactory.walkParentLoggerNames(startName, (key) ->
+        Boolean hideStacks = JettyLoggerFactory.walkParentLoggerNames(startName, key ->
         {
             String stacksBool = properties.getProperty(key + SUFFIX_STACKS);
             if (stacksBool != null)
-            {
                 return Boolean.parseBoolean(stacksBool);
-            }
             return null;
         });
 
-        if (hideStacks != null)
-            return hideStacks;
-
-        return DEFAULT_HIDE_STACKS;
+        return hideStacks != null ? hideStacks : DEFAULT_HIDE_STACKS;
     }
 
     /**
-     * Get the Logging Level for the provided log name. Using the FQCN first, then each package segment from longest to
-     * shortest.
+     * <p>Returns the Logging Level for the provided log name.</p>
+     * <p>Uses the FQCN first, then each package segment from longest to shortest.</p>
      *
      * @param name the name to get log for
      * @return the logging level int
@@ -111,42 +104,30 @@ public class JettyLoggerConfiguration
 
         String startName = name != null ? name : "";
 
-        // strip trailing dot
+        // Strip trailing dot.
         while (startName.endsWith("."))
         {
             startName = startName.substring(0, startName.length() - 1);
         }
 
-        // strip ".LEVEL" suffix (if present)
+        // Strip ".LEVEL" suffix (if present).
         if (startName.endsWith(SUFFIX_LEVEL))
-        {
             startName = startName.substring(0, startName.length() - SUFFIX_LEVEL.length());
-        }
 
-        Integer level = JettyLoggerFactory.walkParentLoggerNames(startName, (key) ->
+        Integer level = JettyLoggerFactory.walkParentLoggerNames(startName, key ->
         {
-            String levelStr1 = properties.getProperty(key + SUFFIX_LEVEL);
-            if (levelStr1 != null)
-            {
-                return LevelUtils.getLevelInt(key, levelStr1);
-            }
-            return null;
+            String levelStr = properties.getProperty(key + SUFFIX_LEVEL);
+            return LevelUtils.getLevelInt(levelStr);
         });
 
         if (level == null)
         {
-            // try legacy root logging config
+            // Try legacy root logging config.
             String levelStr = properties.getProperty("log" + SUFFIX_LEVEL);
-            if (levelStr != null)
-            {
-                level = LevelUtils.getLevelInt("log", levelStr);
-            }
+            level = LevelUtils.getLevelInt(levelStr);
         }
 
-        if (level != null)
-            return level;
-
-        return DEFAULT_LEVEL;
+        return level != null ? level : DEFAULT_LEVEL;
     }
 
     public TimeZone getTimeZone(String key)
@@ -154,7 +135,6 @@ public class JettyLoggerConfiguration
         String zoneIdStr = properties.getProperty(key);
         if (zoneIdStr == null)
             return null;
-
         return TimeZone.getTimeZone(zoneIdStr);
     }
 
@@ -207,9 +187,7 @@ public class JettyLoggerConfiguration
     {
         String val = properties.getProperty(key, Integer.toString(defValue));
         if (val == null)
-        {
             return defValue;
-        }
         try
         {
             return Integer.parseInt(val);
@@ -223,13 +201,9 @@ public class JettyLoggerConfiguration
     private URL getResource(ClassLoader loader, String resourceName)
     {
         if (loader == null)
-        {
             return ClassLoader.getSystemResource(resourceName);
-        }
         else
-        {
             return loader.getResource(resourceName);
-        }
     }
 
     /**
@@ -260,9 +234,7 @@ public class JettyLoggerConfiguration
     {
         URL propsUrl = getResource(loader, resourceName);
         if (propsUrl == null)
-        {
             return null;
-        }
 
         try (InputStream in = propsUrl.openStream())
         {

@@ -24,67 +24,34 @@ import org.slf4j.event.Level;
 
 public class LevelUtils
 {
-    public static Integer getLevelInt(String loggerName, String levelStr)
+    public static Integer getLevelInt(String levelStr)
     {
-        if (levelStr == null)
+        try
+        {
+            if (levelStr == null)
+                return null;
+            String levelName = levelStr.trim().toUpperCase(Locale.ENGLISH);
+            if ("ALL".equals(levelName))
+                return Level.TRACE.toInt();
+            return Level.valueOf(levelName).toInt();
+        }
+        catch (Throwable x)
         {
             return null;
-        }
-
-        String levelName = levelStr.trim().toUpperCase(Locale.ENGLISH);
-        switch (levelName)
-        {
-            case "ALL":
-                return JettyLogger.ALL;
-            case "TRACE":
-                return Level.TRACE.toInt();
-            case "DEBUG":
-                return Level.DEBUG.toInt();
-            case "INFO":
-                return Level.INFO.toInt();
-            case "WARN":
-                return Level.WARN.toInt();
-            case "ERROR":
-                return Level.ERROR.toInt();
-            case "OFF":
-                return JettyLogger.OFF;
-            default:
-                System.err.println("Unknown JettyLogger/Slf4J Level [" + loggerName + "]=[" + levelName + "], expecting only [ALL, TRACE, DEBUG, INFO, WARN, ERROR, OFF] as values.");
-                return null;
         }
     }
 
     public static Level intToLevel(int level)
     {
-        if (level >= JettyLogger.OFF)
+        try
+        {
+            if (level < JettyLogger.ALL)
+                return Level.TRACE;
+            return Level.intToLevel(level);
+        }
+        catch (Throwable x)
+        {
             return Level.ERROR;
-        if (level >= Level.ERROR.toInt())
-            return Level.ERROR;
-        if (level >= Level.WARN.toInt())
-            return Level.WARN;
-        if (level >= Level.INFO.toInt())
-            return Level.INFO;
-        if (level >= Level.DEBUG.toInt())
-            return Level.DEBUG;
-        if (level >= Level.TRACE.toInt())
-            return Level.TRACE;
-        return Level.TRACE; // everything else
-    }
-
-    public static String levelToString(int level)
-    {
-        if (level >= JettyLogger.OFF)
-            return "OFF";
-        if (level >= Level.ERROR.toInt())
-            return "ERROR";
-        if (level >= Level.WARN.toInt())
-            return "WARN";
-        if (level >= Level.INFO.toInt())
-            return "INFO";
-        if (level >= Level.DEBUG.toInt())
-            return "DEBUG";
-        if (level >= Level.TRACE.toInt())
-            return "TRACE";
-        return "OFF"; // everything else
+        }
     }
 }
