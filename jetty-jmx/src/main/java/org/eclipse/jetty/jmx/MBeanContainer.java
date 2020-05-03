@@ -60,7 +60,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
 
     private final MBeanServer _mbeanServer;
     private final boolean _useCacheForOtherClassLoaders;
-    private final ConcurrentMap<Class, MetaData> _metaData = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, MetaData> _metaData = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, Container> _beans = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, ObjectName> _mbeans = new ConcurrentHashMap<>();
     private String _domain = null;
