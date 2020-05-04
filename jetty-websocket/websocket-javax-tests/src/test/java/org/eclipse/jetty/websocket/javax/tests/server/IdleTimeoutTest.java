@@ -28,7 +28,6 @@ import com.acme.websocket.IdleTimeoutOnOpenEndpoint;
 import com.acme.websocket.IdleTimeoutOnOpenSocket;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -51,19 +50,18 @@ public class IdleTimeoutTest
     @BeforeAll
     public static void setupServer() throws Exception
     {
-        server = new WSServer(MavenTestingUtils.getTargetTestingPath(IdleTimeoutTest.class.getName()), "app");
-        server.copyWebInf("idle-timeout-config-web.xml");
+        server = new WSServer(MavenTestingUtils.getTargetTestingPath(IdleTimeoutTest.class.getName()));
+        WSServer.WebApp app = server.createWebApp("app");
+        app.copyWebInf("idle-timeout-config-web.xml");
         // the endpoint (extends javax.websocket.Endpoint)
-        server.copyClass(IdleTimeoutOnOpenEndpoint.class);
+        app.copyClass(IdleTimeoutOnOpenEndpoint.class);
         // the configuration that adds the endpoint
-        server.copyClass(IdleTimeoutContextListener.class);
+        app.copyClass(IdleTimeoutContextListener.class);
         // the annotated socket
-        server.copyClass(IdleTimeoutOnOpenSocket.class);
+        app.copyClass(IdleTimeoutOnOpenSocket.class);
+        app.deploy();
 
         server.start();
-
-        WebAppContext webapp = server.createWebAppContext();
-        server.deployWebapp(webapp);
     }
 
     @AfterAll

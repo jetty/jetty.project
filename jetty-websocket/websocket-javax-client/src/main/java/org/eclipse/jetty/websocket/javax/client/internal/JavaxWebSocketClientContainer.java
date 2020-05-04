@@ -40,11 +40,14 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.core.exception.UpgradeException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.javax.common.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketExtensionConfig;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
 
 /**
  * Container for Client use of the javax.websocket API.
@@ -131,7 +134,7 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
             {
                 if (error != null)
                 {
-                    futureSession.completeExceptionally(error);
+                    futureSession.completeExceptionally(convertCause(error));
                     return;
                 }
 
@@ -145,6 +148,18 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
         }
 
         return futureSession;
+    }
+
+    public static Throwable convertCause(Throwable error)
+    {
+        if (error instanceof UpgradeException ||
+            error instanceof WebSocketTimeoutException)
+            return new IOException(error);
+
+        if (error instanceof InvalidWebSocketException)
+            return new DeploymentException(error.getMessage(), error);
+
+        return error;
     }
 
     private Session connect(ConfiguredEndpoint configuredEndpoint, URI destURI) throws IOException
