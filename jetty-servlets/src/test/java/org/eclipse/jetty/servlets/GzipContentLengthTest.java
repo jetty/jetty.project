@@ -221,8 +221,6 @@ public class GzipContentLengthTest extends AbstractGzipTest
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);
         assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(fileSize));
-        // TODO: Assertions.assertArrayEquals();
-        // TODO: compare bytes
         assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
     }
 }

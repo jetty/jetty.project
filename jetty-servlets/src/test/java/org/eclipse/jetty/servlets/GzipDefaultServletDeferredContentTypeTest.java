@@ -18,6 +18,36 @@
 
 package org.eclipse.jetty.servlets;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.tools.HttpTester;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.Sha1Sum;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.PathResource;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyOrNullString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+
 /**
  * GzipHandler setting of headers when reset and/or not compressed.
  *
@@ -28,26 +58,51 @@ package org.eclipse.jetty.servlets;
  */
 public class GzipDefaultServletDeferredContentTypeTest extends AbstractGzipTest
 {
-    /*
-    public static class AddDefaultServletCustomizer extends ServerHandlerCustomizer
+    private Server server;
+
+    @AfterEach
+    public void stopServer()
     {
-        @Override
-        public Handler customize(ServletContextHandler servletContextHandler, Class<? extends Servlet> servletClass)
-        {
-            ServletHolder holder = new ServletHolder("default", servletClass);
-            servletContextHandler.addServlet(holder, "/");
-            return servletContextHandler;
-        }
+        LifeCycle.stop(server);
     }
 
     @Test
     public void testIsNotGzipCompressedByDeferredContentType() throws Exception
     {
-        createServer(new AddDefaultServletCustomizer(), DeferredGetDefaultServlet.class);
+        server = new Server();
+        LocalConnector localConnector = new LocalConnector(server);
+        server.addConnector(localConnector);
+
+        Path contextDir = workDir.resolve("context");
+        FS.ensureDirExists(contextDir);
+
+        ServletContextHandler servletContextHandler = new ServletContextHandler();
+        servletContextHandler.setContextPath("/context");
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
+        ServletHolder holder = new ServletHolder("default", new DefaultServlet()
+        {
+            @Override
+            public void service(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException
+            {
+                String uri = req.getRequestURI();
+                if (uri.endsWith(".deferred"))
+                {
+                    // System.err.println("type for "+uri.substring(0,uri.length()-9)+" is "+getServletContext().getMimeType(uri.substring(0,uri.length()-9)));
+                    resp.setContentType(getServletContext().getMimeType(uri.substring(0, uri.length() - 9)));
+                }
+
+                doGet(req, resp);
+            }
+        });
+        servletContextHandler.addServlet(holder, "/");
+
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
 
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
 
-        Path file = createFile("file.mp3.deferred", fileSize);
+        Path file = createFile(contextDir, "file.mp3.deferred", fileSize);
         String expectedSha1Sum = Sha1Sum.calculate(file);
 
         server.start();
@@ -80,27 +135,4 @@ public class GzipDefaultServletDeferredContentTypeTest extends AbstractGzipTest
         assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(fileSize));
         assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
     }
-
-    public static class DeferredGetDefaultServlet extends DefaultServlet
-    {
-        public DeferredGetDefaultServlet()
-        {
-            super();
-        }
-
-        @Override
-        public void service(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException
-        {
-            String uri = req.getRequestURI();
-            if (uri.endsWith(".deferred"))
-            {
-                // System.err.println("type for "+uri.substring(0,uri.length()-9)+" is "+getServletContext().getMimeType(uri.substring(0,uri.length()-9)));
-                resp.setContentType(getServletContext().getMimeType(uri.substring(0, uri.length() - 9)));
-            }
-
-            doGet(req, resp);
-        }
-    }
-
-     */
 }

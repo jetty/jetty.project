@@ -46,13 +46,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public abstract class AbstractGzipTest
 {
-    protected static final int DEFAULT_OUTPUT_BUFFER_SIZE;
-
-    static
-    {
-        HttpConfiguration defaultHttp = new HttpConfiguration();
-        DEFAULT_OUTPUT_BUFFER_SIZE = defaultHttp.getOutputBufferSize();
-    }
+    protected static final int DEFAULT_OUTPUT_BUFFER_SIZE = new HttpConfiguration().getOutputBufferSize();
 
     protected Path workDir;
 
