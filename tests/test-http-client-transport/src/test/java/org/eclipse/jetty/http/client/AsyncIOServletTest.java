@@ -75,6 +75,7 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -398,6 +399,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
     @Tag("Unstable")
+    @Disabled
     public void testAsyncWriteClosed(Transport transport) throws Exception
     {
         init(transport);
