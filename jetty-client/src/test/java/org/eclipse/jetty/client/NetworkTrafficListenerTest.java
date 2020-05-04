@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +44,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.io.NetworkTrafficSocketChannelEndPoint;
-import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NetworkTrafficServerConnector;
@@ -507,16 +506,9 @@ public class NetworkTrafficListenerTest
             super(new HttpClientTransportOverHTTP(new ClientConnector()
             {
                 @Override
-                protected SelectorManager newSelectorManager()
+                protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey)
                 {
-                    return new ClientSelectorManager(getExecutor(), getScheduler(), getSelectors())
-                    {
-                        @Override
-                        protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
-                        {
-                            return new NetworkTrafficSocketChannelEndPoint(channel, selector, selectionKey, getScheduler(), getIdleTimeout().toMillis(), listener.get());
-                        }
-                    };
+                    return new NetworkTrafficSocketChannelEndPoint(channel, selector, selectionKey, getScheduler(), getIdleTimeout().toMillis(), listener.get());
                 }
             }));
             this.listener = listener;

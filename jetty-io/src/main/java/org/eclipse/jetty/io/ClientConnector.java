@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketException;
@@ -253,7 +252,7 @@ public class ClientConnector extends ContainerLifeCycle
             // exception is being thrown, so we attempt to provide a better error message.
             if (x.getClass() == SocketException.class)
                 x = new SocketException("Could not connect to " + address).initCause(x);
-            safeClose(channel);
+            IO.close(channel);
             connectFailed(x, context);
         }
     }
@@ -273,21 +272,21 @@ public class ClientConnector extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Could not accept {}", channel);
-            safeClose(channel);
+            IO.close(channel);
             Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
             if (promise != null)
                 promise.failed(failure);
         }
     }
 
-    protected void safeClose(Closeable closeable)
-    {
-        IO.close(closeable);
-    }
-
     protected void configure(SocketChannel channel) throws IOException
     {
         channel.socket().setTcpNoDelay(true);
+    }
+
+    protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey)
+    {
+        return new SocketChannelEndPoint(channel, selector, selectionKey, getScheduler());
     }
 
     protected void connectFailed(Throwable failure, Map<String, Object> context)
@@ -309,7 +308,7 @@ public class ClientConnector extends ContainerLifeCycle
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
-            SocketChannelEndPoint endPoint = new SocketChannelEndPoint(channel, selector, selectionKey, getScheduler());
+            EndPoint endPoint = ClientConnector.this.newEndPoint((SocketChannel)channel, selector, selectionKey);
             endPoint.setIdleTimeout(getIdleTimeout().toMillis());
             return endPoint;
         }

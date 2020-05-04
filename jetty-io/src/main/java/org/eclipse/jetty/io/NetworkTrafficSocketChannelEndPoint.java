@@ -20,8 +20,8 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -36,7 +36,7 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
 
     private final NetworkTrafficListener listener;
 
-    public NetworkTrafficSocketChannelEndPoint(SelectableChannel channel, ManagedSelector selectSet, SelectionKey key, Scheduler scheduler, long idleTimeout, NetworkTrafficListener listener)
+    public NetworkTrafficSocketChannelEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key, Scheduler scheduler, long idleTimeout, NetworkTrafficListener listener)
     {
         super(channel, selectSet, key, scheduler);
         setIdleTimeout(idleTimeout);
@@ -80,7 +80,7 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
         {
             try
             {
-                listener.opened(getSocket());
+                listener.opened(getChannel().socket());
             }
             catch (Throwable x)
             {
@@ -97,7 +97,7 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
         {
             try
             {
-                listener.closed(getSocket());
+                listener.closed(getChannel().socket());
             }
             catch (Throwable x)
             {
@@ -113,7 +113,7 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
             try
             {
                 ByteBuffer view = buffer.asReadOnlyBuffer();
-                listener.incoming(getSocket(), view);
+                listener.incoming(getChannel().socket(), view);
             }
             catch (Throwable x)
             {
@@ -128,7 +128,7 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
         {
             try
             {
-                listener.outgoing(getSocket(), view);
+                listener.outgoing(getChannel().socket(), view);
             }
             catch (Throwable x)
             {
