@@ -21,9 +21,9 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicLong;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import javax.servlet.Servlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,20 +37,19 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GzipHandlerCommitTest
 {
-    private static Server server;
-    private static HttpClient client;
+    private Server server;
+    private HttpClient client;
 
-    @BeforeEach
-    public void startUp() throws Exception
+    public void start(Servlet servlet) throws Exception
     {
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -59,7 +58,8 @@ public class GzipHandlerCommitTest
 
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/");
-        contextHandler.addServlet(FlushBufferServlet.class, "/flush-buffer/*");
+        ServletHolder servletHolder = new ServletHolder(servlet);
+        contextHandler.addServlet(servletHolder, "/test/*");
 
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setHandler(contextHandler);
@@ -78,80 +78,53 @@ public class GzipHandlerCommitTest
         LifeCycle.stop(server);
     }
 
-    /**
-     * A servlet should be able to flush and then produce no content.
-     */
     @Test
-    public void testFlushNoContent() throws Exception
+    public void testImmediateFlushNoContent() throws Exception
     {
-        long delay = 2000;
-        AtomicLong requestCommitTimestamp = new AtomicLong(-1);
-        AtomicLong responseBeganTimestamp = new AtomicLong(-1);
-        AtomicLong responseHeadersTimestamp = new AtomicLong(-1);
-        URI uri = server.getURI().resolve("/flush-buffer/?size=0&delay=" + delay);
+        CountDownLatch latch = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.flushBuffer();
+                assertDoesNotThrow(() -> assertTrue(latch.await(1, TimeUnit.SECONDS)));
+            }
+        });
+
+        URI uri = server.getURI().resolve("/test/");
         Request request = client.newRequest(uri);
         request.header(HttpHeader.CONNECTION, "Close");
-        request.onRequestCommit((r) -> requestCommitTimestamp.set(System.currentTimeMillis()));
-        request.onResponseBegin((r) -> responseBeganTimestamp.set(System.currentTimeMillis()));
-        request.onResponseHeaders((r) -> responseHeadersTimestamp.set(System.currentTimeMillis()));
+        request.onResponseHeaders((r) -> latch.countDown());
         ContentResponse response = request.send();
         assertThat("Response status", response.getStatus(), is(200));
-        long responseCommitDuration = responseHeadersTimestamp.get() - requestCommitTimestamp.get();
-        assertThat("Response headers duration", responseCommitDuration, lessThan(delay));
     }
 
-    /**
-     * A servlet should be able to flush, response is committed, and then content is produced.
-     */
     @Test
-    public void testFlushThenSomeContent() throws Exception
+    public void testImmediateFlushWithContent() throws Exception
     {
         int size = 8000;
-        long delay = 2000;
-        AtomicLong requestCommitTimestamp = new AtomicLong(-1);
-        AtomicLong responseBeganTimestamp = new AtomicLong(-1);
-        AtomicLong responseHeadersTimestamp = new AtomicLong(-1);
-        URI uri = server.getURI().resolve("/flush-buffer/?size=" + size + "&delay=" + delay);
+        CountDownLatch latch = new CountDownLatch(1);
+        start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.flushBuffer();
+                assertDoesNotThrow(() -> assertTrue(latch.await(1, TimeUnit.SECONDS)));
+                response.getOutputStream();
+                byte[] buf = new byte[size];
+                Arrays.fill(buf, (byte)'a');
+                response.getOutputStream().write(buf);
+            }
+        });
+
+        URI uri = server.getURI().resolve("/test/");
         Request request = client.newRequest(uri);
         request.header(HttpHeader.CONNECTION, "Close");
-        request.onRequestCommit((r) -> requestCommitTimestamp.set(System.currentTimeMillis()));
-        request.onResponseBegin((r) -> responseBeganTimestamp.set(System.currentTimeMillis()));
-        request.onResponseHeaders((r) -> responseHeadersTimestamp.set(System.currentTimeMillis()));
+        request.onResponseHeaders((r) -> latch.countDown());
         ContentResponse response = request.send();
         assertThat("Response status", response.getStatus(), is(200));
-        long responseCommitDuration = responseHeadersTimestamp.get() - requestCommitTimestamp.get();
-        assertThat("Response headers duration", responseCommitDuration, lessThan(delay));
-    }
-
-    public static class FlushBufferServlet extends HttpServlet
-    {
-        @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-        {
-            int delay = Integer.parseInt(request.getParameter("delay"));
-            int size = Integer.parseInt(request.getParameter("size"));
-
-            response.setContentType("text/plain");
-            ServletOutputStream out = response.getOutputStream();
-            response.flushBuffer();
-
-            if (delay > 0)
-            {
-                try
-                {
-                    Thread.sleep(delay);
-                }
-                catch (InterruptedException ignored)
-                {
-                }
-            }
-
-            byte[] buf = new byte[size];
-            if (size > 0)
-            {
-                Arrays.fill(buf, (byte)'a');
-                out.write(buf);
-            }
-        }
+        assertThat("Response content size", response.getContent().length, is(size));
     }
 }

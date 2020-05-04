@@ -229,10 +229,10 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             LOG.debug("{} compressing {}", this, _deflater);
             _state.set(GZState.COMPRESSING);
 
-            if (content.remaining() == 0)
+            if (BufferUtil.isEmpty(content))
             {
-                // We are committing, and we have no content to compress.
-                _interceptor.write(content, complete, callback);
+                // We are committing, but have no content to compress, so flush empty buffer to write headers.
+                _interceptor.write(BufferUtil.EMPTY_BUFFER, complete, callback);
             }
             else
             {
