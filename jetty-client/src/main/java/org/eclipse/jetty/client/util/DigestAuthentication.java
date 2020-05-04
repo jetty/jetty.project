@@ -204,7 +204,7 @@ public class DigestAuthentication extends AbstractAuthentication
             }
             value.append(", response=\"").append(hashA3).append("\"");
 
-            request.header(header, value.toString());
+            request.headers(headers -> headers.add(header, value.toString()));
         }
 
         private String nextNonceCount()

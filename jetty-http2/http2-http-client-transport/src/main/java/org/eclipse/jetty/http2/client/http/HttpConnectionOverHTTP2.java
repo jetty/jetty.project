@@ -37,7 +37,6 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.SendFailure;
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -126,14 +125,14 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     }
 
     @Override
-    protected void normalizeRequest(Request request)
+    protected void normalizeRequest(HttpRequest request)
     {
         super.normalizeRequest(request);
         if (request instanceof HttpUpgrader.Factory)
         {
             HttpUpgrader upgrader = ((HttpUpgrader.Factory)request).newHttpUpgrader(HttpVersion.HTTP_2);
-            ((HttpRequest)request).getConversation().setAttribute(HttpUpgrader.class.getName(), upgrader);
-            upgrader.prepare((HttpRequest)request);
+            request.getConversation().setAttribute(HttpUpgrader.class.getName(), upgrader);
+            upgrader.prepare(request);
         }
     }
 

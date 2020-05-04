@@ -72,7 +72,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class HttpReceiver
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(HttpReceiver.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpReceiver.class);
 
     private final AtomicReference<ResponseState> responseState = new AtomicReference<>(ResponseState.IDLE);
     private final HttpChannel channel;
@@ -242,7 +242,7 @@ public abstract class HttpReceiver
         boolean process = notifier.notifyHeader(exchange.getConversation().getResponseListeners(), response, field);
         if (process)
         {
-            response.getHeaderFieldsMutable().add(field);
+            response.header(field);
             HttpHeader fieldHeader = field.getHeader();
             if (fieldHeader != null)
             {

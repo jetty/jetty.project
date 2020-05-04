@@ -31,10 +31,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -166,38 +166,22 @@ public interface Request
      */
     HttpFields getHeaders();
 
-    /** Set the headers, clearing any existing headers
-     * @param fields The fields to set
-     * @return this request object
-     */
-    Request set(HttpFields fields);
-
     /**
-     * @param header the header to remove
+     * Modifies the headers of this request.
+     *
+     * @param consumer the code that modifies the headers of this request
      * @return this request object
      */
-    Request remove(HttpHeader header);
-
-    /**
-     * @param field the field to add
-     * @return this request object
-     * @see #header(HttpHeader, String)
-     */
-    Request add(HttpField field);
-
-    /**
-     * @param field the field to put
-     * @return this request object
-     * @see #header(HttpHeader, String)
-     */
-    Request put(HttpField field);
+    Request headers(Consumer<HttpFields.Mutable> consumer);
 
     /**
      * @param name the name of the header
      * @param value the value of the header
      * @return this request object
      * @see #header(HttpHeader, String)
+     * @deprecated use {@link #headers(Consumer)} instead
      */
+    @Deprecated
     Request header(String name, String value);
 
     /**
@@ -208,7 +192,9 @@ public interface Request
      * @param header the header name
      * @param value the value of the header
      * @return this request object
+     * @deprecated use {@link #headers(Consumer)} instead
      */
+    @Deprecated
     Request header(HttpHeader header, String value);
 
     /**
