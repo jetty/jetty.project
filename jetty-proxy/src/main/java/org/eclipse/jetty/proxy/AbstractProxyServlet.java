@@ -538,8 +538,12 @@ public abstract class AbstractProxyServlet extends HttpServlet
     {
         proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_FOR, clientRequest.getRemoteAddr()));
         proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_PROTO, clientRequest.getScheme()));
-        proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_HOST, clientRequest.getHeader(HttpHeader.HOST.asString())));
-        proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_SERVER, clientRequest.getLocalName()));
+        String hostHeader = clientRequest.getHeader(HttpHeader.HOST.asString());
+        if (hostHeader != null)
+            proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_HOST, hostHeader));
+        String localName = clientRequest.getLocalName();
+        if (localName != null)
+            proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_SERVER, localName));
     }
 
     protected void sendProxyRequest(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)

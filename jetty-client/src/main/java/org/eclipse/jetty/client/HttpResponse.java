@@ -118,7 +118,7 @@ public class HttpResponse implements Response
 
     public HttpFields getTrailers()
     {
-        return trailers.asImmutable();
+        return trailers == null ? null : trailers.asImmutable();
     }
 
     public HttpResponse trailer(HttpField trailer)
