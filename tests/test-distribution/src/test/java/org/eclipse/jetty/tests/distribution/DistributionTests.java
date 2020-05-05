@@ -20,12 +20,14 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -37,10 +39,14 @@ import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.jupiter.api.Disabled;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
@@ -49,6 +55,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -410,6 +417,7 @@ public class DistributionTests extends AbstractDistributionTest
         "",
         "--jpms",
     })
+    @DisabledOnJre(JRE.JAVA_14) // TODO: Waiting on JDK14 bug at https://bugs.openjdk.java.net/browse/JDK-8244090.
     public void testSimpleWebAppWithWebsocket(String arg) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
@@ -427,9 +435,13 @@ public class DistributionTests extends AbstractDistributionTest
             assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
 
-            File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-bad-websocket-webapp:war:" + jettyVersion);
-            distribution.installWarFile(war, "test1");
-            distribution.installWarFile(war, "test2");
+            File webApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-websocket-webapp:war:" + jettyVersion);
+            File badWebApp = distribution.resolveArtifact("org.eclipse.jetty.tests:test-bad-websocket-webapp:war:" + jettyVersion);
+
+            distribution.installWarFile(webApp, "test1");
+            distribution.installWarFile(badWebApp, "test2");
+            distribution.installWarFile(badWebApp, "test3");
+            distribution.installWarFile(webApp, "test4");
 
             int port = distribution.freePort();
             String[] args2 = {
@@ -437,23 +449,61 @@ public class DistributionTests extends AbstractDistributionTest
                 "jetty.http.port=" + port//,
                 //"jetty.server.dumpAfterStart=true"
             };
+
             try (DistributionTester.Run run2 = distribution.start(args2))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
-                // we do not test that anymore because it doesn't work for java14
-                //assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
+                assertFalse(run2.getLogs().stream().anyMatch(s -> s.contains("LinkageError")));
 
                 startHttpClient();
-                ContentResponse response = client.GET("http://localhost:" + port + "/test1/index.jsp");
-                assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Hello"));
-                assertThat(response.getContentAsString(), not(containsString("<%")));
+                WebSocketClient wsClient = new WebSocketClient(client);
+                wsClient.start();
+                URI serverUri = URI.create("ws://localhost:" + port);
 
-                client.GET("http://localhost:" + port + "/test2/index.jsp");
-                assertEquals(HttpStatus.OK_200, response.getStatus());
-                assertThat(response.getContentAsString(), containsString("Hello"));
-                assertThat(response.getContentAsString(), not(containsString("<%")));
+                // Verify /test1 is able to establish a WebSocket connection.
+                WsListener webSocketListener = new WsListener();
+                Session session = wsClient.connect(webSocketListener, serverUri.resolve("/test1")).get(5, TimeUnit.SECONDS);
+                session.getRemote().sendString("echo message");
+                assertThat(webSocketListener.textMessages.poll(5, TimeUnit.SECONDS), is("echo message"));
+                session.close();
+                assertTrue(webSocketListener.closeLatch.await(5, TimeUnit.SECONDS));
+                assertThat(webSocketListener.closeCode, is(StatusCode.NO_CODE));
+
+                // Verify that /test2 and /test3 could not be started.
+                ContentResponse response = client.GET(serverUri.resolve("/test2/badonopen/a"));
+                assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
+                client.GET("http://localhost:" + port + "/test3/badonopen/a");
+                assertEquals(HttpStatus.SERVICE_UNAVAILABLE_503, response.getStatus());
+
+                // Verify /test4 is able to establish a WebSocket connection.
+                webSocketListener = new WsListener();
+                session = wsClient.connect(webSocketListener, serverUri.resolve("/test4")).get(5, TimeUnit.SECONDS);
+                session.getRemote().sendString("echo message");
+                assertThat(webSocketListener.textMessages.poll(5, TimeUnit.SECONDS), is("echo message"));
+                session.close();
+                assertTrue(webSocketListener.closeLatch.await(5, TimeUnit.SECONDS));
+                assertThat(webSocketListener.closeCode, is(StatusCode.NO_CODE));
             }
+        }
+    }
+
+    public static class WsListener implements WebSocketListener
+    {
+        BlockingArrayQueue<String> textMessages = new BlockingArrayQueue<>();
+        private CountDownLatch closeLatch = new CountDownLatch(1);
+        private int closeCode;
+
+        @Override
+        public void onWebSocketClose(int statusCode, String reason)
+        {
+            this.closeCode = statusCode;
+            closeLatch.countDown();
+        }
+
+        @Override
+        public void onWebSocketText(String message)
+        {
+            textMessages.add(message);
         }
     }
 

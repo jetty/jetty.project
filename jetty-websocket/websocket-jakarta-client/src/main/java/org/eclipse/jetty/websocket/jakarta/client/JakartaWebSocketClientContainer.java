@@ -40,12 +40,15 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.core.exception.UpgradeException;
+import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
 import org.eclipse.jetty.websocket.jakarta.client.internal.JsrUpgradeListener;
 import org.eclipse.jetty.websocket.jakarta.common.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketExtensionConfig;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
 
 /**
  * Container for Client use of the jakarta.websocket API.
@@ -132,7 +135,7 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
             {
                 if (error != null)
                 {
-                    futureSession.completeExceptionally(error);
+                    futureSession.completeExceptionally(convertCause(error));
                     return;
                 }
 
@@ -146,6 +149,18 @@ public class JakartaWebSocketClientContainer extends JakartaWebSocketContainer i
         }
 
         return futureSession;
+    }
+
+    public static Throwable convertCause(Throwable error)
+    {
+        if (error instanceof UpgradeException ||
+            error instanceof WebSocketTimeoutException)
+            return new IOException(error);
+
+        if (error instanceof InvalidWebSocketException)
+            return new DeploymentException(error.getMessage(), error);
+
+        return error;
     }
 
     private Session connect(ConfiguredEndpoint configuredEndpoint, URI destURI) throws IOException

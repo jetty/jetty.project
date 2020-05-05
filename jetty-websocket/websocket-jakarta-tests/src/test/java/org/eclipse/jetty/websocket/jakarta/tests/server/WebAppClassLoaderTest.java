@@ -93,12 +93,13 @@ public class WebAppClassLoaderTest
     public void startServer() throws Exception
     {
         Path testdir = MavenTestingUtils.getTargetTestingPath(WebAppClassLoaderTest.class.getName());
-        server = new WSServer(testdir, "app");
-        server.createWebInf();
-        server.copyEndpoint(MySocket.class);
+        server = new WSServer(testdir);
+        WSServer.WebApp app = server.createWebApp("app");
+        app.createWebInf();
+        app.copyClass(MySocket.class);
+        app.deploy();
+        webapp = app.getWebAppContext();
         server.start();
-        webapp = server.createWebAppContext();
-        server.deployWebapp(webapp);
     }
 
     @AfterEach

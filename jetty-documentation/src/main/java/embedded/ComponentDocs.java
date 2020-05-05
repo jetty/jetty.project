@@ -18,11 +18,19 @@
 
 package embedded;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
+
+import static java.lang.System.Logger.Level.INFO;
 
 @SuppressWarnings("unused")
 public class ComponentDocs
@@ -139,5 +147,143 @@ public class ComponentDocs
         // Restart Service.
         service.start();
         // end::restart[]
+    }
+
+    public void getBeans() throws Exception
+    {
+        // tag::getBeans[]
+        class Root extends ContainerLifeCycle
+        {
+        }
+
+        class Service extends ContainerLifeCycle
+        {
+            private ScheduledExecutorService scheduler;
+
+            @Override
+            protected void doStart() throws Exception
+            {
+                scheduler = Executors.newSingleThreadScheduledExecutor();
+                addBean(scheduler);
+                super.doStart();
+            }
+
+            @Override
+            protected void doStop() throws Exception
+            {
+                super.doStop();
+                removeBean(scheduler);
+                scheduler.shutdown();
+            }
+        }
+
+        Root root = new Root();
+        Service service = new Service();
+        root.addBean(service);
+
+        // Start the Root component.
+        root.start();
+
+        // Find all the direct children of root.
+        Collection<Object> children = root.getBeans();
+        // children contains only service
+
+        // Find all descendants of root that are instance of a particular class.
+        Collection<ScheduledExecutorService> schedulers = root.getContainedBeans(ScheduledExecutorService.class);
+        // schedulers contains the service scheduler.
+        // end::getBeans[]
+    }
+
+    public void lifecycleListener()
+    {
+        // tag::lifecycleListener[]
+        Server server = new Server();
+
+        // Add an event listener of type LifeCycle.Listener.
+        server.addEventListener(new LifeCycle.Listener()
+        {
+            @Override
+            public void lifeCycleStarted(LifeCycle lifeCycle)
+            {
+                System.getLogger("server").log(INFO, "Server {0} has been started", lifeCycle);
+            }
+
+            @Override
+            public void lifeCycleFailure(LifeCycle lifeCycle, Throwable failure)
+            {
+                System.getLogger("server").log(INFO, "Server {0} failed to start", lifeCycle, failure);
+            }
+
+            @Override
+            public void lifeCycleStopped(LifeCycle lifeCycle)
+            {
+                System.getLogger("server").log(INFO, "Server {0} has been stopped", lifeCycle);
+            }
+        });
+        // end::lifecycleListener[]
+    }
+
+    public void containerListener()
+    {
+        // tag::containerListener[]
+        Server server = new Server();
+
+        // Add an event listener of type LifeCycle.Listener.
+        server.addEventListener(new Container.Listener()
+        {
+            @Override
+            public void beanAdded(Container parent, Object child)
+            {
+                System.getLogger("server").log(INFO, "Added bean {1} to {0}", parent, child);
+            }
+
+            @Override
+            public void beanRemoved(Container parent, Object child)
+            {
+                System.getLogger("server").log(INFO, "Removed bean {1} from {0}", parent, child);
+            }
+        });
+        // end::containerListener[]
+    }
+
+    public void containerSiblings()
+    {
+        // tag::containerSiblings[]
+        class Parent extends ContainerLifeCycle
+        {
+        }
+
+        class Child
+        {
+        }
+
+        // The older child takes care of its siblings.
+        class OlderChild extends Child implements Container.Listener
+        {
+            private Set<Object> siblings = new HashSet<>();
+
+            @Override
+            public void beanAdded(Container parent, Object child)
+            {
+                siblings.add(child);
+            }
+
+            @Override
+            public void beanRemoved(Container parent, Object child)
+            {
+                siblings.remove(child);
+            }
+        }
+
+        Parent parent = new Parent();
+
+        Child older = new OlderChild();
+        // The older child is a child bean _and_ a listener.
+        parent.addBean(older);
+
+        Child younger = new Child();
+        // Adding a younger child will notify the older child.
+        parent.addBean(younger);
+        // end::containerSiblings[]
     }
 }

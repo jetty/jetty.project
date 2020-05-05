@@ -16,11 +16,35 @@
 // ========================================================================
 //
 
-[appendix]
-[[eg-arch]]
-== Jetty Architecture
+package org.eclipse.jetty.tests.webapp.websocket;
 
-include::arch-bean.adoc[]
-include::arch-jmx.adoc[]
-include::arch-listener.adoc[]
-include::arch-io.adoc[]
+import jakarta.websocket.DecodeException;
+import jakarta.websocket.Decoder;
+import jakarta.websocket.EndpointConfig;
+
+public class StringSequenceDecoder implements Decoder.Text<StringSequence>
+{
+    @Override
+    public StringSequence decode(String s) throws DecodeException
+    {
+        return new StringSequence(s);
+    }
+
+    @Override
+    public void init(EndpointConfig config)
+    {
+
+    }
+
+    @Override
+    public void destroy()
+    {
+
+    }
+
+    @Override
+    public boolean willDecode(String s)
+    {
+        return true;
+    }
+}

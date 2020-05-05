@@ -34,6 +34,7 @@ import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
+@SuppressWarnings("unused")
 public class SelectorManagerDocs
 {
     // tag::connect[]

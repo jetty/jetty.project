@@ -18,40 +18,27 @@
 
 package org.eclipse.jetty.tests.webapp.websocket;
 
-import java.io.IOException;
-
-import jakarta.websocket.OnClose;
-import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
+import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ServerEndpoint("/onclose/{arg}")
-public class OnCloseServerEndpoint
+@ServerEndpoint(value = "/", decoders = {StringSequenceDecoder.class})
+public class EchoEndpoint
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(OnCloseServerEndpoint.class);
-    private static String close = "";
+    private static final Logger LOGGER = LoggerFactory.getLogger(EchoEndpoint.class);
 
     @OnMessage
-    public String echo(String echo)
+    public String echo(StringSequence echo)
     {
-        return close + echo;
+        return echo.toString();
     }
 
-    @OnClose
-    public void onClose(Session session)
+    @OnOpen
+    public void onOpen(Session session)
     {
-        LOGGER.info("Session close");
-    }
-
-    @OnError
-    public void onError(Session session, Throwable t)
-        throws IOException
-    {
-        String message = "Error happened:" + t.getMessage();
-        session.getBasicRemote().sendText(message);
+        LOGGER.info("Session opened");
     }
 }
