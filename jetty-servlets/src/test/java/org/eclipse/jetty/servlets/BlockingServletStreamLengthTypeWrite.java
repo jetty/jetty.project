@@ -19,13 +19,11 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 
 /**
@@ -36,23 +34,25 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
  *
  * <pre>
  *  1) get stream
- *  2) set content type
  *  2) set content length
+ *  3) set content type
  *  4) write
  * </pre>
  *
  * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
  */
 @SuppressWarnings("serial")
-public class TestServletBufferTypeLengthWrite extends TestDirContentServlet
+public class BlockingServletStreamLengthTypeWrite extends AbstractFileContentServlet
 {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        String fileName = request.getServletPath();
+        String fileName = request.getPathInfo();
         byte[] dataBytes = loadContentFileBytes(fileName);
 
         ServletOutputStream out = response.getOutputStream();
+
+        response.setContentLength(dataBytes.length);
 
         if (fileName.endsWith("txt"))
             response.setContentType("text/plain");
@@ -60,8 +60,6 @@ public class TestServletBufferTypeLengthWrite extends TestDirContentServlet
             response.setContentType("audio/mpeg");
         response.setHeader("ETag", "W/etag-" + fileName);
 
-        response.setContentLength(dataBytes.length);
-
-        ((HttpOutput)out).write(ByteBuffer.wrap(dataBytes).asReadOnlyBuffer());
+        out.write(dataBytes);
     }
 }

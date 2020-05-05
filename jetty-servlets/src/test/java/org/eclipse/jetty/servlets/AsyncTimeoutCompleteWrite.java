@@ -43,7 +43,7 @@ import static org.hamcrest.Matchers.nullValue;
  * </pre>
  */
 @SuppressWarnings("serial")
-public abstract class AsyncTimeoutCompleteWrite extends TestDirContentServlet implements AsyncListener
+public abstract class AsyncTimeoutCompleteWrite extends AbstractFileContentServlet implements AsyncListener
 {
     public static class Default extends AsyncTimeoutCompleteWrite
     {
@@ -86,7 +86,7 @@ public abstract class AsyncTimeoutCompleteWrite extends TestDirContentServlet im
             // Pass Request & Response
             ctx = request.startAsync(request, response);
         }
-        String fileName = request.getServletPath();
+        String fileName = request.getPathInfo();
         request.setAttribute("filename", fileName);
         ctx.addListener(this);
         ctx.setTimeout(20);
