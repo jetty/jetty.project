@@ -116,10 +116,7 @@
     <profile>
       <id>ci</id>
       <activation>
-        <property>
-          <name>mongodb.enabled</name>
-          <value>true</value>
-        </property>
+        <file><exists>/var/run/docker.sock</exists></file>
       </activation>
       <build>
         <plugins>
