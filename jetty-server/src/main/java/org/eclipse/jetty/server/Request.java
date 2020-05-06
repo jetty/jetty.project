@@ -1711,7 +1711,7 @@ public class Request implements HttpServletRequest
             // TODO this is not really right for CONNECT
             path = _uri.isAbsolute() ? "/" : null;
         else if (encoded.startsWith("/"))
-            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(URIUtil.decodePath(encoded));
+            path = (encoded.length() == 1) ? "/" : _uri.getDecodedPath();
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
             path = encoded;
         else
