@@ -114,9 +114,13 @@
   </dependencies>
   <profiles>
     <profile>
-      <id>ci</id>
+      <id>remote-session-tests</id>
       <activation>
-        <file><exists>/var/run/docker.sock</exists></file>
+<!--        <file><exists>/var/run/docker.sock</exists></file>-->
+        <property>
+          <name>mongo.enabled</name>
+          <value>true</value>
+        </property>
       </activation>
       <build>
         <plugins>
