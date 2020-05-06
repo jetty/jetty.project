@@ -63,7 +63,6 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
-import javax.servlet.http.MappingMatch;
 import javax.servlet.http.Part;
 import javax.servlet.http.PushBuilder;
 
@@ -83,8 +82,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -193,59 +190,6 @@ public class Request implements HttpServletRequest
         return null;
     }
 
-    public static HttpServletMapping getServletMapping(PathSpec pathSpec, String servletPath, String servletName)
-    {
-        String matchValue;
-        MappingMatch mappingMatch;
-        if (pathSpec instanceof ServletPathSpec)
-        {
-            switch (pathSpec.getGroup())
-            {
-                case ROOT:
-                    mappingMatch = MappingMatch.CONTEXT_ROOT;
-                    matchValue = "";
-                    break;
-                case DEFAULT:
-                    mappingMatch = MappingMatch.DEFAULT;
-                    matchValue = "";
-                    break;
-                case EXACT:
-                    mappingMatch = MappingMatch.EXACT;
-                    matchValue = servletPath;
-                    break;
-                case PREFIX_GLOB:
-                    mappingMatch = MappingMatch.PATH;
-                    matchValue = servletPath;
-                    break;
-                case SUFFIX_GLOB:
-                    mappingMatch = MappingMatch.EXTENSION;
-                    int dot = servletPath.lastIndexOf('.');
-                    matchValue = servletPath.substring(0, dot);
-                    break;
-                case MIDDLE_GLOB:
-                    mappingMatch = null;
-                    matchValue = null;
-                    break;
-                default:
-                    throw new IllegalStateException();
-            }
-        }
-        else
-        {
-            mappingMatch = null;
-            matchValue = null;
-        }
-        matchValue = (matchValue == null) ? "" : matchValue;
-        matchValue = matchValue.startsWith("/") ? matchValue.substring(1) : matchValue;
-
-        String name = (servletName == null ? "" : servletName);
-        String pattern = (pathSpec != null) ? pathSpec.getDeclaration() : "";
-        if (mappingMatch == MappingMatch.EXTENSION)
-            pattern = pattern.startsWith("/") ? pattern.substring(1) : pattern;
-
-        return new JettyHttpServletMapping(matchValue, pattern, name, mappingMatch);
-    }
-
     private final HttpChannel _channel;
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final HttpInput _input;
@@ -257,7 +201,6 @@ public class Request implements HttpServletRequest
     private String _contextPath;
     private String _servletPath;
     private String _pathInfo;
-    private PathSpec _pathSpec;
     private HttpServletMapping _httpServletMapping;
     private boolean _secure;
     private String _asyncNotSupportedSource = null;
@@ -1816,7 +1759,6 @@ public class Request implements HttpServletRequest
         _queryParameters = null;
         _contentParameters = null;
         _parameters = null;
-        _pathSpec = null;
         _contentParamsExtracted = false;
         _inputState = INPUT_NONE;
         _multiParts = null;
@@ -2331,16 +2273,6 @@ public class Request implements HttpServletRequest
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
         throw new ServletException("HttpServletRequest.upgrade() not supported in Jetty");
-    }
-
-    public void setPathSpec(PathSpec pathSpec)
-    {
-        _pathSpec = pathSpec;
-    }
-
-    public PathSpec getPathSpec()
-    {
-        return _pathSpec;
     }
 
     public void setHttpServletMapping(HttpServletMapping httpServletMapping)

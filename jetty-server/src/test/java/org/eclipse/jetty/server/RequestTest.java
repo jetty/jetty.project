@@ -1428,33 +1428,6 @@ public class RequestTest
     }
 
     @Test
-    public void testHttpServletMapping() throws Exception
-    {
-        HttpServletMapping mapping = Request.getServletMapping(null, null, null);
-        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=, pattern=, servletName=, mappingMatch=null}"));
-
-        ServletPathSpec spec = new ServletPathSpec("");
-        mapping = Request.getServletMapping(spec, spec.getPathMatch("foo"), "Something");
-        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=, pattern=, servletName=Something, mappingMatch=CONTEXT_ROOT}"));
-
-        spec = new ServletPathSpec("/");
-        mapping = Request.getServletMapping(spec, "", "Default");
-        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=, pattern=/, servletName=Default, mappingMatch=DEFAULT}"));
-
-        spec = new ServletPathSpec("/foo/*");
-        mapping = Request.getServletMapping(spec, spec.getPathMatch("/foo/bar"), "BarServlet");
-        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=foo, pattern=/foo/*, servletName=BarServlet, mappingMatch=PATH}"));
-
-        spec = new ServletPathSpec("*.jsp");
-        mapping = Request.getServletMapping(spec, spec.getPathMatch("/foo/bar.jsp"), "JspServlet");
-        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=foo/bar, pattern=*.jsp, servletName=JspServlet, mappingMatch=EXTENSION}"));
-
-        spec = new ServletPathSpec("/catalog");
-        mapping = Request.getServletMapping(spec, spec.getPathMatch("/catalog"), "CatalogServlet");
-        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=catalog, pattern=/catalog, servletName=CatalogServlet, mappingMatch=EXACT}"));
-    }
-
-    @Test
     public void testCookies() throws Exception
     {
         final ArrayList<Cookie> cookies = new ArrayList<>();
@@ -2133,7 +2106,6 @@ public class RequestTest
         {
             ((Request)request).setHandled(true);
             baseRequest.setServletPath(_servletPath);
-            baseRequest.setPathSpec(_spec);
             if (_servletName != null)
                 baseRequest.setUserIdentityScope(new TestUserIdentityScope(null, null, _servletName));
             HttpServletMapping mapping = baseRequest.getHttpServletMapping();

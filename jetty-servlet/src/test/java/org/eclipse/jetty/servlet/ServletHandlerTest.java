@@ -20,11 +20,15 @@ package org.eclipse.jetty.servlet;
 
 import java.util.EnumSet;
 import javax.servlet.DispatcherType;
+import javax.servlet.http.HttpServletMapping;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -644,5 +648,32 @@ public class ServletHandlerTest
         assertTrue(f == mappings[4].getFilterHolder());  //ordinary
         assertTrue(fh3 == mappings[5].getFilterHolder()); //isMatchAfter = true;
         assertTrue(pf == mappings[6].getFilterHolder()); //isMatchAfter = true;
+    }
+
+    @Test
+    public void testHttpServletMapping() throws Exception
+    {
+        HttpServletMapping mapping = ServletHandler.getServletMapping(null, null, null);
+        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=, pattern=, servletName=, mappingMatch=null}"));
+
+        ServletPathSpec spec = new ServletPathSpec("");
+        mapping = ServletHandler.getServletMapping(spec, spec.getPathMatch("foo"), "Something");
+        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=, pattern=, servletName=Something, mappingMatch=CONTEXT_ROOT}"));
+
+        spec = new ServletPathSpec("/");
+        mapping = ServletHandler.getServletMapping(spec, "", "Default");
+        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=, pattern=/, servletName=Default, mappingMatch=DEFAULT}"));
+
+        spec = new ServletPathSpec("/foo/*");
+        mapping = ServletHandler.getServletMapping(spec, spec.getPathMatch("/foo/bar"), "BarServlet");
+        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=foo, pattern=/foo/*, servletName=BarServlet, mappingMatch=PATH}"));
+
+        spec = new ServletPathSpec("*.jsp");
+        mapping = ServletHandler.getServletMapping(spec, spec.getPathMatch("/foo/bar.jsp"), "JspServlet");
+        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=foo/bar, pattern=*.jsp, servletName=JspServlet, mappingMatch=EXTENSION}"));
+
+        spec = new ServletPathSpec("/catalog");
+        mapping = ServletHandler.getServletMapping(spec, spec.getPathMatch("/catalog"), "CatalogServlet");
+        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=catalog, pattern=/catalog, servletName=CatalogServlet, mappingMatch=EXACT}"));
     }
 }
