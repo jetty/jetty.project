@@ -52,7 +52,7 @@ public class MongoTestHelper
     public static final String COLLECTION_NAME = "testsessions";
 
     static GenericContainer mongo =
-        new GenericContainer("mongo:" + System.getProperty("mongo.docker.version"))
+        new GenericContainer("mongo:" + System.getProperty("mongo.docker.version", "2.2.7"))
             .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG));
 
     static MongoClient mongoClient;
