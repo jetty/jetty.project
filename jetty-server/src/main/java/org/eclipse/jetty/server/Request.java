@@ -195,7 +195,6 @@ public class Request implements HttpServletRequest
 
     public static HttpServletMapping getServletMapping(PathSpec pathSpec, String servletPath, String servletName)
     {
-        // TODO: can servletPath be null?
         String matchValue;
         MappingMatch mappingMatch;
         if (pathSpec instanceof ServletPathSpec)
@@ -224,16 +223,17 @@ public class Request implements HttpServletRequest
                     matchValue = servletPath.substring(0, dot);
                     break;
                 case MIDDLE_GLOB:
-                    // TODO: Is this a legal match for a servlet? If so what should we do here.
+                    mappingMatch = null;
+                    matchValue = null;
+                    break;
                 default:
                     throw new IllegalStateException();
             }
         }
         else
         {
-            // TODO: what is this branch for? can we just remove it entirely? All pathSpec have getGroup().
             mappingMatch = null;
-            matchValue = servletPath;
+            matchValue = null;
         }
         matchValue = (matchValue == null) ? "" : matchValue;
         matchValue = matchValue.startsWith("/") ? matchValue.substring(1) : matchValue;

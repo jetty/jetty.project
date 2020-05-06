@@ -1430,64 +1430,28 @@ public class RequestTest
     @Test
     public void testHttpServletMapping() throws Exception
     {
-        String request = "GET / HTTP/1.1\n" +
-            "Host: whatever\n" +
-            "Connection: close\n" +
-            "\n";
-
-        _server.stop();
-        PathMappingHandler handler = new PathMappingHandler(null, null, null);
-        _server.setHandler(handler);
-        _server.start();
-        String response = _connector.getResponse(request);
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=, pattern=, servletName=, mappingMatch=null}"));
-        _server.stop();
+        HttpServletMapping mapping = Request.getServletMapping(null, null, null);
+        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=, pattern=, servletName=, mappingMatch=null}"));
 
         ServletPathSpec spec = new ServletPathSpec("");
-        handler = new PathMappingHandler(spec, spec.getPathMatch("foo"), "Something");
-        _server.setHandler(handler);
-        _server.start();
-        response = _connector.getResponse(request);
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=, pattern=, servletName=Something, mappingMatch=CONTEXT_ROOT}"));
-        _server.stop();
+        mapping = Request.getServletMapping(spec, spec.getPathMatch("foo"), "Something");
+        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=, pattern=, servletName=Something, mappingMatch=CONTEXT_ROOT}"));
 
         spec = new ServletPathSpec("/");
-        handler = new PathMappingHandler(spec, "", "Default");
-        _server.setHandler(handler);
-        _server.start();
-        response = _connector.getResponse(request);
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=/, pattern=/, servletName=Default, mappingMatch=DEFAULT}"));
-        _server.stop();
+        mapping = Request.getServletMapping(spec, "", "Default");
+        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=, pattern=/, servletName=Default, mappingMatch=DEFAULT}"));
 
         spec = new ServletPathSpec("/foo/*");
-        handler = new PathMappingHandler(spec, spec.getPathMatch("/foo/bar"), "BarServlet");
-        _server.setHandler(handler);
-        _server.start();
-        response = _connector.getResponse(request);
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=/foo, pattern=/foo/*, servletName=BarServlet, mappingMatch=PATH}"));
-        _server.stop();
+        mapping = Request.getServletMapping(spec, spec.getPathMatch("/foo/bar"), "BarServlet");
+        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=foo, pattern=/foo/*, servletName=BarServlet, mappingMatch=PATH}"));
 
         spec = new ServletPathSpec("*.jsp");
-        handler = new PathMappingHandler(spec, spec.getPathMatch("/foo/bar.jsp"), "JspServlet");
-        _server.setHandler(handler);
-        _server.start();
-        response = _connector.getResponse(request);
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=/foo/bar, pattern=*.jsp, servletName=JspServlet, mappingMatch=EXTENSION}"));
-        _server.stop();
+        mapping = Request.getServletMapping(spec, spec.getPathMatch("/foo/bar.jsp"), "JspServlet");
+        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=foo/bar, pattern=*.jsp, servletName=JspServlet, mappingMatch=EXTENSION}"));
 
         spec = new ServletPathSpec("/catalog");
-        handler = new PathMappingHandler(spec, spec.getPathMatch("/catalog"), "CatalogServlet");
-        _server.setHandler(handler);
-        _server.start();
-        response = _connector.getResponse(request);
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=catalog, pattern=/catalog, servletName=CatalogServlet, mappingMatch=EXACT}"));
-        _server.stop();
+        mapping = Request.getServletMapping(spec, spec.getPathMatch("/catalog"), "CatalogServlet");
+        assertThat(mapping.toString(), containsString("HttpServletMapping{matchValue=catalog, pattern=/catalog, servletName=CatalogServlet, mappingMatch=EXACT}"));
     }
 
     @Test
