@@ -47,6 +47,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletSecurityElement;
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -435,6 +436,7 @@ public class ServletHandler extends ScopedHandler
         final String old_servlet_path = baseRequest.getServletPath();
         final String old_path_info = baseRequest.getPathInfo();
         final PathSpec old_path_spec = baseRequest.getPathSpec();
+        final HttpServletMapping old_http_servlet_mapping = baseRequest.getHttpServletMapping();
 
         DispatcherType type = baseRequest.getDispatcherType();
 
@@ -452,17 +454,19 @@ public class ServletHandler extends ScopedHandler
                 String servletPath = pathSpec.getPathMatch(target);
                 String pathInfo = pathSpec.getPathInfo(target);
 
+                HttpServletMapping httpServletMapping = Request.getServletMapping(pathSpec, servletPath, servletHolder.getName());
                 if (DispatcherType.INCLUDE.equals(type))
                 {
                     baseRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, servletPath);
                     baseRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, pathInfo);
-                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, Request.getServletMapping(pathSpec, servletPath, servletHolder.getName()));
+                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, httpServletMapping);
                 }
                 else
                 {
                     baseRequest.setPathSpec(pathSpec);
                     baseRequest.setServletPath(servletPath);
                     baseRequest.setPathInfo(pathInfo);
+                    baseRequest.setHttpServletMapping(httpServletMapping);
                 }
             }
         }
@@ -488,6 +492,7 @@ public class ServletHandler extends ScopedHandler
                 baseRequest.setServletPath(old_servlet_path);
                 baseRequest.setPathInfo(old_path_info);
                 baseRequest.setPathSpec(old_path_spec);
+                baseRequest.setHttpServletMapping(old_http_servlet_mapping);
             }
         }
     }
@@ -564,8 +569,6 @@ public class ServletHandler extends ScopedHandler
             return _servletPathMap.getMatch(target);
         }
 
-        if (_servletNameMap == null)
-            return null;
         ServletHolder holder = _servletNameMap.get(target);
         if (holder == null)
             return null;

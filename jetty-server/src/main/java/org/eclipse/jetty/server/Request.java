@@ -258,6 +258,7 @@ public class Request implements HttpServletRequest
     private String _servletPath;
     private String _pathInfo;
     private PathSpec _pathSpec;
+    private HttpServletMapping _httpServletMapping;
     private boolean _secure;
     private String _asyncNotSupportedSource = null;
     private boolean _newContext;
@@ -2342,9 +2343,14 @@ public class Request implements HttpServletRequest
         return _pathSpec;
     }
 
+    public void setHttpServletMapping(HttpServletMapping httpServletMapping)
+    {
+        _httpServletMapping = httpServletMapping;
+    }
+
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        return Request.getServletMapping(_pathSpec, _servletPath, getServletName());
+        return _httpServletMapping;
     }
 }
