@@ -195,81 +195,55 @@ public class Request implements HttpServletRequest
 
     public static HttpServletMapping getServletMapping(PathSpec pathSpec, String servletPath, String servletName)
     {
-        final MappingMatch match;
-        final String mapping;
+        // TODO: can servletPath be null?
+        String matchValue;
+        MappingMatch mappingMatch;
         if (pathSpec instanceof ServletPathSpec)
         {
             switch (pathSpec.getGroup())
             {
                 case ROOT:
-                    match = MappingMatch.CONTEXT_ROOT;
-                    mapping = "";
+                    mappingMatch = MappingMatch.CONTEXT_ROOT;
+                    matchValue = "";
                     break;
                 case DEFAULT:
-                    match = MappingMatch.DEFAULT;
-                    mapping = "/";
+                    mappingMatch = MappingMatch.DEFAULT;
+                    matchValue = "";
                     break;
                 case EXACT:
-                    match = MappingMatch.EXACT;
-                    mapping = servletPath.startsWith("/") ? servletPath.substring(1) : servletPath;
-                    break;
-                case SUFFIX_GLOB:
-                    match = MappingMatch.EXTENSION;
-                    int dot = servletPath.lastIndexOf('.');
-                    mapping = servletPath.substring(0, dot);
+                    mappingMatch = MappingMatch.EXACT;
+                    matchValue = servletPath;
                     break;
                 case PREFIX_GLOB:
-                    match = MappingMatch.PATH;
-                    mapping = servletPath;
+                    mappingMatch = MappingMatch.PATH;
+                    matchValue = servletPath;
                     break;
+                case SUFFIX_GLOB:
+                    mappingMatch = MappingMatch.EXTENSION;
+                    int dot = servletPath.lastIndexOf('.');
+                    matchValue = servletPath.substring(0, dot);
+                    break;
+                case MIDDLE_GLOB:
+                    // TODO: Is this a legal match for a servlet? If so what should we do here.
                 default:
-                    match = null;
-                    mapping = servletPath;
-                    break;
+                    throw new IllegalStateException();
             }
         }
         else
         {
-            match = null;
-            mapping = servletPath;
+            // TODO: what is this branch for? can we just remove it entirely? All pathSpec have getGroup().
+            mappingMatch = null;
+            matchValue = servletPath;
         }
+        matchValue = (matchValue == null) ? "" : matchValue;
+        matchValue = matchValue.startsWith("/") ? matchValue.substring(1) : matchValue;
 
-        return new HttpServletMapping()
-        {
-            @Override
-            public String getMatchValue()
-            {
-                return (mapping == null ? "" : mapping);
-            }
+        String name = (servletName == null ? "" : servletName);
+        String pattern = (pathSpec != null) ? pathSpec.getDeclaration() : "";
+        if (mappingMatch == MappingMatch.EXTENSION)
+            pattern = pattern.startsWith("/") ? pattern.substring(1) : pattern;
 
-            @Override
-            public String getPattern()
-            {
-                if (pathSpec != null)
-                    return pathSpec.getDeclaration();
-                return "";
-            }
-
-            @Override
-            public String getServletName()
-            {
-                return (servletName == null ? "" : servletName);
-            }
-
-            @Override
-            public MappingMatch getMappingMatch()
-            {
-                return match;
-            }
-
-            @Override
-            public String toString()
-            {
-                return "HttpServletMapping{matchValue=" + getMatchValue() +
-                    ", pattern=" + getPattern() + ", servletName=" + getServletName() +
-                    ", mappingMatch=" + getMappingMatch() + "}";
-            }
-        };
+        return new JettyHttpServletMapping(matchValue, pattern, name, mappingMatch);
     }
 
     private final HttpChannel _channel;
