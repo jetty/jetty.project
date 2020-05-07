@@ -11,7 +11,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             timeout(time: 120, unit: 'MINUTES') {
-              mavenBuild("jdk8", "-T3 -Pmongodb clean install", "maven3", true)
+              mavenBuild("jdk8", "-T3 clean install", "maven3", true)
               // Collect up the jacoco execution results (only on main build)
               jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                   exclusionPattern: '' +
@@ -45,7 +45,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             timeout(time: 120, unit: 'MINUTES') {
-              mavenBuild("jdk11", "-T3 -Pmongodb clean install", "maven3", true)
+              mavenBuild("jdk11", "-T3 clean install", "maven3", true)
               warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
               junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
             }
@@ -56,7 +56,7 @@ pipeline {
           agent { node { label 'linux' } }
           steps {
             timeout(time: 120, unit: 'MINUTES') {
-              mavenBuild("jdk14", "-T3 -Pmongodb clean install", "maven3", true)
+              mavenBuild("jdk14", "-T3 clean install", "maven3", true)
               warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
               junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
             }
@@ -139,7 +139,7 @@ def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
       mavenOpts: mavenOpts,
       mavenLocalRepo: localRepo) {
     // Some common Maven command line + provided command line
-    sh "mvn -Pci -V -B -e -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
+    sh "mvn -Premote-session-tests -Pci -V -B -e -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
   }
 }
 

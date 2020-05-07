@@ -32,8 +32,10 @@ import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,39 +46,71 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class MongoTestHelper
 {
-    private static final Logger LOG = Log.getLogger(MongoTestHelper.class);
-    static int __workers = 0;
+    private static final Logger LOG = LoggerFactory.getLogger(MongoTestHelper.class);
+    private static final Logger MONGO_LOG = LoggerFactory.getLogger("org.eclipse.jetty.nosql.mongodb.MongoLogs");
     public static final String DB_NAME = "HttpSessions";
     public static final String COLLECTION_NAME = "testsessions";
 
-    static MongoClient _mongoClient;
+    static GenericContainer mongo =
+        new GenericContainer("mongo:" + System.getProperty("mongo.docker.version", "2.2.7"))
+            .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG));
 
-    static
+    static MongoClient mongoClient;
+
+    public static void startMongo()
     {
         try
         {
-            _mongoClient =
-                new MongoClient(System.getProperty("embedmongo.host"), Integer.getInteger("embedmongoPort"));
+            long start = System.currentTimeMillis();
+            mongo.start();
+            String containerIpAddress =  mongo.getContainerIpAddress();
+            int mongoPort = mongo.getMappedPort(27017);
+            LOG.info("Mongo container started for {}:{} - {}ms", containerIpAddress, mongoPort,
+                     System.currentTimeMillis() - start);
+            System.setProperty("embedmongoHost", containerIpAddress);
+            System.setProperty("embedmongoPort", Integer.toString(mongoPort));
         }
-        catch (UnknownHostException e)
+        catch (Exception e)
         {
-            e.printStackTrace();
+            LOG.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         }
     }
 
-    public static void dropCollection() throws MongoException, UnknownHostException
+    public static void stopMongo()
     {
-        _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME).drop();
+        mongo.stop();
+        mongoClient = null;
+    }
+
+    public static MongoClient getMongoClient() throws UnknownHostException
+    {
+        boolean restart = false;
+        if (mongo == null || !mongo.isRunning())
+        {
+            startMongo();
+            restart = true;
+        }
+        if (mongoClient == null || restart)
+        {
+            mongoClient = new MongoClient(System.getProperty("embedmongoHost"), Integer.getInteger("embedmongoPort"));
+        }
+        return mongoClient;
+    }
+
+    public static void dropCollection() throws Exception
+    {
+        getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME).drop();
     }
 
     public static void createCollection() throws UnknownHostException, MongoException
     {
-        _mongoClient.getDB(DB_NAME).createCollection(COLLECTION_NAME, null);
+        getMongoClient().getDB(DB_NAME).createCollection(COLLECTION_NAME, null);
     }
 
     public static DBCollection getCollection() throws UnknownHostException, MongoException
     {
-        return _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        return getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME);
     }
 
     public static MongoSessionDataStoreFactory newSessionDataStoreFactory()
@@ -92,7 +126,7 @@ public class MongoTestHelper
     public static boolean checkSessionExists(String id)
         throws Exception
     {
-        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        DBCollection collection = getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME);
 
         DBObject fields = new BasicDBObject();
         fields.put(MongoSessionDataStore.EXPIRY, 1);
@@ -109,7 +143,7 @@ public class MongoTestHelper
     public static boolean checkSessionPersisted(SessionData data)
         throws Exception
     {
-        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        DBCollection collection = getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME);
 
         DBObject fields = new BasicDBObject();
 
@@ -117,7 +151,7 @@ public class MongoTestHelper
         if (sessionDocument == null)
             return false; //doesn't exist
 
-        LOG.info("{}", sessionDocument);
+        LOG.debug("{}", sessionDocument);
 
         Boolean valid = (Boolean)sessionDocument.get(MongoSessionDataStore.VALID);
 
@@ -183,7 +217,7 @@ public class MongoTestHelper
                                                Map<String, Object> attributes)
         throws Exception
     {
-        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        DBCollection collection = getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME);
 
         // Form query for upsert
         BasicDBObject key = new BasicDBObject(MongoSessionDataStore.ID, id);
@@ -193,7 +227,7 @@ public class MongoTestHelper
         boolean upsert = false;
         BasicDBObject sets = new BasicDBObject();
 
-        Object version = new Long(1);
+        Object version = 1L;
 
         // New session
 
@@ -232,7 +266,7 @@ public class MongoTestHelper
         throws Exception
     {
 
-        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        DBCollection collection = getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME);
 
         // Form query for upsert
         BasicDBObject key = new BasicDBObject(MongoSessionDataStore.ID, id);
@@ -242,7 +276,7 @@ public class MongoTestHelper
         boolean upsert = false;
         BasicDBObject sets = new BasicDBObject();
 
-        Object version = new Long(1);
+        Object version = 1L;
 
         // New session
         upsert = true;
@@ -278,7 +312,7 @@ public class MongoTestHelper
         throws Exception
     {
         //make old-style session to test if we can retrieve it
-        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        DBCollection collection = getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME);
 
         // Form query for upsert
         BasicDBObject key = new BasicDBObject(MongoSessionDataStore.ID, id);
@@ -288,7 +322,7 @@ public class MongoTestHelper
         boolean upsert = false;
         BasicDBObject sets = new BasicDBObject();
 
-        Object version = new Long(1);
+        Object version = 1L;
 
         // New session
         upsert = true;
