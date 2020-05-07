@@ -768,6 +768,11 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             _local = local;
         }
 
+        public EndPoint unwrap()
+        {
+            return _endp;
+        }
+
         @Override
         public void close()
         {
