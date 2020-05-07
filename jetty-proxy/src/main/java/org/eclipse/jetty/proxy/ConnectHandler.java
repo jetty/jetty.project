@@ -506,7 +506,7 @@ public class ConnectHandler extends HandlerWrapper
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
         {
-            SocketChannelEndPoint endPoint = new SocketChannelEndPoint(channel, selector, key, getScheduler());
+            SocketChannelEndPoint endPoint = new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler());
             endPoint.setIdleTimeout(getIdleTimeout());
             return endPoint;
         }

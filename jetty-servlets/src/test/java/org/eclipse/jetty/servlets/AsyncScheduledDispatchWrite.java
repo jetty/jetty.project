@@ -31,7 +31,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @SuppressWarnings("serial")
-public abstract class AsyncScheduledDispatchWrite extends TestDirContentServlet
+public abstract class AsyncScheduledDispatchWrite extends AbstractFileContentServlet
 {
     public static class Default extends AsyncScheduledDispatchWrite
     {
@@ -103,7 +103,7 @@ public abstract class AsyncScheduledDispatchWrite extends TestDirContentServlet
         }
         else
         {
-            String fileName = request.getServletPath();
+            String fileName = request.getPathInfo();
             byte[] dataBytes = loadContentFileBytes(fileName);
 
             response.setContentLength(dataBytes.length);

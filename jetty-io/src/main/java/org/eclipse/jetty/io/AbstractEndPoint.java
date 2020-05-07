@@ -469,11 +469,11 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
             name = c.getSimpleName();
         }
 
-        return String.format("%s@%h{%s<->%s,%s,fill=%s,flush=%s,to=%d/%d}",
+        return String.format("%s@%h{l=%s,r=%s,%s,fill=%s,flush=%s,to=%d/%d}",
             name,
             this,
-            getRemoteAddress(),
             getLocalAddress(),
+            getRemoteAddress(),
             _state.get(),
             _fillInterest.toStateString(),
             _writeFlusher.toStateString(),

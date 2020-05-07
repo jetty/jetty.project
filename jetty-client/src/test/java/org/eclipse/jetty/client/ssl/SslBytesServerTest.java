@@ -50,10 +50,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.ssl.SslBytesTest.TLSRecord.Type;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;
@@ -189,11 +189,11 @@ public class SslBytesServerTest extends SslBytesTest
         ServerConnector connector = new ServerConnector(server, null, null, null, 1, 1, sslFactory, httpFactory)
         {
             @Override
-            protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+            protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
             {
-                ChannelEndPoint endp = super.newEndPoint(channel, selectSet, key);
-                serverEndPoint.set(endp);
-                return endp;
+                SocketChannelEndPoint endPoint = super.newEndPoint(channel, selectSet, key);
+                serverEndPoint.set(endPoint);
+                return endPoint;
             }
         };
         connector.setIdleTimeout(idleTimeout);

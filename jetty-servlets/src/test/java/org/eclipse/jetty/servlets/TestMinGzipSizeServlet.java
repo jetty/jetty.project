@@ -31,7 +31,7 @@ import org.eclipse.jetty.http.MimeTypes;
  * Test servlet for testing against unusual minGzip configurable.
  */
 @SuppressWarnings("serial")
-public class TestMinGzipSizeServlet extends TestDirContentServlet
+public class TestMinGzipSizeServlet extends AbstractFileContentServlet
 {
     private MimeTypes mimeTypes;
 

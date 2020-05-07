@@ -40,6 +40,7 @@ import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.slf4j.Logger;
@@ -146,6 +147,7 @@ public class UnixSocketTest
         assertThat(contentResponse.getContentAsString(), containsString("Hello World"));
     }
 
+    @Tag("external")
     @Test
     public void testNotLocal() throws Exception
     {

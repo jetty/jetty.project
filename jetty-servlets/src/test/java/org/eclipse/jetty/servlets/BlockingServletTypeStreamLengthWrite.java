@@ -33,32 +33,32 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
  * Using a real-world pattern of:
  *
  * <pre>
- *  1) get stream
- *  2) set content length
- *  3) set content type
+ *  1) set content type
+ *  2) get stream
+ *  3) set content length
  *  4) write
  * </pre>
  *
  * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
  */
 @SuppressWarnings("serial")
-public class TestServletStreamLengthTypeWrite extends TestDirContentServlet
+public class BlockingServletTypeStreamLengthWrite extends AbstractFileContentServlet
 {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        String fileName = request.getServletPath();
+        String fileName = request.getPathInfo();
         byte[] dataBytes = loadContentFileBytes(fileName);
-
-        ServletOutputStream out = response.getOutputStream();
-
-        response.setContentLength(dataBytes.length);
 
         if (fileName.endsWith("txt"))
             response.setContentType("text/plain");
         else if (fileName.endsWith("mp3"))
             response.setContentType("audio/mpeg");
         response.setHeader("ETag", "W/etag-" + fileName);
+
+        ServletOutputStream out = response.getOutputStream();
+
+        response.setContentLength(dataBytes.length);
 
         out.write(dataBytes);
     }

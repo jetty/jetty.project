@@ -29,7 +29,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @SuppressWarnings("serial")
-public class AsyncTimeoutDispatchWrite extends TestDirContentServlet implements AsyncListener
+public class AsyncTimeoutDispatchWrite extends AbstractFileContentServlet implements AsyncListener
 {
     public static class Default extends AsyncTimeoutDispatchWrite
     {
@@ -78,7 +78,7 @@ public class AsyncTimeoutDispatchWrite extends TestDirContentServlet implements 
         else
         {
             // second pass through, as result of timeout -> dispatch
-            String fileName = request.getServletPath();
+            String fileName = request.getPathInfo();
             byte[] dataBytes = loadContentFileBytes(fileName);
 
             response.setContentLength(dataBytes.length);

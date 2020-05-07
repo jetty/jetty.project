@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.io.ChannelEndPoint;
+
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
@@ -106,7 +106,7 @@ public class ThreadStarvationTest
         ServerConnector connector = new ServerConnector(_server, 0, 1)
         {
             @Override
-            protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+            protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
             {
                 return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                 {
@@ -258,7 +258,7 @@ public class ThreadStarvationTest
             ServerConnector connector = new ServerConnector(_server, acceptors, selectors)
             {
                 @Override
-                protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+                protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key)
                 {
                     return new SocketChannelEndPoint(channel, selectSet, key, getScheduler())
                     {
