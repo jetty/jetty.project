@@ -117,7 +117,6 @@
     <profile>
       <id>remote-session-tests</id>
       <activation>
-<!--        <file><exists>/var/run/docker.sock</exists></file>-->
         <property>
           <name>mongo.enabled</name>
           <value>true</value>
