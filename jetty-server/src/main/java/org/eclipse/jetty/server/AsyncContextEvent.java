@@ -18,19 +18,28 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.HashSet;
+import java.util.Set;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletMapping;
 
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class AsyncContextEvent extends AsyncEvent implements Runnable
 {
+    /**
+     * Async dispatch attribute name prefix.
+     */
+    public static final String __ASYNC_PREFIX = "javax.servlet.async.";
+
     private final Context _context;
     private final AsyncContextState _asyncContext;
     private final HttpURI _baseURI;
@@ -58,27 +67,16 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         {
             // We are setting these attributes during startAsync, when the spec implies that
             // they are only available after a call to AsyncContext.dispatch(...);
+            Attributes oldAttributes = baseRequest.getAttributes();
+            Attributes newAttributes;
 
             // have we been forwarded before?
-            String uri = (String)baseRequest.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
-            if (uri != null)
-            {
-                baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI, uri);
-                baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, baseRequest.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
-                baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, baseRequest.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
-                baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO, baseRequest.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
-                baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING, baseRequest.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
-                baseRequest.setAttribute(AsyncContext.ASYNC_MAPPING, baseRequest.getAttribute(RequestDispatcher.FORWARD_MAPPING));
-            }
+            if (baseRequest.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI) != null)
+                newAttributes = AsyncAttributes.fromForwardedAttributes(oldAttributes);
             else
-            {
-                baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI, baseRequest.getRequestURI());
-                baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, baseRequest.getContextPath());
-                baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, baseRequest.getServletPath());
-                baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO, baseRequest.getPathInfo());
-                baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING, baseRequest.getQueryString());
-                baseRequest.setAttribute(AsyncContext.ASYNC_MAPPING, baseRequest.getHttpServletMapping());
-            }
+                newAttributes = new AsyncAttributes(baseRequest, oldAttributes);
+
+            baseRequest.setAttributes(newAttributes);
         }
     }
 
@@ -184,5 +182,118 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
             _throwable = e;
         else if (e != _throwable)
             _throwable.addSuppressed(e);
+    }
+
+    private static class AsyncAttributes extends Attributes.Wrapper
+    {
+        private String _requestURI;
+        private String _contextPath;
+        private String _servletPath;
+        private String _pathInfo;
+        private String _query;
+        private HttpServletMapping _mapping;
+
+        AsyncAttributes(Attributes attributes)
+        {
+            super(attributes);
+        }
+
+        AsyncAttributes(Request request, Attributes attributes)
+        {
+            super(attributes);
+            _requestURI = request.getRequestURI();
+            _contextPath = request.getContextPath();
+            _servletPath = request.getServletPath();
+            _pathInfo = request.getPathInfo();
+            _query = request.getQueryString();
+            _mapping = request.getHttpServletMapping();
+        }
+
+        static AsyncAttributes fromForwardedAttributes(Attributes attributes)
+        {
+            AsyncAttributes asyncAttributes = new AsyncAttributes(attributes);
+            asyncAttributes._requestURI = (String)attributes.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+            asyncAttributes._contextPath = (String)attributes.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH);
+            asyncAttributes._servletPath = (String)attributes.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH);
+            asyncAttributes._pathInfo = (String)attributes.getAttribute(RequestDispatcher.FORWARD_PATH_INFO);
+            asyncAttributes._query = (String)attributes.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING);
+            asyncAttributes._mapping = (HttpServletMapping)attributes.getAttribute(RequestDispatcher.FORWARD_MAPPING);
+            return asyncAttributes;
+        }
+
+        @Override
+        public Object getAttribute(String key)
+        {
+            if (!key.startsWith(__ASYNC_PREFIX))
+                return super.getAttribute(key);
+
+            switch (key)
+            {
+                case AsyncContext.ASYNC_REQUEST_URI:
+                    return _requestURI;
+                case AsyncContext.ASYNC_CONTEXT_PATH:
+                    return _contextPath;
+                case AsyncContext.ASYNC_SERVLET_PATH:
+                    return _servletPath;
+                case AsyncContext.ASYNC_PATH_INFO:
+                    return _pathInfo;
+                case AsyncContext.ASYNC_QUERY_STRING:
+                    return _query;
+                case AsyncContext.ASYNC_MAPPING:
+                    return _mapping;
+                default:
+                    return super.getAttribute(key);
+            }
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            HashSet<String> set = new HashSet<>();
+            for (String name : _attributes.getAttributeNameSet())
+            {
+                if (!name.startsWith(__ASYNC_PREFIX))
+                    set.add(name);
+            }
+
+            set.add(AsyncContext.ASYNC_REQUEST_URI);
+            set.add(AsyncContext.ASYNC_CONTEXT_PATH);
+            set.add(AsyncContext.ASYNC_SERVLET_PATH);
+            set.add(AsyncContext.ASYNC_PATH_INFO);
+            set.add(AsyncContext.ASYNC_QUERY_STRING);
+            set.add(AsyncContext.ASYNC_MAPPING);
+            return set;
+        }
+
+        @Override
+        public void setAttribute(String key, Object value)
+        {
+            if (!key.startsWith(__ASYNC_PREFIX))
+                super.setAttribute(key, value);
+
+            switch (key)
+            {
+                case AsyncContext.ASYNC_REQUEST_URI:
+                    _requestURI = (String)value;
+                    break;
+                case AsyncContext.ASYNC_CONTEXT_PATH:
+                    _contextPath = (String)value;
+                    break;
+                case AsyncContext.ASYNC_SERVLET_PATH:
+                    _servletPath = (String)value;
+                    break;
+                case AsyncContext.ASYNC_PATH_INFO:
+                    _pathInfo = (String)value;
+                    break;
+                case AsyncContext.ASYNC_QUERY_STRING:
+                    _query = (String)value;
+                    break;
+                case AsyncContext.ASYNC_MAPPING:
+                    _mapping = (HttpServletMapping)value;
+                    break;
+                default:
+                    super.setAttribute(key, value);
+            }
+        }
     }
 }

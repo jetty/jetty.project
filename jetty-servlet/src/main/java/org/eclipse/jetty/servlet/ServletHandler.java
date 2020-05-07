@@ -1753,6 +1753,7 @@ public class ServletHandler extends ScopedHandler
                 case ROOT:
                     mappingMatch = MappingMatch.CONTEXT_ROOT;
                     matchValue = "";
+                    pattern = "";
                     break;
                 case DEFAULT:
                     mappingMatch = MappingMatch.DEFAULT;
