@@ -662,6 +662,10 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                     if (LOG.isDebugEnabled())
                         LOG.debug("Proxy v2 {} {}", getEndPoint(), proxyEndPoint.toString());
                 }
+                else
+                {
+                    _buffer.position(_buffer.position() + _length);
+                }
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Proxy v2 parsing dynamic packet part is now done, upgrading to {}", _nextProtocol);
