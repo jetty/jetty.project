@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.servlet;
+package org.eclipse.jetty.websocket.util.server;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -35,11 +35,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletHandler;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,7 +123,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         return holder;
     }
 
-    public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.servlet.WebSocketMapping.key";
+    public static final String MAPPING_ATTRIBUTE_INIT_PARAM = "org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping.key";
 
     private final Configuration.ConfigurationCustomizer defaultCustomizer = new Configuration.ConfigurationCustomizer();
     private WebSocketMapping mapping;
@@ -157,12 +157,6 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this, mapping);
-    }
-
-    @ManagedAttribute(value = "factory", readonly = true)
-    public WebSocketMapping getMapping()
-    {
-        return mapping;
     }
 
     @Override

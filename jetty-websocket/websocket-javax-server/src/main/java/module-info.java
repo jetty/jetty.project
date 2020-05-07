@@ -31,7 +31,7 @@ module org.eclipse.jetty.websocket.javax.server
     requires transitive org.eclipse.jetty.webapp;
     requires transitive org.eclipse.jetty.websocket.javax.client;
     requires org.eclipse.jetty.websocket.javax.common;
-    requires org.eclipse.jetty.websocket.servlet;
+    requires org.eclipse.jetty.websocket.util.server;
     requires org.slf4j;
 
     provides ServletContainerInitializer with JavaxWebSocketServletContainerInitializer;

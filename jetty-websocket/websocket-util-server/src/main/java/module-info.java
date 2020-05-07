@@ -16,11 +16,12 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.websocket.servlet
+module org.eclipse.jetty.websocket.util.server
 {
-    exports org.eclipse.jetty.websocket.servlet;
-
+    exports org.eclipse.jetty.websocket.util.server;
+    exports org.eclipse.jetty.websocket.util.server.internal to org.eclipse.jetty.websocket.jetty.server, org.eclipse.jetty.websocket.javax.server;
+    
+    requires org.slf4j;
     requires transitive org.eclipse.jetty.servlet;
     requires transitive org.eclipse.jetty.websocket.core;
-    requires org.slf4j;
 }
