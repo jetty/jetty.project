@@ -48,7 +48,7 @@ public class ShutdownThread extends Thread
      */
     private ShutdownThread()
     {
-        super("ShutdownThread");
+        super("JettyShutdownThread");
     }
 
     private synchronized void hook()
