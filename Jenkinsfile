@@ -12,7 +12,7 @@ pipeline {
             node { label 'linux' }
           }
           steps {
-            container('jetty-build') {
+            container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
                 mavenBuild( "jdk11", "-T3 -Pmongodb clean install", "maven3", true ) // -Pautobahn
                 // Collect up the jacoco execution results (only on main build)
@@ -68,7 +68,7 @@ pipeline {
         stage( "Build Compact3" ) {
           agent { node { label 'linux' } }
           steps {
-            container('jetty-build') {
+            container( 'jetty-build' ) {
               timeout( time: 30, unit: 'MINUTES' ) {
                 mavenBuild( "jdk8", "-T3 -Pcompact3 clean install -DskipTests", "maven3", true )
                 warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
@@ -78,19 +78,20 @@ pipeline {
         }
       }
     }
-    post {
-      failure {
-        slackNotif()
-      }
-      unstable {
-        slackNotif()
-      }
-      fixed {
-        slackNotif()
-      }
+  }
+  post {
+    failure {
+      slackNotif()
+    }
+    unstable {
+      slackNotif()
+    }
+    fixed {
+      slackNotif()
     }
   }
 }
+
 
 def slackNotif() {
   script {
