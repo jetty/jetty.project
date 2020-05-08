@@ -70,7 +70,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 30, unit: 'MINUTES' ) {
-                mavenBuild( "jdk8", "-T3 -Pcompact3 clean install -DskipTests", "maven3", true )
+                mavenBuild( "jdk11", "-T3 -Pcompact3 clean install -DskipTests", "maven3", true )
                 warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
               }
             }
