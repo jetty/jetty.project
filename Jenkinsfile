@@ -11,7 +11,6 @@ pipeline {
           agent {
             node { label 'linux' }
           }
-          options { timeout( time: 120, unit: 'MINUTES' ) }
           steps {
             container('jetty-build') {
               timeout( time: 120, unit: 'MINUTES' ) {
@@ -56,7 +55,7 @@ pipeline {
         stage( "Build Javadoc" ) {
           agent { node { label 'linux' } }
           steps {
-            container('jetty-build') {
+            container( 'jetty-build' ) {
               timeout( time: 30, unit: 'MINUTES' ) {
                 mavenBuild( "jdk11",
                             "package source:jar javadoc:jar javadoc:aggregate-jar -Peclipse-release  -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
@@ -65,15 +64,14 @@ pipeline {
               }
             }
           }
-
-          stage( "Build Compact3" ) {
-            agent { node { label 'linux' } }
-            steps {
-              container('jetty-build') {
-                timeout( time: 30, unit: 'MINUTES' ) {
-                  mavenBuild( "jdk8", "-T3 -Pcompact3 clean install -DskipTests", "maven3", true )
-                  warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-                }
+        }
+        stage( "Build Compact3" ) {
+          agent { node { label 'linux' } }
+          steps {
+            container('jetty-build') {
+              timeout( time: 30, unit: 'MINUTES' ) {
+                mavenBuild( "jdk8", "-T3 -Pcompact3 clean install -DskipTests", "maven3", true )
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
               }
             }
           }
@@ -93,6 +91,7 @@ pipeline {
     }
   }
 }
+
 def slackNotif() {
   script {
     try {
