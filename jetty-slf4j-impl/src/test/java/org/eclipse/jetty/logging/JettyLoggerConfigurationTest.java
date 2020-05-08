@@ -162,7 +162,7 @@ public class JettyLoggerConfigurationTest
     public void testGetLoggingLevelBad()
     {
         Properties props = new Properties();
-        props.setProperty("log.LEVEL", "WARN");
+        props.setProperty("ROOT.LEVEL", "WARN");
         props.setProperty("org.eclipse.jetty.bad.LEVEL", "EXPECTED_BAD_LEVEL");
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
 
@@ -174,7 +174,7 @@ public class JettyLoggerConfigurationTest
     public void testGetLoggingLevelLowercase()
     {
         Properties props = new Properties();
-        props.setProperty("log.LEVEL", "warn");
+        props.setProperty("ROOT.LEVEL", "warn");
         props.setProperty("org.eclipse.jetty.util.LEVEL", "info");
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
 
@@ -188,7 +188,7 @@ public class JettyLoggerConfigurationTest
     public void testGetLoggingLevelRoot()
     {
         Properties props = new Properties();
-        props.setProperty("log.LEVEL", "DEBUG");
+        props.setProperty("ROOT.LEVEL", "DEBUG");
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
 
         // Default Levels
@@ -240,7 +240,7 @@ public class JettyLoggerConfigurationTest
     public void testGetLoggingLevelMixedLevels()
     {
         Properties props = new Properties();
-        props.setProperty("log.LEVEL", "DEBUG");
+        props.setProperty("ROOT.LEVEL", "DEBUG");
         props.setProperty("org.eclipse.jetty.util.LEVEL", "WARN");
         props.setProperty("org.eclipse.jetty.util.ConcurrentHashMap.LEVEL", "ALL");
 
