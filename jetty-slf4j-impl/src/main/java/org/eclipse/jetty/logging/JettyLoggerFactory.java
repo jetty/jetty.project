@@ -154,7 +154,7 @@ public class JettyLoggerFactory implements ILoggerFactory, JettyLoggerFactoryMBe
         {
             JettyLogger logger = loggerMap.get(key);
             if (logger != null)
-                return logger.getLevel().toString();
+                return logger.getLevel().name();
             return null;
         });
     }

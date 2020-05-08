@@ -145,7 +145,7 @@ public class JettyLoggerConfiguration
         if (level == null)
         {
             System.err.printf("Unknown JettyLogger/Slf4J Level [%s]=[%s], expecting only [%s] as values.",
-                loggerName, levelStr, Stream.of(JettyLevel.values()).map(JettyLevel::toString).collect(Collectors.joining(", ")));
+                loggerName, levelStr, Stream.of(JettyLevel.values()).map(JettyLevel::name).collect(Collectors.joining(", ")));
         }
         return level;
     }
