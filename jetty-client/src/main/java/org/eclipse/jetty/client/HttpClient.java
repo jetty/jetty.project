@@ -472,7 +472,7 @@ public class HttpClient extends ContainerLifeCycle
                 continue;
 
             if (!newRequest.getHeaders().contains(field))
-                newRequest.header(field);
+                newRequest.addHeader(field);
         }
         return newRequest;
     }

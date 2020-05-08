@@ -92,7 +92,7 @@ public class HttpResponse implements Response
         return headers.asImmutable();
     }
 
-    public HttpResponse header(HttpField header)
+    public HttpResponse addHeader(HttpField header)
     {
         headers.add(header);
         return this;

@@ -242,7 +242,7 @@ public abstract class HttpReceiver
         boolean process = notifier.notifyHeader(exchange.getConversation().getResponseListeners(), response, field);
         if (process)
         {
-            response.header(field);
+            response.addHeader(field);
             HttpHeader fieldHeader = field.getHeader();
             if (fieldHeader != null)
             {

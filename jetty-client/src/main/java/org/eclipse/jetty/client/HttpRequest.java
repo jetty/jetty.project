@@ -307,6 +307,7 @@ public class HttpRequest implements Request
     }
 
     @Override
+    @Deprecated
     public Request header(String name, String value)
     {
         if (value == null)
@@ -317,6 +318,7 @@ public class HttpRequest implements Request
     }
 
     @Override
+    @Deprecated
     public Request header(HttpHeader header, String value)
     {
         if (value == null)
@@ -382,7 +384,7 @@ public class HttpRequest implements Request
         return this;
     }
 
-    public HttpRequest header(HttpField header)
+    public HttpRequest addHeader(HttpField header)
     {
         headers.add(header);
         return this;
