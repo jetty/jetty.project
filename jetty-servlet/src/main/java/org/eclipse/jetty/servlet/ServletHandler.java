@@ -444,14 +444,14 @@ public class ServletHandler extends ScopedHandler
         ServletHolder servletHolder = null;
         UserIdentity.Scope oldScope = null;
 
-        MappedServletResource mapping = getMappedServlet(target);
+        MappedServlet mapping = getMappedServlet(target);
         if (mapping != null)
         {
             servletHolder = mapping.getResource();
 
-            if (mapping.getPathSpec() != null)
+            PathSpec pathSpec = mapping.getPathSpec();
+            if (pathSpec != null)
             {
-                PathSpec pathSpec = mapping.getPathSpec();
                 String servletPath = pathSpec.getPathMatch(target);
                 String pathInfo = pathSpec.getPathInfo(target);
 
@@ -472,7 +472,7 @@ public class ServletHandler extends ScopedHandler
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("servlet {}|{}|{} -> {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), servletHolder);
+            LOG.debug("servlet {}|{}|{}|{} -> {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), baseRequest.getHttpServletMapping(), servletHolder);
 
         try
         {
@@ -559,7 +559,7 @@ public class ServletHandler extends ScopedHandler
      * @param target Path within _context or servlet name
      * @return MappedResource to the ServletHolder.  Named servlets have a null PathSpec
      */
-    public MappedServletResource getMappedServlet(String target)
+    public MappedServlet getMappedServlet(String target)
     {
         if (target.startsWith("/"))
         {
@@ -569,13 +569,13 @@ public class ServletHandler extends ScopedHandler
             MappedResource<MappedServlet> match = _servletPathMap.getMatch(target);
             if (match == null)
                 return null;
-            return new MappedServletResource(match.getResource());
+            return match.getResource();
         }
 
         ServletHolder holder = _servletNameMap.get(target);
         if (holder == null)
             return null;
-        return new MappedServletResource(null, holder);
+        return new MappedServlet(null, holder);
     }
 
     protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
@@ -1796,14 +1796,20 @@ public class ServletHandler extends ScopedHandler
         return new JettyHttpServletMapping(matchValue, pattern, servletName, mappingMatch);
     }
 
-    private static class MappedServlet
+    /**
+     * Extends {@link MappedResource} for {@link ServletHolder} but can be
+     * asked for a {@link HttpServletMapping} which may have been created
+     * in advance for servlets which have EXACT mappings.
+     */
+    public static class MappedServlet extends MappedResource<ServletHolder>
     {
         private final PathSpec _pathSpec;
         private final ServletHolder _servletHolder;
         private final HttpServletMapping _httpServletMapping;
 
-        public MappedServlet(PathSpec pathSpec, ServletHolder servletHolder)
+        MappedServlet(PathSpec pathSpec, ServletHolder servletHolder)
         {
+            super(pathSpec, servletHolder);
             _pathSpec = pathSpec;
             _servletHolder = servletHolder;
 
@@ -1828,48 +1834,11 @@ public class ServletHandler extends ScopedHandler
             }
         }
 
-        public PathSpec getPathSpec()
-        {
-            return _pathSpec;
-        }
-
-        public ServletHolder getServletHolder()
-        {
-            return _servletHolder;
-        }
-
-        public HttpServletMapping getMapping(String servletPath)
+        public HttpServletMapping getHttpServletMapping(String servletPath)
         {
             if (_httpServletMapping != null)
                 return _httpServletMapping;
             return getServletMapping(_pathSpec, servletPath, _servletHolder.getName());
-        }
-    }
-
-    /**
-     * Extends {@link MappedResource} for {@link ServletHolder} but can be
-     * asked for a {@link HttpServletMapping} which may have been created
-     * in advance for servlets which have EXACT mappings.
-     */
-    public static class MappedServletResource extends MappedResource<ServletHolder>
-    {
-        private final MappedServlet _mappedServlet;
-
-        public MappedServletResource(PathSpec pathSpec, ServletHolder servletHolder)
-        {
-            super(pathSpec, servletHolder);
-            _mappedServlet = null;
-        }
-
-        private MappedServletResource(MappedServlet mappedServlet)
-        {
-            super(mappedServlet.getPathSpec(), mappedServlet.getServletHolder());
-            _mappedServlet = mappedServlet;
-        }
-
-        public HttpServletMapping getHttpServletMapping(String servletPath)
-        {
-            return _mappedServlet.getMapping(servletPath);
         }
     }
 
