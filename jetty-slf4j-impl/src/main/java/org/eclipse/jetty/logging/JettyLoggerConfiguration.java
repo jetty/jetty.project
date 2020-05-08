@@ -27,8 +27,6 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.TimeZone;
 
-import org.slf4j.event.Level;
-
 /**
  * JettyLogger specific configuration:
  * <ul>
@@ -38,7 +36,7 @@ import org.slf4j.event.Level;
  */
 public class JettyLoggerConfiguration
 {
-    private static final int DEFAULT_LEVEL = Level.INFO.toInt();
+    private static final JettyLevel DEFAULT_LEVEL = JettyLevel.INFO;
     private static final boolean DEFAULT_HIDE_STACKS = false;
     private static final String SUFFIX_LEVEL = ".LEVEL";
     private static final String SUFFIX_STACKS = ".STACKS";
@@ -97,7 +95,7 @@ public class JettyLoggerConfiguration
      * @param name the name to get log for
      * @return the logging level int
      */
-    public int getLevel(String name)
+    public JettyLevel getLevel(String name)
     {
         if (properties.isEmpty())
             return DEFAULT_LEVEL;
@@ -114,17 +112,24 @@ public class JettyLoggerConfiguration
         if (startName.endsWith(SUFFIX_LEVEL))
             startName = startName.substring(0, startName.length() - SUFFIX_LEVEL.length());
 
-        Integer level = JettyLoggerFactory.walkParentLoggerNames(startName, key ->
+        JettyLevel level = JettyLoggerFactory.walkParentLoggerNames(startName, key ->
         {
             String levelStr = properties.getProperty(key + SUFFIX_LEVEL);
-            return LevelUtils.getLevelInt(levelStr);
+            return JettyLevel.strToLevel(levelStr);
         });
+
+        if (level == null)
+        {
+            // Try slf4j root logging config.
+            String levelStr = properties.getProperty(JettyLogger.ROOT_LOGGER_NAME + SUFFIX_LEVEL);
+            level = JettyLevel.strToLevel(levelStr);
+        }
 
         if (level == null)
         {
             // Try legacy root logging config.
             String levelStr = properties.getProperty("log" + SUFFIX_LEVEL);
-            level = LevelUtils.getLevelInt(levelStr);
+            level = JettyLevel.strToLevel(levelStr);
         }
 
         return level != null ? level : DEFAULT_LEVEL;

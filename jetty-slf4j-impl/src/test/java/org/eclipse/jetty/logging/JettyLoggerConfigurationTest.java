@@ -21,7 +21,6 @@ package org.eclipse.jetty.logging;
 import java.util.Properties;
 
 import org.junit.jupiter.api.Test;
-import org.slf4j.event.Level;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,8 +45,8 @@ public class JettyLoggerConfigurationTest
         assertFalse(appender.isCondensedNames());
         assertEquals(appender.getThreadPadding(), 10);
 
-        int level = config.getLevel("com.mortbay");
-        assertEquals(Level.WARN.toInt(), level);
+        JettyLevel level = config.getLevel("com.mortbay");
+        assertEquals(JettyLevel.WARN, level);
 
         boolean stacks = config.getHideStacks("com.mortbay.Foo");
         assertFalse(stacks);
@@ -59,8 +58,8 @@ public class JettyLoggerConfigurationTest
         Properties props = new Properties();
         props.setProperty("com.mortbay.LEVEL", "WARN");
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
-        int level = config.getLevel("com.mortbay");
-        assertEquals(Level.WARN.toInt(), level);
+        JettyLevel level = config.getLevel("com.mortbay");
+        assertEquals(JettyLevel.WARN, level);
     }
 
     @Test
@@ -70,8 +69,8 @@ public class JettyLoggerConfigurationTest
         props.setProperty("com.mortbay.LEVEL", "WARN");
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
         // extra trailing dot "."
-        int level = config.getLevel("com.mortbay.");
-        assertEquals(Level.WARN.toInt(), level);
+        JettyLevel level = config.getLevel("com.mortbay.");
+        assertEquals(JettyLevel.WARN, level);
     }
 
     @Test
@@ -81,8 +80,8 @@ public class JettyLoggerConfigurationTest
         props.setProperty("com.mortbay.LEVEL", "WARN");
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
         // asking for name with ".LEVEL"
-        int level = config.getLevel("com.mortbay.Bar.LEVEL");
-        assertEquals(Level.WARN.toInt(), level);
+        JettyLevel level = config.getLevel("com.mortbay.Bar.LEVEL");
+        assertEquals(JettyLevel.WARN, level);
     }
 
     @Test
@@ -91,8 +90,8 @@ public class JettyLoggerConfigurationTest
         Properties props = new Properties();
         props.setProperty("com.mortbay.LEVEL", "WARN");
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
-        int level = config.getLevel("com.mortbay.Foo");
-        assertEquals(Level.WARN.toInt(), level);
+        JettyLevel level = config.getLevel("com.mortbay.Foo");
+        assertEquals(JettyLevel.WARN, level);
     }
 
     @Test
@@ -102,8 +101,8 @@ public class JettyLoggerConfigurationTest
         props.setProperty("com.mortbay.LEVEL", "WARN");
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
         // asking for name that isn't configured, returns default value
-        int level = config.getLevel("org.eclipse.jetty");
-        assertEquals(Level.INFO.toInt(), level);
+        JettyLevel level = config.getLevel("org.eclipse.jetty");
+        assertEquals(JettyLevel.INFO, level);
     }
 
     @Test
@@ -168,7 +167,7 @@ public class JettyLoggerConfigurationTest
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
 
         // Default Level (because of bad level value)
-        assertEquals(Level.WARN.toInt(), config.getLevel("org.eclipse.jetty.bad"));
+        assertEquals(JettyLevel.WARN, config.getLevel("org.eclipse.jetty.bad"));
     }
 
     @Test
@@ -180,9 +179,9 @@ public class JettyLoggerConfigurationTest
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
 
         // Default Level
-        assertEquals(Level.WARN.toInt(), config.getLevel("org.eclipse.jetty"));
+        assertEquals(JettyLevel.WARN, config.getLevel("org.eclipse.jetty"));
         // Specific Level
-        assertEquals(Level.INFO.toInt(), config.getLevel("org.eclipse.jetty.util"));
+        assertEquals(JettyLevel.INFO, config.getLevel("org.eclipse.jetty.util"));
     }
 
     @Test
@@ -193,11 +192,11 @@ public class JettyLoggerConfigurationTest
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
 
         // Default Levels
-        assertEquals(Level.DEBUG.toInt(), config.getLevel(null));
-        assertEquals(Level.DEBUG.toInt(), config.getLevel(""));
-        assertEquals(Level.DEBUG.toInt(), config.getLevel("org.eclipse.jetty"));
+        assertEquals(JettyLevel.DEBUG, config.getLevel(null));
+        assertEquals(JettyLevel.DEBUG, config.getLevel(""));
+        assertEquals(JettyLevel.DEBUG, config.getLevel("org.eclipse.jetty"));
         String name = JettyLoggerConfigurationTest.class.getName();
-        assertEquals(Level.DEBUG.toInt(), config.getLevel(name), "Default Logging Level - " + name + " name");
+        assertEquals(JettyLevel.DEBUG, config.getLevel(name), "Default Logging Level - " + name + " name");
     }
 
     @Test
@@ -209,12 +208,12 @@ public class JettyLoggerConfigurationTest
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
 
         // Default Levels
-        assertEquals(Level.INFO.toInt(), config.getLevel(null));
-        assertEquals(Level.INFO.toInt(), config.getLevel(""));
-        assertEquals(Level.INFO.toInt(), config.getLevel("org.eclipse.jetty"));
+        assertEquals(JettyLevel.INFO, config.getLevel(null));
+        assertEquals(JettyLevel.INFO, config.getLevel(""));
+        assertEquals(JettyLevel.INFO, config.getLevel("org.eclipse.jetty"));
 
         // Specified Level
-        assertEquals(JettyLogger.ALL, config.getLevel(name));
+        assertEquals(JettyLevel.ALL, config.getLevel(name));
     }
 
     @Test
@@ -225,16 +224,16 @@ public class JettyLoggerConfigurationTest
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
 
         // Default Levels
-        assertEquals(Level.INFO.toInt(), config.getLevel(null));
-        assertEquals(Level.INFO.toInt(), config.getLevel(""));
-        assertEquals(Level.INFO.toInt(), config.getLevel("org.eclipse.jetty"));
-        assertEquals(Level.INFO.toInt(), config.getLevel("org.eclipse.jetty.server.BogusObject"));
-        assertEquals(Level.INFO.toInt(), config.getLevel(JettyLoggerConfigurationTest.class.getName()));
+        assertEquals(JettyLevel.INFO, config.getLevel(null));
+        assertEquals(JettyLevel.INFO, config.getLevel(""));
+        assertEquals(JettyLevel.INFO, config.getLevel("org.eclipse.jetty"));
+        assertEquals(JettyLevel.INFO, config.getLevel("org.eclipse.jetty.server.BogusObject"));
+        assertEquals(JettyLevel.INFO, config.getLevel(JettyLoggerConfigurationTest.class.getName()));
 
         // Configured Level
-        assertEquals(Level.DEBUG.toInt(), config.getLevel("org.eclipse.jetty.util.Bogus"));
-        assertEquals(Level.DEBUG.toInt(), config.getLevel("org.eclipse.jetty.util"));
-        assertEquals(Level.DEBUG.toInt(), config.getLevel("org.eclipse.jetty.util.resource.PathResource"));
+        assertEquals(JettyLevel.DEBUG, config.getLevel("org.eclipse.jetty.util.Bogus"));
+        assertEquals(JettyLevel.DEBUG, config.getLevel("org.eclipse.jetty.util"));
+        assertEquals(JettyLevel.DEBUG, config.getLevel("org.eclipse.jetty.util.resource.PathResource"));
     }
 
     @Test
@@ -248,17 +247,17 @@ public class JettyLoggerConfigurationTest
         JettyLoggerConfiguration config = new JettyLoggerConfiguration(props);
 
         // Default Levels
-        assertEquals(Level.DEBUG.toInt(), config.getLevel(null));
-        assertEquals(Level.DEBUG.toInt(), config.getLevel(""));
-        assertEquals(Level.DEBUG.toInt(), config.getLevel("org.eclipse.jetty"));
-        assertEquals(Level.DEBUG.toInt(), config.getLevel("org.eclipse.jetty.server.BogusObject"));
-        assertEquals(Level.DEBUG.toInt(), config.getLevel(JettyLoggerConfigurationTest.class.getName()));
+        assertEquals(JettyLevel.DEBUG, config.getLevel(null));
+        assertEquals(JettyLevel.DEBUG, config.getLevel(""));
+        assertEquals(JettyLevel.DEBUG, config.getLevel("org.eclipse.jetty"));
+        assertEquals(JettyLevel.DEBUG, config.getLevel("org.eclipse.jetty.server.BogusObject"));
+        assertEquals(JettyLevel.DEBUG, config.getLevel(JettyLoggerConfigurationTest.class.getName()));
 
         // Configured Level
-        assertEquals(Level.WARN.toInt(), config.getLevel("org.eclipse.jetty.util.MagicUtil"));
-        assertEquals(Level.WARN.toInt(), config.getLevel("org.eclipse.jetty.util"));
-        assertEquals(Level.WARN.toInt(), config.getLevel("org.eclipse.jetty.util.resource.PathResource"));
+        assertEquals(JettyLevel.WARN, config.getLevel("org.eclipse.jetty.util.MagicUtil"));
+        assertEquals(JettyLevel.WARN, config.getLevel("org.eclipse.jetty.util"));
+        assertEquals(JettyLevel.WARN, config.getLevel("org.eclipse.jetty.util.resource.PathResource"));
 
-        assertEquals(JettyLogger.ALL, config.getLevel("org.eclipse.jetty.util.ConcurrentHashMap"));
+        assertEquals(JettyLevel.ALL, config.getLevel("org.eclipse.jetty.util.ConcurrentHashMap"));
     }
 }

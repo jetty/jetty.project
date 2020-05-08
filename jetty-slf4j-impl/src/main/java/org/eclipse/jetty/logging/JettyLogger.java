@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.logging;
 
-import java.util.Objects;
-
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 import org.slf4j.event.Level;
@@ -29,28 +27,19 @@ import org.slf4j.spi.LocationAwareLogger;
 
 public class JettyLogger implements LocationAwareLogger, Logger
 {
-    /**
-     * The Level to set if you want this logger to be "OFF"
-     */
-    static final int OFF = 999;
-    /**
-     * The Level to set if you want this logger to show all events from all levels.
-     */
-    static final int ALL = Level.TRACE.toInt();
-
     private final JettyLoggerFactory factory;
     private final String name;
     private final String condensedName;
     private final JettyAppender appender;
-    private int level;
+    private JettyLevel level;
     private boolean hideStacks;
 
     public JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender)
     {
-        this(factory, name, appender, Level.INFO.toInt(), false);
+        this(factory, name, appender, JettyLevel.INFO, false);
     }
 
-    public JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender, int level, boolean hideStacks)
+    public JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender, JettyLevel level, boolean hideStacks)
     {
         this.factory = factory;
         this.name = name;
@@ -303,11 +292,11 @@ public class JettyLogger implements LocationAwareLogger, Logger
     @Override
     public void log(Marker marker, String fqcn, int levelInt, String message, Object[] argArray, Throwable throwable)
     {
-        if (this.level <= levelInt)
+        if (this.level.toInt() <= levelInt)
         {
             long timestamp = System.currentTimeMillis();
             String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, LevelUtils.intToLevel(levelInt), timestamp, threadName, throwable, message, argArray);
+            getAppender().emit(this, JettyLevel.intToLevel(levelInt).toLevel(), timestamp, threadName, throwable, message, argArray);
         }
     }
 
@@ -329,23 +318,22 @@ public class JettyLogger implements LocationAwareLogger, Logger
         return condensedName;
     }
 
-    public int getLevel()
+    public JettyLevel getLevel()
     {
         return level;
     }
 
     public void setLevel(Level level)
     {
-        Objects.requireNonNull(level, "Level");
-        setLevel(level.toInt());
+        setLevel(JettyLevel.fromLevel(level));
     }
 
-    public void setLevel(int lvlInt)
+    public void setLevel(JettyLevel level)
     {
-        this.level = lvlInt;
+        this.level = level;
 
         // apply setLevel to children too.
-        factory.walkChildrenLoggers(this.getName(), (logger) -> logger.setLevel(lvlInt));
+        factory.walkChildrenLoggers(this.getName(), (logger) -> logger.setLevel(level));
     }
 
     @Override
@@ -443,13 +431,13 @@ public class JettyLogger implements LocationAwareLogger, Logger
     @Override
     public boolean isDebugEnabled()
     {
-        return level <= Level.DEBUG.toInt();
+        return level.includes(JettyLevel.DEBUG);
     }
 
     @Override
     public boolean isErrorEnabled()
     {
-        return level <= Level.ERROR.toInt();
+        return level.includes(JettyLevel.ERROR);
     }
 
     public boolean isHideStacks()
@@ -468,19 +456,19 @@ public class JettyLogger implements LocationAwareLogger, Logger
     @Override
     public boolean isInfoEnabled()
     {
-        return level <= Level.INFO.toInt();
+        return level.includes(JettyLevel.INFO);
     }
 
     @Override
     public boolean isTraceEnabled()
     {
-        return level <= Level.TRACE.toInt();
+        return level.includes(JettyLevel.TRACE);
     }
 
     @Override
     public boolean isWarnEnabled()
     {
-        return level <= Level.WARN.toInt();
+        return level.includes(JettyLevel.WARN);
     }
 
     @Override
@@ -699,6 +687,6 @@ public class JettyLogger implements LocationAwareLogger, Logger
     @Override
     public String toString()
     {
-        return String.format("%s:%s:LEVEL=%s", JettyLogger.class.getSimpleName(), name, LevelUtils.intToLevel(level));
+        return String.format("%s:%s:LEVEL=%s", JettyLogger.class.getSimpleName(), name, level.name());
     }
 }

@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.logging.JettyLevel;
 import org.eclipse.jetty.logging.JettyLogger;
 import org.eclipse.jetty.logging.StdErrAppender;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -1595,7 +1596,7 @@ public class XmlConfigurationTest
         JettyLogger jettyLogger = (JettyLogger)slf4jLogger;
         StdErrAppender appender = (StdErrAppender)jettyLogger.getAppender();
         PrintStream oldStream = appender.getStream();
-        int oldLevel = jettyLogger.getLevel();
+        JettyLevel oldLevel = jettyLogger.getLevel();
         try
         {
             // capture events

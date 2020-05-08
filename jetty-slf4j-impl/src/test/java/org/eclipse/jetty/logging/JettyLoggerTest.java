@@ -91,11 +91,11 @@ public class JettyLoggerTest
 
         JettyLogger log = factory.getJettyLogger("xxx");
 
-        log.setLevel(Level.DEBUG);
+        log.setLevel(JettyLevel.DEBUG);
         log.debug("testing {} {}", "test", "debug");
         log.info("testing {} {}", "test", "info");
         log.warn("testing {} {}", "test", "warn");
-        log.setLevel(Level.INFO);
+        log.setLevel(JettyLevel.INFO);
         log.debug("YOU SHOULD NOT SEE THIS!");
 
         output.assertContains("DEBUG:xxx:tname: testing test debug");
@@ -177,7 +177,7 @@ public class JettyLoggerTest
         appender.setStream(output);
 
         JettyLogger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
-        log.setLevel(Level.DEBUG);
+        log.setLevel(JettyLevel.DEBUG);
 
         String nullMsg = null;
         try (StacklessLogging ignored = new StacklessLogging(log))
@@ -234,11 +234,11 @@ public class JettyLoggerTest
             log.warn("See Me");
 
             // Set to debug level
-            log.setLevel(Level.DEBUG);
+            log.setLevel(JettyLevel.DEBUG);
             log.warn("Hear Me");
 
             // Set to warn level
-            log.setLevel(Level.WARN);
+            log.setLevel(JettyLevel.WARN);
             log.warn("Cheer Me");
 
             log.warn("<zoom>", new Throwable("out of focus"));
@@ -279,18 +279,18 @@ public class JettyLoggerTest
             log.info("I will not buy");
 
             // Level Debug
-            log.setLevel(Level.DEBUG);
+            log.setLevel(JettyLevel.DEBUG);
             log.info("this record");
 
             // Level All
-            log.setLevel(Level.TRACE);
+            log.setLevel(JettyLevel.TRACE);
             log.info("it is scratched.");
 
             log.info("<zoom>", new Throwable("out of focus"));
             log.info("shot issue", new Throwable("scene lost"));
 
             // Level Warn
-            log.setLevel(Level.WARN);
+            log.setLevel(JettyLevel.WARN);
             log.info("sorry?");
             log.info("<spoken line>", new Throwable("on editing room floor"));
 
@@ -326,7 +326,7 @@ public class JettyLoggerTest
         JettyLogger log = factory.getJettyLogger(JettyLoggerTest.class.getName());
         try (StacklessLogging ignored = new StacklessLogging(log))
         {
-            log.setLevel(Level.ERROR);
+            log.setLevel(JettyLevel.ERROR);
 
             // Various logging events
             log.debug("Squelch");
@@ -359,7 +359,7 @@ public class JettyLoggerTest
 
         try (StacklessLogging ignored = new StacklessLogging(log))
         {
-            log.setLevel(JettyLogger.OFF);
+            log.setLevel(JettyLevel.OFF);
 
             // Various logging events
             log.debug("Squelch");
@@ -399,18 +399,18 @@ public class JettyLoggerTest
             log.debug("<spoken line>", new Throwable("on editing room floor"));
 
             // Level Debug
-            log.setLevel(Level.DEBUG);
+            log.setLevel(JettyLevel.DEBUG);
             log.debug("my hovercraft is");
 
             log.debug("<zoom>", new Throwable("out of focus"));
             log.debug("shot issue", new Throwable("scene lost"));
 
             // Level All
-            log.setLevel(Level.TRACE);
+            log.setLevel(JettyLevel.TRACE);
             log.debug("full of eels.");
 
             // Level Warn
-            log.setLevel(Level.WARN);
+            log.setLevel(JettyLevel.WARN);
             log.debug("what?");
 
             // Validate Output
@@ -444,22 +444,22 @@ public class JettyLoggerTest
 
         try (StacklessLogging ignored = new StacklessLogging(log))
         {
-            log.setLevel(Level.TRACE);
+            log.setLevel(JettyLevel.TRACE);
             assertThat("log.level(trace).isDebugEnabled", log.isDebugEnabled(), is(true));
 
-            log.setLevel(Level.DEBUG);
+            log.setLevel(JettyLevel.DEBUG);
             assertThat("log.level(debug).isDebugEnabled", log.isDebugEnabled(), is(true));
 
-            log.setLevel(Level.INFO);
+            log.setLevel(JettyLevel.INFO);
             assertThat("log.level(info).isDebugEnabled", log.isDebugEnabled(), is(false));
 
-            log.setLevel(Level.WARN);
+            log.setLevel(JettyLevel.WARN);
             assertThat("log.level(warn).isDebugEnabled", log.isDebugEnabled(), is(false));
 
-            log.setLevel(Level.ERROR);
+            log.setLevel(JettyLevel.ERROR);
             assertThat("log.level(error).isDebugEnabled", log.isDebugEnabled(), is(false));
 
-            log.setLevel(JettyLogger.OFF);
+            log.setLevel(JettyLevel.OFF);
             assertThat("log.level(null).isDebugEnabled", log.isDebugEnabled(), is(false));
         }
     }
@@ -478,23 +478,23 @@ public class JettyLoggerTest
 
         try (StacklessLogging ignored = new StacklessLogging(log))
         {
-            log.setLevel(Level.TRACE);
-            assertThat("log.level(trace).getLevel()", log.getLevel(), is(Level.TRACE.toInt()));
+            log.setLevel(JettyLevel.TRACE);
+            assertThat("log.level(trace).getLevel()", log.getLevel(), is(JettyLevel.TRACE));
 
-            log.setLevel(Level.DEBUG);
-            assertThat("log.level(debug).getLevel()", log.getLevel(), is(Level.DEBUG.toInt()));
+            log.setLevel(JettyLevel.DEBUG);
+            assertThat("log.level(debug).getLevel()", log.getLevel(), is(JettyLevel.DEBUG));
 
-            log.setLevel(Level.INFO);
-            assertThat("log.level(info).getLevel()", log.getLevel(), is(Level.INFO.toInt()));
+            log.setLevel(JettyLevel.INFO);
+            assertThat("log.level(info).getLevel()", log.getLevel(), is(JettyLevel.INFO));
 
-            log.setLevel(Level.WARN);
-            assertThat("log.level(warn).getLevel()", log.getLevel(), is(Level.WARN.toInt()));
+            log.setLevel(JettyLevel.WARN);
+            assertThat("log.level(warn).getLevel()", log.getLevel(), is(JettyLevel.WARN));
 
-            log.setLevel(Level.ERROR);
-            assertThat("log.level(error).getLevel()", log.getLevel(), is(Level.ERROR.toInt()));
+            log.setLevel(JettyLevel.ERROR);
+            assertThat("log.level(error).getLevel()", log.getLevel(), is(JettyLevel.ERROR));
 
-            log.setLevel(888);
-            assertThat("log.level(888).getLevel()", log.getLevel(), is(888));
+            log.setLevel(JettyLevel.OFF);
+            assertThat("log.level(off).getLevel()", log.getLevel(), is(JettyLevel.OFF));
         }
     }
 
@@ -510,23 +510,23 @@ public class JettyLoggerTest
 
         JettyLogger log = factory.getJettyLogger("xxx");
 
-        log.setLevel(Level.TRACE);
+        log.setLevel(JettyLevel.TRACE);
         assertThat("Logger.toString", log.toString(), is("JettyLogger:xxx:LEVEL=TRACE"));
 
-        log.setLevel(Level.DEBUG);
+        log.setLevel(JettyLevel.DEBUG);
         assertThat("Logger.toString", log.toString(), is("JettyLogger:xxx:LEVEL=DEBUG"));
 
-        log.setLevel(Level.INFO);
+        log.setLevel(JettyLevel.INFO);
         assertThat("Logger.toString", log.toString(), is("JettyLogger:xxx:LEVEL=INFO"));
 
-        log.setLevel(Level.WARN);
+        log.setLevel(JettyLevel.WARN);
         assertThat("Logger.toString", log.toString(), is("JettyLogger:xxx:LEVEL=WARN"));
 
-        log.setLevel(Level.ERROR);
+        log.setLevel(JettyLevel.ERROR);
         assertThat("Logger.toString", log.toString(), is("JettyLogger:xxx:LEVEL=ERROR"));
 
-        log.setLevel(JettyLogger.OFF);
-        assertThat("Logger.toString", log.toString(), is("JettyLogger:xxx:LEVEL=ERROR"));
+        log.setLevel(JettyLevel.OFF);
+        assertThat("Logger.toString", log.toString(), is("JettyLogger:xxx:LEVEL=OFF"));
     }
 
     @Test
@@ -544,25 +544,25 @@ public class JettyLoggerTest
         appender.setStream(output);
 
         JettyLogger root = factory.getJettyLogger("");
-        assertLevel(root, Level.INFO); // default
+        assertLevel(root, JettyLevel.INFO); // default
 
         JettyLogger log = factory.getJettyLogger("org.eclipse.jetty.util.Foo");
         assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(false));
-        assertLevel(log, Level.WARN); // as configured
+        assertLevel(log, JettyLevel.WARN); // as configured
 
         // Boot stomp it all to debug
-        root.setLevel(Level.DEBUG);
+        root.setLevel(JettyLevel.DEBUG);
         assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(true));
-        assertLevel(log, Level.DEBUG); // as stomped
+        assertLevel(log, JettyLevel.DEBUG); // as stomped
 
         // Restore configured
         factory.walkChildrenLoggers(root.getName(), (logger) ->
         {
-            int configuredLevel = config.getLevel(logger.getName());
+            JettyLevel configuredLevel = config.getLevel(logger.getName());
             logger.setLevel(configuredLevel);
         });
         assertThat("Log.isDebugEnabled()", log.isDebugEnabled(), is(false));
-        assertLevel(log, Level.WARN); // as configured
+        assertLevel(log, JettyLevel.WARN); // as configured
     }
 
     @Test
@@ -606,9 +606,9 @@ public class JettyLoggerTest
         output.assertContains("\t|\t|java.lang.Exception: branch0");
     }
 
-    private void assertLevel(JettyLogger log, Level expectedLevel)
+    private void assertLevel(JettyLogger log, JettyLevel expectedLevel)
     {
         assertThat("Log[" + log.getName() + "].level",
-            LevelUtils.intToLevel(log.getLevel()), is(expectedLevel));
+            log.getLevel(), is(expectedLevel));
     }
 }

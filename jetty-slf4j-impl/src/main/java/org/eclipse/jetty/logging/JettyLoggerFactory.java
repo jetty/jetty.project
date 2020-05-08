@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
@@ -105,7 +107,7 @@ public class JettyLoggerFactory implements ILoggerFactory, JettyLoggerFactoryMBe
     private JettyLogger createLogger(String name)
     {
         JettyAppender appender = rootLogger.getAppender();
-        int level = this.configuration.getLevel(name);
+        JettyLevel level = this.configuration.getLevel(name);
         boolean hideStacks = this.configuration.getHideStacks(name);
         return new JettyLogger(this, name, appender, level, hideStacks);
     }
@@ -154,7 +156,7 @@ public class JettyLoggerFactory implements ILoggerFactory, JettyLoggerFactoryMBe
         {
             JettyLogger logger = loggerMap.get(key);
             if (logger != null)
-                return LevelUtils.intToLevel(logger.getLevel()).toString();
+                return logger.getLevel().toString();
             return null;
         });
     }
@@ -162,11 +164,15 @@ public class JettyLoggerFactory implements ILoggerFactory, JettyLoggerFactoryMBe
     @Override
     public boolean setLoggerLevel(String loggerName, String levelName)
     {
-        Integer levelInt = LevelUtils.getLevelInt(levelName);
-        if (levelInt == null)
+        JettyLevel level = JettyLevel.strToLevel(levelName);
+        if (level == null)
+        {
+            System.err.printf("Unknown JettyLogger/Slf4J Level [%s]=[%s], expecting only [%s] as values.",
+                loggerName, levelName, Stream.of(JettyLevel.values()).map(JettyLevel::toString).collect(Collectors.joining(", ")));
             return false;
+        }
         JettyLogger jettyLogger = getJettyLogger(loggerName);
-        jettyLogger.setLevel(levelInt);
+        jettyLogger.setLevel(level);
         return true;
     }
 }

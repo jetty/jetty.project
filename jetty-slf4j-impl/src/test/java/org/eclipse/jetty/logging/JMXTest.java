@@ -29,7 +29,6 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import org.junit.jupiter.api.Test;
-import org.slf4j.event.Level;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -64,11 +63,11 @@ public class JMXTest
         assertEquals(expected, Arrays.asList(loggerNames));
 
         // Setting the parent level should propagate to the children.
-        parent.setLevel(Level.DEBUG);
-        assertEquals(Level.intToLevel(parent.getLevel()).toString(), mbean.getLoggerLevel(child.getName()));
+        parent.setLevel(JettyLevel.DEBUG);
+        assertEquals(parent.getLevel().toString(), mbean.getLoggerLevel(child.getName()));
 
         // Setting the level via JMX affects the logger.
         assertTrue(mbean.setLoggerLevel(child.getName(), "INFO"));
-        assertEquals(Level.INFO.toInt(), child.getLevel());
+        assertEquals(JettyLevel.INFO, child.getLevel());
     }
 }
