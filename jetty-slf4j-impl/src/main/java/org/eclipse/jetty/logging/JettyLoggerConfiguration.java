@@ -23,11 +23,10 @@ import java.io.InputStream;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.TimeZone;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * JettyLogger specific configuration:
@@ -137,15 +136,15 @@ public class JettyLoggerConfiguration
         return level != null ? level : DEFAULT_LEVEL;
     }
 
-    protected static JettyLevel toJettyLevel(String loggerName, String levelStr)
+    static JettyLevel toJettyLevel(String loggerName, String levelStr)
     {
         if (levelStr == null)
             return null;
         JettyLevel level = JettyLevel.strToLevel(levelStr);
         if (level == null)
         {
-            System.err.printf("Unknown JettyLogger/Slf4J Level [%s]=[%s], expecting only [%s] as values.",
-                loggerName, levelStr, Stream.of(JettyLevel.values()).map(JettyLevel::name).collect(Collectors.joining(", ")));
+            System.err.printf("Unknown JettyLogger/SLF4J Level [%s]=[%s], expecting only %s as values.%n",
+                loggerName, levelStr, Arrays.toString(JettyLevel.values()));
         }
         return level;
     }
