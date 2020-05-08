@@ -115,7 +115,7 @@ public class ConfiguratorTest
             else
             {
                 return "negotiatedExtensions=" + negotiatedExtensions.stream()
-                    .map((ext) -> ext.getName())
+                    .map(Extension::getName)
                     .collect(Collectors.joining(",", "[", "]"));
             }
         }
@@ -198,7 +198,7 @@ public class ConfiguratorTest
 
     public static class UniqueUserPropsConfigurator extends ServerEndpointConfig.Configurator
     {
-        private AtomicInteger upgradeCount = new AtomicInteger(0);
+        private final AtomicInteger upgradeCount = new AtomicInteger(0);
 
         @Override
         public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
@@ -479,7 +479,7 @@ public class ConfiguratorTest
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
         ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
-        upgradeRequest.header("X-Dummy", "Bogus");
+        upgradeRequest.headers(headers -> headers.put("X-Dummy", "Bogus"));
         Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);

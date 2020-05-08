@@ -72,7 +72,7 @@ public class SecuredHelloHandlerTest extends AbstractEmbeddedTest
         String authEncoded = Base64.getEncoder().encodeToString("user:password".getBytes(UTF_8));
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.GET)
-            .header(HttpHeader.AUTHORIZATION, "Basic " + authEncoded)
+            .headers(headers -> headers.put(HttpHeader.AUTHORIZATION, "Basic " + authEncoded))
             .send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 

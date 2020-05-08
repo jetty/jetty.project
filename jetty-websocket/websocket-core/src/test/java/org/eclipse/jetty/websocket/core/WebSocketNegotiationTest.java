@@ -387,7 +387,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
             @Override
             public void onHandshakeRequest(HttpRequest request)
             {
-                request.header(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, "permessage-deflate");
+                request.headers(headers -> headers.put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, "permessage-deflate"));
             }
 
             @Override

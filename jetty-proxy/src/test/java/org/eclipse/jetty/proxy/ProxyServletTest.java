@@ -988,7 +988,7 @@ public class ProxyServletTest
 
         String value1 = "1";
         ContentResponse response1 = client.newRequest("localhost", serverConnector.getLocalPort())
-            .header(name, value1)
+            .headers(headers -> headers.put(name, value1))
             .timeout(5, TimeUnit.SECONDS)
             .send();
         assertEquals(200, response1.getStatus());
@@ -1003,7 +1003,7 @@ public class ProxyServletTest
         {
             String value2 = "2";
             ContentResponse response2 = client2.newRequest("localhost", serverConnector.getLocalPort())
-                .header(name, value2)
+                .headers(headers -> headers.put(name, value2))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
             assertEquals(200, response2.getStatus());
@@ -1236,10 +1236,7 @@ public class ProxyServletTest
         startClient();
 
         Request request = client.newRequest("localhost", serverConnector.getLocalPort());
-        for (Map.Entry<String, String> entry : hopHeaders.entrySet())
-        {
-            request.header(entry.getKey(), entry.getValue());
-        }
+        hopHeaders.forEach((key, value) -> request.headers(headers -> headers.add(key, value)));
         ContentResponse response = request
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -1283,7 +1280,7 @@ public class ProxyServletTest
         CountDownLatch contentLatch = new CountDownLatch(1);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
-            .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
+            .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
             .body(new BytesRequestContent(content))
             .onRequestContent((request, buffer) -> contentLatch.countDown())
             .send(new BufferingResponseListener()
@@ -1340,7 +1337,7 @@ public class ProxyServletTest
         requestContent.offer(ByteBuffer.wrap(content, 0, chunk1));
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
-            .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
+            .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
             .body(requestContent)
             .send(new BufferingResponseListener()
             {
@@ -1400,7 +1397,7 @@ public class ProxyServletTest
         requestContent.offer(ByteBuffer.wrap(content, 0, chunk1));
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
-            .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
+            .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
             .body(requestContent)
             .send(result ->
             {
@@ -1448,7 +1445,7 @@ public class ProxyServletTest
         CountDownLatch contentLatch = new CountDownLatch(1);
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.newRequest("localhost", serverConnector.getLocalPort())
-            .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
+            .headers(headers -> headers.put(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString()))
             .body(new BytesRequestContent(content))
             .onRequestContent((request, buffer) -> contentLatch.countDown())
             .send(result ->

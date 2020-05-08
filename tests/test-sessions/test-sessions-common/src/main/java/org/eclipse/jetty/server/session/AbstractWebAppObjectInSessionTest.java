@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
@@ -35,7 +36,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * AbstractWebAppObjectInSessionTest
@@ -133,9 +134,9 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
                     ContentResponse response = request.send();
                     assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                     String sessionCookie = response.getHeaders().get("Set-Cookie");
-                    assertTrue(sessionCookie != null);
+                    assertNotNull(sessionCookie);
                     // Mangle the cookie, replacing Path with $Path, etc.
-                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+                    sessionCookie = sessionCookie.replaceFirst("(\\W)([Pp])ath=", "$1\\$Path=");
                     
                     //ensure request has finished being handled
                     synchronizer.await(5, TimeUnit.SECONDS);
@@ -143,7 +144,8 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
                     // Perform a request to server2 using the session cookie from the previous request
                     Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=get");
                     request2.method(HttpMethod.GET);
-                    request2.header("Cookie", sessionCookie);
+                    HttpField cookie = new HttpField("Cookie", sessionCookie);
+                    request2.headers(headers -> headers.put(cookie));
                     ContentResponse response2 = request2.send();
 
                     assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
