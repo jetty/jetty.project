@@ -35,6 +35,10 @@ import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,17 +49,33 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class RemoteInfinispanTestSupport
 {
+    private static final Logger LOG = LoggerFactory.getLogger(RemoteInfinispanTestSupport.class);
     public static final String DEFAULT_CACHE_NAME = "session_test_cache";
     public RemoteCache<String, SessionData> _cache;
     private String _name;
     public static RemoteCacheManager _manager;
+    private static final Logger INFINISPAN_LOG =
+        LoggerFactory.getLogger("org.eclipse.jetty.server.session.remote.infinispanLogs");
+
+    static GenericContainer infinispan =
+        new GenericContainer("jboss/infinispan-server:" +
+                                  System.getProperty("infinispan.docker.version", "9.4.11.Final"))
+            .withEnv("APP_USER","theuser")
+            .withEnv("APP_PASS","foobar")
+            .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
 
     static
     {
         try
         {
-            String host = System.getProperty("hotrod.host", "127.0.0.1");
+            long start = System.currentTimeMillis();
+            infinispan.start();
+            String host = infinispan.getContainerIpAddress();
+            System.setProperty("hotrod.host", host);
+            int port = infinispan.getMappedPort(11222);
 
+            LOG.info("Infinispan container started for {}:{} - {}ms", host, port,
+                     System.currentTimeMillis() - start);
             SearchMapping mapping = new SearchMapping();
             mapping.entity(SessionData.class).indexed().providedId()
                 .property("expiry", ElementType.METHOD).field();
@@ -64,7 +84,12 @@ public class RemoteInfinispanTestSupport
             properties.put(Environment.MODEL_MAPPING, mapping);
 
             ConfigurationBuilder clientBuilder = new ConfigurationBuilder();
-            clientBuilder.withProperties(properties).addServer().host(host).marshaller(new ProtoStreamMarshaller());
+            clientBuilder.withProperties(properties).addServer().host(host).port(port)
+                .security().authentication().enable().realm("default")
+                .serverName("infinispan")
+                .saslMechanism("DIGEST-MD5")
+                .username("theuser").password("foobar")
+                .marshaller(new ProtoStreamMarshaller());
 
             _manager = new RemoteCacheManager(clientBuilder.build());
 
@@ -90,7 +115,8 @@ public class RemoteInfinispanTestSupport
         }
         catch (Exception e)
         {
-            fail(e);
+            LOG.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         }
     }
 

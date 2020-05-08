@@ -11,7 +11,9 @@
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
-    <hotrod.host>127.0.0.1</hotrod.host>
+    <!-- if changing this version please update default in RemoteInfinispanTestSupport you will get thanks from Eclipse IDE users -->
+    <!-- 10.1.7.Final -->
+    <infinispan.docker.version>9.4.11.Final</infinispan.docker.version>
   </properties>
   <build>
     <plugins>
@@ -129,15 +131,19 @@
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-jdk14</artifactId>
-      <version>1.7.25</version>
+      <artifactId>slf4j-simple</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
   <profiles>
     <!-- to test hotrod, configure a cache called "remote-session-test" -->
     <profile>
-      <id>remote</id>
+      <id>remote-session-tests</id>
       <activation>
         <property>
           <name>hotrod.enabled</name>
@@ -154,7 +160,7 @@
                 <include>**/*.java</include>
               </includes>
               <systemPropertyVariables>
-                <hotrod.host>${hotrod.host}</hotrod.host>
+                <infinispan.docker.version>${infinispan.docker.version}</infinispan.docker.version>
               </systemPropertyVariables>
             </configuration>
           </plugin>
