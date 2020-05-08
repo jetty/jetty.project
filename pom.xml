@@ -41,7 +41,7 @@
     <unix.socket.tmp></unix.socket.tmp>
     <!-- enable or not TestTracker junit5 extension i.e log message when test method is starting -->
     <jetty.testtracker.log>false</jetty.testtracker.log>
-    <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
+    <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx2g -Xms2g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
 
     <!-- some maven plugins versions -->
     <maven.surefire.version>3.0.0-M4</maven.surefire.version>
