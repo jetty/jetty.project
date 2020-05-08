@@ -24,8 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
@@ -164,11 +162,9 @@ public class JettyLoggerFactory implements ILoggerFactory, JettyLoggerFactoryMBe
     @Override
     public boolean setLoggerLevel(String loggerName, String levelName)
     {
-        JettyLevel level = JettyLevel.strToLevel(levelName);
+        JettyLevel level = JettyLoggerConfiguration.toJettyLevel(loggerName, levelName);
         if (level == null)
         {
-            System.err.printf("Unknown JettyLogger/Slf4J Level [%s]=[%s], expecting only [%s] as values.",
-                loggerName, levelName, Stream.of(JettyLevel.values()).map(JettyLevel::toString).collect(Collectors.joining(", ")));
             return false;
         }
         JettyLogger jettyLogger = getJettyLogger(loggerName);

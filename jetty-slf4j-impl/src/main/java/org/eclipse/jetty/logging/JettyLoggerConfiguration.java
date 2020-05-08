@@ -26,6 +26,8 @@ import java.security.PrivilegedAction;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * JettyLogger specific configuration:
@@ -115,24 +117,37 @@ public class JettyLoggerConfiguration
         JettyLevel level = JettyLoggerFactory.walkParentLoggerNames(startName, key ->
         {
             String levelStr = properties.getProperty(key + SUFFIX_LEVEL);
-            return JettyLevel.strToLevel(levelStr);
+            return toJettyLevel(key, levelStr);
         });
 
         if (level == null)
         {
             // Try slf4j root logging config.
             String levelStr = properties.getProperty(JettyLogger.ROOT_LOGGER_NAME + SUFFIX_LEVEL);
-            level = JettyLevel.strToLevel(levelStr);
+            level = toJettyLevel(JettyLogger.ROOT_LOGGER_NAME, levelStr);
         }
 
         if (level == null)
         {
             // Try legacy root logging config.
             String levelStr = properties.getProperty("log" + SUFFIX_LEVEL);
-            level = JettyLevel.strToLevel(levelStr);
+            level = toJettyLevel("log", levelStr);
         }
 
         return level != null ? level : DEFAULT_LEVEL;
+    }
+
+    protected static JettyLevel toJettyLevel(String loggerName, String levelStr)
+    {
+        if (levelStr == null)
+            return null;
+        JettyLevel level = JettyLevel.strToLevel(levelStr);
+        if (level == null)
+        {
+            System.err.printf("Unknown JettyLogger/Slf4J Level [%s]=[%s], expecting only [%s] as values.",
+                loggerName, levelStr, Stream.of(JettyLevel.values()).map(JettyLevel::toString).collect(Collectors.joining(", ")));
+        }
+        return level;
     }
 
     public TimeZone getTimeZone(String key)
