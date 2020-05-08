@@ -26,6 +26,10 @@
         <Set name="idleTimeout"><Property name="jetty.ssl.idleTimeout" deprecated="ssl.timeout" default="30000"/></Set>
         <Set name="acceptorPriorityDelta"><Property name="jetty.ssl.acceptorPriorityDelta" deprecated="ssl.acceptorPriorityDelta" default="0"/></Set>
         <Set name="acceptQueueSize"><Property name="jetty.ssl.acceptQueueSize" deprecated="ssl.acceptQueueSize" default="0"/></Set>
+        <Set name="reuseAddress"><Property name="jetty.ssl.reuseAddress" default="true"/></Set>
+        <Set name="acceptedTcpNoDelay"><Property name="jetty.ssl.acceptedTcpNoDelay" default="true"/></Set>
+        <Set name="acceptedReceiveBufferSize"><Property name="jetty.ssl.acceptedReceiveBufferSize" default="-1"/></Set>
+        <Set name="acceptedSendBufferSize"><Property name="jetty.ssl.acceptedSendBufferSize" default="-1"/></Set>
         <Get name="SelectorManager">
           <Set name="connectTimeout"><Property name="jetty.ssl.connectTimeout" default="15000"/></Set>
         </Get>
