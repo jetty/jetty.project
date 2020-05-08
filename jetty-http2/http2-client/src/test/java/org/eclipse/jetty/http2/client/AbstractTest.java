@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import jakarta.servlet.http.HttpServlet;
-
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;

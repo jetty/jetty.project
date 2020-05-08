@@ -25,7 +25,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;

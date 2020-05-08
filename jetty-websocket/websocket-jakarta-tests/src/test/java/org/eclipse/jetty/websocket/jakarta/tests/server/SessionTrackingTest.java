@@ -30,7 +30,6 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jakarta.tests.EventSocket;
 import org.eclipse.jetty.websocket.jakarta.tests.LocalServer;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

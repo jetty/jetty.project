@@ -54,7 +54,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
 import org.eclipse.jetty.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.websocket.jakarta.tests.Sha1Sum;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

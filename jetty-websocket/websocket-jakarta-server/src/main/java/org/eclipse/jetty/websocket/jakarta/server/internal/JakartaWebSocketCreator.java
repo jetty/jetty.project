@@ -37,9 +37,9 @@ import org.eclipse.jetty.websocket.jakarta.common.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketExtension;
 import org.eclipse.jetty.websocket.jakarta.common.ServerEndpointConfigWrapper;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.util.server.internal.WebSocketCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

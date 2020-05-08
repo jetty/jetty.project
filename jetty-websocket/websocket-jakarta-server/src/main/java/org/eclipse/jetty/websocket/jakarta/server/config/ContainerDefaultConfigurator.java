@@ -27,7 +27,6 @@ import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.server.HandshakeRequest;
 import jakarta.websocket.server.ServerEndpointConfig;
 import jakarta.websocket.server.ServerEndpointConfig.Configurator;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -26,9 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.server.ServerEndpoint;
-
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Handler;
@@ -51,11 +49,6 @@ import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketSessionListener;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
-import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerFrameHandlerFactory;
-import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -257,28 +250,6 @@ public class LocalServer extends ContainerLifeCycle implements LocalFuzzer.Provi
     public void registerHttpService(String urlPattern, BiConsumer<HttpServletRequest, HttpServletResponse> serviceConsumer)
     {
         ServletHolder holder = new ServletHolder(new BiConsumerServiceServlet(serviceConsumer));
-        servletContextHandler.addServlet(holder, urlPattern);
-    }
-
-    public void registerWebSocket(String urlPattern, WebSocketCreator creator)
-    {
-        ServletHolder holder = new ServletHolder(new WebSocketServlet()
-        {
-            JakartaWebSocketServerFrameHandlerFactory factory = new JakartaWebSocketServerFrameHandlerFactory(JakartaWebSocketServerContainer.ensureContainer(getServletContext()));
-
-            @Override
-            public void configure(WebSocketServletFactory factory)
-            {
-                PathSpec pathSpec = factory.parsePathSpec("/");
-                factory.addMapping(pathSpec, creator);
-            }
-
-            @Override
-            protected FrameHandlerFactory getFactory()
-            {
-                return factory;
-            }
-        });
         servletContextHandler.addServlet(holder, urlPattern);
     }
 

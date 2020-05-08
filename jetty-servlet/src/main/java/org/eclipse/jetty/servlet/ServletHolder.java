@@ -47,7 +47,6 @@ import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.SingleThreadModel;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.RunAsToken;
 import org.eclipse.jetty.server.Request;

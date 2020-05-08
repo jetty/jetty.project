@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionActivationListener;
 import jakarta.servlet.http.HttpSessionEvent;
-
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;

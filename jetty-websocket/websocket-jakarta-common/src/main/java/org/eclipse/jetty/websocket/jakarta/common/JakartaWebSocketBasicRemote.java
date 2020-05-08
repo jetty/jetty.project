@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.util.TextUtil;
+import org.eclipse.jetty.websocket.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,7 +118,7 @@ public class JakartaWebSocketBasicRemote extends JakartaWebSocketRemoteEndpoint 
         assertMessageNotNull(text);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendText({})", TextUtil.hint(text));
+            LOG.debug("sendText({})", TextUtils.hint(text));
         }
 
         FutureCallback b = new FutureCallback();
@@ -132,7 +132,7 @@ public class JakartaWebSocketBasicRemote extends JakartaWebSocketRemoteEndpoint 
         assertMessageNotNull(partialMessage);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendText({},{})", TextUtil.hint(partialMessage), isLast);
+            LOG.debug("sendText({},{})", TextUtils.hint(partialMessage), isLast);
         }
 
         Frame frame;

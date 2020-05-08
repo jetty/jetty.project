@@ -29,7 +29,6 @@ import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
 import jakarta.annotation.Resource;
-
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.Injection;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;

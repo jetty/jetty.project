@@ -27,7 +27,6 @@ import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.websocket.jakarta.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.jakarta.common.UpgradeRequestAdapter;
 import org.eclipse.jetty.websocket.jakarta.tests.DummyEndpoint;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 

@@ -36,7 +36,7 @@ import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
 
 public class JettyServerUpgradeRequest
 {

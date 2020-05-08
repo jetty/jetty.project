@@ -26,7 +26,6 @@ import jakarta.websocket.server.HandshakeRequest;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpointConfig;
 import jakarta.websocket.server.ServerEndpointConfig.Configurator;
-
 import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.pong.PongMessageEndpoint;
 
 public class PongContextListener implements ServletContextListener

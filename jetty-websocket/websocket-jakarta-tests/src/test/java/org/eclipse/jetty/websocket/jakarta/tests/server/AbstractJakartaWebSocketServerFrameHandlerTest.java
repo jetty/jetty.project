@@ -29,7 +29,6 @@ import org.eclipse.jetty.websocket.jakarta.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.jakarta.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 

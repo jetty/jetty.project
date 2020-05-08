@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.util.Objects;
 
 import jakarta.servlet.http.HttpServletRequest;
-
 import org.eclipse.jetty.http.HttpURI;
 
 /**

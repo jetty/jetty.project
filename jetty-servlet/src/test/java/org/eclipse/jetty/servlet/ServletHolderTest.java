@@ -25,7 +25,6 @@ import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletRegistration;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
-
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;

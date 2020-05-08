@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import jakarta.servlet.Servlet;
-
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.tools.HttpTester;

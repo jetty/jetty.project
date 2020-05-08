@@ -19,7 +19,6 @@
 package com.acme;
 
 import java.io.IOException;
-
 import javax.naming.InitialContext;
 import javax.sql.DataSource;
 

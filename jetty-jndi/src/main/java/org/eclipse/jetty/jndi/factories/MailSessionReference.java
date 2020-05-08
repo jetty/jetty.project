@@ -33,7 +33,6 @@ import javax.naming.spi.ObjectFactory;
 import jakarta.mail.Authenticator;
 import jakarta.mail.PasswordAuthentication;
 import jakarta.mail.Session;
-
 import org.eclipse.jetty.util.security.Password;
 
 /**

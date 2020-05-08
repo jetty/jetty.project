@@ -44,7 +44,6 @@ import org.eclipse.jetty.websocket.jakarta.tests.SessionMatchers;
 import org.eclipse.jetty.websocket.jakarta.tests.handlers.BinaryHandlers;
 import org.eclipse.jetty.websocket.jakarta.tests.handlers.LongMessageHandler;
 import org.eclipse.jetty.websocket.jakarta.tests.handlers.TextHandlers;
-
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

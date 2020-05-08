@@ -22,7 +22,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import jakarta.annotation.PreDestroy;
-
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.annotation.PreDestroyCallback;

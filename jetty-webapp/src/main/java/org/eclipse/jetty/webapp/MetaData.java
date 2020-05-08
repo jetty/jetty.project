@@ -27,10 +27,8 @@ import java.util.Map;
 import java.util.Objects;
 
 import jakarta.servlet.ServletContext;
-
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

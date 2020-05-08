@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;

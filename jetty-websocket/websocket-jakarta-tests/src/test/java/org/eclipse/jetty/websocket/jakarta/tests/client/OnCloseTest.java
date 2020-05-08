@@ -38,7 +38,6 @@ import org.eclipse.jetty.websocket.jakarta.tests.client.samples.CloseReasonSocke
 import org.eclipse.jetty.websocket.jakarta.tests.client.samples.CloseSessionReasonSocket;
 import org.eclipse.jetty.websocket.jakarta.tests.client.samples.CloseSessionSocket;
 import org.eclipse.jetty.websocket.jakarta.tests.client.samples.CloseSocket;
-
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;

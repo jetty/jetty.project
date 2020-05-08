@@ -27,7 +27,6 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jakarta.tests.EventSocket;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

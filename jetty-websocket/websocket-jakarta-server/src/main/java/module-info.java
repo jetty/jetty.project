@@ -16,8 +16,8 @@
 // ========================================================================
 //
 
-import jakarta.websocket.server.ServerEndpointConfig;
 import jakarta.servlet.ServletContainerInitializer;
+import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.websocket.jakarta.server.config.ContainerDefaultConfigurator;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
@@ -30,8 +30,7 @@ module org.eclipse.jetty.websocket.jakarta.server
     requires transitive org.eclipse.jetty.webapp;
     requires org.eclipse.jetty.websocket.jakarta.common;
     requires transitive org.eclipse.jetty.websocket.jakarta.client;
-
-    requires org.eclipse.jetty.websocket.servlet;
+    requires org.eclipse.jetty.websocket.util.server;
     requires org.slf4j;
 
     provides ServletContainerInitializer with JakartaWebSocketServletContainerInitializer;

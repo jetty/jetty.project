@@ -23,7 +23,6 @@ import jakarta.servlet.ServletContextListener;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpointConfig;
-
 import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.echo.BasicEchoEndpoint;
 
 /**

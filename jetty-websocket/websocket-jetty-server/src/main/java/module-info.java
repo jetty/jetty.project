@@ -28,10 +28,10 @@ module org.eclipse.jetty.websocket.jetty.server
 
     requires jetty.servlet.api;
     requires org.eclipse.jetty.websocket.jetty.common;
+    requires org.eclipse.jetty.websocket.util.server;
+    requires org.slf4j;
     requires transitive org.eclipse.jetty.webapp;
     requires transitive org.eclipse.jetty.websocket.jetty.api;
-    requires transitive org.eclipse.jetty.websocket.servlet;
-    requires org.slf4j;
 
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;

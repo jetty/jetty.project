@@ -33,7 +33,6 @@ import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.websocket.jakarta.client.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.jakarta.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jakarta.common.encoders.IntegerEncoder;
-
 import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

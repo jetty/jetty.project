@@ -33,7 +33,6 @@ import jakarta.websocket.Endpoint;
 import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
-
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.Negotiation;

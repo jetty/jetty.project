@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.session.SessionHandler;

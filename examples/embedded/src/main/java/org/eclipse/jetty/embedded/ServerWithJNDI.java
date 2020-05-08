@@ -19,7 +19,6 @@
 package org.eclipse.jetty.embedded;
 
 import java.nio.file.Path;
-import java.util.Properties;
 import javax.naming.NamingException;
 
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;

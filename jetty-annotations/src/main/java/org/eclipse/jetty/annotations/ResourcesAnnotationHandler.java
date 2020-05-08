@@ -22,7 +22,6 @@ import javax.naming.NamingException;
 
 import jakarta.annotation.Resource;
 import jakarta.annotation.Resources;
-
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;

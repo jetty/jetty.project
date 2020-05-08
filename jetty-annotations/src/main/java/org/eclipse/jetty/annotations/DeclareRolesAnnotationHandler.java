@@ -20,7 +20,6 @@ package org.eclipse.jetty.annotations;
 
 import jakarta.annotation.security.DeclareRoles;
 import jakarta.servlet.Servlet;
-
 import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;

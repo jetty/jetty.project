@@ -18,12 +18,12 @@
 
 package jettyissue;
 
+import java.util.Set;
+
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.HandlesTypes;
-
-import java.util.Set;
 
 @HandlesTypes({MyAnnotation.class})
 public class MyServletContainerInitializer implements ServletContainerInitializer {

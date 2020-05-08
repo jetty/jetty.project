@@ -27,7 +27,6 @@ import jakarta.servlet.ServletContext;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
@@ -40,7 +39,7 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.WebSocketMapping;
+import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

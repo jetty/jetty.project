@@ -22,7 +22,6 @@ import java.util.EventListener;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
-
 import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**

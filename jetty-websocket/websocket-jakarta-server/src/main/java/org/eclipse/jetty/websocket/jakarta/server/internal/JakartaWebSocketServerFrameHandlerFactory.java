@@ -23,13 +23,12 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-
 import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientFrameHandlerFactory;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandlerMetadata;
-import org.eclipse.jetty.websocket.servlet.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
+import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeResponse;
 
 public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketClientFrameHandlerFactory implements FrameHandlerFactory
 {

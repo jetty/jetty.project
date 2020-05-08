@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.session;
 import java.util.function.Function;
 
 import jakarta.servlet.http.HttpServletRequest;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

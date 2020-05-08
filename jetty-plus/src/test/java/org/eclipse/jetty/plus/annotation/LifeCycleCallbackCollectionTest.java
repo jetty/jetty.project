@@ -21,7 +21,6 @@ package org.eclipse.jetty.plus.annotation;
 import java.lang.reflect.Method;
 
 import jakarta.servlet.http.HttpServlet;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;

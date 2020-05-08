@@ -62,7 +62,6 @@ import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
@@ -88,7 +87,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

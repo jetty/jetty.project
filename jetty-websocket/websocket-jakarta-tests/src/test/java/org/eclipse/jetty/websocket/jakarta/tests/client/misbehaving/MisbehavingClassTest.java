@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.WebSocketContainer;
-
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.jakarta.tests.CoreServer;

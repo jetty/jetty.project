@@ -1,4 +1,5 @@
-import java.util.jar.*
+import java.util.jar.Attributes
+import java.util.jar.JarFile
 
 File artifact = new File( basedir, "target/jetty-runner.jar" )
 assert artifact.exists()

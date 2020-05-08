@@ -28,7 +28,6 @@ import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContaine
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.websocket.jakarta.tests.EventSocket;
 import org.eclipse.jetty.websocket.jakarta.tests.LocalServer;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

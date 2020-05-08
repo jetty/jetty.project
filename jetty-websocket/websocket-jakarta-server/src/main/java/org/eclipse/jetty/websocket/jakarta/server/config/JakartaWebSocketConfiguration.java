@@ -37,7 +37,7 @@ public class JakartaWebSocketConfiguration extends AbstractConfiguration
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents("org.eclipse.jetty.annotations.AnnotationConfiguration", WebAppConfiguration.class.getName());
-        protectAndExpose("org.eclipse.jetty.websocket.servlet."); // For WebSocketUpgradeFilter
+        protectAndExpose("org.eclipse.jetty.websocket.util.server."); // For WebSocketUpgradeFilter
         protectAndExpose("org.eclipse.jetty.websocket.jakarta.server.config.");
         protectAndExpose("org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainerProvider");
         hide("org.eclipse.jetty.websocket.jakarta.server.internal");

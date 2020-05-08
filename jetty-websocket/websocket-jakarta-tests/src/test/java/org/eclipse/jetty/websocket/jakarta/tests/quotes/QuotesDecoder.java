@@ -25,7 +25,6 @@ import java.io.Reader;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
