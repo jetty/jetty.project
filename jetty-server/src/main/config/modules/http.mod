@@ -39,5 +39,20 @@ etc/jetty-http.xml
 ## Thread priority delta to give to acceptor threads
 # jetty.http.acceptorPriorityDelta=0
 
+## The requested maximum length of the queue of incoming connections.
+# jetty.http.acceptQueueSize=0
+
+## Enable/disable the SO_REUSEADDR socket option.
+# jetty.http.reuseAddress=true
+
+## Enable/disable TCP_NODELAY on accepted sockets.
+# jetty.http.acceptedTcpNoDelay=true
+
+## The SO_RCVBUF option to set on accepted sockets. A value of -1 indicates that it is left to its default value.
+# jetty.http.acceptedReceiveBufferSize=-1
+
+## The SO_SNDBUF option to set on accepted sockets. A value of -1 indicates that it is left to its default value.
+# jetty.http.acceptedSendBufferSize=-1
+
 ## Connect Timeout in milliseconds
 # jetty.http.connectTimeout=15000
