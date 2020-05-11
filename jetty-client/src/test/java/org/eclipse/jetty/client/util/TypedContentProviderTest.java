@@ -21,9 +21,9 @@ package org.eclipse.jetty.client.util;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
@@ -57,7 +57,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 assertEquals("POST", request.getMethod());
@@ -90,13 +90,13 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         Fields fields = new Fields();
         fields.put(name1, value1);
         fields.add(name2, value2);
-        final String content = FormContentProvider.convert(fields);
+        final String content = FormRequestContent.convert(fields);
         final String contentType = "text/plain;charset=UTF-8";
 
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 assertEquals("POST", request.getMethod());
@@ -109,7 +109,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
             .scheme(scenario.getScheme())
             .method(HttpMethod.POST)
             .body(new FormRequestContent(fields))
-            .header(HttpHeader.CONTENT_TYPE, contentType)
+            .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, contentType))
             .send();
 
         assertEquals(200, response.getStatus());
@@ -124,7 +124,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 assertEquals("GET", request.getMethod());

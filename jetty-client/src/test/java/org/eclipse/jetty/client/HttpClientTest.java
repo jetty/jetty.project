@@ -907,7 +907,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         // If no exceptions the test passes.
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .header(HttpHeader.CONNECTION, "close")
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .send();
     }
 
@@ -938,8 +938,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .header(HttpHeader.USER_AGENT, null)
-            .header(HttpHeader.USER_AGENT, userAgent)
+            .headers(headers -> headers.put(HttpHeader.USER_AGENT, userAgent))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -985,7 +984,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         // User agent explicitly removed.
         response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .header(HttpHeader.USER_AGENT, null)
+            .headers(headers -> headers.remove(HttpHeader.USER_AGENT))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -1213,7 +1212,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         ContentResponse response = client.newRequest("http://127.0.0.1:" + connector.getLocalPort() + "/path")
             .scheme(scenario.getScheme())
-            .header(HttpHeader.HOST, host)
+            .headers(headers -> headers.put(HttpHeader.HOST, host))
             .send();
 
         assertEquals(200, response.getStatus());
@@ -1239,7 +1238,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .version(HttpVersion.HTTP_1_0)
-            .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString()))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -1266,7 +1265,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Request request = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .version(HttpVersion.HTTP_1_0)
-            .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString()))
             .timeout(timeout, TimeUnit.MILLISECONDS);
         FuturePromise<Connection> promise = new FuturePromise<>();
         Destination destination = client.resolveDestination(request);
@@ -1295,7 +1294,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
             .version(HttpVersion.HTTP_1_0)
-            .header(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString())
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString()))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -1647,8 +1646,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .timeout(321, TimeUnit.SECONDS)
             .idleTimeout(2221, TimeUnit.SECONDS)
             .followRedirects(true)
-            .header(HttpHeader.CONTENT_TYPE, "application/json")
-            .header("X-Some-Custom-Header", "some-value"));
+            .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, "application/json"))
+            .headers(headers -> headers.put("X-Some-Custom-Header", "some-value")));
 
         assertCopyRequest(client.newRequest("https://example.com")
             .method(HttpMethod.POST)
@@ -1657,30 +1656,30 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             .timeout(123231, TimeUnit.SECONDS)
             .idleTimeout(232342, TimeUnit.SECONDS)
             .followRedirects(false)
-            .header(HttpHeader.ACCEPT, "application/json")
-            .header("X-Some-Other-Custom-Header", "some-other-value"));
+            .headers(headers -> headers.put(HttpHeader.ACCEPT, "application/json"))
+            .headers(headers -> headers.put("X-Some-Other-Custom-Header", "some-other-value")));
 
         assertCopyRequest(client.newRequest("https://example.com")
-            .header(HttpHeader.ACCEPT, "application/json")
-            .header(HttpHeader.ACCEPT, "application/xml")
-            .header("x-same-name", "value1")
-            .header("x-same-name", "value2"));
+            .headers(headers -> headers.add(HttpHeader.ACCEPT, "application/json"))
+            .headers(headers -> headers.add(HttpHeader.ACCEPT, "application/xml"))
+            .headers(headers -> headers.add("x-same-name", "value1"))
+            .headers(headers -> headers.add("x-same-name", "value2")));
 
         assertCopyRequest(client.newRequest("https://example.com")
-            .header(HttpHeader.ACCEPT, "application/json")
-            .header(HttpHeader.CONTENT_TYPE, "application/json"));
+            .headers(headers -> headers.put(HttpHeader.ACCEPT, "application/json"))
+            .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, "application/json")));
 
         assertCopyRequest(client.newRequest("https://example.com")
-            .header("Accept", "application/json")
-            .header("Content-Type", "application/json"));
+            .headers(headers -> headers.put("Accept", "application/json"))
+            .headers(headers -> headers.put("Content-Type", "application/json")));
 
         assertCopyRequest(client.newRequest("https://example.com")
-            .header("X-Custom-Header-1", "value1")
-            .header("X-Custom-Header-2", "value2"));
+            .headers(headers -> headers.put("X-Custom-Header-1", "value1"))
+            .headers(headers -> headers.put("X-Custom-Header-2", "value2")));
 
         assertCopyRequest(client.newRequest("https://example.com")
-            .header("X-Custom-Header-1", "value")
-            .header("X-Custom-Header-2", "value"));
+            .headers(headers -> headers.put("X-Custom-Header-1", "value"))
+            .headers(headers -> headers.put("X-Custom-Header-2", "value")));
     }
 
     @ParameterizedTest

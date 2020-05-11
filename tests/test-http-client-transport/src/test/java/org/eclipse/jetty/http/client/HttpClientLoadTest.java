@@ -43,6 +43,7 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -224,23 +225,23 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
             .method(method);
 
         if (clientClose)
-            request.header(HttpHeader.CONNECTION, "close");
+            request.headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE));
         else if (serverClose)
-            request.header("X-Close", "true");
+            request.headers(headers -> headers.put("X-Close", "true"));
 
         if (clientTimeout > 0)
         {
-            request.header("X-Timeout", String.valueOf(clientTimeout));
+            request.headers(headers -> headers.put("X-Timeout", String.valueOf(clientTimeout)));
             request.idleTimeout(clientTimeout, TimeUnit.MILLISECONDS);
         }
 
         switch (method)
         {
             case "GET":
-                request.header("X-Download", String.valueOf(contentLength));
+                request.headers(headers -> headers.put("X-Download", String.valueOf(contentLength)));
                 break;
             case "POST":
-                request.header("X-Upload", String.valueOf(contentLength));
+                request.headers(headers -> headers.put("X-Upload", String.valueOf(contentLength)));
                 request.body(new BytesRequestContent(new byte[contentLength]));
                 break;
         }

@@ -122,9 +122,9 @@ public abstract class HttpConnection implements IConnection
         }
     }
 
-    protected void normalizeRequest(Request request)
+    protected void normalizeRequest(HttpRequest request)
     {
-        boolean normalized = ((HttpRequest)request).normalized();
+        boolean normalized = request.normalized();
         if (LOG.isDebugEnabled())
             LOG.debug("Normalizing {} {}", !normalized, request);
         if (normalized)
@@ -153,7 +153,7 @@ public abstract class HttpConnection implements IConnection
         if (version.getVersion() <= 11)
         {
             if (!headers.contains(HttpHeader.HOST))
-                request.put(getHttpDestination().getHostField());
+                request.addHeader(getHttpDestination().getHostField());
         }
 
         // Add content headers
@@ -167,22 +167,19 @@ public abstract class HttpConnection implements IConnection
             if (!headers.contains(HttpHeader.CONTENT_TYPE))
             {
                 String contentType = content.getContentType();
+                if (contentType == null)
+                    contentType = getHttpClient().getDefaultRequestContentType();
                 if (contentType != null)
                 {
-                    request.put(new HttpField(HttpHeader.CONTENT_TYPE, contentType));
-                }
-                else
-                {
-                    contentType = getHttpClient().getDefaultRequestContentType();
-                    if (contentType != null)
-                        request.put(new HttpField(HttpHeader.CONTENT_TYPE, contentType));
+                    HttpField field = new HttpField(HttpHeader.CONTENT_TYPE, contentType);
+                    request.addHeader(field);
                 }
             }
             long contentLength = content.getLength();
             if (contentLength >= 0)
             {
                 if (!headers.contains(HttpHeader.CONTENT_LENGTH))
-                    request.put(new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, contentLength));
+                    request.addHeader(new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, contentLength));
             }
         }
 
@@ -195,7 +192,10 @@ public abstract class HttpConnection implements IConnection
                 cookies = convertCookies(HttpCookieStore.matchPath(uri, cookieStore.get(uri)), null);
             cookies = convertCookies(request.getCookies(), cookies);
             if (cookies != null)
-                request.header(HttpHeader.COOKIE, cookies.toString());
+            {
+                HttpField cookieField = new HttpField(HttpHeader.COOKIE, cookies.toString());
+                request.addHeader(cookieField);
+            }
         }
 
         // Authentication

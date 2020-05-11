@@ -29,6 +29,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.EndPoint;
@@ -248,7 +249,7 @@ public class HttpClientProxyProtocolTest
         // The proxy maps the client address, then sends the request.
         ContentResponse response = client.newRequest("localhost", serverPort)
             .tag(tag)
-            .header(HttpHeader.CONNECTION, "close")
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());

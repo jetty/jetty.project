@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
@@ -45,7 +45,6 @@ import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,20 +57,10 @@ public class ConnectionPoolTest
     private ServerConnector connector;
     private HttpClient client;
 
-    public static Stream<Arguments> pools()
+    public static Stream<ConnectionPool.Factory> pools()
     {
-        List<Object[]> pools = new ArrayList<>();
-        pools.add(new Object[]{
-            DuplexConnectionPool.class,
-            (ConnectionPool.Factory)
-                destination -> new DuplexConnectionPool(destination, 8, destination)
-        });
-        pools.add(new Object[]{
-            RoundRobinConnectionPool.class,
-            (ConnectionPool.Factory)
-                destination -> new RoundRobinConnectionPool(destination, 8, destination)
-        });
-        return pools.stream().map(Arguments::of);
+        return Stream.of(destination -> new DuplexConnectionPool(destination, 8, destination),
+            destination -> new RoundRobinConnectionPool(destination, 8, destination));
     }
 
     private void start(final ConnectionPool.Factory factory, Handler handler) throws Exception
@@ -112,7 +101,7 @@ public class ConnectionPoolTest
 
     @ParameterizedTest(name = "[{index}] {0}")
     @MethodSource("pools")
-    public void test(Class<? extends ConnectionPool> connectionPoolClass, ConnectionPool.Factory factory) throws Exception
+    public void test(ConnectionPool.Factory factory) throws Exception
     {
         start(factory, new EmptyServerHandler()
         {
@@ -202,17 +191,17 @@ public class ConnectionPoolTest
             .method(method);
 
         if (clientClose)
-            request.header(HttpHeader.CONNECTION, "close");
+            request.headers(fields -> fields.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE));
         else if (serverClose)
-            request.header("X-Close", "true");
+            request.headers(fields -> fields.put("X-Close", "true"));
 
         switch (method)
         {
             case GET:
-                request.header("X-Download", String.valueOf(contentLength));
+                request.headers(fields -> fields.put("X-Download", String.valueOf(contentLength)));
                 break;
             case POST:
-                request.header(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength));
+                request.headers(fields -> fields.put(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength)));
                 request.body(new BytesRequestContent(new byte[contentLength]));
                 break;
             default:

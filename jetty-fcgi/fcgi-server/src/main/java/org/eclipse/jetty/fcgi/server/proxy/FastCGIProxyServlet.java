@@ -182,12 +182,14 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         // If the Host header is missing, add it.
         if (!proxyRequest.getHeaders().contains(HttpHeader.HOST))
         {
-            String host = request.getServerName();
+            String server = request.getServerName();
             int port = request.getServerPort();
             if (!getHttpClient().isDefaultPort(request.getScheme(), port))
-                host += ":" + port;
-            proxyRequest.header(HttpHeader.HOST, host);
-            proxyRequest.header(HttpHeader.X_FORWARDED_HOST, host);
+                server += ":" + port;
+            String host = server;
+            proxyRequest.headers(headers -> headers
+                .put(HttpHeader.HOST, host)
+                .put(HttpHeader.X_FORWARDED_HOST, host));
         }
 
         // PHP does not like multiple Cookie headers, coalesce into one.
@@ -202,8 +204,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
                 String cookie = cookies.get(i);
                 builder.append(cookie);
             }
-            proxyRequest.header(HttpHeader.COOKIE, null);
-            proxyRequest.header(HttpHeader.COOKIE, builder.toString());
+            proxyRequest.headers(headers -> headers.put(HttpHeader.COOKIE, builder.toString()));
         }
 
         super.sendProxyRequest(request, proxyResponse, proxyRequest);

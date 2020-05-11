@@ -42,6 +42,7 @@ import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.EndPoint;
@@ -180,7 +181,7 @@ public class FailedSelectorTest
 
         ContentResponse response = client.newRequest(dest)
             .method(HttpMethod.GET)
-            .header(HttpHeader.CONNECTION, "close")
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .send();
 
         assertThat(dest + " status", response.getStatus(), is(HttpStatus.OK_200));
@@ -193,7 +194,7 @@ public class FailedSelectorTest
         LOG.info("Requesting GET on {}", dest);
         ContentResponse response = client.newRequest(dest)
             .method(HttpMethod.GET)
-            .header(HttpHeader.CONNECTION, "close")
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .send();
 
         assertThat(dest + " status", response.getStatus(), is(HttpStatus.OK_200));

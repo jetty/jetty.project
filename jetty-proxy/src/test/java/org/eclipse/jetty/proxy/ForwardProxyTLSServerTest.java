@@ -251,12 +251,13 @@ public class ForwardProxyTLSServerTest
             assertEquals(body, content);
 
             content = "body=" + body;
+            int contentLength = content.length();
             ContentResponse response2 = httpClient.newRequest("localhost", serverConnector.getLocalPort())
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.POST)
                 .path("/echo")
-                .header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString())
-                .header(HttpHeader.CONTENT_LENGTH, String.valueOf(content.length()))
+                .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString()))
+                .headers(headers -> headers.put(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength)))
                 .body(new StringRequestContent(content))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
@@ -318,8 +319,8 @@ public class ForwardProxyTLSServerTest
                 .scheme(HttpScheme.HTTPS.asString())
                 .method(HttpMethod.POST)
                 .path("/echo")
-                .header(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString())
-                .header(HttpHeader.CONTENT_LENGTH, String.valueOf(body2.length()))
+                .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.FORM_ENCODED.asString()))
+                .headers(headers -> headers.put(HttpHeader.CONTENT_LENGTH, String.valueOf(body2.length())))
                 .body(new StringRequestContent(body2));
 
             // Make sure the second connection can send the exchange via the tunnel

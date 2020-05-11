@@ -29,6 +29,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -85,7 +86,7 @@ public class GzipHandlerBreakEvenSizeTest
     {
         URI uri = server.getURI().resolve("/content?size=" + size);
         ContentResponse response = client.newRequest(uri)
-            .header(HttpHeader.ACCEPT_ENCODING, "gzip")
+            .headers(headers -> headers.put(HttpHeader.ACCEPT_ENCODING, HttpHeaderValue.GZIP))
             .send();
 
         assertThat("Status Code", response.getStatus(), is(200));

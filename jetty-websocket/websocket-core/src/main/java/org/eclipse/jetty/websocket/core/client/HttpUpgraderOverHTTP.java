@@ -54,16 +54,17 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
     public void prepare(HttpRequest request)
     {
         request.method(HttpMethod.GET).version(HttpVersion.HTTP_1_1)
-            .add(WS_VERSION_FIELD)
-            .add(WS_UPGRADE_FIELD)
-            .add(WS_CONNECTION_FIELD)
-            .header(HttpHeader.SEC_WEBSOCKET_KEY, generateRandomKey())
-            // Per the hybi list: Add no-cache headers to avoid compatibility issue.
-            // There are some proxies that rewrite "Connection: upgrade" to
-            // "Connection: close" in the response if a request doesn't contain
-            // these headers.
-            .add(PRAGMA_NO_CACHE_FIELD)
-            .add(CACHE_CONTROL_NO_CACHE_FIELD);
+            .headers(headers -> headers
+                .put(WS_VERSION_FIELD)
+                .put(WS_UPGRADE_FIELD)
+                .put(WS_CONNECTION_FIELD)
+                .put(HttpHeader.SEC_WEBSOCKET_KEY, generateRandomKey())
+                // Per the hybi list: Add no-cache headers to avoid compatibility issue.
+                // There are some proxies that rewrite "Connection: upgrade" to
+                // "Connection: close" in the response if a request doesn't contain
+                // these headers.
+                .put(PRAGMA_NO_CACHE_FIELD)
+                .put(CACHE_CONTROL_NO_CACHE_FIELD));
 
         // Notify the UpgradeListeners now the headers are set.
         clientUpgradeRequest.requestComplete();

@@ -28,12 +28,14 @@ import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * ClientCrossContextSessionTest
@@ -81,12 +83,13 @@ public class ClientCrossContextSessionTest
 
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
-                assertTrue(sessionCookie != null);
+                assertNotNull(sessionCookie);
                 String sessionId = TestServer.extractSessionId(sessionCookie);
 
                 // Perform a request to contextB with the same session cookie
                 Request request = client.newRequest("http://localhost:" + port + contextB + servletMapping);
-                request.header("Cookie", "JSESSIONID=" + sessionId);
+                HttpField cookie = new HttpField("Cookie", "JSESSIONID=" + sessionId);
+                request.headers(headers -> headers.put(cookie));
                 ContentResponse responseB = request.send();
                 assertEquals(HttpServletResponse.SC_OK, responseB.getStatus());
                 assertEquals(servletA.sessionId, servletB.sessionId);
@@ -122,7 +125,7 @@ public class ClientCrossContextSessionTest
 
             // Check that we don't see things put in session by contextB
             Object objectB = session.getAttribute("B");
-            assertTrue(objectB == null);
+            assertNull(objectB);
         }
     }
 
@@ -145,7 +148,7 @@ public class ClientCrossContextSessionTest
 
             // Check that we don't see things put in session by contextA
             Object objectA = session.getAttribute("A");
-            assertTrue(objectA == null);
+            assertNull(objectA);
         }
     }
 }

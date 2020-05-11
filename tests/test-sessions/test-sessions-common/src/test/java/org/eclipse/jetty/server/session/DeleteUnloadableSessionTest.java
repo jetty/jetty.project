@@ -31,6 +31,7 @@ import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -45,14 +46,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  */
 public class DeleteUnloadableSessionTest
 {
-
     /**
      * DelSessionDataStore
      */
     public static class DelSessionDataStore extends AbstractSessionDataStore
     {
-        int count = 0;
-
         Object o = new Object();
 
         String unloadableId = null;
@@ -64,7 +62,7 @@ public class DeleteUnloadableSessionTest
         }
 
         @Override
-        public boolean exists(String id) throws Exception
+        public boolean exists(String id)
         {
             return o != null;
         }
@@ -77,7 +75,7 @@ public class DeleteUnloadableSessionTest
         }
 
         @Override
-        public boolean delete(String id) throws Exception
+        public boolean delete(String id)
         {
             if (id.equals(unloadableId))
             {
@@ -88,7 +86,7 @@ public class DeleteUnloadableSessionTest
         }
 
         @Override
-        public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
+        public void doStore(String id, SessionData data, long lastSaveTime)
         {
             //pretend it was saved
         }
@@ -102,9 +100,8 @@ public class DeleteUnloadableSessionTest
 
     public static class DelSessionDataStoreFactory extends AbstractSessionDataStoreFactory
     {
-
         @Override
-        public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
+        public SessionDataStore getSessionDataStore(SessionHandler handler)
         {
             return new DelSessionDataStore();
         }
@@ -141,8 +138,8 @@ public class DeleteUnloadableSessionTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         cacheFactory.setRemoveUnloadableSessions(true);
-        SessionDataStoreFactory storeFactory = new DelSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
+        AbstractSessionDataStoreFactory storeFactory = new DelSessionDataStoreFactory();
+        storeFactory.setGracePeriodSec(scavengePeriod);
 
         TestServer server = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
@@ -154,7 +151,7 @@ public class DeleteUnloadableSessionTest
         ServletHolder holder = new ServletHolder(servlet);
         context.addServlet(holder, servletMapping);
 
-        try (StacklessLogging stackless = new StacklessLogging(DeleteUnloadableSessionTest.class.getPackage()))
+        try (StacklessLogging ignored = new StacklessLogging(DeleteUnloadableSessionTest.class.getPackage()))
         {
             server.start();
             int port = server.getPort();
@@ -166,7 +163,8 @@ public class DeleteUnloadableSessionTest
                 scopeListener.setExitSynchronizer(latch);
                 String sessionCookie = "JSESSIONID=w0rm3zxpa6h1zg1mevtv76b3te00.w0;$Path=/";
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=test");
-                request.header("Cookie", sessionCookie);
+                HttpField cookie = new HttpField("Cookie", sessionCookie);
+                request.headers(headers -> headers.put(cookie));
                 ContentResponse response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 

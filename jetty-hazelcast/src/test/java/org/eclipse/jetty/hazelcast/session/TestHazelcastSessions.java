@@ -21,7 +21,6 @@ package org.eclipse.jetty.hazelcast.session;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,6 +28,7 @@ import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -42,17 +42,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestHazelcastSessions
 {
-    public static class TestServlet
-        extends HttpServlet
+    public static class TestServlet extends HttpServlet
     {
-
         @Override
-        protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
         {
             String arg = req.getParameter("action");
             if (arg == null)
@@ -154,16 +150,17 @@ public class TestHazelcastSessions
                 client.GET("http://localhost:" + port + contextPath + "?action=set&value=" + value);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             String sessionCookie = response.getHeaders().get("Set-Cookie");
-            assertTrue(sessionCookie != null);
+            assertNotNull(sessionCookie);
             // Mangle the cookie, replacing Path with $Path, etc.
-            sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+            sessionCookie = sessionCookie.replaceFirst("(\\W)([Pp])ath=", "$1\\$Path=");
 
             String resp = response.getContentAsString();
             assertEquals(resp.trim(), String.valueOf(value));
 
             // Be sure the session value is still there
+            HttpField cookie = new HttpField("Cookie", sessionCookie);
             Request request = client.newRequest("http://localhost:" + port + contextPath + "?action=get");
-            request.header("Cookie", sessionCookie);
+            request.headers(headers -> headers.put(cookie));
             response = request.send();
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
@@ -172,13 +169,13 @@ public class TestHazelcastSessions
 
             //Delete the session
             request = client.newRequest("http://localhost:" + port + contextPath + "?action=del");
-            request.header("Cookie", sessionCookie);
+            request.headers(headers -> headers.put(cookie));
             response = request.send();
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             //Check that the session is gone
             request = client.newRequest("http://localhost:" + port + contextPath + "?action=get");
-            request.header("Cookie", sessionCookie);
+            request.headers(headers -> headers.put(cookie));
             response = request.send();
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             resp = response.getContentAsString();

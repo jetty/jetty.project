@@ -307,7 +307,7 @@ public class SPNEGOAuthentication extends AbstractAuthentication
         @Override
         public void apply(Request request)
         {
-            request.header(header, value);
+            request.headers(headers -> headers.add(header, value));
         }
     }
 

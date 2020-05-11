@@ -22,13 +22,13 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.server.session.Session;
@@ -40,7 +40,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * AttributeNameTest
@@ -109,14 +108,15 @@ public class AttributeNameTest
 
                 String sessionCookie = response.getHeaders().get(HttpHeader.SET_COOKIE);
 
-                assertTrue(sessionCookie != null);
+                assertNotNull(sessionCookie);
                 //Mangle the cookie, replacing Path with $Path, etc.
-                sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+                sessionCookie = sessionCookie.replaceFirst("(\\W)([Pp])ath=", "$1\\$Path=");
 
                 //Make a request to the 2nd server which will do a refresh, use TestServlet to ensure that the
                 //session attribute with dotted name is not removed
                 Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=get");
-                request2.header("Cookie", sessionCookie);
+                HttpField cookie = new HttpField("Cookie", sessionCookie);
+                request2.headers(headers -> headers.put(cookie));
                 ContentResponse response2 = request2.send();
                 assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
             }
@@ -135,7 +135,7 @@ public class AttributeNameTest
     public static class TestServlet extends HttpServlet
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws ServletException, IOException
+        protected void doGet(HttpServletRequest request, HttpServletResponse httpServletResponse) throws IOException
         {
             String action = request.getParameter("action");
             if ("init".equals(action))

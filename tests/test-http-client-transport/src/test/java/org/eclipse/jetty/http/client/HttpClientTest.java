@@ -619,7 +619,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
             .method(HttpMethod.HEAD)
             .path(scenario.servletPath)
-            .header(HttpHeader.ACCEPT, "*/*")
+            .headers(headers -> headers.put(HttpHeader.ACCEPT, "*/*"))
             .send();
 
         assertEquals(status, response.getStatus());

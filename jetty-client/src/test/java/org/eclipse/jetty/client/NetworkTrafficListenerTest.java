@@ -188,7 +188,7 @@ public class NetworkTrafficListenerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
