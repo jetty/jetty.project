@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -697,6 +698,44 @@ public class HttpFieldsTest
     }
 
     @Test
+    public void testAddNullName()
+    {
+        HttpFields fields = new HttpFields();
+        assertThrows(NullPointerException.class, () -> fields.add((String)null, "bogus"));
+        assertThat(fields.size(), is(0));
+
+        assertThrows(NullPointerException.class, () -> fields.add((HttpHeader)null, "bogus"));
+        assertThat(fields.size(), is(0));
+    }
+
+    @Test
+    public void testPutNullName()
+    {
+        HttpFields fields = new HttpFields();
+        assertThrows(NullPointerException.class, () -> fields.put((String)null, "bogus"));
+        assertThat(fields.size(), is(0));
+
+        assertThrows(NullPointerException.class, () -> fields.put(null, (List<String>)null));
+        assertThat(fields.size(), is(0));
+
+        List<String> emptyList = new ArrayList<>();
+        assertThrows(NullPointerException.class, () -> fields.put(null, emptyList));
+        assertThat(fields.size(), is(0));
+
+        assertThrows(NullPointerException.class, () -> fields.put((HttpHeader)null, "bogus"));
+        assertThat(fields.size(), is(0));
+    }
+
+    @Test
+    public void testPutNullValueList()
+    {
+        HttpFields fields = new HttpFields();
+
+        fields.put("name", (List<String>)null);
+        assertThat(fields.size(), is(0));
+    }
+
+    @Test
     public void testPreventNullField()
     {
         // Attempt various ways that may have put a null field in the array that
@@ -710,15 +749,15 @@ public class HttpFieldsTest
         assertThat(fields.size(), is(1));
         ListIterator<HttpField> iter = fields.listIterator();
         iter.next();
-        iter.set(null);
+        iter.set(null); // set field to null - null entry in list now
         assertThat(fields.size(), is(0));
-        iter.add(null);
+        iter.add(null); // attempt to add null entry
         assertThat(fields.size(), is(0));
         fields.put("something", "other");
         assertThat(fields.size(), is(1));
         iter = fields.listIterator();
         iter.next();
-        iter.remove();
+        iter.remove(); // remove only entry
         assertThat(fields.size(), is(0));
         fields.put("something", "other");
         assertThat(fields.size(), is(1));

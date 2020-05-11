@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.function.ToIntFunction;
@@ -675,6 +676,8 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void put(HttpHeader header, String value)
     {
+        Objects.requireNonNull(header, "header");
+
         if (value == null)
             remove(header);
         else
@@ -689,7 +692,12 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void put(String name, List<String> list)
     {
+        Objects.requireNonNull(name, "name");
+
         remove(name);
+        if (list == null)
+            return;
+
         for (String v : list)
         {
             if (v != null)
@@ -728,6 +736,8 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void add(HttpHeader header, String value)
     {
+        Objects.requireNonNull(header, "header");
+
         if (value == null)
             throw new IllegalArgumentException("null value");
 

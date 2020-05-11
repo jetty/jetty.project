@@ -40,7 +40,7 @@ public class HttpField
         if (_header != null && name == null)
             _name = _header.asString();
         else
-            _name = Objects.requireNonNull(name);
+            _name = Objects.requireNonNull(name, "name");
         _value = value;
     }
 
