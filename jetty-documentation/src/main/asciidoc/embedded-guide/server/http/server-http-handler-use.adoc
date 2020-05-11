@@ -245,8 +245,7 @@ Server
 * Number of responses grouped by HTTP code (i.e. how many `2xx` responses, how many `3xx` responses, etc.)
 * Total response content bytes
 
-Server applications can read these values and use them internally, or expose them via some service, or export them via JMX.
-// TODO: xref to the JMX section.
+Server applications can read these values and use them internally, or expose them via some service, or xref:eg-arch-jmx[export them to JMX].
 
 `StatisticsHandler` can be configured at the server level or at the context level.
 

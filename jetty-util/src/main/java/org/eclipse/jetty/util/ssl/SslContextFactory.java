@@ -141,9 +141,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     private final Set<String> _includeProtocols = new LinkedHashSet<>();
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
     private final List<String> _includeCipherSuites = new ArrayList<>();
-    protected final Map<String, X509> _aliasX509 = new HashMap<>();
-    protected final Map<String, X509> _certHosts = new HashMap<>();
-    protected final Map<String, X509> _certWilds = new HashMap<>();
+    private final Map<String, X509> _aliasX509 = new HashMap<>();
+    private final Map<String, X509> _certHosts = new HashMap<>();
+    private final Map<String, X509> _certWilds = new HashMap<>();
     private String[] _selectedProtocols;
     private boolean _useCipherSuitesOrder = true;
     private Comparator<String> _cipherComparator;
@@ -451,6 +451,21 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         _aliasX509.clear();
         _certHosts.clear();
         _certWilds.clear();
+    }
+
+    Map<String, X509> aliasCerts()
+    {
+        return _aliasX509;
+    }
+
+    Map<String, X509> hostCerts()
+    {
+        return _certHosts;
+    }
+
+    Map<String, X509> wildCerts()
+    {
+        return _certWilds;
     }
 
     @ManagedAttribute(value = "The selected TLS protocol versions", readonly = true)
@@ -2157,7 +2172,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             boolean hasSniX509ExtendedKeyManager = false;
 
             // Is SNI needed to select a certificate?
-            if (!_certWilds.isEmpty() || _certHosts.size() > 1 || (_certHosts.size() == 1 && _aliasX509.size() > 1))
+            if (isSniRequired() || !wildCerts().isEmpty() || hostCerts().size() > 1 || (hostCerts().size() == 1 && aliasCerts().size() > 1))
             {
                 for (int idx = 0; idx < managers.length; idx++)
                 {
@@ -2201,7 +2216,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             if (sniHost == null)
             {
                 // No SNI, so reject or delegate.
-                return _sniRequired ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+                return isSniRequired() ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
             }
             else
             {

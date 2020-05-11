@@ -71,7 +71,7 @@ public class ServerConnectorTest
             EndPoint endPoint = baseRequest.getHttpChannel().getEndPoint();
             assertThat("Endpoint", endPoint, instanceOf(SocketChannelEndPoint.class));
             SocketChannelEndPoint channelEndPoint = (SocketChannelEndPoint)endPoint;
-            Socket socket = channelEndPoint.getSocket();
+            Socket socket = channelEndPoint.getChannel().socket();
             ServerConnector connector = (ServerConnector)baseRequest.getHttpChannel().getConnector();
 
             PrintWriter out = response.getWriter();
@@ -214,7 +214,7 @@ public class ServerConnectorTest
     }
 
     @Test
-    public void testAddFirstConnectionFactory() throws Exception
+    public void testAddFirstConnectionFactory()
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -236,7 +236,7 @@ public class ServerConnectorTest
     public void testExceptionWhileAccepting() throws Exception
     {
         Server server = new Server();
-        try (StacklessLogging stackless = new StacklessLogging(AbstractConnector.class))
+        try (StacklessLogging ignored = new StacklessLogging(AbstractConnector.class))
         {
             AtomicLong spins = new AtomicLong();
             ServerConnector connector = new ServerConnector(server, 1, 1)

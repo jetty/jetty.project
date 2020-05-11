@@ -25,7 +25,7 @@ import java.util.Map;
 import javax.websocket.server.HandshakeRequest;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
 
 public class JsrHandshakeRequest implements HandshakeRequest
 {

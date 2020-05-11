@@ -3,51 +3,46 @@
 pipeline {
   agent any
   // save some io during the build
-  options { durabilityHint('PERFORMANCE_OPTIMIZED') }
+  options { durabilityHint( 'PERFORMANCE_OPTIMIZED' ) }
   stages {
-    stage("Parallel Stage") {
+    stage( "Parallel Stage" ) {
       parallel {
-        stage("Build / Test - JDK11") {
+        stage( "Build / Test - JDK11" ) {
           agent {
             node { label 'linux' }
           }
-          options { timeout(time: 120, unit: 'MINUTES') }
           steps {
-            container('jetty-build') {
-              mavenBuild("jdk11", "-T3 -Pmongodb clean install", "maven3", true) // -Pautobahn
-              // Collect up the jacoco execution results (only on main build)
-              jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-                exclusionPattern: '' +
-                  // build tools
-                  '**/org/eclipse/jetty/ant/**' +
-                  ',**/org/eclipse/jetty/maven/**' +
-                  ',**/org/eclipse/jetty/jspc/**' +
-                  // example code / documentation
-                  ',**/org/eclipse/jetty/embedded/**' +
-                  ',**/org/eclipse/jetty/asyncrest/**' +
-                  ',**/org/eclipse/jetty/demo/**' +
-                  // special environments / late integrations
-                  ',**/org/eclipse/jetty/gcloud/**' +
-                  ',**/org/eclipse/jetty/infinispan/**' +
-                  ',**/org/eclipse/jetty/osgi/**' +
-                  ',**/org/eclipse/jetty/spring/**' +
-                  ',**/org/eclipse/jetty/http/spi/**' +
-                  // test classes
-                  ',**/org/eclipse/jetty/tests/**' +
-                  ',**/org/eclipse/jetty/test/**',
-                execPattern: '**/target/jacoco.exec',
-                classPattern: '**/target/classes',
-                sourcePattern: '**/src/main/java'
-              warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-              junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
+            container( 'jetty-build' ) {
+              timeout( time: 120, unit: 'MINUTES' ) {
+                mavenBuild( "jdk11", "-T3 -Pmongodb clean install", "maven3", true ) // -Pautobahn
+                // Collect up the jacoco execution results (only on main build)
+                jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
+                       exclusionPattern: '' +
+                               // build tools
+                               '**/org/eclipse/jetty/ant/**' + ',**/org/eclipse/jetty/maven/**' +
+                               ',**/org/eclipse/jetty/jspc/**' +
+                               // example code / documentation
+                               ',**/org/eclipse/jetty/embedded/**' + ',**/org/eclipse/jetty/asyncrest/**' +
+                               ',**/org/eclipse/jetty/demo/**' +
+                               // special environments / late integrations
+                               ',**/org/eclipse/jetty/gcloud/**' + ',**/org/eclipse/jetty/infinispan/**' +
+                               ',**/org/eclipse/jetty/osgi/**' + ',**/org/eclipse/jetty/spring/**' +
+                               ',**/org/eclipse/jetty/http/spi/**' +
+                               // test classes
+                               ',**/org/eclipse/jetty/tests/**' + ',**/org/eclipse/jetty/test/**',
+                       execPattern: '**/target/jacoco.exec',
+                       classPattern: '**/target/classes',
+                       sourcePattern: '**/src/main/java'
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+                junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
+              }
             }
           }
         }
-
-        stage("Build / Test - JDK14") {
+        stage( "Build / Test - JDK14" ) {
           agent { node { label 'linux' } }
           steps {
-            container('jetty-build') {
+            container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
                 mavenBuild( "jdk14", "-T3 -Pmongodb clean install", "maven3", true )
                 warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
@@ -57,15 +52,26 @@ pipeline {
           }
         }
 
-        stage("Build Javadoc") {
+        stage( "Build Javadoc" ) {
           agent { node { label 'linux' } }
           steps {
-            container('jetty-build') {
+            container( 'jetty-build' ) {
               timeout( time: 30, unit: 'MINUTES' ) {
                 mavenBuild( "jdk11",
                             "package source:jar javadoc:jar javadoc:aggregate-jar -Peclipse-release  -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
                             "maven3", true )
                 warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
+              }
+            }
+          }
+        }
+        stage( "Build Compact3" ) {
+          agent { node { label 'linux' } }
+          steps {
+            container( 'jetty-build' ) {
+              timeout( time: 30, unit: 'MINUTES' ) {
+                mavenBuild( "jdk11", "-T3 -Pcompact3 clean install -DskipTests", "maven3", true )
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
               }
             }
           }
@@ -86,10 +92,11 @@ pipeline {
   }
 }
 
+
 def slackNotif() {
   script {
     try {
-      if (env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-9.4.x') {
+      if (env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-9.4.x' || env.BRANCH_NAME == 'jetty-11.0.x') {
         //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
         // by ${BUILD_USER}
         COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
@@ -126,7 +133,7 @@ def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
     mavenOpts: mavenOpts,
     mavenLocalRepo: localRepo) {
     // Some common Maven command line + provided command line
-    sh "mvn -Pci -V -B -e -fae -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
+    sh "mvn -Premote-session-tests -Pci -V -B -e -fae -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
   }
 }
 

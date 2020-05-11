@@ -71,6 +71,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpCookie.SetCookieHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -393,6 +394,11 @@ public class Request implements HttpServletRequest
 
         HttpFields.Mutable fields = HttpFields.build(getHttpFields(), NOT_PUSHED_HEADERS);
 
+        HttpField authField = getHttpFields().getField(HttpHeader.AUTHORIZATION);
+        //TODO check what to do for digest etc etc
+        if (getUserPrincipal() != null && authField.getValue().startsWith("Basic"))
+            fields.add(authField);
+
         String id;
         try
         {
@@ -410,11 +416,46 @@ public class Request implements HttpServletRequest
             id = getRequestedSessionId();
         }
 
+        Map<String,String> cookies = new HashMap<>();
+        Cookie[] existingCookies = getCookies();
+        if (existingCookies != null)
+        {        
+            for (Cookie c: getCookies())
+            {
+                cookies.put(c.getName(), c.getValue());
+            }
+        }
+
+        //Any Set-Cookies that were set on the response must be set as Cookies on the
+        //PushBuilder, unless the max-age of the cookie is <= 0
+        HttpFields responseFields = getResponse().getHttpFields();
+        for (HttpField field : responseFields)
+        {
+            HttpHeader header = field.getHeader();
+            if (header == HttpHeader.SET_COOKIE)
+            {
+                HttpCookie cookie = ((SetCookieHttpField)field).getHttpCookie();
+                if (cookie.getMaxAge() > 0)
+                    cookies.put(cookie.getName(), cookie.getValue());
+                else
+                    cookies.remove(cookie.getName());
+            }
+        }
+
+        if (!cookies.isEmpty())
+        {
+            StringBuilder buff = new StringBuilder();
+            for (Map.Entry<String,String> entry : cookies.entrySet())
+            {
+                if (buff.length() > 0)
+                    buff.append("; ");
+                buff.append(entry.getKey()).append('=').append(entry.getValue());
+            }
+            fields.add(new HttpField(HttpHeader.COOKIE, buff.toString()));
+        }
+        
         PushBuilder builder = new PushBuilderImpl(this, fields, getMethod(), getQueryString(), id);
         builder.addHeader("referer", getRequestURL().toString());
-
-        // TODO process any set cookies
-        // TODO process any user_identity
 
         return builder;
     }

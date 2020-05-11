@@ -465,10 +465,10 @@ public class SocketChannelEndPointTest
             @Override
             protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
             {
-                SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, selectionKey, getScheduler());
-                _lastEndPoint = endp;
+                SocketChannelEndPoint endPoint = new SocketChannelEndPoint((SocketChannel)channel, selector, selectionKey, getScheduler());
+                _lastEndPoint = endPoint;
                 _lastEndPointLatch.countDown();
-                return endp;
+                return endPoint;
             }
 
             @Override
@@ -580,11 +580,11 @@ public class SocketChannelEndPointTest
 
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
         {
-            SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
-            endp.setIdleTimeout(60000);
-            _lastEndPoint = endp;
+            SocketChannelEndPoint endPoint = new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler());
+            endPoint.setIdleTimeout(60000);
+            _lastEndPoint = endPoint;
             _lastEndPointLatch.countDown();
-            return endp;
+            return endPoint;
         }
 
         @Override
@@ -743,7 +743,7 @@ public class SocketChannelEndPointTest
                 return;
             }
 
-            EndPoint endp = getEndPoint();
+            EndPoint endPoint = getEndPoint();
             try
             {
                 _last = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
@@ -756,17 +756,17 @@ public class SocketChannelEndPointTest
                     BufferUtil.compact(_in);
                     if (BufferUtil.isFull(_in))
                         throw new IllegalStateException("FULL " + BufferUtil.toDetailString(_in));
-                    int filled = endp.fill(_in);
+                    int filled = endPoint.fill(_in);
                     if (filled > 0)
                         progress = true;
 
                     // If the tests wants to block, then block
-                    while (_blockAt.get() > 0 && endp.isOpen() && _in.remaining() < _blockAt.get())
+                    while (_blockAt.get() > 0 && endPoint.isOpen() && _in.remaining() < _blockAt.get())
                     {
                         FutureCallback future = _blockingRead = new FutureCallback();
                         fillInterested();
                         future.get();
-                        filled = endp.fill(_in);
+                        filled = endPoint.fill(_in);
                         progress |= filled > 0;
                     }
 
@@ -782,18 +782,18 @@ public class SocketChannelEndPointTest
                         for (int i = 0; i < _writeCount.get(); i++)
                         {
                             FutureCallback blockingWrite = new FutureCallback();
-                            endp.write(blockingWrite, out.asReadOnlyBuffer());
+                            endPoint.write(blockingWrite, out.asReadOnlyBuffer());
                             blockingWrite.get();
                         }
                         progress = true;
                     }
 
                     // are we done?
-                    if (endp.isInputShutdown())
-                        endp.shutdownOutput();
+                    if (endPoint.isInputShutdown())
+                        endPoint.shutdownOutput();
                 }
 
-                if (endp.isOpen())
+                if (endPoint.isOpen())
                     fillInterested();
             }
             catch (ExecutionException e)
@@ -802,9 +802,9 @@ public class SocketChannelEndPointTest
                 try
                 {
                     FutureCallback blockingWrite = new FutureCallback();
-                    endp.write(blockingWrite, BufferUtil.toBuffer("EE: " + BufferUtil.toString(_in)));
+                    endPoint.write(blockingWrite, BufferUtil.toBuffer("EE: " + BufferUtil.toString(_in)));
                     blockingWrite.get();
-                    endp.shutdownOutput();
+                    endPoint.shutdownOutput();
                 }
                 catch (Exception e2)
                 {

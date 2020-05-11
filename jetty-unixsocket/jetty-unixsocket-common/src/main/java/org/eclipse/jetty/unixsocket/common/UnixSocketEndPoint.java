@@ -23,22 +23,25 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 
 import jnr.unixsocket.UnixSocketChannel;
-import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UnixSocketEndPoint extends ChannelEndPoint
+public class UnixSocketEndPoint extends SocketChannelEndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(UnixSocketEndPoint.class);
-
-    private final UnixSocketChannel _channel;
 
     public UnixSocketEndPoint(UnixSocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
         super(channel, selector, key, scheduler);
-        _channel = channel;
+    }
+
+    @Override
+    public UnixSocketChannel getChannel()
+    {
+        return (UnixSocketChannel)super.getChannel();
     }
 
     @Override
@@ -56,11 +59,9 @@ public class UnixSocketEndPoint extends ChannelEndPoint
     @Override
     protected void doShutdownOutput()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("oshut {}", this);
         try
         {
-            _channel.shutdownOutput();
+            getChannel().shutdownOutput();
             super.doShutdownOutput();
         }
         catch (IOException e)

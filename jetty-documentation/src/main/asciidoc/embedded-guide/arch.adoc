@@ -21,5 +21,6 @@
 == Jetty Architecture
 
 include::arch-bean.adoc[]
+include::arch-jmx.adoc[]
 include::arch-listener.adoc[]
 include::arch-io.adoc[]

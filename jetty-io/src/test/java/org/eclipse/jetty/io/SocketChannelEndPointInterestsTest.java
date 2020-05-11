@@ -69,7 +69,7 @@ public class SocketChannelEndPointInterestsTest
             @Override
             protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
             {
-                SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler())
+                SocketChannelEndPoint endp = new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler())
                 {
                     @Override
                     protected void onIncompleteFlush()

@@ -66,7 +66,7 @@ public class ConnectorServer extends AbstractLifeCycle
     private JMXServiceURL _jmxURL;
     private final Map<String, Object> _environment;
     private final String _objectName;
-    private final SslContextFactory _sslContextFactory;
+    private final SslContextFactory.Server _sslContextFactory;
     private int _registryPort;
     private int _rmiPort;
     private JMXConnectorServer _connectorServer;
@@ -98,7 +98,7 @@ public class ConnectorServer extends AbstractLifeCycle
         this(svcUrl, environment, name, null);
     }
 
-    public ConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, String name, SslContextFactory sslContextFactory)
+    public ConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, String name, SslContextFactory.Server sslContextFactory)
     {
         this._jmxURL = svcUrl;
         this._environment = environment == null ? new HashMap<>() : new HashMap<>(environment);
@@ -243,6 +243,7 @@ public class ConnectorServer extends AbstractLifeCycle
             if (_sslContextFactory == null)
             {
                 ServerSocket server = new ServerSocket();
+                server.setReuseAddress(true);
                 server.bind(new InetSocketAddress(address, port));
                 return server;
             }

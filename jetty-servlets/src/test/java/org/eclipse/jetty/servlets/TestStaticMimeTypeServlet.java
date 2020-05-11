@@ -31,7 +31,7 @@ import org.eclipse.jetty.http.MimeTypes;
  * Test servlet for testing against unusual MimeTypes and Content-Types.
  */
 @SuppressWarnings("serial")
-public class TestStaticMimeTypeServlet extends TestDirContentServlet
+public class TestStaticMimeTypeServlet extends AbstractFileContentServlet
 {
     private MimeTypes mimeTypes;
 
@@ -63,7 +63,7 @@ public class TestStaticMimeTypeServlet extends TestDirContentServlet
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        String fileName = request.getServletPath();
+        String fileName = request.getPathInfo();
         byte[] dataBytes = loadContentFileBytes(fileName);
 
         response.setContentLength(dataBytes.length);

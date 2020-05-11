@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
@@ -59,7 +60,7 @@ public class ManyHandlersTest extends AbstractEmbeddedTest
 
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.GET)
-            .header(HttpHeader.ACCEPT_ENCODING, "gzip")
+            .headers(headers -> headers.put(HttpHeader.ACCEPT_ENCODING, HttpHeaderValue.GZIP))
             .send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 
@@ -84,7 +85,7 @@ public class ManyHandlersTest extends AbstractEmbeddedTest
         URI uri = server.getURI().resolve("/hello");
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.GET)
-            .header(HttpHeader.ACCEPT_ENCODING, "gzip")
+            .headers(headers -> headers.put(HttpHeader.ACCEPT_ENCODING, HttpHeaderValue.GZIP))
             .send();
         assertThat("HTTP Response Status", response.getStatus(), is(HttpStatus.OK_200));
 

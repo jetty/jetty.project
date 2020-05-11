@@ -379,7 +379,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         // Make a request, expect 407 + 204.
         ContentResponse response1 = client.newRequest(serverHost, serverPort)
             .scheme(scenario.getScheme())
-            .header(HttpHeader.AUTHORIZATION, "Basic foobar")
+            .headers(headers -> headers.put(HttpHeader.AUTHORIZATION, "Basic foobar"))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -390,7 +390,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
         requests.set(0);
         ContentResponse response2 = client.newRequest(serverHost, serverPort)
             .scheme(scenario.getScheme())
-            .header(HttpHeader.AUTHORIZATION, "Basic foobar")
+            .headers(headers -> headers.put(HttpHeader.AUTHORIZATION, "Basic foobar"))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 

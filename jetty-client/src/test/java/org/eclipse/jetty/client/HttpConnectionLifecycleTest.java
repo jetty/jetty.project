@@ -189,7 +189,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             public void onBegin(Request request)
             {
                 // Remove the host header, this will make the request invalid
-                request.header(HttpHeader.HOST, null);
+                request.headers(headers -> headers.remove(HttpHeader.HOST));
             }
 
             @Override
@@ -251,7 +251,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             public void onBegin(Request request)
             {
                 // Remove the host header, this will make the request invalid
-                request.header(HttpHeader.HOST, null);
+                request.headers(headers -> headers.remove(HttpHeader.HOST));
             }
 
             @Override

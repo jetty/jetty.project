@@ -24,13 +24,13 @@ import java.util.List;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
 import org.eclipse.jetty.websocket.javax.tests.WSServer;
 import org.eclipse.jetty.websocket.javax.tests.server.sockets.echo.BasicEchoSocket;
+import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -39,7 +39,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 /**
- * Testing the use of an alternate {@link org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter}
+ * Testing the use of an alternate {@link WebSocketUpgradeFilter}
  * defined in the WEB-INF/web.xml
  */
 @ExtendWith(WorkDirExtension.class)
@@ -50,22 +50,21 @@ public class AltFilterTest
     @Test
     public void testEcho() throws Exception
     {
-        WSServer wsb = new WSServer(testdir.getPath(), "app");
-        wsb.copyWebInf("alt-filter-web.xml");
+        WSServer wsb = new WSServer(testdir.getPath());
+        WSServer.WebApp app = wsb.createWebApp("app");
+        app.copyWebInf("alt-filter-web.xml");
         // the endpoint (extends javax.websocket.Endpoint)
-        wsb.copyClass(BasicEchoSocket.class);
+        app.copyClass(BasicEchoSocket.class);
+        app.deploy();
 
         try
         {
             wsb.start();
 
-            WebAppContext webapp = wsb.createWebAppContext();
-            wsb.deployWebapp(webapp);
-
-            FilterHolder filterWebXml = webapp.getServletHandler().getFilter("wsuf-test");
+            FilterHolder filterWebXml = app.getWebAppContext().getServletHandler().getFilter("wsuf-test");
             assertThat("Filter[wsuf-test]", filterWebXml, notNullValue());
 
-            FilterHolder filterSCI = webapp.getServletHandler().getFilter("Jetty_WebSocketUpgradeFilter");
+            FilterHolder filterSCI = app.getWebAppContext().getServletHandler().getFilter("Jetty_WebSocketUpgradeFilter");
             assertThat("Filter[Jetty_WebSocketUpgradeFilter]", filterSCI, nullValue());
 
             List<Frame> send = new ArrayList<>();

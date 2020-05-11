@@ -54,7 +54,7 @@ public class HttpClientCorrelationDataTest extends AbstractHttpClientServerTest
             @Override
             public void onQueued(Request request)
             {
-                request.header(correlationName, correlation.get());
+                request.headers(headers -> headers.put(correlationName, correlation.get()));
             }
         });
 

@@ -59,18 +59,18 @@ public class SocketCustomizationListener implements Listener
     @Override
     public void onOpened(Connection connection)
     {
-        EndPoint endp = connection.getEndPoint();
+        EndPoint endPoint = connection.getEndPoint();
         boolean ssl = false;
 
-        if (_ssl && endp instanceof DecryptedEndPoint)
+        if (_ssl && endPoint instanceof DecryptedEndPoint)
         {
-            endp = ((DecryptedEndPoint)endp).getSslConnection().getEndPoint();
+            endPoint = ((DecryptedEndPoint)endPoint).getSslConnection().getEndPoint();
             ssl = true;
         }
 
-        if (endp instanceof SocketChannelEndPoint)
+        if (endPoint instanceof SocketChannelEndPoint)
         {
-            Socket socket = ((SocketChannelEndPoint)endp).getSocket();
+            Socket socket = ((SocketChannelEndPoint)endPoint).getChannel().socket();
             customize(socket, connection.getClass(), ssl);
         }
     }

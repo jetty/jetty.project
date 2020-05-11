@@ -86,7 +86,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
 
         var request = client.newRequest(host, port)
             .scheme(scenario.getScheme())
-            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .body(new StringRequestContent("0"))
             .onRequestSuccess(r ->
             {
@@ -126,7 +126,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         long idleTimeout = 1000;
         var request = client.newRequest(host, port)
             .scheme(scenario.getScheme())
-            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
             .onRequestSuccess(r ->
             {
@@ -188,7 +188,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
         CountDownLatch resultLatch = new CountDownLatch(1);
         var request = client.newRequest(host, port)
             .scheme(scenario.getScheme())
-            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .body(content)
             .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
             .onRequestSuccess(r ->
@@ -242,7 +242,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
 
         var request = client.newRequest(host, port)
             .scheme(scenario.getScheme())
-            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .onRequestSuccess(r ->
             {
                 HttpDestination destination = (HttpDestination)client.resolveDestination(r);
@@ -250,10 +250,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
                 HttpConnectionOverHTTP connection = (HttpConnectionOverHTTP)connectionPool.getActiveConnections().iterator().next();
                 assertFalse(connection.getEndPoint().isOutputShutdown());
             })
-            .onResponseHeaders(r ->
-            {
-                ((HttpResponse)r).getHeaderFieldsMutable().remove(HttpHeader.CONNECTION);
-            });
+            .onResponseHeaders(r -> ((HttpResponse)r).headers(headers -> headers.remove(HttpHeader.CONNECTION)));
         ContentResponse response = request.send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());

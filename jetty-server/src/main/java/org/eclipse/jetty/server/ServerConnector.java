@@ -35,7 +35,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
@@ -83,6 +82,9 @@ public class ServerConnector extends AbstractNetworkConnector
     private volatile int _localPort = -1;
     private volatile int _acceptQueueSize = 0;
     private volatile boolean _reuseAddress = true;
+    private volatile boolean _acceptedTcpNoDelay = true;
+    private volatile int _acceptedReceiveBufferSize = -1;
+    private volatile int _acceptedSendBufferSize = -1;
 
     /**
      * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
@@ -397,7 +399,11 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         try
         {
-            socket.setTcpNoDelay(true);
+            socket.setTcpNoDelay(_acceptedTcpNoDelay);
+            if (_acceptedReceiveBufferSize > -1)
+                socket.setReceiveBufferSize(_acceptedReceiveBufferSize);
+            if (_acceptedSendBufferSize > -1)
+                socket.setSendBufferSize(_acceptedSendBufferSize);
         }
         catch (SocketException e)
         {
@@ -424,7 +430,7 @@ public class ServerConnector extends AbstractNetworkConnector
         return _localPort;
     }
 
-    protected ChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
+    protected SocketChannelEndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key) throws IOException
     {
         SocketChannelEndPoint endpoint = new SocketChannelEndPoint(channel, selectSet, key, getScheduler());
         endpoint.setIdleTimeout(getIdleTimeout());
@@ -452,6 +458,7 @@ public class ServerConnector extends AbstractNetworkConnector
      * @return whether the server socket reuses addresses
      * @see ServerSocket#getReuseAddress()
      */
+    @ManagedAttribute("Server Socket SO_REUSEADDR")
     public boolean getReuseAddress()
     {
         return _reuseAddress;
@@ -464,6 +471,67 @@ public class ServerConnector extends AbstractNetworkConnector
     public void setReuseAddress(boolean reuseAddress)
     {
         _reuseAddress = reuseAddress;
+    }
+
+    /**
+     * @return whether the accepted socket gets {@link java.net.SocketOptions#TCP_NODELAY TCP_NODELAY} enabled.
+     * @see Socket#getTcpNoDelay()
+     */
+    @ManagedAttribute("Accepted Socket TCP_NODELAY")
+    public boolean getAcceptedTcpNoDelay()
+    {
+        return _acceptedTcpNoDelay;
+    }
+
+    /**
+     * @param tcpNoDelay whether {@link java.net.SocketOptions#TCP_NODELAY TCP_NODELAY} gets enabled on the the accepted socket.
+     * @see Socket#setTcpNoDelay(boolean)
+     */
+    public void setAcceptedTcpNoDelay(boolean tcpNoDelay)
+    {
+        this._acceptedTcpNoDelay = tcpNoDelay;
+    }
+
+    /**
+     * @return the {@link java.net.SocketOptions#SO_RCVBUF SO_RCVBUF} size to set onto the accepted socket.
+     * A value of -1 indicates that it is left to its default value.
+     * @see Socket#getReceiveBufferSize()
+     */
+    @ManagedAttribute("Accepted Socket SO_RCVBUF")
+    public int getAcceptedReceiveBufferSize()
+    {
+        return _acceptedReceiveBufferSize;
+    }
+
+    /**
+     * @param receiveBufferSize the {@link java.net.SocketOptions#SO_RCVBUF SO_RCVBUF} size to set onto the accepted socket.
+     * A value of -1 indicates that it is left to its default value.
+     * @see Socket#setReceiveBufferSize(int)
+     */
+    public void setAcceptedReceiveBufferSize(int receiveBufferSize)
+    {
+        this._acceptedReceiveBufferSize = receiveBufferSize;
+    }
+
+    /**
+     * @return the {@link java.net.SocketOptions#SO_SNDBUF SO_SNDBUF} size to set onto the accepted socket.
+     * A value of -1 indicates that it is left to its default value.
+     * @see Socket#getSendBufferSize()
+     */
+    @ManagedAttribute("Accepted Socket SO_SNDBUF")
+    public int getAcceptedSendBufferSize()
+    {
+        return _acceptedSendBufferSize;
+    }
+
+    /**
+     * @param sendBufferSize the {@link java.net.SocketOptions#SO_SNDBUF SO_SNDBUF} size to set onto the accepted socket.
+     * A value of -1 indicates that it is left to its default value.
+     * @see Socket#setSendBufferSize(int)
+     */
+    public void setAcceptedSendBufferSize(int sendBufferSize)
+    {
+        this._acceptedSendBufferSize = sendBufferSize;
     }
 
     @Override
@@ -511,9 +579,9 @@ public class ServerConnector extends AbstractNetworkConnector
         }
 
         @Override
-        protected ChannelEndPoint newEndPoint(SelectableChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
+        protected SocketChannelEndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
         {
-            return ServerConnector.this.newEndPoint((SocketChannel)channel, selectSet, selectionKey);
+            return ServerConnector.this.newEndPoint((SocketChannel)channel, selector, selectionKey);
         }
 
         @Override

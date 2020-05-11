@@ -50,9 +50,13 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.Client
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP2.class);
+
     private final ContentNotifier contentNotifier = new ContentNotifier(this);
 
     public HttpReceiverOverHTTP2(HttpChannel channel)
