@@ -305,7 +305,7 @@ public class ErrorHandler extends AbstractHandler
                 // TODO error page may cause a BufferOverflow.  In which case we try
                 // TODO again with stacks disabled. If it still overflows, it is
                 // TODO written without a body.
-                ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().acquireBuffer();
+                ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getBuffer();
                 ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
                 PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
 
