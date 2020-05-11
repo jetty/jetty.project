@@ -31,18 +31,19 @@ import org.hibernate.search.cfg.Environment;
 import org.hibernate.search.cfg.SearchMapping;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.SerializationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * RemoteInfinispanTestSupport
@@ -57,18 +58,28 @@ public class RemoteInfinispanTestSupport
     private static final Logger INFINISPAN_LOG =
         LoggerFactory.getLogger("org.eclipse.jetty.server.session.remote.infinispanLogs");
 
-    static GenericContainer infinispan =
-        new GenericContainer("jboss/infinispan-server:" +
-                                  System.getProperty("infinispan.docker.version", "9.4.11.Final"))
-            .withEnv("APP_USER","theuser")
-            .withEnv("APP_PASS","foobar")
-            .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
+    static GenericContainer infinispan;
 
     static
     {
         try
         {
+            Testcontainers.exposeHostPorts(11222);
             long start = System.currentTimeMillis();
+            String infinispanVersion = System.getProperty("infinispan.docker.image.version", "9.4.8.Final");
+            infinispan =
+                new GenericContainer(System.getProperty("infinispan.docker.image.name", "jboss/infinispan-server") +
+                                         ":" + infinispanVersion)
+                    .withEnv("APP_USER","theuser")
+                    .withEnv("APP_PASS","foobar")
+                    .withEnv("MGMT_USER", "admin")
+                    .withEnv("MGMT_PASS", "admin")
+                    .withExposedPorts(11222)
+                    .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
+            if (infinispanVersion.startsWith("9.4"))
+            {
+                infinispan =  infinispan.withCommand("standalone");
+            }
             infinispan.start();
             String host = infinispan.getContainerIpAddress();
             System.setProperty("hotrod.host", host);
@@ -83,15 +94,22 @@ public class RemoteInfinispanTestSupport
             Properties properties = new Properties();
             properties.put(Environment.MODEL_MAPPING, mapping);
 
-            ConfigurationBuilder clientBuilder = new ConfigurationBuilder();
-            clientBuilder.withProperties(properties).addServer().host(host).port(port)
-                .security().authentication().enable().realm("default")
-                .serverName("infinispan")
-                .saslMechanism("DIGEST-MD5")
-                .username("theuser").password("foobar")
+            ConfigurationBuilder configurationBuilder = new ConfigurationBuilder().withProperties(properties)
+                .addServer().host(host).port(port)
                 .marshaller(new ProtoStreamMarshaller());
 
-            _manager = new RemoteCacheManager(clientBuilder.build());
+            if (infinispanVersion.startsWith("1"))
+            {
+                configurationBuilder.security().authentication()
+                    .realm("default")
+                    .serverName("infinispan")
+                    .saslMechanism("DIGEST-MD5")
+                    .username("theuser").password("foobar");
+            }
+
+            Configuration configuration = configurationBuilder.build();
+
+            _manager = new RemoteCacheManager(configuration);
 
             FileDescriptorSource fds = new FileDescriptorSource();
             fds.addProtoFiles("/session.proto");
@@ -111,7 +129,7 @@ public class RemoteInfinispanTestSupport
             }
 
             String content = baos.toString("UTF-8");
-            _manager.getCache("___protobuf_metadata").put("session.proto", content);
+            _manager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
         }
         catch (Exception e)
         {
@@ -140,7 +158,7 @@ public class RemoteInfinispanTestSupport
 
     public void setup() throws Exception
     {
-        _cache = _manager.getCache(_name);
+        _cache = _manager.administration().getOrCreateCache(_name,(String)null);
     }
 
     public void teardown() throws Exception
