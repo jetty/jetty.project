@@ -767,7 +767,7 @@ public class HttpFieldsTest
     @Test
     public void testIteration()
     {
-        HttpFields header = new HttpFields();
+        HttpFields header = new HttpFields(5);
         Iterator<HttpField> i = header.iterator();
         assertThat(i.hasNext(), is(false));
 

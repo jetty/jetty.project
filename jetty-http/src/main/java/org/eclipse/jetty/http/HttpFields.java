@@ -636,7 +636,8 @@ public class HttpFields implements Iterable<HttpField>
             {
                 if (put)
                 {
-                    System.arraycopy(_fields, i + 1, _fields, i, --_size - i);
+                    _size--;
+                    System.arraycopy(_fields, i + 1, _fields, i, _size - i);
                 }
                 else
                 {
@@ -676,7 +677,7 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void put(HttpHeader header, String value)
     {
-        Objects.requireNonNull(header, "header");
+        Objects.requireNonNull(header, "header must not be null");
 
         if (value == null)
             remove(header);
@@ -692,7 +693,7 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void put(String name, List<String> list)
     {
-        Objects.requireNonNull(name, "name");
+        Objects.requireNonNull(name, "name must not be null");
 
         remove(name);
         if (list == null)
@@ -736,7 +737,7 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void add(HttpHeader header, String value)
     {
-        Objects.requireNonNull(header, "header");
+        Objects.requireNonNull(header, "header must not be null");
 
         if (value == null)
             throw new IllegalArgumentException("null value");
@@ -760,7 +761,8 @@ public class HttpFields implements Iterable<HttpField>
             if (f.getHeader() == name)
             {
                 removed = f;
-                System.arraycopy(_fields, i + 1, _fields, i, --_size - i);
+                _size--;
+                System.arraycopy(_fields, i + 1, _fields, i, _size - i);
             }
         }
         return removed;
@@ -781,7 +783,8 @@ public class HttpFields implements Iterable<HttpField>
             if (f.getName().equalsIgnoreCase(name))
             {
                 removed = f;
-                System.arraycopy(_fields, i + 1, _fields, i, --_size - i);
+                _size--;
+                System.arraycopy(_fields, i + 1, _fields, i, _size - i);
             }
         }
         return removed;
@@ -1229,8 +1232,9 @@ public class HttpFields implements Iterable<HttpField>
             if (field != null)
             {
                 _fields = Arrays.copyOf(_fields, _fields.length + 1);
-                System.arraycopy(_fields, _cursor, _fields, _cursor + 1, _size++);
+                System.arraycopy(_fields, _cursor, _fields, _cursor + 1, _size - _cursor);
                 _fields[_cursor++] = field;
+                _size++;
                 _current = -1;
             }
         }
