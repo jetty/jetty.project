@@ -749,7 +749,7 @@ public class HttpFieldsTest
         assertThat(fields.size(), is(1));
         ListIterator<HttpField> iter = fields.listIterator();
         iter.next();
-        iter.set(null); // set field to null - null entry in list now
+        iter.set(null); // set field to null - should result in noop
         assertThat(fields.size(), is(0));
         iter.add(null); // attempt to add null entry
         assertThat(fields.size(), is(0));
