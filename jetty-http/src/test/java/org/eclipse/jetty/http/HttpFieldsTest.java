@@ -700,20 +700,28 @@ public class HttpFieldsTest
     public void testPreventNullField()
     {
         // Attempt various ways that may have put a null field in the array that
-        // previously caused a NPE in put.   If this test doesn't throw then it passes.
+        // previously caused a NPE in put.
         HttpFields fields = new HttpFields();
-        fields.add((HttpField)null);
-        fields.put(null);
+        fields.add((HttpField)null); // should not result in field being added
+        assertThat(fields.size(), is(0));
+        fields.put(null); // should not result in field being added
+        assertThat(fields.size(), is(0));
         fields.put("something", "else");
+        assertThat(fields.size(), is(1));
         ListIterator<HttpField> iter = fields.listIterator();
         iter.next();
         iter.set(null);
+        assertThat(fields.size(), is(0));
         iter.add(null);
+        assertThat(fields.size(), is(0));
         fields.put("something", "other");
+        assertThat(fields.size(), is(1));
         iter = fields.listIterator();
         iter.next();
         iter.remove();
+        assertThat(fields.size(), is(0));
         fields.put("something", "other");
+        assertThat(fields.size(), is(1));
         fields.clear();
     }
 
