@@ -475,8 +475,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         synchronized (_channelState)
         {
             _state = State.CLOSED;
+            releaseBuffer();
         }
-        releaseBuffer();
     }
 
     @Override
@@ -601,10 +601,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public ByteBuffer getBuffer()
     {
-        return _aggregate;
+        synchronized (_channelState)
+        {
+            return acquireBuffer();
+        }
     }
 
-    public ByteBuffer acquireBuffer()
+    private ByteBuffer acquireBuffer()
     {
         if (_aggregate == null)
             _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _channel.isUseOutputDirectByteBuffers());
@@ -1362,10 +1365,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public void resetBuffer()
     {
-        _interceptor.resetBuffer();
-        if (BufferUtil.hasContent(_aggregate))
-            BufferUtil.clear(_aggregate);
-        _written = 0;
+        synchronized (_channelState)
+        {
+            _interceptor.resetBuffer();
+            if (BufferUtil.hasContent(_aggregate))
+                BufferUtil.clear(_aggregate);
+            _written = 0;
+        }
     }
 
     @Override
