@@ -56,7 +56,7 @@
 
     <!-- testing -->
     <it.debug>false</it.debug>
-    <jetty.test.version>5.3</jetty.test.version>
+    <jetty.test.version>5.4</jetty.test.version>
     <spring-boot.version>2.1.1.RELEASE</spring-boot.version>
     <jsr250-api.version>1.0</jsr250-api.version>
     <javax.annotation-api>1.3</javax.annotation-api>
