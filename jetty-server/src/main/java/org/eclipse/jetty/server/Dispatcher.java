@@ -330,24 +330,25 @@ public class Dispatcher implements RequestDispatcher
                 {
                     case FORWARD_PATH_INFO:
                         _pathInfo = (String)value;
-                        return;
+                        break;
                     case FORWARD_REQUEST_URI:
                         _requestURI = (String)value;
-                        return;
+                        break;
                     case FORWARD_SERVLET_PATH:
                         _servletPath = (String)value;
-                        return;
+                        break;
                     case FORWARD_CONTEXT_PATH:
                         _contextPath = (String)value;
-                        return;
+                        break;
                     case FORWARD_QUERY_STRING:
                         _query = (String)value;
-                        return;
+                        break;
                     default:
                         if (value == null)
                             _attributes.removeAttribute(key);
                         else
                             _attributes.setAttribute(key, value);
+                        break;
                 }
             }
             else if (value == null)
@@ -452,24 +453,25 @@ public class Dispatcher implements RequestDispatcher
                 {
                     case INCLUDE_PATH_INFO:
                         _pathInfo = (String)value;
-                        return;
+                        break;
                     case INCLUDE_REQUEST_URI:
                         _requestURI = (String)value;
-                        return;
+                        break;
                     case INCLUDE_SERVLET_PATH:
                         _servletPath = (String)value;
-                        return;
+                        break;
                     case INCLUDE_CONTEXT_PATH:
                         _contextPath = (String)value;
-                        return;
+                        break;
                     case INCLUDE_QUERY_STRING:
                         _query = (String)value;
-                        return;
+                        break;
                     default:
                         if (value == null)
                             _attributes.removeAttribute(key);
                         else
                             _attributes.setAttribute(key, value);
+                        break;
                 }
             }
             else if (value == null)
