@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.function.ToIntFunction;
@@ -303,14 +304,18 @@ public class HttpFields implements Iterable<HttpField>
      */
     public List<String> getValuesList(String name)
     {
-        final List<String> list = new ArrayList<>();
+        List<String> list = null;
         for (int i = 0; i < _size; i++)
         {
             HttpField f = _fields[i];
             if (f.getName().equalsIgnoreCase(name))
+            {
+                if (list == null)
+                    list = new ArrayList<>(size() - i);
                 list.add(f.getValue());
+            }
         }
-        return list;
+        return list == null ? Collections.emptyList() : list;
     }
 
     /**
@@ -631,7 +636,8 @@ public class HttpFields implements Iterable<HttpField>
             {
                 if (put)
                 {
-                    System.arraycopy(_fields, i + 1, _fields, i, --_size - i);
+                    _size--;
+                    System.arraycopy(_fields, i + 1, _fields, i, _size - i);
                 }
                 else
                 {
@@ -671,6 +677,8 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void put(HttpHeader header, String value)
     {
+        Objects.requireNonNull(header, "header must not be null");
+
         if (value == null)
             remove(header);
         else
@@ -685,7 +693,12 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void put(String name, List<String> list)
     {
+        Objects.requireNonNull(name, "name must not be null");
+
         remove(name);
+        if (list == null)
+            return;
+
         for (String v : list)
         {
             if (v != null)
@@ -711,7 +724,8 @@ public class HttpFields implements Iterable<HttpField>
 
     public void add(HttpHeader header, HttpHeaderValue value)
     {
-        add(header, value.toString());
+        if (value != null)
+            add(header, value.toString());
     }
 
     /**
@@ -723,6 +737,8 @@ public class HttpFields implements Iterable<HttpField>
      */
     public void add(HttpHeader header, String value)
     {
+        Objects.requireNonNull(header, "header must not be null");
+
         if (value == null)
             throw new IllegalArgumentException("null value");
 
@@ -745,7 +761,8 @@ public class HttpFields implements Iterable<HttpField>
             if (f.getHeader() == name)
             {
                 removed = f;
-                System.arraycopy(_fields, i + 1, _fields, i, --_size - i);
+                _size--;
+                System.arraycopy(_fields, i + 1, _fields, i, _size - i);
             }
         }
         return removed;
@@ -766,7 +783,8 @@ public class HttpFields implements Iterable<HttpField>
             if (f.getName().equalsIgnoreCase(name))
             {
                 removed = f;
-                System.arraycopy(_fields, i + 1, _fields, i, --_size - i);
+                _size--;
+                System.arraycopy(_fields, i + 1, _fields, i, _size - i);
             }
         }
         return removed;
@@ -966,8 +984,11 @@ public class HttpFields implements Iterable<HttpField>
      *
      * @param fields the fields to add
      */
+    @Deprecated
     public void add(HttpFields fields)
     {
+        // TODO this implementation doesn't do what the javadoc says and is really the same
+        // as addAll, which is renamed to add anyway in 10.
         if (fields == null)
             return;
 
@@ -1185,7 +1206,7 @@ public class HttpFields implements Iterable<HttpField>
         @Override
         public int nextIndex()
         {
-            return _cursor + 1;
+            return _cursor;
         }
 
         @Override
@@ -1199,16 +1220,23 @@ public class HttpFields implements Iterable<HttpField>
         {
             if (_current < 0)
                 throw new IllegalStateException();
-            _fields[_current] = field;
+            if (field == null)
+                remove();
+            else
+                _fields[_current] = field;
         }
 
         @Override
         public void add(HttpField field)
         {
-            _fields = Arrays.copyOf(_fields, _fields.length + 1);
-            System.arraycopy(_fields, _cursor, _fields, _cursor + 1, _size++);
-            _fields[_cursor++] = field;
-            _current = -1;
+            if (field != null)
+            {
+                _fields = Arrays.copyOf(_fields, _fields.length + 1);
+                System.arraycopy(_fields, _cursor, _fields, _cursor + 1, _size - _cursor);
+                _fields[_cursor++] = field;
+                _size++;
+                _current = -1;
+            }
         }
     }
 }
