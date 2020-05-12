@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.utility.MountableFile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -74,12 +75,15 @@ public class RemoteInfinispanTestSupport
                     .withEnv("APP_PASS","foobar")
                     .withEnv("MGMT_USER", "admin")
                     .withEnv("MGMT_PASS", "admin")
-                    .withExposedPorts(11222)
+                    .withExposedPorts(4712,4713,7600,8080,8088,8089,8443,8181,8888,9990,9993,11211,11222,11223,11224,57600)
+                    //  /opt/jboss/infinispan-server/standalone/configuration/
+                    .withCopyFileToContainer(MountableFile.forClasspathResource("remote-session-test.xml"),
+                                              "/opt/jboss/infinispan-server/standalone/configuration/remote-session-test.xml")
                     .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
-            if (infinispanVersion.startsWith("9.4"))
-            {
-                infinispan =  infinispan.withCommand("standalone");
-            }
+//            if (infinispanVersion.startsWith("9.4"))
+//            {
+            infinispan =  infinispan.withCommand("-c remote-session-test.xml"); // standalone
+//            }
             infinispan.start();
             String host = infinispan.getContainerIpAddress();
             System.setProperty("hotrod.host", host);
