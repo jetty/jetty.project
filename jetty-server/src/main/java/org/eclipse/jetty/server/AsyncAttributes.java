@@ -118,17 +118,17 @@ class AsyncAttributes extends Attributes.Wrapper
         super.clearAttributes();
     }
 
-    public void applyToAttributes(Attributes attributes)
+    public static void applyAsyncAttributes(Attributes attributes, String requestURI, String contextPath, String servletPath, String pathInfo, String queryString)
     {
-        if (_requestURI != null)
-            attributes.setAttribute(AsyncContext.ASYNC_REQUEST_URI, _requestURI);
-        if (_contextPath != null)
-            attributes.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, _contextPath);
-        if (_servletPath != null)
-            attributes.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, _servletPath);
-        if (_pathInfo != null)
-            attributes.setAttribute(AsyncContext.ASYNC_PATH_INFO, _pathInfo);
-        if (_queryString != null)
-            attributes.setAttribute(AsyncContext.ASYNC_QUERY_STRING, _queryString);
+        if (requestURI != null)
+            attributes.setAttribute(AsyncContext.ASYNC_REQUEST_URI, requestURI);
+        if (contextPath != null)
+            attributes.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, contextPath);
+        if (servletPath != null)
+            attributes.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, servletPath);
+        if (pathInfo != null)
+            attributes.setAttribute(AsyncContext.ASYNC_PATH_INFO, pathInfo);
+        if (queryString != null)
+            attributes.setAttribute(AsyncContext.ASYNC_QUERY_STRING, queryString);
     }
 }

@@ -1982,6 +1982,30 @@ public class Request implements HttpServletRequest
         if (getAttribute(AsyncContext.ASYNC_REQUEST_URI) != null)
             return;
 
+        String requestURI;
+        String contextPath;
+        String servletPath;
+        String pathInfo;
+        String queryString;
+
+        // Have we been forwarded before?
+        requestURI = (String)getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+        if (requestURI != null)
+        {
+            contextPath = (String)getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH);
+            servletPath = (String)getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH);
+            pathInfo = (String)getAttribute(RequestDispatcher.FORWARD_PATH_INFO);
+            queryString = (String)getAttribute(RequestDispatcher.FORWARD_QUERY_STRING);
+        }
+        else
+        {
+            requestURI = getRequestURI();
+            contextPath = getContextPath();
+            servletPath = getServletPath();
+            pathInfo = getPathInfo();
+            queryString = getQueryString();
+        }
+
         // Unwrap the _attributes to get the base attributes instance.
         Attributes baseAttributes;
         if (_attributes == null)
@@ -1989,31 +2013,17 @@ public class Request implements HttpServletRequest
         else
             baseAttributes = Attributes.unwrap(_attributes);
 
-        AsyncAttributes asyncAttributes;
-        // Have we been forwarded before?
-        String uri = (String)getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
-        if (uri != null)
-        {
-            String contextPath = (String)getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH);
-            String servletPath = (String)getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH);
-            String pathInfo = (String)getAttribute(RequestDispatcher.FORWARD_PATH_INFO);
-            String queryString = (String)getAttribute(RequestDispatcher.FORWARD_QUERY_STRING);
-            asyncAttributes = new AsyncAttributes(baseAttributes, uri, contextPath, servletPath, pathInfo, queryString);
-        }
-        else
-        {
-            String requestURI = getRequestURI();
-            String contextPath = getContextPath();
-            String servletPath = getServletPath();
-            String pathInfo = getPathInfo();
-            String queryString = getQueryString();
-            asyncAttributes = new AsyncAttributes(baseAttributes, requestURI, contextPath, servletPath, pathInfo, queryString);
-        }
-
         if (baseAttributes instanceof ServletAttributes)
-            ((ServletAttributes)_attributes).setAsyncAttributes(asyncAttributes);
+        {
+            // Set the AsyncAttributes on the ServletAttributes.
+            ServletAttributes servletAttributes = (ServletAttributes)baseAttributes;
+            servletAttributes.setAsyncAttributes(requestURI, contextPath, servletPath, pathInfo, queryString);
+        }
         else
-            asyncAttributes.applyToAttributes(_attributes);
+        {
+            // If ServletAttributes has been replaced just set them on the top level Attributes.
+            AsyncAttributes.applyAsyncAttributes(_attributes, requestURI, contextPath, servletPath, pathInfo, queryString);
+        }
     }
 
     /**

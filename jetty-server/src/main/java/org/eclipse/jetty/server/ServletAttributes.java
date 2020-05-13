@@ -28,9 +28,9 @@ public class ServletAttributes implements Attributes
     private final Attributes _attributes = new AttributesMap();
     private AsyncAttributes _asyncAttributes;
 
-    public void setAsyncAttributes(AsyncAttributes attributes)
+    public void setAsyncAttributes(String requestURI, String contextPath, String servletPath, String pathInfo, String queryString)
     {
-        _asyncAttributes = attributes;
+        _asyncAttributes = new AsyncAttributes(_attributes, requestURI, contextPath, servletPath, pathInfo, queryString);
     }
 
     private Attributes getAttributes()
