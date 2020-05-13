@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
@@ -103,12 +104,14 @@ public abstract class HttpConnection implements Connection
             request.path(path);
         }
 
-        URI uri = request.getURI();
-
-        if (proxy instanceof HttpProxy && !HttpClient.isSchemeSecure(request.getScheme()) && uri != null)
+        if (proxy instanceof HttpProxy && !HttpClient.isSchemeSecure(request.getScheme()))
         {
-            path = uri.toString();
-            request.path(path);
+            URI uri = request.getURI();
+            if (uri != null)
+            {
+                path = uri.toString();
+                request.path(path);
+            }
         }
 
         // If we are HTTP 1.1, add the Host header
@@ -147,9 +150,10 @@ public abstract class HttpConnection implements Connection
 
         // Cookies
         CookieStore cookieStore = getHttpClient().getCookieStore();
-        if (cookieStore != null)
+        if (cookieStore != null && cookieStore.getClass() != HttpCookieStore.Empty.class)
         {
             StringBuilder cookies = null;
+            URI uri = request.getURI();
             if (uri != null)
                 cookies = convertCookies(HttpCookieStore.matchPath(uri, cookieStore.get(uri)), null);
             cookies = convertCookies(request.getCookies(), cookies);
@@ -158,8 +162,8 @@ public abstract class HttpConnection implements Connection
         }
 
         // Authentication
-        applyAuthentication(request, proxy != null ? proxy.getURI() : null);
-        applyAuthentication(request, uri);
+        applyProxyAuthentication(request, proxy);
+        applyRequestAuthentication(request);
     }
 
     private StringBuilder convertCookies(List<HttpCookie> cookies, StringBuilder builder)
@@ -175,11 +179,26 @@ public abstract class HttpConnection implements Connection
         return builder;
     }
 
-    private void applyAuthentication(Request request, URI uri)
+    private void applyRequestAuthentication(Request request)
     {
-        if (uri != null)
+        AuthenticationStore authenticationStore = getHttpClient().getAuthenticationStore();
+        if (authenticationStore.hasAuthenticationResults())
         {
-            Authentication.Result result = getHttpClient().getAuthenticationStore().findAuthenticationResult(uri);
+            URI uri = request.getURI();
+            if (uri != null)
+            {
+                Authentication.Result result = authenticationStore.findAuthenticationResult(uri);
+                if (result != null)
+                    result.apply(request);
+            }
+        }
+    }
+
+    private void applyProxyAuthentication(Request request, ProxyConfiguration.Proxy proxy)
+    {
+        if (proxy != null)
+        {
+            Authentication.Result result = getHttpClient().getAuthenticationStore().findAuthenticationResult(proxy.getURI());
             if (result != null)
                 result.apply(request);
         }
