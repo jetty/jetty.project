@@ -26,28 +26,27 @@ import org.eclipse.jetty.util.Attributes;
 
 class AsyncAttributes extends Attributes.Wrapper
 {
-    /**
-     * Async dispatch attribute name prefix.
-     */
-    public static final String __ASYNC_PREFIX = "javax.servlet.async.";
-
     private String _requestURI;
     private String _contextPath;
     private String _servletPath;
     private String _pathInfo;
-    private String _query;
+    private String _queryString;
 
-    AsyncAttributes(Attributes attributes)
+    public AsyncAttributes(Attributes attributes, String requestUri, String contextPath, String servletPath, String pathInfo, String queryString)
     {
         super(attributes);
+
+        // TODO: make fields final in jetty-10 and NOOP when one of these attributes is set.
+        _requestURI = requestUri;
+        _contextPath = contextPath;
+        _servletPath = servletPath;
+        _pathInfo = pathInfo;
+        _queryString = queryString;
     }
 
     @Override
     public Object getAttribute(String key)
     {
-        if (!key.startsWith(__ASYNC_PREFIX))
-            return super.getAttribute(key);
-
         switch (key)
         {
             case AsyncContext.ASYNC_REQUEST_URI:
@@ -59,7 +58,7 @@ class AsyncAttributes extends Attributes.Wrapper
             case AsyncContext.ASYNC_PATH_INFO:
                 return _pathInfo;
             case AsyncContext.ASYNC_QUERY_STRING:
-                return _query;
+                return _queryString;
             default:
                 return super.getAttribute(key);
         }
@@ -68,13 +67,7 @@ class AsyncAttributes extends Attributes.Wrapper
     @Override
     public Set<String> getAttributeNameSet()
     {
-        HashSet<String> set = new HashSet<>();
-        for (String name : _attributes.getAttributeNameSet())
-        {
-            if (!name.startsWith(__ASYNC_PREFIX))
-                set.add(name);
-        }
-
+        Set<String> set = new HashSet<>(super.getAttributeNameSet());
         if (_requestURI != null)
             set.add(AsyncContext.ASYNC_REQUEST_URI);
         if (_contextPath != null)
@@ -83,18 +76,14 @@ class AsyncAttributes extends Attributes.Wrapper
             set.add(AsyncContext.ASYNC_SERVLET_PATH);
         if (_pathInfo != null)
             set.add(AsyncContext.ASYNC_PATH_INFO);
-        if (_query != null)
+        if (_queryString != null)
             set.add(AsyncContext.ASYNC_QUERY_STRING);
-
         return set;
     }
 
     @Override
     public void setAttribute(String key, Object value)
     {
-        if (!key.startsWith(__ASYNC_PREFIX))
-            super.setAttribute(key, value);
-
         switch (key)
         {
             case AsyncContext.ASYNC_REQUEST_URI:
@@ -110,10 +99,11 @@ class AsyncAttributes extends Attributes.Wrapper
                 _pathInfo = (String)value;
                 break;
             case AsyncContext.ASYNC_QUERY_STRING:
-                _query = (String)value;
+                _queryString = (String)value;
                 break;
             default:
                 super.setAttribute(key, value);
+                break;
         }
     }
 
@@ -124,7 +114,21 @@ class AsyncAttributes extends Attributes.Wrapper
         _contextPath = null;
         _servletPath = null;
         _pathInfo = null;
-        _query = null;
+        _queryString = null;
         super.clearAttributes();
+    }
+
+    public void applyToAttributes(Attributes attributes)
+    {
+        if (_requestURI != null)
+            attributes.setAttribute(AsyncContext.ASYNC_REQUEST_URI, _requestURI);
+        if (_contextPath != null)
+            attributes.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, _contextPath);
+        if (_servletPath != null)
+            attributes.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, _servletPath);
+        if (_pathInfo != null)
+            attributes.setAttribute(AsyncContext.ASYNC_PATH_INFO, _pathInfo);
+        if (_queryString != null)
+            attributes.setAttribute(AsyncContext.ASYNC_QUERY_STRING, _queryString);
     }
 }

@@ -39,7 +39,6 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.servlet.AsyncContext;
@@ -200,7 +199,7 @@ public class Request implements HttpServletRequest
     private boolean _handled = false;
     private boolean _contentParamsExtracted;
     private boolean _requestedSessionIdFromCookie = false;
-    private Attributes _attributes = new ServletAttributes();
+    private Attributes _attributes;
     private Authentication _authentication;
     private String _contentType;
     private String _characterEncoding;
@@ -627,7 +626,7 @@ public class Request implements HttpServletRequest
                 _channel.getHttpTransport() instanceof HttpConnection)
                 return _channel.getHttpTransport();
         }
-        return _attributes.getAttribute(name);
+        return (_attributes == null) ? null : _attributes.getAttribute(name);
     }
 
     /*
@@ -636,11 +635,16 @@ public class Request implements HttpServletRequest
     @Override
     public Enumeration<String> getAttributeNames()
     {
+        if (_attributes == null)
+            return Collections.enumeration(Collections.emptyList());
+
         return AttributesMap.getAttributeNamesCopy(_attributes);
     }
 
     public Attributes getAttributes()
     {
+        if (_attributes == null)
+            _attributes = new ServletAttributes();
         return _attributes;
     }
 
@@ -1904,7 +1908,7 @@ public class Request implements HttpServletRequest
     @Override
     public void removeAttribute(String name)
     {
-        Object oldValue = _attributes.getAttribute(name);
+        Object oldValue = _attributes == null ? null : _attributes.getAttribute(name);
 
         if (_attributes != null)
             _attributes.removeAttribute(name);
@@ -1938,13 +1942,15 @@ public class Request implements HttpServletRequest
     @Override
     public void setAttribute(String name, Object value)
     {
-        Object oldValue = _attributes.getAttribute(name);
+        Object oldValue = _attributes == null ? null : _attributes.getAttribute(name);
 
         if ("org.eclipse.jetty.server.Request.queryEncoding".equals(name))
             setQueryEncoding(value == null ? null : value.toString());
         else if ("org.eclipse.jetty.server.sendContent".equals(name))
             LOG.warn("Deprecated: org.eclipse.jetty.server.sendContent");
 
+        if (_attributes == null)
+            _attributes = new ServletAttributes();
         _attributes.setAttribute(name, value);
 
         if (!_requestAttributeListeners.isEmpty())
@@ -1964,7 +1970,47 @@ public class Request implements HttpServletRequest
 
     public void setAttributes(Attributes attributes)
     {
-        _attributes = Objects.requireNonNull(attributes);
+        _attributes = attributes;
+    }
+
+    public void setAsyncAttributes()
+    {
+        // Return if we have been async dispatched before.
+        if (getAttribute(AsyncContext.ASYNC_REQUEST_URI) != null)
+            return;
+
+        // Unwrap the _attributes to get the base attributes instance.
+        Attributes baseAttributes;
+        if (_attributes == null)
+            _attributes = baseAttributes = new ServletAttributes();
+        else
+            baseAttributes = Attributes.unwrap(_attributes);
+
+        AsyncAttributes asyncAttributes;
+        // Have we been forwarded before?
+        String uri = (String)getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+        if (uri != null)
+        {
+            String contextPath = (String)getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH);
+            String servletPath = (String)getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH);
+            String pathInfo = (String)getAttribute(RequestDispatcher.FORWARD_PATH_INFO);
+            String queryString = (String)getAttribute(RequestDispatcher.FORWARD_QUERY_STRING);
+            asyncAttributes = new AsyncAttributes(baseAttributes, uri, contextPath, servletPath, pathInfo, queryString);
+        }
+        else
+        {
+            String requestURI = getRequestURI();
+            String contextPath = getContextPath();
+            String servletPath = getServletPath();
+            String pathInfo = getPathInfo();
+            String queryString = getQueryString();
+            asyncAttributes = new AsyncAttributes(baseAttributes, requestURI, contextPath, servletPath, pathInfo, queryString);
+        }
+
+        if (baseAttributes instanceof ServletAttributes)
+            ((ServletAttributes)_attributes).setAsyncAttributes(asyncAttributes);
+        else
+            asyncAttributes.applyToAttributes(_attributes);
     }
 
     /**

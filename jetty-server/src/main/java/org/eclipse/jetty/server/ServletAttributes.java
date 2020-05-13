@@ -25,40 +25,59 @@ import org.eclipse.jetty.util.AttributesMap;
 
 public class ServletAttributes implements Attributes
 {
-    private final Attributes _attributes;
+    private final Attributes _attributes = new AttributesMap();
+    private AsyncAttributes _asyncAttributes;
 
-    public ServletAttributes()
+    public void setAsyncAttributes(AsyncAttributes attributes)
     {
-        _attributes = new AsyncAttributes(new AttributesMap());
+        _asyncAttributes = attributes;
     }
 
     @Override
     public void removeAttribute(String name)
     {
-        _attributes.removeAttribute(name);
+        if (_asyncAttributes == null)
+            _attributes.removeAttribute(name);
+        else
+            _asyncAttributes.removeAttribute(name);
     }
 
     @Override
     public void setAttribute(String name, Object attribute)
     {
-        _attributes.setAttribute(name, attribute);
+        if (_asyncAttributes == null)
+            _attributes.setAttribute(name, attribute);
+        else
+            _asyncAttributes.setAttribute(name, attribute);
     }
 
     @Override
     public Object getAttribute(String name)
     {
-        return _attributes.getAttribute(name);
+        if (_asyncAttributes == null)
+            return _attributes.getAttribute(name);
+        else
+            return _asyncAttributes.getAttribute(name);
     }
 
     @Override
     public Set<String> getAttributeNameSet()
     {
-        return _attributes.getAttributeNameSet();
+        if (_asyncAttributes == null)
+            return _attributes.getAttributeNameSet();
+        else
+            return _asyncAttributes.getAttributeNameSet();
     }
 
     @Override
     public void clearAttributes()
     {
-        _attributes.clearAttributes();
+        if (_asyncAttributes == null)
+            _attributes.clearAttributes();
+        else
+        {
+            _asyncAttributes.clearAttributes();
+            _asyncAttributes = null;
+        }
     }
 }
