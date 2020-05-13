@@ -33,51 +33,39 @@ public class ServletAttributes implements Attributes
         _asyncAttributes = attributes;
     }
 
+    private Attributes getAttributes()
+    {
+        return (_asyncAttributes == null) ? _attributes : _asyncAttributes;
+    }
+
     @Override
     public void removeAttribute(String name)
     {
-        if (_asyncAttributes == null)
-            _attributes.removeAttribute(name);
-        else
-            _asyncAttributes.removeAttribute(name);
+        getAttributes().removeAttribute(name);
     }
 
     @Override
     public void setAttribute(String name, Object attribute)
     {
-        if (_asyncAttributes == null)
-            _attributes.setAttribute(name, attribute);
-        else
-            _asyncAttributes.setAttribute(name, attribute);
+        getAttributes().setAttribute(name, attribute);
     }
 
     @Override
     public Object getAttribute(String name)
     {
-        if (_asyncAttributes == null)
-            return _attributes.getAttribute(name);
-        else
-            return _asyncAttributes.getAttribute(name);
+        return getAttributes().getAttribute(name);
     }
 
     @Override
     public Set<String> getAttributeNameSet()
     {
-        if (_asyncAttributes == null)
-            return _attributes.getAttributeNameSet();
-        else
-            return _asyncAttributes.getAttributeNameSet();
+        return getAttributes().getAttributeNameSet();
     }
 
     @Override
     public void clearAttributes()
     {
-        if (_asyncAttributes == null)
-            _attributes.clearAttributes();
-        else
-        {
-            _asyncAttributes.clearAttributes();
-            _asyncAttributes = null;
-        }
+        getAttributes().clearAttributes();
+        _asyncAttributes = null;
     }
 }

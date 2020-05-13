@@ -1868,10 +1868,13 @@ public class Request implements HttpServletRequest
         _asyncNotSupportedSource = null;
         _handled = false;
         _attributes = Attributes.unwrap(_attributes);
-        if (ServletAttributes.class.equals(_attributes.getClass()))
-            _attributes.clearAttributes();
-        else
-            _attributes = new ServletAttributes();
+        if (_attributes != null)
+        {
+            if (ServletAttributes.class.equals(_attributes.getClass()))
+                _attributes.clearAttributes();
+            else
+                _attributes = null;
+        }
         _contentType = null;
         _characterEncoding = null;
         _contextPath = null;
