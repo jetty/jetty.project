@@ -31,6 +31,7 @@ import org.hibernate.search.cfg.Environment;
 import org.hibernate.search.cfg.SearchMapping;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.utility.MountableFile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -75,15 +77,14 @@ public class RemoteInfinispanTestSupport
                     .withEnv("APP_PASS","foobar")
                     .withEnv("MGMT_USER", "admin")
                     .withEnv("MGMT_PASS", "admin")
-                    .withExposedPorts(4712,4713,7600,8080,8088,8089,8443,8181,8888,9990,9993,11211,11222,11223,11224,57600)
-                    //  /opt/jboss/infinispan-server/standalone/configuration/
+                    .waitingFor(new LogMessageWaitStrategy()
+                                    .withRegEx(".*Infinispan Server.*started in.*\\s"))
+                    .withExposedPorts(4712,4713,8088,8089,8443,9990,9993,11211,11222,11223,11224)
                     .withCopyFileToContainer(MountableFile.forClasspathResource("remote-session-test.xml"),
                                               "/opt/jboss/infinispan-server/standalone/configuration/remote-session-test.xml")
                     .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
-//            if (infinispanVersion.startsWith("9.4"))
-//            {
-            infinispan =  infinispan.withCommand("-c remote-session-test.xml"); // standalone
-//            }
+            // we could simply use `standalone` as well but... :)
+            infinispan =  infinispan.withCommand("-c remote-session-test.xml");
             infinispan.start();
             String host = infinispan.getContainerIpAddress();
             System.setProperty("hotrod.host", host);
@@ -100,6 +101,9 @@ public class RemoteInfinispanTestSupport
 
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder().withProperties(properties)
                 .addServer().host(host).port(port)
+                // we just want to limit connectivity to list of host:port we knows at start
+                // as infinispan create new host:port dynamically but due to how docker expose host/port we cannot do that
+                .clientIntelligence(ClientIntelligence.BASIC)
                 .marshaller(new ProtoStreamMarshaller());
 
             if (infinispanVersion.startsWith("1"))
@@ -134,6 +138,7 @@ public class RemoteInfinispanTestSupport
 
             String content = baos.toString("UTF-8");
             _manager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
+            _manager.administration().getOrCreateCache("remote-session-test", (String)null);
         }
         catch (Exception e)
         {
