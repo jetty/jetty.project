@@ -47,10 +47,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.ServletSecurityElement;
 import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.MappingMatch;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
@@ -58,8 +56,8 @@ import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.server.JettyHttpServletMapping;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.ServletPathMapping;
 import org.eclipse.jetty.server.ServletRequestHttpWrapper;
 import org.eclipse.jetty.server.ServletResponseHttpWrapper;
 import org.eclipse.jetty.server.UserIdentity;
@@ -435,9 +433,7 @@ public class ServletHandler extends ScopedHandler
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         // Get the base requests
-        final String old_servlet_path = baseRequest.getServletPath();
-        final String old_path_info = baseRequest.getPathInfo();
-        final HttpServletMapping old_http_servlet_mapping = baseRequest.getHttpServletMapping();
+        final ServletPathMapping old_servlet_path_mapping = baseRequest.getServletPathMapping();
 
         DispatcherType type = baseRequest.getDispatcherType();
 
@@ -447,27 +443,16 @@ public class ServletHandler extends ScopedHandler
         MappedServlet mappedServlet = getMappedServlet(target);
         if (mappedServlet != null)
         {
-            servletHolder = mappedServlet.getResource();
+            servletHolder = mappedServlet.getServletHolder();
+            ServletPathMapping servletPathMapping = mappedServlet.getServletPathMapping(target);
 
-            PathSpec pathSpec = mappedServlet.getPathSpec();
-            if (pathSpec != null)
+            if (servletPathMapping != null)
             {
-                String servletPath = pathSpec.getPathMatch(target);
-                String pathInfo = pathSpec.getPathInfo(target);
-
-                HttpServletMapping httpServletMapping = mappedServlet.getHttpServletMapping(servletPath);
+                // Setting the servletPathMapping also provides the servletPath and pathInfo
                 if (DispatcherType.INCLUDE.equals(type))
-                {
-                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, servletPath);
-                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_PATH_INFO, pathInfo);
-                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, httpServletMapping);
-                }
+                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, servletPathMapping);
                 else
-                {
-                    baseRequest.setServletPath(servletPath);
-                    baseRequest.setPathInfo(pathInfo);
-                    baseRequest.setHttpServletMapping(httpServletMapping);
-                }
+                    baseRequest.setServletPathMapping(servletPathMapping);
             }
         }
 
@@ -488,11 +473,7 @@ public class ServletHandler extends ScopedHandler
                 baseRequest.setUserIdentityScope(oldScope);
 
             if (!(DispatcherType.INCLUDE.equals(type)))
-            {
-                baseRequest.setServletPath(old_servlet_path);
-                baseRequest.setPathInfo(old_path_info);
-                baseRequest.setHttpServletMapping(old_http_servlet_mapping);
-            }
+                baseRequest.setServletPathMapping(old_servlet_path_mapping);
         }
     }
 
@@ -1739,77 +1720,17 @@ public class ServletHandler extends ScopedHandler
             _contextHandler.destroyListener(listener);
     }
 
-    public static HttpServletMapping getServletMapping(PathSpec pathSpec, String servletPath, String servletName)
-    {
-        String matchValue;
-        MappingMatch mappingMatch;
-        String pattern = (pathSpec != null) ? pathSpec.getDeclaration() : "";
-        servletName = (servletName == null ? "" : servletName);
-
-        if (pathSpec instanceof ServletPathSpec && servletPath != null)
-        {
-            switch (pathSpec.getGroup())
-            {
-                case ROOT:
-                    mappingMatch = MappingMatch.CONTEXT_ROOT;
-                    matchValue = "";
-                    pattern = "";
-                    break;
-                case DEFAULT:
-                    mappingMatch = MappingMatch.DEFAULT;
-                    matchValue = "";
-                    break;
-                case EXACT:
-                    mappingMatch = MappingMatch.EXACT;
-                    matchValue = servletPath;
-                    if (matchValue.startsWith("/"))
-                        matchValue = matchValue.substring(1);
-                    break;
-                case PREFIX_GLOB:
-                    mappingMatch = MappingMatch.PATH;
-                    matchValue = servletPath;
-                    if (matchValue.startsWith("/"))
-                        matchValue = matchValue.substring(1);
-                    break;
-                case SUFFIX_GLOB:
-                    mappingMatch = MappingMatch.EXTENSION;
-                    int dot = servletPath.lastIndexOf('.');
-                    matchValue = servletPath.substring(0, dot);
-                    if (matchValue.startsWith("/"))
-                        matchValue = matchValue.substring(1);
-                    pattern = pattern.startsWith("/") ? pattern.substring(1) : pattern;
-                    break;
-                case MIDDLE_GLOB:
-                    mappingMatch = null;
-                    matchValue = "";
-                    break;
-                default:
-                    throw new IllegalStateException();
-            }
-        }
-        else
-        {
-            mappingMatch = null;
-            matchValue = "";
-        }
-
-        return new JettyHttpServletMapping(matchValue, pattern, servletName, mappingMatch);
-    }
-
     /**
-     * Extends {@link MappedResource} for {@link ServletHolder} but can be
-     * asked for a {@link HttpServletMapping} which may have been created
-     * in advance for servlets which have EXACT mappings.
+     * A mapping of a servlet
      */
-    public static class MappedServlet extends MappedResource<ServletHolder>
+    public static class MappedServlet
     {
         private final PathSpec _pathSpec;
         private final ServletHolder _servletHolder;
-        private final HttpServletMapping _httpServletMapping;
+        private final ServletPathMapping _httpServletMapping;
 
         MappedServlet(PathSpec pathSpec, ServletHolder servletHolder)
         {
-            super(pathSpec, servletHolder);
             _pathSpec = pathSpec;
             _servletHolder = servletHolder;
 
@@ -1819,9 +1740,8 @@ public class ServletHandler extends ScopedHandler
                 switch (pathSpec.getGroup())
                 {
                     case EXACT:
-                    case DEFAULT:
                     case ROOT:
-                        _httpServletMapping = getServletMapping(pathSpec, pathSpec.getDeclaration(), servletHolder.getName());
+                        _httpServletMapping = new ServletPathMapping(_pathSpec, _servletHolder.getName(), null);
                         break;
                     default:
                         _httpServletMapping = null;
@@ -1834,11 +1754,21 @@ public class ServletHandler extends ScopedHandler
             }
         }
 
-        public HttpServletMapping getHttpServletMapping(String servletPath)
+        public PathSpec getPathSpec()
+        {
+            return _pathSpec;
+        }
+
+        public ServletHolder getServletHolder()
+        {
+            return _servletHolder;
+        }
+
+        public ServletPathMapping getServletPathMapping(String pathInContext)
         {
             if (_httpServletMapping != null)
                 return _httpServletMapping;
-            return getServletMapping(_pathSpec, servletPath, _servletHolder.getName());
+            return new ServletPathMapping(_pathSpec, _servletHolder.getName(), pathInContext);
         }
     }
 

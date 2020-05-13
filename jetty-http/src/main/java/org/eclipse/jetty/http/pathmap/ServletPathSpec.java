@@ -188,6 +188,7 @@ public class ServletPathSpec extends PathSpec
 
     public ServletPathSpec(String servletPathSpec)
     {
+        // TODO rather than access protected fields these should be private final
         if (servletPathSpec == null)
             servletPathSpec = "";
         if (servletPathSpec.startsWith("servlet|"))

@@ -102,13 +102,9 @@ public class Dispatcher implements RequestDispatcher
             else
             {
                 IncludeAttributes attr = new IncludeAttributes(old_attr);
-
                 attr._requestURI = _uri.getPath();
                 attr._contextPath = _contextHandler.getContextPath();
-                attr._servletPath = null; // set by ServletHandler
-                attr._pathInfo = _pathInContext;
                 attr._query = _uri.getQuery();
-                attr._mapping = null; //set by ServletHandler
                 if (attr._query != null)
                     baseRequest.mergeQueryParameters(baseRequest.getQueryString(), attr._query);
                 baseRequest.setAttributes(attr);
@@ -390,10 +386,8 @@ public class Dispatcher implements RequestDispatcher
     {
         String _requestURI;
         String _contextPath;
-        String _servletPath;
-        String _pathInfo;
         String _query;
-        HttpServletMapping _mapping;
+        ServletPathMapping _mapping;
 
         IncludeAttributes(Attributes attributes)
         {
@@ -408,9 +402,9 @@ public class Dispatcher implements RequestDispatcher
                 switch (key)
                 {
                     case INCLUDE_PATH_INFO:
-                        return _pathInfo;
+                        return _mapping == null ? null : _mapping.getPathInfo();
                     case INCLUDE_SERVLET_PATH:
-                        return _servletPath;
+                        return _mapping == null ? null : _mapping.getServletPath();
                     case INCLUDE_CONTEXT_PATH:
                         return _contextPath;
                     case INCLUDE_QUERY_STRING:
@@ -441,7 +435,7 @@ public class Dispatcher implements RequestDispatcher
 
             if (_named == null)
             {
-                if (_pathInfo != null)
+                if (_mapping != null && _mapping.getPathInfo() != null)
                     set.add(INCLUDE_PATH_INFO);
                 else
                     set.remove(INCLUDE_PATH_INFO);
@@ -461,18 +455,12 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public void setAttribute(String key, Object value)
         {
-            if (_named == null && key.startsWith("javax.servlet."))
+            if (_named == null)
             {
                 switch (key)
                 {
-                    case INCLUDE_PATH_INFO:
-                        _pathInfo = (String)value;
-                        return;
                     case INCLUDE_REQUEST_URI:
                         _requestURI = (String)value;
-                        return;
-                    case INCLUDE_SERVLET_PATH:
-                        _servletPath = (String)value;
                         return;
                     case INCLUDE_CONTEXT_PATH:
                         _contextPath = (String)value;
@@ -481,7 +469,7 @@ public class Dispatcher implements RequestDispatcher
                         _query = (String)value;
                         return;
                     case INCLUDE_MAPPING:
-                        _mapping = (HttpServletMapping)value;
+                        _mapping = (ServletPathMapping)value;
                         return;
                     default:
                         if (value == null)

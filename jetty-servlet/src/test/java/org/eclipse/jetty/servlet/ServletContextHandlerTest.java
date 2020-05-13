@@ -62,7 +62,6 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
 
-import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.RoleInfo;
@@ -1376,9 +1375,9 @@ public class ServletContextHandlerTest
 
         root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
         _server.start();
-        MappedResource<ServletHolder> mappedServlet = root.getServletHandler().getMappedServlet("/somejsp/xxx");
-        assertNotNull(mappedServlet.getResource());
-        assertEquals("some.jsp", mappedServlet.getResource().getName());
+        ServletHandler.MappedServlet mappedServlet = root.getServletHandler().getMappedServlet("/somejsp/xxx");
+        assertNotNull(mappedServlet.getServletHolder());
+        assertEquals("some.jsp", mappedServlet.getServletHolder().getName());
     }
 
     @Test
@@ -1452,9 +1451,9 @@ public class ServletContextHandlerTest
 
         root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
         _server.start();
-        MappedResource<ServletHolder> mappedServlet = root.getServletHandler().getMappedServlet("/bar/xxx");
-        assertNotNull(mappedServlet.getResource());
-        assertEquals("some.jsp", mappedServlet.getResource().getName());
+        ServletHandler.MappedServlet mappedServlet = root.getServletHandler().getMappedServlet("/bar/xxx");
+        assertNotNull(mappedServlet.getServletHolder());
+        assertEquals("some.jsp", mappedServlet.getServletHolder().getName());
     }
     
     @Test

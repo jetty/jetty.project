@@ -201,7 +201,7 @@ public class Request implements HttpServletRequest
     private String _contextPath;
     private String _servletPath;
     private String _pathInfo;
-    private HttpServletMapping _httpServletMapping;
+    private ServletPathMapping _servletPathMapping;
     private boolean _secure;
     private String _asyncNotSupportedSource = null;
     private boolean _newContext;
@@ -2275,14 +2275,34 @@ public class Request implements HttpServletRequest
         throw new ServletException("HttpServletRequest.upgrade() not supported in Jetty");
     }
 
-    public void setHttpServletMapping(HttpServletMapping httpServletMapping)
+    /**
+     * Set the servletPathMapping, the servletPath and the pathInfo.
+     * TODO remove the side effect on servletPath and pathInfo by removing those fields.
+     * @param servletPathMapping The mapping used to return from {@link #getHttpServletMapping()}
+     */
+    public void setServletPathMapping(ServletPathMapping servletPathMapping)
     {
-        _httpServletMapping = httpServletMapping;
+        _servletPathMapping = servletPathMapping;
+        if (servletPathMapping == null)
+        {
+            // TODO reset the servletPath and pathInfo, but currently cannot do that
+            // as we don't know the pathInContext.
+        }
+        else
+        {
+            _servletPath = servletPathMapping.getServletPath();
+            _pathInfo = servletPathMapping.getPathInfo();
+        }
+    }
+
+    public ServletPathMapping getServletPathMapping()
+    {
+        return _servletPathMapping;
     }
 
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        return _httpServletMapping;
+        return _servletPathMapping;
     }
 }

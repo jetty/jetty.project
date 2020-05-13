@@ -47,6 +47,7 @@ import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.MappingMatch;
 import javax.servlet.http.Part;
 import javax.servlet.http.PushBuilder;
 
@@ -86,6 +87,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1870,6 +1872,74 @@ public class RequestTest
         assertThat(builder.getHeader("Cookie"), containsString("good"));
         assertThat(builder.getHeader("Cookie"), containsString("maxpos"));
         assertThat(builder.getHeader("Cookie"), not(containsString("bad")));
+    }
+
+    @Test
+    public void testServletPathMapping() throws Exception
+    {
+        ServletPathSpec spec;
+        String uri;
+        ServletPathMapping m;
+
+        spec = null;
+        uri = null;
+        m = new ServletPathMapping(spec, null, uri);
+        assertThat(m.getMappingMatch(), nullValue());
+        assertThat(m.getMatchValue(), is(""));
+        assertThat(m.getPattern(), nullValue());
+        assertThat(m.getServletName(), is(""));
+        assertThat(m.getServletPath(), nullValue());
+        assertThat(m.getPathInfo(), nullValue());
+
+        spec = new ServletPathSpec("");
+        uri = "/";
+        m = new ServletPathMapping(spec, "Something", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.CONTEXT_ROOT));
+        assertThat(m.getMatchValue(), is(""));
+        assertThat(m.getPattern(), is(""));
+        assertThat(m.getServletName(), is("Something"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+
+        spec = new ServletPathSpec("/");
+        uri = "/some/path";
+        m = new ServletPathMapping(spec, "Default", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.DEFAULT));
+        assertThat(m.getMatchValue(), is(""));
+        assertThat(m.getPattern(), is("/"));
+        assertThat(m.getServletName(), is("Default"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+
+        spec = new ServletPathSpec("/foo/*");
+        uri = "/foo/bar";
+        m = new ServletPathMapping(spec, "FooServlet", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.PATH));
+        assertThat(m.getMatchValue(), is("foo/bar"));
+        assertThat(m.getPattern(), is("/foo/*"));
+        assertThat(m.getServletName(), is("FooServlet"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+
+        spec = new ServletPathSpec("*.jsp");
+        uri = "/foo/bar.jsp";
+        m = new ServletPathMapping(spec, "JspServlet", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.EXTENSION));
+        assertThat(m.getMatchValue(), is("foo/bar"));
+        assertThat(m.getPattern(), is("*.jsp"));
+        assertThat(m.getServletName(), is("JspServlet"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+
+        spec = new ServletPathSpec("/catalog");
+        uri = "/catalog";
+        m = new ServletPathMapping(spec, "CatalogServlet", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.EXACT));
+        assertThat(m.getMatchValue(), is("catalog"));
+        assertThat(m.getPattern(), is("/catalog"));
+        assertThat(m.getServletName(), is("CatalogServlet"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
     }
 
     interface RequestTester
