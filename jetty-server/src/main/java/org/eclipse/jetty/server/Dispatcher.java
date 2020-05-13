@@ -279,6 +279,7 @@ public class Dispatcher implements RequestDispatcher
                 }
             }
 
+            // If we are forwarded then we hide include attributes
             if (key.startsWith(__INCLUDE_PREFIX))
                 return null;
 
@@ -390,9 +391,6 @@ public class Dispatcher implements RequestDispatcher
                         break;
                 }
             }
-
-            if (key.startsWith(__INCLUDE_PREFIX))
-                return null;
 
             return _attributes.getAttribute(key);
         }
