@@ -1741,7 +1741,7 @@ public class ServletHandler extends ScopedHandler
                 {
                     case EXACT:
                     case ROOT:
-                        _httpServletMapping = new ServletPathMapping(_pathSpec, _servletHolder.getName(), null);
+                        _httpServletMapping = new ServletPathMapping(_pathSpec, _servletHolder.getName(), _pathSpec.getPrefix());
                         break;
                     default:
                         _httpServletMapping = null;
@@ -1770,6 +1770,14 @@ public class ServletHandler extends ScopedHandler
                 return _httpServletMapping;
             return new ServletPathMapping(_pathSpec, _servletHolder.getName(), pathInContext);
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("MappedServlet%x{%s->%s}",
+                hashCode(), _pathSpec == null ? null : _pathSpec.getDeclaration(), _servletHolder);
+        }
+
     }
 
     @SuppressWarnings("serial")

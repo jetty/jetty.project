@@ -1915,7 +1915,25 @@ public class RequestTest
         uri = "/foo/bar";
         m = new ServletPathMapping(spec, "FooServlet", uri);
         assertThat(m.getMappingMatch(), is(MappingMatch.PATH));
-        assertThat(m.getMatchValue(), is("foo/bar"));
+        assertThat(m.getMatchValue(), is("foo"));
+        assertThat(m.getPattern(), is("/foo/*"));
+        assertThat(m.getServletName(), is("FooServlet"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+
+        uri = "/foo/";
+        m = new ServletPathMapping(spec, "FooServlet", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.PATH));
+        assertThat(m.getMatchValue(), is("foo"));
+        assertThat(m.getPattern(), is("/foo/*"));
+        assertThat(m.getServletName(), is("FooServlet"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+
+        uri = "/foo";
+        m = new ServletPathMapping(spec, "FooServlet", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.PATH));
+        assertThat(m.getMatchValue(), is("foo"));
         assertThat(m.getPattern(), is("/foo/*"));
         assertThat(m.getServletName(), is("FooServlet"));
         assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));

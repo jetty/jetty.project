@@ -58,23 +58,23 @@ public class ServletPathMapping implements HttpServletMapping
 
                 case EXACT:
                     _mappingMatch = MappingMatch.EXACT;
-                    _matchValue = _pattern.substring(1);
+                    _matchValue = _pattern.startsWith("/") ? _pattern.substring(1) : _pattern;
                     _servletPath = _pattern;
                     _pathInfo = null;
                     break;
 
                 case PREFIX_GLOB:
                     _mappingMatch = MappingMatch.PATH;
-                    _matchValue = pathInContext.substring(1);
-                    int split = _pattern.length() - 2;
                     _servletPath = pathSpec.getPrefix();
-                    _pathInfo = pathInContext.substring(split);
+                    // TODO avoid the substring on the known servletPath!
+                    _matchValue = _servletPath.startsWith("/") ? _servletPath.substring(1) : _servletPath;
+                    _pathInfo = pathSpec.getPathInfo(pathInContext);
                     break;
 
                 case SUFFIX_GLOB:
                     _mappingMatch = MappingMatch.EXTENSION;
                     int dot = pathInContext.lastIndexOf('.');
-                    _matchValue = pathInContext.substring(1, dot);
+                    _matchValue = pathInContext.substring(pathInContext.startsWith("/") ? 1 : 0, dot);
                     _servletPath = pathInContext;
                     _pathInfo = null;
                     break;
