@@ -419,8 +419,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 abort(x);
                             else
                             {
-                                _response.resetContent();
-                                sendResponseAndComplete();
+                                try
+                                {
+                                    _response.resetContent();
+                                    sendResponseAndComplete();
+                                }
+                                catch (Throwable t)
+                                {
+                                    if (x != t)
+                                        x.addSuppressed(t);
+                                    abort(x);
+                                }
                             }
                         }
                         finally
