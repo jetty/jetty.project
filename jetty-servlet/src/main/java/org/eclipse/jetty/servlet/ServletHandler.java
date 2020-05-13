@@ -444,18 +444,18 @@ public class ServletHandler extends ScopedHandler
         ServletHolder servletHolder = null;
         UserIdentity.Scope oldScope = null;
 
-        MappedServlet mapping = getMappedServlet(target);
-        if (mapping != null)
+        MappedServlet mappedServlet = getMappedServlet(target);
+        if (mappedServlet != null)
         {
-            servletHolder = mapping.getResource();
+            servletHolder = mappedServlet.getResource();
 
-            PathSpec pathSpec = mapping.getPathSpec();
+            PathSpec pathSpec = mappedServlet.getPathSpec();
             if (pathSpec != null)
             {
                 String servletPath = pathSpec.getPathMatch(target);
                 String pathInfo = pathSpec.getPathInfo(target);
 
-                HttpServletMapping httpServletMapping = mapping.getHttpServletMapping(servletPath);
+                HttpServletMapping httpServletMapping = mappedServlet.getHttpServletMapping(servletPath);
                 if (DispatcherType.INCLUDE.equals(type))
                 {
                     baseRequest.setAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH, servletPath);
@@ -573,9 +573,9 @@ public class ServletHandler extends ScopedHandler
         }
 
         ServletHolder holder = _servletNameMap.get(target);
-        if (holder == null)
-            return null;
-        return new MappedServlet(null, holder);
+        if (holder != null)
+            return new MappedServlet(null, holder);
+        return null;
     }
 
     protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
