@@ -739,7 +739,7 @@ public class HTTPClientDocs
         // end::dynamicDefault[]
     }
 
-    public void dynamicOneProtocol() throws Exception
+    public void dynamicOneProtocol()
     {
         // tag::dynamicOneProtocol[]
         ClientConnector connector = new ClientConnector();
@@ -798,9 +798,10 @@ public class HTTPClientDocs
         // Make a clear-text upgrade request from HTTP/1.1 to HTTP/2.
         // The request will start as HTTP/1.1, but the response will be HTTP/2.
         ContentResponse upgradedResponse = client.newRequest("host", 8080)
-            .header(HttpHeader.UPGRADE, "h2c")
-            .header(HttpHeader.HTTP2_SETTINGS, "")
-            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
+            .headers(headers -> headers
+                .put(HttpHeader.UPGRADE, "h2c")
+                .put(HttpHeader.HTTP2_SETTINGS, "")
+                .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .send();
         // end::dynamicClearText[]
     }

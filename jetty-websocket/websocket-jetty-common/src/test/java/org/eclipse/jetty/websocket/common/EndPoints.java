@@ -38,7 +38,7 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.CloseStatus;
-import org.eclipse.jetty.websocket.util.TextUtil;
+import org.eclipse.jetty.websocket.util.TextUtils;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
@@ -62,7 +62,7 @@ public class EndPoints
         @Override
         public void onWebSocketClose(int statusCode, String reason)
         {
-            events.add("onWebSocketClose(%s, %s)", CloseStatus.codeString(statusCode), TextUtil.quote(reason));
+            events.add("onWebSocketClose(%s, %s)", CloseStatus.codeString(statusCode), TextUtils.quote(reason));
         }
 
         @Override
@@ -74,13 +74,13 @@ public class EndPoints
         @Override
         public void onWebSocketError(Throwable cause)
         {
-            events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtil.quote(cause.getMessage()));
+            events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtils.quote(cause.getMessage()));
         }
 
         @Override
         public void onWebSocketText(String message)
         {
-            events.add("onWebSocketText(%s)", TextUtil.quote(message));
+            events.add("onWebSocketText(%s)", TextUtils.quote(message));
         }
     }
 
@@ -91,7 +91,7 @@ public class EndPoints
         @Override
         public void onWebSocketClose(int statusCode, String reason)
         {
-            events.add("onWebSocketClose(%s, %s)", CloseStatus.codeString(statusCode), TextUtil.quote(reason));
+            events.add("onWebSocketClose(%s, %s)", CloseStatus.codeString(statusCode), TextUtils.quote(reason));
         }
 
         @Override
@@ -103,7 +103,7 @@ public class EndPoints
         @Override
         public void onWebSocketError(Throwable cause)
         {
-            events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtil.quote(cause.getMessage()));
+            events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtils.quote(cause.getMessage()));
         }
 
         @Override
@@ -120,7 +120,7 @@ public class EndPoints
         @Override
         public void onWebSocketClose(int statusCode, String reason)
         {
-            events.add("onWebSocketClose(%s, %s)", CloseStatus.codeString(statusCode), TextUtil.quote(reason));
+            events.add("onWebSocketClose(%s, %s)", CloseStatus.codeString(statusCode), TextUtils.quote(reason));
         }
 
         @Override
@@ -132,13 +132,13 @@ public class EndPoints
         @Override
         public void onWebSocketError(Throwable cause)
         {
-            events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtil.quote(cause.getMessage()));
+            events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtils.quote(cause.getMessage()));
         }
 
         @Override
         public void onWebSocketPartialText(String payload, boolean fin)
         {
-            events.add("onWebSocketPartialText(%s, %b)", TextUtil.quote(payload), fin);
+            events.add("onWebSocketPartialText(%s, %b)", TextUtils.quote(payload), fin);
         }
 
         @Override
@@ -155,7 +155,7 @@ public class EndPoints
         @Override
         public void onWebSocketClose(int statusCode, String reason)
         {
-            events.add("onWebSocketClose(%s, %s)", CloseStatus.codeString(statusCode), TextUtil.quote(reason));
+            events.add("onWebSocketClose(%s, %s)", CloseStatus.codeString(statusCode), TextUtils.quote(reason));
         }
 
         @Override
@@ -167,7 +167,7 @@ public class EndPoints
         @Override
         public void onWebSocketError(Throwable cause)
         {
-            events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtil.quote(cause.getMessage()));
+            events.add("onWebSocketError((%s) %s)", cause.getClass().getSimpleName(), TextUtils.quote(cause.getMessage()));
         }
 
         @Override
@@ -228,7 +228,7 @@ public class EndPoints
         @OnWebSocketClose
         public void onClose(int statusCode, String reason)
         {
-            events.add("onClose(%d, %s)", statusCode, TextUtil.quote(reason));
+            events.add("onClose(%d, %s)", statusCode, TextUtils.quote(reason));
         }
 
         @OnWebSocketConnect
@@ -253,7 +253,7 @@ public class EndPoints
         @OnWebSocketClose
         public void onClose(int statusCode, String reason)
         {
-            events.add("onClose(%d, %s)", statusCode, TextUtil.quote(reason));
+            events.add("onClose(%d, %s)", statusCode, TextUtils.quote(reason));
         }
 
         @OnWebSocketConnect
@@ -271,7 +271,7 @@ public class EndPoints
         @OnWebSocketClose
         public void onClose(int statusCode, String reason)
         {
-            events.add("onClose(%d, %s)", statusCode, TextUtil.quote(reason));
+            events.add("onClose(%d, %s)", statusCode, TextUtils.quote(reason));
         }
 
         @OnWebSocketConnect
@@ -289,7 +289,7 @@ public class EndPoints
         @OnWebSocketMessage
         public void onText(String message)
         {
-            events.add("onText(%s)", TextUtil.quote(message));
+            events.add("onText(%s)", TextUtils.quote(message));
         }
     }
 
@@ -301,7 +301,7 @@ public class EndPoints
         @OnWebSocketClose
         public void onClose(int statusCode, String reason)
         {
-            events.add("onClose(%d, %s)", statusCode, TextUtil.quote(reason));
+            events.add("onClose(%d, %s)", statusCode, TextUtils.quote(reason));
         }
 
         @OnWebSocketConnect

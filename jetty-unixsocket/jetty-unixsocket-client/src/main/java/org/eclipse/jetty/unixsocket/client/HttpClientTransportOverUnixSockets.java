@@ -47,6 +47,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.unixsocket.common.UnixSocketEndPoint;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,7 +129,7 @@ public class HttpClientTransportOverUnixSockets extends AbstractConnectorHttpCli
                 }
                 catch (Throwable x)
                 {
-                    safeClose(channel);
+                    IO.close(channel);
                     connectFailed(x, context);
                 }
             }

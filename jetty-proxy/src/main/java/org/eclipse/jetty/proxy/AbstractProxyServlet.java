@@ -499,7 +499,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         if (_hostHeader != null)
             newHeaders.add(HttpHeader.HOST, _hostHeader);
 
-        proxyRequest.set(newHeaders);
+        proxyRequest.headers(headers -> headers.clear().add(newHeaders));
     }
 
     protected Set<String> findConnectionHeaders(HttpServletRequest clientRequest)
@@ -531,15 +531,19 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected void addViaHeader(Request proxyRequest)
     {
-        proxyRequest.header(HttpHeader.VIA, "http/1.1 " + getViaHost());
+        proxyRequest.headers(headers -> headers.add(HttpHeader.VIA, "http/1.1 " + getViaHost()));
     }
 
     protected void addXForwardedHeaders(HttpServletRequest clientRequest, Request proxyRequest)
     {
-        proxyRequest.header(HttpHeader.X_FORWARDED_FOR, clientRequest.getRemoteAddr());
-        proxyRequest.header(HttpHeader.X_FORWARDED_PROTO, clientRequest.getScheme());
-        proxyRequest.header(HttpHeader.X_FORWARDED_HOST, clientRequest.getHeader(HttpHeader.HOST.asString()));
-        proxyRequest.header(HttpHeader.X_FORWARDED_SERVER, clientRequest.getLocalName());
+        proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_FOR, clientRequest.getRemoteAddr()));
+        proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_PROTO, clientRequest.getScheme()));
+        String hostHeader = clientRequest.getHeader(HttpHeader.HOST.asString());
+        if (hostHeader != null)
+            proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_HOST, hostHeader));
+        String localName = clientRequest.getLocalName();
+        if (localName != null)
+            proxyRequest.headers(headers -> headers.add(HttpHeader.X_FORWARDED_SERVER, localName));
     }
 
     protected void sendProxyRequest(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
@@ -633,12 +637,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
                 }
                 builder.append(System.lineSeparator());
             }
-            _log.debug("{} proxying to downstream:{}{}{}{}{}",
+            _log.debug("{} proxying to downstream:{}{}",
                 getRequestId(clientRequest),
-                System.lineSeparator(),
-                serverResponse,
-                System.lineSeparator(),
-                serverResponse.getHeaders().toString().trim(),
                 System.lineSeparator(),
                 builder);
         }

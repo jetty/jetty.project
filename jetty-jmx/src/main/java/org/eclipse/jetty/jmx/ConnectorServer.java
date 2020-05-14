@@ -243,6 +243,7 @@ public class ConnectorServer extends AbstractLifeCycle
             if (_sslContextFactory == null)
             {
                 ServerSocket server = new ServerSocket();
+                server.setReuseAddress(true);
                 server.bind(new InetSocketAddress(address, port));
                 return server;
             }

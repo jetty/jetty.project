@@ -111,8 +111,7 @@ public class AttributesMap implements Attributes, Dumpable
         if (attrs instanceof AttributesMap)
             return Collections.enumeration(((AttributesMap)attrs).keySet());
 
-        List<String> names = new ArrayList<>();
-        names.addAll(Collections.list(attrs.getAttributeNames()));
+        List<String> names = new ArrayList<>(Collections.list(attrs.getAttributeNames()));
         return Collections.enumeration(names);
     }
 

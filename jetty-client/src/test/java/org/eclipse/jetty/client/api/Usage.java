@@ -81,7 +81,7 @@ public class Usage
             .path("/uri")
             .version(HttpVersion.HTTP_1_1)
             .param("a", "b")
-            .header("X-Header", "Y-value")
+            .headers(headers -> headers.put("X-Header", "Y-value"))
             .agent("Jetty HTTP Client")
             .idleTimeout(5000, TimeUnit.MILLISECONDS)
             .timeout(20, TimeUnit.SECONDS);

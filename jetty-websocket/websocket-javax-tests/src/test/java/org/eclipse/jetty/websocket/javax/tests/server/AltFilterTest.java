@@ -30,6 +30,7 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.javax.tests.Fuzzer;
 import org.eclipse.jetty.websocket.javax.tests.WSServer;
 import org.eclipse.jetty.websocket.javax.tests.server.sockets.echo.BasicEchoSocket;
+import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -38,7 +39,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 /**
- * Testing the use of an alternate {@link org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter}
+ * Testing the use of an alternate {@link WebSocketUpgradeFilter}
  * defined in the WEB-INF/web.xml
  */
 @ExtendWith(WorkDirExtension.class)

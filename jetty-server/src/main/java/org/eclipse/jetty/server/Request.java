@@ -657,7 +657,7 @@ public class Request implements HttpServletRequest
     public Attributes getAttributes()
     {
         if (_attributes == null)
-            _attributes = new AttributesMap();
+            _attributes = new ServletAttributes();
         return _attributes;
     }
 
@@ -1670,7 +1670,7 @@ public class Request implements HttpServletRequest
             // TODO this is not really right for CONNECT
             path = _uri.isAbsolute() ? "/" : null;
         else if (encoded.startsWith("/"))
-            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(URIUtil.decodePath(encoded));
+            path = (encoded.length() == 1) ? "/" : _uri.getDecodedPath();
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
             path = encoded;
         else
@@ -1733,7 +1733,7 @@ public class Request implements HttpServletRequest
         _attributes = Attributes.unwrap(_attributes);
         if (_attributes != null)
         {
-            if (AttributesMap.class.equals(_attributes.getClass()))
+            if (ServletAttributes.class.equals(_attributes.getClass()))
                 _attributes.clearAttributes();
             else
                 _attributes = null;
@@ -1813,7 +1813,7 @@ public class Request implements HttpServletRequest
             LOG.warn("Deprecated: org.eclipse.jetty.server.sendContent");
 
         if (_attributes == null)
-            _attributes = new AttributesMap();
+            _attributes = new ServletAttributes();
         _attributes.setAttribute(name, value);
 
         if (!_requestAttributeListeners.isEmpty())
@@ -1834,6 +1834,68 @@ public class Request implements HttpServletRequest
     public void setAttributes(Attributes attributes)
     {
         _attributes = attributes;
+    }
+
+    public void setAsyncAttributes()
+    {
+        // Return if we have been async dispatched before.
+        if (getAttribute(AsyncContext.ASYNC_REQUEST_URI) != null)
+            return;
+
+        // Unwrap the _attributes to get the base attributes instance.
+        Attributes baseAttributes;
+        if (_attributes == null)
+            baseAttributes = _attributes = new ServletAttributes();
+        else
+            baseAttributes = Attributes.unwrap(_attributes);
+
+        if (baseAttributes instanceof ServletAttributes)
+        {
+            // Set the AsyncAttributes on the ServletAttributes.
+            ServletAttributes servletAttributes = (ServletAttributes)baseAttributes;
+
+            // Have we been forwarded before?
+            String requestURI = (String)getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+            if (requestURI != null)
+            {
+                servletAttributes.setAsyncAttributes(requestURI,
+                    (String)getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH),
+                    (String)getAttribute(RequestDispatcher.FORWARD_PATH_INFO),
+                    (ServletPathMapping)getAttribute(RequestDispatcher.FORWARD_MAPPING),
+                    (String)getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
+            }
+            else
+            {
+                servletAttributes.setAsyncAttributes(getRequestURI(),
+                    getContextPath(),
+                    getPathInfo(), // TODO change to pathInContext when cheaply available
+                    getServletPathMapping(),
+                    getQueryString());
+            }
+        }
+        else
+        {
+            // If ServletAttributes has been replaced just set them on the top level Attributes.
+            String requestURI = (String)getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+            if (requestURI != null)
+            {
+                AsyncAttributes.applyAsyncAttributes(_attributes, requestURI,
+                    (String)getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH),
+                    (String)getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH),
+                    (String)getAttribute(RequestDispatcher.FORWARD_PATH_INFO),
+                    (String)getAttribute(RequestDispatcher.FORWARD_QUERY_STRING),
+                    (HttpServletMapping)getAttribute(RequestDispatcher.FORWARD_MAPPING));
+            }
+            else
+            {
+                AsyncAttributes.applyAsyncAttributes(_attributes, getRequestURI(),
+                    getContextPath(),
+                    getServletPath(),
+                    getPathInfo(),
+                    getQueryString(),
+                    getHttpServletMapping());
+            }
+        }
     }
 
     /**

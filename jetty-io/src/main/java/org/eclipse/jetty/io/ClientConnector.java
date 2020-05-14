@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.io;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.StandardSocketOptions;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -58,6 +58,7 @@ public class ClientConnector extends ContainerLifeCycle
     private Duration connectTimeout = Duration.ofSeconds(5);
     private Duration idleTimeout = Duration.ofSeconds(30);
     private SocketAddress bindAddress;
+    private boolean reuseAddress = true;
 
     public Executor getExecutor()
     {
@@ -165,6 +166,16 @@ public class ClientConnector extends ContainerLifeCycle
         this.bindAddress = bindAddress;
     }
 
+    public boolean getReuseAddress()
+    {
+        return reuseAddress;
+    }
+
+    public void setReuseAddress(boolean reuseAddress)
+    {
+        this.reuseAddress = reuseAddress;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
@@ -219,8 +230,10 @@ public class ClientConnector extends ContainerLifeCycle
             SocketAddress bindAddress = getBindAddress();
             if (bindAddress != null)
             {
+                boolean reuseAddress = getReuseAddress();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Binding to {} to connect to {}", bindAddress, address);
+                    LOG.debug("Binding to {} to connect to {}{}", bindAddress, address, (reuseAddress ? " reusing address" : ""));
+                channel.setOption(StandardSocketOptions.SO_REUSEADDR, reuseAddress);
                 channel.bind(bindAddress);
             }
             configure(channel);
@@ -253,7 +266,7 @@ public class ClientConnector extends ContainerLifeCycle
             // exception is being thrown, so we attempt to provide a better error message.
             if (x.getClass() == SocketException.class)
                 x = new SocketException("Could not connect to " + address).initCause(x);
-            safeClose(channel);
+            IO.close(channel);
             connectFailed(x, context);
         }
     }
@@ -273,21 +286,21 @@ public class ClientConnector extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Could not accept {}", channel);
-            safeClose(channel);
+            IO.close(channel);
             Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
             if (promise != null)
                 promise.failed(failure);
         }
     }
 
-    protected void safeClose(Closeable closeable)
-    {
-        IO.close(closeable);
-    }
-
     protected void configure(SocketChannel channel) throws IOException
     {
         channel.socket().setTcpNoDelay(true);
+    }
+
+    protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey)
+    {
+        return new SocketChannelEndPoint(channel, selector, selectionKey, getScheduler());
     }
 
     protected void connectFailed(Throwable failure, Map<String, Object> context)
@@ -309,7 +322,7 @@ public class ClientConnector extends ContainerLifeCycle
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
-            SocketChannelEndPoint endPoint = new SocketChannelEndPoint(channel, selector, selectionKey, getScheduler());
+            EndPoint endPoint = ClientConnector.this.newEndPoint((SocketChannel)channel, selector, selectionKey);
             endPoint.setIdleTimeout(getIdleTimeout().toMillis());
             return endPoint;
         }

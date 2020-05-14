@@ -72,11 +72,11 @@ public class SelectorManagerTest
         SelectorManager selectorManager = new SelectorManager(executor, scheduler)
         {
             @Override
-            protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key) throws IOException
+            protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
             {
-                SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
-                endp.setIdleTimeout(connectTimeout / 2);
-                return endp;
+                SocketChannelEndPoint endPoint = new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler());
+                endPoint.setIdleTimeout(connectTimeout / 2);
+                return endPoint;
             }
 
             @Override
@@ -96,7 +96,7 @@ public class SelectorManagerTest
             }
 
             @Override
-            public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment) throws IOException
+            public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
             {
                 ((Callback)attachment).succeeded();
                 return new AbstractConnection(endpoint, executor)

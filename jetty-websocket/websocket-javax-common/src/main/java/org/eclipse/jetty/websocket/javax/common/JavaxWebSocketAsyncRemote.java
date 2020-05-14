@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.util.TextUtil;
+import org.eclipse.jetty.websocket.util.TextUtils;
 import org.eclipse.jetty.websocket.util.messages.MessageOutputStream;
 import org.eclipse.jetty.websocket.util.messages.MessageWriter;
 import org.slf4j.Logger;
@@ -184,7 +184,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
         assertMessageNotNull(text);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendText({})", TextUtil.hint(text));
+            LOG.debug("sendText({})", TextUtils.hint(text));
         }
         FutureCallback future = new FutureCallback();
         sendFrame(new Frame(OpCode.TEXT).setPayload(text), future, batch);
@@ -198,7 +198,7 @@ public class JavaxWebSocketAsyncRemote extends JavaxWebSocketRemoteEndpoint impl
         assertSendHandlerNotNull(handler);
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("sendText({},{})", TextUtil.hint(text), handler);
+            LOG.debug("sendText({},{})", TextUtils.hint(text), handler);
         }
         sendFrame(new Frame(OpCode.TEXT).setPayload(text), new SendHandlerCallback(handler), batch);
     }

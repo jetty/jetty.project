@@ -80,8 +80,7 @@ public class X509
                     String cn = list.get(1).toString();
                     if (LOG.isDebugEnabled())
                         LOG.debug("Certificate SAN alias={} CN={} in {}", alias, cn, this);
-                    if (cn != null)
-                        addName(cn);
+                    addName(cn);
                 }
             }
         }
@@ -95,19 +94,21 @@ public class X509
                 String cn = rdn.getValue().toString();
                 if (LOG.isDebugEnabled())
                     LOG.debug("Certificate CN alias={} CN={} in {}", alias, cn, this);
-                if (cn != null && cn.contains(".") && !cn.contains(" "))
-                    addName(cn);
+                addName(cn);
             }
         }
     }
 
     protected void addName(String cn)
     {
-        cn = StringUtil.asciiToLowerCase(cn);
-        if (cn.startsWith("*."))
-            _wilds.add(cn.substring(2));
-        else
-            _hosts.add(cn);
+        if (cn != null)
+        {
+            cn = StringUtil.asciiToLowerCase(cn);
+            if (cn.startsWith("*."))
+                _wilds.add(cn.substring(2));
+            else
+                _hosts.add(cn);
+        }
     }
 
     public String getAlias()

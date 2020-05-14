@@ -256,7 +256,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         {
             HttpField field = oldRequest.getHeaders().getField(header);
             if (field != null && !newRequest.getHeaders().contains(header))
-                newRequest.put(field);
+                newRequest.headers(headers -> headers.put(field));
         }
 
         private void forwardSuccessComplete(HttpRequest request, Response response)

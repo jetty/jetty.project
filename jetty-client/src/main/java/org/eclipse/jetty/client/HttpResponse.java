@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -91,9 +92,16 @@ public class HttpResponse implements Response
         return headers.asImmutable();
     }
 
-    public HttpFields.Mutable getHeaderFieldsMutable()
+    public HttpResponse addHeader(HttpField header)
     {
-        return headers;
+        headers.add(header);
+        return this;
+    }
+
+    public HttpResponse headers(Consumer<HttpFields.Mutable> consumer)
+    {
+        consumer.accept(headers);
+        return this;
     }
 
     @Override
@@ -110,7 +118,7 @@ public class HttpResponse implements Response
 
     public HttpFields getTrailers()
     {
-        return trailers;
+        return trailers == null ? null : trailers.asImmutable();
     }
 
     public HttpResponse trailer(HttpField trailer)

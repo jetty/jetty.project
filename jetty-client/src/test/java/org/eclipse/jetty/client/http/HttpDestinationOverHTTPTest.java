@@ -262,7 +262,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         int port = connector.getLocalPort();
         Request request = client.newRequest(host, port)
                 .scheme(scenario.getScheme())
-                .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+                .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE));
         Destination destinationBefore = client.resolveDestination(request);
         ContentResponse response = request.send();
 
@@ -275,7 +275,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
         request = client.newRequest(host, port)
             .scheme(scenario.getScheme())
-            .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE));
         response = request.send();
 
         assertEquals(200, response.getStatus());

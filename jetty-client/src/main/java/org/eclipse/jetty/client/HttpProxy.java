@@ -200,9 +200,9 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             Origin.Address proxyAddress = destination.getConnectAddress();
             HttpClient httpClient = destination.getHttpClient();
             Request connect = new TunnelRequest(httpClient, proxyAddress)
-                    .method(HttpMethod.CONNECT)
-                    .path(target)
-                    .header(HttpHeader.HOST, target);
+                .method(HttpMethod.CONNECT)
+                .path(target)
+                .headers(headers -> headers.put(HttpHeader.HOST, target));
             ProxyConfiguration.Proxy proxy = destination.getProxy();
             if (proxy.isSecure())
                 connect.scheme(HttpScheme.HTTPS.asString());
@@ -262,8 +262,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                 }
                 else
                 {
-                    HttpResponseException failure = new HttpResponseException("Unexpected " + response +
-                            " for " + response.getRequest(), response);
+                    HttpResponseException failure = new HttpResponseException("Unexpected " + response + " for " + response.getRequest(), response);
                     tunnelFailed(endPoint, failure);
                 }
             }

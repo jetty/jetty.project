@@ -155,19 +155,24 @@ public class Dispatcher implements RequestDispatcher
             }
             else
             {
-                //If we have already been forwarded previously, then keep using the established
-                //original value. Otherwise, this is the first forward and we need to establish the values.
-                //Note: the established value on the original request for pathInfo and
-                //for queryString is allowed to be null, but cannot be null for the other values.
+                // If we have already been forwarded previously, then keep using the established
+                // original value. Otherwise, this is the first forward and we need to establish the values.
+                // Note: the established value on the original request for pathInfo and
+                // for queryString is allowed to be null, but cannot be null for the other values.
+                // Note: the pathInfo is passed as the pathInContext since it is only used when there is
+                // no mapping, and when there is no mapping the pathInfo is the pathInContext.
+                // TODO Ultimately it is intended for the request to carry the pathInContext for easy access
                 ForwardAttributes attr = old_attr.getAttribute(FORWARD_REQUEST_URI) != null
                     ? new ForwardAttributes(old_attr,
                     (String)old_attr.getAttribute(FORWARD_REQUEST_URI),
                     (String)old_attr.getAttribute(FORWARD_CONTEXT_PATH),
+                    (String)old_attr.getAttribute(FORWARD_PATH_INFO),
                     (ServletPathMapping)old_attr.getAttribute(FORWARD_MAPPING),
                     (String)old_attr.getAttribute(FORWARD_QUERY_STRING))
                     : new ForwardAttributes(old_attr,
                     old_uri.getPath(),
                     old_context_path,
+                    baseRequest.getPathInfo(), // TODO replace with pathInContext
                     old_mapping,
                     old_uri.getQuery());
 
@@ -243,15 +248,17 @@ public class Dispatcher implements RequestDispatcher
     {
         private final String _requestURI;
         private final String _contextPath;
-        private final ServletPathMapping _mapping;
+        private final String _pathInContext;
+        private final ServletPathMapping _servletPathMapping;
         private final String _query;
 
-        public ForwardAttributes(Attributes attributes, String requestURI, String contextPath, ServletPathMapping mapping, String query)
+        public ForwardAttributes(Attributes attributes, String requestURI, String contextPath, String pathInContext, ServletPathMapping mapping, String query)
         {
             super(attributes);
             _requestURI = requestURI;
             _contextPath = contextPath;
-            _mapping = mapping;
+            _pathInContext = pathInContext;
+            _servletPathMapping = mapping;
             _query = query;
         }
 
@@ -263,17 +270,17 @@ public class Dispatcher implements RequestDispatcher
                 switch (key)
                 {
                     case FORWARD_PATH_INFO:
-                        return _mapping == null ? null : _mapping.getPathInfo();
+                        return _servletPathMapping == null ? _pathInContext : _servletPathMapping.getPathInfo();
                     case FORWARD_REQUEST_URI:
                         return _requestURI;
                     case FORWARD_SERVLET_PATH:
-                        return _mapping.getServletPath();
+                        return _servletPathMapping == null ? null : _servletPathMapping.getServletPath();
                     case FORWARD_CONTEXT_PATH:
                         return _contextPath;
                     case FORWARD_QUERY_STRING:
                         return _query;
                     case FORWARD_MAPPING:
-                        return _mapping;
+                        return _servletPathMapping;
                     default:
                         break;
                 }
@@ -356,8 +363,8 @@ public class Dispatcher implements RequestDispatcher
         private final String _requestURI;
         private final String _contextPath;
         private final String _pathInContext;
+        private ServletPathMapping _servletPathMapping; // Set later by ServletHandler
         private final String _query;
-        private ServletPathMapping _mapping;
 
         public IncludeAttributes(Attributes attributes, String requestURI, String contextPath, String pathInContext, String query)
         {
@@ -376,9 +383,9 @@ public class Dispatcher implements RequestDispatcher
                 switch (key)
                 {
                     case INCLUDE_PATH_INFO:
-                        return _mapping == null ? _pathInContext : _mapping.getPathInfo();
+                        return _servletPathMapping == null ? _pathInContext : _servletPathMapping.getPathInfo();
                     case INCLUDE_SERVLET_PATH:
-                        return _mapping == null ? null : _mapping.getServletPath();
+                        return _servletPathMapping == null ? null : _servletPathMapping.getServletPath();
                     case INCLUDE_CONTEXT_PATH:
                         return _contextPath;
                     case INCLUDE_QUERY_STRING:
@@ -386,7 +393,7 @@ public class Dispatcher implements RequestDispatcher
                     case INCLUDE_REQUEST_URI:
                         return _requestURI;
                     case INCLUDE_MAPPING:
-                        return _mapping;
+                        return _servletPathMapping;
                     default:
                         break;
                 }
@@ -425,7 +432,7 @@ public class Dispatcher implements RequestDispatcher
             {
                 case INCLUDE_MAPPING:
                     if (_named == null)
-                        _mapping = (ServletPathMapping)value;
+                        _servletPathMapping = (ServletPathMapping)value;
                     return;
 
                 case INCLUDE_REQUEST_URI:

@@ -515,9 +515,10 @@ public class HttpClientTransportDynamicTest
 
         // Make an upgrade request from HTTP/1.1 to H2C.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-            .header(HttpHeader.UPGRADE, "h2c")
-            .header(HttpHeader.HTTP2_SETTINGS, "")
-            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
+            .headers(headers -> headers
+                .put(HttpHeader.UPGRADE, "h2c")
+                .put(HttpHeader.HTTP2_SETTINGS, "")
+                .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -595,9 +596,10 @@ public class HttpClientTransportDynamicTest
         // Make an upgrade request from HTTP/1.1 to H2C.
         int serverPort = proxyPort + 1; // Any port will do.
         ContentResponse response = client.newRequest("localhost", serverPort)
-            .header(HttpHeader.UPGRADE, "h2c")
-            .header(HttpHeader.HTTP2_SETTINGS, "")
-            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
+            .headers(headers -> headers
+                .put(HttpHeader.UPGRADE, "h2c")
+                .put(HttpHeader.HTTP2_SETTINGS, "")
+                .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -628,9 +630,10 @@ public class HttpClientTransportDynamicTest
         // Make an upgrade request from HTTP/1.1 to H2C.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(HttpScheme.HTTPS.asString())
-            .header(HttpHeader.UPGRADE, "h2c")
-            .header(HttpHeader.HTTP2_SETTINGS, "")
-            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
+            .headers(headers -> headers
+                .put(HttpHeader.UPGRADE, "h2c")
+                .put(HttpHeader.HTTP2_SETTINGS, "")
+                .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -665,9 +668,10 @@ public class HttpClientTransportDynamicTest
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
             .method(HttpMethod.POST)
-            .header(HttpHeader.UPGRADE, "h2c")
-            .header(HttpHeader.HTTP2_SETTINGS, "")
-            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
+            .headers(headers -> headers
+                .put(HttpHeader.UPGRADE, "h2c")
+                .put(HttpHeader.HTTP2_SETTINGS, "")
+                .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .body(new BytesRequestContent(bytes))
             .timeout(5, TimeUnit.SECONDS)
             .send(new BufferingResponseListener(bytes.length)
@@ -698,8 +702,8 @@ public class HttpClientTransportDynamicTest
 
         // The upgrade request is missing the required HTTP2-Settings header.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-            .header(HttpHeader.UPGRADE, "h2c")
-            .header(HttpHeader.CONNECTION, "Upgrade")
+            .headers(headers -> headers.add(HttpHeader.UPGRADE, "h2c"))
+            .headers(headers -> headers.add(HttpHeader.CONNECTION, "Upgrade"))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -725,9 +729,10 @@ public class HttpClientTransportDynamicTest
         // Make an upgrade request from HTTP/1.1 to H2C.
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-            .header(HttpHeader.UPGRADE, "h2c")
-            .header(HttpHeader.HTTP2_SETTINGS, "")
-            .header(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings")
+            .headers(headers -> headers
+                .put(HttpHeader.UPGRADE, "h2c")
+                .put(HttpHeader.HTTP2_SETTINGS, "")
+                .put(HttpHeader.CONNECTION, "Upgrade, HTTP2-Settings"))
             .send(result ->
             {
                 if (result.isFailed())

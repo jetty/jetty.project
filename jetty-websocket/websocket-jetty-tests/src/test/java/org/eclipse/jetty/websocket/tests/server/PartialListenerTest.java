@@ -47,7 +47,7 @@ import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
-import org.eclipse.jetty.websocket.util.TextUtil;
+import org.eclipse.jetty.websocket.util.TextUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -293,7 +293,7 @@ public class PartialListenerTest
         @Override
         public void onWebSocketPartialText(String payload, boolean fin)
         {
-            partialEvents.offer(String.format("TEXT[payload=%s, fin=%b]", TextUtil.maxStringLength(30, payload), fin));
+            partialEvents.offer(String.format("TEXT[payload=%s, fin=%b]", TextUtils.maxStringLength(30, payload), fin));
         }
     }
 }

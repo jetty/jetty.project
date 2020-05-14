@@ -56,6 +56,7 @@ import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.HTTP2Session;
@@ -74,6 +75,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FuturePromise;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -397,6 +399,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
     @Tag("Unstable")
+    @Disabled
     public void testAsyncWriteClosed(Transport transport) throws Exception
     {
         init(transport);
@@ -627,7 +630,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
             .method(HttpMethod.POST)
             .path(scenario.servletPath)
-            .header(HttpHeader.CONNECTION, "close")
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .body(new StringRequestContent(text))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -893,7 +896,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
             .method(HttpMethod.POST)
             .path(scenario.servletPath)
-            .header(HttpHeader.CONNECTION, "close")
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .body(new StringRequestContent("XYZ"))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -949,7 +952,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
 
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
             .path(scenario.servletPath)
-            .header(HttpHeader.CONNECTION, "close")
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
