@@ -133,7 +133,6 @@ public class RemoteInfinispanTestSupport
 
             String content = baos.toString("UTF-8");
             _manager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
-            _manager.administration().getOrCreateCache("remote-session-test", (String)null);
         }
         catch (Exception e)
         {
