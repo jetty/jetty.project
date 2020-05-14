@@ -111,7 +111,7 @@ public class ServletHandler extends ScopedHandler
     private List<FilterMapping> _filterPathMappings;
     private MultiMap<FilterMapping> _filterNameMappings;
 
-    private final Map<String, ServletHolder> _servletNameMap = new HashMap<>();
+    private final Map<String, MappedServlet> _servletNameMap = new HashMap<>();
     private PathMappings<MappedServlet> _servletPathMap;
 
     private ListenerHolder[] _listeners = new ListenerHolder[0];
@@ -406,7 +406,10 @@ public class ServletHandler extends ScopedHandler
 
     public ServletHolder getServlet(String name)
     {
-        return _servletNameMap.get(name);
+        MappedServlet mapped = _servletNameMap.get(name);
+        if (mapped != null)
+            return mapped.getServletHolder();
+        return null;
     }
 
     @Override
@@ -533,10 +536,7 @@ public class ServletHandler extends ScopedHandler
             return match.getResource();
         }
 
-        ServletHolder holder = _servletNameMap.get(target);
-        if (holder != null)
-            return new MappedServlet(null, holder);
-        return null;
+        return _servletNameMap.get(target);
     }
 
     private FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
@@ -1247,7 +1247,7 @@ public class ServletHandler extends ScopedHandler
             // update the maps
             for (ServletHolder servlet : _servlets)
             {
-                _servletNameMap.put(servlet.getName(), servlet);
+                _servletNameMap.put(servlet.getName(), new MappedServlet(null, servlet));
                 servlet.setServletHandler(this);
             }
         }
@@ -1321,7 +1321,7 @@ public class ServletHandler extends ScopedHandler
                 for (ServletMapping mapping : mappings)
                 {
                     //Get servlet associated with the mapping and check it is enabled
-                    ServletHolder servletHolder = _servletNameMap.get(mapping.getServletName());
+                    ServletHolder servletHolder = getServlet(mapping.getServletName());
                     if (servletHolder == null)
                         throw new IllegalStateException("No such servlet: " + mapping.getServletName());
                     //if the servlet related to the mapping is not enabled, skip it from consideration
@@ -1347,7 +1347,7 @@ public class ServletHandler extends ScopedHandler
                             //existing candidate isn't a default, if the one we're looking at isn't a default either, then its an error
                             if (!mapping.isDefault())
                             {
-                                ServletHolder finalMappedServlet = _servletNameMap.get(finalMapping.getServletName());
+                                ServletHolder finalMappedServlet = getServlet(finalMapping.getServletName());
                                 throw new IllegalStateException("Multiple servlets map to path " +
                                     pathSpec + ": " +
                                     finalMappedServlet.getName() + "[mapped:" + finalMapping.getSource() + "]," +
@@ -1364,10 +1364,10 @@ public class ServletHandler extends ScopedHandler
                         pathSpec,
                         finalMapping.getSource(),
                         finalMapping.getServletName(),
-                        _servletNameMap.get(finalMapping.getServletName()).getSource());
+                        getServlet(finalMapping.getServletName()).getSource());
 
                 ServletPathSpec servletPathSpec = new ServletPathSpec(pathSpec);
-                MappedServlet mappedServlet = new MappedServlet(servletPathSpec, _servletNameMap.get(finalMapping.getServletName()));
+                MappedServlet mappedServlet = new MappedServlet(servletPathSpec, getServlet(finalMapping.getServletName()));
                 pm.put(servletPathSpec, mappedServlet);
             }
 
@@ -1716,6 +1716,11 @@ public class ServletHandler extends ScopedHandler
                         _servletPathMapping = null;
                         break;
                 }
+            }
+            else if (_pathSpec == null)
+            {
+                // Named servlet mapping
+                _servletPathMapping = new ServletPathMapping(null, _servletHolder.getName(), null);
             }
             else
             {
