@@ -12,9 +12,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
     <!-- if changing this version please update default in RemoteInfinispanTestSupport you will get thanks from Eclipse IDE users -->
-    <!-- 10.1.7.Final -->
-    <!--could be ${infinispan.version} but maybe we want to test different version of server vs client -->
-    <infinispan.docker.image.version>9.4.8.Final</infinispan.docker.image.version>
+    <infinispan.docker.image.version>${infinispan.version}</infinispan.docker.image.version>
     <!-- from 10.xx it has changed to jboss/infinispan -->
     <infinispan.docker.image.name>jboss/infinispan-server</infinispan.docker.image.name>
   </properties>
