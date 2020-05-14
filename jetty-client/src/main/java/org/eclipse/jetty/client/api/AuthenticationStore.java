@@ -75,4 +75,12 @@ public interface AuthenticationStore
      * @return the {@link Authentication.Result} that matches the given URI, or null
      */
     public Authentication.Result findAuthenticationResult(URI uri);
+
+    /**
+     * @return false if there are no stored authentication results, true if there may be some.
+     */
+    public default boolean hasAuthenticationResults()
+    {
+        return true;
+    }
 }
