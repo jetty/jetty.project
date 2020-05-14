@@ -21,6 +21,7 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.StandardSocketOptions;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -57,6 +58,7 @@ public class ClientConnector extends ContainerLifeCycle
     private Duration connectTimeout = Duration.ofSeconds(5);
     private Duration idleTimeout = Duration.ofSeconds(30);
     private SocketAddress bindAddress;
+    private boolean reuseAddress = true;
 
     public Executor getExecutor()
     {
@@ -164,6 +166,16 @@ public class ClientConnector extends ContainerLifeCycle
         this.bindAddress = bindAddress;
     }
 
+    public boolean getReuseAddress()
+    {
+        return reuseAddress;
+    }
+
+    public void setReuseAddress(boolean reuseAddress)
+    {
+        this.reuseAddress = reuseAddress;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
@@ -218,8 +230,10 @@ public class ClientConnector extends ContainerLifeCycle
             SocketAddress bindAddress = getBindAddress();
             if (bindAddress != null)
             {
+                boolean reuseAddress = getReuseAddress();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Binding to {} to connect to {}", bindAddress, address);
+                    LOG.debug("Binding to {} to connect to {}{}", bindAddress, address, (reuseAddress ? " reusing address" : ""));
+                channel.setOption(StandardSocketOptions.SO_REUSEADDR, reuseAddress);
                 channel.bind(bindAddress);
             }
             configure(channel);

@@ -34,6 +34,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.IConnection;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.client.api.Connection;
@@ -357,7 +358,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         @Override
         public SendFailure send(HttpExchange exchange)
         {
-            Request request = exchange.getRequest();
+            HttpRequest request = exchange.getRequest();
             normalizeRequest(request);
 
             // FCGI may be multiplexed, so one channel for each exchange.

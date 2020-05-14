@@ -261,7 +261,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         @Override
         public SendFailure send(HttpExchange exchange)
         {
-            Request request = exchange.getRequest();
+            HttpRequest request = exchange.getRequest();
             normalizeRequest(request);
 
             // Save the old idle timeout to restore it.
@@ -276,7 +276,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         }
 
         @Override
-        protected void normalizeRequest(Request request)
+        protected void normalizeRequest(HttpRequest request)
         {
             super.normalizeRequest(request);
 
@@ -287,8 +287,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
                         .idleTimeout(2 * connectTimeout, TimeUnit.MILLISECONDS);
             }
 
-            HttpRequest httpRequest = (HttpRequest)request;
-            HttpConversation conversation = httpRequest.getConversation();
+            HttpConversation conversation = request.getConversation();
             HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
             if (upgrader == null)
             {
@@ -296,7 +295,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
                 {
                     upgrader = ((HttpUpgrader.Factory)request).newHttpUpgrader(HttpVersion.HTTP_1_1);
                     conversation.setAttribute(HttpUpgrader.class.getName(), upgrader);
-                    upgrader.prepare(httpRequest);
+                    upgrader.prepare(request);
                 }
                 else
                 {
@@ -305,7 +304,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
                     {
                         upgrader = new ProtocolHttpUpgrader(getHttpDestination(), protocol);
                         conversation.setAttribute(HttpUpgrader.class.getName(), upgrader);
-                        upgrader.prepare(httpRequest);
+                        upgrader.prepare(request);
                     }
                 }
             }

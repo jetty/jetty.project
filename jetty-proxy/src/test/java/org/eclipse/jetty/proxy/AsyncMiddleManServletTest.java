@@ -226,7 +226,7 @@ public class AsyncMiddleManServletTest
         Request.Content gzipContent = new BytesRequestContent(gzipBytes);
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-            .header(HttpHeader.CONTENT_ENCODING, "gzip")
+            .headers(headers -> headers.put(HttpHeader.CONTENT_ENCODING, HttpHeaderValue.GZIP))
             .body(gzipContent)
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -301,7 +301,7 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-            .header(HttpHeader.CONTENT_ENCODING, "gzip")
+            .headers(headers -> headers.put(HttpHeader.CONTENT_ENCODING, HttpHeaderValue.GZIP))
             .body(new BytesRequestContent(gzip(bytes)))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -348,7 +348,7 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-            .header(HttpHeader.CONTENT_ENCODING, "gzip")
+            .headers(headers -> headers.put(HttpHeader.CONTENT_ENCODING, HttpHeaderValue.GZIP))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
@@ -393,7 +393,7 @@ public class AsyncMiddleManServletTest
         AsyncRequestContent content = new AsyncRequestContent();
         Request request = client.newRequest("localhost", serverConnector.getLocalPort());
         FutureResponseListener listener = new FutureResponseListener(request);
-        request.header(HttpHeader.CONTENT_ENCODING, "gzip")
+        request.headers(headers -> headers.put(HttpHeader.CONTENT_ENCODING, HttpHeaderValue.GZIP))
             .body(content)
             .send(listener);
         byte[] bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
@@ -438,7 +438,7 @@ public class AsyncMiddleManServletTest
 
         byte[] bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-            .header(HttpHeader.CONTENT_ENCODING, "gzip")
+            .headers(headers -> headers.put(HttpHeader.CONTENT_ENCODING, HttpHeaderValue.GZIP))
             .body(new BytesRequestContent(gzip(bytes)))
             .timeout(5, TimeUnit.SECONDS)
             .send();
@@ -482,7 +482,7 @@ public class AsyncMiddleManServletTest
         startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-            .header(HttpHeader.CONTENT_ENCODING, "gzip")
+            .headers(headers -> headers.put(HttpHeader.CONTENT_ENCODING, HttpHeaderValue.GZIP))
             .body(new BytesRequestContent(gzip(bytes)))
             .timeout(5, TimeUnit.SECONDS)
             .send();

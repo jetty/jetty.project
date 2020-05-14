@@ -396,7 +396,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 clientRequest.setAttribute(PROXY_REQUEST_CONTENT_COMMITTED_ATTRIBUTE, true);
                 if (!expects100Continue)
                 {
-                    proxyRequest.header(HttpHeader.CONTENT_LENGTH, null);
+                    proxyRequest.headers(headers -> headers.remove(HttpHeader.CONTENT_LENGTH));
                     sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
                 }
             }

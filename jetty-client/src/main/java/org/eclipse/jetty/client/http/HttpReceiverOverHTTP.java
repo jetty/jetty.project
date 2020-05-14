@@ -38,9 +38,13 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP.class);
+
     private final HttpParser parser;
     private RetainableByteBuffer networkBuffer;
     private boolean shutdown;

@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
@@ -306,34 +307,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request set(HttpFields fields)
-    {
-        headers.clear().add(fields);
-        return this;
-    }
-
-    @Override
-    public Request remove(HttpHeader header)
-    {
-        headers.remove(header);
-        return this;
-    }
-
-    @Override
-    public Request put(HttpField field)
-    {
-        headers.put(field);
-        return this;
-    }
-
-    @Override
-    public Request add(HttpField field)
-    {
-        headers.add(field);
-        return this;
-    }
-
-    @Override
+    @Deprecated
     public Request header(String name, String value)
     {
         if (value == null)
@@ -344,6 +318,7 @@ public class HttpRequest implements Request
     }
 
     @Override
+    @Deprecated
     public Request header(HttpHeader header, String value)
     {
         if (value == null)
@@ -400,6 +375,19 @@ public class HttpRequest implements Request
     public HttpFields.Mutable getHeaders()
     {
         return headers;
+    }
+
+    @Override
+    public Request headers(Consumer<HttpFields.Mutable> consumer)
+    {
+        consumer.accept(headers);
+        return this;
+    }
+
+    public HttpRequest addHeader(HttpField header)
+    {
+        headers.add(header);
+        return this;
     }
 
     @Override
@@ -707,7 +695,7 @@ public class HttpRequest implements Request
     public Request content(ContentProvider content, String contentType)
     {
         if (contentType != null)
-            header(HttpHeader.CONTENT_TYPE, contentType);
+            headers.put(HttpHeader.CONTENT_TYPE, contentType);
         return body(ContentProvider.toRequestContent(content));
     }
 
@@ -886,7 +874,7 @@ public class HttpRequest implements Request
      * headers, etc.</p>
      *
      * @return whether this request was already normalized
-     * @see HttpConnection#normalizeRequest(Request)
+     * @see HttpConnection#normalizeRequest(HttpRequest)
      */
     boolean normalized()
     {

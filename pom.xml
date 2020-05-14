@@ -29,7 +29,7 @@
     <jsp.version>9.0.29</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <conscrypt.version>2.4.0</conscrypt.version>
-    <asm.version>7.2</asm.version>
+    <asm.version>7.3.1</asm.version>
     <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.4.0</tycho-version>
@@ -56,8 +56,7 @@
 
     <!-- testing -->
     <it.debug>false</it.debug>
-    <jetty.test.version>5.3</jetty.test.version>
-
+    <jetty.test.version>5.4</jetty.test.version>
     <!-- springboot is only used for jetty-maven-plugin it test
     otherwise depending on Spring Boot might be chicken and egg issue :) -->
     <springboot.version>2.1.1.RELEASE</springboot.version>
