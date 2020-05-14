@@ -93,4 +93,10 @@ public class HttpAuthenticationStore implements AuthenticationStore
         }
         return null;
     }
+
+    @Override
+    public boolean hasAuthenticationResults()
+    {
+        return !results.isEmpty();
+    }
 }

@@ -163,7 +163,7 @@ public class HttpClient extends ContainerLifeCycle
      */
     public HttpClient()
     {
-        this(null);
+        this(new HttpClientTransportOverHTTP(), null);
     }
 
     /**
@@ -176,6 +176,18 @@ public class HttpClient extends ContainerLifeCycle
     public HttpClient(SslContextFactory sslContextFactory)
     {
         this(new HttpClientTransportOverHTTP(), sslContextFactory);
+    }
+
+    /**
+     * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
+     * (that is, requests with the "http" scheme only, and not "https").
+     *
+     * @param transport the {@link HttpClientTransport}
+     * @see #HttpClient(HttpClientTransport, SslContextFactory)  to perform requests to TLS destinations.
+     */
+    public HttpClient(HttpClientTransport transport)
+    {
+        this(transport, null);
     }
 
     public HttpClient(HttpClientTransport transport, SslContextFactory sslContextFactory)
@@ -1145,7 +1157,7 @@ public class HttpClient extends ContainerLifeCycle
 
     protected String normalizeHost(String host)
     {
-        if (host != null && host.matches("\\[.*\\]"))
+        if (host != null && host.startsWith("[") && host.endsWith("]"))
             return host.substring(1, host.length() - 1);
         return host;
     }
