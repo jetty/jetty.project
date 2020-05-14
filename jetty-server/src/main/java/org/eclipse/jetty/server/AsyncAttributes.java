@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.util.HashSet;
 import java.util.Set;
 import javax.servlet.AsyncContext;
-import javax.servlet.http.HttpServletMapping;
 
 import org.eclipse.jetty.util.Attributes;
 
@@ -36,8 +35,6 @@ class AsyncAttributes extends Attributes.Wrapper
     public AsyncAttributes(Attributes attributes, String requestUri, String contextPath, String pathInContext, ServletPathMapping mapping, String queryString)
     {
         super(attributes);
-
-        // TODO: make fields final in jetty-10 and NOOP when one of these attributes is set.
         _requestURI = requestUri;
         _contextPath = contextPath;
         _pathInContext = pathInContext;
@@ -96,15 +93,5 @@ class AsyncAttributes extends Attributes.Wrapper
                 super.setAttribute(key, value);
                 break;
         }
-    }
-
-    public static void applyAsyncAttributes(Attributes attributes, String requestURI, String contextPath, String servletPath, String pathInfo, String queryString, HttpServletMapping httpServletMapping)
-    {
-        attributes.setAttribute(AsyncContext.ASYNC_REQUEST_URI, requestURI);
-        attributes.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, contextPath);
-        attributes.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, servletPath);
-        attributes.setAttribute(AsyncContext.ASYNC_PATH_INFO, pathInfo);
-        attributes.setAttribute(AsyncContext.ASYNC_QUERY_STRING, queryString);
-        attributes.setAttribute(AsyncContext.ASYNC_MAPPING, httpServletMapping);
     }
 }

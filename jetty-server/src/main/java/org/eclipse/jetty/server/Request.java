@@ -1849,16 +1849,32 @@ public class Request implements HttpServletRequest
         else
             baseAttributes = Attributes.unwrap(_attributes);
 
-        if (baseAttributes instanceof ServletAttributes)
+        String fwdRequestURI = (String)getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+        if (fwdRequestURI == null)
         {
-            // Set the AsyncAttributes on the ServletAttributes.
-            ServletAttributes servletAttributes = (ServletAttributes)baseAttributes;
-
-            // Have we been forwarded before?
-            String requestURI = (String)getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
-            if (requestURI != null)
+            if (baseAttributes instanceof ServletAttributes)
             {
-                servletAttributes.setAsyncAttributes(requestURI,
+                ((ServletAttributes)baseAttributes).setAsyncAttributes(getRequestURI(),
+                    getContextPath(),
+                    getPathInfo(), // TODO change to pathInContext when cheaply available
+                    getServletPathMapping(),
+                    getQueryString());
+            }
+            else
+            {
+                _attributes.setAttribute(AsyncContext.ASYNC_REQUEST_URI, getRequestURI());
+                _attributes.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, getContextPath());
+                _attributes.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, getServletPath());
+                _attributes.setAttribute(AsyncContext.ASYNC_PATH_INFO, getPathInfo());
+                _attributes.setAttribute(AsyncContext.ASYNC_QUERY_STRING, getQueryString());
+                _attributes.setAttribute(AsyncContext.ASYNC_MAPPING, getHttpServletMapping());
+            }
+        }
+        else
+        {
+            if (baseAttributes instanceof ServletAttributes)
+            {
+                ((ServletAttributes)baseAttributes).setAsyncAttributes(fwdRequestURI,
                     (String)getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH),
                     (String)getAttribute(RequestDispatcher.FORWARD_PATH_INFO),
                     (ServletPathMapping)getAttribute(RequestDispatcher.FORWARD_MAPPING),
@@ -1866,34 +1882,12 @@ public class Request implements HttpServletRequest
             }
             else
             {
-                servletAttributes.setAsyncAttributes(getRequestURI(),
-                    getContextPath(),
-                    getPathInfo(), // TODO change to pathInContext when cheaply available
-                    getServletPathMapping(),
-                    getQueryString());
-            }
-        }
-        else
-        {
-            // If ServletAttributes has been replaced just set them on the top level Attributes.
-            String requestURI = (String)getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
-            if (requestURI != null)
-            {
-                AsyncAttributes.applyAsyncAttributes(_attributes, requestURI,
-                    (String)getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH),
-                    (String)getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH),
-                    (String)getAttribute(RequestDispatcher.FORWARD_PATH_INFO),
-                    (String)getAttribute(RequestDispatcher.FORWARD_QUERY_STRING),
-                    (HttpServletMapping)getAttribute(RequestDispatcher.FORWARD_MAPPING));
-            }
-            else
-            {
-                AsyncAttributes.applyAsyncAttributes(_attributes, getRequestURI(),
-                    getContextPath(),
-                    getServletPath(),
-                    getPathInfo(),
-                    getQueryString(),
-                    getHttpServletMapping());
+                _attributes.setAttribute(AsyncContext.ASYNC_REQUEST_URI, fwdRequestURI);
+                _attributes.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
+                _attributes.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
+                _attributes.setAttribute(AsyncContext.ASYNC_PATH_INFO, getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
+                _attributes.setAttribute(AsyncContext.ASYNC_QUERY_STRING, getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
+                _attributes.setAttribute(AsyncContext.ASYNC_MAPPING, getAttribute(RequestDispatcher.FORWARD_MAPPING));
             }
         }
     }

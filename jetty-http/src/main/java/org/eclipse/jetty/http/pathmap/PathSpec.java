@@ -23,7 +23,6 @@ package org.eclipse.jetty.http.pathmap;
  */
 public abstract class PathSpec implements Comparable<PathSpec>
 {
-    // TODO these should be private final fields or this should just be an interface
     protected String pathSpec;
     protected PathSpecGroup group;
     protected int pathDepth;
