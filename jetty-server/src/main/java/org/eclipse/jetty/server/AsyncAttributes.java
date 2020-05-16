@@ -20,8 +20,9 @@ package org.eclipse.jetty.server;
 
 import java.util.HashSet;
 import java.util.Set;
-import javax.servlet.AsyncContext;
-import javax.servlet.http.HttpServletMapping;
+
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.http.HttpServletMapping;
 
 import org.eclipse.jetty.util.Attributes;
 
