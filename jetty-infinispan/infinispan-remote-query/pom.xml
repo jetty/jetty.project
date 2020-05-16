@@ -7,12 +7,11 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>infinispan-remote-query</artifactId>
   <name>Jetty :: Infinispan Session Manager Remote with Querying</name>
-  <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.remote.query</bundle-symbolic-name>
+    <infinispan.docker.image.version>9.4.8.Final</infinispan.docker.image.version>
   </properties>
   <build>
-    <defaultGoal>install</defaultGoal>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -127,10 +126,20 @@
       <artifactId>infinispan-remote-query-client</artifactId>
       <version>${infinispan.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <profiles>
     <profile>
-      <id>remote</id>
+      <id>remote-session-tests</id>
       <activation>
         <property>
           <name>hotrod.enabled</name>
@@ -144,6 +153,9 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
               <skipTests>false</skipTests>
+              <systemPropertyVariables>
+                <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
+              </systemPropertyVariables>
             </configuration>
           </plugin>
         </plugins>

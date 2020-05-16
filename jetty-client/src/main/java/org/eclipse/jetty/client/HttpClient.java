@@ -1113,7 +1113,7 @@ public class HttpClient extends ContainerLifeCycle
 
     protected String normalizeHost(String host)
     {
-        if (host != null && host.matches("\\[.*]"))
+        if (host != null && host.startsWith("[") && host.endsWith("]"))
             return host.substring(1, host.length() - 1);
         return host;
     }
