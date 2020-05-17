@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -31,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
 import java.util.function.LongUnaryOperator;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -693,10 +693,11 @@ public abstract class HttpReceiver
 
         private ContentListeners(List<Response.ResponseListener> responseListeners)
         {
-            listeners = responseListeners.stream()
+            listeners = new ArrayList<>(responseListeners.size());
+            responseListeners.stream()
                 .filter(Response.DemandedContentListener.class::isInstance)
                 .map(Response.DemandedContentListener.class::cast)
-                .collect(Collectors.toList());
+                .forEach(listeners::add);
         }
 
         private boolean isEmpty()
