@@ -88,6 +88,8 @@ class AsyncAttributes extends Attributes.Wrapper
             case AsyncContext.ASYNC_PATH_INFO:
             case AsyncContext.ASYNC_QUERY_STRING:
             case AsyncContext.ASYNC_MAPPING:
+                // Ignore sets for these reserved names as this class is applied
+                // we will always override these particular attributes.
                 break;
             default:
                 super.setAttribute(key, value);

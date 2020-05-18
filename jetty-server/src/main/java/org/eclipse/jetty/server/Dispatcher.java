@@ -320,23 +320,11 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public void setAttribute(String key, Object value)
         {
-            switch (key)
-            {
-                case FORWARD_PATH_INFO:
-                case FORWARD_REQUEST_URI:
-                case FORWARD_SERVLET_PATH:
-                case FORWARD_CONTEXT_PATH:
-                case FORWARD_QUERY_STRING:
-                case FORWARD_MAPPING:
-                    return;
-                default:
-                    break;
-            }
-
-            if (value == null)
-                _attributes.removeAttribute(key);
-            else
-                _attributes.setAttribute(key, value);
+            // Allow any attribute to be set, even if a reserved name. If a reserved
+            // name is set here, it will be hidden by this class during the forward,
+            // but revealed after the forward is complete just as if the reserved name
+            // attribute had be set by the application before the forward.
+            _attributes.setAttribute(key, value);
         }
 
         @Override
@@ -428,26 +416,11 @@ public class Dispatcher implements RequestDispatcher
         @Override
         public void setAttribute(String key, Object value)
         {
-            switch (key)
-            {
-                case INCLUDE_MAPPING:
-                    if (_named == null)
-                        _servletPathMapping = (ServletPathMapping)value;
-                    return;
-
-                case INCLUDE_REQUEST_URI:
-                case INCLUDE_CONTEXT_PATH:
-                case INCLUDE_QUERY_STRING:
-                case INCLUDE_SERVLET_PATH:
-                case INCLUDE_PATH_INFO:
-                    return;
-                default:
-                    break;
-            }
-
-            if (value == null)
-                _attributes.removeAttribute(key);
+            if (_servletPathMapping == null && _named == null && INCLUDE_MAPPING.equals(key))
+                _servletPathMapping = (ServletPathMapping)value;
             else
+                // Allow any attribute to be set, even if a reserved name. If a reserved
+                // name is set here, it will be revealed after the include is complete.
                 _attributes.setAttribute(key, value);
         }
 
