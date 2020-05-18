@@ -104,12 +104,12 @@ public class ServletMapping
     }
 
     @ManagedAttribute(value = "default", readonly = true)
-    public boolean isDefault()
+    public boolean isFromDefaultDescriptor()
     {
         return _default;
     }
 
-    public void setDefault(boolean fromDefault)
+    public void setFromDefaultDescriptor(boolean fromDefault)
     {
         _default = fromDefault;
     }

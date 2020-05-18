@@ -1200,7 +1200,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     {
         ServletMapping mapping = new ServletMapping(new Source(Source.Origin.DESCRIPTOR, descriptor.getResource().toString()));
         mapping.setServletName(servletName);
-        mapping.setDefault(descriptor instanceof DefaultsDescriptor);
+        mapping.setFromDefaultDescriptor(descriptor instanceof DefaultsDescriptor);
 
         List<String> paths = new ArrayList<String>();
         Iterator<XmlParser.Node> iter = node.iterator("url-pattern");
@@ -1221,9 +1221,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     {
                         //The same path has been mapped multiple times, either to a different servlet or the same servlet.
                         //If its a different servlet, this is only valid to do if the old mapping was from a default descriptor.
-                        if (p.equals(ps) && (sm.isDefault() || servletName.equals(sm.getServletName())))
+                        if (p.equals(ps) && (sm.isFromDefaultDescriptor() || servletName.equals(sm.getServletName())))
                         {
-                            if (sm.isDefault())
+                            if (sm.isFromDefaultDescriptor())
                             {
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("{} in mapping {} from defaults descriptor is overridden by ", ps, sm, servletName);

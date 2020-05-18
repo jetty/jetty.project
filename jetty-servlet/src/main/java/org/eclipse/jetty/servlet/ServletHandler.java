@@ -165,7 +165,7 @@ public class ServletHandler extends ScopedHandler
                 LOG.debug("Adding Default404Servlet to {}", this);
             addServletWithMapping(Default404Servlet.class, "/");
             updateMappings();
-            getServletMapping("/").setDefault(true);
+            getServletMapping("/").setFromDefaultDescriptor(true);
         }
 
         if (isFilterChainsCached())
@@ -1334,7 +1334,7 @@ public class ServletHandler extends ScopedHandler
                     {
                         //already have a candidate - only accept another one 
                         //if the candidate is a default, or we're allowing duplicate mappings
-                        if (finalMapping.isDefault())
+                        if (finalMapping.isFromDefaultDescriptor())
                             finalMapping = mapping;
                         else if (isAllowDuplicateMappings())
                         {
@@ -1344,7 +1344,7 @@ public class ServletHandler extends ScopedHandler
                         else
                         {
                             //existing candidate isn't a default, if the one we're looking at isn't a default either, then its an error
-                            if (!mapping.isDefault())
+                            if (!mapping.isFromDefaultDescriptor())
                             {
                                 ServletHolder finalMappedServlet = getServlet(finalMapping.getServletName());
                                 throw new IllegalStateException("Multiple servlets map to path " +

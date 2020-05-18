@@ -78,17 +78,17 @@ public class ServletHandlerTest
         fm5.setFilterHolder(fh5);
 
         sh1.setName("s1");
-        sm1.setDefault(false);
+        sm1.setFromDefaultDescriptor(false);
         sm1.setPathSpec("/foo/*");
         sm1.setServletName("s1");
 
         sh2.setName("s2");
-        sm2.setDefault(false);
+        sm2.setFromDefaultDescriptor(false);
         sm2.setPathSpec("/foo/*");
         sm2.setServletName("s2");
 
         sh3.setName("s3");
-        sm3.setDefault(true);
+        sm3.setFromDefaultDescriptor(true);
         sm3.setPathSpec("/foo/*");
         sm3.setServletName("s3");
     }
