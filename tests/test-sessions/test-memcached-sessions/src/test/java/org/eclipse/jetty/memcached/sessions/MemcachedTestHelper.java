@@ -153,7 +153,7 @@ public class MemcachedTestHelper
             long start = System.currentTimeMillis();
             memcached.start();
             LOG.info("time to start memcache instance {}ms on {}:{}", System.currentTimeMillis() - start,
-                     memcached.getContainerIpAddress(), memcached.getMappedPort(11211));
+                     memcached.getHost(), memcached.getMappedPort(11211));
         }
         catch (Exception e)
         {
