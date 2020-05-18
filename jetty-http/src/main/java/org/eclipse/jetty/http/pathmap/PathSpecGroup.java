@@ -26,8 +26,8 @@ package org.eclipse.jetty.http.pathmap;
  * Search Order:
  * <ol>
  * <li>{@link PathSpecGroup#ordinal()} [increasing]</li>
- * <li>{@link PathSpec#specLength} [decreasing]</li>
- * <li>{@link PathSpec#pathSpec} [natural sort order]</li>
+ * <li>{@link PathSpec#getSpecLength()} [decreasing]</li>
+ * <li>{@link PathSpec#getDeclaration()} [natural sort order]</li>
  * </ol>
  */
 public enum PathSpecGroup

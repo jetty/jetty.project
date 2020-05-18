@@ -100,7 +100,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         List<MappedResource<E>> ret = new ArrayList<>();
         for (MappedResource<E> mr : _mappings)
         {
-            switch (mr.getPathSpec().group)
+            switch (mr.getPathSpec().getGroup())
             {
                 case ROOT:
                     if (isRootPath)
@@ -225,7 +225,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     public boolean put(PathSpec pathSpec, E resource)
     {
         MappedResource<E> entry = new MappedResource<>(pathSpec, resource);
-        switch (pathSpec.group)
+        switch (pathSpec.getGroup())
         {
             case EXACT:
                 String exact = pathSpec.getPrefix();
@@ -260,7 +260,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     @SuppressWarnings("incomplete-switch")
     public boolean remove(PathSpec pathSpec)
     {
-        switch (pathSpec.group)
+        switch (pathSpec.getGroup())
         {
             case EXACT:
                 _exactMap.remove(pathSpec.getPrefix());

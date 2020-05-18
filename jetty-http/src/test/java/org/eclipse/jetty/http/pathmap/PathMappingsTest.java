@@ -199,7 +199,7 @@ public class PathMappingsTest
         p.put(new ServletPathSpec("/*"), "0");
 
         // assertEquals("1", p.get("/abs/path"), "Get absolute path");
-        assertEquals("/abs/path", p.getMatch("/abs/path").getPathSpec().pathSpec, "Match absolute path");
+        assertEquals("/abs/path", p.getMatch("/abs/path").getPathSpec().getDeclaration(), "Match absolute path");
         assertEquals("1", p.getMatch("/abs/path").getResource(), "Match absolute path");
         assertEquals("0", p.getMatch("/abs/path/xxx").getResource(), "Mismatch absolute path");
         assertEquals("0", p.getMatch("/abs/pith").getResource(), "Mismatch absolute path");
