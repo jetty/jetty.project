@@ -428,7 +428,6 @@ public class ServletHandler extends ScopedHandler
         {
             servletHolder = mappedServlet.getServletHolder();
             ServletPathMapping servletPathMapping = mappedServlet.getServletPathMapping(target);
-
             if (servletPathMapping != null)
             {
                 // Setting the servletPathMapping also provides the servletPath and pathInfo
@@ -1690,7 +1689,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     /**
-     * A mapping of a servlet
+     * A mapping of a servlet by pathSpec or by name
      */
     public static class MappedServlet
     {
@@ -1717,11 +1716,6 @@ public class ServletHandler extends ScopedHandler
                         break;
                 }
             }
-            else if (_pathSpec == null)
-            {
-                // Named servlet mapping
-                _servletPathMapping = new ServletPathMapping(null, _servletHolder.getName(), null);
-            }
             else
             {
                 _servletPathMapping = null;
@@ -1742,7 +1736,9 @@ public class ServletHandler extends ScopedHandler
         {
             if (_servletPathMapping != null)
                 return _servletPathMapping;
-            return new ServletPathMapping(_pathSpec, _servletHolder.getName(), pathInContext);
+            if (_pathSpec != null)
+                return new ServletPathMapping(_pathSpec, _servletHolder.getName(), pathInContext);
+            return null;
         }
 
         @Override

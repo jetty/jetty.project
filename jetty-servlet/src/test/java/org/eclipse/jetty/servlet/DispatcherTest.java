@@ -171,6 +171,43 @@ public class DispatcherTest
     }
 
     @Test
+    public void testNamedForward() throws Exception
+    {
+        _contextHandler.addServlet(NamedForwardServlet.class, "/forward/*");
+        String echo = _contextHandler.addServlet(EchoURIServlet.class, "/echo/*").getName();
+
+        String expected =
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: 62\r\n" +
+                "\r\n" +
+                "/context\r\n" +
+                "/forward\r\n" +
+                "/info\r\n" +
+                "/context/forward/info;param=value\r\n";
+        String responses = _connector.getResponse("GET /context/forward/info;param=value?name=" + echo + " HTTP/1.0\n\n");
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testNamedInclude() throws Exception
+    {
+        _contextHandler.addServlet(NamedIncludeServlet.class, "/include/*");
+        String echo = _contextHandler.addServlet(EchoURIServlet.class, "/echo/*").getName();
+
+        String expected =
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 62\r\n" +
+                "\r\n" +
+                "/context\r\n" +
+                "/include\r\n" +
+                "/info\r\n" +
+                "/context/include/info;param=value\r\n";
+        String responses = _connector.getResponse("GET /context/include/info;param=value?name=" + echo + " HTTP/1.0\n\n");
+        assertEquals(expected, responses);
+    }
+
+    @Test
     public void testForwardWithBadParams() throws Exception
     {
         try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
@@ -504,6 +541,24 @@ public class DispatcherTest
                 getServletContext().getRequestDispatcher("/echo?echo=forward&fbad=%88%A4").forward(request, response);
             else
                 getServletContext().getRequestDispatcher("/echo").forward(request, response);
+        }
+    }
+
+    public static class NamedForwardServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            getServletContext().getNamedDispatcher(request.getParameter("name")).forward(request, response);
+        }
+    }
+
+    public static class NamedIncludeServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            getServletContext().getNamedDispatcher(request.getParameter("name")).include(request, response);
         }
     }
 
