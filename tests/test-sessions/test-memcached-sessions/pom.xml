@@ -11,6 +11,7 @@
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.memcached</bundle-symbolic-name>
+    <memcached.docker.version></memcached.docker.version>
   </properties>
   <build>
     <plugins>
@@ -65,13 +66,22 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
-      <version>1.7.9</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
   <profiles>
     <profile>
-      <id>memcached</id>
+      <id>remote-session-tests</id>
       <activation>
         <property>
           <name>memcached.enabled</name>
