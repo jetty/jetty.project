@@ -1849,11 +1849,19 @@ public class Request implements HttpServletRequest
         else
             baseAttributes = Attributes.unwrap(_attributes);
 
+        // We cannot use a apply AsyncAttribute via #setAttributes as that
+        // will wrap over any dispatch specific attribute wrappers (eg.
+        // Dispatcher#ForwardAttributes).   Async attributes must persist
+        // after the current dispatch, so they must be set under any other
+        // wrappers.
+
         String fwdRequestURI = (String)getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
         if (fwdRequestURI == null)
         {
             if (baseAttributes instanceof ServletAttributes)
             {
+                // The baseAttributes map is our ServletAttributes, so we can set the async
+                // attributes there, under any other wrappers.
                 ((ServletAttributes)baseAttributes).setAsyncAttributes(getRequestURI(),
                     getContextPath(),
                     getPathInfo(), // TODO change to pathInContext when cheaply available
@@ -1862,6 +1870,8 @@ public class Request implements HttpServletRequest
             }
             else
             {
+                // We cannot find our ServletAttributes instance, so just set directly and hope
+                // whatever non jetty wrappers that have been applied will do the right thing.
                 _attributes.setAttribute(AsyncContext.ASYNC_REQUEST_URI, getRequestURI());
                 _attributes.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, getContextPath());
                 _attributes.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, getServletPath());
@@ -1874,6 +1884,8 @@ public class Request implements HttpServletRequest
         {
             if (baseAttributes instanceof ServletAttributes)
             {
+                // The baseAttributes map is our ServletAttributes, so we can set the async
+                // attributes there, under any other wrappers.
                 ((ServletAttributes)baseAttributes).setAsyncAttributes(fwdRequestURI,
                     (String)getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH),
                     (String)getAttribute(RequestDispatcher.FORWARD_PATH_INFO),
@@ -1882,6 +1894,8 @@ public class Request implements HttpServletRequest
             }
             else
             {
+                // We cannot find our ServletAttributes instance, so just set directly and hope
+                // whatever non jetty wrappers that have been applied will do the right thing.
                 _attributes.setAttribute(AsyncContext.ASYNC_REQUEST_URI, fwdRequestURI);
                 _attributes.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
                 _attributes.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));

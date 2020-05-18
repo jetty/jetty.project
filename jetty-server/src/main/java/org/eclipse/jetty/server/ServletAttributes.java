@@ -20,11 +20,16 @@ package org.eclipse.jetty.server;
 
 import java.util.Set;
 
-import javax.servlet.http.HttpServletMapping;
-
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 
+/**
+ * An implementation of Attributes that supports the standard async attributes.
+ *
+ * This implementation delegates to an internal {@link AttributesMap} instance, which
+ * can optionally be wrapped with a {@link AsyncAttributes} instance. This allows async
+ * attributes to be applied underneath any other attribute wrappers.
+ */
 public class ServletAttributes implements Attributes
 {
     private final Attributes _attributes = new AttributesMap();
