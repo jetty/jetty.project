@@ -517,10 +517,10 @@ public class ServletHandler extends ScopedHandler
     }
 
     /**
-     * ServletHolder matching path.
+     * Get MappedServlet for target.
      *
      * @param target Path within _context or servlet name
-     * @return MappedResource to the ServletHolder.  Named servlets have a null PathSpec
+     * @return MappedServlet matched by path or name.  Named servlets have a null PathSpec
      */
     public MappedServlet getMappedServlet(String target)
     {
