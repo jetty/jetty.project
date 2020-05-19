@@ -18,7 +18,13 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.time.Duration;
+
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ExecutorThreadPoolTest extends AbstractThreadPoolTest
 {
@@ -26,5 +32,23 @@ public class ExecutorThreadPoolTest extends AbstractThreadPoolTest
     protected SizedThreadPool newPool(int max)
     {
         return new ExecutorThreadPool(max);
+    }
+
+    @Test
+    public void testJoin() throws Exception
+    {
+        final long stopTimeout = 100;
+        ExecutorThreadPool executorThreadPool = new ExecutorThreadPool(10);
+        executorThreadPool.setStopTimeout(stopTimeout);
+        executorThreadPool.start();
+
+        // Verify that join does not timeout after waiting twice the stopTimeout.
+        assertThrows(Throwable.class, () ->
+            assertTimeoutPreemptively(Duration.ofMillis(stopTimeout * 2), executorThreadPool::join)
+        );
+
+        // After stopping the ThreadPool join should unblock.
+        executorThreadPool.stop();
+        assertTimeoutPreemptively(Duration.ofMillis(stopTimeout), executorThreadPool::join);
     }
 }
