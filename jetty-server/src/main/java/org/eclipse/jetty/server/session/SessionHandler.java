@@ -758,6 +758,20 @@ public class SessionHandler extends ScopedHandler
      */
     public HttpSession newHttpSession(HttpServletRequest request)
     {
+        return newHttpSession(request, false);
+    }
+
+    /**
+     * Creates a new <code>HttpSession</code> or returns an existing <code>HttpSession</code>
+     * if useExisting is true
+     *
+     * @param request the HttpServletRequest containing the requested session id
+     * @param useExisting <code>true</code> to re-use an existing cached session if exists;
+     *      <code>false</code> to throw an exception on existing cached session
+     * @return the new <code>HttpSession</code> or existing <code>HttpSession</code> if exists
+     */
+    public HttpSession newHttpSession(HttpServletRequest request, boolean useExisting)
+    {
         long created = System.currentTimeMillis();
         String id = _sessionIdManager.newSessionId(request, created);
         Session session = _sessionCache.newSession(request, id, created, (_dftMaxIdleSecs > 0 ? _dftMaxIdleSecs * 1000L : -1));
@@ -766,15 +780,36 @@ public class SessionHandler extends ScopedHandler
 
         try
         {
-            _sessionCache.add(id, session);
-            Request.getBaseRequest(request).enterSession(session);
-            _sessionsCreatedStats.increment();
+            final Session existingSession;
+            //If it is ok to use an existing cached session then use addIfAbsent
+            if (useExisting)
+            {
+                existingSession = _sessionCache.addIfAbsent(id, session);
+            }
+            else
+            {
+                existingSession = null;
+                //This will throw an exception if an existing Session is already in the cache
+                _sessionCache.add(id, session);
+            }
 
-            if (request != null && request.isSecure())
-                session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
+            //Check if the returned session is null
+            //If it is then that means the new session was added
+            if (existingSession == null)
+            {
+                Request.getBaseRequest(request).enterSession(session);
+                _sessionsCreatedStats.increment();
 
-            callSessionCreatedListeners(session);
+                if (request != null && request.isSecure())
+                    session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
 
+                callSessionCreatedListeners(session);
+            }
+            else
+            {
+                //We found an existing session for this id so return that instead
+                session = existingSession;
+            }
             return session;
         }
         catch (Exception e)

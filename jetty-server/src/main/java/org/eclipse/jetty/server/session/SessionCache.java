@@ -130,6 +130,18 @@ public interface SessionCache extends LifeCycle
     void add(String id, Session session) throws Exception;
 
     /**
+     * Adds a new Session to the cache if absent.
+     * If a session already exists in the cache for the given id then the existing Session is returned
+     * and the new Session is not added
+     *
+     * @param id
+     * @param session
+     * @throws Exception
+     * @return the existing Session object or null if one already exists for the given id
+     */
+    Session addIfAbsent(String id, Session session) throws Exception;
+
+    /**
      * Get an existing Session. If necessary, the cache will load the data for
      * the session from the configured SessionDataStore.
      *

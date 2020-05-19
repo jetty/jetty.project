@@ -441,8 +441,29 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     @Override
     public void add(String id, Session session) throws Exception
     {
+        if (addIfAbsent(id, session) != null)
+        {
+            throw new IllegalStateException("Session " + id + " already in cache");
+        }
+    }
+
+    /**
+     * Add an entirely new session (created by the application calling Request.getSession(true))
+     * to the cache if absent. The usage count of the fresh session is incremented if added.
+     * If session already exists the existing session will be returned else null if it was added
+     *
+     * @param id the id
+     * @param session
+     * @return the existing Session object if one already exists for the given id, or null if no existing
+     * Session exists and the new one was added
+     */
+    @Override
+    public Session addIfAbsent(String id, Session session) throws Exception
+    {
         if (id == null || session == null)
             throw new IllegalArgumentException("Add key=" + id + " session=" + (session == null ? "null" : session.getId()));
+
+        Session existingSession;
 
         try (Lock lock = session.lock())
         {
@@ -452,14 +473,15 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             if (!session.isValid())
                 throw new IllegalStateException("Session " + id + " is not valid");
 
-            if (doPutIfAbsent(id, session) == null)
+            //Check if there is already an existing session for this id
+            if ((existingSession = doPutIfAbsent(id, session)) == null)
             {
                 session.setResident(true); //its in the cache
                 session.use(); //the request is using it
             }
-            else
-                throw new IllegalStateException("Session " + id + " already in cache");
         }
+
+        return existingSession;
     }
 
     /**

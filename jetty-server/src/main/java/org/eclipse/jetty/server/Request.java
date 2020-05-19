@@ -1604,7 +1604,7 @@ public class Request implements HttpServletRequest
         if (_sessionHandler == null)
             throw new IllegalStateException("No SessionManager");
 
-        _session = _sessionHandler.newHttpSession(this);
+        _session = _sessionHandler.newHttpSession(this, true);
         HttpCookie cookie = _sessionHandler.getSessionCookie(_session, getContextPath(), isSecure());
         if (cookie != null)
             _channel.getResponse().replaceCookie(cookie);
