@@ -23,12 +23,10 @@ import java.io.InputStream;
 import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.TimeZone;
-import java.util.function.Function;
-
-import org.slf4j.event.Level;
 
 /**
  * JettyLogger specific configuration:
@@ -39,7 +37,7 @@ import org.slf4j.event.Level;
  */
 public class JettyLoggerConfiguration
 {
-    private static final int DEFAULT_LEVEL = Level.INFO.toInt();
+    private static final JettyLevel DEFAULT_LEVEL = JettyLevel.INFO;
     private static final boolean DEFAULT_HIDE_STACKS = false;
     private static final String SUFFIX_LEVEL = ".LEVEL";
     private static final String SUFFIX_STACKS = ".STACKS";
@@ -78,76 +76,77 @@ public class JettyLoggerConfiguration
 
         // strip ".STACKS" suffix (if present)
         if (startName.endsWith(SUFFIX_STACKS))
-        {
             startName = startName.substring(0, startName.length() - SUFFIX_STACKS.length());
-        }
 
-        Boolean hideStacks = walkParentLoggerNames(startName, (key) ->
+        Boolean hideStacks = JettyLoggerFactory.walkParentLoggerNames(startName, key ->
         {
             String stacksBool = properties.getProperty(key + SUFFIX_STACKS);
             if (stacksBool != null)
-            {
                 return Boolean.parseBoolean(stacksBool);
-            }
             return null;
         });
 
-        if (hideStacks != null)
-            return hideStacks;
-
-        return DEFAULT_HIDE_STACKS;
+        return hideStacks != null ? hideStacks : DEFAULT_HIDE_STACKS;
     }
 
     /**
-     * Get the Logging Level for the provided log name. Using the FQCN first, then each package segment from longest to
-     * shortest.
+     * <p>Returns the Logging Level for the provided log name.</p>
+     * <p>Uses the FQCN first, then each package segment from longest to shortest.</p>
      *
      * @param name the name to get log for
      * @return the logging level int
      */
-    public int getLevel(String name)
+    public JettyLevel getLevel(String name)
     {
         if (properties.isEmpty())
             return DEFAULT_LEVEL;
 
         String startName = name != null ? name : "";
 
-        // strip trailing dot
+        // Strip trailing dot.
         while (startName.endsWith("."))
         {
             startName = startName.substring(0, startName.length() - 1);
         }
 
-        // strip ".LEVEL" suffix (if present)
+        // Strip ".LEVEL" suffix (if present).
         if (startName.endsWith(SUFFIX_LEVEL))
-        {
             startName = startName.substring(0, startName.length() - SUFFIX_LEVEL.length());
-        }
 
-        Integer level = walkParentLoggerNames(startName, (key) ->
+        JettyLevel level = JettyLoggerFactory.walkParentLoggerNames(startName, key ->
         {
             String levelStr = properties.getProperty(key + SUFFIX_LEVEL);
-            if (levelStr != null)
-            {
-                return getLevelInt(key, levelStr);
-            }
-            return null;
+            return toJettyLevel(key, levelStr);
         });
 
         if (level == null)
         {
-            // try legacy root logging config
-            String levelStr = properties.getProperty("log" + SUFFIX_LEVEL);
-            if (levelStr != null)
-            {
-                level = getLevelInt("log", levelStr);
-            }
+            // Try slf4j root logging config.
+            String levelStr = properties.getProperty(JettyLogger.ROOT_LOGGER_NAME + SUFFIX_LEVEL);
+            level = toJettyLevel(JettyLogger.ROOT_LOGGER_NAME, levelStr);
         }
 
-        if (level != null)
-            return level;
+        if (level == null)
+        {
+            // Try legacy root logging config.
+            String levelStr = properties.getProperty("log" + SUFFIX_LEVEL);
+            level = toJettyLevel("log", levelStr);
+        }
 
-        return DEFAULT_LEVEL;
+        return level != null ? level : DEFAULT_LEVEL;
+    }
+
+    static JettyLevel toJettyLevel(String loggerName, String levelStr)
+    {
+        if (levelStr == null)
+            return null;
+        JettyLevel level = JettyLevel.strToLevel(levelStr);
+        if (level == null)
+        {
+            System.err.printf("Unknown JettyLogger/SLF4J Level [%s]=[%s], expecting only %s as values.%n",
+                loggerName, levelStr, Arrays.toString(JettyLevel.values()));
+        }
+        return level;
     }
 
     public TimeZone getTimeZone(String key)
@@ -155,7 +154,6 @@ public class JettyLoggerConfiguration
         String zoneIdStr = properties.getProperty(key);
         if (zoneIdStr == null)
             return null;
-
         return TimeZone.getTimeZone(zoneIdStr);
     }
 
@@ -193,6 +191,11 @@ public class JettyLoggerConfiguration
         });
     }
 
+    public String getString(String key, String defValue)
+    {
+        return properties.getProperty(key, defValue);
+    }
+
     public boolean getBoolean(String key, boolean defValue)
     {
         String val = properties.getProperty(key, Boolean.toString(defValue));
@@ -203,9 +206,7 @@ public class JettyLoggerConfiguration
     {
         String val = properties.getProperty(key, Integer.toString(defValue));
         if (val == null)
-        {
             return defValue;
-        }
         try
         {
             return Integer.parseInt(val);
@@ -216,46 +217,12 @@ public class JettyLoggerConfiguration
         }
     }
 
-    private Integer getLevelInt(String levelSegment, String levelStr)
-    {
-        if (levelStr == null)
-        {
-            return null;
-        }
-
-        String levelName = levelStr.trim().toUpperCase(Locale.ENGLISH);
-        switch (levelName)
-        {
-            case "ALL":
-                return JettyLogger.ALL;
-            case "TRACE":
-                return Level.TRACE.toInt();
-            case "DEBUG":
-                return Level.DEBUG.toInt();
-            case "INFO":
-                return Level.INFO.toInt();
-            case "WARN":
-                return Level.WARN.toInt();
-            case "ERROR":
-                return Level.ERROR.toInt();
-            case "OFF":
-                return JettyLogger.OFF;
-            default:
-                System.err.println("Unknown JettyLogger/Slf4J Level [" + levelSegment + "]=[" + levelName + "], expecting only [ALL, TRACE, DEBUG, INFO, WARN, ERROR, OFF] as values.");
-                return null;
-        }
-    }
-
     private URL getResource(ClassLoader loader, String resourceName)
     {
         if (loader == null)
-        {
             return ClassLoader.getSystemResource(resourceName);
-        }
         else
-        {
             return loader.getResource(resourceName);
-        }
     }
 
     /**
@@ -286,9 +253,7 @@ public class JettyLoggerConfiguration
     {
         URL propsUrl = getResource(loader, resourceName);
         if (propsUrl == null)
-        {
             return null;
-        }
 
         try (InputStream in = propsUrl.openStream())
         {
@@ -301,32 +266,6 @@ public class JettyLoggerConfiguration
             System.err.println("[WARN] Error loading logging config: " + propsUrl);
             e.printStackTrace();
         }
-        return null;
-    }
-
-    private <T> T walkParentLoggerNames(String startName, Function<String, T> nameFunction)
-    {
-        String nameSegment = startName;
-
-        // Checking with FQCN first, then each package segment from longest to shortest.
-        while ((nameSegment != null) && (nameSegment.length() > 0))
-        {
-            T ret = nameFunction.apply(nameSegment);
-            if (ret != null)
-                return ret;
-
-            // Trim and try again.
-            int idx = nameSegment.lastIndexOf('.');
-            if (idx >= 0)
-            {
-                nameSegment = nameSegment.substring(0, idx);
-            }
-            else
-            {
-                nameSegment = null;
-            }
-        }
-
         return null;
     }
 }
