@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import java.io.InputStream;
-import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -27,11 +25,11 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import javax.websocket.CloseReason;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -39,15 +37,14 @@ import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
-import javax.websocket.PongMessage;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
+import org.eclipse.jetty.websocket.javax.common.messages.AbstractDecodedMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryStreamMessageSink;
-import org.eclipse.jetty.websocket.javax.common.messages.DecodedMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.websocket.util.InvalidSignatureException;
@@ -65,60 +62,10 @@ import org.eclipse.jetty.websocket.util.messages.ReaderMessageSink;
 import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerMetadata.MessageMetadata;
 
 public abstract class JavaxWebSocketFrameHandlerFactory
 {
     private static final MethodHandle FILTER_RETURN_TYPE_METHOD;
-
-    // The different kind of @OnMessage method parameter signatures expected.
-    private static final InvokerUtils.Arg[] textCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(String.class).required()
-    };
-
-    private static final InvokerUtils.Arg[] textPartialCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(String.class).required(),
-        new InvokerUtils.Arg(boolean.class).required()
-    };
-
-    private static final InvokerUtils.Arg[] binaryBufferCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(ByteBuffer.class).required()
-    };
-
-    private static final InvokerUtils.Arg[] binaryPartialBufferCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(ByteBuffer.class).required(),
-        new InvokerUtils.Arg(boolean.class).required()
-    };
-
-    private static final InvokerUtils.Arg[] binaryArrayCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(byte[].class).required()
-    };
-
-    private static final InvokerUtils.Arg[] binaryPartialArrayCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(byte[].class).required(),
-        new InvokerUtils.Arg(boolean.class).required()
-    };
-
-    private static final InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(InputStream.class).required()
-    };
-
-    private static final InvokerUtils.Arg[] readerCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(Reader.class).required()
-    };
-
-    private static final InvokerUtils.Arg[] pongCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(PongMessage.class).required()
-    };
 
     static
     {
@@ -172,8 +119,8 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         MethodHandle errorHandle = metadata.getErrorHandle();
         MethodHandle pongHandle = metadata.getPongHandle();
 
-        MessageMetadata textMetadata = MessageMetadata.copyOf(metadata.getTextMetadata());
-        MessageMetadata binaryMetadata = MessageMetadata.copyOf(metadata.getBinaryMetadata());
+        JavaxWebSocketMessageMetadata textMetadata = JavaxWebSocketMessageMetadata.copyOf(metadata.getTextMetadata());
+        JavaxWebSocketMessageMetadata binaryMetadata = JavaxWebSocketMessageMetadata.copyOf(metadata.getBinaryMetadata());
 
         UriTemplatePathSpec templatePathSpec = metadata.getUriTemplatePathSpec();
         if (templatePathSpec != null)
@@ -188,9 +135,9 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             pongHandle = bindTemplateVariables(pongHandle, namedVariables, pathParams);
 
             if (textMetadata != null)
-                textMetadata.handle = bindTemplateVariables(textMetadata.handle, namedVariables, pathParams);
+                textMetadata.setMethodHandle(bindTemplateVariables(textMetadata.getMethodHandle(), namedVariables, pathParams));
             if (binaryMetadata != null)
-                binaryMetadata.handle = bindTemplateVariables(binaryMetadata.handle, namedVariables, pathParams);
+                binaryMetadata.setMethodHandle(bindTemplateVariables(binaryMetadata.getMethodHandle(), namedVariables, pathParams));
         }
 
         openHandle = InvokerUtils.bindTo(openHandle, endpoint);
@@ -313,8 +260,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         return retHandle;
     }
 
-    @SuppressWarnings("Duplicates")
-    public static MessageSink createMessageSink(JavaxWebSocketSession session, MessageMetadata msgMetadata)
+    public static MessageSink createMessageSink(JavaxWebSocketSession session, JavaxWebSocketMessageMetadata msgMetadata)
     {
         if (msgMetadata == null)
             return null;
@@ -322,27 +268,27 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         try
         {
             MethodHandles.Lookup lookup = getServerMethodHandleLookup();
-            if (DecodedMessageSink.class.isAssignableFrom(msgMetadata.sinkClass))
+            if (AbstractDecodedMessageSink.class.isAssignableFrom(msgMetadata.getSinkClass()))
             {
-                MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.sinkClass,
-                    MethodType.methodType(void.class, CoreSession.class, msgMetadata.registeredDecoder.interfaceType, MethodHandle.class));
-                Decoder decoder = session.getDecoders().getInstanceOf(msgMetadata.registeredDecoder);
-                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), decoder, msgMetadata.handle);
+                MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.getSinkClass(),
+                    MethodType.methodType(void.class, CoreSession.class, MethodHandle.class, List.class));
+                List<RegisteredDecoder> registeredDecoders = msgMetadata.getRegisteredDecoders();
+                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.getMethodHandle(), registeredDecoders);
             }
             else
             {
-                MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.sinkClass,
+                MethodHandle ctorHandle = lookup.findConstructor(msgMetadata.getSinkClass(),
                     MethodType.methodType(void.class, CoreSession.class, MethodHandle.class));
-                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.handle);
+                return (MessageSink)ctorHandle.invoke(session.getCoreSession(), msgMetadata.getMethodHandle());
             }
         }
         catch (NoSuchMethodException e)
         {
-            throw new RuntimeException("Missing expected MessageSink constructor found at: " + msgMetadata.sinkClass.getName(), e);
+            throw new RuntimeException("Missing expected MessageSink constructor found at: " + msgMetadata.getSinkClass().getName(), e);
         }
         catch (IllegalAccessException | InstantiationException | InvocationTargetException e)
         {
-            throw new RuntimeException("Unable to create MessageSink: " + msgMetadata.sinkClass.getName(), e);
+            throw new RuntimeException("Unable to create MessageSink: " + msgMetadata.getSinkClass().getName(), e);
         }
         catch (RuntimeException e)
         {
@@ -456,15 +402,19 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             for (Method onMsg : onMessages)
             {
                 assertSignatureValid(endpointClass, onMsg, OnMessage.class);
-
-                MessageMetadata msgMetadata = new MessageMetadata();
                 OnMessage onMessageAnno = onMsg.getAnnotation(OnMessage.class);
-                if (onMessageAnno.maxMessageSize() > Integer.MAX_VALUE)
+
+                long annotationMaxMessageSize = onMessageAnno.maxMessageSize();
+                if (annotationMaxMessageSize > Integer.MAX_VALUE)
                 {
                     throw new InvalidWebSocketException(String.format("Value too large: %s#%s - @OnMessage.maxMessageSize=%,d > Integer.MAX_VALUE",
-                            endpointClass.getName(), onMsg.getName(), onMessageAnno.maxMessageSize()));
+                            endpointClass.getName(), onMsg.getName(), annotationMaxMessageSize));
                 }
-                msgMetadata.maxMessageSize = (int)onMessageAnno.maxMessageSize();
+
+                // Create MessageMetadata and set annotated maxMessageSize if it is not the default value.
+                JavaxWebSocketMessageMetadata msgMetadata = new JavaxWebSocketMessageMetadata();
+                if (annotationMaxMessageSize != -1)
+                    msgMetadata.setMaxMessageSize((int)annotationMaxMessageSize);
 
                 // Function to search for matching MethodHandle for the endpointClass given a signature.
                 Function<InvokerUtils.Arg[], MethodHandle> getMethodHandle = (signature) ->
@@ -486,91 +436,91 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         return metadata;
     }
 
-    private boolean matchOnMessage(Method onMsg, JavaxWebSocketFrameHandlerMetadata metadata, MessageMetadata msgMetadata,
+    private boolean matchOnMessage(Method onMsg, JavaxWebSocketFrameHandlerMetadata metadata, JavaxWebSocketMessageMetadata msgMetadata,
                                    Function<InvokerUtils.Arg[], MethodHandle> getMethodHandle)
     {
         // Whole Text Message.
-        MethodHandle methodHandle = getMethodHandle.apply(textCallingArgs);
+        MethodHandle methodHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.textCallingArgs);
         if (methodHandle != null)
         {
-            msgMetadata.sinkClass = StringMessageSink.class;
-            msgMetadata.handle = methodHandle;
+            msgMetadata.setSinkClass(StringMessageSink.class);
+            msgMetadata.setMethodHandle(methodHandle);
             metadata.setTextMetadata(msgMetadata, onMsg);
             return true;
         }
 
         // Partial Text Message.
-        methodHandle = getMethodHandle.apply(textPartialCallingArgs);
+        methodHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.textPartialCallingArgs);
         if (methodHandle != null)
         {
-            msgMetadata.sinkClass = PartialStringMessageSink.class;
-            msgMetadata.handle = methodHandle;
+            msgMetadata.setSinkClass(PartialStringMessageSink.class);
+            msgMetadata.setMethodHandle(methodHandle);
             metadata.setTextMetadata(msgMetadata, onMsg);
             return true;
         }
 
         // Whole ByteBuffer Binary Message.
-        methodHandle = getMethodHandle.apply(binaryBufferCallingArgs);
+        methodHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.binaryBufferCallingArgs);
         if (methodHandle != null)
         {
-            msgMetadata.sinkClass = ByteBufferMessageSink.class;
-            msgMetadata.handle = methodHandle;
+            msgMetadata.setSinkClass(ByteBufferMessageSink.class);
+            msgMetadata.setMethodHandle(methodHandle);
             metadata.setBinaryMetadata(msgMetadata, onMsg);
             return true;
         }
 
         // Partial ByteBuffer Binary Message.
-        methodHandle = getMethodHandle.apply(binaryPartialBufferCallingArgs);
+        methodHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.binaryPartialBufferCallingArgs);
         if (methodHandle != null)
         {
-            msgMetadata.sinkClass = PartialByteBufferMessageSink.class;
-            msgMetadata.handle = methodHandle;
+            msgMetadata.setSinkClass(PartialByteBufferMessageSink.class);
+            msgMetadata.setMethodHandle(methodHandle);
             metadata.setBinaryMetadata(msgMetadata, onMsg);
             return true;
         }
 
         // Whole byte[] Binary Message.
-        methodHandle = getMethodHandle.apply(binaryArrayCallingArgs);
+        methodHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.binaryArrayCallingArgs);
         if (methodHandle != null)
         {
-            msgMetadata.sinkClass = ByteArrayMessageSink.class;
-            msgMetadata.handle = methodHandle;
+            msgMetadata.setSinkClass(ByteArrayMessageSink.class);
+            msgMetadata.setMethodHandle(methodHandle);
             metadata.setBinaryMetadata(msgMetadata, onMsg);
             return true;
         }
 
         // Partial byte[] Binary Message.
-        methodHandle = getMethodHandle.apply(binaryPartialArrayCallingArgs);
+        methodHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.binaryPartialArrayCallingArgs);
         if (methodHandle != null)
         {
-            msgMetadata.sinkClass = PartialByteArrayMessageSink.class;
-            msgMetadata.handle = methodHandle;
+            msgMetadata.setSinkClass(PartialByteArrayMessageSink.class);
+            msgMetadata.setMethodHandle(methodHandle);
             metadata.setBinaryMetadata(msgMetadata, onMsg);
             return true;
         }
 
         // InputStream Binary Message.
-        methodHandle = getMethodHandle.apply(inputStreamCallingArgs);
+        methodHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.inputStreamCallingArgs);
         if (methodHandle != null)
         {
-            msgMetadata.sinkClass = InputStreamMessageSink.class;
-            msgMetadata.handle = methodHandle;
+            msgMetadata.setSinkClass(InputStreamMessageSink.class);
+            msgMetadata.setMethodHandle(methodHandle);
             metadata.setBinaryMetadata(msgMetadata, onMsg);
             return true;
         }
 
         // Reader Text Message.
-        methodHandle = getMethodHandle.apply(readerCallingArgs);
+        methodHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.readerCallingArgs);
         if (methodHandle != null)
         {
-            msgMetadata.sinkClass = ReaderMessageSink.class;
-            msgMetadata.handle = methodHandle;
+            msgMetadata.setSinkClass(ReaderMessageSink.class);
+            msgMetadata.setMethodHandle(methodHandle);
             metadata.setTextMetadata(msgMetadata, onMsg);
             return true;
         }
 
         // Pong Message.
-        MethodHandle pongHandle = getMethodHandle.apply(pongCallingArgs);
+        MethodHandle pongHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.pongCallingArgs);
         if (pongHandle != null)
         {
             metadata.setPongHandle(pongHandle, onMsg);
@@ -580,88 +530,70 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         return false;
     }
 
-    private boolean matchDecoders(Method onMsg, JavaxWebSocketFrameHandlerMetadata metadata, MessageMetadata msgMetadata,
+    private boolean matchDecoders(Method onMsg, JavaxWebSocketFrameHandlerMetadata metadata, JavaxWebSocketMessageMetadata msgMetadata,
                                   Function<InvokerUtils.Arg[], MethodHandle> getMethodHandle)
     {
-        // TODO: we should be able to get this information directly from the AvailableDecoders in the metadata.
-        List<DecodedArgs> decodedTextCallingArgs = new ArrayList<>();
-        List<DecodedArgs> decodedTextStreamCallingArgs = new ArrayList<>();
-        List<DecodedArgs> decodedBinaryCallingArgs = new ArrayList<>();
-        List<DecodedArgs> decodedBinaryStreamCallingArgs = new ArrayList<>();
-        for (AvailableDecoders.RegisteredDecoder decoder : metadata.getAvailableDecoders())
+        // We need to get all the decoders which match not just the first.
+        Stream<RegisteredDecoder> matchedDecodersStream = metadata.getAvailableDecoders().stream().filter(registeredDecoder ->
         {
-            InvokerUtils.Arg[] args = {new InvokerUtils.Arg(Session.class), new InvokerUtils.Arg(decoder.objectType).required()};
-            DecodedArgs decodedArgs = new DecodedArgs(decoder, args);
+            InvokerUtils.Arg[] args = {new InvokerUtils.Arg(Session.class), new InvokerUtils.Arg(registeredDecoder.objectType).required()};
+            return getMethodHandle.apply(args) != null;
+        });
 
-            if (decoder.implementsInterface(Decoder.Text.class))
-                decodedTextCallingArgs.add(decodedArgs);
-            if (decoder.implementsInterface(Decoder.TextStream.class))
-                decodedTextStreamCallingArgs.add(decodedArgs);
-            if (decoder.implementsInterface(Decoder.Binary.class))
-                decodedBinaryCallingArgs.add(decodedArgs);
-            if (decoder.implementsInterface(Decoder.BinaryStream.class))
-                decodedBinaryStreamCallingArgs.add(decodedArgs);
+        // Use the interface type of the first matched decoder.
+        RegisteredDecoder firstDecoder = matchedDecodersStream.findFirst().orElse(null);
+        if (firstDecoder == null)
+            return false;
+
+
+        // TODO: COMMENT
+        List<RegisteredDecoder> decoders = new ArrayList<>();
+        Class<? extends Decoder> interfaceType = firstDecoder.interfaceType;
+        metadata.getAvailableDecoders().stream()
+            .filter(registeredDecoder -> registeredDecoder.interfaceType.equals(interfaceType))
+            .forEach(decoders::add);
+
+
+        // Get the original argument type.
+        Class<?> type = firstDecoder.objectType;
+        for (Class<?> clazz : onMsg.getParameterTypes())
+        {
+            if (clazz.isAssignableFrom(firstDecoder.objectType))
+                type = clazz;
+        }
+        InvokerUtils.Arg[] generalArgs = {new InvokerUtils.Arg(Session.class), new InvokerUtils.Arg(type).required()};
+        MethodHandle generalMethodHandle = getMethodHandle.apply(generalArgs);
+        if (generalMethodHandle == null)
+        {
+            // TODO: warn or throw
+            return false;
         }
 
-        MethodHandle methodHandle;
+        msgMetadata.setRegisteredDecoders(decoders);
+        msgMetadata.setMethodHandle(generalMethodHandle);
 
-        // Decoder.Text
-        for (DecodedArgs decodedArgs : decodedTextCallingArgs)
+        if (interfaceType.equals(Decoder.Text.class))
         {
-            methodHandle = getMethodHandle.apply(decodedArgs.args);
-            if (methodHandle != null)
-            {
-                msgMetadata.sinkClass = DecodedTextMessageSink.class;
-                msgMetadata.handle = methodHandle;
-                msgMetadata.registeredDecoder = decodedArgs.registeredDecoder;
-                metadata.setTextMetadata(msgMetadata, onMsg);
-                return true;
-            }
+            msgMetadata.setSinkClass(DecodedTextMessageSink.class);
+            metadata.setTextMetadata(msgMetadata, onMsg);
+        }
+        else if (interfaceType.equals(Decoder.Binary.class))
+        {
+            msgMetadata.setSinkClass(DecodedBinaryMessageSink.class);
+            metadata.setBinaryMetadata(msgMetadata, onMsg);
+        }
+        else if (interfaceType.equals(Decoder.TextStream.class))
+        {
+            msgMetadata.setSinkClass(DecodedTextStreamMessageSink.class);
+            metadata.setTextMetadata(msgMetadata, onMsg);
+        }
+        else if (interfaceType.equals(Decoder.BinaryStream.class))
+        {
+            msgMetadata.setSinkClass(DecodedBinaryStreamMessageSink.class);
+            metadata.setBinaryMetadata(msgMetadata, onMsg);
         }
 
-        // Decoder.Binary
-        for (DecodedArgs decodedArgs : decodedBinaryCallingArgs)
-        {
-            methodHandle = getMethodHandle.apply(decodedArgs.args);
-            if (methodHandle != null)
-            {
-                msgMetadata.sinkClass = DecodedBinaryMessageSink.class;
-                msgMetadata.handle = methodHandle;
-                msgMetadata.registeredDecoder = decodedArgs.registeredDecoder;
-                metadata.setBinaryMetadata(msgMetadata, onMsg);
-                return true;
-            }
-        }
-
-        // Try to match Text Stream decoders.
-        for (DecodedArgs decodedArgs : decodedTextStreamCallingArgs)
-        {
-            methodHandle = getMethodHandle.apply(decodedArgs.args);
-            if (methodHandle != null)
-            {
-                msgMetadata.sinkClass = DecodedTextStreamMessageSink.class;
-                msgMetadata.handle = methodHandle;
-                msgMetadata.registeredDecoder = decodedArgs.registeredDecoder;
-                metadata.setTextMetadata(msgMetadata, onMsg);
-                return true;
-            }
-        }
-
-        // Decoder.BinaryStream
-        for (DecodedArgs decodedArgs : decodedBinaryStreamCallingArgs)
-        {
-            methodHandle = getMethodHandle.apply(decodedArgs.args);
-            if (methodHandle != null)
-            {
-                msgMetadata.sinkClass = DecodedBinaryStreamMessageSink.class;
-                msgMetadata.handle = methodHandle;
-                msgMetadata.registeredDecoder = decodedArgs.registeredDecoder;
-                metadata.setBinaryMetadata(msgMetadata, onMsg);
-                return true;
-            }
-        }
-
-        return false;
+        return true;
     }
 
     private void assertSignatureValid(Class<?> endpointClass, Method method, Class<? extends Annotation> annotationClass)
@@ -751,17 +683,5 @@ public abstract class JavaxWebSocketFrameHandlerFactory
     public static MethodHandles.Lookup getApplicationMethodHandleLookup(Class<?> lookupClass)
     {
         return MethodHandles.publicLookup().in(lookupClass);
-    }
-
-    private static class DecodedArgs
-    {
-        public final AvailableDecoders.RegisteredDecoder registeredDecoder;
-        public final InvokerUtils.Arg[] args;
-
-        public DecodedArgs(AvailableDecoders.RegisteredDecoder registeredDecoder, InvokerUtils.Arg... args)
-        {
-            this.registeredDecoder = registeredDecoder;
-            this.args = args;
-        }
     }
 }

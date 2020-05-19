@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.javax.common;
 
 import java.lang.invoke.MethodHandle;
-import javax.websocket.Decoder;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
@@ -27,25 +26,21 @@ import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
 public class JavaxWebSocketFrameHandlerMetadata
 {
     private static final String[] NO_VARIABLES = new String[0];
 
     // EndpointConfig entries
-    private final EndpointConfig endpointConfig;
     private final AvailableDecoders availableDecoders;
     private final AvailableEncoders availableEncoders;
 
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
-
-    private MessageMetadata textMetadata;
-    private MessageMetadata binaryMetadata;
-
     private MethodHandle pongHandle;
+    private JavaxWebSocketMessageMetadata textMetadata;
+    private JavaxWebSocketMessageMetadata binaryMetadata;
 
     /**
      * For {@code @ServerEndpoint} or {@code ServerEndpointConfig} based endpoints, this
@@ -76,7 +71,6 @@ public class JavaxWebSocketFrameHandlerMetadata
 
     public JavaxWebSocketFrameHandlerMetadata(EndpointConfig endpointConfig)
     {
-        this.endpointConfig = endpointConfig;
         this.availableDecoders = new AvailableDecoders(endpointConfig);
         this.availableEncoders = new AvailableEncoders(endpointConfig);
     }
@@ -91,7 +85,7 @@ public class JavaxWebSocketFrameHandlerMetadata
         return availableEncoders;
     }
 
-    public MessageMetadata getBinaryMetadata()
+    public JavaxWebSocketMessageMetadata getBinaryMetadata()
     {
         return binaryMetadata;
     }
@@ -133,7 +127,7 @@ public class JavaxWebSocketFrameHandlerMetadata
         return pongHandle;
     }
 
-    public MessageMetadata getTextMetadata()
+    public JavaxWebSocketMessageMetadata getTextMetadata()
     {
         return textMetadata;
     }
@@ -148,7 +142,7 @@ public class JavaxWebSocketFrameHandlerMetadata
         return (textMetadata != null);
     }
 
-    public void setBinaryMetadata(MessageMetadata metadata, Object origin)
+    public void setBinaryMetadata(JavaxWebSocketMessageMetadata metadata, Object origin)
     {
         assertNotSet(this.binaryMetadata, "BINARY Message Metadata", origin);
         this.binaryMetadata = metadata;
@@ -158,11 +152,6 @@ public class JavaxWebSocketFrameHandlerMetadata
     {
         assertNotSet(this.closeHandle, "CLOSE Handler", origin);
         this.closeHandle = close;
-    }
-
-    public void setDecoders(Class<? extends Decoder>[] decoders)
-    {
-        this.availableDecoders.registerAll(decoders);
     }
 
     public void setEncoders(Class<? extends Encoder>[] encoders)
@@ -188,7 +177,7 @@ public class JavaxWebSocketFrameHandlerMetadata
         this.pongHandle = pong;
     }
 
-    public void setTextMetadata(MessageMetadata metadata, Object origin)
+    public void setTextMetadata(JavaxWebSocketMessageMetadata metadata, Object origin)
     {
         assertNotSet(this.textMetadata, "TEXT Messsage Metadata", origin);
         this.textMetadata = metadata;
@@ -218,34 +207,5 @@ public class JavaxWebSocketFrameHandlerMetadata
         }
 
         return obj.toString();
-    }
-
-    public static class MessageMetadata
-    {
-        private static final int UNSET = -1;
-
-        public MethodHandle handle;
-        public Class<? extends MessageSink> sinkClass;
-        public AvailableDecoders.RegisteredDecoder registeredDecoder;
-        public int maxMessageSize = UNSET;
-
-        public static MessageMetadata copyOf(MessageMetadata metadata)
-        {
-            if (metadata == null)
-                return null;
-
-            MessageMetadata copy = new MessageMetadata();
-            copy.handle = metadata.handle;
-            copy.sinkClass = metadata.sinkClass;
-            copy.registeredDecoder = metadata.registeredDecoder;
-            copy.maxMessageSize = metadata.maxMessageSize;
-
-            return copy;
-        }
-
-        public boolean isMaxMessageSizeSet()
-        {
-            return maxMessageSize != UNSET;
-        }
     }
 }

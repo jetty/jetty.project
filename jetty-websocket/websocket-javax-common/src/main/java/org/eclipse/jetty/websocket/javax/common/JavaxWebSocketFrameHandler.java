@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryStreamMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextMessageSink;
@@ -95,9 +97,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
-    private JavaxWebSocketFrameHandlerMetadata.MessageMetadata textMetadata;
-    private JavaxWebSocketFrameHandlerMetadata.MessageMetadata binaryMetadata;
     private MethodHandle pongHandle;
+    private JavaxWebSocketMessageMetadata textMetadata;
+    private JavaxWebSocketMessageMetadata binaryMetadata;
 
     private UpgradeRequest upgradeRequest;
 
@@ -114,8 +116,8 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     public JavaxWebSocketFrameHandler(JavaxWebSocketContainer container,
                                       Object endpointInstance,
                                       MethodHandle openHandle, MethodHandle closeHandle, MethodHandle errorHandle,
-                                      JavaxWebSocketFrameHandlerMetadata.MessageMetadata textMetadata,
-                                      JavaxWebSocketFrameHandlerMetadata.MessageMetadata binaryMetadata,
+                                      JavaxWebSocketMessageMetadata textMetadata,
+                                      JavaxWebSocketMessageMetadata binaryMetadata,
                                       MethodHandle pongHandle,
                                       EndpointConfig endpointConfig)
     {
@@ -170,26 +172,32 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             errorHandle = InvokerUtils.bindTo(errorHandle, session);
             pongHandle = InvokerUtils.bindTo(pongHandle, session);
 
-            JavaxWebSocketFrameHandlerMetadata.MessageMetadata actualTextMetadata = JavaxWebSocketFrameHandlerMetadata.MessageMetadata.copyOf(textMetadata);
+            JavaxWebSocketMessageMetadata actualTextMetadata = JavaxWebSocketMessageMetadata.copyOf(textMetadata);
             if (actualTextMetadata != null)
             {
                 if (actualTextMetadata.isMaxMessageSizeSet())
-                    session.setMaxTextMessageBufferSize(actualTextMetadata.maxMessageSize);
+                    session.setMaxTextMessageBufferSize(actualTextMetadata.getMaxMessageSize());
 
-                actualTextMetadata.handle = InvokerUtils.bindTo(actualTextMetadata.handle, endpointInstance, endpointConfig, session);
-                actualTextMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(actualTextMetadata.handle, session);
+                MethodHandle methodHandle = actualTextMetadata.getMethodHandle();
+                methodHandle = InvokerUtils.bindTo(methodHandle, endpointInstance, endpointConfig, session);
+                methodHandle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(methodHandle, session);
+                actualTextMetadata.setMethodHandle(methodHandle);
+
                 textSink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, actualTextMetadata);
                 textMetadata = actualTextMetadata;
             }
 
-            JavaxWebSocketFrameHandlerMetadata.MessageMetadata actualBinaryMetadata = JavaxWebSocketFrameHandlerMetadata.MessageMetadata.copyOf(binaryMetadata);
+            JavaxWebSocketMessageMetadata actualBinaryMetadata = JavaxWebSocketMessageMetadata.copyOf(binaryMetadata);
             if (actualBinaryMetadata != null)
             {
                 if (actualBinaryMetadata.isMaxMessageSizeSet())
-                    session.setMaxBinaryMessageBufferSize(actualBinaryMetadata.maxMessageSize);
+                    session.setMaxBinaryMessageBufferSize(actualBinaryMetadata.getMaxMessageSize());
 
-                actualBinaryMetadata.handle = InvokerUtils.bindTo(actualBinaryMetadata.handle, endpointInstance, endpointConfig, session);
-                actualBinaryMetadata.handle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(actualBinaryMetadata.handle, session);
+                MethodHandle methodHandle = actualBinaryMetadata.getMethodHandle();
+                methodHandle = InvokerUtils.bindTo(methodHandle, endpointInstance, endpointConfig, session);
+                methodHandle = JavaxWebSocketFrameHandlerFactory.wrapNonVoidReturnType(methodHandle, session);
+                actualBinaryMetadata.setMethodHandle(methodHandle);
+
                 binarySink = JavaxWebSocketFrameHandlerFactory.createMessageSink(session, actualBinaryMetadata);
                 binaryMetadata = actualBinaryMetadata;
             }
@@ -350,12 +358,12 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         return messageHandlerMap;
     }
 
-    public JavaxWebSocketFrameHandlerMetadata.MessageMetadata getBinaryMetadata()
+    public JavaxWebSocketMessageMetadata getBinaryMetadata()
     {
         return binaryMetadata;
     }
 
-    public JavaxWebSocketFrameHandlerMetadata.MessageMetadata getTextMetadata()
+    public JavaxWebSocketMessageMetadata getTextMetadata()
     {
         return textMetadata;
     }
@@ -369,7 +377,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         }
     }
 
-    public <T> void addMessageHandler(JavaxWebSocketSession session, Class<T> clazz, MessageHandler.Partial<T> handler)
+    public <T> void addMessageHandler(Class<T> clazz, MessageHandler.Partial<T> handler)
     {
         try
         {
@@ -384,9 +392,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
                 assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryMetadata, handler.getClass().getName());
                 MessageSink messageSink = new PartialByteArrayMessageSink(coreSession, partialMessageHandler);
                 this.binarySink = registerMessageHandler(OpCode.BINARY, clazz, handler, messageSink);
-                JavaxWebSocketFrameHandlerMetadata.MessageMetadata metadata = new JavaxWebSocketFrameHandlerMetadata.MessageMetadata();
-                metadata.handle = partialMessageHandler;
-                metadata.sinkClass = PartialByteArrayMessageSink.class;
+                JavaxWebSocketMessageMetadata metadata = new JavaxWebSocketMessageMetadata();
+                metadata.setMethodHandle(partialMessageHandler);
+                metadata.setSinkClass(PartialByteArrayMessageSink.class);
                 this.binaryMetadata = metadata;
             }
             else if (ByteBuffer.class.isAssignableFrom(clazz))
@@ -394,9 +402,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
                 assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryMetadata, handler.getClass().getName());
                 MessageSink messageSink = new PartialByteBufferMessageSink(coreSession, partialMessageHandler);
                 this.binarySink = registerMessageHandler(OpCode.BINARY, clazz, handler, messageSink);
-                JavaxWebSocketFrameHandlerMetadata.MessageMetadata metadata = new JavaxWebSocketFrameHandlerMetadata.MessageMetadata();
-                metadata.handle = partialMessageHandler;
-                metadata.sinkClass = PartialByteBufferMessageSink.class;
+                JavaxWebSocketMessageMetadata metadata = new JavaxWebSocketMessageMetadata();
+                metadata.setMethodHandle(partialMessageHandler);
+                metadata.setSinkClass(PartialByteBufferMessageSink.class);
                 this.binaryMetadata = metadata;
             }
             else if (String.class.isAssignableFrom(clazz))
@@ -404,9 +412,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
                 assertBasicTypeNotRegistered(OpCode.TEXT, this.textMetadata, handler.getClass().getName());
                 MessageSink messageSink = new PartialStringMessageSink(coreSession, partialMessageHandler);
                 this.textSink = registerMessageHandler(OpCode.TEXT, clazz, handler, messageSink);
-                JavaxWebSocketFrameHandlerMetadata.MessageMetadata metadata = new JavaxWebSocketFrameHandlerMetadata.MessageMetadata();
-                metadata.handle = partialMessageHandler;
-                metadata.sinkClass = PartialStringMessageSink.class;
+                JavaxWebSocketMessageMetadata metadata = new JavaxWebSocketMessageMetadata();
+                metadata.setMethodHandle(partialMessageHandler);
+                metadata.setSinkClass(PartialStringMessageSink.class);
                 this.textMetadata = metadata;
             }
             else
@@ -426,67 +434,67 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         }
     }
 
-    public <T> void addMessageHandler(JavaxWebSocketSession session, Class<T> clazz, MessageHandler.Whole<T> handler)
+    public <T> void addMessageHandler(Class<T> clazz, MessageHandler.Whole<T> handler)
     {
         try
         {
-            MethodHandles.Lookup lookup = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
-            MethodHandle wholeMsgMethodHandle = lookup.findVirtual(MessageHandler.Whole.class, "onMessage", MethodType.methodType(void.class, Object.class));
-            wholeMsgMethodHandle = wholeMsgMethodHandle.bindTo(handler);
+            MethodHandle methodHandle = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
+                .findVirtual(MessageHandler.Whole.class, "onMessage", MethodType.methodType(void.class, Object.class))
+                .bindTo(handler);
 
             if (PongMessage.class.isAssignableFrom(clazz))
             {
                 assertBasicTypeNotRegistered(OpCode.PONG, this.pongHandle, handler.getClass().getName());
-                this.pongHandle = wholeMsgMethodHandle;
+                this.pongHandle = methodHandle;
                 registerMessageHandler(OpCode.PONG, clazz, handler, null);
             }
             else
             {
                 AvailableDecoders availableDecoders = session.getDecoders();
 
-                AvailableDecoders.RegisteredDecoder registeredDecoder = availableDecoders.getRegisteredDecoderFor(clazz);
+                RegisteredDecoder registeredDecoder = availableDecoders.getFirstRegisteredDecoder(clazz);
                 if (registeredDecoder == null)
                 {
                     throw new IllegalStateException("Unable to find Decoder for type: " + clazz);
                 }
 
-                JavaxWebSocketFrameHandlerMetadata.MessageMetadata metadata = new JavaxWebSocketFrameHandlerMetadata.MessageMetadata();
-                metadata.handle = wholeMsgMethodHandle;
-                metadata.registeredDecoder = registeredDecoder;
+                JavaxWebSocketMessageMetadata metadata = new JavaxWebSocketMessageMetadata();
+                metadata.setMethodHandle(methodHandle);
+                metadata.setRegisteredDecoder(registeredDecoder);
 
                 if (registeredDecoder.implementsInterface(Decoder.Binary.class))
                 {
                     assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryMetadata, handler.getClass().getName());
-                    Decoder.Binary<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
-                    MessageSink messageSink = new DecodedBinaryMessageSink(coreSession, decoder, wholeMsgMethodHandle);
-                    metadata.sinkClass = messageSink.getClass();
+                    List<RegisteredDecoder> binaryDecoders = availableDecoders.getBinaryDecoders(clazz);
+                    MessageSink messageSink = new DecodedBinaryMessageSink<T>(coreSession, methodHandle, binaryDecoders);
+                    metadata.setSinkClass(messageSink.getClass());
                     this.binarySink = registerMessageHandler(OpCode.BINARY, clazz, handler, messageSink);
                     this.binaryMetadata = metadata;
                 }
                 else if (registeredDecoder.implementsInterface(Decoder.BinaryStream.class))
                 {
                     assertBasicTypeNotRegistered(OpCode.BINARY, this.binaryMetadata, handler.getClass().getName());
-                    Decoder.BinaryStream<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
-                    MessageSink messageSink = new DecodedBinaryStreamMessageSink(coreSession, decoder, wholeMsgMethodHandle);
-                    metadata.sinkClass = messageSink.getClass();
+                    List<RegisteredDecoder> binaryStreamDecoders = availableDecoders.getBinaryStreamDecoders(clazz);
+                    MessageSink messageSink = new DecodedBinaryStreamMessageSink<T>(coreSession, methodHandle, binaryStreamDecoders);
+                    metadata.setSinkClass(messageSink.getClass());
                     this.binarySink = registerMessageHandler(OpCode.BINARY, clazz, handler, messageSink);
                     this.binaryMetadata = metadata;
                 }
                 else if (registeredDecoder.implementsInterface(Decoder.Text.class))
                 {
                     assertBasicTypeNotRegistered(OpCode.TEXT, this.textMetadata, handler.getClass().getName());
-                    Decoder.Text<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
-                    MessageSink messageSink = new DecodedTextMessageSink(coreSession, decoder, wholeMsgMethodHandle);
-                    metadata.sinkClass = messageSink.getClass();
+                    List<RegisteredDecoder> textDecoders = availableDecoders.getTextDecoders(clazz);
+                    MessageSink messageSink = new DecodedTextMessageSink<T>(coreSession, methodHandle, textDecoders);
+                    metadata.setSinkClass(messageSink.getClass());
                     this.textSink = registerMessageHandler(OpCode.TEXT, clazz, handler, messageSink);
                     this.textMetadata = metadata;
                 }
                 else if (registeredDecoder.implementsInterface(Decoder.TextStream.class))
                 {
                     assertBasicTypeNotRegistered(OpCode.TEXT, this.textMetadata, handler.getClass().getName());
-                    Decoder.TextStream<T> decoder = availableDecoders.getInstanceOf(registeredDecoder);
-                    MessageSink messageSink = new DecodedTextStreamMessageSink(coreSession, decoder, wholeMsgMethodHandle);
-                    metadata.sinkClass = messageSink.getClass();
+                    List<RegisteredDecoder> textStreamDecoders = availableDecoders.getTextStreamDecoders(clazz);
+                    MessageSink messageSink = new DecodedTextStreamMessageSink<T>(coreSession, methodHandle, textStreamDecoders);
+                    metadata.setSinkClass(messageSink.getClass());
                     this.textSink = registerMessageHandler(OpCode.TEXT, clazz, handler, messageSink);
                     this.textMetadata = metadata;
                 }

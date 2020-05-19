@@ -27,11 +27,13 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import javax.websocket.ClientEndpointConfig;
 import javax.websocket.Decoder;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.websocket.javax.tests.FunctionMethod;
 import org.eclipse.jetty.websocket.javax.tests.client.AbstractClientSessionTest;
@@ -64,7 +66,6 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
     @Test
     public void testQuotesDecodedReaderMessageSink() throws Exception
     {
-        Decoder.TextStream<Quotes> decoder = new QuotesDecoder();
         CompletableFuture<Quotes> futureQuotes = new CompletableFuture<>();
         MethodHandle functionHandle = FunctionMethod.getFunctionApplyMethodHandle();
         MethodHandle quoteHandle = functionHandle.bindTo((Function<Quotes, Void>)(quotes) ->
@@ -80,7 +81,8 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
             return null;
         });
 
-        DecodedTextStreamMessageSink sink = new DecodedTextStreamMessageSink(session.getCoreSession(), decoder, quoteHandle);
+        List<RegisteredDecoder> decoders = toRegisteredDecoderList(QuotesDecoder.class, Quotes.class);
+        DecodedTextStreamMessageSink<Quotes> sink = new DecodedTextStreamMessageSink<>(session.getCoreSession(), quoteHandle, decoders);
 
         List<FutureCallback> callbacks = new ArrayList<>();
         FutureCallback finCallback = null;
@@ -106,5 +108,22 @@ public class DecoderTextStreamTest extends AbstractClientSessionTest
         }
         assertThat("Quotes.author", quotes.getAuthor(), is("Benjamin Franklin"));
         assertThat("Quotes.count", quotes.getQuotes().size(), is(3));
+    }
+
+    public List<RegisteredDecoder> toRegisteredDecoderList(Class<? extends Decoder> clazz, Class<?> objectType)
+    {
+        Class<? extends Decoder> interfaceType;
+        if (Decoder.Text.class.isAssignableFrom(clazz))
+            interfaceType = Decoder.Text.class;
+        else if (Decoder.Binary.class.isAssignableFrom(clazz))
+            interfaceType = Decoder.Binary.class;
+        else if (Decoder.TextStream.class.isAssignableFrom(clazz))
+            interfaceType = Decoder.TextStream.class;
+        else if (Decoder.BinaryStream.class.isAssignableFrom(clazz))
+            interfaceType = Decoder.BinaryStream.class;
+        else
+            throw new IllegalStateException();
+
+        return List.of(new RegisteredDecoder(clazz, interfaceType, objectType, ClientEndpointConfig.Builder.create().build()));
     }
 }

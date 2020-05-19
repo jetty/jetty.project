@@ -24,6 +24,7 @@ import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
+import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,8 +53,8 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
         CompletableFuture<Calendar> copyFuture = new CompletableFuture<>();
         DecodedCalendarCopy copy = new DecodedCalendarCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Calendar.class);
-        Decoder.BinaryStream<Calendar> decoder = new GmtDecoder();
-        DecodedBinaryStreamMessageSink sink = new DecodedBinaryStreamMessageSink(session.getCoreSession(), decoder, copyHandle);
+        List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
+        DecodedBinaryStreamMessageSink<Calendar> sink = new DecodedBinaryStreamMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
         FutureCallback finCallback = new FutureCallback();
         ByteBuffer data = ByteBuffer.allocate(16);
@@ -74,8 +76,8 @@ public class DecodedBinaryStreamMessageSinkTest extends AbstractMessageSinkTest
         CompletableFuture<Calendar> copyFuture = new CompletableFuture<>();
         DecodedCalendarCopy copy = new DecodedCalendarCopy(copyFuture);
         MethodHandle copyHandle = getAcceptHandle(copy, Calendar.class);
-        Decoder.BinaryStream<Calendar> decoder = new GmtDecoder();
-        DecodedBinaryStreamMessageSink sink = new DecodedBinaryStreamMessageSink(session.getCoreSession(), decoder, copyHandle);
+        List<RegisteredDecoder> decoders = toRegisteredDecoderList(GmtDecoder.class, Calendar.class);
+        DecodedBinaryStreamMessageSink<Calendar> sink = new DecodedBinaryStreamMessageSink<>(session.getCoreSession(), copyHandle, decoders);
 
         FutureCallback callback1 = new FutureCallback();
         FutureCallback callback2 = new FutureCallback();

@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.javax.common.messages;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.util.List;
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
@@ -27,54 +28,47 @@ import javax.websocket.Decoder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
 import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
 
-public class DecodedTextMessageSink<T> extends DecodedMessageSink<Decoder.Text<T>>
+public class DecodedTextMessageSink<T> extends AbstractDecodedMessageSink<Decoder.Text<T>>
 {
-    public DecodedTextMessageSink(CoreSession session,
-                                  Decoder.Text<T> decoder,
-                                  MethodHandle methodHandle)
-        throws NoSuchMethodException, IllegalAccessException
+    public DecodedTextMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders) throws NoSuchMethodException, IllegalAccessException
     {
-        super(session, decoder, methodHandle);
+        super(session, methodHandle, decoders);
     }
 
     @Override
-    protected MethodHandle newRawMethodHandle() throws NoSuchMethodException, IllegalAccessException
+    MessageSink getMessageSink() throws NoSuchMethodException, IllegalAccessException
     {
-        return JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(DecodedTextMessageSink.class,
-            "onWholeMessage", MethodType.methodType(void.class, String.class))
+        MethodHandle methodHandle = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
+            .findVirtual(getClass(), "onMessage", MethodType.methodType(void.class, String.class))
             .bindTo(this);
+        return new StringMessageSink(_coreSession, methodHandle);
     }
 
-    @Override
-    protected MessageSink newRawMessageSink(CoreSession session, MethodHandle rawMethodHandle)
+    public void onMessage(String wholeMessage)
     {
-        return new StringMessageSink(session, rawMethodHandle);
-    }
-
-    @SuppressWarnings("Duplicates")
-    public void onWholeMessage(String wholeMessage)
-    {
-        if (!getDecoder().willDecode(wholeMessage))
+        for (Decoder.Text<T> decoder : _decoders)
         {
-            logger.warn("Message lost, decoder " + getDecoder().getClass().getName() + "#willDecode() has rejected it.");
-            return;
-        }
-
-        try
-        {
-            T obj = getDecoder().decode(wholeMessage);
-            methodHandle.invoke(obj);
-        }
-        catch (DecodeException e)
-        {
-            throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Unable to decode", e);
-        }
-        catch (Throwable t)
-        {
-            throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Endpoint notification error", t);
+            if (decoder.willDecode(wholeMessage))
+            {
+                try
+                {
+                    T obj = decoder.decode(wholeMessage);
+                    _methodHandle.invoke(obj);
+                    return;
+                }
+                catch (DecodeException e)
+                {
+                    throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Unable to decode", e);
+                }
+                catch (Throwable t)
+                {
+                    throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Endpoint notification error", t);
+                }
+            }
         }
     }
 }
