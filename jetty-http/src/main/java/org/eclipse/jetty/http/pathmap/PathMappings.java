@@ -20,6 +20,7 @@ package org.eclipse.jetty.http.pathmap;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -46,7 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 {
     private static final Logger LOG = Log.getLogger(PathMappings.class);
-    private final Set<MappedResource<E>> _mappings = new TreeSet<>(LogicalDeclarationComparator.INSTANCE);
+    private final Set<MappedResource<E>> _mappings = new TreeSet<>(Comparator.comparing(MappedResource::getPathSpec));
 
     private Trie<MappedResource<E>> _exactMap = new ArrayTernaryTrie<>(false);
     private Trie<MappedResource<E>> _prefixMap = new ArrayTernaryTrie<>(false);
