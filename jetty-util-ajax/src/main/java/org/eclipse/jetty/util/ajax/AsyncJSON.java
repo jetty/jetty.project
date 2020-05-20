@@ -181,17 +181,15 @@ public class AsyncJSON
 
     private static final Object UNSET = new Object();
 
-    private final Factory factory;
     private final FrameStack stack = new FrameStack();
-    private final Utf8StringBuilder stringBuilder;
-    private final NumberBuilder numberBuilder;
+    private final NumberBuilder numberBuilder = new NumberBuilder();
+    private final Utf8StringBuilder stringBuilder = new Utf8StringBuilder(32);
+    private final Factory factory;
     private List<ByteBuffer> chunks;
 
     public AsyncJSON(Factory factory)
     {
         this.factory = factory;
-        this.stringBuilder = new Utf8StringBuilder(32);
-        this.numberBuilder = new NumberBuilder();
     }
 
     // Used by tests only.
@@ -1124,12 +1122,6 @@ public class AsyncJSON
         private State state;
         private Object value;
 
-        private Frame(State state, Object value)
-        {
-            this.state = state;
-            this.value = value;
-        }
-
         private void value(Object value)
         {
             switch (state)
@@ -1277,7 +1269,7 @@ public class AsyncJSON
         {
             for (int i = 0; i < grow; i++)
             {
-                stack.add(new Frame(null, null));
+                stack.add(new Frame());
             }
         }
 
