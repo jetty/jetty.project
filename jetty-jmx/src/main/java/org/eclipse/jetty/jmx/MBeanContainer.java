@@ -30,10 +30,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import javax.management.DynamicMBean;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
+import javax.management.MXBean;
 import javax.management.ObjectName;
 import javax.management.modelmbean.ModelMBean;
 
@@ -151,6 +153,25 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     {
         if (o == null)
             return null;
+        if (o instanceof DynamicMBean)
+            return o;
+        Class<?> klass = o.getClass();
+        while (klass != Object.class)
+        {
+            MXBean mxbean = klass.getAnnotation(MXBean.class);
+            if (mxbean != null && mxbean.value())
+                return o;
+            String mbeanName = klass.getName() + "MBean";
+            String mxbeanName = klass.getName() + "MXBean";
+            Class<?>[] interfaces = klass.getInterfaces();
+            for (Class<?> type : interfaces)
+            {
+                String name = type.getName();
+                if (name.equals(mbeanName) || name.equals(mxbeanName))
+                    return o;
+            }
+            klass = klass.getSuperclass();
+        }
         Object mbean = findMetaData(container, o.getClass()).newInstance(o);
         if (mbean instanceof ObjectMBean)
             ((ObjectMBean)mbean).setMBeanContainer(container);
@@ -338,7 +359,9 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
 
                 StringBuilder buf = new StringBuilder();
 
-                String context = (mbean instanceof ObjectMBean) ? makeName(((ObjectMBean)mbean).getObjectContextBasis()) : null;
+                String context = (mbean instanceof ObjectMBean)
+                    ? makeName(((ObjectMBean)mbean).getObjectContextBasis())
+                    : makeName(reflectContextBasis(mbean));
                 if (context == null && parentObjectName != null)
                     context = parentObjectName.getKeyProperty("context");
 
@@ -347,7 +370,9 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
 
                 buf.append("type=").append(type);
 
-                String name = (mbean instanceof ObjectMBean) ? makeName(((ObjectMBean)mbean).getObjectNameBasis()) : context;
+                String name = (mbean instanceof ObjectMBean)
+                    ? makeName(((ObjectMBean)mbean).getObjectNameBasis())
+                    : makeName(reflectNameBasis(mbean));
                 if (name != null && name.length() > 1)
                     buf.append(",").append("name=").append(name);
 
@@ -391,6 +416,28 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             ObjectName objectName = _mbeans.remove(obj);
             if (objectName != null)
                 unregister(objectName);
+        }
+    }
+
+    private String reflectContextBasis(Object mbean)
+    {
+        return reflectBasis(mbean, "jmxContext");
+    }
+
+    private String reflectNameBasis(Object mbean)
+    {
+        return reflectBasis(mbean, "jmxName");
+    }
+
+    private String reflectBasis(Object mbean, String methodName)
+    {
+        try
+        {
+            return (String)mbean.getClass().getMethod(methodName).invoke(mbean);
+        }
+        catch (Throwable x)
+        {
+            return null;
         }
     }
 

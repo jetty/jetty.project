@@ -61,6 +61,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.PushCacheFilter;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.slf4j.LoggerFactory;
 
 public class Http2Server
 {
@@ -73,6 +74,8 @@ public class Http2Server
         MBeanContainer mbContainer = new MBeanContainer(
             ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
+
+        server.addBean(LoggerFactory.getILoggerFactory());
 
         ServletContextHandler context = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
         Path docroot = Paths.get("src/main/resources/docroot");

@@ -55,7 +55,7 @@ You *must also install the Apache Aries SPI Fly bundles* as  many parts of Jetty
 [cols=",,",options="header",]
 |=======================================================================
 |Jar |Bundle Symbolic Name |Location
-|org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle-1.2.jar |org.apache.aries.spifly.dynamic.bundle
+|org.apache.aries.spifly:org.apache.aries.spifly.dynamic.bundle-1.2.4.jar |org.apache.aries.spifly.dynamic.bundle
 |https://repo1.maven.org/maven2/org/apache/aries/spifly/org.apache.aries.spifly.dynamic.bundle/[Maven central]
 |=======================================================================
 
