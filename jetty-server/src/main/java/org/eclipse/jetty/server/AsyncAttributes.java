@@ -21,30 +21,25 @@ package org.eclipse.jetty.server;
 import java.util.HashSet;
 import java.util.Set;
 import javax.servlet.AsyncContext;
-import javax.servlet.http.HttpServletMapping;
 
 import org.eclipse.jetty.util.Attributes;
 
 class AsyncAttributes extends Attributes.Wrapper
 {
-    private String _requestURI;
-    private String _contextPath;
-    private String _servletPath;
-    private String _pathInfo;
-    private String _queryString;
-    private HttpServletMapping _httpServletMapping;
+    private final String _requestURI;
+    private final String _contextPath;
+    private final String _pathInContext;
+    private ServletPathMapping _mapping;
+    private final String _queryString;
 
-    public AsyncAttributes(Attributes attributes, String requestUri, String contextPath, String servletPath, String pathInfo, String queryString, HttpServletMapping httpServletMapping)
+    public AsyncAttributes(Attributes attributes, String requestUri, String contextPath, String pathInContext, ServletPathMapping mapping, String queryString)
     {
         super(attributes);
-
-        // TODO: make fields final in jetty-10 and NOOP when one of these attributes is set.
         _requestURI = requestUri;
         _contextPath = contextPath;
-        _servletPath = servletPath;
-        _pathInfo = pathInfo;
+        _pathInContext = pathInContext;
+        _mapping = mapping;
         _queryString = queryString;
-        _httpServletMapping = httpServletMapping;
     }
 
     @Override
@@ -57,13 +52,13 @@ class AsyncAttributes extends Attributes.Wrapper
             case AsyncContext.ASYNC_CONTEXT_PATH:
                 return _contextPath;
             case AsyncContext.ASYNC_SERVLET_PATH:
-                return _servletPath;
+                return _mapping == null ? null : _mapping.getServletPath();
             case AsyncContext.ASYNC_PATH_INFO:
-                return _pathInfo;
+                return _mapping == null ? _pathInContext : _mapping.getPathInfo();
             case AsyncContext.ASYNC_QUERY_STRING:
                 return _queryString;
             case AsyncContext.ASYNC_MAPPING:
-                return _httpServletMapping;
+                return _mapping;
             default:
                 return super.getAttribute(key);
         }
@@ -73,18 +68,12 @@ class AsyncAttributes extends Attributes.Wrapper
     public Set<String> getAttributeNameSet()
     {
         Set<String> set = new HashSet<>(super.getAttributeNameSet());
-        if (_requestURI != null)
-            set.add(AsyncContext.ASYNC_REQUEST_URI);
-        if (_contextPath != null)
-            set.add(AsyncContext.ASYNC_CONTEXT_PATH);
-        if (_servletPath != null)
-            set.add(AsyncContext.ASYNC_SERVLET_PATH);
-        if (_pathInfo != null)
-            set.add(AsyncContext.ASYNC_PATH_INFO);
-        if (_queryString != null)
-            set.add(AsyncContext.ASYNC_QUERY_STRING);
-        if (_httpServletMapping != null)
-            set.add(AsyncContext.ASYNC_MAPPING);
+        set.add(AsyncContext.ASYNC_REQUEST_URI);
+        set.add(AsyncContext.ASYNC_CONTEXT_PATH);
+        set.add(AsyncContext.ASYNC_SERVLET_PATH);
+        set.add(AsyncContext.ASYNC_PATH_INFO);
+        set.add(AsyncContext.ASYNC_QUERY_STRING);
+        set.add(AsyncContext.ASYNC_MAPPING);
         return set;
     }
 
@@ -94,54 +83,17 @@ class AsyncAttributes extends Attributes.Wrapper
         switch (key)
         {
             case AsyncContext.ASYNC_REQUEST_URI:
-                _requestURI = (String)value;
-                break;
             case AsyncContext.ASYNC_CONTEXT_PATH:
-                _contextPath = (String)value;
-                break;
             case AsyncContext.ASYNC_SERVLET_PATH:
-                _servletPath = (String)value;
-                break;
             case AsyncContext.ASYNC_PATH_INFO:
-                _pathInfo = (String)value;
-                break;
             case AsyncContext.ASYNC_QUERY_STRING:
-                _queryString = (String)value;
-                break;
             case AsyncContext.ASYNC_MAPPING:
-                _httpServletMapping = (HttpServletMapping)value;
+                // Ignore sets for these reserved names as this class is applied
+                // we will always override these particular attributes.
                 break;
             default:
                 super.setAttribute(key, value);
                 break;
         }
-    }
-
-    @Override
-    public void clearAttributes()
-    {
-        _requestURI = null;
-        _contextPath = null;
-        _servletPath = null;
-        _pathInfo = null;
-        _queryString = null;
-        _httpServletMapping = null;
-        super.clearAttributes();
-    }
-
-    public static void applyAsyncAttributes(Attributes attributes, String requestURI, String contextPath, String servletPath, String pathInfo, String queryString, HttpServletMapping httpServletMapping)
-    {
-        if (requestURI != null)
-            attributes.setAttribute(AsyncContext.ASYNC_REQUEST_URI, requestURI);
-        if (contextPath != null)
-            attributes.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, contextPath);
-        if (servletPath != null)
-            attributes.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, servletPath);
-        if (pathInfo != null)
-            attributes.setAttribute(AsyncContext.ASYNC_PATH_INFO, pathInfo);
-        if (queryString != null)
-            attributes.setAttribute(AsyncContext.ASYNC_QUERY_STRING, queryString);
-        if (httpServletMapping != null)
-            attributes.setAttribute(AsyncContext.ASYNC_MAPPING, httpServletMapping);
     }
 }

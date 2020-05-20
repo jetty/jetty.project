@@ -171,6 +171,43 @@ public class DispatcherTest
     }
 
     @Test
+    public void testNamedForward() throws Exception
+    {
+        _contextHandler.addServlet(NamedForwardServlet.class, "/forward/*");
+        String echo = _contextHandler.addServlet(EchoURIServlet.class, "/echo/*").getName();
+
+        String expected =
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: 62\r\n" +
+                "\r\n" +
+                "/context\r\n" +
+                "/forward\r\n" +
+                "/info\r\n" +
+                "/context/forward/info;param=value\r\n";
+        String responses = _connector.getResponse("GET /context/forward/info;param=value?name=" + echo + " HTTP/1.0\n\n");
+        assertEquals(expected, responses);
+    }
+
+    @Test
+    public void testNamedInclude() throws Exception
+    {
+        _contextHandler.addServlet(NamedIncludeServlet.class, "/include/*");
+        String echo = _contextHandler.addServlet(EchoURIServlet.class, "/echo/*").getName();
+
+        String expected =
+            "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 62\r\n" +
+                "\r\n" +
+                "/context\r\n" +
+                "/include\r\n" +
+                "/info\r\n" +
+                "/context/include/info;param=value\r\n";
+        String responses = _connector.getResponse("GET /context/include/info;param=value?name=" + echo + " HTTP/1.0\n\n");
+        assertEquals(expected, responses);
+    }
+
+    @Test
     public void testForwardWithBadParams() throws Exception
     {
         try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
@@ -507,6 +544,24 @@ public class DispatcherTest
         }
     }
 
+    public static class NamedForwardServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            getServletContext().getNamedDispatcher(request.getParameter("name")).forward(request, response);
+        }
+    }
+
+    public static class NamedIncludeServlet extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            getServletContext().getNamedDispatcher(request.getParameter("name")).include(request, response);
+        }
+    }
+
     public static class ForwardNonUTF8Servlet extends HttpServlet implements Servlet
     {
         @Override
@@ -734,7 +789,7 @@ public class DispatcherTest
             assertEquals("do=assertforward&do=more&test=1", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
             HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
             assertNotNull(fwdMapping);
-            assertEquals("/ForwardServlet", fwdMapping.getMatchValue());
+            assertEquals("ForwardServlet", fwdMapping.getMatchValue());
 
             List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH,
                 Dispatcher.FORWARD_SERVLET_PATH, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING);
@@ -769,7 +824,7 @@ public class DispatcherTest
             assertEquals("do=assertforward&foreign=%d2%e5%ec%ef%e5%f0%e0%f2%f3%f0%e0&test=1", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
             HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
             assertNotNull(fwdMapping);
-            assertEquals("/ForwardServlet", fwdMapping.getMatchValue());
+            assertEquals("ForwardServlet", fwdMapping.getMatchValue());
 
             List<String> expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH,
                 Dispatcher.FORWARD_SERVLET_PATH, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING);
@@ -818,7 +873,7 @@ public class DispatcherTest
             assertEquals("do=end&do=the", request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING));
             HttpServletMapping incMapping = (HttpServletMapping)request.getAttribute(Dispatcher.INCLUDE_MAPPING);
             assertNotNull(incMapping);
-            assertEquals("/AssertIncludeServlet", incMapping.getMatchValue());
+            assertEquals("AssertIncludeServlet", incMapping.getMatchValue());
 
             List expectedAttributeNames = Arrays.asList(Dispatcher.INCLUDE_REQUEST_URI, Dispatcher.INCLUDE_CONTEXT_PATH,
                 Dispatcher.INCLUDE_SERVLET_PATH, Dispatcher.INCLUDE_QUERY_STRING, Dispatcher.INCLUDE_MAPPING);
@@ -851,7 +906,7 @@ public class DispatcherTest
             assertEquals("do=include", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
             HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
             assertNotNull(fwdMapping);
-            assertEquals("/ForwardServlet", fwdMapping.getMatchValue());
+            assertEquals("ForwardServlet", fwdMapping.getMatchValue());
 
             assertEquals("/context/AssertForwardIncludeServlet/assertpath", request.getAttribute(Dispatcher.INCLUDE_REQUEST_URI));
             assertEquals("/context", request.getAttribute(Dispatcher.INCLUDE_CONTEXT_PATH));
@@ -860,7 +915,7 @@ public class DispatcherTest
             assertEquals("do=end", request.getAttribute(Dispatcher.INCLUDE_QUERY_STRING));
             HttpServletMapping incMapping = (HttpServletMapping)request.getAttribute(Dispatcher.INCLUDE_MAPPING);
             assertNotNull(incMapping);
-            assertEquals("/AssertForwardIncludeServlet", incMapping.getMatchValue());
+            assertEquals("AssertForwardIncludeServlet", incMapping.getMatchValue());
 
             List expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH,
                 Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING,
@@ -902,7 +957,7 @@ public class DispatcherTest
             assertEquals("do=forward", request.getAttribute(Dispatcher.FORWARD_QUERY_STRING));
             HttpServletMapping fwdMapping = (HttpServletMapping)request.getAttribute(Dispatcher.FORWARD_MAPPING);
             assertNotNull(fwdMapping);
-            assertEquals("/IncludeServlet", fwdMapping.getMatchValue());
+            assertEquals("IncludeServlet", fwdMapping.getMatchValue());
 
             List expectedAttributeNames = Arrays.asList(Dispatcher.FORWARD_REQUEST_URI, Dispatcher.FORWARD_CONTEXT_PATH, Dispatcher.FORWARD_SERVLET_PATH,
                 Dispatcher.FORWARD_PATH_INFO, Dispatcher.FORWARD_QUERY_STRING, Dispatcher.FORWARD_MAPPING);
