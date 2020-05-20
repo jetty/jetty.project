@@ -107,14 +107,16 @@ import org.slf4j.LoggerFactory;
  * request object to be as lightweight as possible and not actually implement any significant behavior. For example
  * <ul>
  *
- * <li>The {@link Request#getContextPath()} method will return null, until the request has been passed to a {@link ContextHandler} which matches the
- * {@link Request#getPathInfo()} with a context path and calls {@link Request#setContextPath(String)} as a result.</li>
+ * <li>the {@link Request#getContextPath()} method will return null, until the request has been passed to a {@link ContextHandler} which matches the
+ * {@link Request#getPathInfo()} with a context path and calls {@link Request#setContextPaths(String,String)} as a result.  For
+ * some dispatch types (ie include and named dispatch) the context path may not reflect the {@link ServletContext} set
+ * by {@link Request#setContext(Context)}.</li>
  *
  * <li>the HTTP session methods will all return null sessions until such time as a request has been passed to a
  * {@link org.eclipse.jetty.server.session.SessionHandler} which checks for session cookies and enables the ability to create new sessions.</li>
  *
- * <li>The {@link Request#getServletPath()} method will return null until the request has been passed to a <code>org.eclipse.jetty.servlet.ServletHandler</code>
- * and the pathInfo matched against the servlet URL patterns and {@link Request#setServletPath(String)} called as a result.</li>
+ * <li>The {@link Request#getServletPath()} method will return "" until the request has been passed to a <code>org.eclipse.jetty.servlet.ServletHandler</code>
+ * and the pathInfo matched against the servlet URL patterns and {@link Request#setServletPathMapping(ServletPathMapping)} called as a result.</li>
  * </ul>
  *
  * <p>
@@ -199,8 +201,7 @@ public class Request implements HttpServletRequest
     private HttpURI _uri;
     private String _method;
     private String _contextPath;
-    private String _servletPath;
-    private String _pathInfo;
+    private String _pathInContext;
     private ServletPathMapping _servletPathMapping;
     private boolean _secure;
     private String _asyncNotSupportedSource = null;
@@ -780,6 +781,19 @@ public class Request implements HttpServletRequest
         return _contextPath;
     }
 
+    /** Get the path in the context.
+     *
+     * The path relative to the context path, analogous to {@link #getServletPath()} + {@link #getPathInfo()}.
+     * If no context is set, then the path in context is the full path.
+     * @return The decoded part of the {@link #getRequestURI()} path after any {@link #getContextPath()}
+     *         up to any {@link #getQueryString()}, excluding path parameters.
+     * @see #setContextPaths(String, String)
+     */
+    public String getPathInContext()
+    {
+        return _pathInContext;
+    }
+
     @Override
     public Cookie[] getCookies()
     {
@@ -1048,15 +1062,16 @@ public class Request implements HttpServletRequest
     @Override
     public String getPathInfo()
     {
-        return _pathInfo;
+        return _servletPathMapping == null ? _pathInContext : _servletPathMapping.getPathInfo();
     }
 
     @Override
     public String getPathTranslated()
     {
-        if (_pathInfo == null || _context == null)
+        String pathInfo = getPathInfo();
+        if (pathInfo == null || _context == null)
             return null;
-        return _context.getRealPath(_pathInfo);
+        return _context.getRealPath(pathInfo);
     }
 
     @Override
@@ -1207,7 +1222,7 @@ public class Request implements HttpServletRequest
         // handle relative path
         if (!path.startsWith("/"))
         {
-            String relTo = URIUtil.addPaths(_servletPath, _pathInfo);
+            String relTo = _pathInContext;
             int slash = relTo.lastIndexOf("/");
             if (slash > 1)
                 relTo = relTo.substring(0, slash + 1);
@@ -1335,9 +1350,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getServletPath()
     {
-        if (_servletPath == null)
-            _servletPath = "";
-        return _servletPath;
+        return _servletPathMapping == null ? "" : _servletPathMapping.getServletPath();
     }
 
     public ServletResponse getServletResponse()
@@ -1678,10 +1691,10 @@ public class Request implements HttpServletRequest
 
         if (path == null || path.isEmpty())
         {
-            setPathInfo(encoded == null ? "" : encoded);
+            _pathInContext = encoded == null ? "" : encoded;
             throw new BadMessageException(400, "Bad URI");
         }
-        setPathInfo(path);
+        _pathInContext = path;
     }
 
     public org.eclipse.jetty.http.MetaData.Request getMetaData()
@@ -1741,12 +1754,12 @@ public class Request implements HttpServletRequest
         _contentType = null;
         _characterEncoding = null;
         _contextPath = null;
+        _pathInContext = null;
         if (_cookies != null)
             _cookies.reset();
         _cookiesExtracted = false;
         _context = null;
         _newContext = false;
-        _pathInfo = null;
         _queryEncoding = null;
         _requestedSessionId = null;
         _requestedSessionIdFromCookie = false;
@@ -1754,7 +1767,6 @@ public class Request implements HttpServletRequest
         _session = null;
         _sessionHandler = null;
         _scope = null;
-        _servletPath = null;
         _timeStamp = 0;
         _queryParameters = null;
         _contentParameters = null;
@@ -1864,7 +1876,7 @@ public class Request implements HttpServletRequest
                 // attributes there, under any other wrappers.
                 ((ServletAttributes)baseAttributes).setAsyncAttributes(getRequestURI(),
                     getContextPath(),
-                    getPathInfo(), // TODO change to pathInContext when cheaply available
+                    getPathInContext(),
                     getServletPathMapping(),
                     getQueryString());
             }
@@ -1983,14 +1995,20 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * Sets the "context path" for this request
+     * Sets the contextPath and pathInContext for this request.
      *
-     * @param contextPath the context path for this request
-     * @see HttpServletRequest#getContextPath()
+     * This is implemented as a combined setter because one should never
+     * be set without the other.
+     *
+     * @param contextPath the encoded context path for this request, "" for the root context or null for no context.
+     * @param pathInContext The path after the context path up to the query string, decoded without path parameters.
+     * @see #getContextPath()
+     * @see #getPathInContext()
      */
-    public void setContextPath(String contextPath)
+    public void setContextPaths(String contextPath, String pathInContext)
     {
         _contextPath = contextPath;
+        _pathInContext = pathInContext;
     }
 
     /**
@@ -2024,14 +2042,6 @@ public class Request implements HttpServletRequest
     public boolean isHead()
     {
         return HttpMethod.HEAD.is(getMethod());
-    }
-
-    /**
-     * @param pathInfo The pathInfo to set.
-     */
-    public void setPathInfo(String pathInfo)
-    {
-        _pathInfo = pathInfo;
     }
 
     /**
@@ -2069,14 +2079,6 @@ public class Request implements HttpServletRequest
     public void setRequestedSessionIdFromCookie(boolean requestedSessionIdCookie)
     {
         _requestedSessionIdFromCookie = requestedSessionIdCookie;
-    }
-
-    /**
-     * @param servletPath The servletPath to set.
-     */
-    public void setServletPath(String servletPath)
-    {
-        _servletPath = servletPath;
     }
 
     /**
@@ -2347,22 +2349,11 @@ public class Request implements HttpServletRequest
 
     /**
      * Set the servletPathMapping, the servletPath and the pathInfo.
-     * TODO remove the side effect on servletPath and pathInfo by removing those fields.
      * @param servletPathMapping The mapping used to return from {@link #getHttpServletMapping()}
      */
     public void setServletPathMapping(ServletPathMapping servletPathMapping)
     {
         _servletPathMapping = servletPathMapping;
-        if (servletPathMapping == null)
-        {
-            // TODO reset the servletPath and pathInfo, but currently cannot do that
-            // as we don't know the pathInContext.
-        }
-        else
-        {
-            _servletPath = servletPathMapping.getServletPath();
-            _pathInfo = servletPathMapping.getPathInfo();
-        }
     }
 
     public ServletPathMapping getServletPathMapping()

@@ -137,8 +137,7 @@ public class Dispatcher implements RequestDispatcher
 
         final HttpURI old_uri = baseRequest.getHttpURI();
         final String old_context_path = baseRequest.getContextPath();
-        final String old_servlet_path = baseRequest.getServletPath();
-        final String old_path_info = baseRequest.getPathInfo();
+        final String old_path_in_context = baseRequest.getPathInContext();
         final ServletPathMapping old_mapping = baseRequest.getServletPathMapping();
 
         final MultiMap<String> old_query_params = baseRequest.getQueryParameters();
@@ -181,10 +180,8 @@ public class Dispatcher implements RequestDispatcher
                     query = old_uri.getQuery();
 
                 baseRequest.setHttpURI(HttpURI.build(old_uri, _uri.getPath(), _uri.getParam(), query));
-                baseRequest.setContextPath(_contextHandler.getContextPath());
+                baseRequest.setContextPaths(_contextHandler.getContextPathEncoded(), _pathInContext);
                 baseRequest.setServletPathMapping(null);
-                baseRequest.setServletPath(null);
-                baseRequest.setPathInfo(_pathInContext);
 
                 if (_uri.getQuery() != null || old_uri.getQuery() != null)
                 {
@@ -228,9 +225,7 @@ public class Dispatcher implements RequestDispatcher
         finally
         {
             baseRequest.setHttpURI(old_uri);
-            baseRequest.setContextPath(old_context_path);
-            baseRequest.setServletPath(old_servlet_path);
-            baseRequest.setPathInfo(old_path_info);
+            baseRequest.setContextPaths(old_context_path, old_path_in_context);
             baseRequest.setQueryParameters(old_query_params);
             baseRequest.resetParameters();
             baseRequest.setAttributes(old_attr);

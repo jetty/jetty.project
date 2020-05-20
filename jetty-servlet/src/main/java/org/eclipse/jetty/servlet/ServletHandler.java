@@ -66,7 +66,6 @@ import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -1405,7 +1404,7 @@ public class ServletHandler extends ScopedHandler
         if (LOG.isDebugEnabled())
             LOG.debug("Not Found {}", request.getRequestURI());
         if (getHandler() != null)
-            nextHandle(URIUtil.addPaths(request.getServletPath(), request.getPathInfo()), baseRequest, request, response);
+            nextHandle(baseRequest.getPathInContext(), baseRequest, request, response);
     }
 
     protected synchronized boolean containsFilterHolder(FilterHolder holder)

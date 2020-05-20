@@ -862,7 +862,7 @@ public class ResponseTest
         Response response = getResponse();
         Request request = response.getHttpChannel().getRequest();
         request.setHttpURI(HttpURI.build(request.getHttpURI()).host("myhost").port(8888));
-        request.setContextPath("/path");
+        request.setContextPaths("/path", "/info");
 
         assertEquals("http://myhost:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
 
@@ -893,7 +893,7 @@ public class ResponseTest
         assertEquals("http://myhost/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
         assertEquals("http://myhost:8888/other/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
 
-        request.setContextPath("");
+        request.setContextPaths("", "/");
         assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888"));
         assertEquals("https://myhost:8888/;jsessionid=12345", response.encodeURL("https://myhost:8888"));
         assertEquals("mailto:/foo", response.encodeURL("mailto:/foo"));
@@ -956,7 +956,7 @@ public class ResponseTest
                     if (host != null)
                         uri.host(host).port(port);
                     request.setHttpURI(uri);
-                    request.setContextPath("/path");
+                    request.setContextPaths("/path", "/info");
                     request.setRequestedSessionId("12345");
                     request.setRequestedSessionIdFromCookie(i > 2);
                     SessionHandler handler = new SessionHandler();

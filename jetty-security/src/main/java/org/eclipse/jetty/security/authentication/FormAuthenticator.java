@@ -254,7 +254,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (!mandatory)
             return new DeferredAuthentication(this);
 
-        if (isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(), request.getPathInfo())) && !DeferredAuthentication.isDeferred(response))
+        if (isLoginOrErrorPage(baseRequest.getPathInContext()) && !DeferredAuthentication.isDeferred(response))
             return new DeferredAuthentication(this);
 
         try
