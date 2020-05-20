@@ -479,7 +479,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         {
             //only write the session out at this point if the attributes changed. If only
             //the lastAccess/expiry time changed defer the write until the last request exits
-            if (session.getSessionData().isDirty() && _flushOnResponseCommit)
+            if (session.isValid() && session.getSessionData().isDirty() && _flushOnResponseCommit)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Flush session {} on response commit", session);
