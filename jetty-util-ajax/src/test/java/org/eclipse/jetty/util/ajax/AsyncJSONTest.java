@@ -68,7 +68,6 @@ public class AsyncJSONTest
         assertTrue(parser.isEmpty());
     }
 
-
     @ParameterizedTest(name = "[{index}] ''{0}'' -> ''{1}''")
     @MethodSource("validStrings")
     public void testParseString(String string, String expected)
@@ -100,11 +99,11 @@ public class AsyncJSONTest
         List<Object[]> result = new ArrayList<>();
         result.add(new Object[]{"", ""});
         result.add(new Object[]{" \t\r\n", " \t\r\n"});
-        result.add(new Object[]{"\u20AC", "\u20AC"});
-        result.add(new Object[]{"\\u20AC", "\u20AC"});
+        result.add(new Object[]{"\u20AC", "\u20AC"}); // euro symbol
+        result.add(new Object[]{"\\u20AC", "\u20AC"}); // euro symbol
         result.add(new Object[]{"/foo", "/foo"});
         result.add(new Object[]{"123E+01", "123E+01"});
-        result.add(new Object[]{"A\\u20AC/foo\\t\\n", "A\u20AC/foo\t\n"});
+        result.add(new Object[]{"A\\u20AC/foo\\t\\n", "A\u20AC/foo\t\n"});  // euro symbol
         result.add(new Object[]{" ABC ", " ABC "});
         return result;
     }
