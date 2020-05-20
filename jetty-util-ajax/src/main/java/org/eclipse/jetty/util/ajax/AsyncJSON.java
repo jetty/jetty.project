@@ -32,25 +32,76 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.ajax.JSON.Convertible;
+import org.eclipse.jetty.util.ajax.JSON.Convertor;
 
+/**
+ * <p>A non-blocking JSON parser that can parse partial JSON strings.</p>
+ * <p>Usage:</p>
+ * <pre>
+ * AsyncJSON parser = new AsyncJSON.Factory().newAsyncJSON();
+ *
+ * // Feed the parser with partial JSON string content.
+ * parser.parse(chunk1);
+ * parser.parse(chunk2);
+ *
+ * // Tell the parser that the JSON string content
+ * // is terminated and get the JSON object back.
+ * Map&lt;String, Object&gt; object = parser.eof();
+ * </pre>
+ * <p>After the call to {@link #eof()} the parser can be reused to parse
+ * another JSON string.</p>
+ * <p>Custom objects can be created by specifying a {@code "class"} or
+ * {@code "x-class"} field:</p>
+ * <pre>
+ * String json = """
+ * {
+ *   "x-class": "com.acme.Person",
+ *   "firstName": "John",
+ *   "lastName": "Doe",
+ *   "age": 42
+ * }
+ * """
+ *
+ * parser.parse(json);
+ * com.acme.Person person = parser.eof();
+ * </pre>
+ * <p>Class {@code com.acme.Person} must either implement {@link Convertible},
+ * or be mapped with a {@link Convertor} via {@link Factory#putConvertor(String, Convertor)}.</p>
+ */
 public class AsyncJSON
 {
+    /**
+     * <p>The factory that creates AsyncJSON instances.</p>
+     * <p>The factory can be configured with custom {@link Convertor}s,
+     * and with cached strings that will not be allocated if they can
+     * be looked up from the cache.</p>
+     */
     public static class Factory
     {
         private Trie<String> cache;
-        private Map<String, JSON.Convertor> convertors;
+        private Map<String, Convertor> convertors;
         private boolean detailedParseException;
 
+        /**
+         * @return whether a parse failure should report the whole JSON string or just the last chunk
+         */
         public boolean isDetailedParseException()
         {
             return detailedParseException;
         }
 
+        /**
+         * @param detailedParseException whether a parse failure should report the whole JSON string or just the last chunk
+         */
         public void setDetailedParseException(boolean detailedParseException)
         {
             this.detailedParseException = detailedParseException;
         }
 
+        /**
+         * @param value the string to cache
+         */
         public void cache(String value)
         {
             if (cache == null)
@@ -58,6 +109,16 @@ public class AsyncJSON
             cache.put("\"" + value + "\"", value);
         }
 
+        /**
+         * <p>Attempts to return a cached string from the buffer bytes.</p>
+         * <p>In case of a cache hit, the string is returned and the buffer
+         * position updated.</p>
+         * <p>In case of cache miss, {@code null} is returned and the buffer
+         * position is left unaltered.</p>
+         *
+         * @param buffer the buffer to lookup the string from
+         * @return a cached string or {@code null}
+         */
         public String cached(ByteBuffer buffer)
         {
             if (cache != null)
@@ -72,23 +133,49 @@ public class AsyncJSON
             return null;
         }
 
+        /**
+         * @return a new parser instance
+         */
         public AsyncJSON newAsyncJSON()
         {
             return new AsyncJSON(this);
         }
 
-        public void putConvertor(String className, JSON.Convertor convertor)
+        /**
+         * <p>Associates the given {@link Convertor} to the given class name.</p>
+         *
+         * @param className the domain class name such as {@code com.acme.Person}
+         * @param convertor the {@link Convertor} that converts {@code Map} to domain objects
+         */
+        public void putConvertor(String className, Convertor convertor)
         {
             if (convertors == null)
                 convertors = new ConcurrentHashMap<>();
             convertors.put(className, convertor);
         }
 
-        public JSON.Convertor removeConvertor(String className)
+        /**
+         * <p>Removes the {@link Convertor} associated with the given class name.</p>
+         *
+         * @param className the class name associated with the {@link Convertor}
+         * @return the {@link Convertor} associated with the class name, or {@code null}
+         */
+        public Convertor removeConvertor(String className)
         {
             if (convertors != null)
                 return convertors.remove(className);
             return null;
+        }
+
+        /**
+         * <p>Returns the {@link Convertor} associated with the given class name, if any.</p>
+         *
+         * @param className the class name associated with the {@link Convertor}
+         * @return the {@link Convertor} associated with the class name, or {@code null}
+         */
+        public Convertor getConvertor(String className)
+        {
+            return convertors == null ? null : convertors.get(className);
         }
     }
 
@@ -113,11 +200,24 @@ public class AsyncJSON
         return stack.isEmpty();
     }
 
+    /**
+     * <p>Feeds the parser with the given bytes chunk.</p>
+     *
+     * @param bytes the bytes to parse
+     * @return whether the JSON parsing was complete
+     */
     public boolean parse(byte[] bytes)
     {
         return parse(ByteBuffer.wrap(bytes));
     }
 
+    /**
+     * <p>Feeds the parser with the given buffer chunk.</p>
+     *
+     * @param buffer the buffer to parse
+     * @return whether the JSON parsing was complete
+     * @throws IllegalArgumentException if the JSON is malformed
+     */
     public boolean parse(ByteBuffer buffer)
     {
         try
@@ -251,6 +351,16 @@ public class AsyncJSON
         }
     }
 
+    /**
+     * <p>Signals to the parser that the parse data is complete, and returns
+     * the object parsed from the JSON chunks passed to the {@code parse()}
+     * methods.</p>
+     *
+     * @param <R> the type the result is cast to
+     * @return the result of the JSON parsing
+     * @throws IllegalArgumentException if the JSON is malformed
+     * @throws IllegalStateException if the no JSON was passed to the {@code parse()} methods
+     */
     public <R> R eof()
     {
         try
@@ -290,11 +400,27 @@ public class AsyncJSON
         }
     }
 
+    /**
+     * <p>When a JSON <code>{</code> is encountered during parsing,
+     * this method is called to create a new {@code Map} instance.</p>
+     * <p>Subclasses may override to return a custom {@code Map} instance.</p>
+     *
+     * @param context the parsing context
+     * @return a {@code Map} instance
+     */
     protected Map<String, Object> newObject(Context context)
     {
         return new HashMap<>();
     }
 
+    /**
+     * <p>When a JSON <code>[</code> is encountered during parsing,
+     * this method is called to create a new {@code List} instance.</p>
+     * <p>Subclasses may override to return a custom {@code List} instance.</p>
+     *
+     * @param context the parsing context
+     * @return a {@code List} instance
+     */
     protected List<Object> newArray(Context context)
     {
         return new ArrayList<>();
@@ -918,27 +1044,27 @@ public class AsyncJSON
         if (className == null)
             return null;
 
-        JSON.Convertible convertible = toConvertible(className);
+        Convertible convertible = toConvertible(className);
         if (convertible != null)
         {
             convertible.fromJSON(object);
             return convertible;
         }
 
-        JSON.Convertor convertor = factory.convertors.get(className);
+        Convertor convertor = factory.getConvertor(className);
         if (convertor != null)
             return convertor.fromJSON(object);
 
         return null;
     }
 
-    private JSON.Convertible toConvertible(String className)
+    private Convertible toConvertible(String className)
     {
         try
         {
             Class<?> klass = Loader.loadClass(className);
-            if (JSON.Convertible.class.isAssignableFrom(klass))
-                return (JSON.Convertible)klass.getConstructor().newInstance();
+            if (Convertible.class.isAssignableFrom(klass))
+                return (Convertible)klass.getConstructor().newInstance();
             return null;
         }
         catch (Throwable x)
@@ -976,8 +1102,14 @@ public class AsyncJSON
         return new IllegalArgumentException(builder.toString());
     }
 
+    /**
+     * <p>The state of JSON parsing.</p>
+     */
     public interface Context
     {
+        /**
+         * @return the depth in the JSON structure
+         */
         public int depth();
     }
 
