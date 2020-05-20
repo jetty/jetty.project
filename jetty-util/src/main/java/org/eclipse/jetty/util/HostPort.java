@@ -74,7 +74,7 @@ public class HostPort
                 {
                     if (c != authority.indexOf(':'))
                     {
-                        _host = "[" + authority + "]";
+                        _host = STRIP_IPV6 ? authority : "[" + authority + "]";
                         _port = 0;
                     }
                     else
