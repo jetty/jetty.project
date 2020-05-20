@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import java.io.InputStream;
-import java.io.Reader;
 import java.nio.ByteBuffer;
 import javax.websocket.PongMessage;
 import javax.websocket.Session;
@@ -29,20 +27,15 @@ import org.eclipse.jetty.websocket.util.InvokerUtils;
 // The different kind of @OnMessage method parameter signatures expected.
 public class JavaxWebSocketCallingArgs
 {
-    static final InvokerUtils.Arg[] textCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(String.class).required()
-    };
+    static InvokerUtils.Arg[] getArgsFor(Class<?> objectType)
+    {
+        return new InvokerUtils.Arg[]{new InvokerUtils.Arg(Session.class), new InvokerUtils.Arg(objectType).required()};
+    }
 
     static final InvokerUtils.Arg[] textPartialCallingArgs = new InvokerUtils.Arg[]{
         new InvokerUtils.Arg(Session.class),
         new InvokerUtils.Arg(String.class).required(),
         new InvokerUtils.Arg(boolean.class).required()
-    };
-
-    static final InvokerUtils.Arg[] binaryBufferCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(ByteBuffer.class).required()
     };
 
     static final InvokerUtils.Arg[] binaryPartialBufferCallingArgs = new InvokerUtils.Arg[]{
@@ -51,25 +44,10 @@ public class JavaxWebSocketCallingArgs
         new InvokerUtils.Arg(boolean.class).required()
     };
 
-    static final InvokerUtils.Arg[] binaryArrayCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(byte[].class).required()
-    };
-
     static final InvokerUtils.Arg[] binaryPartialArrayCallingArgs = new InvokerUtils.Arg[]{
         new InvokerUtils.Arg(Session.class),
         new InvokerUtils.Arg(byte[].class).required(),
         new InvokerUtils.Arg(boolean.class).required()
-    };
-
-    static final InvokerUtils.Arg[] inputStreamCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(InputStream.class).required()
-    };
-
-    static final InvokerUtils.Arg[] readerCallingArgs = new InvokerUtils.Arg[]{
-        new InvokerUtils.Arg(Session.class),
-        new InvokerUtils.Arg(Reader.class).required()
     };
 
     static final InvokerUtils.Arg[] pongCallingArgs = new InvokerUtils.Arg[]{

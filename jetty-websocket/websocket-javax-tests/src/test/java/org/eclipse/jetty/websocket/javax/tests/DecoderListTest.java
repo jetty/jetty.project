@@ -79,7 +79,7 @@ public class DecoderListTest
             Arguments.of("=DecodeEquals", "DecodeEquals="),
             Arguments.of("+DecodePlus", "DecodePlus+"),
             Arguments.of("-DecodeMinus", "DecodeMinus-"),
-            Arguments.of("DecodeNoMatch", null)
+            Arguments.of("DecodeNoMatch", "DecodeNoMatch")
         );
     }
 
