@@ -47,9 +47,9 @@ import org.eclipse.jetty.util.ajax.JSON.Convertor;
  *
  * // Tell the parser that the JSON string content
  * // is terminated and get the JSON object back.
- * Map&lt;String, Object&gt; object = parser.eof();
+ * Map&lt;String, Object&gt; object = parser.complete();
  * </pre>
- * <p>After the call to {@link #eof()} the parser can be reused to parse
+ * <p>After the call to {@link #complete()} the parser can be reused to parse
  * another JSON string.</p>
  * <p>Custom objects can be created by specifying a {@code "class"} or
  * {@code "x-class"} field:</p>
@@ -64,7 +64,7 @@ import org.eclipse.jetty.util.ajax.JSON.Convertor;
  * """
  *
  * parser.parse(json);
- * com.acme.Person person = parser.eof();
+ * com.acme.Person person = parser.complete();
  * </pre>
  * <p>Class {@code com.acme.Person} must either implement {@link Convertible},
  * or be mapped with a {@link Convertor} via {@link Factory#putConvertor(String, Convertor)}.</p>
@@ -119,7 +119,7 @@ public class AsyncJSON
          * @param buffer the buffer to lookup the string from
          * @return a cached string or {@code null}
          */
-        public String cached(ByteBuffer buffer)
+        private String cached(ByteBuffer buffer)
         {
             if (cache != null)
             {
@@ -270,7 +270,7 @@ public class AsyncJSON
                             {
                                 int position = buffer.position();
                                 byte peek = buffer.get(position);
-                                if (Character.isWhitespace((char)peek))
+                                if (isWhitespace(peek))
                                     buffer.position(position + 1);
                                 else
                                     throw newInvalidJSON(buffer, "invalid character after JSON data");
@@ -374,7 +374,7 @@ public class AsyncJSON
      * @throws IllegalArgumentException if the JSON is malformed
      * @throws IllegalStateException if the no JSON was passed to the {@code parse()} methods
      */
-    public <R> R eof()
+    public <R> R complete()
     {
         try
         {
@@ -397,7 +397,7 @@ public class AsyncJSON
                     {
                         if (stack.peek().value == UNSET)
                             throw new IllegalStateException("invalid state " + state);
-                        return (R)complete();
+                        return (R)end();
                     }
                     default:
                     {
@@ -439,7 +439,7 @@ public class AsyncJSON
         return new ArrayList<>();
     }
 
-    private Object complete()
+    private Object end()
     {
         Object result = stack.peek().value;
         reset();
@@ -498,7 +498,7 @@ public class AsyncJSON
                         return true;
                     break;
                 default:
-                    if (Character.isWhitespace(peek))
+                    if (isWhitespace(peek))
                     {
                         buffer.get();
                         break;
@@ -854,7 +854,7 @@ public class AsyncJSON
                 }
                 default:
                 {
-                    if (Character.isWhitespace(peek))
+                    if (isWhitespace(peek))
                     {
                         buffer.get();
                         break;
@@ -904,7 +904,7 @@ public class AsyncJSON
                 }
                 default:
                 {
-                    if (Character.isWhitespace(currentByte))
+                    if (isWhitespace(currentByte))
                     {
                         break;
                     }
@@ -947,7 +947,7 @@ public class AsyncJSON
                 }
                 default:
                 {
-                    if (Character.isWhitespace(peek))
+                    if (isWhitespace(peek))
                     {
                         buffer.get();
                         break;
@@ -1002,7 +1002,7 @@ public class AsyncJSON
                 }
                 default:
                 {
-                    if (Character.isWhitespace(peek))
+                    if (isWhitespace(peek))
                     {
                         buffer.get();
                         break;
@@ -1113,6 +1113,20 @@ public class AsyncJSON
         builder.append("^ ");
         builder.append(message);
         return new IllegalArgumentException(builder.toString());
+    }
+
+    private static boolean isWhitespace(byte ws)
+    {
+        switch (ws)
+        {
+            case ' ':
+            case '\n':
+            case '\r':
+            case '\t':
+                return true;
+            default:
+                return false;
+        }
     }
 
     /**

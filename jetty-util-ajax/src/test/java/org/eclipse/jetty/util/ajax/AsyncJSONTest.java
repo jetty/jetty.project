@@ -78,7 +78,7 @@ public class AsyncJSONTest
 
         // Parse the whole input.
         assertTrue(parser.parse(bytes));
-        assertEquals(expected, parser.eof());
+        assertEquals(expected, parser.complete());
         assertTrue(parser.isEmpty());
 
         // Parse byte by byte.
@@ -90,7 +90,7 @@ public class AsyncJSONTest
             else
                 assertFalse(parser.parse(new byte[]{b}));
         }
-        assertEquals(expected, parser.eof());
+        assertEquals(expected, parser.complete());
         assertTrue(parser.isEmpty());
     }
 
@@ -140,12 +140,12 @@ public class AsyncJSONTest
 
         // Parse the whole input.
         assertTrue(parser.parse(bytes));
-        assertEquals(expected, parser.eof());
+        assertEquals(expected, parser.complete());
         assertTrue(parser.isEmpty());
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         assertTrue(parser.parse(buffer));
         assertFalse(buffer.hasRemaining());
-        assertEquals(expected, parser.eof());
+        assertEquals(expected, parser.complete());
         assertTrue(parser.isEmpty());
 
         // Parse byte by byte.
@@ -153,7 +153,7 @@ public class AsyncJSONTest
         {
             parser.parse(new byte[]{b});
         }
-        assertEquals(expected, parser.eof());
+        assertEquals(expected, parser.complete());
         assertTrue(parser.isEmpty());
     }
 
@@ -195,7 +195,7 @@ public class AsyncJSONTest
         assertThrows(IllegalArgumentException.class, () ->
         {
             parser.parse(bytes);
-            parser.eof();
+            parser.complete();
         });
         assertTrue(parser.isEmpty());
 
@@ -206,7 +206,7 @@ public class AsyncJSONTest
             {
                 parser.parse(new byte[]{b});
             }
-            parser.eof();
+            parser.complete();
         });
         assertTrue(parser.isEmpty());
     }
@@ -220,7 +220,7 @@ public class AsyncJSONTest
 
         // Parse the whole input.
         assertTrue(parser.parse(bytes));
-        assertEquals(expected, parser.eof());
+        assertEquals(expected, parser.complete());
         assertTrue(parser.isEmpty());
 
         // Parse byte by byte.
@@ -236,7 +236,7 @@ public class AsyncJSONTest
                 assertFalse(parser.parse(new byte[]{b}));
             }
         }
-        assertEquals(expected, parser.eof());
+        assertEquals(expected, parser.complete());
         assertTrue(parser.isEmpty());
     }
 
@@ -278,7 +278,7 @@ public class AsyncJSONTest
         assertThrows(IllegalArgumentException.class, () ->
         {
             parser.parse(bytes);
-            parser.eof();
+            parser.complete();
         });
         assertTrue(parser.isEmpty());
 
@@ -289,7 +289,7 @@ public class AsyncJSONTest
             {
                 parser.parse(new byte[]{b});
             }
-            parser.eof();
+            parser.complete();
         });
         assertTrue(parser.isEmpty());
     }
@@ -303,11 +303,11 @@ public class AsyncJSONTest
 
         // Parse the whole input.
         parser.parse(bytes);
-        assertEquals(expected, parser.eof());
+        assertEquals(expected, parser.complete());
         assertTrue(parser.isEmpty());
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         parser.parse(buffer);
-        assertEquals(expected, parser.eof());
+        assertEquals(expected, parser.complete());
         assertFalse(buffer.hasRemaining());
         assertTrue(parser.isEmpty());
 
@@ -316,7 +316,7 @@ public class AsyncJSONTest
         {
             parser.parse(new byte[]{b});
         }
-        assertEquals(expected, parser.eof());
+        assertEquals(expected, parser.complete());
         assertTrue(parser.isEmpty());
     }
 
@@ -349,7 +349,7 @@ public class AsyncJSONTest
         assertThrows(IllegalArgumentException.class, () ->
         {
             parser.parse(bytes);
-            parser.eof();
+            parser.complete();
         });
         assertTrue(parser.isEmpty());
 
@@ -360,7 +360,7 @@ public class AsyncJSONTest
             {
                 parser.parse(new byte[]{b});
             }
-            parser.eof();
+            parser.complete();
         });
         assertTrue(parser.isEmpty());
     }
@@ -379,7 +379,7 @@ public class AsyncJSONTest
 
         AsyncJSON parser = factory.newAsyncJSON();
         assertTrue(parser.parse(UTF_8.encode(json)));
-        Map<String, Object> result = parser.eof();
+        Map<String, Object> result = parser.complete();
 
         Object value1 = result.get("f1");
         assertTrue(value1 instanceof CustomConvertible);
@@ -389,7 +389,7 @@ public class AsyncJSONTest
 
         assertSame(convertor, factory.removeConvertor(CustomConvertor.class.getName()));
         assertTrue(parser.parse(UTF_8.encode(json)));
-        result = parser.eof();
+        result = parser.complete();
 
         value1 = result.get("f1");
         assertTrue(value1 instanceof CustomConvertible);
@@ -467,7 +467,7 @@ public class AsyncJSONTest
             "}]";
 
         assertTrue(parser.parse(UTF_8.encode(json)));
-        List<CustomMap> messages = parser.eof();
+        List<CustomMap> messages = parser.complete();
 
         for (CustomMap message : messages)
         {
@@ -491,7 +491,7 @@ public class AsyncJSONTest
 
         String json = "{\"foo\": [\"foo\", \"foo\"]}";
         parser.parse(UTF_8.encode(json));
-        Map<String, Object> object = parser.eof();
+        Map<String, Object> object = parser.complete();
 
         Map.Entry<String, Object> entry = object.entrySet().iterator().next();
         assertSame(foo, entry.getKey());
