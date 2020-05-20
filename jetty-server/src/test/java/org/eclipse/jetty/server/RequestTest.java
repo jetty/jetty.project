@@ -48,6 +48,7 @@ import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.MappingMatch;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
 import org.eclipse.jetty.http.BadMessageException;
@@ -86,6 +87,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1428,69 +1430,6 @@ public class RequestTest
     }
 
     @Test
-    public void testHttpServletMapping() throws Exception
-    {
-        String request = "GET / HTTP/1.1\n" +
-            "Host: whatever\n" +
-            "Connection: close\n" +
-            "\n";
-
-        _server.stop();
-        PathMappingHandler handler = new PathMappingHandler(null, null, null);
-        _server.setHandler(handler);
-        _server.start();
-        String response = _connector.getResponse(request);
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=, pattern=, servletName=, mappingMatch=null}"));
-        _server.stop();
-
-        ServletPathSpec spec = new ServletPathSpec("");
-        handler = new PathMappingHandler(spec, spec.getPathMatch("foo"), "Something");
-        _server.setHandler(handler);
-        _server.start();
-        response = _connector.getResponse(request);
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=, pattern=, servletName=Something, mappingMatch=CONTEXT_ROOT}"));
-        _server.stop();
-
-        spec = new ServletPathSpec("/");
-        handler = new PathMappingHandler(spec, "", "Default");
-        _server.setHandler(handler);
-        _server.start();
-        response = _connector.getResponse(request);
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=/, pattern=/, servletName=Default, mappingMatch=DEFAULT}"));
-        _server.stop();
-
-        spec = new ServletPathSpec("/foo/*");
-        handler = new PathMappingHandler(spec, spec.getPathMatch("/foo/bar"), "BarServlet");
-        _server.setHandler(handler);
-        _server.start();
-        response = _connector.getResponse(request);
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=/foo, pattern=/foo/*, servletName=BarServlet, mappingMatch=PATH}"));
-        _server.stop();
-
-        spec = new ServletPathSpec("*.jsp");
-        handler = new PathMappingHandler(spec, spec.getPathMatch("/foo/bar.jsp"), "JspServlet");
-        _server.setHandler(handler);
-        _server.start();
-        response = _connector.getResponse(request);
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=/foo/bar, pattern=*.jsp, servletName=JspServlet, mappingMatch=EXTENSION}"));
-        _server.stop();
-
-        spec = new ServletPathSpec("/catalog");
-        handler = new PathMappingHandler(spec, spec.getPathMatch("/catalog"), "CatalogServlet");
-        _server.setHandler(handler);
-        _server.start();
-        response = _connector.getResponse(request);
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
-        assertThat("Response body content", response, containsString("HttpServletMapping{matchValue=catalog, pattern=/catalog, servletName=CatalogServlet, mappingMatch=EXACT}"));
-        _server.stop();
-    }
-
-    @Test
     public void testCookies() throws Exception
     {
         final ArrayList<Cookie> cookies = new ArrayList<>();
@@ -1935,6 +1874,92 @@ public class RequestTest
         assertThat(builder.getHeader("Cookie"), not(containsString("bad")));
     }
 
+    @Test
+    public void testServletPathMapping() throws Exception
+    {
+        ServletPathSpec spec;
+        String uri;
+        ServletPathMapping m;
+
+        spec = null;
+        uri = null;
+        m = new ServletPathMapping(spec, null, uri);
+        assertThat(m.getMappingMatch(), nullValue());
+        assertThat(m.getMatchValue(), is(""));
+        assertThat(m.getPattern(), nullValue());
+        assertThat(m.getServletName(), is(""));
+        assertThat(m.getServletPath(), nullValue());
+        assertThat(m.getPathInfo(), nullValue());
+
+        spec = new ServletPathSpec("");
+        uri = "/";
+        m = new ServletPathMapping(spec, "Something", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.CONTEXT_ROOT));
+        assertThat(m.getMatchValue(), is(""));
+        assertThat(m.getPattern(), is(""));
+        assertThat(m.getServletName(), is("Something"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+
+        spec = new ServletPathSpec("/");
+        uri = "/some/path";
+        m = new ServletPathMapping(spec, "Default", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.DEFAULT));
+        assertThat(m.getMatchValue(), is(""));
+        assertThat(m.getPattern(), is("/"));
+        assertThat(m.getServletName(), is("Default"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+
+        spec = new ServletPathSpec("/foo/*");
+        uri = "/foo/bar";
+        m = new ServletPathMapping(spec, "FooServlet", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.PATH));
+        assertThat(m.getMatchValue(), is("foo"));
+        assertThat(m.getPattern(), is("/foo/*"));
+        assertThat(m.getServletName(), is("FooServlet"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+
+        uri = "/foo/";
+        m = new ServletPathMapping(spec, "FooServlet", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.PATH));
+        assertThat(m.getMatchValue(), is("foo"));
+        assertThat(m.getPattern(), is("/foo/*"));
+        assertThat(m.getServletName(), is("FooServlet"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+
+        uri = "/foo";
+        m = new ServletPathMapping(spec, "FooServlet", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.PATH));
+        assertThat(m.getMatchValue(), is("foo"));
+        assertThat(m.getPattern(), is("/foo/*"));
+        assertThat(m.getServletName(), is("FooServlet"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+
+        spec = new ServletPathSpec("*.jsp");
+        uri = "/foo/bar.jsp";
+        m = new ServletPathMapping(spec, "JspServlet", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.EXTENSION));
+        assertThat(m.getMatchValue(), is("foo/bar"));
+        assertThat(m.getPattern(), is("*.jsp"));
+        assertThat(m.getServletName(), is("JspServlet"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+
+        spec = new ServletPathSpec("/catalog");
+        uri = "/catalog";
+        m = new ServletPathMapping(spec, "CatalogServlet", uri);
+        assertThat(m.getMappingMatch(), is(MappingMatch.EXACT));
+        assertThat(m.getMatchValue(), is("catalog"));
+        assertThat(m.getPattern(), is("/catalog"));
+        assertThat(m.getServletName(), is("CatalogServlet"));
+        assertThat(m.getServletPath(), is(spec.getPathMatch(uri)));
+        assertThat(m.getPathInfo(), is(spec.getPathInfo(uri)));
+    }
+
     interface RequestTester
     {
         boolean check(HttpServletRequest request, HttpServletResponse response) throws IOException;
@@ -2169,7 +2194,6 @@ public class RequestTest
         {
             ((Request)request).setHandled(true);
             baseRequest.setServletPath(_servletPath);
-            baseRequest.setPathSpec(_spec);
             if (_servletName != null)
                 baseRequest.setUserIdentityScope(new TestUserIdentityScope(null, null, _servletName));
             HttpServletMapping mapping = baseRequest.getHttpServletMapping();

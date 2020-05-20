@@ -106,7 +106,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
         {
             String origin = node.getAttribute(_originAttributeName);
             if (!StringUtil.isBlank(origin) && origin.startsWith(DefaultsDescriptor.class.getSimpleName()))
-                mapping.setDefault(true);
+                mapping.setFromDefaultDescriptor(true);
         }
     }
 

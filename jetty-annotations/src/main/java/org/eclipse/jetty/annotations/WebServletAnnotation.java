@@ -211,7 +211,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             for (String p : urlPatternList)
             {
                 ServletMapping existingMapping = _context.getServletHandler().getServletMapping(p);
-                if (existingMapping != null && existingMapping.isDefault())
+                if (existingMapping != null && existingMapping.isFromDefaultDescriptor())
                 {
                     String[] updatedPaths = ArrayUtil.removeFromArray(existingMapping.getPathSpecs(), p);
                     //if we removed the last path from a servletmapping, delete the servletmapping
@@ -264,7 +264,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
             return false;
         for (ServletMapping m : mappings)
         {
-            if (!m.isDefault())
+            if (!m.isFromDefaultDescriptor())
                 return true;
         }
         return false;

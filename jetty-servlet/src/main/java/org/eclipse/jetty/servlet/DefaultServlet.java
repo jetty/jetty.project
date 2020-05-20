@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.server.CachedContentFactory;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
@@ -500,9 +499,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
 
             if ((_welcomeServlets || _welcomeExactServlets) && welcomeServlet == null)
             {
-                MappedResource<ServletHolder> entry = _servletHandler.getMappedServlet(welcomeInContext);
+                ServletHandler.MappedServlet entry = _servletHandler.getMappedServlet(welcomeInContext);
                 @SuppressWarnings("ReferenceEquality")
-                boolean isDefaultHolder = (entry.getResource() != _defaultHolder);
+                boolean isDefaultHolder = (entry.getServletHolder() != _defaultHolder);
                 if (entry != null && isDefaultHolder &&
                     (_welcomeServlets || (_welcomeExactServlets && entry.getPathSpec().getDeclaration().equals(welcomeInContext))))
                     welcomeServlet = welcomeInContext;

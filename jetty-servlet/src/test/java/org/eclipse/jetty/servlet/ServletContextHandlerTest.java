@@ -1376,9 +1376,9 @@ public class ServletContextHandlerTest
 
         root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
         _server.start();
-        MappedResource<ServletHolder> mappedServlet = root.getServletHandler().getMappedServlet("/somejsp/xxx");
-        assertNotNull(mappedServlet.getResource());
-        assertEquals("some.jsp", mappedServlet.getResource().getName());
+        ServletHandler.MappedServlet mappedServlet = root.getServletHandler().getMappedServlet("/somejsp/xxx");
+        assertNotNull(mappedServlet.getServletHolder());
+        assertEquals("some.jsp", mappedServlet.getServletHolder().getName());
     }
 
     @Test
@@ -1452,9 +1452,9 @@ public class ServletContextHandlerTest
 
         root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
         _server.start();
-        MappedResource<ServletHolder> mappedServlet = root.getServletHandler().getMappedServlet("/bar/xxx");
-        assertNotNull(mappedServlet.getResource());
-        assertEquals("some.jsp", mappedServlet.getResource().getName());
+        ServletHandler.MappedServlet mappedServlet = root.getServletHandler().getMappedServlet("/bar/xxx");
+        assertNotNull(mappedServlet.getServletHolder());
+        assertEquals("some.jsp", mappedServlet.getServletHolder().getName());
     }
     
     @Test
