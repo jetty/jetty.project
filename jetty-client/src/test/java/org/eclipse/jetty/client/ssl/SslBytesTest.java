@@ -237,6 +237,7 @@ public abstract class SslBytesTest
 
         public void flushToServer(TLSRecord record, long sleep) throws Exception
         {
+            logger.debug("P --> S {}", record);
             if (record == null)
             {
                 server.shutdownOutput();
@@ -275,6 +276,7 @@ public abstract class SslBytesTest
 
         public void flushToClient(TLSRecord record) throws Exception
         {
+            logger.debug("C <-- P {}", record);
             if (record == null)
             {
                 client.shutdownOutput();
