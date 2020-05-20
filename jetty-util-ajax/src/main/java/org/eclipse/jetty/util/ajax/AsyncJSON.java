@@ -203,10 +203,25 @@ public class AsyncJSON
      *
      * @param bytes the bytes to parse
      * @return whether the JSON parsing was complete
+     * @throws IllegalArgumentException if the JSON is malformed
      */
     public boolean parse(byte[] bytes)
     {
-        return parse(ByteBuffer.wrap(bytes));
+        return parse(bytes, 0, bytes.length);
+    }
+
+    /**
+     * <p>Feeds the parser with the given bytes chunk.</p>
+     *
+     * @param bytes the bytes to parse
+     * @param offset the offset to start parsing from
+     * @param length the number of bytes to parse
+     * @return whether the JSON parsing was complete
+     * @throws IllegalArgumentException if the JSON is malformed
+     */
+    public boolean parse(byte[] bytes, int offset, int length)
+    {
+        return parse(ByteBuffer.wrap(bytes, offset, length));
     }
 
     /**
