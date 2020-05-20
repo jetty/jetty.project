@@ -54,6 +54,7 @@ public class RemoveSessionTest
         String servletMapping = "/server";
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setFlushOnResponseCommit(true);
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
@@ -93,6 +94,9 @@ public class RemoveSessionTest
                 assertEquals(0, ((DefaultSessionCache)m.getSessionCache()).getSessionsCurrent());
                 assertEquals(1, ((DefaultSessionCache)m.getSessionCache()).getSessionsMax());
                 assertEquals(1, ((DefaultSessionCache)m.getSessionCache()).getSessionsTotal());
+                
+                //check the session is no longer in the cache
+                assertFalse(((AbstractSessionCache)m.getSessionCache()).contains(TestServer.extractSessionId(sessionCookie)));
 
                 //check the session is not persisted any more
                 assertFalse(m.getSessionCache().getSessionDataStore().exists(TestServer.extractSessionId(sessionCookie)));
@@ -125,7 +129,8 @@ public class RemoveSessionTest
             String action = request.getParameter("action");
             if ("create".equals(action))
             {
-                request.getSession(true);
+                HttpSession s = request.getSession(true);
+                s.setAttribute("foo", "bar");
             }
             else if ("delete".equals(action))
             {
