@@ -199,7 +199,6 @@ public class ResourceService
     public boolean doGet(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
-        String pathInContext;
         String servletPath = null;
         String pathInfo = null;
         Enumeration<String> reqRanges = null;
@@ -213,19 +212,19 @@ public class ResourceService
                 servletPath = request.getServletPath();
                 pathInfo = request.getPathInfo();
             }
-            pathInContext = URIUtil.addPaths(servletPath, pathInfo);
         }
         else
         {
             servletPath = _pathInfoOnly ? "/" : request.getServletPath();
             pathInfo = request.getPathInfo();
-            pathInContext = (request instanceof Request) ? ((Request)request).getPathInContext() : URIUtil.addPaths(servletPath, pathInfo);
 
             // Is this a Range request?
             reqRanges = request.getHeaders(HttpHeader.RANGE.asString());
             if (!hasDefinedRange(reqRanges))
                 reqRanges = null;
         }
+
+        String pathInContext = URIUtil.addPaths(servletPath, pathInfo);
 
         boolean endsWithSlash = (pathInfo == null ? (_pathInfoOnly ? "" : servletPath) : pathInfo).endsWith(URIUtil.SLASH);
         boolean checkPrecompressedVariants = _precompressedFormats.length > 0 && !endsWithSlash && !included && reqRanges == null;
