@@ -79,7 +79,7 @@ public class AsyncJSON
      */
     public static class Factory
     {
-        private Trie<String> cache;
+        private Trie<CachedString> cache;
         private Map<String, Convertor> convertors;
         private boolean detailedParseException;
 
@@ -101,12 +101,20 @@ public class AsyncJSON
 
         /**
          * @param value the string to cache
+         * @return whether the value can be cached
          */
-        public void cache(String value)
+        public boolean cache(String value)
         {
             if (cache == null)
                 cache = new ArrayTernaryTrie.Growing<>(false, 64, 64);
-            cache.put("\"" + value + "\"", value);
+
+            CachedString cached = new CachedString(value);
+            if (cached.isCacheable())
+            {
+                cache.put(cached.encoded, cached);
+                return true;
+            }
+            return false;
         }
 
         /**
@@ -119,15 +127,15 @@ public class AsyncJSON
          * @param buffer the buffer to lookup the string from
          * @return a cached string or {@code null}
          */
-        private String cached(ByteBuffer buffer)
+        protected String cached(ByteBuffer buffer)
         {
             if (cache != null)
             {
-                String result = cache.getBest(buffer, 0, buffer.remaining());
+                CachedString result = cache.getBest(buffer, 0, buffer.remaining());
                 if (result != null)
                 {
-                    buffer.position(buffer.position() + result.length() + 2);
-                    return result;
+                    buffer.position(buffer.position() + result.encoded.length());
+                    return result.value;
                 }
             }
             return null;
@@ -176,6 +184,29 @@ public class AsyncJSON
         public Convertor getConvertor(String className)
         {
             return convertors == null ? null : convertors.get(className);
+        }
+
+        private static class CachedString
+        {
+            private final String encoded;
+            private final String value;
+
+            private CachedString(String value)
+            {
+                this.encoded = JSON.toString(value);
+                this.value = value;
+            }
+
+            private boolean isCacheable()
+            {
+                for (int i = encoded.length(); i-- > 0;)
+                {
+                    char c = encoded.charAt(i);
+                    if (c > 127)
+                        return false;
+                }
+                return true;
+            }
         }
     }
 

@@ -502,4 +502,27 @@ public class AsyncJSONTest
             assertSame(foo, item);
         }
     }
+
+    @Test
+    public void testEncodedCaching()
+    {
+        AsyncJSON.Factory factory = new AsyncJSON.Factory();
+        assertFalse(factory.cache("yèck"));
+        String foo = "foo\\yuck";
+        assertTrue(factory.cache(foo));
+        AsyncJSON parser = factory.newAsyncJSON();
+
+        String json = "{\"foo\\\\yuck\": [\"foo\\\\yuck\", \"foo\\\\yuck\"]}";
+        parser.parse(UTF_8.encode(json));
+        Map<String, Object> object = parser.complete();
+
+        Map.Entry<String, Object> entry = object.entrySet().iterator().next();
+        assertSame(foo, entry.getKey());
+        @SuppressWarnings("unchecked")
+        List<String> array = (List<String>)entry.getValue();
+        for (String item : array)
+        {
+            assertSame(foo, item);
+        }
+    }
 }
