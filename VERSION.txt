@@ -1,3 +1,5 @@
+jetty-9.4.30-SNAPSHOT
+
 jetty-9.4.29.v20200521 - 21 May 2020
  + 2188 Lock contention creating HTTP/2 streams
  + 4235 communicate the reason of failure to the OpenID error page
