@@ -315,17 +315,16 @@ public class AvailableDecodersTest
     {
         // has duplicated support for the same target Type
         Exception e = assertThrows(InvalidWebSocketException.class, () -> decoders.register(BadDualDecoder.class));
-        assertThat(e.getMessage(), containsString("Duplicate"));
+        assertThat(e.getMessage(), containsString("Multiple decoders with different interface types"));
     }
 
     @Test
     public void testCustomDecoderRegisterOtherDuplicate()
     {
+        // This duplicate of decoders is of the same interface type so will form a decoder list.
         // Register DateDecoder (decodes java.util.Date)
         decoders.register(DateDecoder.class);
-
         // Register TimeDecoder (which also wants to decode java.util.Date)
-        Exception e = assertThrows(InvalidWebSocketException.class, () -> decoders.register(TimeDecoder.class));
-        assertThat(e.getMessage(), containsString("Duplicate"));
+        decoders.register(TimeDecoder.class);
     }
 }

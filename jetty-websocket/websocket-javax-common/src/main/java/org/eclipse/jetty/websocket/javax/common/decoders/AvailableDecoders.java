@@ -138,12 +138,26 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
             throw new InvalidWebSocketException(err);
         }
 
-        boolean alreadyRegistered = registeredDecoders.stream().anyMatch(registered ->
-            registered.decoder.equals(decoder) && registered.interfaceType.equals(interfaceClass));
+        // Validate the decoder to be added against the existing registered decoders.
+        for (RegisteredDecoder registered : registeredDecoders)
+        {
+            if (!registered.primitive && objectType.equals(registered.objectType))
+            {
+                // Streaming decoders can only have one decoder per object type.
+                if (interfaceClass.equals(Decoder.TextStream.class) || interfaceClass.equals(Decoder.BinaryStream.class))
+                    throw new InvalidWebSocketException("Multiple decoders for objectType" + objectType);
 
-        // If decoder is already registered for this interfaceType, don't bother adding it again.
-        if (!alreadyRegistered)
-            registeredDecoders.add(0, new RegisteredDecoder(decoder, interfaceClass, objectType, config));
+                // If we have the same objectType, then the interfaceTypes must be the same to form a decoder list.
+                if (!registered.interfaceType.equals(interfaceClass))
+                    throw new InvalidWebSocketException("Multiple decoders with different interface types for objectType " + objectType);
+            }
+
+            // If this decoder is already registered for this interface type we can skip adding a duplicate.
+            if (registered.decoder.equals(decoder) && registered.interfaceType.equals(interfaceClass))
+                return;
+        }
+
+        registeredDecoders.add(0, new RegisteredDecoder(decoder, interfaceClass, objectType, config));
     }
 
     public RegisteredDecoder getFirstRegisteredDecoder(Class<?> type)

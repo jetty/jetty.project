@@ -33,9 +33,9 @@ import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
 import org.eclipse.jetty.websocket.util.messages.ReaderMessageSink;
 
-public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink<Decoder.TextStream<T>>
+public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink.Stream<Decoder.TextStream<T>>
 {
-    public DecodedTextStreamMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders) throws NoSuchMethodException, IllegalAccessException
+    public DecodedTextStreamMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
     {
         super(session, methodHandle, decoders);
     }
@@ -51,22 +51,18 @@ public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink<
 
     public void onStreamStart(Reader reader)
     {
-        for (Decoder.TextStream<T> decoder : _decoders)
+        try
         {
-            try
-            {
-                T obj = decoder.decode(reader);
-                _methodHandle.invoke(obj);
-                return;
-            }
-            catch (DecodeException e)
-            {
-                throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Unable to decode", e);
-            }
-            catch (Throwable t)
-            {
-                throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Endpoint notification error", t);
-            }
+            T obj = _decoder.decode(reader);
+            _methodHandle.invoke(obj);
+        }
+        catch (DecodeException e)
+        {
+            throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Unable to decode", e);
+        }
+        catch (Throwable t)
+        {
+            throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Endpoint notification error", t);
         }
     }
 }

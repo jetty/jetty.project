@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.util.messages.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
-public class DecodedBinaryMessageSink<T> extends AbstractDecodedMessageSink<Decoder.Binary<T>>
+public class DecodedBinaryMessageSink<T> extends AbstractDecodedMessageSink.Basic<Decoder.Binary<T>>
 {
     public DecodedBinaryMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
     {

@@ -33,9 +33,9 @@ import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
-public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSink<Decoder.BinaryStream<T>>
+public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSink.Stream<Decoder.BinaryStream<T>>
 {
-    public DecodedBinaryStreamMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders) throws NoSuchMethodException, IllegalAccessException
+    public DecodedBinaryStreamMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
     {
         super(session, methodHandle, decoders);
     }
@@ -52,22 +52,18 @@ public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSin
     @SuppressWarnings("Duplicates")
     public void onStreamStart(InputStream stream)
     {
-        for (Decoder.BinaryStream<T> decoder : _decoders)
+        try
         {
-            try
-            {
-                T obj = decoder.decode(stream);
-                _methodHandle.invoke(obj);
-                return;
-            }
-            catch (DecodeException e)
-            {
-                throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Unable to decode", e);
-            }
-            catch (Throwable t)
-            {
-                throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Endpoint notification error", t);
-            }
+            T obj = _decoder.decode(stream);
+            _methodHandle.invoke(obj);
+        }
+        catch (DecodeException e)
+        {
+            throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Unable to decode", e);
+        }
+        catch (Throwable t)
+        {
+            throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Endpoint notification error", t);
         }
     }
 }

@@ -31,22 +31,18 @@ import org.eclipse.jetty.websocket.util.messages.MessageSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractDecodedMessageSink<T extends Decoder> implements MessageSink
+public abstract class AbstractDecodedMessageSink implements MessageSink
 {
     protected final Logger _logger;
     protected final CoreSession _coreSession;
     protected final MethodHandle _methodHandle;
     protected final MessageSink _messageSink;
-    protected final List<T> _decoders;
 
-    public AbstractDecodedMessageSink(CoreSession coreSession, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
+    public AbstractDecodedMessageSink(CoreSession coreSession, MethodHandle methodHandle)
     {
         _logger = LoggerFactory.getLogger(getClass());
         _coreSession = coreSession;
         _methodHandle = methodHandle;
-        _decoders = decoders.stream()
-            .map(RegisteredDecoder::<T>getInstance)
-            .collect(Collectors.toList());
 
         try
         {
@@ -71,5 +67,33 @@ public abstract class AbstractDecodedMessageSink<T extends Decoder> implements M
         if (_logger.isDebugEnabled())
             _logger.debug("accepting frame {} for {}", frame, _messageSink);
         _messageSink.accept(frame, callback);
+    }
+
+    public abstract static class Basic<T extends Decoder> extends AbstractDecodedMessageSink
+    {
+        protected final List<T> _decoders;
+
+        public Basic(CoreSession coreSession, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
+        {
+            super(coreSession, methodHandle);
+            if (decoders.isEmpty())
+                throw new IllegalArgumentException("Require at least one decoder for " + this.getClass());
+            _decoders = decoders.stream()
+                .map(RegisteredDecoder::<T>getInstance)
+                .collect(Collectors.toList());
+        }
+    }
+
+    public abstract static class Stream<T extends Decoder> extends AbstractDecodedMessageSink
+    {
+        protected final T _decoder;
+
+        public Stream(CoreSession coreSession, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
+        {
+            super(coreSession, methodHandle);
+            if (decoders.size() != 1)
+                throw new IllegalArgumentException("Require exactly one decoder for " + this.getClass());
+            _decoder = decoders.get(0).getInstance();
+        }
     }
 }
