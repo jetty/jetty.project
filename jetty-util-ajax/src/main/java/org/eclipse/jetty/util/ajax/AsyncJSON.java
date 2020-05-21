@@ -21,12 +21,14 @@ package org.eclipse.jetty.util.ajax;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.ArrayTernaryTrie;
+import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.Trie;
@@ -211,6 +213,19 @@ public class AsyncJSON
     }
 
     private static final Object UNSET = new Object();
+    private static final Trie<Number> NUMBERS = new ArrayTrie<>();
+
+    static
+    {
+        for (String terminator : new String[] {" ", "\t", "\r", "\n", ",", "]", "}"})
+        {
+            NUMBERS.put("0" + terminator, 0L);
+            NUMBERS.put("1" + terminator, 1L);
+            NUMBERS.put("-1" + terminator, -1L);
+            NUMBERS.put("0.0" + terminator, 0.0D);
+            NUMBERS.put("1.0" + terminator, 1.0D);
+        }
+    }
 
     private final FrameStack stack = new FrameStack();
     private final NumberBuilder numberBuilder = new NumberBuilder();
@@ -680,7 +695,18 @@ public class AsyncJSON
     private boolean parseNumber(ByteBuffer buffer)
     {
         if (stack.peek().state != State.NUMBER)
+        {
+            Number number = NUMBERS.getBest(buffer, 0, buffer.remaining());
+            if (number != null)
+            {
+                // short cut for known numbers
+                int len = (number instanceof Double) ? 3 : (number.intValue() < 0 ? 2 : 1);
+                buffer.position(buffer.position() + len);
+                stack.peek().value(number);
+                return true;
+            }
             stack.push(State.NUMBER, numberBuilder);
+        }
 
         while (buffer.hasRemaining())
         {
@@ -744,6 +770,14 @@ public class AsyncJSON
                 {
                     if (stack.peek().state != State.STRING)
                     {
+                        if (buffer.hasRemaining() && buffer.get(buffer.position()) == '"')
+                        {
+                            // This is a short cut for an empty string.
+                            buffer.get();
+                            stack.peek().value("");
+                            return true;
+                        }
+
                         stack.push(State.STRING, stringBuilder);
                         break;
                     }
@@ -867,6 +901,13 @@ public class AsyncJSON
                 case '[':
                 {
                     buffer.get();
+                    if (buffer.hasRemaining() && buffer.get(buffer.position()) == ']')
+                    {
+                        // This is a short cut for an empty array.
+                        buffer.get();
+                        stack.peek().value(Collections.emptyList());
+                        return true;
+                    }
                     stack.push(State.ARRAY, newArray(stack));
                     break;
                 }
@@ -916,6 +957,14 @@ public class AsyncJSON
                 {
                     if (stack.peek().state != State.OBJECT)
                     {
+                        if (buffer.hasRemaining() && buffer.get(buffer.position()) == '}')
+                        {
+                            // This is a short cut for an empty object.
+                            buffer.get();
+                            stack.peek().value(Collections.emptyMap());
+                            return true;
+                        }
+
                         stack.push(State.OBJECT, newObject(stack));
                         break;
                     }
