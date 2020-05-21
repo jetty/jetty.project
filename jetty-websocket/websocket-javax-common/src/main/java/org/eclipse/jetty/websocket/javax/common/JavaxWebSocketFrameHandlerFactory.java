@@ -327,7 +327,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                                    Function<InvokerUtils.Arg[], MethodHandle> getMethodHandle)
     {
         // Partial Text Message.
-         MethodHandle methodHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.textPartialCallingArgs);
+        MethodHandle methodHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.textPartialCallingArgs);
         if (methodHandle != null)
         {
             msgMetadata.setSinkClass(PartialStringMessageSink.class);
@@ -381,12 +381,9 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         // Assemble a list of matching decoders which implement the interface type of the first matching decoder found.
         List<RegisteredDecoder> decoders = new ArrayList<>();
         Class<? extends Decoder> interfaceType = firstDecoder.interfaceType;
-        metadata.getAvailableDecoders().stream()
-            .filter(decoder ->
-            {
-                InvokerUtils.Arg[] args = {new InvokerUtils.Arg(Session.class), new InvokerUtils.Arg(decoder.objectType).required()};
-                return decoder.interfaceType.equals(interfaceType) && (getMethodHandle.apply(args) != null);
-            }).forEach(decoders::add);
+        metadata.getAvailableDecoders().stream().filter(decoder ->
+            decoder.interfaceType.equals(interfaceType) && (getMethodHandle.apply(getArgsFor(decoder.objectType)) != null))
+            .forEach(decoders::add);
         msgMetadata.setRegisteredDecoders(decoders);
 
         // Get the general methodHandle which applies to all the decoders in the list.
@@ -395,9 +392,8 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         {
             if (decoder.objectType.isAssignableFrom(objectType))
                 objectType = decoder.objectType;
-        };
-        InvokerUtils.Arg[] args = {new InvokerUtils.Arg(Session.class), new InvokerUtils.Arg(objectType).required()};
-        MethodHandle methodHandle = getMethodHandle.apply(args);
+        }
+        MethodHandle methodHandle = getMethodHandle.apply(getArgsFor(objectType));
         msgMetadata.setMethodHandle(methodHandle);
 
         // Set the sinkClass and then set the MessageMetadata on the FrameHandlerMetadata
