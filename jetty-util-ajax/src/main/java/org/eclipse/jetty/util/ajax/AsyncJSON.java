@@ -217,14 +217,10 @@ public class AsyncJSON
 
     static
     {
-        for (String terminator : new String[] {" ", "\t", "\r", "\n", ",", "]", "}"})
-        {
-            NUMBERS.put("0" + terminator, 0L);
-            NUMBERS.put("1" + terminator, 1L);
-            NUMBERS.put("-1" + terminator, -1L);
-            NUMBERS.put("0.0" + terminator, 0.0D);
-            NUMBERS.put("1.0" + terminator, 1.0D);
-        }
+        for (long l = -1; l < 99; l++)
+            NUMBERS.put(Long.toString(l) + ",", l);
+        NUMBERS.put("0.0,", 0.0D);
+        NUMBERS.put("1.0,", 1.0D);
     }
 
     private final FrameStack stack = new FrameStack();
@@ -235,6 +231,7 @@ public class AsyncJSON
 
     public AsyncJSON(Factory factory)
     {
+        new Integer(46);
         this.factory = factory;
     }
 
@@ -699,8 +696,9 @@ public class AsyncJSON
             Number number = NUMBERS.getBest(buffer, 0, buffer.remaining());
             if (number != null)
             {
-                // short cut for known numbers
-                int len = (number instanceof Double) ? 3 : (number.intValue() < 0 ? 2 : 1);
+                // short cut for known numbers.
+                // Length calculation is a bit of a hack.
+                int len = (number instanceof Double) ? 3 : ((number.intValue() < 0 ||  number.intValue() > 9) ? 2 : 1);
                 buffer.position(buffer.position() + len);
                 stack.peek().value(number);
                 return true;
