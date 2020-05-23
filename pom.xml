@@ -63,6 +63,7 @@
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
+    <testcontainers.version>1.14.2</testcontainers.version>
   </properties>
 
   <licenses>
@@ -1083,12 +1084,12 @@
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers</artifactId>
-        <version>1.14.1</version>
+        <version>${testcontainers.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>junit-jupiter</artifactId>
-        <version>1.14.1</version>
+        <version>${testcontainers.version}</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
