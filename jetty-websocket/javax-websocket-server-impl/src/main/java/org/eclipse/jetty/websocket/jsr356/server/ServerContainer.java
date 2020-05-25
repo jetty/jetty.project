@@ -130,7 +130,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         {
             if (deferredEndpointClasses == null)
             {
-                deferredEndpointClasses = new ArrayList<Class<?>>();
+                deferredEndpointClasses = new ArrayList<>();
             }
             deferredEndpointClasses.add(endpointClass);
         }
@@ -161,7 +161,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         {
             if (deferredEndpointConfigs == null)
             {
-                deferredEndpointConfigs = new ArrayList<ServerEndpointConfig>();
+                deferredEndpointConfigs = new ArrayList<>();
             }
             deferredEndpointConfigs.add(config);
         }
@@ -216,7 +216,10 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             }
             else
             {
-                throw new DeploymentException("Unable to identify as valid Endpoint: " + endpoint);
+                String err = "Not a recognized websocket [" + endpoint.getName() +
+                    "] does not extend @" + ServerEndpoint.class.getName() +
+                    " or extend from " + Endpoint.class.getName();
+                throw new DeploymentException(err);
             }
 
             return metadata;
