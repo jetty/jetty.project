@@ -94,6 +94,21 @@ public class PrivateEndpointTest
         }
     }
 
+    @SuppressWarnings("InnerClassMayBeStatic")
+    public class ServerSocketNonStatic extends Endpoint implements MessageHandler.Whole<String>
+    {
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
+        {
+            session.addMessageHandler(this);
+        }
+
+        @Override
+        public void onMessage(String message)
+        {
+        }
+    }
+
     @ServerEndpoint("/annotated")
     private static class AnnotatedServerSocket
     {
@@ -120,7 +135,18 @@ public class PrivateEndpointTest
 
         assertThat(error.getCause(), instanceOf(DeploymentException.class));
         DeploymentException deploymentException = (DeploymentException)error.getCause();
-        assertThat(deploymentException.getMessage(), containsString("Class modifier must be public"));
+        assertThat(deploymentException.getMessage(), containsString("Cannot access default constructor for the Endpoint class"));
+    }
+
+    @Test
+    public void testInnerEndpoint()
+    {
+        RuntimeException error = assertThrows(RuntimeException.class, () ->
+            start(container -> container.addEndpoint(ServerEndpointConfig.Builder.create(ServerSocketNonStatic.class, "/").build())));
+
+        assertThat(error.getCause(), instanceOf(DeploymentException.class));
+        DeploymentException deploymentException = (DeploymentException)error.getCause();
+        assertThat(deploymentException.getMessage(), containsString("Cannot access default constructor for the Endpoint class"));
     }
 
     @Test
@@ -131,7 +157,7 @@ public class PrivateEndpointTest
 
         assertThat(error.getCause(), instanceOf(DeploymentException.class));
         DeploymentException deploymentException = (DeploymentException)error.getCause();
-        assertThat(deploymentException.getMessage(), containsString("Class modifier must be public"));
+        assertThat(deploymentException.getMessage(), containsString("Cannot access default constructor for the Endpoint class"));
     }
 
     @Test

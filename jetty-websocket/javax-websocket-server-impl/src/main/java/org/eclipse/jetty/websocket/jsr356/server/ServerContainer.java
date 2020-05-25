@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
@@ -138,8 +138,8 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 
     private void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
     {
-        if (!Modifier.isPublic(metadata.getEndpointClass().getModifiers()))
-            throw new DeploymentException("Class modifier must be public");
+        if (!ReflectUtils.isDefaultConstructable(metadata.getEndpointClass()))
+            throw new DeploymentException("Cannot access default constructor for the Endpoint class");
 
         JsrCreator creator = new JsrCreator(this, metadata, this.configuration.getFactory().getExtensionFactory());
         this.configuration.addMapping("uri-template|" + metadata.getPath(), creator);
