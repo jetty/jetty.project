@@ -26,6 +26,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
@@ -89,7 +90,7 @@ public class JettyWebSocketServletContainerInitializer implements ServletContain
      */
     private static JettyWebSocketServerContainer initialize(ServletContextHandler context)
     {
-        WebSocketComponents components = WebSocketComponents.ensureWebSocketComponents(context.getServletContext());
+        WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServletContext());
         FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
         WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.ensureContainer(context.getServletContext());

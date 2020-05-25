@@ -19,21 +19,11 @@
 package org.eclipse.jetty.osgi.test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.StringUtil;
@@ -43,16 +33,12 @@ import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.options.WrappedUrlProvisionOption.OverwriteMode;
 import org.ops4j.pax.tinybundles.core.TinyBundle;
 import org.ops4j.pax.tinybundles.core.TinyBundles;
-import org.ops4j.pax.url.mvn.internal.AetherBasedResolver;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
-import org.osgi.service.http.HttpService;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
@@ -195,7 +181,9 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-jndi").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-plus").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-annotations").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-core").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-core-server").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-core-client").versionAsInProject().start());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-core-common").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-util-server").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-jetty-api").versionAsInProject().start());

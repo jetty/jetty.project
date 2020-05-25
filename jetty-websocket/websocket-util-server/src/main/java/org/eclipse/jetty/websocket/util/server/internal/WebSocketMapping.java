@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
+import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +66,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
         if (mappingObject != null)
         {
-            if (WebSocketMapping.class.isInstance(mappingObject))
+            if (mappingObject instanceof WebSocketMapping)
                 return (WebSocketMapping)mappingObject;
             else
                 throw new IllegalStateException(
@@ -88,7 +89,7 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
 
         if (mapping == null)
         {
-            mapping = new WebSocketMapping(WebSocketComponents.ensureWebSocketComponents(servletContext));
+            mapping = new WebSocketMapping(WebSocketServerComponents.ensureWebSocketComponents(servletContext));
             servletContext.setAttribute(mappingKey, mapping);
         }
 

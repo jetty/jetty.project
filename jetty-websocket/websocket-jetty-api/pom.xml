@@ -14,14 +14,6 @@
     <bundle-symbolic-name>${project.groupId}.api</bundle-symbolic-name>
   </properties>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-
   <build>
     <plugins>
       <plugin>

@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
+import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
@@ -95,7 +96,7 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
             // Create the Jetty ServerContainer implementation
             container = new JavaxWebSocketServerContainer(
                 WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
-                WebSocketComponents.ensureWebSocketComponents(servletContext),
+                WebSocketServerComponents.ensureWebSocketComponents(servletContext),
                 coreClientSupplier);
             contextHandler.addManaged(container);
             contextHandler.addEventListener(container);
