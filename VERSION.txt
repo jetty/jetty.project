@@ -1,4 +1,30 @@
-jetty-9.4.29-SNAPSHOT
+jetty-9.4.30-SNAPSHOT
+
+jetty-9.4.29.v20200521 - 21 May 2020
+ + 2188 Lock contention creating HTTP/2 streams
+ + 4235 communicate the reason of failure to the OpenID error page
+ + 4695 HttpChannel recycling in h2
+ + 4764 HTTP2 Jetty Server does not send back content-length
+ + 4778 Enforcing SNI when there are only non-wildcards certificates
+ + 4787 Make org.eclipse.jetty.client.HttpRequest's host name writable
+ + 4789 org.eclipse.jetty.util.thread.ShutdownThread should use an appropriate
+   name to identify itself in Thread dump
+ + 4798 Better handling of fatal Selector failures
+ + 4814 Allow a ConnectionFactory (eg SslConnectionFactory) to automatically
+   add a Customizer
+ + 4820 Jetty OSGi DefaultJettyAtJettyHomeHelper refers to non-existent
+   config file
+ + 4824 WebSocket server outgoing message queue memory growth
+ + 4828 NIO ByteBuffer corruption in embedded Jetty server
+ + 4835 GzipHandler and GzipHttpOutputInterceptor do not flush response when
+   body is empty
+ + 4860 org.eclipse.jetty.server.HttpChannel busyloop on HttpFields
+   NullPointerException
+ + 4861 Combine `AttributesMap` and `Attributes.Wrapper`
+ + 4868 Update to asm 7.3.1
+ + 4892 Non-blocking JSON parser
+ + 4895 AbstractSessionCache.setFlushOnResponseCommit(true) can write an
+   invalid session to the backing store
 
 jetty-9.4.28.v20200408 - 08 April 2020
  + 847 Setting async timeout on WebSocketClient does not seem to timeout writes
@@ -8,7 +34,7 @@ jetty-9.4.28.v20200408 - 08 April 2020
  + 4529 ErrorHandler showing servlet info, can not be disabled unless
    overriding most of its functionality
  + 4542 servlet context root mapping incorrect
- + 4619 Inconsistent library versions notice.
+ + 4619 Inconsistent library versions notice
  + 4620 Using console-capture with StdErrLog results in empty log file
  + 4621 jetty-jaspi in jetty-all uber aggregate artifact requires
    javax.security.auth.message.AuthException which cannot be included
