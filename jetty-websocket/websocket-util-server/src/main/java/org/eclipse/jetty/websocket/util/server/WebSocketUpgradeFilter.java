@@ -38,7 +38,7 @@ import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.core.Configuration;
-import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -168,7 +168,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         if (mappingKey != null)
             mapping = WebSocketMapping.ensureMapping(context, mappingKey);
         else
-            mapping = new WebSocketMapping(WebSocketComponents.ensureWebSocketComponents(context));
+            mapping = new WebSocketMapping(WebSocketServerComponents.ensureWebSocketComponents(context));
 
         String max = config.getInitParameter("idleTimeout");
         if (max == null)

@@ -22,12 +22,12 @@ import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContaine
 module org.eclipse.jetty.websocket.jakarta.client
 {
     exports org.eclipse.jetty.websocket.jakarta.client;
+    exports org.eclipse.jetty.websocket.jakarta.client.internal to org.eclipse.jetty.websocket.jakarta.server;
 
+    requires org.eclipse.jetty.client;
+    requires org.eclipse.jetty.websocket.core.client;
+    requires org.eclipse.jetty.websocket.jakarta.common;
     requires transitive jetty.websocket.api;
-    requires transitive org.eclipse.jetty.client;
-    requires transitive org.eclipse.jetty.websocket.jakarta.common;
-    requires org.eclipse.jetty.websocket.core;
-    requires org.eclipse.jetty.websocket.util;
 
     provides ContainerProvider with JakartaWebSocketClientContainerProvider;
 }

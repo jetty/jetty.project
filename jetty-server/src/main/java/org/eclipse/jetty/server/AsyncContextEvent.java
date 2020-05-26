@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.AsyncEvent;
-import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;

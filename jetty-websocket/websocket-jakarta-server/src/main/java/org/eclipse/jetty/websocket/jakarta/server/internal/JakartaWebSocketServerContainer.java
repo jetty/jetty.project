@@ -37,6 +37,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
+import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
@@ -96,7 +97,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             // Create the Jetty ServerContainer implementation
             container = new JakartaWebSocketServerContainer(
                 WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
-                WebSocketComponents.ensureWebSocketComponents(servletContext),
+                WebSocketServerComponents.ensureWebSocketComponents(servletContext),
                 coreClientSupplier);
             contextHandler.addManaged(container);
             contextHandler.addEventListener(container);

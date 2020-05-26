@@ -23,10 +23,8 @@ module org.eclipse.jetty.websocket.jakarta.common
     exports org.eclipse.jetty.websocket.jakarta.common.encoders;
     exports org.eclipse.jetty.websocket.jakarta.common.messages;
 
-    requires transitive jetty.websocket.api;
-    requires transitive org.eclipse.jetty.http;
-    requires transitive org.eclipse.jetty.io;
-    requires transitive org.eclipse.jetty.websocket.core;
-    requires transitive org.eclipse.jetty.websocket.util;
     requires org.slf4j;
+    requires transitive jetty.websocket.api;
+    requires transitive org.eclipse.jetty.websocket.core.client;
+    requires transitive org.eclipse.jetty.websocket.util;
 }

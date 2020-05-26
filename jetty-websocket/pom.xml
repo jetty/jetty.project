@@ -14,9 +14,11 @@
   <url>http://www.eclipse.org/jetty</url>
 
   <modules>
-    <module>websocket-core</module>
-    <module>websocket-util</module>
-    <module>websocket-util-server</module>
+    <!-- WebSocket Core Implementation -->
+    <module>websocket-core-common</module>
+    <module>websocket-core-client</module>
+    <module>websocket-core-server</module>
+    <module>websocket-core-tests</module>
     <!-- Jetty WebSocket Implementation -->
     <module>websocket-jetty-api</module>
     <module>websocket-jetty-common</module>
@@ -28,6 +30,9 @@
     <module>websocket-jakarta-client</module>
     <module>websocket-jakarta-server</module>
     <module>websocket-jakarta-tests</module>
+    <!-- Common WebSocket Implementation -->
+    <module>websocket-util</module>
+    <module>websocket-util-server</module>
   </modules>
 
   <build>

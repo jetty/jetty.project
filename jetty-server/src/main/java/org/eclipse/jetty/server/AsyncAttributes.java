@@ -22,8 +22,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.servlet.AsyncContext;
-import jakarta.servlet.http.HttpServletMapping;
-
 import org.eclipse.jetty.util.Attributes;
 
 class AsyncAttributes extends Attributes.Wrapper

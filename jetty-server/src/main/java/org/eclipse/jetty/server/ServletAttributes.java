@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.util.Set;
 
-import jakarta.servlet.http.HttpServletMapping;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 

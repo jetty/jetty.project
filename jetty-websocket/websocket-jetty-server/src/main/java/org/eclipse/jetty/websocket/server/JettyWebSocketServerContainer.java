@@ -39,6 +39,7 @@ import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
+import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
@@ -73,7 +74,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             container = new JettyWebSocketServerContainer(
                 contextHandler,
                 WebSocketMapping.ensureMapping(servletContext, WebSocketMapping.DEFAULT_KEY),
-                WebSocketComponents.ensureWebSocketComponents(servletContext), executor);
+                WebSocketServerComponents.ensureWebSocketComponents(servletContext), executor);
             servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
             contextHandler.addManaged(container);
             contextHandler.addEventListener(container);

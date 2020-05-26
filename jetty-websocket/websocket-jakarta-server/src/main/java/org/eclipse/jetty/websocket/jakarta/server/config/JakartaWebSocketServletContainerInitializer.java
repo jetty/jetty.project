@@ -37,6 +37,7 @@ import org.eclipse.jetty.servlet.listener.ContainerInitializer;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
@@ -70,20 +71,14 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
         String cp = context.getInitParameter(keyName);
         if (cp != null)
         {
-            if (TypeUtil.isTrue(cp))
-                return true;
-            else
-                return false;
+            return TypeUtil.isTrue(cp);
         }
 
         // Next, try attribute on context
         Object enable = context.getAttribute(keyName);
         if (enable != null)
         {
-            if (TypeUtil.isTrue(enable))
-                return true;
-            else
-                return false;
+            return TypeUtil.isTrue(enable);
         }
 
         return null;
@@ -153,7 +148,7 @@ public class JakartaWebSocketServletContainerInitializer implements ServletConta
         JakartaWebSocketServerContainer serverContainer = JakartaWebSocketServerContainer.getContainer(context.getServletContext());
         if (serverContainer == null)
         {
-            WebSocketComponents components = WebSocketComponents.ensureWebSocketComponents(context.getServletContext());
+            WebSocketComponents components = WebSocketServerComponents.ensureWebSocketComponents(context.getServletContext());
             FilterHolder filterHolder = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
             WebSocketMapping mapping = WebSocketMapping.ensureMapping(context.getServletContext(), WebSocketMapping.DEFAULT_KEY);
             serverContainer = JakartaWebSocketServerContainer.ensureContainer(context.getServletContext());

@@ -31,6 +31,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
+import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
@@ -129,7 +130,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         {
             ServletContext servletContext = getServletContext();
 
-            components = WebSocketComponents.ensureWebSocketComponents(servletContext);
+            components = WebSocketServerComponents.ensureWebSocketComponents(servletContext);
             mapping = new WebSocketMapping(components);
 
             String max = getInitParameter("idleTimeout");
@@ -262,7 +263,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
 
     private static class WrappedJettyCreator implements WebSocketCreator
     {
-        private JettyWebSocketCreator creator;
+        private final JettyWebSocketCreator creator;
 
         private WrappedJettyCreator(JettyWebSocketCreator creator)
         {
