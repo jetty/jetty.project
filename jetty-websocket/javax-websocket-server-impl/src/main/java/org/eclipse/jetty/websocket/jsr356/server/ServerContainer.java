@@ -224,9 +224,11 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 
             return metadata;
         }
-        catch (RuntimeException e)
+        catch (Throwable t)
         {
-            throw new DeploymentException(e.getMessage(), e);
+            if (t instanceof DeploymentException)
+                throw t;
+            throw new DeploymentException(t.getMessage(), t);
         }
     }
 
