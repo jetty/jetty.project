@@ -195,7 +195,7 @@ public class RuleContainer extends Rule implements Dumpable
                 }
 
                 if (_rewritePathInfo)
-                    baseRequest.setContextPaths(baseRequest.getContextPath(), applied);
+                    baseRequest.setContext(baseRequest.getContext(), applied);
 
                 target = applied;
 

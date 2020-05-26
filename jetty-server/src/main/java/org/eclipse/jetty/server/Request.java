@@ -108,9 +108,9 @@ import org.slf4j.LoggerFactory;
  * <ul>
  *
  * <li>the {@link Request#getContextPath()} method will return null, until the request has been passed to a {@link ContextHandler} which matches the
- * {@link Request#getPathInfo()} with a context path and calls {@link Request#setContextPaths(String,String)} as a result.  For
+ * {@link Request#getPathInfo()} with a context path and calls {@link Request#setContext(Context,String)} as a result.  For
  * some dispatch types (ie include and named dispatch) the context path may not reflect the {@link ServletContext} set
- * by {@link Request#setContext(Context)}.</li>
+ * by {@link Request#setContext(Context, String)}.</li>
  *
  * <li>the HTTP session methods will all return null sessions until such time as a request has been passed to a
  * {@link org.eclipse.jetty.server.session.SessionHandler} which checks for session cookies and enables the ability to create new sessions.</li>
@@ -200,7 +200,6 @@ public class Request implements HttpServletRequest
     private HttpFields _trailers;
     private HttpURI _uri;
     private String _method;
-    private String _contextPath;
     private String _pathInContext;
     private ServletPathMapping _servletPathMapping;
     private boolean _secure;
@@ -778,7 +777,15 @@ public class Request implements HttpServletRequest
     @Override
     public String getContextPath()
     {
-        return _contextPath;
+        Context context = (_attributes instanceof Dispatcher.IncludeAttributes)
+            ? ((Dispatcher.IncludeAttributes)_attributes).getSourceContext()
+            : _context;
+        if (context == null)
+            return null;
+        String contextPath = context.getContextHandler().getContextPathEncoded();
+        if (URIUtil.SLASH.equals(contextPath))
+            return "";
+        return contextPath;
     }
 
     /** Get the path in the context.
@@ -787,7 +794,7 @@ public class Request implements HttpServletRequest
      * If no context is set, then the path in context is the full path.
      * @return The decoded part of the {@link #getRequestURI()} path after any {@link #getContextPath()}
      *         up to any {@link #getQueryString()}, excluding path parameters.
-     * @see #setContextPaths(String, String)
+     * @see #setContext(Context, String)
      */
     public String getPathInContext()
     {
@@ -1753,7 +1760,6 @@ public class Request implements HttpServletRequest
         }
         _contentType = null;
         _characterEncoding = null;
-        _contextPath = null;
         _pathInContext = null;
         if (_cookies != null)
             _cookies.reset();
@@ -1971,44 +1977,24 @@ public class Request implements HttpServletRequest
      *
      * @param context context object
      */
-    public void setContext(Context context)
+    public void setContext(Context context, String pathInContext)
     {
         _newContext = _context != context;
-        if (context == null)
-            _context = null;
-        else
-        {
-            _context = context;
+        _context = context;
+        _pathInContext = pathInContext;
+        if (context != null)
             _errorContext = context;
-        }
     }
 
     /**
      * @return True if this is the first call of <code>takeNewContext()</code> since the last
-     * {@link #setContext(org.eclipse.jetty.server.handler.ContextHandler.Context)} call.
+     * {@link #setContext(org.eclipse.jetty.server.handler.ContextHandler.Context, String)} call.
      */
     public boolean takeNewContext()
     {
         boolean nc = _newContext;
         _newContext = false;
         return nc;
-    }
-
-    /**
-     * Sets the contextPath and pathInContext for this request.
-     *
-     * This is implemented as a combined setter because one should never
-     * be set without the other.
-     *
-     * @param contextPath the encoded context path for this request, "" for the root context or null for no context.
-     * @param pathInContext The path after the context path up to the query string, decoded without path parameters.
-     * @see #getContextPath()
-     * @see #getPathInContext()
-     */
-    public void setContextPaths(String contextPath, String pathInContext)
-    {
-        _contextPath = contextPath;
-        _pathInContext = pathInContext;
     }
 
     /**
