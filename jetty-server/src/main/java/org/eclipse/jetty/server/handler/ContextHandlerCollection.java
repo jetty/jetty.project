@@ -58,6 +58,7 @@ public class ContextHandlerCollection extends HandlerCollection
 
     @Deprecated
     private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
+    private volatile Handler _singleContext;
 
     public ContextHandlerCollection()
     {
@@ -97,6 +98,7 @@ public class ContextHandlerCollection extends HandlerCollection
     @Override
     protected Handlers newHandlers(Handler[] handlers)
     {
+        _singleContext = null;
         if (handlers == null || handlers.length == 0)
             return null;
 
@@ -170,17 +172,30 @@ public class ContextHandlerCollection extends HandlerCollection
             }
         }
 
+        // setup bypass for a single handler.
+        if (mapping != null && mapping.getHandlers().length == 1)
+            _singleContext = mapping.getHandlers()[0];
+
         return mapping;
     }
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        Handlers handlers = _handlers.get();
-        if (handlers == null)
+        // Only one context, so just call it and let it work out if it applies.
+        Handler singleContext = _singleContext;
+        if (singleContext != null)
+        {
+            singleContext.handle(target, baseRequest, request, response);
+            return;
+        }
+
+        // Handle no contexts
+        Mapping mapping = (Mapping)_handlers.get();
+        if (mapping == null && mapping.getHandlers().length == 0)
             return;
 
-        Mapping mapping = (Mapping)handlers;
+        // handle many contexts
         HttpChannelState async = baseRequest.getHttpChannelState();
         if (async.isAsync())
         {
