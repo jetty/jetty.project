@@ -26,9 +26,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <systemPropertyVariables>
-            <mariadb.enabled>false</mariadb.enabled>
-          </systemPropertyVariables>
+          <skip>true</skip>
         </configuration>
       </plugin>
     </plugins>
@@ -53,16 +51,6 @@
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-sessions-common</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.derby</groupId>
-      <artifactId>derby</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.derby</groupId>
-      <artifactId>derbytools</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -112,9 +100,9 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
+              <skip>false</skip>
               <systemPropertyVariables>
                 <mariadb.docker.version>${mariadb.docker.version}</mariadb.docker.version>
-                <mariadb.enabled>true</mariadb.enabled>
               </systemPropertyVariables>
             </configuration>
           </plugin>

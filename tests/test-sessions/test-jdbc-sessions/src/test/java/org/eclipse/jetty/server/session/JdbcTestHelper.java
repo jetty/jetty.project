@@ -47,14 +47,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class JdbcTestHelper
 {
-    public static final boolean USE_MARIADB = Boolean.getBoolean("mariadb.enabled");
-
     private static final Logger LOG = LoggerFactory.getLogger(JdbcTestHelper.class);
     private static final Logger MARIADB_LOG = LoggerFactory.getLogger("org.eclipse.jetty.server.session.MariaDbLogs");
 
-    public static String DRIVER_CLASS = "org.apache.derby.jdbc.EmbeddedDriver";
-    public static String DEFAULT_CONNECTION_URL = "jdbc:derby:memory:sessions;create=true";
-    public static String DEFAULT_SHUTDOWN_URL = "jdbc:derby:memory:sessions;drop=true";
+    public static String DRIVER_CLASS;
+    public static String DEFAULT_CONNECTION_URL;
+
     public static final int STALE_INTERVAL = 1;
 
     public static final String EXPIRY_COL = "extime";
@@ -77,32 +75,29 @@ public class JdbcTestHelper
 
     static
     {
-        if (USE_MARIADB)
+        try
         {
-            try
-            {
-                long start = System.currentTimeMillis();
-                MARIAD_DB =
-                    new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
-                        .withUsername(MARIA_DB_USER)
-                        .withPassword(MARIA_DB_PASSWORD)
-                        .withDatabaseName("sessions");
-                MARIAD_DB.withLogConsumer(new Slf4jLogConsumer(MARIADB_LOG)).start();
-                String containerIpAddress =  MARIAD_DB.getContainerIpAddress();
-                int mariadbPort = MARIAD_DB.getMappedPort(3306);
-                DEFAULT_CONNECTION_URL = MARIAD_DB.getJdbcUrl();
-                DRIVER_CLASS = MARIAD_DB.getDriverClassName();
-                LOG.info("Mariadb container started for {}:{} - {}ms", containerIpAddress, mariadbPort,
-                         System.currentTimeMillis() - start);
-                DEFAULT_CONNECTION_URL = DEFAULT_CONNECTION_URL + "?user=" + MARIA_DB_USER +
-                    "&password=" + MARIA_DB_PASSWORD;
-                LOG.info("DEFAULT_CONNECTION_URL: {}", DEFAULT_CONNECTION_URL);
-            }
-            catch (Exception e)
-            {
-                LOG.error(e.getMessage(), e);
-                throw new RuntimeException(e.getMessage(), e);
-            }
+            long start = System.currentTimeMillis();
+            MARIAD_DB =
+                new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
+                    .withUsername(MARIA_DB_USER)
+                    .withPassword(MARIA_DB_PASSWORD)
+                    .withDatabaseName("sessions");
+            MARIAD_DB.withLogConsumer(new Slf4jLogConsumer(MARIADB_LOG)).start();
+            String containerIpAddress =  MARIAD_DB.getContainerIpAddress();
+            int mariadbPort = MARIAD_DB.getMappedPort(3306);
+            DEFAULT_CONNECTION_URL = MARIAD_DB.getJdbcUrl();
+            DRIVER_CLASS = MARIAD_DB.getDriverClassName();
+            LOG.info("Mariadb container started for {}:{} - {}ms", containerIpAddress, mariadbPort,
+                     System.currentTimeMillis() - start);
+            DEFAULT_CONNECTION_URL = DEFAULT_CONNECTION_URL + "?user=" + MARIA_DB_USER +
+                "&password=" + MARIA_DB_PASSWORD;
+            LOG.info("DEFAULT_CONNECTION_URL: {}", DEFAULT_CONNECTION_URL);
+        }
+        catch (Exception e)
+        {
+            LOG.error(e.getMessage(), e);
+            throw new RuntimeException(e.getMessage(), e);
         }
     }
 
@@ -114,27 +109,9 @@ public class JdbcTestHelper
     public static void shutdown(String connectionUrl)
         throws Exception
     {
-        if (USE_MARIADB)
+        try (Connection connection = getConnection())
         {
-            try (Connection connection = getConnection())
-            {
-                connection.prepareStatement("truncate table " + TABLE).executeUpdate();
-            }
-            return;
-        }
-        if (connectionUrl == null)
-            connectionUrl = DEFAULT_SHUTDOWN_URL;
-
-        try
-        {
-            DriverManager.getConnection(connectionUrl);
-        }
-        catch (SQLException expected)
-        {
-            if (!"08006".equals(expected.getSQLState()))
-            {
-                throw expected;
-            }
+            connection.prepareStatement("truncate table " + TABLE).executeUpdate();
         }
     }
 
