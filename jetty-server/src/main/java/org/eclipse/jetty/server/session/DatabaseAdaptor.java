@@ -60,8 +60,6 @@ public class DatabaseAdaptor
     private String _connectionUrl;
     private Driver _driver;
     private DataSource _datasource;
-    private String _username;
-    private String _password;
 
     private String _jndiName;
 
@@ -259,26 +257,6 @@ public class DatabaseAdaptor
         return _connectionUrl;
     }
 
-    public String getUsername()
-    {
-        return _username;
-    }
-
-    public void setUsername(String username)
-    {
-        this._username = username;
-    }
-
-    public String getPassword()
-    {
-        return _password;
-    }
-
-    public void setPassword(String password)
-    {
-        this._password = password;
-    }
-
     public void initialize()
         throws Exception
     {
@@ -324,8 +302,7 @@ public class DatabaseAdaptor
         if (_datasource != null)
             return _datasource.getConnection();
         else
-            return _username == null ? DriverManager.getConnection(_connectionUrl)
-                : DriverManager.getConnection(_connectionUrl, _username, _password);
+            return DriverManager.getConnection(_connectionUrl);
     }
 
     /**

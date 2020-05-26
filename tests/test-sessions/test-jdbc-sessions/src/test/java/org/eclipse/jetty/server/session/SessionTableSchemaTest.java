@@ -61,11 +61,6 @@ public class SessionTableSchemaTest
                 return true; //test special handling for oracle
             }
         };
-        if (USE_MARIADB)
-        {
-            _da.setUsername(JdbcTestHelper.MARIAD_DB.getUsername());
-            _da.setPassword(JdbcTestHelper.MARIAD_DB.getPassword());
-        }
         _da.setDriverInfo(JdbcTestHelper.DRIVER_CLASS, JdbcTestHelper.DEFAULT_CONNECTION_URL);
         _tableSchema = JdbcTestHelper.newSessionTableSchema();
         _tableSchema.setDatabaseAdaptor(_da);

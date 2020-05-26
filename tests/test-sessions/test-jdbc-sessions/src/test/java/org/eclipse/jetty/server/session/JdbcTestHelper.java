@@ -70,9 +70,10 @@ public class JdbcTestHelper
     public static final String COOKIE_COL = "cooktime";
     public static final String CREATE_COL = "ctime";
 
-    static MariaDBContainer MARIAD_DB =
-        new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
-            .withDatabaseName("sessions");
+    static MariaDBContainer MARIAD_DB;
+
+    static final String MARIA_DB_USER = "beer";
+    static final String MARIA_DB_PASSWORD = "pacific_ale";
 
     static
     {
@@ -81,6 +82,11 @@ public class JdbcTestHelper
             try
             {
                 long start = System.currentTimeMillis();
+                MARIAD_DB =
+                    new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
+                        .withUsername(MARIA_DB_USER)
+                        .withPassword(MARIA_DB_PASSWORD)
+                        .withDatabaseName("sessions");
                 MARIAD_DB.withLogConsumer(new Slf4jLogConsumer(MARIADB_LOG)).start();
                 String containerIpAddress =  MARIAD_DB.getContainerIpAddress();
                 int mariadbPort = MARIAD_DB.getMappedPort(3306);
@@ -88,6 +94,9 @@ public class JdbcTestHelper
                 DRIVER_CLASS = MARIAD_DB.getDriverClassName();
                 LOG.info("Mariadb container started for {}:{} - {}ms", containerIpAddress, mariadbPort,
                          System.currentTimeMillis() - start);
+                DEFAULT_CONNECTION_URL = DEFAULT_CONNECTION_URL + "?user=" + MARIA_DB_USER +
+                    "&password=" + MARIA_DB_PASSWORD;
+                LOG.info("DEFAULT_CONNECTION_URL: {}", DEFAULT_CONNECTION_URL);
             }
             catch (Exception e)
             {
@@ -132,11 +141,6 @@ public class JdbcTestHelper
     public static DatabaseAdaptor buildDatabaseAdaptor()
     {
         DatabaseAdaptor da = new DatabaseAdaptor();
-        if (USE_MARIADB)
-        {
-            da.setUsername(MARIAD_DB.getUsername());
-            da.setPassword(MARIAD_DB.getPassword());
-        }
         da.setDriverInfo(DRIVER_CLASS, DEFAULT_CONNECTION_URL);
         return da;
     }
@@ -145,10 +149,7 @@ public class JdbcTestHelper
         throws Exception
     {
         Class.forName(DRIVER_CLASS);
-        return USE_MARIADB ? DriverManager.getConnection(DEFAULT_CONNECTION_URL,
-                                                        MARIAD_DB.getUsername(),
-                                                        MARIAD_DB.getPassword())
-            : DriverManager.getConnection(DEFAULT_CONNECTION_URL);
+        return DriverManager.getConnection(DEFAULT_CONNECTION_URL);
     }
 
     /**
