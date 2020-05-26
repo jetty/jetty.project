@@ -101,11 +101,6 @@ public class JdbcTestHelper
         }
     }
 
-    static
-    {
-        System.setProperty("derby.system.home", MavenTestingUtils.getTargetFile("test-derby").getAbsolutePath());
-    }
-
     public static void shutdown(String connectionUrl)
         throws Exception
     {
