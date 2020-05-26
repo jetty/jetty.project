@@ -37,7 +37,6 @@ import java.util.stream.Stream;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -430,10 +429,7 @@ public class ServletHandler extends ScopedHandler
             if (servletPathMapping != null)
             {
                 // Setting the servletPathMapping also provides the servletPath and pathInfo
-                if (DispatcherType.INCLUDE.equals(type))
-                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, servletPathMapping);
-                else
-                    baseRequest.setServletPathMapping(servletPathMapping);
+                baseRequest.setServletPathMapping(servletPathMapping);
             }
         }
 

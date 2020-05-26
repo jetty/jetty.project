@@ -52,6 +52,17 @@ public interface Attributes
         return attributes;
     }
 
+    static <T extends Attributes.Wrapper> T unwrap(Attributes attributes, Class<T> target)
+    {
+        while (attributes instanceof Wrapper)
+        {
+            if (target.isAssignableFrom(attributes.getClass()))
+                return (T)attributes;
+            attributes = ((Wrapper)attributes).getAttributes();
+        }
+        return null;
+    }
+
     abstract class Wrapper implements Attributes
     {
         protected final Attributes _attributes;

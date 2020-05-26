@@ -332,7 +332,7 @@ public class Response implements HttpServletResponse
                 return url;
             if (request.getServerPort() != port)
                 return url;
-            if (!path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts
+            if (request.getContext() != null && !path.startsWith(request.getContextPath()))
                 return url;
         }
 

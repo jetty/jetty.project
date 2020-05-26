@@ -777,9 +777,17 @@ public class Request implements HttpServletRequest
     @Override
     public String getContextPath()
     {
-        Context context = (_attributes instanceof Dispatcher.IncludeAttributes)
-            ? ((Dispatcher.IncludeAttributes)_attributes).getSourceContext()
-            : _context;
+        Context context;
+        if (_dispatcherType == DispatcherType.INCLUDE)
+        {
+            Dispatcher.IncludeAttributes include = Attributes.unwrap(_attributes, Dispatcher.IncludeAttributes.class);
+            context = (include == null) ? _context : include.getSourceContext();
+        }
+        else
+        {
+            context = _context;
+        }
+
         if (context == null)
             return null;
         String contextPath = context.getContextHandler().getContextPathEncoded();
@@ -1069,7 +1077,9 @@ public class Request implements HttpServletRequest
     @Override
     public String getPathInfo()
     {
-        return _servletPathMapping == null ? _pathInContext : _servletPathMapping.getPathInfo();
+        ServletPathMapping mapping = findServletPathMapping();
+
+        return mapping == null ? _pathInContext : mapping.getPathInfo();
     }
 
     @Override
@@ -1357,7 +1367,8 @@ public class Request implements HttpServletRequest
     @Override
     public String getServletPath()
     {
-        return _servletPathMapping == null ? "" : _servletPathMapping.getServletPath();
+        ServletPathMapping mapping = findServletPathMapping();
+        return mapping == null ? "" : mapping.getServletPath();
     }
 
     public ServletResponse getServletResponse()
@@ -2347,9 +2358,24 @@ public class Request implements HttpServletRequest
         return _servletPathMapping;
     }
 
+    ServletPathMapping findServletPathMapping()
+    {
+        ServletPathMapping mapping;
+        if (_dispatcherType == DispatcherType.INCLUDE)
+        {
+            Dispatcher.IncludeAttributes include = Attributes.unwrap(_attributes, Dispatcher.IncludeAttributes.class);
+            mapping = (include == null) ? _servletPathMapping : include.getSourceMapping();
+        }
+        else
+        {
+            mapping = _servletPathMapping;
+        }
+        return mapping;
+    }
+
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        return _servletPathMapping;
+        return findServletPathMapping();
     }
 }

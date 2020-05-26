@@ -893,7 +893,23 @@ public class ResponseTest
         assertEquals("http://myhost/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
         assertEquals("http://myhost:8888/other/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
 
+        context = new ContextHandler("/");
+        request.setContext(context.getServletContext(), "/");
+        assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888"));
+        assertEquals("https://myhost:8888/;jsessionid=12345", response.encodeURL("https://myhost:8888"));
+        assertEquals("mailto:/foo", response.encodeURL("mailto:/foo"));
+        assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888/"));
+        assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888/;jsessionid=7777"));
+        assertEquals("http://myhost:8888/;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/;param?query=0&more=1#target"));
+        assertEquals("http://other:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
+        handler.setCheckingRemoteSessionIdEncoding(false);
+        assertEquals("/foo;jsessionid=12345", response.encodeURL("/foo"));
+        assertEquals("/;jsessionid=12345", response.encodeURL("/"));
+        assertEquals("/foo.html;jsessionid=12345#target", response.encodeURL("/foo.html#target"));
+        assertEquals(";jsessionid=12345", response.encodeURL(""));
+
         request.setContext(null, "/");
+        handler.setCheckingRemoteSessionIdEncoding(true);
         assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888"));
         assertEquals("https://myhost:8888/;jsessionid=12345", response.encodeURL("https://myhost:8888"));
         assertEquals("mailto:/foo", response.encodeURL("mailto:/foo"));
