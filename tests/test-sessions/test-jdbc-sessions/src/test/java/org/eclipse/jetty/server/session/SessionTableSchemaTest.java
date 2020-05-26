@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Test the SessionTableSchema behaviour when the database treats "" as a NULL,
  * like Oracle does.
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class SessionTableSchemaTest
 {
     DatabaseAdaptor _da;
