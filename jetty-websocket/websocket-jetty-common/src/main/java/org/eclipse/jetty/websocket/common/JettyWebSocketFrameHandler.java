@@ -296,7 +296,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         synchronized (this)
         {
-            // We are now closed and cannot suspend or resume
+            // We are now closed and cannot suspend or resume.
             state = SuspendState.CLOSED;
         }
 
@@ -311,6 +311,15 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         {
             callback.failed(new ClosedChannelException());
             return;
+        }
+
+        // If we have received the final close frame set state to closed to disallow suspends and resumes.
+        if (!session.getCoreSession().isOutputOpen())
+        {
+            synchronized (this)
+            {
+                state = SuspendState.CLOSED;
+            }
         }
 
         try
