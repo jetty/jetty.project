@@ -58,7 +58,6 @@ public class ContextHandlerCollection extends HandlerCollection
 
     @Deprecated
     private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
-    private volatile Handler _singleContext;
 
     public ContextHandlerCollection()
     {
@@ -98,7 +97,6 @@ public class ContextHandlerCollection extends HandlerCollection
     @Override
     protected Handlers newHandlers(Handler[] handlers)
     {
-        _singleContext = null;
         if (handlers == null || handlers.length == 0)
             return null;
 
@@ -172,30 +170,29 @@ public class ContextHandlerCollection extends HandlerCollection
             }
         }
 
-        // setup bypass for a single handler.
-        if (mapping != null && mapping.getHandlers().length == 1)
-            _singleContext = mapping.getHandlers()[0];
-
         return mapping;
     }
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        // Only one context, so just call it and let it work out if it applies.
-        Handler singleContext = _singleContext;
-        if (singleContext != null)
+        Mapping mapping = (Mapping)_handlers.get();
+
+        // Handle no contexts
+        if (mapping == null)
+            return;
+        Handler[] handlers = mapping.getHandlers();
+        if (handlers == null || handlers.length == 0)
+            return;
+
+        // handle only a single context.
+        if (handlers.length == 1)
         {
-            singleContext.handle(target, baseRequest, request, response);
+            handlers[0].handle(target, baseRequest, request, response);
             return;
         }
 
-        // Handle no contexts
-        Mapping mapping = (Mapping)_handlers.get();
-        if (mapping == null && mapping.getHandlers().length == 0)
-            return;
-
-        // handle many contexts
+        // handle async dispatch to specific context
         HttpChannelState async = baseRequest.getHttpChannelState();
         if (async.isAsync())
         {
@@ -212,6 +209,7 @@ public class ContextHandlerCollection extends HandlerCollection
             }
         }
 
+        // handle many contexts
         if (target.startsWith("/"))
         {
             Trie<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
@@ -244,11 +242,9 @@ public class ContextHandlerCollection extends HandlerCollection
         }
         else
         {
-            if (mapping.getHandlers() == null)
-                return;
-            for (int i = 0; i < mapping.getHandlers().length; i++)
+            for (Handler handler : handlers)
             {
-                mapping.getHandlers()[i].handle(target, baseRequest, request, response);
+                handler.handle(target, baseRequest, request, response);
                 if (baseRequest.isHandled())
                     return;
             }
