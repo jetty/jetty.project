@@ -21,10 +21,12 @@ package org.eclipse.jetty.server.session;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * WebAppObjectInSessionTest
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
 {
 

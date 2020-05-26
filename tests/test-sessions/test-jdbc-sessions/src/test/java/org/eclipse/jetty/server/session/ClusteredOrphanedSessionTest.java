@@ -19,10 +19,12 @@
 package org.eclipse.jetty.server.session;
 
 import org.junit.jupiter.api.AfterEach;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * ClusteredOrphanedSessionTest
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
     /**
