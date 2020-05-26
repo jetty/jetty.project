@@ -64,7 +64,11 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
         Connection connection = activate();
         if (connection == null)
         {
-            int maxPending = 1 + destination.getQueuedRequestCount() / getMaxMultiplex();
+            int queuedRequests = destination.getQueuedRequestCount();
+            int maxMultiplex = getMaxMultiplex();
+            int maxPending = queuedRequests / maxMultiplex;
+            if (maxPending * maxMultiplex != queuedRequests)
+                ++maxPending;
             tryCreate(maxPending);
             connection = activate();
         }

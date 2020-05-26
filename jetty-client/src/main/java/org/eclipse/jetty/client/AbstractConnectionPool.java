@@ -44,13 +44,13 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
      * The bottom 32 bits represent the total connections and the top 32 bits represent the pending connections.
      */
     private final AtomicBiInteger connections = new AtomicBiInteger();
-    private final Destination destination;
+    private final HttpDestination destination;
     private final int maxConnections;
     private final Callback requester;
 
     protected AbstractConnectionPool(Destination destination, int maxConnections, Callback requester)
     {
-        this.destination = destination;
+        this.destination = (HttpDestination)destination;
         this.maxConnections = maxConnections;
         this.requester = requester;
     }
@@ -102,7 +102,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         Connection connection = activate();
         if (connection == null)
         {
-            tryCreate(-1);
+            tryCreate(destination.getQueuedRequestCount());
             connection = activate();
         }
         return connection;
