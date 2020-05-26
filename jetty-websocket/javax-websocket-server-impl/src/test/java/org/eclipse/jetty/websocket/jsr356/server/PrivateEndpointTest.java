@@ -1,0 +1,173 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.websocket.jsr356.server;
+
+import javax.websocket.ContainerProvider;
+import javax.websocket.DeploymentException;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.MessageHandler;
+import javax.websocket.OnMessage;
+import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
+import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerEndpointConfig;
+
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+public class PrivateEndpointTest
+{
+    private Server server;
+    private WebSocketContainer client;
+    private ServletContextHandler contextHandler;
+
+    @BeforeEach
+    public void before()
+    {
+        server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        contextHandler = new ServletContextHandler();
+        contextHandler.setContextPath("/");
+        server.setHandler(contextHandler);
+        client = ContainerProvider.getWebSocketContainer();
+    }
+
+    @AfterEach
+    public void after() throws Exception
+    {
+        LifeCycle.stop(client);
+        server.stop();
+    }
+
+    public interface CheckedConsumer<T>
+    {
+        void accept(T t) throws DeploymentException;
+    }
+
+    public void start(CheckedConsumer<ServerContainer> containerConsumer) throws Exception
+    {
+        WebSocketServerContainerInitializer.configure(contextHandler, (context, container) -> containerConsumer.accept(container));
+        server.start();
+    }
+
+    private static class ServerSocket extends Endpoint implements MessageHandler.Whole<String>
+    {
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
+        {
+            session.addMessageHandler(this);
+        }
+
+        @Override
+        public void onMessage(String message)
+        {
+        }
+    }
+
+    @SuppressWarnings("InnerClassMayBeStatic")
+    public class ServerSocketNonStatic extends Endpoint implements MessageHandler.Whole<String>
+    {
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
+        {
+            session.addMessageHandler(this);
+        }
+
+        @Override
+        public void onMessage(String message)
+        {
+        }
+    }
+
+    @ServerEndpoint("/annotated")
+    private static class AnnotatedServerSocket
+    {
+        @OnMessage
+        public void onMessage(String message)
+        {
+        }
+    }
+
+    @ServerEndpoint("/annotatedMethod")
+    public static class AnnotatedServerMethod
+    {
+        @OnMessage
+        private void onMessage(String message)
+        {
+        }
+    }
+
+    @Test
+    public void testEndpoint()
+    {
+        RuntimeException error = assertThrows(RuntimeException.class, () ->
+            start(container -> container.addEndpoint(ServerEndpointConfig.Builder.create(ServerSocket.class, "/").build())));
+
+        assertThat(error.getCause(), instanceOf(DeploymentException.class));
+        DeploymentException deploymentException = (DeploymentException)error.getCause();
+        assertThat(deploymentException.getMessage(), containsString("Cannot access default constructor for the Endpoint class"));
+    }
+
+    @Test
+    public void testInnerEndpoint()
+    {
+        RuntimeException error = assertThrows(RuntimeException.class, () ->
+            start(container -> container.addEndpoint(ServerEndpointConfig.Builder.create(ServerSocketNonStatic.class, "/").build())));
+
+        assertThat(error.getCause(), instanceOf(DeploymentException.class));
+        DeploymentException deploymentException = (DeploymentException)error.getCause();
+        assertThat(deploymentException.getMessage(), containsString("Cannot access default constructor for the Endpoint class"));
+    }
+
+    @Test
+    public void testAnnotatedEndpoint()
+    {
+        RuntimeException error = assertThrows(RuntimeException.class, () ->
+            start(container -> container.addEndpoint(AnnotatedServerSocket.class)));
+
+        assertThat(error.getCause(), instanceOf(DeploymentException.class));
+        DeploymentException deploymentException = (DeploymentException)error.getCause();
+        assertThat(deploymentException.getMessage(), containsString("Cannot access default constructor for the Endpoint class"));
+    }
+
+    @Test
+    public void testAnnotatedMethod()
+    {
+        RuntimeException error = assertThrows(RuntimeException.class, () ->
+            start(container -> container.addEndpoint(AnnotatedServerMethod.class)));
+
+        assertThat(error.getCause(), instanceOf(DeploymentException.class));
+        DeploymentException deploymentException = (DeploymentException)error.getCause();
+        assertThat(deploymentException.getMessage(), containsString("Method modifier must be public"));
+    }
+}
