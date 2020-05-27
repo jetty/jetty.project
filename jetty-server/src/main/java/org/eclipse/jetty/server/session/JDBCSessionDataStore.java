@@ -66,9 +66,11 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     public static class SessionTableSchema
     {
         public static final int MAX_INTERVAL_NOT_SET = -999;
+        public static final String INFERRED = "INFERRED";
 
         protected DatabaseAdaptor _dbAdaptor;
         protected String _schemaName = null;
+        protected String _catalogName = null;
         protected String _tableName = "JettySessions";
         protected String _idColumn = "sessionId";
         protected String _contextPathColumn = "contextPath";
@@ -87,7 +89,20 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         {
             _dbAdaptor = dbadaptor;
         }
+        
+        public void setCatalogName(String catalogName)
+        {
+            if (catalogName != null && StringUtil.isBlank(catalogName))
+                _catalogName = null;
+            else
+                _catalogName = catalogName;
+        }
 
+        public String getCatalogName()
+        {
+            return _catalogName;
+        }
+        
         public String getSchemaName()
         {
             return _schemaName;
@@ -95,8 +110,10 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
         public void setSchemaName(String schemaName)
         {
-            checkNotNull(schemaName);
-            _schemaName = schemaName;
+            if (schemaName != null && StringUtil.isBlank(schemaName))
+                _schemaName = null;
+            else
+                _schemaName = schemaName;
         }
 
         public String getTableName()
@@ -484,28 +501,48 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
                 //make the session table if necessary
                 String tableName = _dbAdaptor.convertIdentifier(getTableName());
+                
                 String schemaName = _dbAdaptor.convertIdentifier(getSchemaName());
-                try (ResultSet result = metaData.getTables(null, schemaName, tableName, null))
+                if (INFERRED.equalsIgnoreCase(schemaName))
+                {
+                    //use the value from the connection -
+                    //NOTE that this value will also now be prepended to ALL
+                    //table names in queries/updates.
+                    schemaName = connection.getSchema();
+                    setSchemaName(schemaName);
+                }
+                String catalogName = _dbAdaptor.convertIdentifier(getCatalogName());
+                if (INFERRED.equalsIgnoreCase(catalogName))
+                {
+                    //use the value from the connection
+                    catalogName = connection.getCatalog();
+                    setCatalogName(catalogName);
+                }
+                
+                try (ResultSet result = metaData.getTables(catalogName, schemaName, tableName, null))
                 {
                     if (!result.next())
                     {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Creating table {} schema={} catalog={}", tableName, schemaName, catalogName);
                         //table does not exist, so create it
                         statement.executeUpdate(getCreateStatementAsString());
                     }
                     else
                     {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Not creating table {} schema={} catalog={}", tableName, schemaName, catalogName);
                         //session table exists, check it has maxinterval column
                         ResultSet colResult = null;
                         try
                         {
-                            colResult = metaData.getColumns(null, schemaName, tableName,
+                            colResult = metaData.getColumns(catalogName, schemaName, tableName,
                                 _dbAdaptor.convertIdentifier(getMaxIntervalColumn()));
                         }
                         catch (SQLException sqlEx)
                         {
-                            LOG.warn("Problem checking if " + getTableName() +
-                                " table contains " + getMaxIntervalColumn() + " column. Ensure table contains column definition: \"" +
-                                getMaxIntervalColumn() + " long not null default -999\"");
+                            LOG.warn("Problem checking if {} table contains {} column. Ensure table contains column with definition: long not null default -999",
+                                getTableName(), getMaxIntervalColumn());
                             throw sqlEx;
                         }
                         try
@@ -519,9 +556,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                                 }
                                 catch (SQLException sqlEx)
                                 {
-                                    LOG.warn("Problem adding " + getMaxIntervalColumn() +
-                                        " column. Ensure table contains column definition: \"" + getMaxIntervalColumn() +
-                                        " long not null default -999\"");
+                                    LOG.warn("Problem adding {} column. Ensure table contains column definition: long not null default -999", getMaxIntervalColumn());
                                     throw sqlEx;
                                 }
                             }
@@ -538,7 +573,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
                 boolean index1Exists = false;
                 boolean index2Exists = false;
-                try (ResultSet result = metaData.getIndexInfo(null, schemaName, tableName, false, true))
+                try (ResultSet result = metaData.getIndexInfo(catalogName, schemaName, tableName, false, true))
                 {
                     while (result.next())
                     {
@@ -559,8 +594,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         @Override
         public String toString()
         {
-            return String.format("%s[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]", super.toString(),
-                _schemaName, _tableName, _idColumn, _contextPathColumn, _virtualHostColumn, _cookieTimeColumn, _createTimeColumn,
+            return String.format("%s[%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s]", super.toString(),
+                _catalogName, _schemaName, _tableName, _idColumn, _contextPathColumn, _virtualHostColumn, _cookieTimeColumn, _createTimeColumn,
                 _expiryTimeColumn, _accessTimeColumn, _lastAccessTimeColumn, _lastNodeColumn, _lastSavedTimeColumn, _maxIntervalColumn);
         }
     }
