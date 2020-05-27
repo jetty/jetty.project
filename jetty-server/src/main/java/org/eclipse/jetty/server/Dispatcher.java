@@ -342,6 +342,14 @@ public class Dispatcher implements RequestDispatcher
         }
     }
 
+    /**
+     * Attributes Wrapper to provide the {@link DispatcherType#INCLUDE} attributes.
+     *
+     * The source {@link org.eclipse.jetty.server.handler.ContextHandler.Context} and
+     * {@link ServletPathMapping} instances are also retained by this wrapper so they
+     * may be used by {@link Request#getContextPath()}, {@link Request#getServletPath()},
+     * {@link Request#getPathInfo()} and {@link Request#getHttpServletMapping()}.
+     */
     class IncludeAttributes extends Attributes.Wrapper
     {
         private final Request _baseRequest;

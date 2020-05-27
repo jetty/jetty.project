@@ -43,6 +43,10 @@ public interface Attributes
 
     void clearAttributes();
 
+    /** Unwrap all  {@link Wrapper}s of the attributes
+     * @param attributes The attributes to unwrap, which may be a  {@link Wrapper}.
+     * @return The core attributes
+     */
     static Attributes unwrap(Attributes attributes)
     {
         while (attributes instanceof Wrapper)
@@ -52,6 +56,12 @@ public interface Attributes
         return attributes;
     }
 
+    /** Unwrap attributes to a specific attribute  {@link Wrapper}.
+     * @param attributes The attributes to unwrap, which may be a {@link Wrapper}
+     * @param target The target  {@link Wrapper} class.
+     * @param <T> The type of the target  {@link Wrapper}.
+     * @return The outermost {@link Wrapper} of the matching type of null if not found.
+     */
     static <T extends Attributes.Wrapper> T unwrap(Attributes attributes, Class<T> target)
     {
         while (attributes instanceof Wrapper)
@@ -63,6 +73,9 @@ public interface Attributes
         return null;
     }
 
+    /**
+     * A Wrapper of attributes
+     */
     abstract class Wrapper implements Attributes
     {
         protected final Attributes _attributes;

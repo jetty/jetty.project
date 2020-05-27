@@ -777,6 +777,9 @@ public class Request implements HttpServletRequest
     @Override
     public String getContextPath()
     {
+        // The context path returned is normally for the current context.  Except during a cross context
+        // INCLUDE dispatch, in which case this method returns the context path of the source context,
+        // which we recover from the IncludeAttributes wrapper.
         Context context;
         if (_dispatcherType == DispatcherType.INCLUDE)
         {
@@ -790,7 +793,12 @@ public class Request implements HttpServletRequest
 
         if (context == null)
             return null;
+
+        // For some reason the spec requires the context path to be encoded (unlike getServletPath).
         String contextPath = context.getContextHandler().getContextPathEncoded();
+
+        // For the root context, the spec requires that the empty string is returned instead of the leading '/'
+        // which is included in the pathInContext
         if (URIUtil.SLASH.equals(contextPath))
             return "";
         return contextPath;
@@ -1077,8 +1085,10 @@ public class Request implements HttpServletRequest
     @Override
     public String getPathInfo()
     {
+        // The pathInfo returned is normally for the current servlet.  Except during an
+        // INCLUDE dispatch, in which case this method returns the pathInfo of the source servlet,
+        // which we recover from the IncludeAttributes wrapper.
         ServletPathMapping mapping = findServletPathMapping();
-
         return mapping == null ? _pathInContext : mapping.getPathInfo();
     }
 
@@ -1367,6 +1377,9 @@ public class Request implements HttpServletRequest
     @Override
     public String getServletPath()
     {
+        // The servletPath returned is normally for the current servlet.  Except during an
+        // INCLUDE dispatch, in which case this method returns the servletPath of the source servlet,
+        // which we recover from the IncludeAttributes wrapper.
         ServletPathMapping mapping = findServletPathMapping();
         return mapping == null ? "" : mapping.getServletPath();
     }
@@ -1860,6 +1873,13 @@ public class Request implements HttpServletRequest
         }
     }
 
+    /**
+     * Set the attributes for the request.
+     *
+     * @param attributes The attributes, which must be a {@link org.eclipse.jetty.util.Attributes.Wrapper}
+     *                   for which {@link Attributes#unwrap(Attributes)} will return the
+     *                   original {@link ServletAttributes}.
+     */
     public void setAttributes(Attributes attributes)
     {
         _attributes = attributes;
@@ -1984,9 +2004,11 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * Set request context
+     * Set request context and path in the context.
      *
      * @param context context object
+     * @param pathInContext the part of the URI path that is withing the context.
+     *                      For servlets, this is equal to servletPath + pathInfo
      */
     public void setContext(Context context, String pathInContext)
     {
@@ -2353,11 +2375,20 @@ public class Request implements HttpServletRequest
         _servletPathMapping = servletPathMapping;
     }
 
+    /**
+     * @return The mapping for the current target servlet, regardless of dispatch type.
+     */
     public ServletPathMapping getServletPathMapping()
     {
         return _servletPathMapping;
     }
 
+    /**
+     * @return The mapping for the target servlet reported by the {@link #getServletPath()} and
+     * {@link #getPathInfo()} methods.  For {@link DispatcherType#INCLUDE} dispatches, this
+     * method returns the mapping of the source servlet, otherwise it returns the mapping of
+     * the target servlet.
+     */
     ServletPathMapping findServletPathMapping()
     {
         ServletPathMapping mapping;
@@ -2376,6 +2407,9 @@ public class Request implements HttpServletRequest
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
+        // The mapping returned is normally for the current servlet.  Except during an
+        // INCLUDE dispatch, in which case this method returns the mapping of the source servlet,
+        // which we recover from the IncludeAttributes wrapper.
         return findServletPathMapping();
     }
 }
