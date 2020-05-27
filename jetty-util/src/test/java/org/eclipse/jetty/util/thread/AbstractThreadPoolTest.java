@@ -18,11 +18,7 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.time.Duration;
-
 import org.eclipse.jetty.util.ProcessorUtils;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -30,8 +26,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class AbstractThreadPoolTest
@@ -92,27 +86,5 @@ public abstract class AbstractThreadPoolTest
         }
 
         assertThat(pool.getMaxThreads(), Matchers.is(3));
-    }
-
-    @Test
-    public void testJoinWithStopTimeout()
-    {
-        // ThreadPool must be an implement ContainerLifeCycle for this test to be valid.
-        SizedThreadPool threadPool = newPool(3);
-        if (!(threadPool instanceof ContainerLifeCycle))
-            return;
-
-        final long stopTimeout = 100;
-        ((ContainerLifeCycle)threadPool).setStopTimeout(100);
-        LifeCycle.start(threadPool);
-
-        // Verify that join does not timeout after waiting twice the stopTimeout.
-        assertThrows(Throwable.class, () ->
-            assertTimeoutPreemptively(Duration.ofMillis(stopTimeout * 2), threadPool::join)
-        );
-
-        // After stopping the ThreadPool join should unblock.
-        LifeCycle.stop(threadPool);
-        assertTimeoutPreemptively(Duration.ofMillis(stopTimeout), threadPool::join);
     }
 }
