@@ -20,10 +20,12 @@ package org.eclipse.jetty.server.session;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * JDBCSessionDataStoreTest
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
 
