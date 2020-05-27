@@ -89,6 +89,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -965,6 +966,23 @@ public class ResponseTest
         String set = response.getHttpFields().get("Set-Cookie");
 
         assertEquals("name=value; Path=/path; Domain=domain; Secure; HttpOnly", set);
+    }
+    
+    @Test
+    public void testAddCookieInInclude() throws Exception
+    {
+        Response response = getResponse();
+        response.include();
+
+        Cookie cookie = new Cookie("naughty", "value");
+        cookie.setDomain("domain");
+        cookie.setPath("/path");
+        cookie.setSecure(true);
+        cookie.setComment("comment__HTTP_ONLY__");
+
+        response.addCookie(cookie);
+
+        assertNull(response.getHttpFields().get("Set-Cookie"));
     }
     
     @Test
