@@ -206,6 +206,16 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             }
         }
 
+        // If we have received a close frame, set state to closed to disallow suspends and resumes.
+        byte opCode = frame.getOpCode();
+        if (opCode == OpCode.CLOSE)
+        {
+            synchronized (this)
+            {
+                state = SuspendState.CLOSED;
+            }
+        }
+
         // Send to raw frame handling on user side (eg: WebSocketFrameListener)
         if (frameHandle != null)
         {
@@ -237,7 +247,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
             callback::failed
         );
 
-        switch (frame.getOpCode())
+        switch (opCode)
         {
             case OpCode.CLOSE:
                 onCloseFrame(frame, callback);
@@ -311,15 +321,6 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         {
             callback.failed(new ClosedChannelException());
             return;
-        }
-
-        // If we have received the final close frame set state to closed to disallow suspends and resumes.
-        if (!session.getCoreSession().isOutputOpen())
-        {
-            synchronized (this)
-            {
-                state = SuspendState.CLOSED;
-            }
         }
 
         try
