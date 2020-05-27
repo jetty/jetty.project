@@ -173,11 +173,23 @@ public class ContextHandlerCollection extends HandlerCollection
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        Handlers handlers = _handlers.get();
-        if (handlers == null)
+        Mapping mapping = (Mapping)_handlers.get();
+
+        // Handle no contexts
+        if (mapping == null)
+            return;
+        Handler[] handlers = mapping.getHandlers();
+        if (handlers == null || handlers.length == 0)
             return;
 
-        Mapping mapping = (Mapping)handlers;
+        // handle only a single context.
+        if (handlers.length == 1)
+        {
+            handlers[0].handle(target, baseRequest, request, response);
+            return;
+        }
+
+        // handle async dispatch to specific context
         HttpChannelState async = baseRequest.getHttpChannelState();
         if (async.isAsync())
         {
@@ -194,6 +206,7 @@ public class ContextHandlerCollection extends HandlerCollection
             }
         }
 
+        // handle many contexts
         if (target.startsWith("/"))
         {
             Trie<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
@@ -226,11 +239,9 @@ public class ContextHandlerCollection extends HandlerCollection
         }
         else
         {
-            if (mapping.getHandlers() == null)
-                return;
-            for (int i = 0; i < mapping.getHandlers().length; i++)
+            for (Handler handler : handlers)
             {
-                mapping.getHandlers()[i].handle(target, baseRequest, request, response);
+                handler.handle(target, baseRequest, request, response);
                 if (baseRequest.isHandled())
                     return;
             }
