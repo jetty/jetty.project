@@ -341,7 +341,8 @@ public class JettyRunDistro extends JettyRunMojo
 
         targetBase = new File(target, "jetty-base");
         Path targetBasePath = targetBase.toPath();
-        Files.deleteIfExists(targetBase.toPath());
+        if (Files.exists(targetBasePath))
+            IO.delete(targetBase);
 
         targetBase.mkdirs();
 
