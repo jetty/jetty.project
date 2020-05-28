@@ -43,7 +43,6 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -2173,31 +2172,6 @@ public class RequestTest
         public Map<String, String> getRoleRefMap()
         {
             return null;
-        }
-    }
-
-    private class PathMappingHandler extends AbstractHandler
-    {
-        private ServletPathSpec _spec;
-        private String _servletPath;
-        private String _servletName;
-
-        public PathMappingHandler(ServletPathSpec spec, String servletPath, String servletName)
-        {
-            _spec = spec;
-            _servletPath = servletPath;
-            _servletName = servletName;
-        }
-
-        @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            ((Request)request).setHandled(true);
-            baseRequest.setServletPath(_servletPath);
-            if (_servletName != null)
-                baseRequest.setUserIdentityScope(new TestUserIdentityScope(null, null, _servletName));
-            HttpServletMapping mapping = baseRequest.getHttpServletMapping();
-            response.getWriter().println(mapping);
         }
     }
 }
