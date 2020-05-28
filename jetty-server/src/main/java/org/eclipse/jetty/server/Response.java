@@ -230,26 +230,30 @@ public class Response implements HttpServletResponse
     @Override
     public void addCookie(Cookie cookie)
     {
-        if (StringUtil.isBlank(cookie.getName()))
-            throw new IllegalArgumentException("Cookie.name cannot be blank/null");
+        //Servlet Spec 9.3 Include method: cannot set a cookie if handling an include
+        if (isMutable())
+        {
+            if (StringUtil.isBlank(cookie.getName()))
+                throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
-        String comment = cookie.getComment();
-        // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
-        boolean httpOnly = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
-        SameSite sameSite = HttpCookie.getSameSiteFromComment(comment);
-        comment = HttpCookie.getCommentWithoutAttributes(comment);
+            String comment = cookie.getComment();
+            // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
+            boolean httpOnly = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
+            SameSite sameSite = HttpCookie.getSameSiteFromComment(comment);
+            comment = HttpCookie.getCommentWithoutAttributes(comment);
 
-        addCookie(new HttpCookie(
-            cookie.getName(),
-            cookie.getValue(),
-            cookie.getDomain(),
-            cookie.getPath(),
-            cookie.getMaxAge(),
-            httpOnly,
-            cookie.getSecure(),
-            comment,
-            cookie.getVersion(),
-            sameSite));
+            addCookie(new HttpCookie(
+                cookie.getName(),
+                cookie.getValue(),
+                cookie.getDomain(),
+                cookie.getPath(),
+                cookie.getMaxAge(),
+                httpOnly,
+                cookie.getSecure(),
+                comment,
+                cookie.getVersion(),
+                sameSite));
+        }
     }
 
     /**
@@ -302,7 +306,6 @@ public class Response implements HttpServletResponse
         addCookie(cookie);
     }
 
-    @Override
     public boolean containsHeader(String name)
     {
         return _fields.contains(name);
