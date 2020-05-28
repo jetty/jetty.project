@@ -72,5 +72,7 @@ public class DecodedBinaryMessageSink<T> extends AbstractDecodedMessageSink.Basi
                 }
             }
         }
+
+        _logger.warn("Message lost, willDecode() has returned false for all decoders in the decoder list.");
     }
 }

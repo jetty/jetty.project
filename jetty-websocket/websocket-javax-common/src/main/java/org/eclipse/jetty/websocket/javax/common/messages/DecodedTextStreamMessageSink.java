@@ -49,6 +49,7 @@ public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink.
         return new ReaderMessageSink(_coreSession, methodHandle);
     }
 
+    @SuppressWarnings("Duplicates")
     public void onStreamStart(Reader reader)
     {
         try

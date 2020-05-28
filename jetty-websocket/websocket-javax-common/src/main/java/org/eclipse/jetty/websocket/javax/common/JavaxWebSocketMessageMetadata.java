@@ -26,14 +26,6 @@ import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
 public class JavaxWebSocketMessageMetadata
 {
-    public static enum Type
-    {
-        TEXT,
-        BINARY,
-        TEXT_STREAM,
-        BINARY_STREAM
-    }
-
     private MethodHandle methodHandle;
     private Class<? extends MessageSink> sinkClass;
     private List<RegisteredDecoder> registeredDecoders;
@@ -89,18 +81,6 @@ public class JavaxWebSocketMessageMetadata
     public void setSinkClass(Class<? extends MessageSink> sinkClass)
     {
         this.sinkClass = sinkClass;
-    }
-
-    public RegisteredDecoder getRegisteredDecoder()
-    {
-        if (registeredDecoders == null || registeredDecoders.isEmpty())
-            return null;
-        return registeredDecoders.get(0);
-    }
-
-    public void setRegisteredDecoder(RegisteredDecoder registeredDecoder)
-    {
-        this.registeredDecoders = List.of(registeredDecoder);
     }
 
     public List<RegisteredDecoder> getRegisteredDecoders()

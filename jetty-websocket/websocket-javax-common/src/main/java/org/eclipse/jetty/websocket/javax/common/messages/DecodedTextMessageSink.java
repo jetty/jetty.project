@@ -48,6 +48,7 @@ public class DecodedTextMessageSink<T> extends AbstractDecodedMessageSink.Basic<
         return new StringMessageSink(_coreSession, methodHandle);
     }
 
+    @SuppressWarnings("Duplicates")
     public void onMessage(String wholeMessage)
     {
         for (Decoder.Text<T> decoder : _decoders)
@@ -70,5 +71,7 @@ public class DecodedTextMessageSink<T> extends AbstractDecodedMessageSink.Basic<
                 }
             }
         }
+
+        _logger.warn("Message lost, willDecode() has returned false for all decoders in the decoder list.");
     }
 }
