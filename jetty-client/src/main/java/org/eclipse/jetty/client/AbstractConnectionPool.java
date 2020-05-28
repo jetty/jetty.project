@@ -99,10 +99,16 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     @Override
     public Connection acquire()
     {
+        return acquire(true);
+    }
+
+    protected Connection acquire(boolean create)
+    {
         Connection connection = activate();
         if (connection == null)
         {
-            tryCreate(destination.getQueuedRequestCount());
+            if (create)
+                tryCreate(destination.getQueuedRequestCount());
             connection = activate();
         }
         return connection;

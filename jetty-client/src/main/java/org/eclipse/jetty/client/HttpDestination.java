@@ -244,7 +244,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @Override
     public void succeeded()
     {
-        send();
+        send(false);
     }
 
     @Override
@@ -308,25 +308,35 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public void send()
     {
-        if (getHttpExchanges().isEmpty())
-            return;
-        process();
+        send(true);
     }
 
-    private void process()
+    private void send(boolean create)
+    {
+        if (getHttpExchanges().isEmpty())
+            return;
+        process(create);
+    }
+
+    private void process(boolean create)
     {
         while (true)
         {
-            Connection connection = connectionPool.acquire();
+            Connection connection;
+            if (connectionPool instanceof AbstractConnectionPool)
+                connection = ((AbstractConnectionPool)connectionPool).acquire(create);
+            else
+                connection = connectionPool.acquire();
             if (connection == null)
                 break;
-            boolean proceed = process(connection);
-            if (!proceed)
+            ProcessResult result = process(connection);
+            if (result == ProcessResult.FINISH)
                 break;
+            create = result == ProcessResult.RESTART;
         }
     }
 
-    public boolean process(Connection connection)
+    public ProcessResult process(Connection connection)
     {
         HttpClient client = getHttpClient();
         HttpExchange exchange = getHttpExchanges().poll();
@@ -342,7 +352,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                     LOG.debug("{} is stopping", client);
                 connection.close();
             }
-            return false;
+            return ProcessResult.FINISH;
         }
         else
         {
@@ -359,25 +369,28 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 // is created. Aborting the exchange a second time will result in
                 // a no-operation, so we just abort here to cover that edge case.
                 exchange.abort(cause);
+                return getHttpExchanges().size() > 0 ? ProcessResult.CONTINUE : ProcessResult.FINISH;
             }
-            else
+
+            SendFailure result = send(connection, exchange);
+            if (result == null)
             {
-                SendFailure result = send(connection, exchange);
-                if (result != null)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Send failed {} for {}", result, exchange);
-                    if (result.retry)
-                    {
-                        // Resend this exchange, likely on another connection,
-                        // and return false to avoid to re-enter this method.
-                        send(exchange);
-                        return false;
-                    }
-                    request.abort(result.failure);
-                }
+                // Aggressively send other queued requests
+                // in case connections are multiplexed.
+                return getHttpExchanges().size() > 0 ? ProcessResult.CONTINUE : ProcessResult.FINISH;
             }
-            return getHttpExchanges().peek() != null;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Send failed {} for {}", result, exchange);
+            if (result.retry)
+            {
+                // Resend this exchange, likely on another connection,
+                // and return false to avoid to re-enter this method.
+                send(exchange);
+                return ProcessResult.FINISH;
+            }
+            request.abort(result.failure);
+            return getHttpExchanges().size() > 0 ? ProcessResult.RESTART : ProcessResult.FINISH;
         }
     }
 
@@ -419,7 +432,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             if (connectionPool.isActive(connection))
             {
                 if (connectionPool.release(connection))
-                    send();
+                    send(false);
                 else
                     connection.close();
             }
@@ -456,7 +469,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             // We may create a connection that is not needed, but it will eventually
             // idle timeout, so no worries.
             if (removed)
-                process();
+                process(true);
         }
     }
 
@@ -580,5 +593,10 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 }
             }
         }
+    }
+
+    private enum ProcessResult
+    {
+        RESTART, CONTINUE, FINISH
     }
 }

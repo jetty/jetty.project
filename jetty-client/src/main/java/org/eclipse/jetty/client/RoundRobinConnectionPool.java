@@ -70,6 +70,14 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
     }
 
     @Override
+    protected Connection acquire(boolean create)
+    {
+        // The nature of this connection pool is such that a
+        // connection must always be present in the next slot.
+        return super.acquire(true);
+    }
+
+    @Override
     protected void onCreated(Connection connection)
     {
         synchronized (this)
