@@ -28,6 +28,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpFieldTest
@@ -163,6 +164,12 @@ public class HttpFieldTest
         assertEquals("a", values[0]);
         assertEquals("x,\"p,q\",z", values[1]);
         assertEquals("c", values[2]);
+    }
+
+    @Test
+    public void testFieldNameNull()
+    {
+        assertThrows(NullPointerException.class, () -> new HttpField((String)null, null));
     }
 
     @Test

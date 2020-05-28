@@ -30,7 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * InfinispanSessionDataStoreTest
@@ -110,15 +110,7 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         ((InfinispanSessionDataStore)store).setCache(null);
 
         //test that loading it fails
-        try
-        {
-            store.load("222");
-            fail("Session should be unreadable");
-        }
-        catch (UnreadableSessionDataException e)
-        {
-            //expected exception
-        }
+        assertThrows(UnreadableSessionDataException.class, () -> store.load("222"));
     }
 
     /**

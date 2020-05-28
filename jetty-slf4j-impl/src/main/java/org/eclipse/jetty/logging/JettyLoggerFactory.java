@@ -19,19 +19,20 @@
 package org.eclipse.jetty.logging;
 
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 
-public class JettyLoggerFactory implements ILoggerFactory
+public class JettyLoggerFactory implements ILoggerFactory, JettyLoggerFactoryMBean
 {
-    private static final String ROOT_LOGGER_NAME = "";
     private final JettyLoggerConfiguration configuration;
     private final JettyLogger rootLogger;
-    private ConcurrentMap<String, JettyLogger> loggerMap;
+    private final ConcurrentMap<String, JettyLogger> loggerMap;
 
     public JettyLoggerFactory(JettyLoggerConfiguration config)
     {
@@ -41,9 +42,16 @@ public class JettyLoggerFactory implements ILoggerFactory
 
         StdErrAppender appender = new StdErrAppender(configuration);
 
-        rootLogger = new JettyLogger(this, ROOT_LOGGER_NAME, appender);
-        loggerMap.put(ROOT_LOGGER_NAME, rootLogger);
-        rootLogger.setLevel(configuration.getLevel(ROOT_LOGGER_NAME));
+        rootLogger = new JettyLogger(this, Logger.ROOT_LOGGER_NAME, appender);
+        loggerMap.put(Logger.ROOT_LOGGER_NAME, rootLogger);
+        rootLogger.setLevel(configuration.getLevel(Logger.ROOT_LOGGER_NAME));
+    }
+
+    @SuppressWarnings("unused")
+    public String jmxContext()
+    {
+        // Used to build the ObjectName.
+        return configuration.getString("org.eclipse.jetty.logging.jmx.context", null);
     }
 
     /**
@@ -54,11 +62,8 @@ public class JettyLoggerFactory implements ILoggerFactory
      */
     public JettyLogger getJettyLogger(String name)
     {
-        if (name.equals(ROOT_LOGGER_NAME))
-        {
+        if (name.equals(Logger.ROOT_LOGGER_NAME))
             return getRootLogger();
-        }
-
         return loggerMap.computeIfAbsent(name, this::createLogger);
     }
 
@@ -74,109 +79,96 @@ public class JettyLoggerFactory implements ILoggerFactory
         return getJettyLogger(name);
     }
 
-    protected void walkChildLoggers(String parentName, Consumer<JettyLogger> childConsumer)
+    void walkChildrenLoggers(String parentName, Consumer<JettyLogger> childConsumer)
     {
         String prefix = parentName;
         if (parentName.length() > 0 && !prefix.endsWith("."))
-        {
             prefix += ".";
-        }
 
         for (JettyLogger logger : loggerMap.values())
         {
+            // Skip self.
             if (logger.getName().equals(parentName))
-            {
-                // skip self
                 continue;
-            }
 
-            // is child, and is not itself
+            // It is a child, and is not itself.
             if (logger.getName().startsWith(prefix))
-            {
                 childConsumer.accept(logger);
-            }
         }
     }
 
-    public JettyLogger getRootLogger()
+    JettyLogger getRootLogger()
     {
         return rootLogger;
     }
 
     private JettyLogger createLogger(String name)
     {
-        // or is that handled by slf4j itself?
         JettyAppender appender = rootLogger.getAppender();
-        int level = this.configuration.getLevel(name);
+        JettyLevel level = this.configuration.getLevel(name);
         boolean hideStacks = this.configuration.getHideStacks(name);
         return new JettyLogger(this, name, appender, level, hideStacks);
     }
 
-    /**
-     * Condenses a classname by stripping down the package name to just the first character of each package name
-     * segment.Configured
-     *
-     * <pre>
-     * Examples:
-     * "org.eclipse.jetty.test.FooTest"           = "oejt.FooTest"
-     * "org.eclipse.jetty.server.logging.LogTest" = "orjsl.LogTest"
-     * </pre>
-     *
-     * @param classname the fully qualified class name
-     * @return the condensed name
-     */
-    protected static String condensePackageString(String classname)
+    static <T> T walkParentLoggerNames(String startName, Function<String, T> nameFunction)
     {
-        if (classname == null || classname.isEmpty())
+        if (startName == null)
+            return null;
+
+        // Checking with FQCN first, then each package segment from longest to shortest.
+        String nameSegment = startName;
+        while (nameSegment.length() > 0)
         {
-            return "";
+            T ret = nameFunction.apply(nameSegment);
+            if (ret != null)
+                return ret;
+
+            // Trim and try again.
+            int idx = nameSegment.lastIndexOf('.');
+            if (idx >= 0)
+                nameSegment = nameSegment.substring(0, idx);
+            else
+                break;
         }
 
-        int rawLen = classname.length();
-        StringBuilder dense = new StringBuilder(rawLen);
-        boolean foundStart = false;
-        boolean hasPackage = false;
-        int startIdx = -1;
-        int endIdx = -1;
-        for (int i = 0; i < rawLen; i++)
-        {
-            char c = classname.charAt(i);
-            if (!foundStart)
-            {
-                foundStart = Character.isJavaIdentifierStart(c);
-                if (foundStart)
-                {
-                    if (startIdx >= 0)
-                    {
-                        dense.append(classname.charAt(startIdx));
-                        hasPackage = true;
-                    }
-                    startIdx = i;
-                }
-            }
+        return nameFunction.apply(Logger.ROOT_LOGGER_NAME);
+    }
 
-            if (foundStart)
-            {
-                if (!Character.isJavaIdentifierPart(c))
-                {
-                    foundStart = false;
-                }
-                else
-                {
-                    endIdx = i;
-                }
-            }
-        }
-        // append remaining from startIdx
-        if ((startIdx >= 0) && (endIdx >= startIdx))
-        {
-            if (hasPackage)
-            {
-                dense.append('.');
-            }
-            dense.append(classname, startIdx, endIdx + 1);
-        }
+    @Override
+    public String[] getLoggerNames()
+    {
+        TreeSet<String> names = new TreeSet<>(loggerMap.keySet());
+        return names.toArray(new String[0]);
+    }
 
-        return dense.toString();
+    @Override
+    public int getLoggerCount()
+    {
+        return loggerMap.size();
+    }
+
+    @Override
+    public String getLoggerLevel(String loggerName)
+    {
+        return walkParentLoggerNames(loggerName, key ->
+        {
+            JettyLogger logger = loggerMap.get(key);
+            if (logger != null)
+                return logger.getLevel().name();
+            return null;
+        });
+    }
+
+    @Override
+    public boolean setLoggerLevel(String loggerName, String levelName)
+    {
+        JettyLevel level = JettyLoggerConfiguration.toJettyLevel(loggerName, levelName);
+        if (level == null)
+        {
+            return false;
+        }
+        JettyLogger jettyLogger = getJettyLogger(loggerName);
+        jettyLogger.setLevel(level);
+        return true;
     }
 }

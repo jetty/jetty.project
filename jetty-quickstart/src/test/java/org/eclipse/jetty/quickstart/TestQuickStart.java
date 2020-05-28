@@ -100,7 +100,7 @@ public class TestQuickStart
         server.dumpStdErr();
 
         //verify that FooServlet is now mapped to / and not the DefaultServlet
-        ServletHolder sh = webapp.getServletHandler().getMappedServlet("/").getResource();
+        ServletHolder sh = webapp.getServletHandler().getMappedServlet("/").getServletHolder();
         assertNotNull(sh);
         assertEquals("foo", sh.getName());
     }

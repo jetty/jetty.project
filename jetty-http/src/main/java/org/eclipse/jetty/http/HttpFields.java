@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
@@ -855,6 +856,8 @@ public interface HttpFields extends Iterable<HttpField>
          */
         public Mutable put(String name, List<String> list)
         {
+            Objects.requireNonNull(name, "name must not be null");
+            Objects.requireNonNull(list, "list must not be null");
             remove(name);
             for (String v : list)
             {
@@ -1018,6 +1021,9 @@ public interface HttpFields extends Iterable<HttpField>
             @Override
             public void add(HttpField field)
             {
+                if (field == null)
+                    return;
+
                 _fields = Arrays.copyOf(_fields, _fields.length + 1);
                 System.arraycopy(_fields, _cursor, _fields, _cursor + 1, _size++);
                 _fields[_cursor++] = field;
@@ -1083,7 +1089,10 @@ public interface HttpFields extends Iterable<HttpField>
             {
                 if (_current < 0)
                     throw new IllegalStateException();
-                _fields[_current] = field;
+                if (field == null)
+                    remove();
+                else
+                    _fields[_current] = field;
             }
         }
     }

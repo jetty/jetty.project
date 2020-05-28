@@ -31,6 +31,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpField;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -45,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * Rather, it tests all of the machinery above the SessionDataStore. Thus,
  * to reduce test time, we only apply it to the JDBCSessionDataStore.
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class ClusteredSessionMigrationTest extends AbstractTestBase
 {
 

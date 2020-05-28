@@ -918,7 +918,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 if (mapping != null)
                 {
                     //if the servlet mapping was from a default descriptor, then allow it to be overridden
-                    if (!mapping.isDefault())
+                    if (!mapping.isFromDefaultDescriptor())
                     {
                         if (clash == null)
                             clash = new HashSet<>();

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.logging;
 
-import java.util.Objects;
-
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 import org.slf4j.event.Level;
@@ -29,35 +27,128 @@ import org.slf4j.spi.LocationAwareLogger;
 
 public class JettyLogger implements LocationAwareLogger, Logger
 {
-    /**
-     * The Level to set if you want this logger to be "OFF"
-     */
-    public static final int OFF = 999;
-    /**
-     * The Level to set if you want this logger to show all events from all levels.
-     */
-    public static final int ALL = -1;
-
     private final JettyLoggerFactory factory;
     private final String name;
     private final String condensedName;
     private final JettyAppender appender;
-    private int level;
-    private boolean hideStacks = false;
+    private JettyLevel level;
+    private boolean hideStacks;
 
     public JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender)
     {
-        this(factory, name, appender, Level.INFO.toInt(), false);
+        this(factory, name, appender, JettyLevel.INFO, false);
     }
 
-    public JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender, int level, boolean hideStacks)
+    public JettyLogger(JettyLoggerFactory factory, String name, JettyAppender appender, JettyLevel level, boolean hideStacks)
     {
         this.factory = factory;
         this.name = name;
-        this.condensedName = JettyLoggerFactory.condensePackageString(name);
+        this.condensedName = condensePackageString(name);
         this.appender = appender;
         this.level = level;
         this.hideStacks = hideStacks;
+    }
+
+    /**
+     * Condenses a classname by stripping down the package name to just the first character of each package name
+     * segment.Configured
+     *
+     * <pre>
+     * Examples:
+     * "org.eclipse.jetty.test.FooTest"           = "oejt.FooTest"
+     * "org.eclipse.jetty.server.logging.LogTest" = "orjsl.LogTest"
+     * </pre>
+     *
+     * @param classname the fully qualified class name
+     * @return the condensed name
+     */
+    private static String condensePackageString(String classname)
+    {
+        if (classname == null || classname.isEmpty())
+            return "";
+
+        int rawLen = classname.length();
+        StringBuilder dense = new StringBuilder(rawLen);
+        boolean foundStart = false;
+        boolean hasPackage = false;
+        int startIdx = -1;
+        int endIdx = -1;
+        for (int i = 0; i < rawLen; i++)
+        {
+            char c = classname.charAt(i);
+            if (!foundStart)
+            {
+                foundStart = Character.isJavaIdentifierStart(c);
+                if (foundStart)
+                {
+                    if (startIdx >= 0)
+                    {
+                        dense.append(classname.charAt(startIdx));
+                        hasPackage = true;
+                    }
+                    startIdx = i;
+                }
+            }
+
+            if (foundStart)
+            {
+                if (Character.isJavaIdentifierPart(c))
+                    endIdx = i;
+                else
+                    foundStart = false;
+            }
+        }
+        // append remaining from startIdx
+        if ((startIdx >= 0) && (endIdx >= startIdx))
+        {
+            if (hasPackage)
+                dense.append('.');
+            dense.append(classname, startIdx, endIdx + 1);
+        }
+
+        return dense.toString();
+    }
+
+    public JettyAppender getAppender()
+    {
+        return appender;
+    }
+
+    String getCondensedName()
+    {
+        return condensedName;
+    }
+
+    public JettyLevel getLevel()
+    {
+        return level;
+    }
+
+    public void setLevel(JettyLevel level)
+    {
+        this.level = level;
+
+        // apply setLevel to children too.
+        factory.walkChildrenLoggers(this.getName(), (logger) -> logger.setLevel(level));
+    }
+
+    @Override
+    public String getName()
+    {
+        return name;
+    }
+
+    public boolean isHideStacks()
+    {
+        return hideStacks;
+    }
+
+    public void setHideStacks(boolean hideStacks)
+    {
+        this.hideStacks = hideStacks;
+
+        // apply setHideStacks to children too.
+        factory.walkChildrenLoggers(this.getName(), (logger) -> logger.setHideStacks(hideStacks));
     }
 
     @Override
@@ -106,12 +197,6 @@ public class JettyLogger implements LocationAwareLogger, Logger
     }
 
     @Override
-    public boolean isDebugEnabled(Marker marker)
-    {
-        return isDebugEnabled();
-    }
-
-    @Override
     public void debug(Marker marker, String msg)
     {
         // TODO: do we want to support org.sfl4j.Marker?
@@ -144,6 +229,18 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         // TODO: do we want to support org.sfl4j.Marker?
         debug(msg, t);
+    }
+
+    @Override
+    public boolean isDebugEnabled()
+    {
+        return level.includes(JettyLevel.DEBUG);
+    }
+
+    @Override
+    public boolean isDebugEnabled(Marker marker)
+    {
+        return isDebugEnabled();
     }
 
     @Override
@@ -192,12 +289,6 @@ public class JettyLogger implements LocationAwareLogger, Logger
     }
 
     @Override
-    public boolean isErrorEnabled(Marker marker)
-    {
-        return isErrorEnabled();
-    }
-
-    @Override
     public void error(Marker marker, String msg)
     {
         // TODO: do we want to support org.sfl4j.Marker?
@@ -232,66 +323,16 @@ public class JettyLogger implements LocationAwareLogger, Logger
         error(msg, t);
     }
 
-    public JettyAppender getAppender()
-    {
-        return appender;
-    }
-
-    /**
-     * Entry point for {@link LocationAwareLogger}
-     */
     @Override
-    public void log(Marker marker, String fqcn, int levelInt, String message, Object[] argArray, Throwable throwable)
+    public boolean isErrorEnabled()
     {
-        if (this.level <= levelInt)
-        {
-            long timestamp = System.currentTimeMillis();
-            String threadName = Thread.currentThread().getName();
-            getAppender().emit(this, intToLevel(levelInt), timestamp, threadName, throwable, message, argArray);
-        }
-    }
-
-    /**
-     * Dynamic (via Reflection) entry point for {@link SubstituteLogger} usage.
-     *
-     * @param event the logging event
-     */
-    @SuppressWarnings("unused")
-    public void log(LoggingEvent event)
-    {
-        // TODO: do we want to support org.sfl4j.Marker?
-        // TODO: do we want to support org.sfl4j.even.KeyValuePair?
-        getAppender().emit(this, event.getLevel(), event.getTimeStamp(), event.getThreadName(), event.getThrowable(), event.getMessage(), event.getArgumentArray());
-    }
-
-    public String getCondensedName()
-    {
-        return condensedName;
-    }
-
-    public int getLevel()
-    {
-        return level;
-    }
-
-    public void setLevel(Level level)
-    {
-        Objects.requireNonNull(level, "Level");
-        setLevel(level.toInt());
-    }
-
-    public void setLevel(int lvlInt)
-    {
-        this.level = lvlInt;
-
-        // apply setLevel to children too.
-        factory.walkChildLoggers(this.getName(), (logger) -> logger.setLevel(lvlInt));
+        return level.includes(JettyLevel.ERROR);
     }
 
     @Override
-    public String getName()
+    public boolean isErrorEnabled(Marker marker)
     {
-        return name;
+        return isErrorEnabled();
     }
 
     @Override
@@ -340,12 +381,6 @@ public class JettyLogger implements LocationAwareLogger, Logger
     }
 
     @Override
-    public boolean isInfoEnabled(Marker marker)
-    {
-        return isInfoEnabled();
-    }
-
-    @Override
     public void info(Marker marker, String msg)
     {
         // TODO: do we want to support org.sfl4j.Marker?
@@ -381,46 +416,15 @@ public class JettyLogger implements LocationAwareLogger, Logger
     }
 
     @Override
-    public boolean isDebugEnabled()
-    {
-        return level <= Level.DEBUG.toInt();
-    }
-
-    @Override
-    public boolean isErrorEnabled()
-    {
-        return level <= Level.ERROR.toInt();
-    }
-
-    public boolean isHideStacks()
-    {
-        return hideStacks;
-    }
-
-    public void setHideStacks(boolean hideStacks)
-    {
-        this.hideStacks = hideStacks;
-
-        // apply setHideStacks to children too.
-        factory.walkChildLoggers(this.getName(), (logger) -> logger.setHideStacks(hideStacks));
-    }
-
-    @Override
     public boolean isInfoEnabled()
     {
-        return level <= Level.INFO.toInt();
+        return level.includes(JettyLevel.INFO);
     }
 
     @Override
-    public boolean isTraceEnabled()
+    public boolean isInfoEnabled(Marker marker)
     {
-        return level <= Level.TRACE.toInt();
-    }
-
-    @Override
-    public boolean isWarnEnabled()
-    {
-        return level <= Level.WARN.toInt();
+        return isInfoEnabled();
     }
 
     @Override
@@ -469,12 +473,6 @@ public class JettyLogger implements LocationAwareLogger, Logger
     }
 
     @Override
-    public boolean isTraceEnabled(Marker marker)
-    {
-        return isTraceEnabled();
-    }
-
-    @Override
     public void trace(Marker marker, String msg)
     {
         // TODO: do we want to support org.sfl4j.Marker?
@@ -507,6 +505,18 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         // TODO: do we want to support org.sfl4j.Marker?
         trace(msg, t);
+    }
+
+    @Override
+    public boolean isTraceEnabled()
+    {
+        return level.includes(JettyLevel.TRACE);
+    }
+
+    @Override
+    public boolean isTraceEnabled(Marker marker)
+    {
+        return isTraceEnabled();
     }
 
     @Override
@@ -555,12 +565,6 @@ public class JettyLogger implements LocationAwareLogger, Logger
     }
 
     @Override
-    public boolean isWarnEnabled(Marker marker)
-    {
-        return isWarnEnabled();
-    }
-
-    @Override
     public void warn(Marker marker, String msg)
     {
         // TODO: do we want to support org.sfl4j.Marker?
@@ -593,6 +597,18 @@ public class JettyLogger implements LocationAwareLogger, Logger
     {
         // TODO: do we want to support org.sfl4j.Marker?
         warn(msg, t);
+    }
+
+    @Override
+    public boolean isWarnEnabled()
+    {
+        return level.includes(JettyLevel.WARN);
+    }
+
+    @Override
+    public boolean isWarnEnabled(Marker marker)
+    {
+        return isWarnEnabled();
     }
 
     private void emit(Level level, String msg)
@@ -636,43 +652,36 @@ public class JettyLogger implements LocationAwareLogger, Logger
         getAppender().emit(this, level, timestamp, threadName, throwable, msg);
     }
 
-    public static Level intToLevel(int level)
+    /**
+     * Entry point for {@link LocationAwareLogger}
+     */
+    @Override
+    public void log(Marker marker, String fqcn, int levelInt, String message, Object[] argArray, Throwable throwable)
     {
-        if (level >= JettyLogger.OFF)
-            return Level.ERROR;
-        if (level >= Level.ERROR.toInt())
-            return Level.ERROR;
-        if (level >= Level.WARN.toInt())
-            return Level.WARN;
-        if (level >= Level.INFO.toInt())
-            return Level.INFO;
-        if (level >= Level.DEBUG.toInt())
-            return Level.DEBUG;
-        if (level >= Level.TRACE.toInt())
-            return Level.TRACE;
-        return Level.TRACE; // everything else
+        if (this.level.toInt() <= levelInt)
+        {
+            long timestamp = System.currentTimeMillis();
+            String threadName = Thread.currentThread().getName();
+            getAppender().emit(this, JettyLevel.intToLevel(levelInt).toLevel(), timestamp, threadName, throwable, message, argArray);
+        }
     }
 
-    public static String levelToString(int level)
+    /**
+     * Dynamic (via Reflection) entry point for {@link SubstituteLogger} usage.
+     *
+     * @param event the logging event
+     */
+    @SuppressWarnings("unused")
+    public void log(LoggingEvent event)
     {
-        if (level >= JettyLogger.OFF)
-            return "OFF";
-        if (level >= Level.ERROR.toInt())
-            return "ERROR";
-        if (level >= Level.WARN.toInt())
-            return "WARN";
-        if (level >= Level.INFO.toInt())
-            return "INFO";
-        if (level >= Level.DEBUG.toInt())
-            return "DEBUG";
-        if (level >= Level.TRACE.toInt())
-            return "TRACE";
-        return "OFF"; // everything else
+        // TODO: do we want to support org.sfl4j.Marker?
+        // TODO: do we want to support org.sfl4j.even.KeyValuePair?
+        getAppender().emit(this, event.getLevel(), event.getTimeStamp(), event.getThreadName(), event.getThrowable(), event.getMessage(), event.getArgumentArray());
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s:%s:LEVEL=%s", JettyLogger.class.getSimpleName(), name, levelToString(level));
+        return String.format("%s:%s:LEVEL=%s", JettyLogger.class.getSimpleName(), name, level.name());
     }
 }

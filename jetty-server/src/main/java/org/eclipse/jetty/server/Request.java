@@ -63,7 +63,6 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
-import javax.servlet.http.MappingMatch;
 import javax.servlet.http.Part;
 import javax.servlet.http.PushBuilder;
 
@@ -83,8 +82,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -193,85 +190,6 @@ public class Request implements HttpServletRequest
         return null;
     }
 
-    public static HttpServletMapping getServletMapping(PathSpec pathSpec, String servletPath, String servletName)
-    {
-        final MappingMatch match;
-        final String mapping;
-        if (pathSpec instanceof ServletPathSpec)
-        {
-            switch (pathSpec.getGroup())
-            {
-                case ROOT:
-                    match = MappingMatch.CONTEXT_ROOT;
-                    mapping = "";
-                    break;
-                case DEFAULT:
-                    match = MappingMatch.DEFAULT;
-                    mapping = "/";
-                    break;
-                case EXACT:
-                    match = MappingMatch.EXACT;
-                    mapping = servletPath.startsWith("/") ? servletPath.substring(1) : servletPath;
-                    break;
-                case SUFFIX_GLOB:
-                    match = MappingMatch.EXTENSION;
-                    int dot = servletPath.lastIndexOf('.');
-                    mapping = servletPath.substring(0, dot);
-                    break;
-                case PREFIX_GLOB:
-                    match = MappingMatch.PATH;
-                    mapping = servletPath;
-                    break;
-                default:
-                    match = null;
-                    mapping = servletPath;
-                    break;
-            }
-        }
-        else
-        {
-            match = null;
-            mapping = servletPath;
-        }
-
-        return new HttpServletMapping()
-        {
-            @Override
-            public String getMatchValue()
-            {
-                return (mapping == null ? "" : mapping);
-            }
-
-            @Override
-            public String getPattern()
-            {
-                if (pathSpec != null)
-                    return pathSpec.getDeclaration();
-                return "";
-            }
-
-            @Override
-            public String getServletName()
-            {
-                return (servletName == null ? "" : servletName);
-            }
-
-            @Override
-            public MappingMatch getMappingMatch()
-            {
-                return match;
-            }
-
-            @Override
-            public String toString()
-            {
-                return "HttpServletMapping{matchValue=" + getMatchValue() +
-                    ", pattern=" + getPattern() + ", servletName=" + getServletName() +
-                    ", mappingMatch=" + getMappingMatch() + "}";
-            }
-        };
-    }
-
     private final HttpChannel _channel;
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final HttpInput _input;
@@ -283,7 +201,7 @@ public class Request implements HttpServletRequest
     private String _contextPath;
     private String _servletPath;
     private String _pathInfo;
-    private PathSpec _pathSpec;
+    private ServletPathMapping _servletPathMapping;
     private boolean _secure;
     private String _asyncNotSupportedSource = null;
     private boolean _newContext;
@@ -739,7 +657,7 @@ public class Request implements HttpServletRequest
     public Attributes getAttributes()
     {
         if (_attributes == null)
-            _attributes = new AttributesMap();
+            _attributes = new ServletAttributes();
         return _attributes;
     }
 
@@ -1752,7 +1670,7 @@ public class Request implements HttpServletRequest
             // TODO this is not really right for CONNECT
             path = _uri.isAbsolute() ? "/" : null;
         else if (encoded.startsWith("/"))
-            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(URIUtil.decodePath(encoded));
+            path = (encoded.length() == 1) ? "/" : _uri.getDecodedPath();
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
             path = encoded;
         else
@@ -1815,7 +1733,7 @@ public class Request implements HttpServletRequest
         _attributes = Attributes.unwrap(_attributes);
         if (_attributes != null)
         {
-            if (AttributesMap.class.equals(_attributes.getClass()))
+            if (ServletAttributes.class.equals(_attributes.getClass()))
                 _attributes.clearAttributes();
             else
                 _attributes = null;
@@ -1841,7 +1759,6 @@ public class Request implements HttpServletRequest
         _queryParameters = null;
         _contentParameters = null;
         _parameters = null;
-        _pathSpec = null;
         _contentParamsExtracted = false;
         _inputState = INPUT_NONE;
         _multiParts = null;
@@ -1896,7 +1813,7 @@ public class Request implements HttpServletRequest
             LOG.warn("Deprecated: org.eclipse.jetty.server.sendContent");
 
         if (_attributes == null)
-            _attributes = new AttributesMap();
+            _attributes = new ServletAttributes();
         _attributes.setAttribute(name, value);
 
         if (!_requestAttributeListeners.isEmpty())
@@ -1917,6 +1834,76 @@ public class Request implements HttpServletRequest
     public void setAttributes(Attributes attributes)
     {
         _attributes = attributes;
+    }
+
+    public void setAsyncAttributes()
+    {
+        // Return if we have been async dispatched before.
+        if (getAttribute(AsyncContext.ASYNC_REQUEST_URI) != null)
+            return;
+
+        // Unwrap the _attributes to get the base attributes instance.
+        Attributes baseAttributes;
+        if (_attributes == null)
+            baseAttributes = _attributes = new ServletAttributes();
+        else
+            baseAttributes = Attributes.unwrap(_attributes);
+
+        // We cannot use a apply AsyncAttribute via #setAttributes as that
+        // will wrap over any dispatch specific attribute wrappers (eg.
+        // Dispatcher#ForwardAttributes).   Async attributes must persist
+        // after the current dispatch, so they must be set under any other
+        // wrappers.
+
+        String fwdRequestURI = (String)getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+        if (fwdRequestURI == null)
+        {
+            if (baseAttributes instanceof ServletAttributes)
+            {
+                // The baseAttributes map is our ServletAttributes, so we can set the async
+                // attributes there, under any other wrappers.
+                ((ServletAttributes)baseAttributes).setAsyncAttributes(getRequestURI(),
+                    getContextPath(),
+                    getPathInfo(), // TODO change to pathInContext when cheaply available
+                    getServletPathMapping(),
+                    getQueryString());
+            }
+            else
+            {
+                // We cannot find our ServletAttributes instance, so just set directly and hope
+                // whatever non jetty wrappers that have been applied will do the right thing.
+                _attributes.setAttribute(AsyncContext.ASYNC_REQUEST_URI, getRequestURI());
+                _attributes.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, getContextPath());
+                _attributes.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, getServletPath());
+                _attributes.setAttribute(AsyncContext.ASYNC_PATH_INFO, getPathInfo());
+                _attributes.setAttribute(AsyncContext.ASYNC_QUERY_STRING, getQueryString());
+                _attributes.setAttribute(AsyncContext.ASYNC_MAPPING, getHttpServletMapping());
+            }
+        }
+        else
+        {
+            if (baseAttributes instanceof ServletAttributes)
+            {
+                // The baseAttributes map is our ServletAttributes, so we can set the async
+                // attributes there, under any other wrappers.
+                ((ServletAttributes)baseAttributes).setAsyncAttributes(fwdRequestURI,
+                    (String)getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH),
+                    (String)getAttribute(RequestDispatcher.FORWARD_PATH_INFO),
+                    (ServletPathMapping)getAttribute(RequestDispatcher.FORWARD_MAPPING),
+                    (String)getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
+            }
+            else
+            {
+                // We cannot find our ServletAttributes instance, so just set directly and hope
+                // whatever non jetty wrappers that have been applied will do the right thing.
+                _attributes.setAttribute(AsyncContext.ASYNC_REQUEST_URI, fwdRequestURI);
+                _attributes.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
+                _attributes.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
+                _attributes.setAttribute(AsyncContext.ASYNC_PATH_INFO, getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
+                _attributes.setAttribute(AsyncContext.ASYNC_QUERY_STRING, getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
+                _attributes.setAttribute(AsyncContext.ASYNC_MAPPING, getAttribute(RequestDispatcher.FORWARD_MAPPING));
+            }
+        }
     }
 
     /**
@@ -2358,19 +2345,34 @@ public class Request implements HttpServletRequest
         throw new ServletException("HttpServletRequest.upgrade() not supported in Jetty");
     }
 
-    public void setPathSpec(PathSpec pathSpec)
+    /**
+     * Set the servletPathMapping, the servletPath and the pathInfo.
+     * TODO remove the side effect on servletPath and pathInfo by removing those fields.
+     * @param servletPathMapping The mapping used to return from {@link #getHttpServletMapping()}
+     */
+    public void setServletPathMapping(ServletPathMapping servletPathMapping)
     {
-        _pathSpec = pathSpec;
+        _servletPathMapping = servletPathMapping;
+        if (servletPathMapping == null)
+        {
+            // TODO reset the servletPath and pathInfo, but currently cannot do that
+            // as we don't know the pathInContext.
+        }
+        else
+        {
+            _servletPath = servletPathMapping.getServletPath();
+            _pathInfo = servletPathMapping.getPathInfo();
+        }
     }
 
-    public PathSpec getPathSpec()
+    public ServletPathMapping getServletPathMapping()
     {
-        return _pathSpec;
+        return _servletPathMapping;
     }
 
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        return Request.getServletMapping(_pathSpec, _servletPath, getServletName());
+        return _servletPathMapping;
     }
 }

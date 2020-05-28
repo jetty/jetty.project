@@ -29,7 +29,7 @@
     <jsp.version>9.0.29</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <conscrypt.version>2.4.0</conscrypt.version>
-    <asm.version>7.2</asm.version>
+    <asm.version>7.3.1</asm.version>
     <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.4.0</tycho-version>
@@ -56,8 +56,7 @@
 
     <!-- testing -->
     <it.debug>false</it.debug>
-    <jetty.test.version>5.3</jetty.test.version>
-
+    <jetty.test.version>5.4</jetty.test.version>
     <!-- springboot is only used for jetty-maven-plugin it test
     otherwise depending on Spring Boot might be chicken and egg issue :) -->
     <springboot.version>2.1.1.RELEASE</springboot.version>
@@ -66,6 +65,7 @@
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
+    <testcontainers.version>1.14.2</testcontainers.version>
   </properties>
 
   <licenses>
@@ -1066,12 +1066,12 @@
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers</artifactId>
-        <version>1.14.1</version>
+        <version>${testcontainers.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>junit-jupiter</artifactId>
-        <version>1.14.1</version>
+        <version>${testcontainers.version}</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
@@ -1103,6 +1103,12 @@
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-simple</artifactId>
         <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>jul-to-slf4j</artifactId>
+        <version>${slf4j.version}</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.jboss.logging</groupId>

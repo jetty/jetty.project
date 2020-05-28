@@ -117,7 +117,7 @@ public class TestServletAnnotations
         ServletMapping m = new ServletMapping();
         m.setPathSpec("/");
         m.setServletName("default");
-        m.setDefault(true);  //this mapping will be from a default descriptor
+        m.setFromDefaultDescriptor(true);  //this mapping will be from a default descriptor
         wac.getServletHandler().addServletMapping(m);
 
         WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.annotations.ServletD", null);
@@ -150,13 +150,13 @@ public class TestServletAnnotations
         ServletMapping m = new ServletMapping();
         m.setPathSpec("/");
         m.setServletName("default");
-        m.setDefault(true);  //this mapping will be from a default descriptor
+        m.setFromDefaultDescriptor(true);  //this mapping will be from a default descriptor
         wac.getServletHandler().addServletMapping(m);
 
         ServletMapping m2 = new ServletMapping();
         m2.setPathSpec("/other");
         m2.setServletName("default");
-        m2.setDefault(true);  //this mapping will be from a default descriptor
+        m2.setFromDefaultDescriptor(true);  //this mapping will be from a default descriptor
         wac.getServletHandler().addServletMapping(m2);
 
         WebServletAnnotation annotation = new WebServletAnnotation(wac, "org.eclipse.jetty.annotations.ServletD", null);
@@ -235,7 +235,7 @@ public class TestServletAnnotations
 
         ServletMapping m = new ServletMapping();
         m.setPathSpec("/default");
-        m.setDefault(true);
+        m.setFromDefaultDescriptor(true);
         m.setServletName("DServlet");
         wac.getServletHandler().addServletMapping(m);
 

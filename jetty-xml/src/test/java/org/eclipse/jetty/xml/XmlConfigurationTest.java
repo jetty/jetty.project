@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.logging.JettyLevel;
 import org.eclipse.jetty.logging.JettyLogger;
 import org.eclipse.jetty.logging.StdErrAppender;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -54,7 +55,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 import org.xml.sax.SAXException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -1595,13 +1595,13 @@ public class XmlConfigurationTest
         JettyLogger jettyLogger = (JettyLogger)slf4jLogger;
         StdErrAppender appender = (StdErrAppender)jettyLogger.getAppender();
         PrintStream oldStream = appender.getStream();
-        int oldLevel = jettyLogger.getLevel();
+        JettyLevel oldLevel = jettyLogger.getLevel();
         try
         {
             // capture events
             appender.setStream(new PrintStream(logBytes, true));
             // make sure we are seeing WARN level events
-            jettyLogger.setLevel(Level.WARN);
+            jettyLogger.setLevel(JettyLevel.WARN);
 
             action.run();
         }

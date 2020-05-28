@@ -20,9 +20,9 @@ module org.eclipse.jetty.websocket.jetty.client
 {
     exports org.eclipse.jetty.websocket.client;
 
-    requires transitive org.eclipse.jetty.client;
-    requires transitive org.eclipse.jetty.websocket.jetty.api;
-    requires org.eclipse.jetty.websocket.core;
+    requires org.eclipse.jetty.websocket.core.client;
     requires org.eclipse.jetty.websocket.jetty.common;
     requires org.slf4j;
+    requires transitive org.eclipse.jetty.client;
+    requires transitive org.eclipse.jetty.websocket.jetty.api;
 }
