@@ -14,7 +14,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "-T3 -Pmongodb clean install", "maven3", true ) // -Pautobahn
+                mavenBuild( "jdk11", "-T3 clean install", "maven3", true ) // -Pautobahn
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                        exclusionPattern: '' +
@@ -44,7 +44,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk14", "-T3 -Pmongodb clean install", "maven3", true )
+                mavenBuild( "jdk14", "-T3 clean install", "maven3", true )
                 warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
                 junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
               }
