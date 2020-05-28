@@ -40,7 +40,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +103,7 @@ public class BufferedResponseHandler extends HandlerWrapper
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         final ServletContext context = baseRequest.getServletContext();
-        final String path = context == null ? baseRequest.getRequestURI() : URIUtil.addPaths(baseRequest.getServletPath(), baseRequest.getPathInfo());
+        final String path = baseRequest.getPathInContext();
         LOG.debug("{} handle {} in {}", this, baseRequest, context);
 
         HttpOutput out = baseRequest.getResponse().getHttpOutput();

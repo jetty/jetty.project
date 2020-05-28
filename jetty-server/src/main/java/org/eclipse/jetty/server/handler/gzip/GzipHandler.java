@@ -45,7 +45,6 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.RegexSet;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -582,7 +581,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         final ServletContext context = baseRequest.getServletContext();
-        final String path = context == null ? baseRequest.getRequestURI() : URIUtil.addPaths(baseRequest.getServletPath(), baseRequest.getPathInfo());
+        final String path = baseRequest.getPathInContext();
         LOG.debug("{} handle {} in {}", this, baseRequest, context);
 
         if (!_dispatchers.contains(baseRequest.getDispatcherType()))

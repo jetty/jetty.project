@@ -107,14 +107,16 @@ import org.slf4j.LoggerFactory;
  * request object to be as lightweight as possible and not actually implement any significant behavior. For example
  * <ul>
  *
- * <li>The {@link Request#getContextPath()} method will return null, until the request has been passed to a {@link ContextHandler} which matches the
- * {@link Request#getPathInfo()} with a context path and calls {@link Request#setContextPath(String)} as a result.</li>
+ * <li>the {@link Request#getContextPath()} method will return null, until the request has been passed to a {@link ContextHandler} which matches the
+ * {@link Request#getPathInfo()} with a context path and calls {@link Request#setContext(Context,String)} as a result.  For
+ * some dispatch types (ie include and named dispatch) the context path may not reflect the {@link ServletContext} set
+ * by {@link Request#setContext(Context, String)}.</li>
  *
  * <li>the HTTP session methods will all return null sessions until such time as a request has been passed to a
  * {@link org.eclipse.jetty.server.session.SessionHandler} which checks for session cookies and enables the ability to create new sessions.</li>
  *
- * <li>The {@link Request#getServletPath()} method will return null until the request has been passed to a <code>org.eclipse.jetty.servlet.ServletHandler</code>
- * and the pathInfo matched against the servlet URL patterns and {@link Request#setServletPath(String)} called as a result.</li>
+ * <li>The {@link Request#getServletPath()} method will return "" until the request has been passed to a <code>org.eclipse.jetty.servlet.ServletHandler</code>
+ * and the pathInfo matched against the servlet URL patterns and {@link Request#setServletPathMapping(ServletPathMapping)} called as a result.</li>
  * </ul>
  *
  * <p>
@@ -198,9 +200,7 @@ public class Request implements HttpServletRequest
     private HttpFields _trailers;
     private HttpURI _uri;
     private String _method;
-    private String _contextPath;
-    private String _servletPath;
-    private String _pathInfo;
+    private String _pathInContext;
     private ServletPathMapping _servletPathMapping;
     private boolean _secure;
     private String _asyncNotSupportedSource = null;
@@ -777,7 +777,44 @@ public class Request implements HttpServletRequest
     @Override
     public String getContextPath()
     {
-        return _contextPath;
+        // The context path returned is normally for the current context.  Except during a cross context
+        // INCLUDE dispatch, in which case this method returns the context path of the source context,
+        // which we recover from the IncludeAttributes wrapper.
+        Context context;
+        if (_dispatcherType == DispatcherType.INCLUDE)
+        {
+            Dispatcher.IncludeAttributes include = Attributes.unwrap(_attributes, Dispatcher.IncludeAttributes.class);
+            context = (include == null) ? _context : include.getSourceContext();
+        }
+        else
+        {
+            context = _context;
+        }
+
+        if (context == null)
+            return null;
+
+        // For some reason the spec requires the context path to be encoded (unlike getServletPath).
+        String contextPath = context.getContextHandler().getContextPathEncoded();
+
+        // For the root context, the spec requires that the empty string is returned instead of the leading '/'
+        // which is included in the pathInContext
+        if (URIUtil.SLASH.equals(contextPath))
+            return "";
+        return contextPath;
+    }
+
+    /** Get the path in the context.
+     *
+     * The path relative to the context path, analogous to {@link #getServletPath()} + {@link #getPathInfo()}.
+     * If no context is set, then the path in context is the full path.
+     * @return The decoded part of the {@link #getRequestURI()} path after any {@link #getContextPath()}
+     *         up to any {@link #getQueryString()}, excluding path parameters.
+     * @see #setContext(Context, String)
+     */
+    public String getPathInContext()
+    {
+        return _pathInContext;
     }
 
     @Override
@@ -1048,15 +1085,20 @@ public class Request implements HttpServletRequest
     @Override
     public String getPathInfo()
     {
-        return _pathInfo;
+        // The pathInfo returned is normally for the current servlet.  Except during an
+        // INCLUDE dispatch, in which case this method returns the pathInfo of the source servlet,
+        // which we recover from the IncludeAttributes wrapper.
+        ServletPathMapping mapping = findServletPathMapping();
+        return mapping == null ? _pathInContext : mapping.getPathInfo();
     }
 
     @Override
     public String getPathTranslated()
     {
-        if (_pathInfo == null || _context == null)
+        String pathInfo = getPathInfo();
+        if (pathInfo == null || _context == null)
             return null;
-        return _context.getRealPath(_pathInfo);
+        return _context.getRealPath(pathInfo);
     }
 
     @Override
@@ -1207,7 +1249,7 @@ public class Request implements HttpServletRequest
         // handle relative path
         if (!path.startsWith("/"))
         {
-            String relTo = URIUtil.addPaths(_servletPath, _pathInfo);
+            String relTo = _pathInContext;
             int slash = relTo.lastIndexOf("/");
             if (slash > 1)
                 relTo = relTo.substring(0, slash + 1);
@@ -1335,9 +1377,11 @@ public class Request implements HttpServletRequest
     @Override
     public String getServletPath()
     {
-        if (_servletPath == null)
-            _servletPath = "";
-        return _servletPath;
+        // The servletPath returned is normally for the current servlet.  Except during an
+        // INCLUDE dispatch, in which case this method returns the servletPath of the source servlet,
+        // which we recover from the IncludeAttributes wrapper.
+        ServletPathMapping mapping = findServletPathMapping();
+        return mapping == null ? "" : mapping.getServletPath();
     }
 
     public ServletResponse getServletResponse()
@@ -1678,10 +1722,10 @@ public class Request implements HttpServletRequest
 
         if (path == null || path.isEmpty())
         {
-            setPathInfo(encoded == null ? "" : encoded);
+            _pathInContext = encoded == null ? "" : encoded;
             throw new BadMessageException(400, "Bad URI");
         }
-        setPathInfo(path);
+        _pathInContext = path;
     }
 
     public org.eclipse.jetty.http.MetaData.Request getMetaData()
@@ -1740,13 +1784,12 @@ public class Request implements HttpServletRequest
         }
         _contentType = null;
         _characterEncoding = null;
-        _contextPath = null;
+        _pathInContext = null;
         if (_cookies != null)
             _cookies.reset();
         _cookiesExtracted = false;
         _context = null;
         _newContext = false;
-        _pathInfo = null;
         _queryEncoding = null;
         _requestedSessionId = null;
         _requestedSessionIdFromCookie = false;
@@ -1754,7 +1797,6 @@ public class Request implements HttpServletRequest
         _session = null;
         _sessionHandler = null;
         _scope = null;
-        _servletPath = null;
         _timeStamp = 0;
         _queryParameters = null;
         _contentParameters = null;
@@ -1831,6 +1873,13 @@ public class Request implements HttpServletRequest
         }
     }
 
+    /**
+     * Set the attributes for the request.
+     *
+     * @param attributes The attributes, which must be a {@link org.eclipse.jetty.util.Attributes.Wrapper}
+     *                   for which {@link Attributes#unwrap(Attributes)} will return the
+     *                   original {@link ServletAttributes}.
+     */
     public void setAttributes(Attributes attributes)
     {
         _attributes = attributes;
@@ -1864,7 +1913,7 @@ public class Request implements HttpServletRequest
                 // attributes there, under any other wrappers.
                 ((ServletAttributes)baseAttributes).setAsyncAttributes(getRequestURI(),
                     getContextPath(),
-                    getPathInfo(), // TODO change to pathInContext when cheaply available
+                    getPathInContext(),
                     getServletPathMapping(),
                     getQueryString());
             }
@@ -1955,42 +2004,30 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * Set request context
+     * Set request context and path in the context.
      *
      * @param context context object
+     * @param pathInContext the part of the URI path that is withing the context.
+     *                      For servlets, this is equal to servletPath + pathInfo
      */
-    public void setContext(Context context)
+    public void setContext(Context context, String pathInContext)
     {
         _newContext = _context != context;
-        if (context == null)
-            _context = null;
-        else
-        {
-            _context = context;
+        _context = context;
+        _pathInContext = pathInContext;
+        if (context != null)
             _errorContext = context;
-        }
     }
 
     /**
      * @return True if this is the first call of <code>takeNewContext()</code> since the last
-     * {@link #setContext(org.eclipse.jetty.server.handler.ContextHandler.Context)} call.
+     * {@link #setContext(org.eclipse.jetty.server.handler.ContextHandler.Context, String)} call.
      */
     public boolean takeNewContext()
     {
         boolean nc = _newContext;
         _newContext = false;
         return nc;
-    }
-
-    /**
-     * Sets the "context path" for this request
-     *
-     * @param contextPath the context path for this request
-     * @see HttpServletRequest#getContextPath()
-     */
-    public void setContextPath(String contextPath)
-    {
-        _contextPath = contextPath;
     }
 
     /**
@@ -2024,14 +2061,6 @@ public class Request implements HttpServletRequest
     public boolean isHead()
     {
         return HttpMethod.HEAD.is(getMethod());
-    }
-
-    /**
-     * @param pathInfo The pathInfo to set.
-     */
-    public void setPathInfo(String pathInfo)
-    {
-        _pathInfo = pathInfo;
     }
 
     /**
@@ -2069,14 +2098,6 @@ public class Request implements HttpServletRequest
     public void setRequestedSessionIdFromCookie(boolean requestedSessionIdCookie)
     {
         _requestedSessionIdFromCookie = requestedSessionIdCookie;
-    }
-
-    /**
-     * @param servletPath The servletPath to set.
-     */
-    public void setServletPath(String servletPath)
-    {
-        _servletPath = servletPath;
     }
 
     /**
@@ -2347,32 +2368,48 @@ public class Request implements HttpServletRequest
 
     /**
      * Set the servletPathMapping, the servletPath and the pathInfo.
-     * TODO remove the side effect on servletPath and pathInfo by removing those fields.
      * @param servletPathMapping The mapping used to return from {@link #getHttpServletMapping()}
      */
     public void setServletPathMapping(ServletPathMapping servletPathMapping)
     {
         _servletPathMapping = servletPathMapping;
-        if (servletPathMapping == null)
-        {
-            // TODO reset the servletPath and pathInfo, but currently cannot do that
-            // as we don't know the pathInContext.
-        }
-        else
-        {
-            _servletPath = servletPathMapping.getServletPath();
-            _pathInfo = servletPathMapping.getPathInfo();
-        }
     }
 
+    /**
+     * @return The mapping for the current target servlet, regardless of dispatch type.
+     */
     public ServletPathMapping getServletPathMapping()
     {
         return _servletPathMapping;
     }
 
+    /**
+     * @return The mapping for the target servlet reported by the {@link #getServletPath()} and
+     * {@link #getPathInfo()} methods.  For {@link DispatcherType#INCLUDE} dispatches, this
+     * method returns the mapping of the source servlet, otherwise it returns the mapping of
+     * the target servlet.
+     */
+    ServletPathMapping findServletPathMapping()
+    {
+        ServletPathMapping mapping;
+        if (_dispatcherType == DispatcherType.INCLUDE)
+        {
+            Dispatcher.IncludeAttributes include = Attributes.unwrap(_attributes, Dispatcher.IncludeAttributes.class);
+            mapping = (include == null) ? _servletPathMapping : include.getSourceMapping();
+        }
+        else
+        {
+            mapping = _servletPathMapping;
+        }
+        return mapping;
+    }
+
     @Override
     public HttpServletMapping getHttpServletMapping()
     {
-        return _servletPathMapping;
+        // The mapping returned is normally for the current servlet.  Except during an
+        // INCLUDE dispatch, in which case this method returns the mapping of the source servlet,
+        // which we recover from the IncludeAttributes wrapper.
+        return findServletPathMapping();
     }
 }
