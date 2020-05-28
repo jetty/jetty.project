@@ -1113,6 +1113,23 @@ public class ResponseTest
     }
     
     @Test
+    public void testAddCookieInInclude() throws Exception
+    {
+        Response response = getResponse();
+        response.include();
+
+        Cookie cookie = new Cookie("naughty", "value");
+        cookie.setDomain("domain");
+        cookie.setPath("/path");
+        cookie.setSecure(true);
+        cookie.setComment("comment__HTTP_ONLY__");
+
+        response.addCookie(cookie);
+
+        assertNull(response.getHttpFields().get("Set-Cookie"));
+    }
+    
+    @Test
     public void testAddCookieSameSiteDefault() throws Exception
     {
         Response response = getResponse();
