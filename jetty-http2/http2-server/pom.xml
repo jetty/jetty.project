@@ -78,4 +78,34 @@
     </dependency>
   </dependencies>
 
+  <profiles>
+    <profile>
+      <id>run-spec-server</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>spec-server-run</id>
+                <phase>test</phase>
+                <configuration>
+                  <mainClass>org.eclipse.jetty.http2.server.H2SpecServer</mainClass>
+                  <classpathScope>test</classpathScope>
+                  <arguments>
+                    <argument>8080</argument>
+                  </arguments>
+                </configuration>
+                <goals>
+                  <goal>java</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
 </project>
