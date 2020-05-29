@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import javax.websocket.Extension;
 import javax.websocket.Extension.Parameter;
 import javax.websocket.server.ServerEndpointConfig;
@@ -70,7 +71,7 @@ public class JavaxWebSocketCreator implements WebSocketCreator
         // per upgrade request.
         ServerEndpointConfig config = new ServerEndpointConfigWrapper(baseConfig)
         {
-            Map<String, Object> userProperties = new HashMap<>(baseConfig.getUserProperties());
+            final Map<String, Object> userProperties = new HashMap<>(baseConfig.getUserProperties());
 
             @Override
             public Map<String, Object> getUserProperties()
@@ -183,15 +184,13 @@ public class JavaxWebSocketCreator implements WebSocketCreator
             return false;
 
         JavaxWebSocketCreator that = (JavaxWebSocketCreator)o;
-
-        return baseConfig != null ? baseConfig.equals(that.baseConfig) : that.baseConfig == null;
+        return Objects.equals(baseConfig, that.baseConfig);
     }
 
     @Override
     public int hashCode()
     {
-        int result = (baseConfig != null ? baseConfig.hashCode() : 0);
-        return result;
+        return (baseConfig != null ? baseConfig.hashCode() : 0);
     }
 
     @Override
