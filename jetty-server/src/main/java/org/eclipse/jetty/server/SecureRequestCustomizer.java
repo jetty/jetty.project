@@ -283,10 +283,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         request.setAttributes(new SslAttributes(request, sslSession, request.getAttributes()));
     }
 
-    private X509Certificate[] getCertChain(Request request, SSLSession sslSession)
+    private X509Certificate[] getCertChain(Connector connector, SSLSession sslSession)
     {
         // The in-use SslContextFactory should be present in the Connector's SslConnectionFactory
-        Connector connector = request.getHttpChannel().getConnector();
         SslConnectionFactory sslConnectionFactory = connector.getConnectionFactory(SslConnectionFactory.class);
         if (sslConnectionFactory != null)
         {
@@ -338,16 +337,16 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                 switch (name)
                 {
                     case JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE:
-                        return SecureRequestCustomizer.this.getCertChain(_request, _session);
+                        return getSslSessionInfo().getCerts();
 
                     case JAVAX_SERVLET_REQUEST_CIPHER_SUITE:
                         return _session.getCipherSuite();
 
                     case JAVAX_SERVLET_REQUEST_KEY_SIZE:
-                        return SslContextFactory.deduceKeyLength(_session.getCipherSuite());
+                        return getSslSessionInfo().getKeySize();
 
                     case JAVAX_SERVLET_REQUEST_SSL_SESSION_ID:
-                        return TypeUtil.toHexString(_session.getId());
+                        return getSslSessionInfo().getIdStr();
 
                     default:
                         String sessionAttribute = getSslSessionAttribute();
@@ -363,6 +362,27 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             return null;
         }
 
+        /**
+         * Get information belonging to the {@link SSLSession}.
+         *
+         * @return the SSLSessionInfo
+         */
+        private CachedSslSessionInfo getSslSessionInfo()
+        {
+            CachedSslSessionInfo cachedSslSessionInfo = (CachedSslSessionInfo)_session.getValue(CachedSslSessionInfo.ATTR);
+            if (cachedSslSessionInfo == null)
+            {
+                String cipherSuite = _session.getCipherSuite();
+                int keySize = SslContextFactory.deduceKeyLength(cipherSuite);
+                X509Certificate[] certs = getCertChain(_request.getHttpChannel().getConnector(), _session);
+                byte[] bytes = _session.getId();
+                String idStr = TypeUtil.toHexString(bytes);
+                cachedSslSessionInfo = new CachedSslSessionInfo(keySize, certs, idStr);
+                _session.putValue(CachedSslSessionInfo.ATTR, cachedSslSessionInfo);
+            }
+            return cachedSslSessionInfo;
+        }
+
         @Override
         public Set<String> getAttributeNameSet()
         {
@@ -375,6 +395,43 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             if (!StringUtil.isEmpty(sessionAttribute))
                 names.add(sessionAttribute);
             return names;
+        }
+    }
+
+    /**
+     * Simple bundle of information that is cached in the SSLSession. Stores the
+     * effective keySize and the client certificate chain.
+     */
+    private static class CachedSslSessionInfo
+    {
+        /**
+         * The name of the SSLSession attribute that will contain any cached information.
+         */
+        public static final String ATTR = CachedSslSessionInfo.class.getName();
+        private final X509Certificate[] _certs;
+        private final Integer _keySize;
+        private final String _idStr;
+
+        CachedSslSessionInfo(Integer keySize, X509Certificate[] certs, String idStr)
+        {
+            this._keySize = keySize;
+            this._certs = certs;
+            this._idStr = idStr;
+        }
+
+        X509Certificate[] getCerts()
+        {
+            return _certs;
+        }
+
+        Integer getKeySize()
+        {
+            return _keySize;
+        }
+
+        String getIdStr()
+        {
+            return _idStr;
         }
     }
 }
