@@ -120,7 +120,29 @@ public class QuickStartWebApp extends WebAppContext
     {
         _generateOrigin = generateOrigin;
     }
-
+    
+    /**
+     * Never call any listeners unless we are fully
+     * starting the webapp.
+     */
+    @Override
+    public void contextInitialized() throws Exception
+    {
+        if (_startWebapp)
+            super.contextInitialized();
+    }
+    
+    /**
+     * Never call any listeners unless we are fully
+     * starting the webapp.
+     */
+    @Override
+    public void contextDestroyed() throws Exception
+    {
+        if (_startWebapp)
+            super.contextDestroyed();
+    }
+    
     @Override
     protected void startWebapp() throws Exception
     {
