@@ -1490,37 +1490,36 @@
         </pluginRepository>
       </pluginRepositories>
     </profile>
-    <profile>
-      <id>snapshot-repositories</id>
-      <activation>
-        <!-- temporary until we get jetty-jakarta-api released -->
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <repositories>
-        <repository>
-          <id>jetty-snapshots</id>
-          <name>jetty-snapshots</name>
-          <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-        </repository>
-        <repository>
-          <id>oss.snapshots</id>
-          <name>OSS Snapshots</name>
-          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </repository>
-      </repositories>
-    </profile>
+<!--    <profile>-->
+<!--      <id>snapshot-repositories</id>-->
+<!--      <activation>-->
+<!--        <activeByDefault>true</activeByDefault>-->
+<!--      </activation>-->
+<!--      <repositories>-->
+<!--        <repository>-->
+<!--          <id>jetty-snapshots</id>-->
+<!--          <name>jetty-snapshots</name>-->
+<!--          <url>https://oss.sonatype.org/content/repositories/jetty-snapshots</url>-->
+<!--          <snapshots>-->
+<!--            <enabled>true</enabled>-->
+<!--          </snapshots>-->
+<!--          <releases>-->
+<!--            <enabled>false</enabled>-->
+<!--          </releases>-->
+<!--        </repository>-->
+<!--        <repository>-->
+<!--          <id>oss.snapshots</id>-->
+<!--          <name>OSS Snapshots</name>-->
+<!--          <url>https://oss.sonatype.org/content/repositories/snapshots</url>-->
+<!--          <releases>-->
+<!--            <enabled>false</enabled>-->
+<!--          </releases>-->
+<!--          <snapshots>-->
+<!--            <enabled>true</enabled>-->
+<!--          </snapshots>-->
+<!--        </repository>-->
+<!--      </repositories>-->
+<!--    </profile>-->
   </profiles>
 
   <issueManagement>
