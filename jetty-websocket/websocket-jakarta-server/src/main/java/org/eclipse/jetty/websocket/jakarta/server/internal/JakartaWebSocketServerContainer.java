@@ -36,10 +36,10 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.util.ReflectUtils;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -161,6 +161,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         return frameHandlerFactory;
     }
 
+    @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
         if (endpointClass == null)
@@ -170,19 +171,12 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
 
         if (isStarted() || isStarting())
         {
-            try
-            {
-                ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
-                if (anno == null)
-                    throw new DeploymentException(String.format("Class must be @%s annotated: %s", ServerEndpoint.class.getName(), endpointClass.getName()));
+            ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
+            if (anno == null)
+                throw new DeploymentException(String.format("Class must be @%s annotated: %s", ServerEndpoint.class.getName(), endpointClass.getName()));
 
-                ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
-                addEndpointMapping(config);
-            }
-            catch (WebSocketException e)
-            {
-                throw new DeploymentException("Unable to deploy: " + endpointClass.getName(), e);
-            }
+            ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
+            addEndpointMapping(config);
         }
         else
         {
@@ -200,23 +194,16 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
 
         if (isStarted() || isStarting())
         {
+            // If we have annotations merge the annotated ServerEndpointConfig with the provided one.
             Class<?> endpointClass = providedConfig.getEndpointClass();
-            try
-            {
-                // If we have annotations merge the annotated ServerEndpointConfig with the provided one.
-                ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
-                ServerEndpointConfig config = (anno == null) ? providedConfig
-                    : new AnnotatedServerEndpointConfig(this, endpointClass, anno, providedConfig);
+            ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
+            ServerEndpointConfig config = (anno == null) ? providedConfig
+                : new AnnotatedServerEndpointConfig(this, endpointClass, anno, providedConfig);
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), endpointClass);
+            if (LOG.isDebugEnabled())
+                LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), endpointClass);
 
-                addEndpointMapping(config);
-            }
-            catch (WebSocketException e)
-            {
-                throw new DeploymentException("Unable to deploy: " + endpointClass.getName(), e);
-            }
+            addEndpointMapping(config);
         }
         else
         {
@@ -226,14 +213,23 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         }
     }
 
-    private void addEndpointMapping(ServerEndpointConfig config) throws WebSocketException
+    private void addEndpointMapping(ServerEndpointConfig config) throws DeploymentException
     {
-        frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
+        if (!ReflectUtils.isDefaultConstructable(config.getEndpointClass()))
+            throw new DeploymentException("Cannot access default constructor for the Endpoint class");
 
-        JakartaWebSocketCreator creator = new JakartaWebSocketCreator(this, config, getExtensionRegistry());
+        try
+        {
+            frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
+            JakartaWebSocketCreator creator = new JakartaWebSocketCreator(this, config, getExtensionRegistry());
+            PathSpec pathSpec = new UriTemplatePathSpec(config.getPath());
+            webSocketMapping.addMapping(pathSpec, creator, frameHandlerFactory, defaultCustomizer);
+        }
+        catch (Throwable t)
+        {
+            throw new DeploymentException("Unable to deploy: " + config.getEndpointClass().getName(), t);
+        }
 
-        PathSpec pathSpec = new UriTemplatePathSpec(config.getPath());
-        webSocketMapping.addMapping(pathSpec, creator, frameHandlerFactory, defaultCustomizer);
     }
 
     @Override
