@@ -17,7 +17,7 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>com.github.madgnome</groupId>
+        <groupId>org.mortbay.jetty</groupId>
         <artifactId>h2spec-maven-plugin</artifactId>
         <configuration>
           <mainClass>org.eclipse.jetty.http2.server.H2SpecServer</mainClass>
