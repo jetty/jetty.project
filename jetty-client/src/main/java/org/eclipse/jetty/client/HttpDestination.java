@@ -452,12 +452,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public boolean remove(Connection connection)
     {
-        return connectionPool.remove(connection);
-    }
-
-    public void close(Connection connection)
-    {
-        boolean removed = remove(connection);
+        boolean removed = connectionPool.remove(connection);
 
         if (getHttpExchanges().isEmpty())
         {
@@ -465,12 +460,19 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         }
         else
         {
-            // We need to execute queued requests even if this connection failed.
-            // We may create a connection that is not needed, but it will eventually
-            // idle timeout, so no worries.
+            // We need to execute queued requests
+            // even if this connection was removed.
+            // We may create a connection that is not
+            // needed, but it will eventually idle timeout.
             if (removed)
                 process(true);
         }
+        return connectionPool.remove(connection);
+    }
+
+    public void close(Connection connection)
+    {
+        remove(connection);
     }
 
     /**
