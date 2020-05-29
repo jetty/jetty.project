@@ -320,6 +320,10 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     private void process(boolean create)
     {
+        // The loop is necessary in case of a new multiplexed connection,
+        // when a single thread notified of the connection opening must
+        // process all queued exchanges.
+        // In other cases looping is a work-stealing optimization.
         while (true)
         {
             Connection connection;
@@ -363,17 +367,20 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 if (LOG.isDebugEnabled())
                     LOG.debug("Aborted before processing {}: {}", exchange, cause);
                 // Won't use this connection, release it back.
-                if (!connectionPool.release(connection))
+                boolean released = connectionPool.release(connection);
+                if (!released)
                     connection.close();
                 // It may happen that the request is aborted before the exchange
                 // is created. Aborting the exchange a second time will result in
                 // a no-operation, so we just abort here to cover that edge case.
                 exchange.abort(cause);
-                return getHttpExchanges().size() > 0 ? ProcessResult.CONTINUE : ProcessResult.FINISH;
+                return getHttpExchanges().size() > 0
+                    ?  (released ? ProcessResult.CONTINUE : ProcessResult.RESTART)
+                    : ProcessResult.FINISH;
             }
 
-            SendFailure result = send(connection, exchange);
-            if (result == null)
+            SendFailure failure = send(connection, exchange);
+            if (failure == null)
             {
                 // Aggressively send other queued requests
                 // in case connections are multiplexed.
@@ -381,15 +388,15 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Send failed {} for {}", result, exchange);
-            if (result.retry)
+                LOG.debug("Send failed {} for {}", failure, exchange);
+            if (failure.retry)
             {
                 // Resend this exchange, likely on another connection,
                 // and return false to avoid to re-enter this method.
                 send(exchange);
                 return ProcessResult.FINISH;
             }
-            request.abort(result.failure);
+            request.abort(failure.failure);
             return getHttpExchanges().size() > 0 ? ProcessResult.RESTART : ProcessResult.FINISH;
         }
     }
