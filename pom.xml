@@ -1044,6 +1044,11 @@
         <artifactId>taglibs-standard</artifactId>
         <version>${jsp.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.mortbay.jasper</groupId>
+        <artifactId>apache-el</artifactId>
+        <version>${jsp.version}</version>
+      </dependency>
       <!-- JSTL API -->
       <dependency>
         <groupId>jakarta.servlet.jsp.jstl</groupId>

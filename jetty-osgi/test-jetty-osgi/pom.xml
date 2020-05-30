@@ -210,7 +210,6 @@
     <dependency>
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>apache-el</artifactId>
-        <version>10.0.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>jakarta.servlet.jsp.jstl</groupId>
@@ -225,7 +224,6 @@
     <dependency>
       <groupId>org.mortbay.jasper</groupId>
       <artifactId>taglibs-standard</artifactId>
-      <version>10.0.0-SNAPSHOT</version>
    </dependency>
    <dependency>
     <groupId>org.apache.servicemix.bundles</groupId>
