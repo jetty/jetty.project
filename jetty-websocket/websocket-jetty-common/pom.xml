@@ -17,6 +17,14 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.websocket.jetty.common=org.eclipse.jetty.io
+          </argLine>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <executions>
