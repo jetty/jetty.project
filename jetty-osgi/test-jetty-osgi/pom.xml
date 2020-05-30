@@ -203,9 +203,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-        <groupId>org.mortbay.jasper</groupId>
-        <artifactId>apache-jsp</artifactId>
-        <version>10.0.0-SNAPSHOT</version>
+      <groupId>org.mortbay.jasper</groupId>
+      <artifactId>apache-jsp</artifactId>
     </dependency>
     <dependency>
         <groupId>org.mortbay.jasper</groupId>
