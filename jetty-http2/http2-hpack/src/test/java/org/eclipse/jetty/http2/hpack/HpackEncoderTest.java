@@ -146,6 +146,32 @@ public class HpackEncoderTest
     }
 
     @Test
+    public void testLargeFieldsNotIndexed()
+    {
+        HpackEncoder encoder = new HpackEncoder(38 * 5);
+        HpackContext ctx = encoder.getHpackContext();
+
+        ByteBuffer buffer = BufferUtil.allocate(4096);
+
+        // Index little fields
+        int pos = BufferUtil.flipToFill(buffer);
+        encoder.encode(buffer, new HttpField("Name", "Value"));
+        BufferUtil.flipToFlush(buffer, pos);
+        int dynamicTableSize = ctx.getDynamicTableSize();
+        assertThat(dynamicTableSize, Matchers.greaterThan(0));
+
+        // Do not index big field
+        StringBuilder largeName = new StringBuilder("largeName-");
+        String X = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+        while (largeName.length() < ctx.getMaxDynamicTableSize())
+            largeName.append(X, 0, Math.min(X.length(), ctx.getMaxDynamicTableSize()-largeName.length()));
+        pos = BufferUtil.flipToFill(buffer);
+        encoder.encode(buffer, new HttpField(largeName.toString(), "Value"));
+        BufferUtil.flipToFlush(buffer, pos);
+        assertThat(ctx.getDynamicTableSize(), Matchers.is(dynamicTableSize));
+    }
+
+    @Test
     public void testNeverIndexSetCookie() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder(38 * 5);

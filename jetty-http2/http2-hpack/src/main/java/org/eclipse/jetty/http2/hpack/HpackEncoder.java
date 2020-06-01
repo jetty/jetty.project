@@ -299,11 +299,11 @@ public class HpackEncoder
 
         String encoding = null;
 
-        // Is there an entry for the field?
+        // Is there an index entry for the field?
         Entry entry = _context.get(field);
         if (entry != null)
         {
-            // Known field entry, so encode it as indexed
+            // This is a known indexed field, send as static or dynamic indexed.
             if (entry.isStatic())
             {
                 buffer.put(((StaticEntry)entry).getEncodedField());
@@ -321,10 +321,10 @@ public class HpackEncoder
         }
         else
         {
-            // Unknown field entry, so we will have to send literally.
+            // Unknown field entry, so we will have to send literally, but perhaps add an index.
             final boolean indexed;
 
-            // But do we know it's name?
+            // Do we know it's name?
             HttpHeader header = field.getHeader();
 
             // Select encoding strategy
@@ -342,12 +342,12 @@ public class HpackEncoder
                     if (_debug)
                         encoding = indexed ? "PreEncodedIdx" : "PreEncoded";
                 }
-                // has the custom header name been seen before?
-                else if (name == null)
+                // has the custom header name been seen before and will it fit in dynamic table?
+                else if (name == null && fieldSize < _context.getMaxDynamicTableSize())
                 {
-                    // unknown name and value, so let's index this just in case it is
-                    // the first time we have seen a custom name or a custom field.
-                    // unless the name is changing, this is worthwhile
+                    // unknown name and value that will fit in dynamic table, so let's index
+                    // this just in case it is the first time we have seen a custom name or a
+                    // custom field.  Unless the name is once only, this is worthwhile
                     indexed = true;
                     encodeName(buffer, (byte)0x40, 6, field.getName(), null);
                     encodeValue(buffer, true, field.getValue());
