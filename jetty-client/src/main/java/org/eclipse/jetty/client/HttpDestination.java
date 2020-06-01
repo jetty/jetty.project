@@ -340,7 +340,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         }
     }
 
-    public ProcessResult process(Connection connection)
+    private ProcessResult process(Connection connection)
     {
         HttpClient client = getHttpClient();
         HttpExchange exchange = getHttpExchanges().poll();

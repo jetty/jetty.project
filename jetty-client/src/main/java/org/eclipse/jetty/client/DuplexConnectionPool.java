@@ -52,7 +52,7 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
 
     public DuplexConnectionPool(Destination destination, int maxConnections, Callback requester)
     {
-        super(destination, maxConnections, requester);
+        super((HttpDestination)destination, maxConnections, requester);
         this.idleConnections = new ArrayDeque<>(maxConnections);
         this.activeConnections = new HashSet<>(maxConnections);
     }

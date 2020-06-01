@@ -42,7 +42,6 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     private static final Logger LOG = Log.getLogger(MultiplexConnectionPool.class);
 
     private final ReentrantLock lock = new ReentrantLock();
-    private final HttpDestination destination;
     private final Deque<Holder> idleConnections;
     private final Map<Connection, Holder> muxedConnections;
     private final Map<Connection, Holder> busyConnections;
@@ -51,7 +50,6 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     public MultiplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
         super(destination, maxConnections, requester);
-        this.destination = destination;
         this.idleConnections = new ArrayDeque<>(maxConnections);
         this.muxedConnections = new HashMap<>(maxConnections);
         this.busyConnections = new HashMap<>(maxConnections);
@@ -64,7 +62,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
         Connection connection = activate();
         if (connection == null)
         {
-            int queuedRequests = destination.getQueuedRequestCount();
+            int queuedRequests = getHttpDestination().getQueuedRequestCount();
             int maxMultiplex = getMaxMultiplex();
             int maxPending = ceilDiv(queuedRequests, maxMultiplex);
             tryCreate(maxPending);

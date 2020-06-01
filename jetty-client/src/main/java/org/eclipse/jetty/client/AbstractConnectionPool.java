@@ -47,11 +47,28 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     private final int maxConnections;
     private final Callback requester;
 
+    /**
+     * @param destination the correspondent destination
+     * @param maxConnections the max number of connections
+     * @param requester the callback to notify about new connection creation/failure
+     * @deprecated use {@link #AbstractConnectionPool(HttpDestination, int, Callback)} instead
+     */
+    @Deprecated
     protected AbstractConnectionPool(Destination destination, int maxConnections, Callback requester)
     {
-        this.destination = (HttpDestination)destination;
+        this((HttpDestination)destination, maxConnections, requester);
+    }
+
+    protected AbstractConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
+    {
+        this.destination = destination;
         this.maxConnections = maxConnections;
         this.requester = requester;
+    }
+
+    protected HttpDestination getHttpDestination()
+    {
+        return destination;
     }
 
     @ManagedAttribute(value = "The max number of connections", readonly = true)

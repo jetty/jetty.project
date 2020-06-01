@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.EmptyServerHandler;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -205,7 +207,9 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             }
 
             // There are no exchanges so process() is a no-op.
-            destination.process(connection1);
+            Method process = HttpDestination.class.getDeclaredMethod("process", Connection.class);
+            process.setAccessible(true);
+            process.invoke(destination, connection1);
             destination.release(connection1);
 
             Connection connection2 = connectionPool.acquire();

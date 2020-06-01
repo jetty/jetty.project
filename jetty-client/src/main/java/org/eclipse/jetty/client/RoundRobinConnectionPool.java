@@ -42,7 +42,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
 
     public RoundRobinConnectionPool(Destination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
-        super(destination, maxConnections, requester);
+        super((HttpDestination)destination, maxConnections, requester);
         entries = new ArrayList<>(maxConnections);
         for (int i = 0; i < maxConnections; ++i)
         {
