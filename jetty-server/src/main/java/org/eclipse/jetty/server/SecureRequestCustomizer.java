@@ -369,7 +369,8 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
          */
         private SslSessionData getSslSessionData()
         {
-            SslSessionData sslSessionData = (SslSessionData)_session.getValue(SslSessionData.class.getName());
+            String key = SslSessionData.class.getName();
+            SslSessionData sslSessionData = (SslSessionData)_session.getValue(key);
             if (sslSessionData == null)
             {
                 String cipherSuite = _session.getCipherSuite();
@@ -381,7 +382,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                 String idStr = TypeUtil.toHexString(bytes);
 
                 sslSessionData = new SslSessionData(keySize, certs, idStr);
-                _session.putValue(SslSessionData.class.getName(), sslSessionData);
+                _session.putValue(key, sslSessionData);
             }
             return sslSessionData;
         }
