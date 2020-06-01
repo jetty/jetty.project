@@ -369,7 +369,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
          */
         private SslSessionData getSslSessionData()
         {
-            SslSessionData sslSessionData = (SslSessionData)_session.getValue(SslSessionData.ATTR);
+            SslSessionData sslSessionData = (SslSessionData)_session.getValue(SslSessionData.class.getName());
             if (sslSessionData == null)
             {
                 String cipherSuite = _session.getCipherSuite();
@@ -381,7 +381,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                 String idStr = TypeUtil.toHexString(bytes);
 
                 sslSessionData = new SslSessionData(keySize, certs, idStr);
-                _session.putValue(SslSessionData.ATTR, sslSessionData);
+                _session.putValue(SslSessionData.class.getName(), sslSessionData);
             }
             return sslSessionData;
         }
@@ -402,33 +402,29 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
-     * Simple bundle of information that is cached in the SSLSession.
+     * Simple bundle of data that is cached in the SSLSession.
      */
     private static class SslSessionData
     {
-        /**
-         * The name of the SSLSession attribute that will contain this information.
-         */
-        private static final String ATTR = SslSessionData.class.getName();
         private final Integer _keySize;
         private final X509Certificate[] _certs;
         private final String _idStr;
 
-        private SslSessionData(int keySize, X509Certificate[] certs, String idStr)
+        private SslSessionData(Integer keySize, X509Certificate[] certs, String idStr)
         {
             this._keySize = keySize;
             this._certs = certs;
             this._idStr = idStr;
         }
 
+        private Integer getKeySize()
+        {
+            return _keySize;
+        }
+
         private X509Certificate[] getCerts()
         {
             return _certs;
-        }
-
-        private int getKeySize()
-        {
-            return _keySize;
         }
 
         private String getIdStr()
