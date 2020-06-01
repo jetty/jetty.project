@@ -465,16 +465,14 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         {
             tryRemoveIdleDestination();
         }
-        else
+        else if (removed)
         {
-            // We need to execute queued requests
-            // even if this connection was removed.
+            // Process queued requests that may be waiting.
             // We may create a connection that is not
             // needed, but it will eventually idle timeout.
-            if (removed)
-                process(true);
+            process(true);
         }
-        return connectionPool.remove(connection);
+        return removed;
     }
 
     public void close(Connection connection)
