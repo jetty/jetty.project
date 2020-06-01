@@ -162,9 +162,9 @@ public class HpackEncoderTest
 
         // Do not index big field
         StringBuilder largeName = new StringBuilder("largeName-");
-        String X = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+        String filler = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
         while (largeName.length() < ctx.getMaxDynamicTableSize())
-            largeName.append(X, 0, Math.min(X.length(), ctx.getMaxDynamicTableSize()-largeName.length()));
+            largeName.append(filler, 0, Math.min(filler.length(), ctx.getMaxDynamicTableSize() - largeName.length()));
         pos = BufferUtil.flipToFill(buffer);
         encoder.encode(buffer, new HttpField(largeName.toString(), "Value"));
         BufferUtil.flipToFlush(buffer, pos);
