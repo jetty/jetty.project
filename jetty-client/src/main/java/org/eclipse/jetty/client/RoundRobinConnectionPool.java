@@ -69,6 +69,13 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
         }
     }
 
+    /**
+     * <p>Returns an idle connection, if available, following a round robin algorithm;
+     * otherwise it always tries to create a new connection, up until the max connection count.</p>
+     *
+     * @param create this parameter is ignored and assumed to be always {@code true}
+     * @return an idle connection or {@code null} if no idle connections are available
+     */
     @Override
     protected Connection acquire(boolean create)
     {

@@ -248,7 +248,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     {
         if (closed.compareAndSet(false, true))
         {
-            getHttpDestination().close(this);
+            getHttpDestination().remove(this);
 
             abort(failure);
 

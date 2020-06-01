@@ -475,6 +475,11 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         return removed;
     }
 
+    /**
+     * @param connection the connection to remove
+     * @deprecated use {@link #remove(Connection)} instead
+     */
+    @Deprecated
     public void close(Connection connection)
     {
         remove(connection);
