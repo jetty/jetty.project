@@ -66,13 +66,21 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
         {
             int queuedRequests = destination.getQueuedRequestCount();
             int maxMultiplex = getMaxMultiplex();
-            int maxPending = queuedRequests / maxMultiplex;
-            if (maxPending * maxMultiplex != queuedRequests)
-                ++maxPending;
+            int maxPending = ceilDiv(queuedRequests, maxMultiplex);
             tryCreate(maxPending);
             connection = activate();
         }
         return connection;
+    }
+
+    /**
+     * @param a the dividend
+     * @param b the divisor
+     * @return the ceiling of the algebraic quotient
+     */
+    private static int ceilDiv(int a, int b)
+    {
+        return (a + b - 1) / b;
     }
 
     protected void lock()
