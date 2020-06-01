@@ -395,9 +395,9 @@ public class HpackEncoder
                             (huffman ? "HuffV" : "LitV") +
                             (neverIndex ? "!!Idx" : "!Idx");
                 }
-                else if (fieldSize >= _context.getMaxDynamicTableSize() || header == HttpHeader.CONTENT_LENGTH && field.getValue().length() > 2)
+                else if (fieldSize >= _context.getMaxDynamicTableSize() || header == HttpHeader.CONTENT_LENGTH && field.getIntValue() != 0)
                 {
-                    // Non indexed if field too large or a content length for 3 digits or more
+                    // The field is too large or a non zero content length, so do not index.
                     indexed = false;
                     encodeName(buffer, (byte)0x00, 4, header.asString(), name);
                     encodeValue(buffer, true, field.getValue());

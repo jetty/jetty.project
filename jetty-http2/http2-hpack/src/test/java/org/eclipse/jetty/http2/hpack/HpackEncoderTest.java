@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.BufferUtil;
@@ -167,6 +168,28 @@ public class HpackEncoderTest
             largeName.append(filler, 0, Math.min(filler.length(), ctx.getMaxDynamicTableSize() - largeName.length()));
         pos = BufferUtil.flipToFill(buffer);
         encoder.encode(buffer, new HttpField(largeName.toString(), "Value"));
+        BufferUtil.flipToFlush(buffer, pos);
+        assertThat(ctx.getDynamicTableSize(), Matchers.is(dynamicTableSize));
+    }
+
+    @Test
+    public void testIndexContentLength()
+    {
+        HpackEncoder encoder = new HpackEncoder(38 * 5);
+        HpackContext ctx = encoder.getHpackContext();
+
+        ByteBuffer buffer = BufferUtil.allocate(4096);
+
+        // Index zero content length
+        int pos = BufferUtil.flipToFill(buffer);
+        encoder.encode(buffer, new HttpField(HttpHeader.CONTENT_LENGTH, "0"));
+        BufferUtil.flipToFlush(buffer, pos);
+        int dynamicTableSize = ctx.getDynamicTableSize();
+        assertThat(dynamicTableSize, Matchers.greaterThan(0));
+
+        // Do not index non zero content length
+        pos = BufferUtil.flipToFill(buffer);
+        encoder.encode(buffer, new HttpField(HttpHeader.CONTENT_LENGTH, "42"));
         BufferUtil.flipToFlush(buffer, pos);
         assertThat(ctx.getDynamicTableSize(), Matchers.is(dynamicTableSize));
     }
