@@ -246,7 +246,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     {
         if (closed.compareAndSet(false, true))
         {
-            getHttpDestination().close(this);
+            getHttpDestination().remove(this);
 
             abort(failure);
 

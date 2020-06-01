@@ -45,12 +45,16 @@ public interface ConnectionPool extends Closeable
     boolean isClosed();
 
     /**
-     * <p>Returns an idle connection, if available, or schedules the opening
-     * of a new connection and returns {@code null}.</p>
+     * <p>Returns an idle connection, if available;
+     * if an idle connection is not available, and the given {@code create} parameter is {@code true},
+     * then schedules the opening of a new connection, if possible within the configuration of this
+     * connection pool (for example, if it does not exceed the max connection count);
+     * otherwise returns {@code null}.</p>
      *
-     * @return an available connection, or null
+     * @param create whether to schedule the opening of a connection if no idle connections are available
+     * @return an idle connection or {@code null} if no idle connections are available
      */
-    Connection acquire();
+    Connection acquire(boolean create);
 
     /**
      * <p>Accepts the given connection to be managed by this ConnectionPool.</p>
@@ -61,7 +65,7 @@ public interface ConnectionPool extends Closeable
     boolean accept(Connection connection);
 
     /**
-     * <p>Returns the given connection, previously obtained via {@link #acquire()},
+     * <p>Returns the given connection, previously obtained via {@link #acquire(boolean)},
      * back to this ConnectionPool.</p>
      *
      * @param connection the connection to release

@@ -105,6 +105,8 @@ public abstract class HttpConnection implements IConnection
             }
             else
             {
+                // Association may fail, for example if the application
+                // aborted the request, so we must release the channel.
                 channel.release();
                 result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
             }
@@ -119,6 +121,8 @@ public abstract class HttpConnection implements IConnection
         }
         else
         {
+            // This connection has been timed out by another thread
+            // that will take care of removing it from the pool.
             return new SendFailure(new TimeoutException(), true);
         }
     }

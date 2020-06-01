@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject
 public abstract class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Callback, Dumpable
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(HttpDestination.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpDestination.class);
 
     private final HttpClient client;
     private final Origin origin;
@@ -234,7 +234,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @Override
     public void succeeded()
     {
-        send();
+        send(false);
     }
 
     @Override
@@ -291,32 +291,42 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         }
     }
 
-    public void send()
-    {
-        if (getHttpExchanges().isEmpty())
-            return;
-        process();
-    }
-
     protected boolean enqueue(Queue<HttpExchange> queue, HttpExchange exchange)
     {
         return queue.offer(exchange);
     }
 
-    private void process()
+    public void send()
     {
+        send(true);
+    }
+
+    private void send(boolean create)
+    {
+        if (getHttpExchanges().isEmpty())
+            return;
+        process(create);
+    }
+
+    private void process(boolean create)
+    {
+        // The loop is necessary in case of a new multiplexed connection,
+        // when a single thread notified of the connection opening must
+        // process all queued exchanges.
+        // In other cases looping is a work-stealing optimization.
         while (true)
         {
-            Connection connection = connectionPool.acquire();
+            Connection connection = connectionPool.acquire(create);
             if (connection == null)
                 break;
-            boolean proceed = process(connection);
-            if (!proceed)
+            ProcessResult result = process(connection);
+            if (result == ProcessResult.FINISH)
                 break;
+            create = result == ProcessResult.RESTART;
         }
     }
 
-    public boolean process(Connection connection)
+    private ProcessResult process(Connection connection)
     {
         HttpClient client = getHttpClient();
         HttpExchange exchange = getHttpExchanges().poll();
@@ -332,7 +342,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                     LOG.debug("{} is stopping", client);
                 connection.close();
             }
-            return false;
+            return ProcessResult.FINISH;
         }
         else
         {
@@ -343,31 +353,37 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 if (LOG.isDebugEnabled())
                     LOG.debug("Aborted before processing {}: {}", exchange, cause);
                 // Won't use this connection, release it back.
-                if (!connectionPool.release(connection))
+                boolean released = connectionPool.release(connection);
+                if (!released)
                     connection.close();
                 // It may happen that the request is aborted before the exchange
                 // is created. Aborting the exchange a second time will result in
                 // a no-operation, so we just abort here to cover that edge case.
                 exchange.abort(cause);
+                return getHttpExchanges().size() > 0
+                    ?  (released ? ProcessResult.CONTINUE : ProcessResult.RESTART)
+                    : ProcessResult.FINISH;
             }
-            else
+
+            SendFailure failure = send((IConnection)connection, exchange);
+            if (failure == null)
             {
-                SendFailure result = send((IConnection)connection, exchange);
-                if (result != null)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Send failed {} for {}", result, exchange);
-                    if (result.retry)
-                    {
-                        // Resend this exchange, likely on another connection,
-                        // and return false to avoid to re-enter this method.
-                        send(exchange);
-                        return false;
-                    }
-                    request.abort(result.failure);
-                }
+                // Aggressively send other queued requests
+                // in case connections are multiplexed.
+                return getHttpExchanges().size() > 0 ? ProcessResult.CONTINUE : ProcessResult.FINISH;
             }
-            return getHttpExchanges().peek() != null;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Send failed {} for {}", failure, exchange);
+            if (failure.retry)
+            {
+                // Resend this exchange, likely on another connection,
+                // and return false to avoid to re-enter this method.
+                send(exchange);
+                return ProcessResult.FINISH;
+            }
+            request.abort(failure.failure);
+            return getHttpExchanges().size() > 0 ? ProcessResult.RESTART : ProcessResult.FINISH;
         }
     }
 
@@ -392,11 +408,6 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         return exchanges.remove(exchange);
     }
 
-    public boolean remove(Connection connection)
-    {
-        return connectionPool.remove(connection);
-    }
-
     @Override
     public void close()
     {
@@ -405,24 +416,6 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             LOG.debug("Closed {}", this);
         connectionPool.close();
         timeout.destroy();
-    }
-
-    public void close(Connection connection)
-    {
-        boolean removed = remove(connection);
-
-        if (getHttpExchanges().isEmpty())
-        {
-            tryRemoveIdleDestination();
-        }
-        else
-        {
-            // We need to execute queued requests even if this connection failed.
-            // We may create a connection that is not needed, but it will eventually
-            // idle timeout, so no worries.
-            if (removed)
-                process();
-        }
     }
 
     public void release(Connection connection)
@@ -435,7 +428,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             if (connectionPool.isActive(connection))
             {
                 if (connectionPool.release(connection))
-                    send();
+                    send(false);
                 else
                     connection.close();
             }
@@ -451,6 +444,24 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 LOG.debug("{} is stopped", client);
             connection.close();
         }
+    }
+
+    public boolean remove(Connection connection)
+    {
+        boolean removed = connectionPool.remove(connection);
+
+        if (getHttpExchanges().isEmpty())
+        {
+            tryRemoveIdleDestination();
+        }
+        else if (removed)
+        {
+            // Process queued requests that may be waiting.
+            // We may create a connection that is not
+            // needed, but it will eventually idle timeout.
+            process(true);
+        }
+        return removed;
     }
 
     /**
@@ -579,5 +590,10 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 }
             }
         }
+    }
+
+    private enum ProcessResult
+    {
+        RESTART, CONTINUE, FINISH
     }
 }

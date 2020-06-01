@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -65,7 +64,7 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
     private final long timeout;
     private final Map<Connection, Holder> quarantine;
 
-    public ValidatingConnectionPool(Destination destination, int maxConnections, Callback requester, Scheduler scheduler, long timeout)
+    public ValidatingConnectionPool(HttpDestination destination, int maxConnections, Callback requester, Scheduler scheduler, long timeout)
     {
         super(destination, maxConnections, requester);
         this.scheduler = scheduler;
