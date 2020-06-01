@@ -394,7 +394,7 @@ public class HpackEncoder
                             (huffman ? "HuffV" : "LitV") +
                             (neverIndex ? "!!Idx" : "!Idx");
                 }
-                else if (fieldSize >= _context.getMaxDynamicTableSize() || header == HttpHeader.CONTENT_LENGTH && field.getIntValue() != 0)
+                else if (fieldSize >= _context.getMaxDynamicTableSize() || header == HttpHeader.CONTENT_LENGTH && !"0".equals(field.getValue()))
                 {
                     // The field is too large or a non zero content length, so do not index.
                     indexed = false;
