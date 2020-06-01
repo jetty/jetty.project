@@ -53,6 +53,11 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         this.requester = requester;
     }
 
+    protected HttpDestination getHttpDestination()
+    {
+        return destination;
+    }
+
     @ManagedAttribute(value = "The max number of connections", readonly = true)
     public int getMaxConnectionCount()
     {
