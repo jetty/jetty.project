@@ -324,7 +324,7 @@ public class HpackEncoder
             // Unknown field entry, so we will have to send literally, but perhaps add an index.
             final boolean indexed;
 
-            // Do we know it's name?
+            // Do we know its name?
             HttpHeader header = field.getHeader();
 
             // Select encoding strategy
@@ -342,7 +342,6 @@ public class HpackEncoder
                     if (_debug)
                         encoding = indexed ? "PreEncodedIdx" : "PreEncoded";
                 }
-                // has the custom header name been seen before and will it fit in dynamic table?
                 else if (name == null && fieldSize < _context.getMaxDynamicTableSize())
                 {
                     // unknown name and value that will fit in dynamic table, so let's index
@@ -356,7 +355,7 @@ public class HpackEncoder
                 }
                 else
                 {
-                    // known custom name, but unknown value.
+                    // Known name, but different value.
                     // This is probably a custom field with changing value, so don't index.
                     indexed = false;
                     encodeName(buffer, (byte)0x00, 4, field.getName(), null);
