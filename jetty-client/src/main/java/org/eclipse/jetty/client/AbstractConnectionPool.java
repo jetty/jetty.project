@@ -37,13 +37,12 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
 {
     private static final Logger LOG = Log.getLogger(AbstractConnectionPool.class);
 
-    private final AtomicBoolean closed = new AtomicBoolean();
-
     /**
      * The connectionCount encodes both the total connections plus the pending connection counts, so both can be atomically changed.
      * The bottom 32 bits represent the total connections and the top 32 bits represent the pending connections.
      */
     private final AtomicBiInteger connections = new AtomicBiInteger();
+    private final AtomicBoolean closed = new AtomicBoolean();
     private final HttpDestination destination;
     private final int maxConnections;
     private final Callback requester;
@@ -102,6 +101,15 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         return acquire(true);
     }
 
+    /**
+     * <p>Returns an idle connection, if available;
+     * if an idle connection is not available, and the given {@code create} parameter is {@code true},
+     * then schedules the opening of a new connection;
+     * otherwise returns {@code null}.</p>
+     *
+     * @param create whether to schedule the opening of a connection if no idle connections are available
+     * @return an idle connection or {@code null} if no idle connections are available
+     */
     protected Connection acquire(boolean create)
     {
         Connection connection = activate();
@@ -114,6 +122,16 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         return connection;
     }
 
+    /**
+     * <p>Schedules the opening of a new connection.</p>
+     * <p>Whether a new connection is scheduled for opening is determined by the {@code maxPending} parameter:
+     * if {@code maxPending} is greater than the current number of connections scheduled for opening,
+     * then this method returns without scheduling the opening of a new connection;
+     * if {@code maxPending} is negative, a new connection is always scheduled for opening.</p>
+     *
+     * @param maxPending the max desired number of connections scheduled for opening,
+     * or a negative number to always trigger the opening of a new connection
+     */
     protected void tryCreate(int maxPending)
     {
         while (true)

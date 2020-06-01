@@ -228,7 +228,7 @@ public abstract class HttpConnection implements Connection
             }
             else
             {
-                // Association may fail for example if the application
+                // Association may fail, for example if the application
                 // aborted the request, so we must release the channel.
                 channel.release();
                 result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
