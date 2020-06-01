@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -35,12 +34,12 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
     private int maxMultiplex;
     private int index;
 
-    public RoundRobinConnectionPool(Destination destination, int maxConnections, Callback requester)
+    public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
     {
         this(destination, maxConnections, requester, 1);
     }
 
-    public RoundRobinConnectionPool(Destination destination, int maxConnections, Callback requester, int maxMultiplex)
+    public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
         super(destination, maxConnections, requester);
         entries = new ArrayList<>(maxConnections);
@@ -67,6 +66,21 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
         {
             this.maxMultiplex = maxMultiplex;
         }
+    }
+
+    /**
+     * <p>Returns an idle connection, if available, following a round robin algorithm;
+     * otherwise it always tries to create a new connection, up until the max connection count.</p>
+     *
+     * @param create this parameter is ignored and assumed to be always {@code true}
+     * @return an idle connection or {@code null} if no idle connections are available
+     */
+    @Override
+    public Connection acquire(boolean create)
+    {
+        // The nature of this connection pool is such that a
+        // connection must always be present in the next slot.
+        return super.acquire(true);
     }
 
     @Override

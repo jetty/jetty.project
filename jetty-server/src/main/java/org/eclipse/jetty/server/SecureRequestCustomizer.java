@@ -283,10 +283,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             request.getResponse().getHttpFields().add(_stsField);
     }
 
-    private X509Certificate[] getCertChain(Request request, SSLSession sslSession)
+    private X509Certificate[] getCertChain(Connector connector, SSLSession sslSession)
     {
         // The in-use SslContextFactory should be present in the Connector's SslConnectionFactory
-        Connector connector = request.getHttpChannel().getConnector();
         SslConnectionFactory sslConnectionFactory = connector.getConnectionFactory(SslConnectionFactory.class);
         if (sslConnectionFactory != null)
         {
@@ -338,16 +337,16 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                 switch (name)
                 {
                     case JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE:
-                        return SecureRequestCustomizer.this.getCertChain(_request, _session);
+                        return getSslSessionData().getCerts();
 
                     case JAKARTA_SERVLET_REQUEST_CIPHER_SUITE:
                         return _session.getCipherSuite();
 
                     case JAKARTA_SERVLET_REQUEST_KEY_SIZE:
-                        return SslContextFactory.deduceKeyLength(_session.getCipherSuite());
+                        return getSslSessionData().getKeySize();
 
                     case JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID:
-                        return TypeUtil.toHexString(_session.getId());
+                        return getSslSessionData().getIdStr();
 
                     default:
                         String sessionAttribute = getSslSessionAttribute();
@@ -363,6 +362,31 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             return null;
         }
 
+        /**
+         * Get data belonging to the {@link SSLSession}.
+         *
+         * @return the SslSessionData
+         */
+        private SslSessionData getSslSessionData()
+        {
+            String key = SslSessionData.class.getName();
+            SslSessionData sslSessionData = (SslSessionData)_session.getValue(key);
+            if (sslSessionData == null)
+            {
+                String cipherSuite = _session.getCipherSuite();
+                int keySize = SslContextFactory.deduceKeyLength(cipherSuite);
+
+                X509Certificate[] certs = getCertChain(_request.getHttpChannel().getConnector(), _session);
+
+                byte[] bytes = _session.getId();
+                String idStr = TypeUtil.toHexString(bytes);
+
+                sslSessionData = new SslSessionData(keySize, certs, idStr);
+                _session.putValue(key, sslSessionData);
+            }
+            return sslSessionData;
+        }
+
         @Override
         public Set<String> getAttributeNameSet()
         {
@@ -375,6 +399,38 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             if (!StringUtil.isEmpty(sessionAttribute))
                 names.add(sessionAttribute);
             return names;
+        }
+    }
+
+    /**
+     * Simple bundle of data that is cached in the SSLSession.
+     */
+    private static class SslSessionData
+    {
+        private final Integer _keySize;
+        private final X509Certificate[] _certs;
+        private final String _idStr;
+
+        private SslSessionData(Integer keySize, X509Certificate[] certs, String idStr)
+        {
+            this._keySize = keySize;
+            this._certs = certs;
+            this._idStr = idStr;
+        }
+
+        private Integer getKeySize()
+        {
+            return _keySize;
+        }
+
+        private X509Certificate[] getCerts()
+        {
+            return _certs;
+        }
+
+        private String getIdStr()
+        {
+            return _idStr;
         }
     }
 }

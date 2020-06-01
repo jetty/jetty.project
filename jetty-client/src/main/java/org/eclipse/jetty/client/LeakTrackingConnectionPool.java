@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.LeakDetector;
 import org.slf4j.Logger;
@@ -38,7 +37,7 @@ public class LeakTrackingConnectionPool extends DuplexConnectionPool
         }
     };
 
-    public LeakTrackingConnectionPool(Destination destination, int maxConnections, Callback requester)
+    public LeakTrackingConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
     {
         super(destination, maxConnections, requester);
         start();
