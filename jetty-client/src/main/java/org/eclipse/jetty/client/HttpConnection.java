@@ -149,17 +149,16 @@ public abstract class HttpConnection implements Connection
         }
 
         // Cookies
+        StringBuilder cookies = convertCookies(request.getCookies(), null);
         CookieStore cookieStore = getHttpClient().getCookieStore();
         if (cookieStore != null && cookieStore.getClass() != HttpCookieStore.Empty.class)
         {
-            StringBuilder cookies = null;
             URI uri = request.getURI();
             if (uri != null)
-                cookies = convertCookies(HttpCookieStore.matchPath(uri, cookieStore.get(uri)), null);
-            cookies = convertCookies(request.getCookies(), cookies);
-            if (cookies != null)
-                request.header(HttpHeader.COOKIE.asString(), cookies.toString());
+                cookies = convertCookies(HttpCookieStore.matchPath(uri, cookieStore.get(uri)), cookies);
         }
+        if (cookies != null)
+            request.header(HttpHeader.COOKIE.asString(), cookies.toString());
 
         // Authentication
         applyProxyAuthentication(request, proxy);

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client;
 
+import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.Arrays;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -133,6 +135,18 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testPerRequestCookieIsSent(Scenario scenario) throws Exception
     {
+        testPerRequestCookieIsSent(scenario, null);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testPerRequestCookieIsSentWithEmptyCookieStore(Scenario scenario) throws Exception
+    {
+        testPerRequestCookieIsSent(scenario, new HttpCookieStore.Empty());
+    }
+
+    private void testPerRequestCookieIsSent(Scenario scenario, CookieStore cookieStore) throws Exception
+    {
         final String name = "foo";
         final String value = "bar";
         start(scenario, new EmptyServerHandler()
@@ -148,6 +162,9 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 assertEquals(value, cookie.getValue());
             }
         });
+
+        if (cookieStore != null)
+            client.setCookieStore(cookieStore);
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
