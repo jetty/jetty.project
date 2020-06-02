@@ -21,8 +21,8 @@ module org.eclipse.jetty.websocket.util
     exports org.eclipse.jetty.websocket.util;
     exports org.eclipse.jetty.websocket.util.messages;
 
-    requires org.eclipse.jetty.util;
     requires org.slf4j;
-    requires org.eclipse.jetty.io;
+    requires transitive org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.io;
     requires transitive org.eclipse.jetty.websocket.core.common;
 }
