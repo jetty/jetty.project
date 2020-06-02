@@ -29,7 +29,7 @@ import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 
 public class SessionTracker extends AbstractLifeCycle implements WebSocketSessionListener
 {
-    private List<Session> sessions = new CopyOnWriteArrayList<>();
+    private final List<Session> sessions = new CopyOnWriteArrayList<>();
 
     public Collection<Session> getSessions()
     {

@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletContext;
@@ -468,12 +469,14 @@ public class Server extends HandlerWrapper implements Attributes
 
         MultiException mex = new MultiException();
 
+        // Initiate graceful shutdown but only wait for it if stopTimeout is set.
+        CompletableFuture<Void> shutdown = Graceful.shutdown(this);
         if (getStopTimeout() > 0)
         {
             long end = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(getStopTimeout());
             try
             {
-                Graceful.shutdown(this).get(getStopTimeout(), TimeUnit.MILLISECONDS);
+                shutdown.get(getStopTimeout(), TimeUnit.MILLISECONDS);
             }
             catch (Throwable e)
             {

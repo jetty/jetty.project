@@ -387,6 +387,13 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     @Override
+    protected void doStop() throws Exception
+    {
+        sessionTracker.stop();
+        super.doStop();
+    }
+
+    @Override
     public String toString()
     {
         final StringBuilder sb = new StringBuilder("WebSocketClient@");
