@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServletPathSpec implements PathSpec
+public class ServletPathSpec extends AbstractPathSpec
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletPathSpec.class);
 
