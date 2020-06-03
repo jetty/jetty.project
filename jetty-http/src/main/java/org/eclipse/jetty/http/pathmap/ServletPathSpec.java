@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http.pathmap;
 
+import java.util.Objects;
+
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -290,5 +292,22 @@ public class ServletPathSpec implements PathSpec
             default:
                 return false;
         }
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        ServletPathSpec that = (ServletPathSpec)o;
+        return compareTo(that) == 0;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(_declaration);
     }
 }

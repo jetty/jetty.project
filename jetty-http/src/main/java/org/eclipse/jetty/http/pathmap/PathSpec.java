@@ -20,6 +20,8 @@ package org.eclipse.jetty.http.pathmap;
 
 /**
  * A path specification is a URI path template that can be matched against.
+ * <p>
+ * Implementors <i>must</i> override {@link Object#equals(Object)} and {@link Object#hashCode()}.
  */
 public interface PathSpec extends Comparable<PathSpec>
 {

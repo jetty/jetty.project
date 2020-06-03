@@ -21,7 +21,9 @@ package org.eclipse.jetty.http.pathmap;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RegexPathSpecTest
@@ -131,5 +133,15 @@ public class RegexPathSpecTest
         assertNotMatches(spec, "/aa");
         assertNotMatches(spec, "/aa/bb");
         assertNotMatches(spec, "/aa/bb.do/more");
+    }
+
+    @Test
+    void testEquals()
+    {
+        assertThat(new RegexPathSpec("^(.*).do$"), equalTo(new RegexPathSpec("^(.*).do$")));
+        assertThat(new RegexPathSpec("/foo"), equalTo(new RegexPathSpec("/foo")));
+        assertThat(new RegexPathSpec("^(.*).do$"), not(equalTo(new RegexPathSpec("^(.*).gz$"))));
+        assertThat(new RegexPathSpec("^(.*).do$"), not(equalTo(new RegexPathSpec("^.*.do$"))));
+        assertThat(new RegexPathSpec("/foo"), not(equalTo(new ServletPathSpec("/foo"))));
     }
 }
