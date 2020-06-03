@@ -441,8 +441,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 _parser.close();
         }
 
-        // Not in a race here with onFillable, because it has given up control before calling handle.
-        // in a slight race with #completed, but not sure what to do with that anyway.
         _generator.reset();
 
         // if we are not called from the onfillable thread, schedule completion
