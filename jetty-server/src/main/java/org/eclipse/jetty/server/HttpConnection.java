@@ -784,7 +784,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     case HEADER_OVERFLOW:
                     {
                         if (_header.capacity() >= _config.getResponseHeaderSize())
-                            throw new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, "Response header too large");
+                            throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Response header too large");
                         releaseHeader();
                         _header = _bufferPool.acquire(_config.getResponseHeaderSize(), useDirectByteBuffers);
                         continue;
