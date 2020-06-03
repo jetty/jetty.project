@@ -21,7 +21,7 @@ package org.eclipse.jetty.http.pathmap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class RegexPathSpec implements PathSpec
+public class RegexPathSpec extends AbstractPathSpec
 {
     private final String _declaration;
     private final PathSpecGroup _group;
