@@ -261,16 +261,21 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     @SuppressWarnings("incomplete-switch")
     public boolean remove(PathSpec pathSpec)
     {
+        String prefix = pathSpec.getPrefix();
+        String suffix = pathSpec.getSuffix();
         switch (pathSpec.getGroup())
         {
             case EXACT:
-                _exactMap.remove(pathSpec.getPrefix());
+                if (prefix != null)
+                    _exactMap.remove(prefix);
                 break;
             case PREFIX_GLOB:
-                _prefixMap.remove(pathSpec.getPrefix());
+                if (prefix != null)
+                    _prefixMap.remove(prefix);
                 break;
             case SUFFIX_GLOB:
-                _suffixMap.remove(pathSpec.getSuffix());
+                if (suffix != null)
+                    _suffixMap.remove(suffix);
                 break;
             default:
                 break;

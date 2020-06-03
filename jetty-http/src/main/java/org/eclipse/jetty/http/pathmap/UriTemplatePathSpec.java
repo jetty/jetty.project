@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see <a href="https://tools.ietf.org/html/rfc6570">URI Templates (Level 1)</a>
  */
-public class UriTemplatePathSpec implements PathSpec
+public class UriTemplatePathSpec extends AbstractPathSpec
 {
     private static final Logger LOG = LoggerFactory.getLogger(UriTemplatePathSpec.class);
 
@@ -287,7 +287,7 @@ public class UriTemplatePathSpec implements PathSpec
         }
         else
         {
-            return PathSpec.super.compareTo(other);
+            return super.compareTo(other);
         }
     }
 
