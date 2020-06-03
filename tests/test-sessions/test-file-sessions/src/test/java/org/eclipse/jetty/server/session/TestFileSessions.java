@@ -21,6 +21,8 @@ package org.eclipse.jetty.server.session;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -255,8 +257,12 @@ public class TestFileSessions extends AbstractTestBase
         FileTestHelper.createFile(foreignNeverExpired);
         FileTestHelper.assertFileExists(foreignNeverExpired, true);
 
-        //sweep
-        ((FileSessionDataStore)store).sweepDisk();
+        //sweep - we're expecting a debug log with exception stacktrace due to file named 
+        //nonNumber__0.0.0.0_spuriousFile so suppress it
+        try (StacklessLogging stackless = new StacklessLogging(Log.getLogger("org.eclipse.jetty.server.session")))
+        {
+            ((FileSessionDataStore)store).sweepDisk();
+        }
 
         //check results
         FileTestHelper.assertSessionExists("sessiona", false);
