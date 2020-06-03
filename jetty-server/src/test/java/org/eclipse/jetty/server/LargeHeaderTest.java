@@ -98,7 +98,7 @@ public class LargeHeaderTest
     }
 
     @Test
-    public void testLargeHeader() throws Exception
+    public void testLargeHeader() throws Throwable
     {
         final Logger CLIENTLOG = Log.getLogger(LargeHeaderTest.class).getLogger(".client");
         ExecutorService executorService = Executors.newFixedThreadPool(8);
@@ -107,6 +107,8 @@ public class LargeHeaderTest
         String rawRequest = "GET / HTTP/1.1\r\n" +
             "Host: localhost:" + localPort + "\r\n" +
             "\r\n";
+
+        Throwable issues = new Throwable();
 
         for (int i = 0; i < 500; ++i)
         {
@@ -120,18 +122,21 @@ public class LargeHeaderTest
                     output.flush();
 
                     String rawResponse = IO.toString(input, UTF_8);
-
-                    CLIENTLOG.info("rawResponse[{}]=[{}]", rawResponse.length(), rawResponse);
                     HttpTester.Response response = HttpTester.parseResponse(rawResponse);
                     assertThat(response.getStatus(), is(500));
                 }
                 catch (Throwable t)
                 {
                     CLIENTLOG.warn("Client Issue", t);
+                    issues.addSuppressed(t);
                 }
             });
         }
 
         executorService.awaitTermination(5, TimeUnit.SECONDS);
+        if (issues.getSuppressed().length > 0)
+        {
+            throw issues;
+        }
     }
 }
