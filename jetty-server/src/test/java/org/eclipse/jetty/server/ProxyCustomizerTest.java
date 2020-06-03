@@ -128,7 +128,7 @@ public class ProxyCustomizerTest
     }
 
     @Test
-    void testProxyCustomizerWithProxyData() throws Exception
+    public void testProxyCustomizerWithProxyData() throws Exception
     {
         String proxy =
             // Preamble
@@ -159,7 +159,7 @@ public class ProxyCustomizerTest
     }
 
     @Test
-    void testProxyCustomizerWithoutProxyData() throws Exception
+    public void testProxyCustomizerWithoutProxyData() throws Exception
     {
         String proxy = "";
         String http = "GET /1 HTTP/1.1\r\n" +

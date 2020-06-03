@@ -191,7 +191,7 @@ public class ServletPathSpecTest
     }
 
     @Test
-    void testEquals()
+    public void testEquals()
     {
         assertThat(new ServletPathSpec("*.gz"), equalTo(new ServletPathSpec("*.gz")));
         assertThat(new ServletPathSpec("/foo"), equalTo(new ServletPathSpec("/foo")));

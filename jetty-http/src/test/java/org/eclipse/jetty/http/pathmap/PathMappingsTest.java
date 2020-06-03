@@ -307,7 +307,7 @@ public class PathMappingsTest
     }
 
     @Test
-    void testPutRejectsDuplicates()
+    public void testPutRejectsDuplicates()
     {
         PathMappings<String> p = new PathMappings<>();
         assertThat(p.put(new UriTemplatePathSpec("/a/{var1}/c"), "resourceA"), is(true));
@@ -322,7 +322,7 @@ public class PathMappingsTest
     }
 
     @Test
-    void testGetUriTemplatePathSpec()
+    public void testGetUriTemplatePathSpec()
     {
         PathMappings<String> p = new PathMappings<>();
         p.put(new UriTemplatePathSpec("/a/{var1}/c"), "resourceA");
@@ -336,7 +336,7 @@ public class PathMappingsTest
     }
 
     @Test
-    void testGetRegexPathSpec()
+    public void testGetRegexPathSpec()
     {
         PathMappings<String> p = new PathMappings<>();
         p.put(new RegexPathSpec("/a/b/c"), "resourceA");
@@ -353,7 +353,7 @@ public class PathMappingsTest
     }
 
     @Test
-    void testGetServletPathSpec()
+    public void testGetServletPathSpec()
     {
         PathMappings<String> p = new PathMappings<>();
         p.put(new ServletPathSpec("/"), "resourceA");
@@ -372,7 +372,7 @@ public class PathMappingsTest
     }
 
     @Test
-    void testRemoveUriTemplatePathSpec()
+    public void testRemoveUriTemplatePathSpec()
     {
         PathMappings<String> p = new PathMappings<>();
 
@@ -401,7 +401,7 @@ public class PathMappingsTest
     }
 
     @Test
-    void testRemoveRegexPathSpec()
+    public void testRemoveRegexPathSpec()
     {
         PathMappings<String> p = new PathMappings<>();
 
@@ -427,7 +427,7 @@ public class PathMappingsTest
     }
 
     @Test
-    void testRemoveServletPathSpec()
+    public void testRemoveServletPathSpec()
     {
         PathMappings<String> p = new PathMappings<>();
 
