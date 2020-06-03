@@ -18,11 +18,10 @@
 
 package org.eclipse.jetty.http.pathmap;
 
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class RegexPathSpec implements PathSpec
+public class RegexPathSpec extends AbstractPathSpec
 {
     private final String _declaration;
     private final PathSpecGroup _group;
@@ -193,22 +192,5 @@ public class RegexPathSpec implements PathSpec
             // match entire path
             return getMatcher(path).matches();
         }
-    }
-
-    @Override
-    public boolean equals(Object o)
-    {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        RegexPathSpec that = (RegexPathSpec)o;
-        return compareTo(that) == 0;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash(_declaration);
     }
 }

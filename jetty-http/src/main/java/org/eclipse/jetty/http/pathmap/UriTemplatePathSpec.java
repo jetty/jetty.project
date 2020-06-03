@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * @see <a href="https://tools.ietf.org/html/rfc6570">URI Templates (Level 1)</a>
  */
-public class UriTemplatePathSpec implements PathSpec
+public class UriTemplatePathSpec extends AbstractPathSpec
 {
     private static final Logger LOG = Log.getLogger(UriTemplatePathSpec.class);
 
@@ -287,7 +287,7 @@ public class UriTemplatePathSpec implements PathSpec
         }
         else
         {
-            return PathSpec.super.compareTo(other);
+            return super.compareTo(other);
         }
     }
 
@@ -420,22 +420,5 @@ public class UriTemplatePathSpec implements PathSpec
     public String[] getVariables()
     {
         return _variables;
-    }
-
-    @Override
-    public boolean equals(Object o)
-    {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        UriTemplatePathSpec that = (UriTemplatePathSpec)o;
-        return compareTo(that) == 0;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash(_declaration);
     }
 }

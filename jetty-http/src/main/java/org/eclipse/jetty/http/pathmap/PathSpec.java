@@ -92,20 +92,4 @@ public interface PathSpec extends Comparable<PathSpec>
      * @return true if the path matches this path spec, false otherwise
      */
     boolean matches(String path);
-
-    default int compareTo(PathSpec other)
-    {
-        // Grouping (increasing)
-        int diff = getGroup().ordinal() - other.getGroup().ordinal();
-        if (diff != 0)
-            return diff;
-
-        // Spec Length (decreasing)
-        diff = other.getSpecLength() - getSpecLength();
-        if (diff != 0)
-            return diff;
-
-        // Path Spec Name (alphabetical)
-        return getDeclaration().compareTo(other.getDeclaration());
-    }
 }
