@@ -285,7 +285,7 @@ public class UriTemplatePathSpecTest
     }
 
     @Test
-    void testEquals()
+    public void testEquals()
     {
         assertThat(new UriTemplatePathSpec("/{var1}"), equalTo(new UriTemplatePathSpec("/{var1}")));
         assertThat(new UriTemplatePathSpec("/{var1}"), equalTo(new UriTemplatePathSpec("/{var2}")));

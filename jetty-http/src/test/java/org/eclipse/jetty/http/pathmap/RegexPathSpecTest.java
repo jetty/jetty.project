@@ -136,7 +136,7 @@ public class RegexPathSpecTest
     }
 
     @Test
-    void testEquals()
+    public void testEquals()
     {
         assertThat(new RegexPathSpec("^(.*).do$"), equalTo(new RegexPathSpec("^(.*).do$")));
         assertThat(new RegexPathSpec("/foo"), equalTo(new RegexPathSpec("/foo")));
