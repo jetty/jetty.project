@@ -20,6 +20,7 @@ package org.eclipse.jetty.http.pathmap;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -46,7 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
 {
     private static final Logger LOG = Log.getLogger(PathMappings.class);
-    private final Set<MappedResource<E>> _mappings = new TreeSet<>();
+    private final Set<MappedResource<E>> _mappings = new TreeSet<>(Comparator.comparing(MappedResource::getPathSpec));
 
     private Trie<MappedResource<E>> _exactMap = new ArrayTernaryTrie<>(false);
     private Trie<MappedResource<E>> _prefixMap = new ArrayTernaryTrie<>(false);
@@ -100,7 +101,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         List<MappedResource<E>> ret = new ArrayList<>();
         for (MappedResource<E> mr : _mappings)
         {
-            switch (mr.getPathSpec().group)
+            switch (mr.getPathSpec().getGroup())
             {
                 case ROOT:
                     if (isRootPath)
@@ -225,7 +226,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     public boolean put(PathSpec pathSpec, E resource)
     {
         MappedResource<E> entry = new MappedResource<>(pathSpec, resource);
-        switch (pathSpec.group)
+        switch (pathSpec.getGroup())
         {
             case EXACT:
                 String exact = pathSpec.getPrefix();
@@ -260,7 +261,7 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
     @SuppressWarnings("incomplete-switch")
     public boolean remove(PathSpec pathSpec)
     {
-        switch (pathSpec.group)
+        switch (pathSpec.getGroup())
         {
             case EXACT:
                 _exactMap.remove(pathSpec.getPrefix());

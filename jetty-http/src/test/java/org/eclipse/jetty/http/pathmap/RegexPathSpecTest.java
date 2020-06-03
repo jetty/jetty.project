@@ -45,7 +45,7 @@ public class RegexPathSpecTest
         assertEquals("^/a$", spec.getDeclaration(), "Spec.pathSpec");
         assertEquals("^/a$", spec.getPattern().pattern(), "Spec.pattern");
         assertEquals(1, spec.getPathDepth(), "Spec.pathDepth");
-        assertEquals(PathSpecGroup.EXACT, spec.group, "Spec.group");
+        assertEquals(PathSpecGroup.EXACT, spec.getGroup(), "Spec.group");
 
         assertMatches(spec, "/a");
 
@@ -60,7 +60,7 @@ public class RegexPathSpecTest
         assertEquals("^/rest/([^/]*)/list$", spec.getDeclaration(), "Spec.pathSpec");
         assertEquals("^/rest/([^/]*)/list$", spec.getPattern().pattern(), "Spec.pattern");
         assertEquals(3, spec.getPathDepth(), "Spec.pathDepth");
-        assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.group, "Spec.group");
+        assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.getGroup(), "Spec.group");
 
         assertMatches(spec, "/rest/api/list");
         assertMatches(spec, "/rest/1.0/list");
@@ -81,7 +81,7 @@ public class RegexPathSpecTest
         assertEquals("^/rest/[^/]+/list$", spec.getDeclaration(), "Spec.pathSpec");
         assertEquals("^/rest/[^/]+/list$", spec.getPattern().pattern(), "Spec.pattern");
         assertEquals(3, spec.getPathDepth(), "Spec.pathDepth");
-        assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.group, "Spec.group");
+        assertEquals(PathSpecGroup.MIDDLE_GLOB, spec.getGroup(), "Spec.group");
 
         assertMatches(spec, "/rest/api/list");
         assertMatches(spec, "/rest/1.0/list");
@@ -102,7 +102,7 @@ public class RegexPathSpecTest
         assertEquals("^/a/(.*)$", spec.getDeclaration(), "Spec.pathSpec");
         assertEquals("^/a/(.*)$", spec.getPattern().pattern(), "Spec.pattern");
         assertEquals(2, spec.getPathDepth(), "Spec.pathDepth");
-        assertEquals(PathSpecGroup.PREFIX_GLOB, spec.group, "Spec.group");
+        assertEquals(PathSpecGroup.PREFIX_GLOB, spec.getGroup(), "Spec.group");
 
         assertMatches(spec, "/a/");
         assertMatches(spec, "/a/b");
@@ -120,7 +120,7 @@ public class RegexPathSpecTest
         assertEquals("^(.*).do$", spec.getDeclaration(), "Spec.pathSpec");
         assertEquals("^(.*).do$", spec.getPattern().pattern(), "Spec.pattern");
         assertEquals(0, spec.getPathDepth(), "Spec.pathDepth");
-        assertEquals(PathSpecGroup.SUFFIX_GLOB, spec.group, "Spec.group");
+        assertEquals(PathSpecGroup.SUFFIX_GLOB, spec.getGroup(), "Spec.group");
 
         assertMatches(spec, "/a.do");
         assertMatches(spec, "/a/b/c.do");
