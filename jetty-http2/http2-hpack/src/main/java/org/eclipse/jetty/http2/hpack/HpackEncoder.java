@@ -423,9 +423,10 @@ public class HpackEncoder
 
         if (_debug)
         {
-            int e = buffer.position();
-            if (LOG.isDebugEnabled())
-                LOG.debug("encode {}:'{}' to '{}'", encoding, field, TypeUtil.toHexString(buffer.array(), buffer.arrayOffset() + p, e - p));
+            byte[] bytes = new byte[buffer.position() - p];
+            buffer.position(p);
+            buffer.get(bytes);
+            LOG.debug("encode {}:'{}' to '{}'", encoding, field, TypeUtil.toHexString(bytes));
         }
     }
 
