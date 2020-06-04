@@ -38,7 +38,7 @@ basehome:modules/ssl/keystore|etc/keystore
 # jetty.ssl.selectors=-1
 
 ## ServerSocketChannel backlog (0 picks platform default)
-# jetty.ssl.acceptorQueueSize=0
+# jetty.ssl.acceptQueueSize=0
 
 ## Thread priority delta to give to acceptor threads
 # jetty.ssl.acceptorPriorityDelta=0
