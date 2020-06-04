@@ -34,8 +34,6 @@ pipeline {
                        classPattern: '**/target/classes',
                        sourcePattern: '**/src/main/java'
                 warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-                sh "cat jetty-client/target/surefire-reports/TEST-org.eclipse.jetty.client.ConnectionPoolTest.xml"
-                archiveArtifacts artifacts: "jetty-client/target/surefire-reports/TEST-org.eclipse.jetty.client.ConnectionPoolTest.xml",allowEmptyArchive: true
                 junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
               }
             }
