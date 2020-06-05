@@ -43,6 +43,8 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+import javax.net.ssl.SSLHandshakeException;
+
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
  */
@@ -269,6 +271,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         catch (EofException e)
         {
             LOG.debug(e);
+        }
+        catch (SSLHandshakeException e)
+        {
+            LOG.warn(this.toString(), e);
         }
         catch (Exception e)
         {
