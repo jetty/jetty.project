@@ -176,7 +176,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     public boolean isRemotelyClosed()
     {
         CloseState state = closeState.get();
-        return state == CloseState.REMOTELY_CLOSED || state == CloseState.CLOSING;
+        return state == CloseState.REMOTELY_CLOSED || state == CloseState.CLOSING || state == CloseState.CLOSED;
     }
 
     public boolean isLocallyClosed()
@@ -357,6 +357,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private void onFailure(FailureFrame frame, Callback callback)
     {
+        // Don't close or remove the stream, as the listener may
+        // want to use it, for example to send a RST_STREAM frame.
         notifyFailure(this, frame, callback);
     }
 

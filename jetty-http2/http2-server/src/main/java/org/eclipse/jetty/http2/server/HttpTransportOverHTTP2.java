@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.server;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -103,8 +104,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 }
                 else
                 {
-                    if (transportCallback.start(callback, false))
-                        sendHeadersFrame(info, false, transportCallback);
+                    transportCallback.send(callback, false, c ->
+                        sendHeadersFrame(info, false, c));
                 }
             }
             else
@@ -138,24 +139,24 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                                     HttpFields trailers = retrieveTrailers();
                                     if (trailers != null)
                                     {
-                                        if (transportCallback.start(new SendTrailers(getCallback(), trailers), false))
-                                            sendDataFrame(content, true, false, transportCallback);
+                                        transportCallback.send(new SendTrailers(getCallback(), trailers), false, c ->
+                                            sendDataFrame(content, true, false, c));
                                     }
                                     else
                                     {
-                                        if (transportCallback.start(getCallback(), false))
-                                            sendDataFrame(content, true, true, transportCallback);
+                                        transportCallback.send(getCallback(), false, c ->
+                                            sendDataFrame(content, true, true, c));
                                     }
                                 }
                                 else
                                 {
-                                    if (transportCallback.start(getCallback(), false))
-                                        sendDataFrame(content, false, false, transportCallback);
+                                    transportCallback.send(getCallback(), false, c ->
+                                        sendDataFrame(content, false, false, c));
                                 }
                             }
                         };
-                        if (transportCallback.start(commitCallback, true))
-                            sendHeadersFrame(info, false, transportCallback);
+                        transportCallback.send(commitCallback, true, c ->
+                            sendHeadersFrame(info, false, c));
                     }
                     else
                     {
@@ -164,19 +165,19 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                             HttpFields trailers = retrieveTrailers();
                             if (trailers != null)
                             {
-                                if (transportCallback.start(new SendTrailers(callback, trailers), true))
-                                    sendHeadersFrame(info, false, transportCallback);
+                                transportCallback.send(new SendTrailers(callback, trailers), true, c ->
+                                    sendHeadersFrame(info, false, c));
                             }
                             else
                             {
-                                if (transportCallback.start(callback, true))
-                                    sendHeadersFrame(info, true, transportCallback);
+                                transportCallback.send(callback, true, c ->
+                                    sendHeadersFrame(info, true, c));
                             }
                         }
                         else
                         {
-                            if (transportCallback.start(callback, true))
-                                sendHeadersFrame(info, false, transportCallback);
+                            transportCallback.send(callback, true, c ->
+                                sendHeadersFrame(info, false, c));
                         }
                     }
                 }
@@ -198,8 +199,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                         SendTrailers sendTrailers = new SendTrailers(callback, trailers);
                         if (hasContent)
                         {
-                            if (transportCallback.start(sendTrailers, false))
-                                sendDataFrame(content, true, false, transportCallback);
+                            transportCallback.send(sendTrailers, false, c ->
+                                sendDataFrame(content, true, false, c));
                         }
                         else
                         {
@@ -208,14 +209,14 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     }
                     else
                     {
-                        if (transportCallback.start(callback, false))
-                            sendDataFrame(content, true, true, transportCallback);
+                        transportCallback.send(callback, false, c ->
+                            sendDataFrame(content, true, true, c));
                     }
                 }
                 else
                 {
-                    if (transportCallback.start(callback, false))
-                        sendDataFrame(content, false, false, transportCallback);
+                    transportCallback.send(callback, false, c ->
+                        sendDataFrame(content, false, false, c));
                 }
             }
             else
@@ -317,7 +318,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
     public boolean onStreamTimeout(Throwable failure)
     {
-        return transportCallback.onIdleTimeout(failure);
+        return transportCallback.idleTimeout(failure);
     }
 
     @Override
@@ -352,117 +353,259 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
     private class TransportCallback implements Callback
     {
-        private State state = State.IDLE;
-        private Callback callback;
-        private Throwable failure;
-        private boolean commit;
+        private State _state = State.IDLE;
+        private Callback _callback;
+        private boolean _commit;
+        private Throwable _failure;
 
-        public boolean start(Callback callback, boolean commit)
+        private void reset()
         {
-            State state;
+            assert Thread.holdsLock(this);
+            _state = State.IDLE;
+            _callback = null;
+            _commit = false;
+            _failure = null;
+        }
+
+        private void send(Callback callback, boolean commit, Consumer<Callback> consumer)
+        {
+            Throwable failure = preSend(callback, commit);
+            if (failure == null)
+            {
+                consumer.accept(this);
+                postSend();
+            }
+            else
+            {
+                callback.failed(failure);
+            }
+        }
+
+        private Throwable preSend(Callback callback, boolean commit)
+        {
+            synchronized (this)
+            {
+                switch (_state)
+                {
+                    case IDLE:
+                    {
+                        _state = State.PRE_SEND;
+                        _callback = callback;
+                        _commit = commit;
+                        return null;
+                    }
+                    default:
+                    {
+                        Throwable failure = _failure;
+                        if (failure == null)
+                            failure = new IllegalStateException("Invalid transport state: " + _state);
+                        return failure;
+                    }
+                }
+            }
+        }
+
+        private void postSend()
+        {
+            Callback callback;
+            boolean commit;
             Throwable failure;
             synchronized (this)
             {
-                state = this.state;
-                failure = this.failure;
-                if (state == State.IDLE)
+                switch (_state)
                 {
-                    this.state = State.WRITING;
-                    this.callback = callback;
-                    this.commit = commit;
-                    return true;
+                    case PRE_SEND:
+                    {
+                        _state = State.POST_SEND;
+                        return;
+                    }
+                    case SUCCEED:
+                    {
+                        callback = _callback;
+                        commit = _commit;
+                        failure = null;
+                        reset();
+                        break;
+                    }
+                    case FAIL:
+                    {
+                        _state = State.FAILED;
+                        callback = _callback;
+                        commit = _commit;
+                        failure = _failure;
+                        break;
+                    }
+                    default:
+                    {
+                        _state = State.FAILED;
+                        _failure = new IllegalStateException("Invalid transport state: " + _state);
+                        callback = _callback;
+                        commit = _commit;
+                        failure = _failure;
+                        break;
+                    }
                 }
             }
             if (failure == null)
-                failure = new IllegalStateException("Invalid transport state: " + state);
-            callback.failed(failure);
-            return false;
+                succeed(callback, commit);
+            else
+                fail(callback, commit, failure);
         }
 
         @Override
         public void succeeded()
         {
+            Callback callback;
             boolean commit;
-            Callback callback = null;
             synchronized (this)
             {
-                commit = this.commit;
-                if (state == State.WRITING)
+                switch (_state)
                 {
-                    this.state = State.IDLE;
-                    callback = this.callback;
-                    this.callback = null;
-                    this.commit = false;
+                    case PRE_SEND:
+                    {
+                        _state = State.SUCCEED;
+                        // Succeeding the callback will be done in postSend().
+                        return;
+                    }
+                    case POST_SEND:
+                    {
+                        callback = _callback;
+                        commit = _commit;
+                        reset();
+                        break;
+                    }
+                    default:
+                    {
+                        // The race to succeed was lost and other states
+                        // have already performed their terminal action.
+                        return;
+                    }
                 }
             }
-            if (LOG.isDebugEnabled())
-                LOG.debug("HTTP2 Response #{}/{} {} {}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                    commit ? "commit" : "flush",
-                    callback == null ? "failure" : "success");
-            if (callback != null)
-                callback.succeeded();
+            succeed(callback, commit);
         }
 
         @Override
         public void failed(Throwable failure)
         {
-            boolean commit;
             Callback callback;
+            boolean commit;
             synchronized (this)
             {
-                commit = this.commit;
-                this.state = State.FAILED;
-                callback = this.callback;
-                this.callback = null;
-                this.failure = failure;
+                switch (_state)
+                {
+                    case PRE_SEND:
+                    {
+                        _state = State.FAIL;
+                        _failure = failure;
+                        // Failing the callback will be done in postSend().
+                        return;
+                    }
+                    case IDLE:
+                    case POST_SEND:
+                    {
+                        _state = State.FAILED;
+                        _failure = failure;
+                        callback = _callback;
+                        commit = _commit;
+                        break;
+                    }
+                    default:
+                    {
+                        // The race to fail was lost and other states
+                        // have already performed their terminal action.
+                        return;
+                    }
+                }
             }
+            fail(callback, commit, failure);
+        }
+
+        private boolean idleTimeout(Throwable failure)
+        {
+            Callback callback;
+            boolean timeout;
+            synchronized (this)
+            {
+                switch (_state)
+                {
+                    case POST_SEND:
+                    {
+                        // The send was started but idle timed out, fail it.
+                        _state = State.FAILED;
+                        _failure = failure;
+                        callback = _callback;
+                        timeout = true;
+                        break;
+                    }
+                    case IDLE:
+                        // The application may be suspended, ignore the idle timeout.
+                    case PRE_SEND:
+                        // A send has been started at the same time of an idle timeout;
+                        // Ignore the idle timeout and let the write continue normally.
+                    case SUCCEED:
+                    case FAIL:
+                        // An idle timeout during these transient states is ignored.
+                    case FAILED:
+                        // Already failed, ignore the idle timeout.
+                    {
+                        callback = null;
+                        timeout = false;
+                        break;
+                    }
+                    default:
+                    {
+                        // Should not happen, but just in case.
+                        _state = State.FAILED;
+                        _failure = new IllegalStateException("Invalid transport state: " + _state, failure);
+                        callback = _callback;
+                        if (callback == null)
+                            callback = Callback.NOOP;
+                        timeout = true;
+                        failure = _failure;
+                        break;
+                    }
+                }
+            }
+            idleTimeout(callback, timeout, failure);
+            return timeout;
+        }
+
+        private void succeed(Callback callback, boolean commit)
+        {
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HTTP2 Response #%d/%h %s %s", stream.getId(), stream.getSession(),
-                    commit ? "commit" : "flush", callback == null ? "ignored" : "failed"), failure);
+                LOG.debug("HTTP2 Response #{}/{} {} success",
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    commit ? "commit" : "flush");
+            callback.succeeded();
+        }
+
+        private void fail(Callback callback, boolean commit, Throwable failure)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("HTTP2 Response #{}/{} {} failure",
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    commit ? "commit" : "flush",
+                    failure);
             if (callback != null)
                 callback.failed(failure);
         }
 
-        private boolean onIdleTimeout(Throwable failure)
+        private void idleTimeout(Callback callback, boolean timeout, Throwable failure)
         {
-            boolean result;
-            Callback callback = null;
-            synchronized (this)
-            {
-                // Ignore idle timeouts if not writing,
-                // as the application may be suspended.
-                result = state == State.WRITING;
-                if (result)
-                {
-                    this.state = State.TIMEOUT;
-                    callback = this.callback;
-                    this.callback = null;
-                    this.failure = failure;
-                }
-            }
             if (LOG.isDebugEnabled())
-                LOG.debug(String.format("HTTP2 Response #%d/%h idle timeout %s", stream.getId(), stream.getSession(), result ? "expired" : "ignored"), failure);
-            if (result)
+                LOG.debug("HTTP2 Response #{}/{} idle timeout {}",
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    timeout ? "expired" : "ignored",
+                    failure);
+            if (timeout)
                 callback.failed(failure);
-            return result;
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            Callback callback;
-            synchronized (this)
-            {
-                callback = this.callback;
-            }
-            return callback != null ? callback.getInvocationType() : Callback.super.getInvocationType();
         }
     }
 
     private enum State
     {
-        IDLE, WRITING, FAILED, TIMEOUT
+        IDLE, PRE_SEND, POST_SEND, SUCCEED, FAIL, FAILED
     }
 
     private class SendTrailers extends Callback.Nested
@@ -478,8 +621,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         @Override
         public void succeeded()
         {
-            if (transportCallback.start(getCallback(), false))
-                sendTrailersFrame(new MetaData(HttpVersion.HTTP_2, trailers), transportCallback);
+            transportCallback.send(getCallback(), false, c ->
+                sendTrailersFrame(new MetaData(HttpVersion.HTTP_2, trailers), c));
         }
     }
 }

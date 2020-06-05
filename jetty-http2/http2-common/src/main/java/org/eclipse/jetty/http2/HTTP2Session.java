@@ -439,7 +439,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         // We received a GO_AWAY, so try to write
                         // what's in the queue and then disconnect.
                         closeFrame = frame;
-                        notifyClose(this, frame, new DisconnectCallback());
+                        onClose(frame, new DisconnectCallback());
                         return;
                     }
                     break;
@@ -498,6 +498,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void onStreamFailure(int streamId, int error, String reason)
     {
         Callback callback = new ResetCallback(streamId, error, Callback.NOOP);
+        onStreamFailure(streamId, error, reason, callback);
+    }
+
+    private void onStreamFailure(int streamId, int error, String reason, Callback callback)
+    {
         IStream stream = getStream(streamId);
         if (stream != null)
             stream.process(new FailureFrame(error, reason), callback);
@@ -513,7 +518,28 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected void onConnectionFailure(int error, String reason, Callback callback)
     {
-        notifyFailure(this, new IOException(String.format("%d/%s", error, reason)), new CloseCallback(error, reason, callback));
+        Collection<Stream> streams = getStreams();
+        int count = streams.size();
+        Callback countCallback = new CountingCallback(new CloseCallback(error, reason, callback), count + 1);
+        for (Stream stream : streams)
+        {
+            onStreamFailure(stream.getId(), error, reason, countCallback);
+        }
+        IOException failure = new IOException(String.format("%s/%s", ErrorCode.toString(error, null), reason));
+        notifyFailure(this, failure, countCallback);
+    }
+
+    private void onClose(GoAwayFrame frame, Callback callback)
+    {
+        Collection<Stream> streams = getStreams();
+        int count = streams.size();
+        Callback countCallback = new CountingCallback(callback, count + 1);
+        String reason = frame.tryConvertPayload();
+        for (Stream stream : streams)
+        {
+            onStreamFailure(stream.getId(), frame.getError(), reason, countCallback);
+        }
+        notifyClose(this, frame, countCallback);
     }
 
     @Override
