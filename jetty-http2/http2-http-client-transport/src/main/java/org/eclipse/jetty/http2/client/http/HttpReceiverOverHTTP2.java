@@ -195,9 +195,9 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
-    public void onFailure(Stream stream, int error, String reason, Callback callback)
+    public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
     {
-        responseFailure(new IOException(String.format("%s/%s", ErrorCode.toString(error, null), reason)));
+        responseFailure(failure);
         callback.succeeded();
     }
 

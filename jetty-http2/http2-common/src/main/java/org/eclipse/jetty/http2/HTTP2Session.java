@@ -498,14 +498,15 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void onStreamFailure(int streamId, int error, String reason)
     {
         Callback callback = new ResetCallback(streamId, error, Callback.NOOP);
-        onStreamFailure(streamId, error, reason, callback);
+        Throwable failure = toFailure("Stream failure", error, reason);
+        onStreamFailure(streamId, error, reason, failure, callback);
     }
 
-    private void onStreamFailure(int streamId, int error, String reason, Callback callback)
+    private void onStreamFailure(int streamId, int error, String reason, Throwable failure, Callback callback)
     {
         IStream stream = getStream(streamId);
         if (stream != null)
-            stream.process(new FailureFrame(error, reason), callback);
+            stream.process(new FailureFrame(error, reason, failure), callback);
         else
             callback.succeeded();
     }
@@ -518,28 +519,45 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected void onConnectionFailure(int error, String reason, Callback callback)
     {
+        Throwable failure = toFailure("Session failure", error, reason);
+        onFailure(error, reason, failure, new CloseCallback(error, reason, callback));
+    }
+
+    protected void abort(Throwable failure)
+    {
+        onFailure(ErrorCode.NO_ERROR.code, null, failure, new TerminateCallback(failure));
+    }
+
+    private void onFailure(int error, String reason, Throwable failure, Callback callback)
+    {
         Collection<Stream> streams = getStreams();
         int count = streams.size();
-        Callback countCallback = new CountingCallback(new CloseCallback(error, reason, callback), count + 1);
+        Callback countCallback = new CountingCallback(callback, count + 1);
         for (Stream stream : streams)
         {
-            onStreamFailure(stream.getId(), error, reason, countCallback);
+            onStreamFailure(stream.getId(), error, reason, failure, countCallback);
         }
-        IOException failure = new IOException(String.format("%s/%s", ErrorCode.toString(error, null), reason));
         notifyFailure(this, failure, countCallback);
     }
 
     private void onClose(GoAwayFrame frame, Callback callback)
     {
+        int error = frame.getError();
+        String reason = frame.tryConvertPayload();
+        Throwable failure = toFailure("Session close", error, reason);
         Collection<Stream> streams = getStreams();
         int count = streams.size();
         Callback countCallback = new CountingCallback(callback, count + 1);
-        String reason = frame.tryConvertPayload();
         for (Stream stream : streams)
         {
-            onStreamFailure(stream.getId(), frame.getError(), reason, countCallback);
+            onStreamFailure(stream.getId(), error, reason, failure, countCallback);
         }
         notifyClose(this, frame, countCallback);
+    }
+
+    private Throwable toFailure(String message, int error, String reason)
+    {
+        return new IOException(String.format("%s %s/%s", message, ErrorCode.toString(error, null), reason));
     }
 
     @Override
@@ -1022,11 +1040,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 }
             }
         }
-    }
-
-    protected void abort(Throwable failure)
-    {
-        notifyFailure(this, failure, new TerminateCallback(failure));
     }
 
     public boolean isDisconnected()

@@ -34,6 +34,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NegotiatingServerConnection.CipherDiscriminator;
@@ -160,9 +161,10 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public void onFailure(Stream stream, int error, String reason, Callback callback)
+        public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
         {
-            EofException failure = new EofException(String.format("Failure %s/%s", ErrorCode.toString(error, null), reason));
+            if (!(failure instanceof QuietException))
+                failure = new EofException(failure);
             onFailure(stream, failure, callback);
         }
 

@@ -609,7 +609,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         {
             try
             {
-                listener.onFailure(stream, frame.getError(), frame.getReason(), callback);
+                listener.onFailure(stream, frame.getError(), frame.getReason(), frame.getFailure(), callback);
             }
             catch (Throwable x)
             {
