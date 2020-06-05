@@ -138,7 +138,6 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     {
         if (writing.compareAndSet(null, callback))
             return true;
-        close();
         callback.failed(new WritePendingException());
         return false;
     }
