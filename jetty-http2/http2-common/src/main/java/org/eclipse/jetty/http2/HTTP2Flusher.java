@@ -425,12 +425,21 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             super.failed(x);
         }
 
+        /**
+         * @return whether the entry is stale and must not be processed
+         */
         private boolean isStale()
         {
-            return !isProtocol() && stream != null && stream.isReset();
+            // If it is a protocol frame, process it.
+            if (isProtocolFrame(frame))
+                return false;
+            // It's an application frame; is the stream gone already?
+            if (stream == null)
+                return true;
+            return stream.isReset();
         }
 
-        private boolean isProtocol()
+        private boolean isProtocolFrame(Frame frame)
         {
             switch (frame.getType())
             {

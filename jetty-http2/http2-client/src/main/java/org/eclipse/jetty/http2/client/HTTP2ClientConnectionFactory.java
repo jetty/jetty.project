@@ -77,7 +77,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         return customize(connection, context);
     }
 
-    private class HTTP2ClientConnection extends HTTP2Connection implements Callback
+    private static class HTTP2ClientConnection extends HTTP2Connection implements Callback
     {
         private final HTTP2Client client;
         private final Promise<Session> promise;
@@ -154,7 +154,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         }
     }
 
-    private class ConnectionListener implements Connection.Listener
+    private static class ConnectionListener implements Connection.Listener
     {
         @Override
         public void onOpened(Connection connection)

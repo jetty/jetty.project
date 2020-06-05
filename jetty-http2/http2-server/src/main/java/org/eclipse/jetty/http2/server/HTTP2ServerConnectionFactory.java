@@ -119,7 +119,8 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             String reason = frame.tryConvertPayload();
             if (!StringUtil.isEmpty(reason))
                 reason = " (" + reason + ")";
-            getConnection().onSessionFailure(new EofException(String.format("Close %s/%s", ErrorCode.toString(frame.getError(), null), reason)), callback);
+            EofException failure = new EofException(String.format("Close %s/%s", ErrorCode.toString(frame.getError(), null), reason));
+            onFailure(session, failure, callback);
         }
 
         @Override
@@ -154,13 +155,20 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
-            getConnection().onStreamFailure((IStream)stream, new EofException("Reset " + ErrorCode.toString(frame.getError(), null)), callback);
+            EofException failure = new EofException("Reset " + ErrorCode.toString(frame.getError(), null));
+            onFailure(stream, failure, callback);
         }
 
         @Override
         public void onFailure(Stream stream, int error, String reason, Callback callback)
         {
-            getConnection().onStreamFailure((IStream)stream, new EofException(String.format("Failure %s/%s", ErrorCode.toString(error, null), reason)), callback);
+            EofException failure = new EofException(String.format("Failure %s/%s", ErrorCode.toString(error, null), reason));
+            onFailure(stream, failure, callback);
+        }
+
+        private void onFailure(Stream stream, Throwable failure, Callback callback)
+        {
+            getConnection().onStreamFailure((IStream)stream, failure, callback);
         }
 
         @Override
