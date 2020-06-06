@@ -54,6 +54,22 @@ import org.eclipse.jetty.util.resource.Resource;
  * extent so does the {@link ResourceHandler}, so unless you have exceptional
  * circumstances it is best to use those classes for static content
  * </p>
+ * <p>
+ *     <em>WARNING</em>: This is an example on how to send content fast.
+ *     It is not secure, is highly vulnerable, and does not contain the
+ *     common set of mitigations for malicious requests that bypass
+ *     your controls over what a client can access.
+ *
+ *     If you want to continue this codebase, consider adding
+ *     checks for content outside of the resourceBase, and other
+ *     bypasses such as alias references, alternate stream references,
+ *     filesystem case sensitivity differences, filesystem utf-8 handling
+ *     differences, bad filename concerns, etc..
+ *
+ *     Or just use the existing {@link DefaultServlet} or
+ *     {@link ResourceHandler} that gives you all of these protections
+ *     (and more) built-in.
+ * </p>
  */
 public class FastFileServer
 {
