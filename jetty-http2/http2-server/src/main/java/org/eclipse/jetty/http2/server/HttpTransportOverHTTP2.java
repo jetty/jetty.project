@@ -440,11 +440,15 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 {
                     case PRE_SEND:
                     {
+                        // The send has not completed the callback yet,
+                        // wait for succeeded() or failed() to be called.
                         _state = State.POST_SEND;
                         return;
                     }
                     case SUCCEED:
                     {
+                        // The send already completed successfully, but the
+                        // call to succeeded() was delayed, so call it now.
                         callback = _callback;
                         commit = _commit;
                         failure = null;
@@ -453,6 +457,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     }
                     case FAIL:
                     {
+                        // The send already completed with a failure, but
+                        // the call to failed() was delayed, so call it now.
                         _state = State.FAILED;
                         callback = _callback;
                         commit = _commit;
