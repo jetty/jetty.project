@@ -351,6 +351,30 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
     }
 
+    /**
+     * <p>Callback that controls sends initiated by the transport, by eventually
+     * notifying a nested callback.</p>
+     * <p>There are 3 sources of concurrency after a send is initiated:</p>
+     * <ul>
+     *   <li>the completion of the send operation, either success or failure</li>
+     *   <li>an asynchronous failure coming from the read side such as a stream
+     *   being reset, or the connection being closed</li>
+     *   <li>an asynchronous idle timeout</li>
+     * </ul>
+     * <p>The last 2 cases may happen <em>during</em> a send, when the frames
+     * are being generated in the flusher.
+     * In such cases, this class must avoid that the nested callback is notified
+     * while the frame generation is in progress, because the nested callback
+     * may modify other states (such as clearing the {@code HttpOutput._buffer})
+     * that are accessed during frame generation.</p>
+     * <p>The solution implemented in this class works by splitting the send
+     * operation in 3 parts: {@code preSend()}, {@code send()} and {@code postSend()}.
+     * Asynchronous state changes happening during {@code send()} are stored
+     * and only executed in {@code postSend()}, therefore never interfering
+     * with frame generation.</p>
+     *
+     * @see State
+     */
     private class TransportCallback implements Callback
     {
         private State _state = State.IDLE;
@@ -476,8 +500,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     }
                     default:
                     {
-                        // The race to succeed was lost and other states
-                        // have already performed their terminal action.
+                        // This thread lost the race to succeed the current
+                        // send, as other threads likely already failed it.
                         return;
                     }
                 }
@@ -512,8 +536,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     }
                     default:
                     {
-                        // The race to fail was lost and other states
-                        // have already performed their terminal action.
+                        // This thread lost the race to fail the current send,
+                        // as other threads already succeeded or failed it.
                         return;
                     }
                 }
@@ -603,9 +627,80 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         }
     }
 
+    /**
+     * <p>Send states for {@link TransportCallback}.</p>
+     *
+     * @see TransportCallback
+     */
     private enum State
     {
-        IDLE, PRE_SEND, POST_SEND, SUCCEED, FAIL, FAILED
+        /**
+         * <p>No send initiated or in progress.</p>
+         * <p>Next states could be:</p>
+         * <ul>
+         *   <li>{@link #PRE_SEND}, when {@link TransportCallback#send(Callback, boolean, Consumer)}
+         *   is called by the transport to initiate a send</li>
+         *   <li>{@link #FAILED}, when {@link TransportCallback#failed(Throwable)}
+         *   is called by an asynchronous failure</li>
+         * </ul>
+         */
+        IDLE,
+        /**
+         * <p>A send is initiated; the nested callback in {@link TransportCallback}
+         * cannot be notified while in this state.</p>
+         * <p>Next states could be:</p>
+         * <ul>
+         *   <li>{@link #SUCCEED}, when {@link TransportCallback#succeeded()}
+         *   is called synchronously because the send succeeded</li>
+         *   <li>{@link #FAIL}, when {@link TransportCallback#failed(Throwable)}
+         *   is called synchronously because the send failed</li>
+         *   <li>{@link #POST_SEND}, when {@link TransportCallback#postSend()}
+         *   is called before the send completes</li>
+         * </ul>
+         */
+        PRE_SEND,
+        /**
+         * <p>A send was initiated and is now pending, waiting for the {@link TransportCallback}
+         * to be notified of success or failure.</p>
+         * <p>Next states could be:</p>
+         * <ul>
+         *   <li>{@link #IDLE}, when {@link TransportCallback#succeeded()}
+         *   is called because the send succeeded</li>
+         *   <li>{@link #FAILED}, when {@link TransportCallback#failed(Throwable)}
+         *   is called because either the send failed, or an asynchronous failure happened</li>
+         * </ul>
+         */
+        POST_SEND,
+        /**
+         * <p>A send was initiated and succeeded, but {@link TransportCallback#postSend()}
+         * has not been called yet.</p>
+         * <p>This state indicates that the success actions (such as notifying the
+         * {@link TransportCallback} nested callback) must be performed when
+         * {@link TransportCallback#postSend()} is called.</p>
+         * <p>Next states could be:</p>
+         * <ul>
+         *   <li>{@link #IDLE}, when {@link TransportCallback#postSend()}
+         *   is called</li>
+         * </ul>
+         */
+        SUCCEED,
+        /**
+         * <p>A send was initiated and failed, but {@link TransportCallback#postSend()}
+         * has not been called yet.</p>
+         * <p>This state indicates that the failure actions (such as notifying the
+         * {@link TransportCallback} nested callback) must be performed when
+         * {@link TransportCallback#postSend()} is called.</p>
+         * <p>Next states could be:</p>
+         * <ul>
+         *   <li>{@link #FAILED}, when {@link TransportCallback#postSend()}
+         *   is called</li>
+         * </ul>
+         */
+        FAIL,
+        /**
+         * <p>The terminal state indicating failure of the send.</p>
+         */
+        FAILED
     }
 
     private class SendTrailers extends Callback.Nested
