@@ -368,9 +368,9 @@ public class HttpTransportOverHTTP2 implements HttpTransport
      * may modify other states (such as clearing the {@code HttpOutput._buffer})
      * that are accessed during frame generation.</p>
      * <p>The solution implemented in this class works by splitting the send
-     * operation in 3 parts: {@code preSend()}, {@code send()} and {@code postSend()}.
-     * Asynchronous state changes happening during {@code send()} are stored
-     * and only executed in {@code postSend()}, therefore never interfering
+     * operation in 3 parts: {@code pre-send}, {@code send} and {@code post-send}.
+     * Asynchronous state changes happening during {@code send} are stored
+     * and only executed in {@code post-send}, therefore never interfering
      * with frame generation.</p>
      *
      * @see State
@@ -391,13 +391,13 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             _failure = null;
         }
 
-        private void send(Callback callback, boolean commit, Consumer<Callback> consumer)
+        private void send(Callback callback, boolean commit, Consumer<Callback> sendFrame)
         {
-            Throwable failure = preSend(callback, commit);
+            Throwable failure = sending(callback, commit);
             if (failure == null)
             {
-                consumer.accept(this);
-                postSend();
+                sendFrame.accept(this);
+                pending();
             }
             else
             {
@@ -405,7 +405,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             }
         }
 
-        private Throwable preSend(Callback callback, boolean commit)
+        private Throwable sending(Callback callback, boolean commit)
         {
             synchronized (this)
             {
@@ -413,23 +413,24 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 {
                     case IDLE:
                     {
-                        _state = State.PRE_SEND;
+                        _state = State.SENDING;
                         _callback = callback;
                         _commit = commit;
                         return null;
                     }
+                    case FAILED:
+                    {
+                        return _failure;
+                    }
                     default:
                     {
-                        Throwable failure = _failure;
-                        if (failure == null)
-                            failure = new IllegalStateException("Invalid transport state: " + _state);
-                        return failure;
+                        return new IllegalStateException("Invalid transport state: " + _state);
                     }
                 }
             }
         }
 
-        private void postSend()
+        private void pending()
         {
             Callback callback;
             boolean commit;
@@ -438,14 +439,14 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             {
                 switch (_state)
                 {
-                    case PRE_SEND:
+                    case SENDING:
                     {
                         // The send has not completed the callback yet,
                         // wait for succeeded() or failed() to be called.
-                        _state = State.POST_SEND;
+                        _state = State.PENDING;
                         return;
                     }
-                    case SUCCEED:
+                    case SUCCEEDING:
                     {
                         // The send already completed successfully, but the
                         // call to succeeded() was delayed, so call it now.
@@ -455,7 +456,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                         reset();
                         break;
                     }
-                    case FAIL:
+                    case FAILING:
                     {
                         // The send already completed with a failure, but
                         // the call to failed() was delayed, so call it now.
@@ -491,13 +492,13 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             {
                 switch (_state)
                 {
-                    case PRE_SEND:
+                    case SENDING:
                     {
-                        _state = State.SUCCEED;
+                        _state = State.SUCCEEDING;
                         // Succeeding the callback will be done in postSend().
                         return;
                     }
-                    case POST_SEND:
+                    case PENDING:
                     {
                         callback = _callback;
                         commit = _commit;
@@ -524,15 +525,15 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             {
                 switch (_state)
                 {
-                    case PRE_SEND:
+                    case SENDING:
                     {
-                        _state = State.FAIL;
+                        _state = State.FAILING;
                         _failure = failure;
                         // Failing the callback will be done in postSend().
                         return;
                     }
                     case IDLE:
-                    case POST_SEND:
+                    case PENDING:
                     {
                         _state = State.FAILED;
                         _failure = failure;
@@ -559,7 +560,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             {
                 switch (_state)
                 {
-                    case POST_SEND:
+                    case PENDING:
                     {
                         // The send was started but idle timed out, fail it.
                         _state = State.FAILED;
@@ -570,11 +571,11 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     }
                     case IDLE:
                         // The application may be suspended, ignore the idle timeout.
-                    case PRE_SEND:
+                    case SENDING:
                         // A send has been started at the same time of an idle timeout;
                         // Ignore the idle timeout and let the write continue normally.
-                    case SUCCEED:
-                    case FAIL:
+                    case SUCCEEDING:
+                    case FAILING:
                         // An idle timeout during these transient states is ignored.
                     case FAILED:
                         // Already failed, ignore the idle timeout.
@@ -644,7 +645,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
          * <p>No send initiated or in progress.</p>
          * <p>Next states could be:</p>
          * <ul>
-         *   <li>{@link #PRE_SEND}, when {@link TransportCallback#send(Callback, boolean, Consumer)}
+         *   <li>{@link #SENDING}, when {@link TransportCallback#send(Callback, boolean, Consumer)}
          *   is called by the transport to initiate a send</li>
          *   <li>{@link #FAILED}, when {@link TransportCallback#failed(Throwable)}
          *   is called by an asynchronous failure</li>
@@ -656,15 +657,15 @@ public class HttpTransportOverHTTP2 implements HttpTransport
          * cannot be notified while in this state.</p>
          * <p>Next states could be:</p>
          * <ul>
-         *   <li>{@link #SUCCEED}, when {@link TransportCallback#succeeded()}
+         *   <li>{@link #SUCCEEDING}, when {@link TransportCallback#succeeded()}
          *   is called synchronously because the send succeeded</li>
-         *   <li>{@link #FAIL}, when {@link TransportCallback#failed(Throwable)}
+         *   <li>{@link #FAILING}, when {@link TransportCallback#failed(Throwable)}
          *   is called synchronously because the send failed</li>
-         *   <li>{@link #POST_SEND}, when {@link TransportCallback#postSend()}
+         *   <li>{@link #PENDING}, when {@link TransportCallback#pending()}
          *   is called before the send completes</li>
          * </ul>
          */
-        PRE_SEND,
+        SENDING,
         /**
          * <p>A send was initiated and is now pending, waiting for the {@link TransportCallback}
          * to be notified of success or failure.</p>
@@ -676,33 +677,33 @@ public class HttpTransportOverHTTP2 implements HttpTransport
          *   is called because either the send failed, or an asynchronous failure happened</li>
          * </ul>
          */
-        POST_SEND,
+        PENDING,
         /**
-         * <p>A send was initiated and succeeded, but {@link TransportCallback#postSend()}
+         * <p>A send was initiated and succeeded, but {@link TransportCallback#pending()}
          * has not been called yet.</p>
          * <p>This state indicates that the success actions (such as notifying the
          * {@link TransportCallback} nested callback) must be performed when
-         * {@link TransportCallback#postSend()} is called.</p>
+         * {@link TransportCallback#pending()} is called.</p>
          * <p>Next states could be:</p>
          * <ul>
-         *   <li>{@link #IDLE}, when {@link TransportCallback#postSend()}
+         *   <li>{@link #IDLE}, when {@link TransportCallback#pending()}
          *   is called</li>
          * </ul>
          */
-        SUCCEED,
+        SUCCEEDING,
         /**
-         * <p>A send was initiated and failed, but {@link TransportCallback#postSend()}
+         * <p>A send was initiated and failed, but {@link TransportCallback#pending()}
          * has not been called yet.</p>
          * <p>This state indicates that the failure actions (such as notifying the
          * {@link TransportCallback} nested callback) must be performed when
-         * {@link TransportCallback#postSend()} is called.</p>
+         * {@link TransportCallback#pending()} is called.</p>
          * <p>Next states could be:</p>
          * <ul>
-         *   <li>{@link #FAILED}, when {@link TransportCallback#postSend()}
+         *   <li>{@link #FAILED}, when {@link TransportCallback#pending()}
          *   is called</li>
          * </ul>
          */
-        FAIL,
+        FAILING,
         /**
          * <p>The terminal state indicating failure of the send.</p>
          */
