@@ -382,10 +382,10 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         private boolean _commit;
         private Throwable _failure;
 
-        private void reset()
+        private void reset(boolean failed)
         {
             assert Thread.holdsLock(this);
-            _state = State.IDLE;
+            _state = failed ? State.FAILED : State.IDLE;
             _callback = null;
             _commit = false;
             _failure = null;
@@ -453,26 +453,25 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                         callback = _callback;
                         commit = _commit;
                         failure = null;
-                        reset();
+                        reset(false);
                         break;
                     }
                     case FAILING:
                     {
                         // The send already completed with a failure, but
                         // the call to failed() was delayed, so call it now.
-                        _state = State.FAILED;
                         callback = _callback;
                         commit = _commit;
                         failure = _failure;
+                        reset(true);
                         break;
                     }
                     default:
                     {
-                        _state = State.FAILED;
-                        _failure = new IllegalStateException("Invalid transport state: " + _state);
                         callback = _callback;
                         commit = _commit;
-                        failure = _failure;
+                        failure = new IllegalStateException("Invalid transport state: " + _state);
+                        reset(true);
                         break;
                     }
                 }
@@ -502,7 +501,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     {
                         callback = _callback;
                         commit = _commit;
-                        reset();
+                        reset(false);
                         break;
                     }
                     default:
@@ -535,10 +534,9 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     case IDLE:
                     case PENDING:
                     {
-                        _state = State.FAILED;
-                        _failure = failure;
                         callback = _callback;
                         commit = _commit;
+                        reset(true);
                         break;
                     }
                     default:
@@ -563,10 +561,9 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     case PENDING:
                     {
                         // The send was started but idle timed out, fail it.
-                        _state = State.FAILED;
-                        _failure = failure;
                         callback = _callback;
                         timeout = true;
+                        reset(true);
                         break;
                     }
                     case IDLE:
@@ -587,13 +584,12 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     default:
                     {
                         // Should not happen, but just in case.
-                        _state = State.FAILED;
-                        _failure = new IllegalStateException("Invalid transport state: " + _state, failure);
                         callback = _callback;
                         if (callback == null)
                             callback = Callback.NOOP;
                         timeout = true;
-                        failure = _failure;
+                        failure = new IllegalStateException("Invalid transport state: " + _state, failure);
+                        reset(true);
                         break;
                     }
                 }
