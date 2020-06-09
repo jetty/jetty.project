@@ -447,7 +447,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             // We received a GO_AWAY, so try to write
             // what's in the queue and then disconnect.
             closeFrame = frame;
-            notifyClose(this, frame, new DisconnectCallback());
+            onClose(frame, new DisconnectCallback());
             return;
         }
 
@@ -514,9 +514,15 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void onStreamFailure(int streamId, int error, String reason)
     {
         Callback callback = new ResetCallback(streamId, error, Callback.NOOP);
+        Throwable failure = toFailure("Stream failure", error, reason);
+        onStreamFailure(streamId, error, reason, failure, callback);
+    }
+
+    private void onStreamFailure(int streamId, int error, String reason, Throwable failure, Callback callback)
+    {
         IStream stream = getStream(streamId);
         if (stream != null)
-            stream.process(new FailureFrame(error, reason), callback);
+            stream.process(new FailureFrame(error, reason, failure), callback);
         else
             callback.succeeded();
     }
@@ -529,38 +535,51 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected void onConnectionFailure(int error, String reason, Callback callback)
     {
-        notifyFailure(this, new IOException(String.format("%d/%s", error, reason)), new FailureCallback(error, reason, callback));
+        Throwable failure = toFailure("Session failure", error, reason);
+        onFailure(error, reason, failure, new FailureCallback(error, reason, callback));
+    }
+
+    protected void abort(Throwable failure)
+    {
+        onFailure(ErrorCode.NO_ERROR.code, null, failure, new TerminateCallback(failure));
+    }
+
+    private void onFailure(int error, String reason, Throwable failure, Callback callback)
+    {
+        Collection<Stream> streams = getStreams();
+        int count = streams.size();
+        Callback countCallback = new CountingCallback(callback, count + 1);
+        for (Stream stream : streams)
+        {
+            onStreamFailure(stream.getId(), error, reason, failure, countCallback);
+        }
+        notifyFailure(this, failure, countCallback);
+    }
+
+    private void onClose(GoAwayFrame frame, Callback callback)
+    {
+        int error = frame.getError();
+        String reason = frame.tryConvertPayload();
+        Throwable failure = toFailure("Session close", error, reason);
+        Collection<Stream> streams = getStreams();
+        int count = streams.size();
+        Callback countCallback = new CountingCallback(callback, count + 1);
+        for (Stream stream : streams)
+        {
+            onStreamFailure(stream.getId(), error, reason, failure, countCallback);
+        }
+        notifyClose(this, frame, countCallback);
+    }
+
+    private Throwable toFailure(String message, int error, String reason)
+    {
+        return new IOException(String.format("%s %s/%s", message, ErrorCode.toString(error, null), reason));
     }
 
     @Override
     public void newStream(HeadersFrame frame, Promise<Stream> promise, Stream.Listener listener)
     {
         streamCreator.newStream(frame, promise, listener);
-/*
-        try
-        {
-            // Synchronization is necessary to atomically create
-            // the stream id and enqueue the frame to be sent.
-            IStream stream;
-            boolean queued;
-            synchronized (this)
-            {
-                HeadersFrame[] frameOut = new HeadersFrame[1];
-                stream = newLocalStream(frame, frameOut);
-                stream.setListener(listener);
-                ControlEntry entry = new ControlEntry(frameOut[0], stream, new StreamPromiseCallback(promise, stream));
-                queued = flusher.append(entry);
-            }
-            stream.process(new PrefaceFrame(), Callback.NOOP);
-            // Iterate outside the synchronized block.
-            if (queued)
-                flusher.iterate();
-        }
-        catch (Throwable x)
-        {
-            promise.failed(x);
-        }
-*/
     }
 
     /**
@@ -1100,11 +1119,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected void abort(Throwable failure)
-    {
-        notifyFailure(this, failure, new TerminateCallback(failure));
-    }
-
     public boolean isDisconnected()
     {
         return !endPoint.isOpen();
@@ -1629,7 +1643,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         public void failed(Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("CloseCallback failed", x);
+                LOG.debug("FailureCallback failed", x);
             complete();
         }
 
