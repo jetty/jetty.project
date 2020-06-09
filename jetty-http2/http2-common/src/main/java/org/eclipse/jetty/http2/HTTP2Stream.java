@@ -344,7 +344,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         if (dataLength != Long.MIN_VALUE)
         {
             dataLength -= frame.remaining();
-            if (frame.isEndStream() && dataLength != 0)
+            if (dataLength < 0 || (frame.isEndStream() && dataLength != 0))
             {
                 reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
                 callback.failed(new IOException("invalid_data_length"));
