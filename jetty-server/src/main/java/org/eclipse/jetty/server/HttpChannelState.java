@@ -817,13 +817,16 @@ public class HttpChannelState
         // check the actions of the listeners
         synchronized (this)
         {
-            // If we are still async and nobody has called sendError
             if (_requestState == RequestState.ASYNC && !_sendError)
-                // Then the listeners did not invoke API methods
-                // and the container must provide a default error dispatch.
+            {
+                // The listeners did not invoke API methods and the
+                // container must provide a default error dispatch.
                 sendError(th);
-            else
+            }
+            else if (_requestState != RequestState.COMPLETE)
+            {
                 LOG.warn("unhandled in state " + _requestState, new IllegalStateException(th));
+            }
         }
     }
 

@@ -22,12 +22,14 @@ public class FailureFrame extends Frame
 {
     private final int error;
     private final String reason;
+    private final Throwable failure;
 
-    public FailureFrame(int error, String reason)
+    public FailureFrame(int error, String reason, Throwable failure)
     {
         super(FrameType.FAILURE);
         this.error = error;
         this.reason = reason;
+        this.failure = failure;
     }
 
     public int getError()
@@ -38,5 +40,10 @@ public class FailureFrame extends Frame
     public String getReason()
     {
         return reason;
+    }
+
+    public Throwable getFailure()
+    {
+        return failure;
     }
 }
