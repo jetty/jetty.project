@@ -365,6 +365,11 @@ public class HttpParser
         return _contentPosition;
     }
 
+    public long getHeaderLength()
+    {
+        return _headerBytes;
+    }
+
     /**
      * Set if a HEAD response is expected
      *
