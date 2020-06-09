@@ -31,7 +31,8 @@ public interface ByteCountEvent
     Throwable getResponseFailure();
 
     // TODO: do we care about upgraded connections?
-    // TODO: what about HTTP/2 ?
+    // TODO: what about the TLS bytes? (SSLConnection bytesIn / bytesOut?)
+    // TODO: what about HTTP/2 ?  (what about non-stream frames? settings, window-updates, reset, etc)
 
     interface HttpByteCount
     {

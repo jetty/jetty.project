@@ -60,6 +60,7 @@ public class ByteCounterChannelListener implements HttpChannel.Listener
             HttpInput httpInput = request.getHttpInput();
             long byteCountRequestAPI = httpInput.getContentConsumed();
             byteCountEventAdaptor.getRequestCount().onBodyEnd(connection.getBytesIn(), byteCountRequestAPI);
+            byteCountEventAdaptor.getRequestCount().onTrailerStart(connection.getBytesIn());
         }
     }
 
@@ -84,6 +85,8 @@ public class ByteCounterChannelListener implements HttpChannel.Listener
             byteCountEventAdaptor.getRequestCount().onFailure(connection.getBytesIn(), failure);
         }
     }
+
+    // TODO: investigate Http Dispatch Failure too.
 
     @Override
     public void onResponseBegin(Request request)

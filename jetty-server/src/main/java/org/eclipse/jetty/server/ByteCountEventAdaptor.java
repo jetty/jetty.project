@@ -117,6 +117,11 @@ public class ByteCountEventAdaptor implements ByteCountEvent
             this.trailerStart = connectionCount;
         }
 
+        public void onTrailerStart(long connectionCount)
+        {
+            this.trailerStart = connectionCount;
+        }
+
         void onTrailerEnd(long connectionCount)
         {
             this.trailerEnd = connectionCount;

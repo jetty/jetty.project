@@ -1150,6 +1150,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
         }
 
+        // TODO: need onResponseTrailers(Request request) - see https://github.com/eclipse/jetty.project/issues/4956
+
         /**
          * Invoked when the response has been fully written.
          *
