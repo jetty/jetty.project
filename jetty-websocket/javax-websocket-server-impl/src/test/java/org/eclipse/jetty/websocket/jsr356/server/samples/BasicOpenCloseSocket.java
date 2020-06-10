@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server.samples;
 
+import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.OnOpen;
@@ -26,6 +27,7 @@ import javax.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.websocket.jsr356.server.TrackingSocket;
 
 @ServerEndpoint(value = "/basic")
+@ClientEndpoint
 public class BasicOpenCloseSocket extends TrackingSocket
 {
     @OnOpen

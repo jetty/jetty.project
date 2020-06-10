@@ -18,12 +18,15 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.util.concurrent.TimeUnit;
+import javax.websocket.CloseReason;
 import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
@@ -35,6 +38,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.eclipse.jetty.websocket.jsr356.server.samples.BasicOpenCloseSocket;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,8 +49,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PrivateEndpointTest
+public class AddEndpointTest
 {
     private Server server;
     private WebSocketContainer client;
@@ -96,11 +102,36 @@ public class PrivateEndpointTest
         }
     }
 
+    @SuppressWarnings("InnerClassMayBeStatic")
     private class CustomPrivateEndpoint extends Endpoint
     {
         @Override
         public void onOpen(Session session, EndpointConfig config)
         {
+        }
+    }
+
+    @SuppressWarnings("InnerClassMayBeStatic")
+    @ServerEndpoint(value = "/", configurator = CustomAnnotatedEndpointConfigurator.class)
+    public static class CustomAnnotatedEndpoint
+    {
+        public CustomAnnotatedEndpoint(String id)
+        {
+        }
+
+        @OnOpen
+        public void onOpen(Session session, EndpointConfig config)
+        {
+        }
+    }
+
+    public static class CustomAnnotatedEndpointConfigurator extends ServerEndpointConfig.Configurator
+    {
+        @SuppressWarnings("unchecked")
+        @Override
+        public <T> T getEndpointInstance(Class<T> endpointClass)
+        {
+            return (T)new CustomAnnotatedEndpoint("server");
         }
     }
 
@@ -186,8 +217,12 @@ public class PrivateEndpointTest
             }).build();
         start(container -> container.addEndpoint(config));
 
-        Session session = client.connectToServer(new CustomEndpoint("client"), WSURI.toWebsocket(server.getURI().resolve("/")));
+        BasicOpenCloseSocket clientEndpoint = new BasicOpenCloseSocket();
+        Session session = client.connectToServer(clientEndpoint, WSURI.toWebsocket(server.getURI().resolve("/")));
         assertNotNull(session);
+        session.close();
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.closeReason.getCloseCode(), Matchers.is(CloseReason.CloseCodes.NORMAL_CLOSURE));
     }
 
     @Test
@@ -205,8 +240,25 @@ public class PrivateEndpointTest
             }).build();
         start(container -> container.addEndpoint(config));
 
-        Session session = client.connectToServer(new CustomEndpoint("client"), WSURI.toWebsocket(server.getURI().resolve("/")));
+        BasicOpenCloseSocket clientEndpoint = new BasicOpenCloseSocket();
+        Session session = client.connectToServer(clientEndpoint, WSURI.toWebsocket(server.getURI().resolve("/")));
         assertNotNull(session);
+        session.close();
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.closeReason.getCloseCode(), Matchers.is(CloseReason.CloseCodes.NORMAL_CLOSURE));
+    }
+
+    @Test
+    public void testCustomAnnotatedEndpoint() throws Exception
+    {
+        start(container -> container.addEndpoint(CustomAnnotatedEndpoint.class));
+
+        BasicOpenCloseSocket clientEndpoint = new BasicOpenCloseSocket();
+        Session session = client.connectToServer(clientEndpoint, WSURI.toWebsocket(server.getURI().resolve("/")));
+        assertNotNull(session);
+        session.close();
+        assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientEndpoint.closeReason.getCloseCode(), Matchers.is(CloseReason.CloseCodes.NORMAL_CLOSURE));
     }
 
     @Test
