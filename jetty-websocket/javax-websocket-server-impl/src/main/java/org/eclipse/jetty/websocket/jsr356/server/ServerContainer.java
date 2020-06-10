@@ -173,8 +173,14 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         if (isStarted() || isStarting())
         {
             ServerEndpointConfig.Configurator configurator = config.getConfigurator();
+
+            if (configurator == null)
+            {
+                throw new DeploymentException("Unable to deploy with null ServerEndpointConfig.Configurator");
+            }
+
             // only validate constructor and class modifiers on non-custom configurators
-            if (configurator instanceof ContainerDefaultConfigurator)
+            if (configurator.getClass() == ContainerDefaultConfigurator.class)
             {
                 if (!ReflectUtils.isDefaultConstructable(endpointClass))
                 {

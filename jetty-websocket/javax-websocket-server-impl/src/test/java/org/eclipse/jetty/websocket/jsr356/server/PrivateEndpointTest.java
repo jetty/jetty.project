@@ -96,6 +96,14 @@ public class PrivateEndpointTest
         }
     }
 
+    private class CustomPrivateEndpoint extends Endpoint
+    {
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
+        {
+        }
+    }
+
     public static class CustomEndpoint extends Endpoint implements MessageHandler.Whole<String>
     {
         public CustomEndpoint(String id)
@@ -174,6 +182,25 @@ public class PrivateEndpointTest
                 public <T> T getEndpointInstance(Class<T> endpointClass)
                 {
                     return (T)new CustomEndpoint("server");
+                }
+            }).build();
+        start(container -> container.addEndpoint(config));
+
+        Session session = client.connectToServer(new CustomEndpoint("client"), WSURI.toWebsocket(server.getURI().resolve("/")));
+        assertNotNull(session);
+    }
+
+    @Test
+    public void testCustomPrivateEndpoint() throws Exception
+    {
+        ServerEndpointConfig config = ServerEndpointConfig.Builder.create(CustomPrivateEndpoint.class, "/")
+            .configurator(new ServerEndpointConfig.Configurator()
+            {
+                @SuppressWarnings("unchecked")
+                @Override
+                public <T> T getEndpointInstance(Class<T> endpointClass)
+                {
+                    return (T)new CustomPrivateEndpoint();
                 }
             }).build();
         start(container -> container.addEndpoint(config));
