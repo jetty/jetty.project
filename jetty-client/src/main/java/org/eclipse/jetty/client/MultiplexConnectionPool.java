@@ -18,405 +18,47 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-
-import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Sweeper;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
-public class MultiplexConnectionPool extends AbstractConnectionPool implements ConnectionPool.Multiplexable, Sweeper.Sweepable
+@ManagedObject
+public class MultiplexConnectionPool extends AbstractConnectionPool implements ConnectionPool.Multiplexable
 {
-    private static final Logger LOG = Log.getLogger(MultiplexConnectionPool.class);
-
-    private final ReentrantLock lock = new ReentrantLock();
-    private final Deque<Holder> idleConnections;
-    private final Map<Connection, Holder> muxedConnections;
-    private final Map<Connection, Holder> busyConnections;
-    private int maxMultiplex;
-
     public MultiplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
-        super(destination, maxConnections, requester);
-        this.idleConnections = new ArrayDeque<>(maxConnections);
-        this.muxedConnections = new HashMap<>(maxConnections);
-        this.busyConnections = new HashMap<>(maxConnections);
-        this.maxMultiplex = maxMultiplex;
+        this(destination, maxConnections, true, requester, maxMultiplex);
+    }
+
+    public MultiplexConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester, int maxMultiplex)
+    {
+        super(destination, maxConnections, cache, requester);
+        setMaxMultiplex(maxMultiplex);
     }
 
     @Override
-    protected Connection acquire(boolean create)
-    {
-        Connection connection = activate();
-        if (connection == null && create)
-        {
-            int queuedRequests = getHttpDestination().getQueuedRequestCount();
-            int maxMultiplex = getMaxMultiplex();
-            int maxPending = ceilDiv(queuedRequests, maxMultiplex);
-            tryCreate(maxPending);
-            connection = activate();
-        }
-        return connection;
-    }
-
-    /**
-     * @param a the dividend
-     * @param b the divisor
-     * @return the ceiling of the algebraic quotient
-     */
-    private static int ceilDiv(int a, int b)
-    {
-        return (a + b - 1) / b;
-    }
-
-    protected void lock()
-    {
-        lock.lock();
-    }
-
-    protected void unlock()
-    {
-        lock.unlock();
-    }
-
-    @Override
+    @ManagedAttribute(value = "The multiplexing factor of connections")
     public int getMaxMultiplex()
     {
-        lock();
-        try
-        {
-            return maxMultiplex;
-        }
-        finally
-        {
-            unlock();
-        }
+        return super.getMaxMultiplex();
     }
 
     @Override
     public void setMaxMultiplex(int maxMultiplex)
     {
-        lock();
-        try
-        {
-            this.maxMultiplex = maxMultiplex;
-        }
-        finally
-        {
-            unlock();
-        }
+        super.setMaxMultiplex(maxMultiplex);
     }
 
     @Override
-    public boolean isActive(Connection connection)
+    @ManagedAttribute(value = "The maximum amount of times a connection is used before it gets closed")
+    public int getMaxUsageCount()
     {
-        lock();
-        try
-        {
-            if (muxedConnections.containsKey(connection))
-                return true;
-            return busyConnections.containsKey(connection);
-        }
-        finally
-        {
-            unlock();
-        }
+        return super.getMaxUsageCount();
     }
 
     @Override
-    protected void onCreated(Connection connection)
+    public void setMaxUsageCount(int maxUsageCount)
     {
-        lock();
-        try
-        {
-            // Use "cold" connections as last.
-            idleConnections.offer(new Holder(connection));
-        }
-        finally
-        {
-            unlock();
-        }
-
-        idle(connection, false);
-    }
-
-    @Override
-    protected Connection activate()
-    {
-        Holder holder;
-        lock();
-        try
-        {
-            while (true)
-            {
-                if (muxedConnections.isEmpty())
-                {
-                    holder = idleConnections.poll();
-                    if (holder == null)
-                        return null;
-                    muxedConnections.put(holder.connection, holder);
-                }
-                else
-                {
-                    holder = muxedConnections.values().iterator().next();
-                }
-
-                if (holder.count < maxMultiplex)
-                {
-                    ++holder.count;
-                    break;
-                }
-                else
-                {
-                    muxedConnections.remove(holder.connection);
-                    busyConnections.put(holder.connection, holder);
-                }
-            }
-        }
-        finally
-        {
-            unlock();
-        }
-
-        return active(holder.connection);
-    }
-
-    @Override
-    public boolean release(Connection connection)
-    {
-        boolean closed = isClosed();
-        boolean idle = false;
-        Holder holder;
-        lock();
-        try
-        {
-            holder = muxedConnections.get(connection);
-            if (holder != null)
-            {
-                int count = --holder.count;
-                if (count == 0)
-                {
-                    muxedConnections.remove(connection);
-                    if (!closed)
-                    {
-                        idleConnections.offerFirst(holder);
-                        idle = true;
-                    }
-                }
-            }
-            else
-            {
-                holder = busyConnections.remove(connection);
-                if (holder != null)
-                {
-                    int count = --holder.count;
-                    if (!closed)
-                    {
-                        if (count == 0)
-                        {
-                            idleConnections.offerFirst(holder);
-                            idle = true;
-                        }
-                        else
-                        {
-                            muxedConnections.put(connection, holder);
-                        }
-                    }
-                }
-            }
-        }
-        finally
-        {
-            unlock();
-        }
-
-        if (holder == null)
-            return false;
-
-        released(connection);
-        if (idle || closed)
-            return idle(connection, closed);
-        return true;
-    }
-
-    @Override
-    public boolean remove(Connection connection)
-    {
-        return remove(connection, false);
-    }
-
-    protected boolean remove(Connection connection, boolean force)
-    {
-        boolean activeRemoved = true;
-        boolean idleRemoved = false;
-        lock();
-        try
-        {
-            Holder holder = muxedConnections.remove(connection);
-            if (holder == null)
-                holder = busyConnections.remove(connection);
-            if (holder == null)
-            {
-                activeRemoved = false;
-                for (Iterator<Holder> iterator = idleConnections.iterator(); iterator.hasNext(); )
-                {
-                    holder = iterator.next();
-                    if (holder.connection == connection)
-                    {
-                        idleRemoved = true;
-                        iterator.remove();
-                        break;
-                    }
-                }
-            }
-        }
-        finally
-        {
-            unlock();
-        }
-
-        if (activeRemoved || force)
-            released(connection);
-        boolean removed = activeRemoved || idleRemoved || force;
-        if (removed)
-            removed(connection);
-        return removed;
-    }
-
-    @Override
-    public void close()
-    {
-        super.close();
-
-        List<Connection> connections;
-        lock();
-        try
-        {
-            connections = idleConnections.stream().map(holder -> holder.connection).collect(Collectors.toList());
-            connections.addAll(muxedConnections.keySet());
-            connections.addAll(busyConnections.keySet());
-        }
-        finally
-        {
-            unlock();
-        }
-
-        close(connections);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        DumpableCollection busy;
-        DumpableCollection muxed;
-        DumpableCollection idle;
-        lock();
-        try
-        {
-            busy = new DumpableCollection("busy", new ArrayList<>(busyConnections.values()));
-            muxed = new DumpableCollection("muxed", new ArrayList<>(muxedConnections.values()));
-            idle = new DumpableCollection("idle", new ArrayList<>(idleConnections));
-        }
-        finally
-        {
-            unlock();
-        }
-
-        Dumpable.dumpObjects(out, indent, this, busy, muxed, idle);
-    }
-
-    @Override
-    public boolean sweep()
-    {
-        List<Connection> toSweep = new ArrayList<>();
-        lock();
-        try
-        {
-            busyConnections.values().stream()
-                .map(holder -> holder.connection)
-                .filter(connection -> connection instanceof Sweeper.Sweepable)
-                .collect(Collectors.toCollection(() -> toSweep));
-            muxedConnections.values().stream()
-                .map(holder -> holder.connection)
-                .filter(connection -> connection instanceof Sweeper.Sweepable)
-                .collect(Collectors.toCollection(() -> toSweep));
-        }
-        finally
-        {
-            unlock();
-        }
-
-        for (Connection connection : toSweep)
-        {
-            if (((Sweeper.Sweepable)connection).sweep())
-            {
-                boolean removed = remove(connection, true);
-                LOG.warn("Connection swept: {}{}{} from active connections{}{}",
-                    connection,
-                    System.lineSeparator(),
-                    removed ? "Removed" : "Not removed",
-                    System.lineSeparator(),
-                    dump());
-            }
-        }
-
-        return false;
-    }
-
-    @Override
-    public String toString()
-    {
-        int busySize;
-        int muxedSize;
-        int idleSize;
-        lock();
-        try
-        {
-            busySize = busyConnections.size();
-            muxedSize = muxedConnections.size();
-            idleSize = idleConnections.size();
-        }
-        finally
-        {
-            unlock();
-        }
-        return String.format("%s@%x[c=%d/%d/%d,b=%d,m=%d,i=%d]",
-            getClass().getSimpleName(),
-            hashCode(),
-            getPendingConnectionCount(),
-            getConnectionCount(),
-            getMaxConnectionCount(),
-            busySize,
-            muxedSize,
-            idleSize);
-    }
-
-    private static class Holder
-    {
-        private final Connection connection;
-        private int count;
-
-        private Holder(Connection connection)
-        {
-            this.connection = connection;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s[%d]", connection, count);
-        }
+        super.setMaxUsageCount(maxUsageCount);
     }
 }

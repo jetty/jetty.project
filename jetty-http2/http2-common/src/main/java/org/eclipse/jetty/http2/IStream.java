@@ -22,6 +22,7 @@ import java.io.Closeable;
 
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.Frame;
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -29,21 +30,8 @@ import org.eclipse.jetty.util.Callback;
  * <p>This class extends {@link Stream} by adding the methods required to
  * implement the HTTP/2 stream functionalities.</p>
  */
-public interface IStream extends Stream, Closeable
+public interface IStream extends Stream, Attachable, Closeable
 {
-    /**
-     * @return the object attached to this stream
-     * @see #setAttachment(Object)
-     */
-    Object getAttachment();
-
-    /**
-     * Attaches the given object to this stream for later retrieval.
-     *
-     * @param attachment the object to attach to this stream
-     */
-    void setAttachment(Object attachment);
-
     /**
      * @return whether this stream is local or remote
      */

@@ -18,244 +18,55 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 @ManagedObject
-public class RoundRobinConnectionPool extends AbstractConnectionPool implements ConnectionPool.Multiplexable
+public class RoundRobinConnectionPool extends MultiplexConnectionPool
 {
-    private final List<Entry> entries;
-    private int maxMultiplex;
-    private int index;
+    private static final Logger LOG = Log.getLogger(RoundRobinConnectionPool.class);
 
-    public RoundRobinConnectionPool(Destination destination, int maxConnections, Callback requester)
+    private final AtomicInteger offset = new AtomicInteger();
+    private final Pool<Connection> pool;
+
+    public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
     {
         this(destination, maxConnections, requester, 1);
     }
 
-    public RoundRobinConnectionPool(Destination destination, int maxConnections, Callback requester, int maxMultiplex)
+    public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
-        super((HttpDestination)destination, maxConnections, requester);
-        entries = new ArrayList<>(maxConnections);
-        for (int i = 0; i < maxConnections; ++i)
-        {
-            entries.add(new Entry());
-        }
-        this.maxMultiplex = maxMultiplex;
-    }
-
-    @Override
-    public int getMaxMultiplex()
-    {
-        synchronized (this)
-        {
-            return maxMultiplex;
-        }
-    }
-
-    @Override
-    public void setMaxMultiplex(int maxMultiplex)
-    {
-        synchronized (this)
-        {
-            this.maxMultiplex = maxMultiplex;
-        }
-    }
-
-    /**
-     * <p>Returns an idle connection, if available, following a round robin algorithm;
-     * otherwise it always tries to create a new connection, up until the max connection count.</p>
-     *
-     * @param create this parameter is ignored and assumed to be always {@code true}
-     * @return an idle connection or {@code null} if no idle connections are available
-     */
-    @Override
-    protected Connection acquire(boolean create)
-    {
-        // The nature of this connection pool is such that a
-        // connection must always be present in the next slot.
-        return super.acquire(true);
-    }
-
-    @Override
-    protected void onCreated(Connection connection)
-    {
-        synchronized (this)
-        {
-            for (Entry entry : entries)
-            {
-                if (entry.connection == null)
-                {
-                    entry.connection = connection;
-                    break;
-                }
-            }
-        }
-        idle(connection, false);
+        super(destination, maxConnections, false, requester, maxMultiplex);
+        pool = destination.getBean(Pool.class);
     }
 
     @Override
     protected Connection activate()
     {
-        Connection connection = null;
-        synchronized (this)
-        {
-            int offset = 0;
-            int capacity = getMaxConnectionCount();
-            while (offset < capacity)
-            {
-                int idx = index + offset;
-                if (idx >= capacity)
-                    idx -= capacity;
-
-                Entry entry = entries.get(idx);
-
-                if (entry.connection == null)
-                    break;
-
-                if (entry.active < getMaxMultiplex())
-                {
-                    ++entry.active;
-                    ++entry.used;
-                    connection = entry.connection;
-                    index += offset + 1;
-                    if (index >= capacity)
-                        index -= capacity;
-                    break;
-                }
-
-                ++offset;
-            }
-        }
-        return connection == null ? null : active(connection);
+        int offset = this.offset.get();
+        Connection connection = activate(offset);
+        if (connection != null)
+            this.offset.getAndIncrement();
+        return connection;
     }
 
-    @Override
-    public boolean isActive(Connection connection)
+    private Connection activate(int offset)
     {
-        synchronized (this)
+        Pool<Connection>.Entry entry = pool.acquireAt(Math.abs(offset % pool.getMaxEntries()));
+        if (LOG.isDebugEnabled())
+            LOG.debug("activated '{}'", entry);
+        if (entry != null)
         {
-            for (Entry entry : entries)
-            {
-                if (entry.connection == connection)
-                    return entry.active > 0;
-            }
-            return false;
+            Connection connection = entry.getPooled();
+            acquired(connection);
+            return connection;
         }
-    }
-
-    @Override
-    public boolean release(Connection connection)
-    {
-        boolean found = false;
-        boolean idle = false;
-        synchronized (this)
-        {
-            for (Entry entry : entries)
-            {
-                if (entry.connection == connection)
-                {
-                    found = true;
-                    int active = --entry.active;
-                    idle = active == 0;
-                    break;
-                }
-            }
-        }
-        if (!found)
-            return false;
-        released(connection);
-        if (idle)
-            return idle(connection, isClosed());
-        return true;
-    }
-
-    @Override
-    public boolean remove(Connection connection)
-    {
-        boolean found = false;
-        synchronized (this)
-        {
-            for (Entry entry : entries)
-            {
-                if (entry.connection == connection)
-                {
-                    found = true;
-                    entry.reset();
-                    break;
-                }
-            }
-        }
-        if (found)
-        {
-            released(connection);
-            removed(connection);
-        }
-        return found;
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        List<Entry> connections;
-        synchronized (this)
-        {
-            connections = new ArrayList<>(entries);
-        }
-        Dumpable.dumpObjects(out, indent, out, connections);
-    }
-
-    @Override
-    public String toString()
-    {
-        int present = 0;
-        int active = 0;
-        synchronized (this)
-        {
-            for (Entry entry : entries)
-            {
-                if (entry.connection != null)
-                {
-                    ++present;
-                    if (entry.active > 0)
-                        ++active;
-                }
-            }
-        }
-        return String.format("%s@%x[c=%d/%d/%d,a=%d]",
-            getClass().getSimpleName(),
-            hashCode(),
-            getPendingConnectionCount(),
-            present,
-            getMaxConnectionCount(),
-            active
-        );
-    }
-
-    private static class Entry
-    {
-        private Connection connection;
-        private int active;
-        private long used;
-
-        private void reset()
-        {
-            connection = null;
-            active = 0;
-            used = 0;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("{u=%d,c=%s}", used, connection);
-        }
+        return null;
     }
 }

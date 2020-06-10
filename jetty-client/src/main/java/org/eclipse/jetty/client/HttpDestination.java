@@ -438,6 +438,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         {
             if (connectionPool.isActive(connection))
             {
+                // trigger the next request after releasing the connection
                 if (connectionPool.release(connection))
                     send(false);
                 else
