@@ -121,8 +121,22 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
+        if (endpointClass == null)
+        {
+            throw new DeploymentException("Unable to deploy null endpoint class");
+        }
+
         if (isStarted() || isStarting())
         {
+            if (!ReflectUtils.isDefaultConstructable(endpointClass))
+            {
+                throw new DeploymentException("Cannot access default constructor for the class: " + endpointClass.getName());
+            }
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("addEndpoint({})", endpointClass);
+            }
             ServerEndpointMetadata metadata = getServerEndpointMetadata(endpointClass, null);
             addEndpoint(metadata);
         }
@@ -136,11 +150,8 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         }
     }
 
-    private void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
+    private void addEndpoint(ServerEndpointMetadata metadata)
     {
-        if (!ReflectUtils.isDefaultConstructable(metadata.getEndpointClass()))
-            throw new DeploymentException("Cannot access default constructor for the Endpoint class");
-
         JsrCreator creator = new JsrCreator(this, metadata, this.configuration.getFactory().getExtensionFactory());
         this.configuration.addMapping("uri-template|" + metadata.getPath(), creator);
     }
@@ -148,8 +159,29 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void addEndpoint(ServerEndpointConfig config) throws DeploymentException
     {
+        if (config == null)
+        {
+            throw new DeploymentException("Unable to deploy null ServerEndpointConfig");
+        }
+
+        Class<?> endpointClass = config.getEndpointClass();
+        if (endpointClass == null)
+        {
+            throw new DeploymentException("Unable to deploy null endpoint class from ServerEndpointConfig: " + config.getClass().getName());
+        }
+
         if (isStarted() || isStarting())
         {
+            ServerEndpointConfig.Configurator configurator = config.getConfigurator();
+            // only validate constructor and class modifiers on non-custom configurators
+            if (configurator instanceof ContainerDefaultConfigurator)
+            {
+                if (!ReflectUtils.isDefaultConstructable(endpointClass))
+                {
+                    throw new DeploymentException("Cannot access default constructor for the class: " + endpointClass.getName());
+                }
+            }
+
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), config.getEndpointClass());

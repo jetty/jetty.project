@@ -33,6 +33,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class PrivateEndpointTest
@@ -94,6 +96,26 @@ public class PrivateEndpointTest
         }
     }
 
+    public static class CustomEndpoint extends Endpoint implements MessageHandler.Whole<String>
+    {
+        public CustomEndpoint(String id)
+        {
+            // This is a valid no-default-constructor implementation, and can be added via a custom
+            // ServerEndpointConfig.Configurator
+        }
+
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
+        {
+            session.addMessageHandler(this);
+        }
+
+        @Override
+        public void onMessage(String message)
+        {
+        }
+    }
+
     @SuppressWarnings("InnerClassMayBeStatic")
     public class ServerSocketNonStatic extends Endpoint implements MessageHandler.Whole<String>
     {
@@ -131,11 +153,47 @@ public class PrivateEndpointTest
     public void testEndpoint()
     {
         RuntimeException error = assertThrows(RuntimeException.class, () ->
-            start(container -> container.addEndpoint(ServerEndpointConfig.Builder.create(ServerSocket.class, "/").build())));
+        {
+            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(ServerSocket.class, "/").build();
+            start(container -> container.addEndpoint(config));
+        });
 
         assertThat(error.getCause(), instanceOf(DeploymentException.class));
         DeploymentException deploymentException = (DeploymentException)error.getCause();
-        assertThat(deploymentException.getMessage(), containsString("Cannot access default constructor for the Endpoint class"));
+        assertThat(deploymentException.getMessage(), containsString("Cannot access default constructor"));
+    }
+
+    @Test
+    public void testCustomEndpoint() throws Exception
+    {
+        ServerEndpointConfig config = ServerEndpointConfig.Builder.create(CustomEndpoint.class, "/")
+            .configurator(new ServerEndpointConfig.Configurator()
+            {
+                @SuppressWarnings("unchecked")
+                @Override
+                public <T> T getEndpointInstance(Class<T> endpointClass)
+                {
+                    return (T)new CustomEndpoint("server");
+                }
+            }).build();
+        start(container -> container.addEndpoint(config));
+
+        Session session = client.connectToServer(new CustomEndpoint("client"), WSURI.toWebsocket(server.getURI().resolve("/")));
+        assertNotNull(session);
+    }
+
+    @Test
+    public void testCustomEndpointNoConfigurator()
+    {
+        RuntimeException error = assertThrows(RuntimeException.class, () ->
+        {
+            ServerEndpointConfig config = ServerEndpointConfig.Builder.create(CustomEndpoint.class, "/").build();
+            start(container -> container.addEndpoint(config));
+        });
+
+        assertThat(error.getCause(), instanceOf(DeploymentException.class));
+        DeploymentException deploymentException = (DeploymentException)error.getCause();
+        assertThat(deploymentException.getMessage(), containsString("Cannot access default constructor"));
     }
 
     @Test
@@ -146,7 +204,7 @@ public class PrivateEndpointTest
 
         assertThat(error.getCause(), instanceOf(DeploymentException.class));
         DeploymentException deploymentException = (DeploymentException)error.getCause();
-        assertThat(deploymentException.getMessage(), containsString("Cannot access default constructor for the Endpoint class"));
+        assertThat(deploymentException.getMessage(), containsString("Cannot access default constructor"));
     }
 
     @Test
@@ -157,7 +215,7 @@ public class PrivateEndpointTest
 
         assertThat(error.getCause(), instanceOf(DeploymentException.class));
         DeploymentException deploymentException = (DeploymentException)error.getCause();
-        assertThat(deploymentException.getMessage(), containsString("Cannot access default constructor for the Endpoint class"));
+        assertThat(deploymentException.getMessage(), containsString("Cannot access default constructor"));
     }
 
     @Test
