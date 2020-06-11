@@ -118,12 +118,51 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         return new EndpointInstance(endpoint, cec, metadata);
     }
 
+    private void validateEndpointConfig(ServerEndpointConfig config) throws DeploymentException
+    {
+        if (config == null)
+        {
+            throw new DeploymentException("Unable to deploy null ServerEndpointConfig");
+        }
+
+        ServerEndpointConfig.Configurator configurator = config.getConfigurator();
+        if (configurator == null)
+        {
+            throw new DeploymentException("Unable to deploy with null ServerEndpointConfig.Configurator");
+        }
+
+        Class<?> endpointClass = config.getEndpointClass();
+        if (endpointClass == null)
+        {
+            throw new DeploymentException("Unable to deploy null endpoint class from ServerEndpointConfig: " + config.getClass().getName());
+        }
+
+        if (configurator.getClass() == ContainerDefaultConfigurator.class)
+        {
+            if (!ReflectUtils.isDefaultConstructable(endpointClass))
+            {
+                throw new DeploymentException("Cannot access default constructor for the class: " + endpointClass.getName());
+            }
+        }
+    }
+
     @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
+        if (endpointClass == null)
+        {
+            throw new DeploymentException("Unable to deploy null endpoint class");
+        }
+
         if (isStarted() || isStarting())
         {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("addEndpoint({})", endpointClass);
+            }
+
             ServerEndpointMetadata metadata = getServerEndpointMetadata(endpointClass, null);
+            validateEndpointConfig(metadata.getConfig());
             addEndpoint(metadata);
         }
         else
@@ -136,11 +175,8 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         }
     }
 
-    private void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
+    private void addEndpoint(ServerEndpointMetadata metadata)
     {
-        if (!ReflectUtils.isDefaultConstructable(metadata.getEndpointClass()))
-            throw new DeploymentException("Cannot access default constructor for the Endpoint class");
-
         JsrCreator creator = new JsrCreator(this, metadata, this.configuration.getFactory().getExtensionFactory());
         this.configuration.addMapping("uri-template|" + metadata.getPath(), creator);
     }
@@ -148,12 +184,14 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void addEndpoint(ServerEndpointConfig config) throws DeploymentException
     {
+        validateEndpointConfig(config);
         if (isStarted() || isStarting())
         {
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), config.getEndpointClass());
             }
+
             ServerEndpointMetadata metadata = getServerEndpointMetadata(config.getEndpointClass(), config);
             addEndpoint(metadata);
         }

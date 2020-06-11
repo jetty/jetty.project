@@ -129,7 +129,7 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
         {
             try
             {
-                resolvedConfigurator = anno.configurator().getDeclaredConstructor().newInstance();
+                resolvedConfigurator = anno.configurator().getConstructor().newInstance();
             }
             catch (Exception e)
             {
