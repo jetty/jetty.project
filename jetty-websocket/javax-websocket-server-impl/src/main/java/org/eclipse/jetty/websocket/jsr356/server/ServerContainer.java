@@ -184,10 +184,9 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void addEndpoint(ServerEndpointConfig config) throws DeploymentException
     {
+        validateEndpointConfig(config);
         if (isStarted() || isStarting())
         {
-            validateEndpointConfig(config);
-
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), config.getEndpointClass());
