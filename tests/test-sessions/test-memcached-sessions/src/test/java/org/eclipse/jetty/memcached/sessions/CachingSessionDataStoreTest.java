@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.session.TestServer;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -56,6 +57,7 @@ public class CachingSessionDataStoreTest
         int scavengePeriod = -1;
         int maxInactivePeriod = -1;
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setFlushOnResponseCommit(true); //ensure changes are saved before response commits so we can check values after response
         SessionDataStoreFactory storeFactory = MemcachedTestHelper.newSessionDataStoreFactory();
 
         //Make sure sessions are evicted on request exit so they will need to be reloaded via cache/persistent store
@@ -109,6 +111,13 @@ public class CachingSessionDataStoreTest
                 sd = dataMap.load(id);
                 assertNotNull(sd);
                 assertEquals("bar", sd.getAttribute("foo"));
+                
+                //invalidate a session and check its gone from cache and store
+                request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=del");
+                response = request.send();
+                assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+                assertNull(persistentStore.load(id));
+                assertNull(dataMap.load(id));
             }
             finally
             {
@@ -141,6 +150,13 @@ public class CachingSessionDataStoreTest
                 HttpSession session = request.getSession(false);
                 assertNotNull(session);
                 session.setAttribute("foo", "bar");
+                return;
+            }
+            if ("del".equals(action))
+            {
+                HttpSession session = request.getSession(false);
+                assertNotNull(session);
+                session.invalidate();
                 return;
             }
         }
