@@ -1,3 +1,5 @@
+jetty-9.4.31-SNAPSHOT
+
 jetty-9.4.30.v20200611 - 11 June 2020
  + 4776 Incorrect path matching for WebSocket using PathMappings
  + 4826 Upgrade to Apache Jasper 8.5.54
