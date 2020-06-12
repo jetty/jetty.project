@@ -1,5 +1,25 @@
 jetty-10.0.0-SNAPSHOT
 
+jetty-9.4.30.v20200611 - 11 June 2020
+ + 4776 Incorrect path matching for WebSocket using PathMappings
+ + 4826 Upgrade to Apache Jasper 8.5.54
+ + 4855 occasional h2spec failures on jenkins
+ + 4873 Server.join not working when used with ExecutorThreadPool
+ + 4885 setCookie() must not change the headers in a response during an include
+ + 4890 JettyClient behavior when SETTINGS_HEADER_TABLE_SIZE is set to 0 in
+   SETTINGS Frame.
+ + 4894 JDBCSessionDataStore fails to create multiple JettySessions for server
+   with multiple databases
+ + 4903 Give better errors for non public Websocket Endpoints
+ + 4904 WebsocketClient creates more connections than needed
+ + 4913 DirectoryNotEmptyException when using mvn jetty:run-distro
+ + 4920 Restore ability to delete sessions on stop
+ + 4921 Quickstart run improperly runs dynamically added context initializers
+ + 4923 SecureRequestCustomizer.SslAttributes does not cache cert chain like
+   before
+ + 4929 HttpClient: HttpCookieStore.Empty prevents sending cookies
+ + 4936 Response header overflow leads to buffer corruptions
+
 jetty-9.4.29.v20200521 - 21 May 2020
  + 2188 Lock contention creating HTTP/2 streams
  + 4235 communicate the reason of failure to the OpenID error page
@@ -12,8 +32,8 @@ jetty-9.4.29.v20200521 - 21 May 2020
  + 4798 Better handling of fatal Selector failures
  + 4814 Allow a ConnectionFactory (eg SslConnectionFactory) to automatically
    add a Customizer
- + 4820 Jetty OSGi DefaultJettyAtJettyHomeHelper refers to non-existent
-   config file
+ + 4820 Jetty OSGi DefaultJettyAtJettyHomeHelper refers to non-existent config
+   file
  + 4824 WebSocket server outgoing message queue memory growth
  + 4828 NIO ByteBuffer corruption in embedded Jetty server
  + 4835 GzipHandler and GzipHttpOutputInterceptor do not flush response when

@@ -15,6 +15,7 @@
      <Set name="saveOnCreate"><Property name="jetty.session.saveOnCreate" default="false" /></Set>
      <Set name="removeUnloadableSessions"><Property name="jetty.session.removeUnloadableSessions" default="false"/></Set>
      <Set name="flushOnResponseCommit"><Property name="jetty.session.flushOnResponseCommit" default="false"/></Set>
+     <Set name="invalidateOnShutdown"><Property name="jetty.session.invalidateOnShutdown" default="false"/></Set>
     </New>
    </Arg>
   </Call>
