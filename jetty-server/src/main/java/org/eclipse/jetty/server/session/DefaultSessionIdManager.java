@@ -471,7 +471,9 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         {
             for (Handler h : tmp)
             {
-                if (h.isStarted())
+                //This method can be called on shutdown when the handlers are STOPPING, so only
+                //check that they are not already stopped
+                if (!h.isStopped() && !h.isFailed())
                     handlers.add((SessionHandler)h);
             }
         }

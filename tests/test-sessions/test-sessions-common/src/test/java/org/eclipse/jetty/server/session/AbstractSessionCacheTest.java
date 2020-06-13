@@ -115,10 +115,24 @@ public abstract class AbstractSessionCacheTest
             ++activateCalls;
         }
     }
-    
-    public abstract AbstractSessionCacheFactory newSessionCacheFactory(int evictionPolicy, boolean saveOnCreate, 
-                                                                       boolean saveOnInactiveEvict, boolean removeUnloadableSessions,
+
+    public abstract AbstractSessionCacheFactory newSessionCacheFactory(int evictionPolicy,
+                                                                       boolean saveOnCreate, 
+                                                                       boolean saveOnInactiveEvict,
+                                                                       boolean removeUnloadableSessions,
                                                                        boolean flushOnResponseCommit);
+
+    public abstract void checkSessionBeforeShutdown(String id,
+                                                    SessionDataStore store, 
+                                                    SessionCache cache, 
+                                                    TestSessionActivationListener activationListener,
+                                                    TestHttpSessionListener sessionListener) throws Exception;
+    
+    public abstract void checkSessionAfterShutdown(String id,
+                                                   SessionDataStore store,
+                                                   SessionCache cache,
+                                                   TestSessionActivationListener activationListener,
+                                                   TestHttpSessionListener sessionListener) throws Exception;
 
     /**
      * Test that a session that exists in the datastore, but that cannot be
@@ -239,11 +253,14 @@ public abstract class AbstractSessionCacheTest
         assertEquals(now - 20, session.getCreationTime());
     }
     
+    /**
+     * Test state of session with call to commit
+     * 
+     * @throws Exception
+     */
     @Test
     public void testCommit() throws Exception
     {
-        //Test state of session with call to commit
-        
         Server server = new Server();
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -316,11 +333,14 @@ public abstract class AbstractSessionCacheTest
         commitAndCheckSaveState(cache, store, session, false, true, false, true, 0, 0);
     }
     
+    /**
+     * Test what happens with various states of a session when commit
+     * is called before release
+     * @throws Exception
+     */
     @Test
     public void testCommitAndRelease() throws Exception
     {
-        //test what happens with various states of a session when commit
-        //is called before release
         Server server = new Server();
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -417,7 +437,7 @@ public abstract class AbstractSessionCacheTest
         assertFalse(session.getSessionData().isDirty());
         assertTrue(session.getSessionData().isMetaDataDirty());
     }
-    
+
     /**
      * Test the exist method.
      */
@@ -592,6 +612,92 @@ public abstract class AbstractSessionCacheTest
         cache.newSession(null, "1234", now, TimeUnit.MINUTES.toMillis(10));
         assertFalse(store.exists("1234"));
     }
+    
+    /**
+     * Test shutting down the server with invalidateOnShutdown==false
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testNoInvalidateOnShutdown()
+        throws Exception
+    {
+        Server server = new Server();
+
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");
+        context.setServer(server);
+        server.setHandler(context);
+
+        AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
+        SessionCache cache = cacheFactory.getSessionCache(context.getSessionHandler());
+
+        TestSessionDataStore store = new TestSessionDataStore(true);//fake passivation
+        cache.setSessionDataStore(store);
+        context.getSessionHandler().setSessionCache(cache);
+        TestHttpSessionListener sessionListener = new TestHttpSessionListener();
+        context.getSessionHandler().addEventListener(sessionListener);
+
+        server.start();
+
+        //put a session in the cache and store
+        long now = System.currentTimeMillis();
+        SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
+        Session session = cache.newSession(data);
+        TestSessionActivationListener activationListener = new TestSessionActivationListener();
+        cache.add("1234", session);
+        session.setAttribute("aaa", activationListener);
+        cache.release("1234", session);
+        checkSessionBeforeShutdown("1234", store, cache, activationListener, sessionListener);
+
+        server.stop(); //calls shutdown
+
+        checkSessionAfterShutdown("1234", store, cache, activationListener, sessionListener);
+    }
+    
+    /**
+     * Test shutdown of the server with invalidateOnShutdown==true
+     * @throws Exception
+     */
+    @Test
+    public void testInvalidateOnShutdown()
+        throws Exception
+    {
+        Server server = new Server();
+
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");
+        server.setHandler(context);
+
+        //flushOnResponseCommit is true
+        AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, true);
+        cacheFactory.setInvalidateOnShutdown(true);
+        SessionCache cache = cacheFactory.getSessionCache(context.getSessionHandler());
+
+
+        TestSessionDataStore store = new TestSessionDataStore(true); //fake a passivating store
+        cache.setSessionDataStore(store);
+        context.getSessionHandler().setSessionCache(cache);
+        TestHttpSessionListener sessionListener = new TestHttpSessionListener();
+        context.getSessionHandler().addEventListener(sessionListener);
+
+        server.start();
+
+        //Make a session in the store and cache and check that it is invalidated on shutdown
+        long now = System.currentTimeMillis();
+        SessionData data = store.newSessionData("8888", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
+        Session session = cache.newSession(data);
+        cache.add("8888", session);
+
+        TestSessionActivationListener activationListener = new TestSessionActivationListener();
+        session.setAttribute("aaa", activationListener);
+        cache.release("8888", session);
+        checkSessionBeforeShutdown("8888", store, cache, activationListener, sessionListener);
+
+        server.stop();
+
+        checkSessionAfterShutdown("8888", store, cache, activationListener, sessionListener);
+    }
 
     public void commitAndCheckSaveState(SessionCache cache, TestSessionDataStore store, Session session, 
                                         boolean expectedBeforeDirty, boolean expectedBeforeMetaDirty, 
@@ -607,7 +713,7 @@ public abstract class AbstractSessionCacheTest
         assertEquals(expectedAfterMetaDirty, session.getSessionData().isMetaDataDirty());
         assertEquals(expectedAfterNumSaves, store._numSaves.get());
     }
-    
+
     public Session createUnExpiredSession(SessionCache cache, SessionDataStore store, String id)
     {
         long now = System.currentTimeMillis();

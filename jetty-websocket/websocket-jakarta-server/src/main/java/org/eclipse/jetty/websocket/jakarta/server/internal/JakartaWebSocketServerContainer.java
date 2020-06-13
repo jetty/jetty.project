@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.jakarta.server.internal;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -38,7 +39,9 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.websocket.jakarta.server.config.ContainerDefaultConfigurator;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.util.ReflectUtils;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
@@ -161,21 +164,62 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         return frameHandlerFactory;
     }
 
+    private void validateEndpointConfig(ServerEndpointConfig config) throws DeploymentException
+    {
+        if (config == null)
+        {
+            throw new DeploymentException("Unable to deploy null ServerEndpointConfig");
+        }
+
+        ServerEndpointConfig.Configurator configurator = config.getConfigurator();
+        if (configurator == null)
+        {
+            throw new DeploymentException("Unable to deploy with null ServerEndpointConfig.Configurator");
+        }
+
+        Class<?> endpointClass = config.getEndpointClass();
+        if (endpointClass == null)
+        {
+            throw new DeploymentException("Unable to deploy null endpoint class from ServerEndpointConfig: " + config.getClass().getName());
+        }
+
+        if (!Modifier.isPublic(endpointClass.getModifiers()))
+        {
+            throw new DeploymentException("Class is not public: " + endpointClass.getName());
+        }
+
+        if (configurator.getClass() == ContainerDefaultConfigurator.class)
+        {
+            if (!ReflectUtils.isDefaultConstructable(endpointClass))
+            {
+                throw new DeploymentException("Cannot access default constructor for the class: " + endpointClass.getName());
+            }
+        }
+    }
+
     @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
         if (endpointClass == null)
         {
-            throw new DeploymentException("EndpointClass is null");
+            throw new DeploymentException("Unable to deploy null endpoint class");
         }
 
         if (isStarted() || isStarting())
         {
             ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
             if (anno == null)
+            {
                 throw new DeploymentException(String.format("Class must be @%s annotated: %s", ServerEndpoint.class.getName(), endpointClass.getName()));
+            }
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("addEndpoint({})", endpointClass);
+            }
 
             ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
+            validateEndpointConfig(config);
             addEndpointMapping(config);
         }
         else
@@ -203,6 +247,7 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             if (LOG.isDebugEnabled())
                 LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), endpointClass);
 
+            validateEndpointConfig(config);
             addEndpointMapping(config);
         }
         else
@@ -215,9 +260,6 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
 
     private void addEndpointMapping(ServerEndpointConfig config) throws DeploymentException
     {
-        if (!ReflectUtils.isDefaultConstructable(config.getEndpointClass()))
-            throw new DeploymentException("Cannot access default constructor for the Endpoint class");
-
         try
         {
             frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
@@ -225,11 +267,14 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
             PathSpec pathSpec = new UriTemplatePathSpec(config.getPath());
             webSocketMapping.addMapping(pathSpec, creator, frameHandlerFactory, defaultCustomizer);
         }
+        catch (InvalidSignatureException e)
+        {
+            throw new DeploymentException(e.getMessage(), e);
+        }
         catch (Throwable t)
         {
             throw new DeploymentException("Unable to deploy: " + config.getEndpointClass().getName(), t);
         }
-
     }
 
     @Override

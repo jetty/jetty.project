@@ -19,11 +19,13 @@
 package org.eclipse.jetty.memcached.sessions;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import net.rubyeye.xmemcached.XMemcachedClientBuilder;
 import org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
@@ -32,6 +34,10 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 /**
  * MemcachedTestHelper
@@ -129,11 +135,49 @@ public class MemcachedTestHelper
         }
     }
 
+    private static final Logger LOG = LoggerFactory.getLogger(MemcachedTestHelper.class);
+
+    private static final Logger MEMCACHED_LOG = LoggerFactory.getLogger("org.eclipse.jetty.memcached.sessions.MemcachedLogs");
+
+    static GenericContainer memcached =
+        new GenericContainer("memcached:" + System.getProperty("memcached.docker.version", "1.6.6"))
+            .withLogConsumer(new Slf4jLogConsumer(MEMCACHED_LOG));
+
+    static
+    {
+        try
+        {
+            long start = System.currentTimeMillis();
+            memcached.start();
+            LOG.info("time to start memcache instance {}ms on {}:{}", System.currentTimeMillis() - start,
+                     memcached.getHost(), memcached.getMappedPort(11211));
+        }
+        catch (Exception e)
+        {
+            LOG.error(e.getMessage(), e);
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+
     public static SessionDataStoreFactory newSessionDataStoreFactory()
     {
         MockDataStoreFactory storeFactory = new MockDataStoreFactory();
         MemcachedSessionDataMapFactory mapFactory = new MemcachedSessionDataMapFactory();
-        mapFactory.setAddresses(new InetSocketAddress("localhost", 11211));
+        String host = memcached.getContainerIpAddress();
+        int port = memcached.getMappedPort(11211);
+        InetSocketAddress inetSocketAddress = new InetSocketAddress(host, port);
+        mapFactory.setAddresses(inetSocketAddress);
+
+        try
+        {
+            XMemcachedClientBuilder builder = new XMemcachedClientBuilder(Arrays.asList(inetSocketAddress));
+            builder.build().flushAll();
+        }
+        catch (Exception e)
+        {
+            LOG.error(e.getMessage(), e);
+            throw new RuntimeException(e.getMessage(), e);
+        }
 
         CachingSessionDataStoreFactory factory = new CachingSessionDataStoreFactory();
         factory.setSessionDataMapFactory(mapFactory);

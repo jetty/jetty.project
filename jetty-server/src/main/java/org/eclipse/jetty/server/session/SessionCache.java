@@ -290,4 +290,13 @@ public interface SessionCache extends LifeCycle
      * before the response is committed.
      */
     boolean isFlushOnResponseCommit();
+    
+    /**
+     * If true, all existing sessions in the cache will be invalidated when
+     * the server shuts down. Default is false.
+     * @param invalidateOnShutdown
+     */
+    void setInvalidateOnShutdown(boolean invalidateOnShutdown);
+    
+    boolean isInvalidateOnShutdown();
 }

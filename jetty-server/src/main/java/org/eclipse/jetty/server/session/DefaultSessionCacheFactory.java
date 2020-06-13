@@ -26,14 +26,8 @@ package org.eclipse.jetty.server.session;
 public class DefaultSessionCacheFactory extends AbstractSessionCacheFactory
 {
     @Override
-    public SessionCache getSessionCache(SessionHandler handler)
+    public SessionCache newSessionCache(SessionHandler handler)
     {
-        DefaultSessionCache cache = new DefaultSessionCache(handler);
-        cache.setEvictionPolicy(getEvictionPolicy());
-        cache.setSaveOnInactiveEviction(isSaveOnInactiveEvict());
-        cache.setSaveOnCreate(isSaveOnCreate());
-        cache.setRemoveUnloadableSessions(isRemoveUnloadableSessions());
-        cache.setFlushOnResponseCommit(isFlushOnResponseCommit());
-        return cache;
+        return new DefaultSessionCache(handler);
     }
 }
