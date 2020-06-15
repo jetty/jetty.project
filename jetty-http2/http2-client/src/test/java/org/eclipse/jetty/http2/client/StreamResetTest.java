@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
@@ -1049,19 +1050,7 @@ public class StreamResetTest extends AbstractTest
         int window = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
         float ratio = 0.5F;
         AtomicReference<Stream> streamRef = new AtomicReference<>();
-        start(new ServerSessionListener.Adapter()
-        {
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
-            {
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
-                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
-                Callback.Completable completable = new Callback.Completable();
-                stream.headers(responseFrame, completable);
-                // Consume the request content as it arrives.
-                return new Stream.Listener.Adapter();
-            }
-        }, http2 ->
+        Consumer<AbstractHTTP2ServerConnectionFactory> http2Factory = http2 ->
         {
             http2.setInitialSessionRecvWindow(window);
             http2.setInitialStreamRecvWindow(window);
@@ -1076,7 +1065,20 @@ public class StreamResetTest extends AbstractTest
                     super.sendWindowUpdate(stream, session, frame);
                 }
             });
-        });
+        };
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
+                Callback.Completable completable = new Callback.Completable();
+                stream.headers(responseFrame, completable);
+                // Consume the request content as it arrives.
+                return new Stream.Listener.Adapter();
+            }
+        }, http2Factory);
 
         CountDownLatch failureLatch = new CountDownLatch(1);
         Session client = newClient(new Session.Listener.Adapter()
