@@ -51,6 +51,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Flusher;
@@ -1040,6 +1041,63 @@ public class StreamResetTest extends AbstractTest
             requestLatch2.countDown();
             assertTrue(writeLatch1.await(5, TimeUnit.SECONDS));
         }
+    }
+
+    @Test
+    public void testResetBeforeReceivingWindowUpdate() throws Exception
+    {
+        int window = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+        float ratio = 0.5F;
+        AtomicReference<Stream> streamRef = new AtomicReference<>();
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
+                Callback.Completable completable = new Callback.Completable();
+                stream.headers(responseFrame, completable);
+                // Consume the request content as it arrives.
+                return new Stream.Listener.Adapter();
+            }
+        }, http2 ->
+        {
+            http2.setInitialSessionRecvWindow(window);
+            http2.setInitialStreamRecvWindow(window);
+            http2.setFlowControlStrategyFactory(() -> new BufferingFlowControlStrategy(ratio)
+            {
+                @Override
+                protected void sendWindowUpdate(IStream stream, ISession session, WindowUpdateFrame frame)
+                {
+                    // Before sending the window update, reset from the client side.
+                    if (stream != null)
+                        streamRef.get().reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+                    super.sendWindowUpdate(stream, session, frame);
+                }
+            });
+        });
+
+        CountDownLatch failureLatch = new CountDownLatch(1);
+        Session client = newClient(new Session.Listener.Adapter()
+        {
+            @Override
+            public void onFailure(Session session, Throwable failure)
+            {
+                failureLatch.countDown();
+            }
+        });
+        MetaData.Request request = newRequest("GET", new HttpFields());
+        HeadersFrame requestFrame = new HeadersFrame(request, null, false);
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        client.newStream(requestFrame, promise, new Stream.Listener.Adapter());
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
+        streamRef.set(stream);
+        // Send enough bytes to trigger the server to send a window update.
+        ByteBuffer content = ByteBuffer.allocate((int)(window * ratio) + 1024);
+        stream.data(new DataFrame(stream.getId(), content, false), Callback.NOOP);
+
+        assertFalse(failureLatch.await(1, TimeUnit.SECONDS));
     }
 
     private void waitUntilTCPCongested(WriteFlusher flusher) throws TimeoutException, InterruptedException
