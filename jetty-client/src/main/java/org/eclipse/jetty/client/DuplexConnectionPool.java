@@ -31,7 +31,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -50,7 +49,7 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
     private final Deque<Connection> idleConnections;
     private final Set<Connection> activeConnections;
 
-    public DuplexConnectionPool(Destination destination, int maxConnections, Callback requester)
+    public DuplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
     {
         super(destination, maxConnections, requester);
         this.idleConnections = new ArrayDeque<>(maxConnections);

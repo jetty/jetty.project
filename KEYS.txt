@@ -5,3 +5,4 @@ Joakim Erdfelt  <joakim.erdfelt@gmail.com>  5989 BAF7 6217 B843 D66B  E55B 2D0E 
 Joakim Erdfelt  <joakime@apache.org>        B59B 67FD 7904 9843 67F9  3180 0818 D9D6 8FB6 7BAC
 Joakim Erdfelt  <joakim@erdfelt.com>        BFBB 21C2 46D7 7768 3628  7A48 A04E 0C74 ABB3 5FEA
 Simone Bordet   <simone.bordet@gmail.com>   8B09 6546 B1A8 F026 56B1  5D3B 1677 D141 BCF3 584D
+Olivier Lamy    <olamy@apache.org>          F254 B356 17DC 255D 9344  BCFA 873A 8E86 B437 2146

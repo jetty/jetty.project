@@ -622,7 +622,7 @@ public class Server extends HandlerWrapper implements Attributes
                     baseRequest.mergeQueryParameters(oldUri.getQuery(), baseRequest.getQueryString());
             }
 
-            baseRequest.setPathInfo(baseRequest.getHttpURI().getDecodedPath());
+            baseRequest.setContext(null, baseRequest.getHttpURI().getDecodedPath());
             handleAsync(channel, event, baseRequest);
         }
         finally

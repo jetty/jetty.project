@@ -34,6 +34,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NegotiatingServerConnection.CipherDiscriminator;
@@ -123,30 +124,19 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public boolean onIdleTimeout(Stream stream, Throwable x)
-        {
-            return getConnection().onStreamTimeout((IStream)stream, x);
-        }
-
-        @Override
         public void onClose(Session session, GoAwayFrame frame, Callback callback)
         {
             String reason = frame.tryConvertPayload();
             if (!StringUtil.isEmpty(reason))
                 reason = " (" + reason + ")";
-            getConnection().onSessionFailure(new EofException(String.format("Close %s/%s", ErrorCode.toString(frame.getError(), null), reason)), callback);
+            EofException failure = new EofException(String.format("Close %s/%s", ErrorCode.toString(frame.getError(), null), reason));
+            onFailure(session, failure, callback);
         }
 
         @Override
         public void onFailure(Session session, Throwable failure, Callback callback)
         {
             getConnection().onSessionFailure(failure, callback);
-        }
-
-        @Override
-        public void onFailure(Stream stream, int error, String reason, Callback callback)
-        {
-            getConnection().onStreamFailure((IStream)stream, new EofException(String.format("Failure %s/%s", ErrorCode.toString(error, null), reason)), callback);
         }
 
         @Override
@@ -175,7 +165,27 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
-            getConnection().onStreamFailure((IStream)stream, new EofException("Reset " + ErrorCode.toString(frame.getError(), null)), callback);
+            EofException failure = new EofException("Reset " + ErrorCode.toString(frame.getError(), null));
+            onFailure(stream, failure, callback);
+        }
+
+        @Override
+        public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
+        {
+            if (!(failure instanceof QuietException))
+                failure = new EofException(failure);
+            onFailure(stream, failure, callback);
+        }
+
+        private void onFailure(Stream stream, Throwable failure, Callback callback)
+        {
+            getConnection().onStreamFailure((IStream)stream, failure, callback);
+        }
+
+        @Override
+        public boolean onIdleTimeout(Stream stream, Throwable x)
+        {
+            return getConnection().onStreamTimeout((IStream)stream, x);
         }
 
         private void close(Stream stream, String reason)

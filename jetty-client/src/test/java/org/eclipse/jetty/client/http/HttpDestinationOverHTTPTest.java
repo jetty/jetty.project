@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.util.Callback;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -54,7 +56,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 {
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void testFirstAcquireWithEmptyQueue(Scenario scenario) throws Exception
+    public void testAcquireWithEmptyQueue(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
@@ -62,7 +64,29 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         {
             destination.start();
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-            Connection connection = connectionPool.acquire();
+            Connection connection = connectionPool.acquire(true);
+            assertNull(connection);
+            // There are no queued requests, so no connection should be created.
+            connection = pollIdleConnection(connectionPool, 1, TimeUnit.SECONDS);
+            assertNull(connection);
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testAcquireWithOneExchangeQueued(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        try (TestDestination destination = new TestDestination(client, new Origin("http", "localhost", connector.getLocalPort())))
+        {
+            destination.start();
+            TestDestination.TestConnectionPool connectionPool = (TestDestination.TestConnectionPool)destination.getConnectionPool();
+
+            // Trigger creation of one connection.
+            connectionPool.tryCreate(1);
+
+            Connection connection = connectionPool.acquire(false);
             if (connection == null)
             {
                 // There are no queued requests, so the newly created connection will be idle
@@ -78,19 +102,22 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        try (HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", connector.getLocalPort())))
+        try (TestDestination destination = new TestDestination(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
             destination.start();
+            TestDestination.TestConnectionPool connectionPool = (TestDestination.TestConnectionPool)destination.getConnectionPool();
 
-            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-            Connection connection1 = connectionPool.acquire();
+            // Trigger creation of one connection.
+            connectionPool.tryCreate(1);
+
+            Connection connection1 = connectionPool.acquire(true);
             if (connection1 == null)
             {
                 // There are no queued requests, so the newly created connection will be idle
                 connection1 = peekIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
                 assertNotNull(connection1);
 
-                Connection connection2 = connectionPool.acquire();
+                Connection connection2 = connectionPool.acquire(true);
                 assertSame(connection1, connection2);
             }
         }
@@ -102,14 +129,14 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        final CountDownLatch idleLatch = new CountDownLatch(1);
-        final CountDownLatch latch = new CountDownLatch(1);
-        HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", connector.getLocalPort()))
+        CountDownLatch idleLatch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
+        try (TestDestination destination = new TestDestination(client, new Origin("http", "localhost", connector.getLocalPort()))
         {
             @Override
             protected ConnectionPool newConnectionPool(HttpClient client)
             {
-                return new DuplexConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
+                return new TestConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
                 {
                     @Override
                     protected void onCreated(Connection connection)
@@ -127,30 +154,37 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
                     }
                 };
             }
-        };
+        })
+        {
+            destination.start();
+            TestDestination.TestConnectionPool connectionPool = (TestDestination.TestConnectionPool)destination.getConnectionPool();
 
-        destination.start();
-        DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-        Connection connection1 = connectionPool.acquire();
+            // Trigger creation of one connection.
+            connectionPool.tryCreate(1);
 
-        // Make sure we entered idleCreated().
-        assertTrue(idleLatch.await(5, TimeUnit.SECONDS));
+            // Make sure we entered idleCreated().
+            assertTrue(idleLatch.await(5, TimeUnit.SECONDS));
 
-        // There are no available existing connections, so acquire()
-        // returns null because we delayed idleCreated() above
-        assertNull(connection1);
+            // There are no available existing connections, so acquire()
+            // returns null because we delayed idleCreated() above.
+            Connection connection1 = connectionPool.acquire(true);
+            assertNull(connection1);
 
-        // Second attempt also returns null because we delayed idleCreated() above.
-        Connection connection2 = connectionPool.acquire();
-        assertNull(connection2);
+            // Trigger creation of a second connection.
+            connectionPool.tryCreate(1);
 
-        latch.countDown();
+            // Second attempt also returns null because we delayed idleCreated() above.
+            Connection connection2 = connectionPool.acquire(true);
+            assertNull(connection2);
 
-        // There must be 2 idle connections.
-        Connection connection = pollIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
-        assertNotNull(connection);
-        connection = pollIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
-        assertNotNull(connection);
+            latch.countDown();
+
+            // There must be 2 idle connections.
+            Connection connection = pollIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
+            assertNotNull(connection);
+            connection = pollIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
+            assertNotNull(connection);
+        }
     }
 
     @ParameterizedTest
@@ -159,23 +193,30 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     {
         start(scenario, new EmptyServerHandler());
 
-        try (HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", connector.getLocalPort())))
+        try (TestDestination destination = new TestDestination(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
             destination.start();
-            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-            Connection connection1 = connectionPool.acquire();
+            TestDestination.TestConnectionPool connectionPool = (TestDestination.TestConnectionPool)destination.getConnectionPool();
+
+            // Trigger creation of one connection.
+            connectionPool.tryCreate(1);
+
+            Connection connection1 = connectionPool.acquire(true);
             if (connection1 == null)
             {
                 connection1 = peekIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
                 assertNotNull(connection1);
                 // Acquire the connection to make it active.
-                assertSame(connection1, connectionPool.acquire(), "From idle");
+                assertSame(connection1, connectionPool.acquire(true), "From idle");
             }
 
-            destination.process(connection1);
+            // There are no exchanges so process() is a no-op.
+            Method process = HttpDestination.class.getDeclaredMethod("process", Connection.class);
+            process.setAccessible(true);
+            process.invoke(destination, connection1);
             destination.release(connection1);
 
-            Connection connection2 = connectionPool.acquire();
+            Connection connection2 = connectionPool.acquire(true);
             assertSame(connection1, connection2, "After release");
         }
     }
@@ -184,15 +225,20 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testIdleConnectionIdleTimeout(Scenario scenario) throws Exception
     {
-        startServer(scenario, new EmptyServerHandler());
+        start(scenario, new EmptyServerHandler());
+
         long idleTimeout = 1000;
         startClient(scenario, httpClient -> httpClient.setIdleTimeout(idleTimeout));
 
-        try (HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", connector.getLocalPort())))
+        try (TestDestination destination = new TestDestination(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
             destination.start();
-            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-            Connection connection1 = connectionPool.acquire();
+            TestDestination.TestConnectionPool connectionPool = (TestDestination.TestConnectionPool)destination.getConnectionPool();
+
+            // Trigger creation of one connection.
+            connectionPool.tryCreate(1);
+
+            Connection connection1 = connectionPool.acquire(true);
             if (connection1 == null)
             {
                 connection1 = peekIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
@@ -261,7 +307,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         Request request = client.newRequest(host, port)
-                .scheme(scenario.getScheme())
+            .scheme(scenario.getScheme())
                 .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE));
         Destination destinationBefore = client.resolveDestination(request);
         ContentResponse response = request.send();
@@ -297,7 +343,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
         server.stop();
         Request request = client.newRequest(host, port).scheme(scenario.getScheme());
-        assertThrows(Exception.class, () ->  request.send());
+        assertThrows(Exception.class, request::send);
 
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
         while (!client.getDestinations().isEmpty() && System.nanoTime() < deadline)
@@ -328,5 +374,39 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             TimeUnit.MILLISECONDS.sleep(5);
         }
         return null;
+    }
+
+    private static class TestDestination extends DuplexHttpDestination
+    {
+        public TestDestination(HttpClient client, Origin origin)
+        {
+            super(client, origin);
+        }
+
+        @Override
+        protected ConnectionPool newConnectionPool(HttpClient client)
+        {
+            return new TestConnectionPool(this, client.getMaxConnectionsPerDestination(), this);
+        }
+
+        public static class TestConnectionPool extends DuplexConnectionPool
+        {
+            public TestConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
+            {
+                super(destination, maxConnections, requester);
+            }
+
+            @Override
+            public void tryCreate(int maxPending)
+            {
+                super.tryCreate(maxPending);
+            }
+
+            @Override
+            public Connection acquire(boolean create)
+            {
+                return super.acquire(create);
+            }
+        }
     }
 }

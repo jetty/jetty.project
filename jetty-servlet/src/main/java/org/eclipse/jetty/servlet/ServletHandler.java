@@ -37,7 +37,6 @@ import java.util.stream.Stream;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -66,7 +65,6 @@ import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -431,10 +429,7 @@ public class ServletHandler extends ScopedHandler
             if (servletPathMapping != null)
             {
                 // Setting the servletPathMapping also provides the servletPath and pathInfo
-                if (DispatcherType.INCLUDE.equals(type))
-                    baseRequest.setAttribute(RequestDispatcher.INCLUDE_MAPPING, servletPathMapping);
-                else
-                    baseRequest.setServletPathMapping(servletPathMapping);
+                baseRequest.setServletPathMapping(servletPathMapping);
             }
         }
 
@@ -1405,7 +1400,7 @@ public class ServletHandler extends ScopedHandler
         if (LOG.isDebugEnabled())
             LOG.debug("Not Found {}", request.getRequestURI());
         if (getHandler() != null)
-            nextHandle(URIUtil.addPaths(request.getServletPath(), request.getPathInfo()), baseRequest, request, response);
+            nextHandle(baseRequest.getPathInContext(), baseRequest, request, response);
     }
 
     protected synchronized boolean containsFilterHolder(FilterHolder holder)

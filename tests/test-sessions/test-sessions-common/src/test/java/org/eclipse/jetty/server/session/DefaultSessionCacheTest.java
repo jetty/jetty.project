@@ -53,6 +53,42 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         factory.setFlushOnResponseCommit(flushOnResponseCommit);
         return factory;
     }
+    
+    @Override
+    public void checkSessionBeforeShutdown(String id,
+                                           SessionDataStore store,
+                                           SessionCache cache,
+                                           TestSessionActivationListener activationListener,
+                                           TestHttpSessionListener sessionListener) throws Exception
+    {
+        assertTrue(store.exists(id));
+        assertTrue(cache.contains(id));
+        assertFalse(sessionListener.destroyedSessions.contains(id));
+        assertEquals(1, activationListener.passivateCalls);
+        assertEquals(1, activationListener.activateCalls);
+    }
+    
+    @Override
+    public void checkSessionAfterShutdown(String id,
+                                          SessionDataStore store,
+                                          SessionCache cache,
+                                          TestSessionActivationListener activationListener,
+                                          TestHttpSessionListener sessionListener) throws Exception
+    {
+        if (cache.isInvalidateOnShutdown())
+        {
+            assertFalse(store.exists(id));
+            assertFalse(cache.contains(id));
+            assertTrue(sessionListener.destroyedSessions.contains(id));
+        }
+        else
+        {
+            assertTrue(store.exists(id));
+            assertFalse(cache.contains(id));
+            assertEquals(2, activationListener.passivateCalls);
+            assertEquals(1, activationListener.activateCalls); //no re-activate on shutdown
+        }
+    }
 
     @Test
     public void testRenewWithInvalidate() throws Exception
@@ -181,25 +217,26 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     /**
      * Test sessions are saved when shutdown with a store.
      */
-    @Test
-    public void testShutdownWithSessionStore()
+    /*    @Test
+    public void testNoInvalidateOnShutdown()
         throws Exception
     {
         Server server = new Server();
-
+    
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/test");
         context.setServer(server);
-
+        server.setHandler(context);
+    
         AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
-
+    
         TestSessionDataStore store = new TestSessionDataStore(true);//fake passivation
         cache.setSessionDataStore(store);
         context.getSessionHandler().setSessionCache(cache);
-
-        context.start();
-
+    
+        server.start();
+    
         //put a session in the cache and store
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
@@ -209,17 +246,18 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         assertTrue(cache.contains("1234"));
         session.setAttribute("aaa", listener);
         cache.release("1234", session);
-
+    
         assertTrue(store.exists("1234"));
         assertTrue(cache.contains("1234"));
-
-        context.stop(); //calls shutdown
-
+    
+        server.stop(); //calls shutdown
+    
         assertTrue(store.exists("1234"));
         assertFalse(cache.contains("1234"));
         assertEquals(2, listener.passivateCalls);
         assertEquals(1, listener.activateCalls);
     }
+    */
 
     /**
      * Test that a session id can be renewed.

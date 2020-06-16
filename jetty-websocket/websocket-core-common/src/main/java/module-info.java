@@ -29,9 +29,9 @@ module org.eclipse.jetty.websocket.core.common
     exports org.eclipse.jetty.websocket.core.internal to org.eclipse.jetty.websocket.core.client, org.eclipse.jetty.websocket.core.server, org.eclipse.jetty.util;
 
     requires org.eclipse.jetty.http;
-    requires org.slf4j;
     requires transitive org.eclipse.jetty.io;
     requires transitive org.eclipse.jetty.util;
+    requires org.slf4j;
 
     uses Extension;
 

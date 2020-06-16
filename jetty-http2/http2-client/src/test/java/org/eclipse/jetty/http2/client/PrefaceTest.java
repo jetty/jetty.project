@@ -18,7 +18,11 @@
 
 package org.eclipse.jetty.http2.client;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +45,7 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
+import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
@@ -63,6 +68,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PrefaceTest extends AbstractTest
@@ -330,6 +336,73 @@ public class PrefaceTest extends AbstractTest
             }
 
             assertTrue(clientSettingsLatch.await(5, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    public void testInvalidServerPreface() throws Exception
+    {
+        try (ServerSocket server = new ServerSocket(0))
+        {
+            prepareClient();
+            client.start();
+
+            CountDownLatch failureLatch = new CountDownLatch(1);
+            Promise.Completable<Session> promise = new Promise.Completable<>();
+            InetSocketAddress address = new InetSocketAddress("localhost", server.getLocalPort());
+            client.connect(address, new Session.Listener.Adapter()
+            {
+                @Override
+                public void onFailure(Session session, Throwable failure)
+                {
+                    failureLatch.countDown();
+                }
+            }, promise);
+
+            try (Socket socket = server.accept())
+            {
+                OutputStream output = socket.getOutputStream();
+                output.write("enough_junk_bytes".getBytes(StandardCharsets.UTF_8));
+
+                Session session = promise.get(5, TimeUnit.SECONDS);
+                assertNotNull(session);
+
+                assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+
+                // Verify that the client closed the socket.
+                InputStream input = socket.getInputStream();
+                while (true)
+                {
+                    int read = input.read();
+                    if (read < 0)
+                        break;
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testInvalidClientPreface() throws Exception
+    {
+        start(new ServerSessionListener.Adapter());
+
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = client.getOutputStream();
+            output.write("enough_junk_bytes".getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            byte[] bytes = new byte[1024];
+            InputStream input = client.getInputStream();
+            int read = input.read(bytes);
+            if (read < 0)
+            {
+                // Closing the connection without GOAWAY frame is fine.
+                return;
+            }
+
+            int type = bytes[3];
+            assertEquals(FrameType.GO_AWAY.getType(), type);
         }
     }
 }

@@ -85,7 +85,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setRewriteRequestURI(true);
         _handler.setRewritePathInfo(true);
         _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/xxx/bar"));
-        _request.setPathInfo("/xxx/bar");
+        _request.setContext(_request.getContext(), "/xxx/bar");
         _handler.handle("/xxx/bar", _request, _request, _response);
         assertEquals(201, _response.getStatus());
         assertEquals("/bar/zzz", _request.getAttribute("target"));
@@ -99,7 +99,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setRewriteRequestURI(false);
         _handler.setRewritePathInfo(false);
         _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/foo/bar"));
-        _request.setPathInfo("/foo/bar");
+        _request.setContext(_request.getContext(), "/foo/bar");
 
         _handler.handle("/foo/bar", _request, _request, _response);
         assertEquals(201, _response.getStatus());
@@ -112,7 +112,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _request.setHandled(false);
         _handler.setOriginalPathAttribute(null);
         _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/aaa/bar"));
-        _request.setPathInfo("/aaa/bar");
+        _request.setContext(_request.getContext(), "/aaa/bar");
         _handler.handle("/aaa/bar", _request, _request, _response);
         assertEquals(201, _response.getStatus());
         assertEquals("/ddd/bar", _request.getAttribute("target"));
@@ -126,7 +126,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setRewriteRequestURI(true);
         _handler.setRewritePathInfo(true);
         _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/aaa/bar"));
-        _request.setPathInfo("/aaa/bar");
+        _request.setContext(_request.getContext(), "/aaa/bar");
         _handler.handle("/aaa/bar", _request, _request, _response);
         assertEquals(201, _response.getStatus());
         assertEquals("/ddd/bar", _request.getAttribute("target"));
@@ -138,7 +138,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _request.setHandled(false);
         _rule2.setTerminating(true);
         _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/aaa/bar"));
-        _request.setPathInfo("/aaa/bar");
+        _request.setContext(_request.getContext(), "/aaa/bar");
         _handler.handle("/aaa/bar", _request, _request, _response);
         assertEquals(201, _response.getStatus());
         assertEquals("/ccc/bar", _request.getAttribute("target"));
@@ -154,7 +154,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _request.setAttribute("URI", null);
         _request.setAttribute("info", null);
         _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/aaa/bar"));
-        _request.setPathInfo("/aaa/bar");
+        _request.setContext(_request.getContext(), "/aaa/bar");
         _handler.handle("/aaa/bar", _request, _request, _response);
         assertEquals(200, _response.getStatus());
         assertEquals(null, _request.getAttribute("target"));
@@ -173,7 +173,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setRewriteRequestURI(true);
         _handler.setRewritePathInfo(false);
         _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/ccc/x%20y"));
-        _request.setPathInfo("/ccc/x y");
+        _request.setContext(_request.getContext(), "/ccc/x y");
         _handler.handle("/ccc/x y", _request, _request, _response);
         assertEquals(201, _response.getStatus());
         assertEquals("/ddd/x y", _request.getAttribute("target"));
@@ -190,7 +190,7 @@ public class RewriteHandlerTest extends AbstractRuleTestCase
         _handler.setRewriteRequestURI(true);
         _handler.setRewritePathInfo(false);
         _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/xxx/x%20y"));
-        _request.setPathInfo("/xxx/x y");
+        _request.setContext(_request.getContext(), "/xxx/x y");
         _handler.handle("/xxx/x y", _request, _request, _response);
         assertEquals(201, _response.getStatus());
         assertEquals("/x y/zzz", _request.getAttribute("target"));
