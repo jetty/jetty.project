@@ -16,31 +16,30 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.tests.server;
+package org.eclipse.jetty.websocket.jakarta.tests.server;
 
 import java.util.concurrent.TimeUnit;
-import javax.websocket.CloseReason;
-import javax.websocket.ContainerProvider;
-import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.MessageHandler;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
-import javax.websocket.WebSocketContainer;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
-import javax.websocket.server.ServerEndpointConfig;
 
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.MessageHandler;
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.OnOpen;
+import jakarta.websocket.Session;
+import jakarta.websocket.WebSocketContainer;
+import jakarta.websocket.server.ServerContainer;
+import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.javax.tests.WSURI;
-import org.eclipse.jetty.websocket.javax.tests.client.samples.CloseSocket;
-import org.eclipse.jetty.websocket.javax.tests.server.sockets.BasicOpenCloseSocket;
+import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.jakarta.tests.WSURI;
+import org.eclipse.jetty.websocket.jakarta.tests.client.samples.CloseSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,7 +87,7 @@ public class AddEndpointTest
 
     public void start(CheckedConsumer<ServerContainer> containerConsumer) throws Exception
     {
-        JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container) -> containerConsumer.accept(container));
+        JakartaWebSocketServletContainerInitializer.configure(contextHandler, (context, container) -> containerConsumer.accept(container));
         server.start();
     }
 
