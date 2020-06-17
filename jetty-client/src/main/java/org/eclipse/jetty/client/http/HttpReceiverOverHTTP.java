@@ -140,6 +140,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 // Always parse even empty buffers to advance the parser.
                 boolean stopProcessing = parse();
 
+                if (stopProcessing)
+                    return;
+
                 // Connection may be closed or upgraded in a parser callback.
                 boolean upgraded = connection != endPoint.getConnection();
                 if (connection.isClosed() || upgraded)
@@ -149,9 +152,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     releaseNetworkBuffer();
                     return;
                 }
-
-                if (stopProcessing)
-                    return;
 
                 if (networkBuffer.getReferences() > 1)
                     reacquireNetworkBuffer();
@@ -182,8 +182,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
-            networkBuffer.clear();
-            releaseNetworkBuffer();
+            if (networkBuffer != null)
+            {
+                networkBuffer.clear();
+                releaseNetworkBuffer();
+            }
             failAndClose(x);
         }
     }
@@ -198,12 +201,16 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         while (true)
         {
             boolean handle = parser.parseNext(networkBuffer.getBuffer());
+            if (handle)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Parsed true, returning");
+                return true;
+            }
             boolean complete = this.complete;
             this.complete = false;
             if (LOG.isDebugEnabled())
                 LOG.debug("Parsed {}, remaining {} {}", handle, networkBuffer.remaining(), parser);
-            if (handle)
-                return true;
             if (networkBuffer.isEmpty())
                 return false;
             if (complete)
