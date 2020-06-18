@@ -158,17 +158,6 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
     }
 
     @Override
-    protected void onResetForUnknownStream(ResetFrame frame)
-    {
-        int streamId = frame.getStreamId();
-        boolean closed = isClientStream(streamId) ? isRemoteStreamClosed(streamId) : isLocalStreamClosed(streamId);
-        if (closed)
-            notifyReset(this, frame);
-        else
-            onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_rst_stream_frame");
-    }
-
-    @Override
     public void onPushPromise(PushPromiseFrame frame)
     {
         onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "push_promise");
