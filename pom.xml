@@ -311,6 +311,7 @@
         </executions>
       </plugin>
       <!-- The source maven plugin creates the source bundle and adds manifest -->
+      <!-- if removing this we need to add it back in eclipse-release profile -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
@@ -318,22 +319,10 @@
         <executions>
           <execution>
             <id>attach-sources</id>
-            <phase>process-classes</phase>
+            <phase>package</phase>
             <goals>
-              <goal>jar</goal>
+              <goal>jar-no-fork</goal>
             </goals>
-            <configuration>
-              <archive>
-                <manifestEntries>
-                  <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
-                  <Bundle-Name>${project.name}</Bundle-Name>
-                  <Bundle-SymbolicName>${bundle-symbolic-name}.source</Bundle-SymbolicName>
-                  <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
-                  <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
-                  <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
-                </manifestEntries>
-              </archive>
-            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -657,6 +646,18 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
           <version>${maven.source.plugin.version}</version>
+          <configuration>
+            <archive>
+              <manifestEntries>
+                <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
+                <Bundle-Name>${project.name}</Bundle-Name>
+                <Bundle-SymbolicName>${bundle-symbolic-name}.source</Bundle-SymbolicName>
+                <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
+                <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
+                <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
+              </manifestEntries>
+            </archive>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -1340,18 +1341,6 @@
             <configuration>
               <updateReleaseInfo>true</updateReleaseInfo>
             </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>attach-sources</id>
-                <goals>
-                  <goal>jar-no-fork</goal>
-                </goals>
-              </execution>
-            </executions>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
