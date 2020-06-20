@@ -263,13 +263,21 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             // We must enlarge the session flow control window,
             // otherwise other requests will be stalled.
             flowControl.onDataConsumed(this, null, flowControlLength);
-            boolean local = (streamId & 1) == (localStreamIds.get() & 1);
-            boolean closed = local ? isLocalStreamClosed(streamId) : isRemoteStreamClosed(streamId);
-            if (closed)
+            if (isStreamClosed(streamId))
                 reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), callback);
             else
                 onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_data_frame", callback);
         }
+    }
+
+    private boolean isStreamClosed(int streamId)
+    {
+        return isLocalStream(streamId) ? isLocalStreamClosed(streamId) : isRemoteStreamClosed(streamId);
+    }
+
+    private boolean isLocalStream(int streamId)
+    {
+        return (streamId & 1) == (localStreamIds.get() & 1);
     }
 
     protected boolean isLocalStreamClosed(int streamId)
@@ -310,7 +318,13 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected abstract void onResetForUnknownStream(ResetFrame frame);
+    protected void onResetForUnknownStream(ResetFrame frame)
+    {
+        if (isStreamClosed(frame.getStreamId()))
+            notifyReset(this, frame);
+        else
+            onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_rst_stream_frame");
+    }
 
     @Override
     public void onSettings(SettingsFrame frame)
@@ -481,7 +495,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             }
             else
             {
-                if (!isRemoteStreamClosed(streamId))
+                if (!isStreamClosed(streamId))
                     onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_window_update_frame");
             }
         }
