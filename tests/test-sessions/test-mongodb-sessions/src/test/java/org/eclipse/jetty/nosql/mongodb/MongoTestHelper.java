@@ -60,7 +60,7 @@ public class MongoTestHelper
     static String mongoHost;
     static int mongoPort;
 
-    public static void startMongo()
+    static
     {
         try
         {
@@ -70,6 +70,7 @@ public class MongoTestHelper
             mongoPort = mongo.getMappedPort(27017);
             LOG.info("Mongo container started for {}:{} - {}ms", mongoHost, mongoPort,
                      System.currentTimeMillis() - start);
+            mongoClient = new MongoClient(mongoHost, mongoPort);
         }
         catch (Exception e)
         {
@@ -78,24 +79,9 @@ public class MongoTestHelper
         }
     }
 
-    public static void stopMongo()
-    {
-        mongo.stop();
-        mongoClient = null;
-    }
 
     public static MongoClient getMongoClient() throws UnknownHostException
     {
-        boolean restart = false;
-        if (mongo == null || !mongo.isRunning())
-        {
-            startMongo();
-            restart = true;
-        }
-        if (mongoClient == null || restart)
-        {
-            mongoClient = new MongoClient(mongoHost, mongoPort);
-        }
         return mongoClient;
     }
 
