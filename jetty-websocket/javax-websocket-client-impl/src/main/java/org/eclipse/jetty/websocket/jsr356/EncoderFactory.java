@@ -62,14 +62,21 @@ public class EncoderFactory implements Configurable
         {
             this.encoder.init(config);
         }
+
+        @Override
+        public void destroy()
+        {
+            this.encoder.destroy();
+        }
     }
 
     private static final Logger LOG = Log.getLogger(EncoderFactory.class);
 
     private final EncoderMetadataSet metadatas;
     private final WebSocketContainerScope containerScope;
-    private EncoderFactory parentFactory;
-    private Map<Class<?>, Wrapper> activeWrappers;
+    private final Map<Class<?>, Wrapper> activeWrappers;
+    private final EncoderFactory parentFactory;
+    private EndpointConfig endpointConfig;
 
     public EncoderFactory(WebSocketContainerScope containerScope, EncoderMetadataSet metadatas)
     {
@@ -153,10 +160,9 @@ public class EncoderFactory implements Configurable
     @Override
     public void init(EndpointConfig config)
     {
+        this.endpointConfig = config;
         if (LOG.isDebugEnabled())
-        {
-            LOG.debug("init({})", config);
-        }
+            LOG.debug("init({})", endpointConfig);
 
         // Instantiate all declared encoders
         for (EncoderMetadata metadata : metadatas)
@@ -164,20 +170,29 @@ public class EncoderFactory implements Configurable
             Wrapper wrapper = newWrapper(metadata);
             activeWrappers.put(metadata.getObjectType(), wrapper);
         }
+    }
 
-        // Initialize all encoders
+    @Override
+    public void destroy()
+    {
         for (Wrapper wrapper : activeWrappers.values())
         {
-            wrapper.encoder.init(config);
+            wrapper.encoder.destroy();
         }
+
+        activeWrappers.clear();
     }
 
     private Wrapper newWrapper(EncoderMetadata metadata)
     {
+        if (endpointConfig == null)
+            throw new IllegalStateException("EndpointConfig not set");
+
         Class<? extends Encoder> encoderClass = metadata.getCoderClass();
         try
         {
             Encoder encoder = containerScope.getObjectFactory().createInstance(encoderClass);
+            encoder.init(endpointConfig);
             return new Wrapper(encoder, metadata);
         }
         catch (Exception e)

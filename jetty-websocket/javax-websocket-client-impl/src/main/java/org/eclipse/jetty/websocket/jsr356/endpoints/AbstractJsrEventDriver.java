@@ -77,6 +77,10 @@ public abstract class AbstractJsrEventDriver extends AbstractEventDriver
         CloseCode closecode = CloseCodes.getCloseCode(close.getStatusCode());
         CloseReason closereason = new CloseReason(closecode, close.getReason());
         onClose(closereason);
+
+        // Destroy the JsrSession.
+        if (jsrsession != null)
+            jsrsession.destroy();
     }
 
     protected abstract void onClose(CloseReason closereason);
