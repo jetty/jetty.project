@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -53,7 +54,9 @@ public class MongoTestHelper
 
     static GenericContainer mongo =
         new GenericContainer("mongo:" + System.getProperty("mongo.docker.version", "2.2.7"))
-            .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG));
+            .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG))
+            .waitingFor(new LogMessageWaitStrategy()
+                            .withRegEx(".*waiting for connections.*"));
 
     static MongoClient mongoClient;
 
@@ -78,7 +81,7 @@ public class MongoTestHelper
             throw new RuntimeException(e);
         }
     }
-    
+
     public static MongoClient getMongoClient() throws UnknownHostException
     {
         return mongoClient;
