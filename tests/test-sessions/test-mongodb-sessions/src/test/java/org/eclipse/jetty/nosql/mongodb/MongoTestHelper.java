@@ -78,8 +78,7 @@ public class MongoTestHelper
             throw new RuntimeException(e);
         }
     }
-
-
+    
     public static MongoClient getMongoClient() throws UnknownHostException
     {
         return mongoClient;
