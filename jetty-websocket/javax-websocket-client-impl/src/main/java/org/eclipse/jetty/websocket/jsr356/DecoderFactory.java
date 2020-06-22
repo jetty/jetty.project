@@ -69,6 +69,12 @@ public class DecoderFactory implements Configurable
         {
             this.decoder.init(config);
         }
+
+        @Override
+        public void destroy()
+        {
+            this.decoder.destroy();
+        }
     }
 
     private static final Logger LOG = Log.getLogger(DecoderFactory.class);
@@ -183,6 +189,17 @@ public class DecoderFactory implements Configurable
         {
             wrapper.decoder.init(config);
         }
+    }
+
+    @Override
+    public void destroy()
+    {
+        for (Wrapper wrapper : activeWrappers.values())
+        {
+            wrapper.decoder.destroy();
+        }
+
+        activeWrappers.clear();
     }
 
     public Wrapper newWrapper(DecoderMetadata metadata)

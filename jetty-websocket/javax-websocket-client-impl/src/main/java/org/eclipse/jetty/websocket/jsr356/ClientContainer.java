@@ -308,6 +308,8 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     protected void doStop() throws Exception
     {
         ShutdownThread.deregister(this);
+        this.encoderFactory.destroy();
+        this.decoderFactory.destroy();
         endpointClientMetadataCache.clear();
         super.doStop();
     }

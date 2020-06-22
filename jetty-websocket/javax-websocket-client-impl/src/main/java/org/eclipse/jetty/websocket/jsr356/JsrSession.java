@@ -307,6 +307,13 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     }
 
     @Override
+    public void destroy()
+    {
+        encoderFactory.destroy();
+        decoderFactory.destroy();
+    }
+
+    @Override
     public void removeMessageHandler(MessageHandler handler)
     {
         synchronized (wrappers)
