@@ -98,4 +98,23 @@ public class EventSocket
         error = cause;
         errorLatch.countDown();
     }
+
+    @ServerEndpoint("/")
+    @ClientEndpoint
+    public static class EchoSocket extends EventSocket
+    {
+        @Override
+        public void onMessage(String message) throws IOException
+        {
+            super.onMessage(message);
+            session.getBasicRemote().sendText(message);
+        }
+
+        @Override
+        public void onMessage(ByteBuffer message) throws IOException
+        {
+            super.onMessage(message);
+            session.getBasicRemote().sendBinary(message);
+        }
+    }
 }
