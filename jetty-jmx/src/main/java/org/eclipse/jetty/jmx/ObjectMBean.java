@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.jmx;
@@ -27,8 +27,8 @@ import javax.management.MBeanInfo;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A dynamic MBean that can wrap an arbitrary Object instance.</p>
@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ObjectMBean implements DynamicMBean
 {
-    private static final Logger LOG = Log.getLogger(ObjectMBean.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ObjectMBean.class);
 
     protected final Object _managed;
     private MetaData _metaData;
@@ -121,17 +121,6 @@ public class ObjectMBean implements DynamicMBean
         return this._mbeanContainer;
     }
 
-    /**
-     * @param o the object to wrap as MBean
-     * @return a new instance of an MBean for the object or null if the MBean cannot be created
-     * @deprecated Use {@link MBeanContainer#mbeanFor(Object)} instead
-     */
-    @Deprecated
-    public static Object mbeanFor(Object o)
-    {
-        return MBeanContainer.mbeanFor(null, o);
-    }
-
     @Override
     public MBeanInfo getMBeanInfo()
     {
@@ -165,7 +154,7 @@ public class ObjectMBean implements DynamicMBean
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug("Unable to get attribute {}", name, x);
             }
         }
         return results;
@@ -199,7 +188,7 @@ public class ObjectMBean implements DynamicMBean
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(x);
+                    LOG.debug("Unable to get Attribute {}", attribute, x);
             }
         }
         return results;

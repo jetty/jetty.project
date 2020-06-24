@@ -1,25 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.handler;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -37,6 +34,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 @Disabled("Unfixed range bug - Issue #107")
 public class ResourceHandlerRangeTest
@@ -56,7 +56,7 @@ public class ResourceHandlerRangeTest
 
         File dir = MavenTestingUtils.getTargetTestingDir(ResourceHandlerRangeTest.class.getSimpleName());
         FS.ensureEmpty(dir);
-        File rangeFile = new File(dir,"range.txt");
+        File rangeFile = new File(dir, "range.txt");
         try (FileWriter writer = new FileWriter(rangeFile))
         {
             writer.append("0123456789");
@@ -80,7 +80,7 @@ public class ResourceHandlerRangeTest
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        serverUri = new URI(String.format("http://%s:%d/",host,port));
+        serverUri = new URI(String.format("http://%s:%d/", host, port));
     }
 
     @AfterAll
@@ -96,7 +96,7 @@ public class ResourceHandlerRangeTest
 
         HttpURLConnection uconn = (HttpURLConnection)uri.toURL().openConnection();
         uconn.setRequestMethod("GET");
-        uconn.addRequestProperty("Range","bytes=" + 5 + "-");
+        uconn.addRequestProperty("Range", "bytes=" + 5 + "-");
 
         int contentLength = Integer.parseInt(uconn.getHeaderField("Content-Length"));
 
@@ -106,7 +106,7 @@ public class ResourceHandlerRangeTest
             response = IO.toString(is);
         }
 
-        assertThat("Content Length",contentLength,is(5));
-        assertThat("Response Content",response,is("56789"));
+        assertThat("Content Length", contentLength, is(5));
+        assertThat("Response Content", response, is("56789"));
     }
 }

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.test.support.rawhttp;
@@ -26,10 +26,10 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.tools.HttpTester;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -77,7 +77,7 @@ public class HttpResponseTesterTest
         rawResponse.append("Server: Jetty(7.0.y.z-SNAPSHOT)\n");
         rawResponse.append("\n");
         rawResponse.append("ABCDEFGHIJKLMNOPQRSTTUVWXYZ\n");
-        
+
         rawResponse.append("HTTP/1.1 200 OK\n");
         rawResponse.append("Date: Mon, 08 Jun 2009 23:05:26 GMT\n");
         rawResponse.append("Content-Type: text/plain\n");
@@ -110,20 +110,20 @@ public class HttpResponseTesterTest
         assertEquals(HttpStatus.OK_200, resp1.getStatus());
         assertEquals("text/plain", resp1.get("Content-Type"));
         assertThat(resp1.getContent(), containsString("ABCDEFGHIJKLMNOPQRSTTUVWXYZ\n"));
-        assertThat(resp1.get("Connection"),is(not("close")));
+        assertThat(resp1.get("Connection"), is(not("close")));
 
         HttpTester.Response resp2 = responses.get(1);
         // System.err.println(resp2.toString());
         assertEquals(HttpStatus.OK_200, resp2.getStatus());
         assertEquals("text/plain", resp2.get("Content-Type"));
         assertThat(resp2.getContent(), containsString("Host=Default\nResource=R1\n"));
-        assertThat(resp2.get("Connection"),is(not("close")));
+        assertThat(resp2.get("Connection"), is(not("close")));
 
         HttpTester.Response resp3 = responses.get(2);
         // System.err.println(resp3.toString());
         assertEquals(HttpStatus.OK_200, resp3.getStatus());
         assertEquals("text/plain", resp3.get("Content-Type"));
         assertThat(resp3.getContent(), containsString("Host=Default\nResource=R2\n"));
-        assertThat(resp3.get("Connection"),is("close"));
+        assertThat(resp3.get("Connection"), is("close"));
     }
 }

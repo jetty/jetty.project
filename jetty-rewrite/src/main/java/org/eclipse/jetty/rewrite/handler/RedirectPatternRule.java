@@ -1,25 +1,24 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -37,10 +36,10 @@ public class RedirectPatternRule extends PatternRule
 {
     private String _location;
     private int _statusCode = HttpStatus.FOUND_302;
-    
+
     public RedirectPatternRule()
     {
-        this(null,null);
+        this(null, null);
     }
 
     public RedirectPatternRule(@Name("pattern") String pattern, @Name("location") String location)
@@ -48,22 +47,22 @@ public class RedirectPatternRule extends PatternRule
         super(pattern);
         _handling = true;
         _terminating = true;
-        _location=location;
+        _location = location;
     }
-    
+
     /**
      * Sets the redirect location.
-     * 
+     *
      * @param value the location to redirect.
      */
     public void setLocation(String value)
     {
         _location = value;
     }
-    
+
     /**
      * Sets the redirect status code.
-     * 
+     *
      * @param statusCode the 3xx redirect status code
      */
     public void setStatusCode(int statusCode)
@@ -82,7 +81,7 @@ public class RedirectPatternRule extends PatternRule
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         String location = response.encodeRedirectURL(_location);
-        response.setHeader("Location",RedirectUtil.toRedirectURL(request,location));
+        response.setHeader("Location", RedirectUtil.toRedirectURL(request, location));
         response.setStatus(_statusCode);
         response.getOutputStream().flush(); // no output / content
         response.getOutputStream().close();

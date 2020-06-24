@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.resource;
@@ -35,9 +35,9 @@ public class ClassPathResourceTest
     @Test
     public void testClassPathResourceClassRelative()
     {
-        final String classPathName="Resource.class";
+        final String classPathName = "Resource.class";
 
-        try(Resource resource=Resource.newClassPathResource(classPathName);)
+        try (Resource resource = Resource.newClassPathResource(classPathName);)
         {
             // A class path cannot be a directory
             assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
@@ -53,9 +53,9 @@ public class ClassPathResourceTest
     @Test
     public void testClassPathResourceClassAbsolute()
     {
-        final String classPathName="/org/eclipse/jetty/util/resource/Resource.class";
+        final String classPathName = "/org/eclipse/jetty/util/resource/Resource.class";
 
-        Resource resource=Resource.newClassPathResource(classPathName);
+        Resource resource = Resource.newClassPathResource(classPathName);
 
         // A class path cannot be a directory
         assertFalse(resource.isDirectory(), "Class path cannot be a directory.");
@@ -66,6 +66,7 @@ public class ClassPathResourceTest
 
     /**
      * Test a class path resource for directories.
+     *
      * @throws Exception failed test
      */
     @Test
@@ -74,14 +75,17 @@ public class ClassPathResourceTest
         // If the test runs in the module-path, resource "/" cannot be found.
         assumeFalse(Resource.class.getModule().isNamed());
 
-        final String classPathName="/";
+        final String classPathName = "/";
 
-        Resource resource=Resource.newClassPathResource(classPathName);
+        Resource resource = Resource.newClassPathResource(classPathName);
 
         // A class path must be a directory
         assertTrue(resource.isDirectory(), "Class path must be a directory.");
 
-        assertTrue(resource.getFile().isDirectory(), "Class path returned file must be a directory.");
+        if (!(resource instanceof JarFileResource))
+        {
+            assertTrue(resource.getFile().isDirectory(), "Class path returned file must be a directory.");
+        }
 
         // A class path must exist
         assertTrue(resource.exists(), "Class path resource does not exist.");
@@ -89,23 +93,24 @@ public class ClassPathResourceTest
 
     /**
      * Test a class path resource for a file.
+     *
      * @throws Exception failed test
      */
     @Test
     public void testClassPathResourceFile() throws Exception
     {
-        final String fileName="resource.txt";
-        final String classPathName="/"+fileName;
+        final String fileName = "resource.txt";
+        final String classPathName = "/" + fileName;
 
         // Will locate a resource in the class path
-        Resource resource=Resource.newClassPathResource(classPathName);
+        Resource resource = Resource.newClassPathResource(classPathName);
 
         // A class path cannot be a directory
         assertFalse(resource.isDirectory(), "Class path must be a directory.");
 
-        assertTrue(resource!=null);
+        assertTrue(resource != null);
 
-        File file=resource.getFile();
+        File file = resource.getFile();
 
         assertEquals(fileName, file.getName(), "File name from class path is not equal.");
         assertTrue(file.isFile(), "File returned from class path should be a file.");

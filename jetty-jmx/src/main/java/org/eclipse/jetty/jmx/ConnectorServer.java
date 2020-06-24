@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.jmx;
@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.IntConsumer;
-
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.remote.JMXConnectorServer;
@@ -44,30 +43,30 @@ import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>LifeCycle wrapper for JMXConnectorServer.</p>
  * <p>This class provides the following facilities:</p>
  * <ul>
- *   <li>participates in the {@code Server} lifecycle</li>
- *   <li>starts the RMI registry if not there already</li>
- *   <li>allows to bind the RMI registry and the RMI server to the loopback interface</li>
- *   <li>makes it easy to use TLS for the JMX communication</li>
+ * <li>participates in the {@code Server} lifecycle</li>
+ * <li>starts the RMI registry if not there already</li>
+ * <li>allows to bind the RMI registry and the RMI server to the loopback interface</li>
+ * <li>makes it easy to use TLS for the JMX communication</li>
  * </ul>
  */
 public class ConnectorServer extends AbstractLifeCycle
 {
     public static final String RMI_REGISTRY_CLIENT_SOCKET_FACTORY_ATTRIBUTE = "com.sun.jndi.rmi.factory.socket";
-    private static final Logger LOG = Log.getLogger(ConnectorServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectorServer.class);
 
     private JMXServiceURL _jmxURL;
     private final Map<String, Object> _environment;
     private final String _objectName;
-    private final SslContextFactory _sslContextFactory;
+    private final SslContextFactory.Server _sslContextFactory;
     private int _registryPort;
     private int _rmiPort;
     private JMXConnectorServer _connectorServer;
@@ -77,7 +76,7 @@ public class ConnectorServer extends AbstractLifeCycle
      * Constructs a ConnectorServer
      *
      * @param serviceURL the address of the new ConnectorServer
-     * @param name       object name string to be assigned to ConnectorServer bean
+     * @param name object name string to be assigned to ConnectorServer bean
      */
     public ConnectorServer(JMXServiceURL serviceURL, String name)
     {
@@ -87,19 +86,19 @@ public class ConnectorServer extends AbstractLifeCycle
     /**
      * Constructs a ConnectorServer
      *
-     * @param svcUrl      the address of the new ConnectorServer
+     * @param svcUrl the address of the new ConnectorServer
      * @param environment a set of attributes to control the new ConnectorServer's behavior.
-     *                    This parameter can be null. Keys in this map must
-     *                    be Strings. The appropriate type of each associated value depends on
-     *                    the attribute. The contents of environment are not changed by this call.
-     * @param name        object name string to be assigned to ConnectorServer bean
+     * This parameter can be null. Keys in this map must
+     * be Strings. The appropriate type of each associated value depends on
+     * the attribute. The contents of environment are not changed by this call.
+     * @param name object name string to be assigned to ConnectorServer bean
      */
     public ConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, String name)
     {
         this(svcUrl, environment, name, null);
     }
 
-    public ConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, String name, SslContextFactory sslContextFactory)
+    public ConnectorServer(JMXServiceURL svcUrl, Map<String, ?> environment, String name, SslContextFactory.Server sslContextFactory)
     {
         this._jmxURL = svcUrl;
         this._environment = environment == null ? new HashMap<>() : new HashMap<>(environment);
@@ -184,7 +183,7 @@ public class ConnectorServer extends AbstractLifeCycle
         }
         catch (Throwable ex)
         {
-            LOG.ignore(ex);
+            LOG.trace("IGNORED", ex);
         }
 
         RMIClientSocketFactory csf = _sslContextFactory == null ? null : new SslRMIClientSocketFactory();
@@ -209,7 +208,7 @@ public class ConnectorServer extends AbstractLifeCycle
             }
             catch (Exception ex)
             {
-                LOG.ignore(ex);
+                LOG.trace("IGNORED", ex);
             }
             finally
             {
@@ -244,6 +243,7 @@ public class ConnectorServer extends AbstractLifeCycle
             if (_sslContextFactory == null)
             {
                 ServerSocket server = new ServerSocket();
+                server.setReuseAddress(true);
                 server.bind(new InetSocketAddress(address, port));
                 return server;
             }

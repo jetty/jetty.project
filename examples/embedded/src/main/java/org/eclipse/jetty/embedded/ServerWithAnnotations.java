@@ -1,27 +1,31 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.embedded;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.net.URL;
+import javax.naming.NamingException;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.plus.jndi.EnvEntry;
+import org.eclipse.jetty.plus.jndi.NamingDump;
 import org.eclipse.jetty.plus.jndi.Resource;
 import org.eclipse.jetty.plus.jndi.Transaction;
 import org.eclipse.jetty.plus.webapp.EnvConfiguration;
@@ -35,25 +39,23 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServerWithAnnotations
 {
-    public static final void main( String args[] ) throws Exception
+    public static Server createServer(int port) throws NamingException, FileNotFoundException
     {
         // Create the server
-        Server server = new Server(8080);
-
+        Server server = new Server(port);
 
         // Create a WebApp
         WebAppContext webapp = new WebAppContext();
-        
+
         // Enable parsing of jndi-related parts of web.xml and jetty-env.xml
-        webapp.addConfiguration(new EnvConfiguration(),new PlusConfiguration(),new AnnotationConfiguration());
-        
+        webapp.addConfiguration(new EnvConfiguration(), new PlusConfiguration(), new AnnotationConfiguration());
+
         webapp.setContextPath("/");
-        File warFile = new File(
-                "jetty-distribution/target/distribution/demo-base/webapps/test.war");
+        File warFile = JettyDistribution.resolve("demo-base/webapps/test-spec.war").toFile();
         webapp.setWar(warFile.getAbsolutePath());
         webapp.setAttribute(
-                "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-                ".*/javax.servlet-[^/]*\\.jar$|.*/servlet-api-[^/]*\\.jar$");
+            "org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
+            ".*/jetty-servlet-api-[^/]*\\.jar$");
         server.setHandler(webapp);
 
         // Register new transaction manager in JNDI
@@ -61,20 +63,36 @@ public class ServerWithAnnotations
         new Transaction(new com.acme.MockUserTransaction());
 
         // Define an env entry with webapp scope.
-        new EnvEntry(webapp, "maxAmount", new Double(100), true);
+        // THIS ENTRY IS OVERRIDDEN BY THE ENTRY IN jetty-env.xml
+        new EnvEntry(webapp, "maxAmount", 100d, true);
 
         // Register a mock DataSource scoped to the webapp
-        new Resource(webapp, "jdbc/mydatasource", new com.acme.MockDataSource());
+        new Resource(server, "jdbc/mydatasource", new com.acme.MockDataSource());
+
+        // Add JNDI context to server for dump
+        server.addBean(new NamingDump());
 
         // Configure a LoginService
+        String realmResourceName = "etc/realm.properties";
+        ClassLoader classLoader = ServerWithAnnotations.class.getClassLoader();
+        URL realmProps = classLoader.getResource(realmResourceName);
+        if (realmProps == null)
+            throw new FileNotFoundException("Unable to find " + realmResourceName);
+
         HashLoginService loginService = new HashLoginService();
         loginService.setName("Test Realm");
-        loginService.setConfig("examples/embedded/src/test/resources/realm.properties");
+        loginService.setConfig(realmProps.toExternalForm());
         server.addBean(loginService);
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
 
         server.start();
         server.dumpStdErr();
         server.join();
     }
-
 }

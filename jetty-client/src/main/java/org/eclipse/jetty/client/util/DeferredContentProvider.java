@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.util;
@@ -54,8 +54,8 @@ import org.eclipse.jetty.util.Callback;
  * However, it is possible for subclasses to override {@link #offer(ByteBuffer)} and {@link #close()} to copy
  * the content to another location (for example a file) and be able to support multiple invocations
  * of of {@link #iterator()} returning the iterator provided by this
-  * class on the first invocation, and an iterator on the bytes copied to the other location
-  * for subsequent invocations.
+ * class on the first invocation, and an iterator on the bytes copied to the other location
+ * for subsequent invocations.
  * <p>
  * Typical usage of {@link DeferredContentProvider} is in asynchronous proxies, where HTTP headers arrive
  * separately from HTTP content chunks.
@@ -85,7 +85,10 @@ import org.eclipse.jetty.util.Callback;
  *     content.offer(ByteBuffer.wrap("some content".getBytes()));
  * }
  * </pre>
+ *
+ * @deprecated use {@link AsyncRequestContent} instead.
  */
+@Deprecated
 public class DeferredContentProvider implements AsyncContentProvider, Callback, Closeable
 {
     private static final Chunk CLOSE = new Chunk(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
@@ -107,7 +110,9 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
     public DeferredContentProvider(ByteBuffer... buffers)
     {
         for (ByteBuffer buffer : buffers)
+        {
             offer(buffer);
+        }
     }
 
     @Override
@@ -115,7 +120,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
     {
         if (!this.listener.compareAndSet(null, listener))
             throw new IllegalStateException(String.format("The same %s instance cannot be used in multiple requests",
-                    AsyncContentProvider.class.getName()));
+                AsyncContentProvider.class.getName()));
 
         if (isClosed())
         {
@@ -123,7 +128,9 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
             {
                 long total = 0;
                 for (Chunk chunk : chunks)
+                {
                     total += chunk.buffer.remaining();
+                }
                 length = total;
             }
         }
@@ -281,6 +288,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
             synchronized (lock)
             {
                 chunk = current;
+                current = null;
                 if (chunk != null)
                 {
                     --size;
@@ -308,7 +316,9 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
                 lock.notify();
             }
             for (Chunk chunk : chunks)
+            {
                 chunk.callback.failed(x);
+            }
         }
 
         @Override

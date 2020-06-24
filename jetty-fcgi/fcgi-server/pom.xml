@@ -14,15 +14,15 @@
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
   </properties>
 
-  <build>
-    <plugins>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
@@ -42,6 +42,11 @@
 
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -54,7 +59,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-server</artifactId>
+      <artifactId>jetty-alpn-java-server</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

@@ -1,21 +1,20 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.gcloud.session;
 
@@ -28,8 +27,6 @@ import org.junit.jupiter.api.BeforeAll;
 
 /**
  * GCloudSessionDataStoreTest
- *
- *
  */
 public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
@@ -37,24 +34,23 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
     public static GCloudSessionTestSupport __testSupport;
 
     @BeforeAll
-    public static void setUp () throws Exception
+    public static void setUp() throws Exception
     {
         __testSupport = new GCloudSessionTestSupport();
         __testSupport.setUp();
     }
 
     @AfterAll
-    public static void tearDown () throws Exception
+    public static void tearDown() throws Exception
     {
         __testSupport.tearDown();
     }
 
     @AfterEach
-    public void teardown () throws Exception
+    public void teardown() throws Exception
     {
-       __testSupport.deleteSessions();
+        __testSupport.deleteSessions();
     }
-    
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
@@ -62,41 +58,41 @@ public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
         return GCloudSessionTestSupport.newSessionDataStoreFactory(__testSupport.getDatastore());
     }
 
-  
     @Override
     public void persistSession(SessionData data) throws Exception
     {
         __testSupport.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-                                                    data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), 
-                                                    data.getCookieSet(), data.getLastSaved(), data.getAllAttributes());
-
+            data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(),
+            data.getCookieSet(), data.getLastSaved(), data.getAllAttributes());
     }
 
-   
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
 
         __testSupport.createSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
-                                                    data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), 
-                                                    data.getCookieSet(), data.getLastSaved(), null);
+            data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(),
+            data.getCookieSet(), data.getLastSaved(), null);
     }
 
-    
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
     {
         return __testSupport.checkSessionExists(data.getId());
     }
 
-
-    /** 
-     * 
-     */
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {
-        return __testSupport.checkSessionPersisted(data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
+        try
+        {
+            return __testSupport.checkSessionPersisted(data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
-
 }

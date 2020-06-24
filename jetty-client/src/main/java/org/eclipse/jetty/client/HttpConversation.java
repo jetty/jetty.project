@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -25,9 +25,13 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.AttributesMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpConversation extends AttributesMap
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpConversation.class);
+
     private final Deque<HttpExchange> exchanges = new ConcurrentLinkedDeque<>();
     private volatile List<Response.ResponseListener> listeners;
 
@@ -41,46 +45,46 @@ public class HttpConversation extends AttributesMap
      * This list changes as the conversation proceeds, as follows:
      * <ol>
      * <li>
-     *     request R1 send =&gt; conversation.updateResponseListeners(null)
-     *     <ul>
-     *         <li>exchanges in conversation: E1</li>
-     *         <li>listeners to be notified: E1.listeners</li>
-     *     </ul>
+     * request R1 send =&gt; conversation.updateResponseListeners(null)
+     * <ul>
+     * <li>exchanges in conversation: E1</li>
+     * <li>listeners to be notified: E1.listeners</li>
+     * </ul>
      * </li>
      * <li>
-     *     response R1 arrived, 401 =&gt; conversation.updateResponseListeners(AuthenticationProtocolHandler.listener)
-     *     <ul>
-     *         <li>exchanges in conversation: E1</li>
-     *         <li>listeners to be notified: AuthenticationProtocolHandler.listener</li>
-     *     </ul>
+     * response R1 arrived, 401 =&gt; conversation.updateResponseListeners(AuthenticationProtocolHandler.listener)
+     * <ul>
+     * <li>exchanges in conversation: E1</li>
+     * <li>listeners to be notified: AuthenticationProtocolHandler.listener</li>
+     * </ul>
      * </li>
      * <li>
-     *     request R2 send =&gt; conversation.updateResponseListeners(null)
-     *     <ul>
-     *         <li>exchanges in conversation: E1 + E2</li>
-     *         <li>listeners to be notified: E2.listeners + E1.listeners</li>
-     *     </ul>
+     * request R2 send =&gt; conversation.updateResponseListeners(null)
+     * <ul>
+     * <li>exchanges in conversation: E1 + E2</li>
+     * <li>listeners to be notified: E2.listeners + E1.listeners</li>
+     * </ul>
      * </li>
      * <li>
-     *     response R2 arrived, 302 =&gt; conversation.updateResponseListeners(RedirectProtocolHandler.listener)
-     *     <ul>
-     *         <li>exchanges in conversation: E1 + E2</li>
-     *         <li>listeners to be notified: E2.listeners + RedirectProtocolHandler.listener</li>
-     *     </ul>
+     * response R2 arrived, 302 =&gt; conversation.updateResponseListeners(RedirectProtocolHandler.listener)
+     * <ul>
+     * <li>exchanges in conversation: E1 + E2</li>
+     * <li>listeners to be notified: E2.listeners + RedirectProtocolHandler.listener</li>
+     * </ul>
      * </li>
      * <li>
-     *     request R3 send =&gt; conversation.updateResponseListeners(null)
-     *     <ul>
-     *         <li>exchanges in conversation: E1 + E2 + E3</li>
-     *         <li>listeners to be notified: E3.listeners + E1.listeners</li>
-     *     </ul>
+     * request R3 send =&gt; conversation.updateResponseListeners(null)
+     * <ul>
+     * <li>exchanges in conversation: E1 + E2 + E3</li>
+     * <li>listeners to be notified: E3.listeners + E1.listeners</li>
+     * </ul>
      * </li>
      * <li>
-     *     response R3 arrived, 200 =&gt; conversation.updateResponseListeners(null)
-     *     <ul>
-     *         <li>exchanges in conversation: E1 + E2 + E3</li>
-     *         <li>listeners to be notified: E3.listeners + E1.listeners</li>
-     *     </ul>
+     * response R3 arrived, 200 =&gt; conversation.updateResponseListeners(null)
+     * <ul>
+     * <li>exchanges in conversation: E1 + E2 + E3</li>
+     * <li>listeners to be notified: E3.listeners + E1.listeners</li>
+     * </ul>
      * </li>
      * </ol>
      * Basically the override conversation listener replaces the first exchange response listener,
@@ -113,11 +117,12 @@ public class HttpConversation extends AttributesMap
         // will notify a listener that may send a new request and trigger
         // another call to this method which will build different listeners
         // which may be iterated over when the iteration continues.
-        List<Response.ResponseListener> listeners = new ArrayList<>();
         HttpExchange firstExchange = exchanges.peekFirst();
         HttpExchange lastExchange = exchanges.peekLast();
+        List<Response.ResponseListener> listeners = new ArrayList<>(firstExchange.getResponseListeners().size() + lastExchange.getResponseListeners().size());
         if (firstExchange == lastExchange)
         {
+            // We don't have a conversation, just a single request.
             if (overrideListener != null)
                 listeners.add(overrideListener);
             else
@@ -125,13 +130,16 @@ public class HttpConversation extends AttributesMap
         }
         else
         {
-            // Order is important, we want to notify the last exchange first
+            // We have a conversation (e.g. redirect, authentication).
+            // Order is important, we want to notify the last exchange first.
             listeners.addAll(lastExchange.getResponseListeners());
             if (overrideListener != null)
                 listeners.add(overrideListener);
             else
                 listeners.addAll(firstExchange.getResponseListeners());
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Exchanges in conversation {}, override={}, listeners={}", exchanges.size(), overrideListener, listeners);
         this.listeners = listeners;
     }
 

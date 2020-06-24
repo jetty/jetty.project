@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2;
@@ -21,6 +21,8 @@ package org.eclipse.jetty.http2;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -30,23 +32,24 @@ import java.util.Set;
 
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HTTP2Flusher extends IteratingCallback implements Dumpable
 {
-    private static final Logger LOG = Log.getLogger(HTTP2Flusher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP2Flusher.class);
     private static final ByteBuffer[] EMPTY_BYTE_BUFFERS = new ByteBuffer[0];
 
     private final Queue<WindowEntry> windows = new ArrayDeque<>();
     private final Deque<Entry> entries = new ArrayDeque<>();
     private final Queue<Entry> pendingEntries = new ArrayDeque<>();
-    private final Set<Entry> processedEntries = new HashSet<>();
+    private final Collection<Entry> processedEntries = new ArrayList<>();
     private final HTTP2Session session;
     private final ByteBufferPool.Lease lease;
     private Throwable terminated;
@@ -139,11 +142,15 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
             WindowEntry windowEntry;
             while ((windowEntry = windows.poll()) != null)
+            {
                 windowEntry.perform();
+            }
 
             Entry entry;
             while ((entry = entries.poll()) != null)
+            {
                 pendingEntries.offer(entry);
+            }
         }
 
         if (pendingEntries.isEmpty())
@@ -187,7 +194,10 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
                         progress = true;
 
-                        processedEntries.add(entry);
+                        // We use ArrayList contains() + add() instead of HashSet add()
+                        // because that is faster for collections of size up to 250 entries.
+                        if (!processedEntries.contains(entry))
+                            processedEntries.add(entry);
 
                         if (entry.getDataBytesRemaining() == 0)
                             pending.remove();
@@ -202,6 +212,13 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                             // Continue to process control frames.
                         }
                     }
+                }
+                catch (HpackException.StreamException failure)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Failure generating " + entry, failure);
+                    entry.failed(failure);
+                    pending.remove();
                 }
                 catch (Throwable failure)
                 {
@@ -237,12 +254,12 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         if (LOG.isDebugEnabled())
             LOG.debug("Writing {} buffers ({} bytes) - entries processed/pending {}/{}: {}/{}",
-                    byteBuffers.size(),
-                    lease.getTotalLength(),
-                    processedEntries.size(),
-                    pendingEntries.size(),
-                    processedEntries,
-                    pendingEntries);
+                byteBuffers.size(),
+                lease.getTotalLength(),
+                processedEntries.size(),
+                pendingEntries.size(),
+                processedEntries,
+                pendingEntries);
 
         session.getEndPoint().write(this, byteBuffers.toArray(EMPTY_BYTE_BUFFERS));
         return Action.SCHEDULED;
@@ -252,7 +269,9 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     {
         // A single EndPoint write may be flushed multiple times (for example with SSL).
         for (Entry entry : processedEntries)
+        {
             bytes = entry.onFlushed(bytes);
+        }
     }
 
     @Override
@@ -260,11 +279,11 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Written {} buffers - entries processed/pending {}/{}: {}/{}",
-                    lease.getByteBuffers().size(),
-                    processedEntries.size(),
-                    pendingEntries.size(),
-                    processedEntries,
-                    pendingEntries);
+                lease.getByteBuffers().size(),
+                processedEntries.size(),
+                pendingEntries.size(),
+                processedEntries,
+                pendingEntries);
         finish();
         super.succeeded();
     }
@@ -310,10 +329,10 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             terminated = x;
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("%s, entries processed/pending/queued=%d/%d/%d",
-                        closed != null ? "Closing" : "Failing",
-                        processedEntries.size(),
-                        pendingEntries.size(),
-                        entries.size()), x);
+                    closed != null ? "Closing" : "Failing",
+                    processedEntries.size(),
+                    pendingEntries.size(),
+                    entries.size()), x);
             allEntries = new HashSet<>(entries);
             entries.clear();
         }
@@ -365,14 +384,14 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public String toString()
     {
         return String.format("%s[window_queue=%d,frame_queue=%d,processed/pending=%d/%d]",
-                super.toString(),
-                getWindowQueueSize(),
-                getFrameQueueSize(),
-                processedEntries.size(),
-                pendingEntries.size());
+            super.toString(),
+            getWindowQueueSize(),
+            getFrameQueueSize(),
+            processedEntries.size(),
+            pendingEntries.size());
     }
 
-    public static abstract class Entry extends Callback.Nested
+    public abstract static class Entry extends Callback.Nested
     {
         protected final Frame frame;
         protected final IStream stream;
@@ -391,7 +410,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             return 0;
         }
 
-        protected abstract boolean generate(ByteBufferPool.Lease lease);
+        protected abstract boolean generate(ByteBufferPool.Lease lease) throws HpackException;
 
         public abstract long onFlushed(long bytes) throws IOException;
 
@@ -406,12 +425,21 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             super.failed(x);
         }
 
+        /**
+         * @return whether the entry is stale and must not be processed
+         */
         private boolean isStale()
         {
-            return !isProtocol() && stream != null && stream.isReset();
+            // If it is a protocol frame, process it.
+            if (isProtocolFrame(frame))
+                return false;
+            // It's an application frame; is the stream gone already?
+            if (stream == null)
+                return true;
+            return stream.isReset();
         }
 
-        private boolean isProtocol()
+        private boolean isProtocolFrame(Frame frame)
         {
             switch (frame.getType())
             {

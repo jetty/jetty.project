@@ -1,27 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.ssl;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -34,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
-
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLParameters;
@@ -49,7 +43,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SocketCustomizationListener;
@@ -59,9 +52,13 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SslConnectionFactoryTest
 {
@@ -72,29 +69,27 @@ public class SslConnectionFactoryTest
     @BeforeEach
     public void before() throws Exception
     {
-        String keystorePath = "src/test/resources/keystore";
+        String keystorePath = "src/test/resources/keystore.p12";
         File keystoreFile = new File(keystorePath);
         if (!keystoreFile.exists())
             throw new FileNotFoundException(keystoreFile.getAbsolutePath());
 
         _server = new Server();
 
-        HttpConfiguration http_config = new HttpConfiguration();
-        http_config.setSecureScheme("https");
-        http_config.setSecurePort(8443);
-        http_config.setOutputBufferSize(32768);
-        HttpConfiguration https_config = new HttpConfiguration(http_config);
-        https_config.addCustomizer(new SecureRequestCustomizer());
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.setSecureScheme("https");
+        httpConfig.setSecurePort(8443);
+        httpConfig.setOutputBufferSize(32768);
 
-
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
-        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        sslContextFactory.setKeyStorePassword("storepwd");
 
+        SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
+        sslConnectionFactory.setEnsureSecureRequestCustomizer(true);
         ServerConnector https = _connector = new ServerConnector(_server,
-                new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-                new HttpConnectionFactory(https_config));
+            sslConnectionFactory,
+            new HttpConnectionFactory());
         https.setPort(0);
         https.setIdleTimeout(30000);
 
@@ -132,14 +127,15 @@ public class SslConnectionFactoryTest
     @Test
     public void testSNIConnect() throws Exception
     {
-        String response = getResponse("localhost", "localhost", "jetty.eclipse.org");
+        String response = getResponse("localhost", "localhost", "localhost");
         assertThat(response, Matchers.containsString("host=localhost"));
     }
 
     @Test
     public void testBadHandshake() throws Exception
     {
-        try (Socket socket = new Socket("127.0.0.1", _port); OutputStream out = socket.getOutputStream())
+        try (Socket socket = new Socket("127.0.0.1", _port);
+             OutputStream out = socket.getOutputStream())
         {
             out.write("Rubbish".getBytes());
             out.flush();
@@ -197,7 +193,7 @@ public class SslConnectionFactoryTest
     {
         _server.stop();
         assertNotNull(_connector.removeConnectionFactory(HttpVersion.HTTP_1_1.asString()));
-        assertThrows(IllegalStateException.class, ()-> _server.start());
+        assertThrows(IllegalStateException.class, () -> _server.start());
     }
 
     private String getResponse(String host, String cn) throws Exception
@@ -210,7 +206,7 @@ public class SslConnectionFactoryTest
 
     private String getResponse(String sniHost, String reqHost, String cn) throws Exception
     {
-        SslContextFactory clientContextFactory = new SslContextFactory(true);
+        SslContextFactory clientContextFactory = new SslContextFactory.Client(true);
         clientContextFactory.start();
         SSLSocketFactory factory = clientContextFactory.getSslContext().getSocketFactory();
 

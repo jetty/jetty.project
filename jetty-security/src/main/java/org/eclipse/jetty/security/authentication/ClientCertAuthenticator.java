@@ -1,30 +1,29 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.security.authentication;
 
-import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.Principal;
 import java.security.cert.CRL;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.Collection;
-
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -35,7 +34,6 @@ import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
@@ -44,29 +42,51 @@ import org.eclipse.jetty.util.security.Password;
 
 public class ClientCertAuthenticator extends LoginAuthenticator
 {
-    /** String name of keystore password property. */
+    /**
+     * String name of keystore password property.
+     */
     private static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
 
-    /** Truststore path */
+    /**
+     * Truststore path
+     */
     private String _trustStorePath;
-    /** Truststore provider name */
+    /**
+     * Truststore provider name
+     */
     private String _trustStoreProvider;
-    /** Truststore type */
-    private String _trustStoreType = "JKS";
-    /** Truststore password */
+    /**
+     * Truststore type
+     */
+    private String _trustStoreType = "PKCS12";
+    /**
+     * Truststore password
+     */
     private transient Password _trustStorePassword;
 
-    /** Set to true if SSL certificate validation is required */
+    /**
+     * Set to true if SSL certificate validation is required
+     */
     private boolean _validateCerts;
-    /** Path to file that contains Certificate Revocation List */
+    /**
+     * Path to file that contains Certificate Revocation List
+     */
     private String _crlPath;
-    /** Maximum certification path length (n - number of intermediate certs, -1 for unlimited) */
+    /**
+     * Maximum certification path length (n - number of intermediate certs, -1 for unlimited)
+     */
     private int _maxCertPathLength = -1;
-    /** CRL Distribution Points (CRLDP) support */
+    /**
+     * CRL Distribution Points (CRLDP) support
+     */
     private boolean _enableCRLDP = false;
-    /** On-Line Certificate Status Protocol (OCSP) support */
+    /**
+     * On-Line Certificate Status Protocol (OCSP) support
+     */
     private boolean _enableOCSP = false;
-    /** Location of OCSP Responder */
+    /**
+     * Location of OCSP Responder
+     */
     private String _ocspResponderURL;
 
     public ClientCertAuthenticator()
@@ -88,7 +108,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
 
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
-        X509Certificate[] certs = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+        X509Certificate[] certs = (X509Certificate[])request.getAttribute("javax.servlet.request.X509Certificate");
 
         try
         {
@@ -99,28 +119,30 @@ public class ClientCertAuthenticator extends LoginAuthenticator
                 if (_validateCerts)
                 {
                     KeyStore trustStore = getKeyStore(
-                            _trustStorePath, _trustStoreType, _trustStoreProvider,
-                            _trustStorePassword == null ? null :_trustStorePassword.toString());
+                        _trustStorePath, _trustStoreType, _trustStoreProvider,
+                        _trustStorePassword == null ? null : _trustStorePassword.toString());
                     Collection<? extends CRL> crls = loadCRL(_crlPath);
                     CertificateValidator validator = new CertificateValidator(trustStore, crls);
                     validator.validate(certs);
                 }
 
-                for (X509Certificate cert: certs)
+                for (X509Certificate cert : certs)
                 {
-                    if (cert==null)
+                    if (cert == null)
                         continue;
 
                     Principal principal = cert.getSubjectDN();
-                    if (principal == null) principal = cert.getIssuerDN();
+                    if (principal == null)
+                        principal = cert.getIssuerDN();
                     final String username = principal == null ? "clientcert" : principal.getName();
 
-                    final char[] credential = B64Code.encode(cert.getSignature());
+                    // TODO: investigate if using a raw byte[] is better vs older char[]
+                    final char[] credential = Base64.getEncoder().encodeToString(cert.getSignature()).toCharArray();
 
                     UserIdentity user = login(username, credential, req);
-                    if (user!=null)
+                    if (user != null)
                     {
-                        return new UserAuthentication(getAuthMethod(),user);
+                        return new UserAuthentication(getAuthMethod(), user);
                     }
                 }
             }
@@ -139,12 +161,6 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         }
     }
 
-    @Deprecated
-    protected KeyStore getKeyStore(InputStream storeStream, String storePath, String storeType, String storeProvider, String storePassword) throws Exception
-    {
-        return getKeyStore(storePath, storeType, storeProvider, storePassword);
-    }
-    /* ------------------------------------------------------------ */
     /**
      * Loads keystore using an input stream or a file path in the same
      * order of precedence.
@@ -164,7 +180,6 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return CertificateUtils.getKeyStore(Resource.newResource(storePath), storeType, storeProvider, storePassword);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Loads certificate revocation list (CRL) from a file.
      *
@@ -173,7 +188,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
      *
      * @param crlPath path of certificate revocation list file
      * @return a (possibly empty) collection view of java.security.cert.CRL objects initialized with the data from the
-     *         input stream.
+     * input stream.
      * @throws Exception if unable to load CRL
      */
     protected Collection<? extends CRL> loadCRL(String crlPath) throws Exception
@@ -187,7 +202,6 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return true;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return true if SSL certificate has to be validated
      */
@@ -196,17 +210,14 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _validateCerts;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param validateCerts
-     *            true if SSL certificates have to be validated
+     * @param validateCerts true if SSL certificates have to be validated
      */
     public void setValidateCerts(boolean validateCerts)
     {
         _validateCerts = validateCerts;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return The file name or URL of the trust store location
      */
@@ -215,17 +226,14 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _trustStorePath;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param trustStorePath
-     *            The file name or URL of the trust store location
+     * @param trustStorePath The file name or URL of the trust store location
      */
     public void setTrustStore(String trustStorePath)
     {
         _trustStorePath = trustStorePath;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return The provider of the trust store
      */
@@ -234,47 +242,41 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _trustStoreProvider;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param trustStoreProvider
-     *            The provider of the trust store
+     * @param trustStoreProvider The provider of the trust store
      */
     public void setTrustStoreProvider(String trustStoreProvider)
     {
         _trustStoreProvider = trustStoreProvider;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @return The type of the trust store (default "JKS")
+     * @return The type of the trust store (default "PKCS12")
      */
     public String getTrustStoreType()
     {
         return _trustStoreType;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param trustStoreType
-     *            The type of the trust store (default "JKS")
+     * @param trustStoreType The type of the trust store
      */
     public void setTrustStoreType(String trustStoreType)
     {
         _trustStoreType = trustStoreType;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param password
-     *            The password for the trust store
+     * @param password The password for the trust store
      */
     public void setTrustStorePassword(String password)
     {
-        _trustStorePassword = Password.getPassword(PASSWORD_PROPERTY,password,null);
+        _trustStorePassword = Password.getPassword(PASSWORD_PROPERTY, password, null);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the crlPath.
+    /**
+     * Get the crlPath.
+     *
      * @return the crlPath
      */
     public String getCrlPath()
@@ -282,8 +284,9 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _crlPath;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Set the crlPath.
+    /**
+     * Set the crlPath.
+     *
      * @param crlPath the crlPath to set
      */
     public void setCrlPath(String crlPath)
@@ -300,18 +303,15 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _maxCertPathLength;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @param maxCertPathLength
-     *            maximum number of intermediate certificates in
-     *            the certification path (-1 for unlimited)
+     * @param maxCertPathLength maximum number of intermediate certificates in
+     * the certification path (-1 for unlimited)
      */
     public void setMaxCertPathLength(int maxCertPathLength)
     {
         _maxCertPathLength = maxCertPathLength;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return true if CRL Distribution Points support is enabled
      */
@@ -320,8 +320,9 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _enableCRLDP;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Enables CRL Distribution Points Support
+    /**
+     * Enables CRL Distribution Points Support
+     *
      * @param enableCRLDP true - turn on, false - turns off
      */
     public void setEnableCRLDP(boolean enableCRLDP)
@@ -329,7 +330,6 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         _enableCRLDP = enableCRLDP;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return true if On-Line Certificate Status Protocol support is enabled
      */
@@ -338,8 +338,9 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _enableOCSP;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Enables On-Line Certificate Status Protocol support
+    /**
+     * Enables On-Line Certificate Status Protocol support
+     *
      * @param enableOCSP true - turn on, false - turn off
      */
     public void setEnableOCSP(boolean enableOCSP)
@@ -347,7 +348,6 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         _enableOCSP = enableOCSP;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return Location of the OCSP Responder
      */
@@ -356,8 +356,9 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return _ocspResponderURL;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Set the location of the OCSP Responder.
+    /**
+     * Set the location of the OCSP Responder.
+     *
      * @param ocspResponderURL location of the OCSP Responder
      */
     public void setOcspResponderURL(String ocspResponderURL)

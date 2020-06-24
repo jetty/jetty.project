@@ -1,0 +1,5 @@
+org.eclipse.jetty.websocket.core.internal.IdentityExtension
+org.eclipse.jetty.websocket.core.internal.FragmentExtension
+org.eclipse.jetty.websocket.core.internal.PerMessageDeflateExtension
+org.eclipse.jetty.websocket.core.internal.ValidationExtension
+org.eclipse.jetty.websocket.core.internal.FrameCaptureExtension

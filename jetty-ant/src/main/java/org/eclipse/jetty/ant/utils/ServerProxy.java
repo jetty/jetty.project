@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.ant.utils;
 
 import org.eclipse.jetty.ant.AntWebAppContext;
@@ -26,7 +25,7 @@ public interface ServerProxy
 
     /**
      * Adds a new web application to this server.
-     * 
+     *
      * @param awc a AntWebAppContext object.
      */
     public void addWebApplication(AntWebAppContext awc);
@@ -35,8 +34,6 @@ public interface ServerProxy
      * Starts this server.
      */
     public void start();
-    
-    
-    public Object getProxiedObject();
 
+    public Object getProxiedObject();
 }

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http.pathmap;
@@ -23,11 +23,11 @@ package org.eclipse.jetty.http.pathmap;
  * <p>
  * This is used to facilitate proper pathspec search order.
  * <p>
- * Search Order: 
+ * Search Order:
  * <ol>
  * <li>{@link PathSpecGroup#ordinal()} [increasing]</li>
- * <li>{@link PathSpec#specLength} [decreasing]</li>
- * <li>{@link PathSpec#pathSpec} [natural sort order]</li>
+ * <li>{@link PathSpec#getSpecLength()} [decreasing]</li>
+ * <li>{@link PathSpec#getDeclaration()} [natural sort order]</li>
  * </ol>
  */
 public enum PathSpecGroup
@@ -36,12 +36,12 @@ public enum PathSpecGroup
 
     /**
      * The root spec for accessing the Root behavior.
-     * 
+     *
      * <pre>
      *   ""           - servlet spec       (Root Servlet)
-     *   null         - servlet spec       (Root Servlet)
+     *   null         - legacy             (Root Servlet)
      * </pre>
-     * 
+     *
      * Note: there is no known uri-template spec variant of this kind of path spec
      */
     ROOT,
@@ -51,12 +51,12 @@ public enum PathSpecGroup
     EXACT,
     /**
      * For path specs that have a hardcoded prefix and suffix with wildcard glob in the middle.
-     * 
+     *
      * <pre>
      *   "^/downloads/[^/]*.zip$"  - regex spec
      *   "/a/{var}/c"              - uri-template spec
      * </pre>
-     * 
+     *
      * Note: there is no known servlet spec variant of this kind of path spec
      */
     MIDDLE_GLOB,
@@ -74,25 +74,25 @@ public enum PathSpecGroup
     PREFIX_GLOB,
     /**
      * For path specs that have a wildcard glob with a hardcoded suffix
-     * 
+     *
      * <pre>
      *   "*.do"        - servlet spec
      *   "*.css"       - servlet spec
      *   "^.*\.zip$"   - regex spec
      * </pre>
-     * 
+     *
      * Note: there is no known uri-template spec variant of this kind of path spec
      */
     SUFFIX_GLOB,
     /**
      * The default spec for accessing the Default path behavior.
-     * 
+     *
      * <pre>
      *   "/"           - servlet spec      (Default Servlet)
      *   "/"           - uri-template spec (Root Context)
      *   "^/$"         - regex spec        (Root Context)
      * </pre>
-     * 
+     *
      * Per Servlet Spec, pathInfo is always null for these specs.
      * If nothing above matches, then default will match.
      */

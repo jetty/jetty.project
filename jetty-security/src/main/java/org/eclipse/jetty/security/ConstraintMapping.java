@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.security;
@@ -29,7 +29,6 @@ public class ConstraintMapping
 
     Constraint _constraint;
 
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns the constraint.
      */
@@ -38,7 +37,6 @@ public class ConstraintMapping
         return _constraint;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param constraint The constraint to set.
      */
@@ -47,7 +45,6 @@ public class ConstraintMapping
         this._constraint = constraint;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns the method.
      */
@@ -56,7 +53,6 @@ public class ConstraintMapping
         return _method;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param method The method to set.
      */
@@ -65,7 +61,6 @@ public class ConstraintMapping
         this._method = method;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns the pathSpec.
      */
@@ -74,7 +69,6 @@ public class ConstraintMapping
         return _pathSpec;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param pathSpec The pathSpec to set.
      */
@@ -82,8 +76,7 @@ public class ConstraintMapping
     {
         this._pathSpec = pathSpec;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param omissions The http-method-omission
      */
@@ -91,8 +84,7 @@ public class ConstraintMapping
     {
         _methodOmissions = omissions;
     }
-    
-    /* ------------------------------------------------------------ */
+
     public String[] getMethodOmissions()
     {
         return _methodOmissions;

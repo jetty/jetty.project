@@ -1,34 +1,33 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.server.session;
 
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DefaultSessionCache
@@ -38,137 +37,112 @@ import org.eclipse.jetty.util.statistic.CounterStatistic;
 @ManagedObject
 public class DefaultSessionCache extends AbstractSessionCache
 {
-    private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
-    
-    
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultSessionCache.class);
+
     /**
      * The cache of sessions in a hashmap
      */
     protected ConcurrentHashMap<String, Session> _sessions = new ConcurrentHashMap<>();
-    
+
     private final CounterStatistic _stats = new CounterStatistic();
-    
-    
-    
+
     /**
      * @param manager The SessionHandler related to this SessionCache
      */
-    public DefaultSessionCache (SessionHandler manager)
+    public DefaultSessionCache(SessionHandler manager)
     {
-        super (manager);
+        super(manager);
     }
-    
-    
+
     /**
      * @return the number of sessions in the cache
      */
-    @ManagedAttribute(value="current sessions in cache", readonly=true)
-    public long getSessionsCurrent ()
+    @ManagedAttribute(value = "current sessions in cache", readonly = true)
+    public long getSessionsCurrent()
     {
         return _stats.getCurrent();
     }
-    
-    
+
     /**
      * @return the max number of sessions in the cache
      */
-    @ManagedAttribute(value="max sessions in cache", readonly=true)
+    @ManagedAttribute(value = "max sessions in cache", readonly = true)
     public long getSessionsMax()
     {
         return _stats.getMax();
     }
-    
-    
+
     /**
      * @return a running total of sessions in the cache
      */
-    @ManagedAttribute(value="total sessions in cache", readonly=true)
+    @ManagedAttribute(value = "total sessions in cache", readonly = true)
     public long getSessionsTotal()
     {
         return _stats.getTotal();
     }
-    
-    /**
-     * 
-     */
-    @ManagedOperation(value="reset statistics", impact="ACTION")
+
+    @ManagedOperation(value = "reset statistics", impact = "ACTION")
     public void resetStats()
     {
         _stats.reset();
     }
-    
-    
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doGet(java.lang.String)
-     */
+
     @Override
     public Session doGet(String id)
     {
         if (id == null)
             return null;
-        
+
         Session session = _sessions.get(id);
-       
+
         return session;
     }
 
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doPutIfAbsent(java.lang.String, org.eclipse.jetty.server.session.Session)
-     */
     @Override
     public Session doPutIfAbsent(String id, Session session)
     {
         Session s = _sessions.putIfAbsent(id, session);
-        if (s == null && !(session instanceof PlaceHolderSession))
+        if (s == null)
             _stats.increment();
-       return s;
+        return s;
     }
 
-  
+    @Override
+    protected Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction)
+    {
+        return _sessions.computeIfAbsent(id, k ->
+        {
+            Session s = mappingFunction.apply(k);
+            if (s != null)
+                _stats.increment();
+            return s;
+        });
+    }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doDelete(java.lang.String)
-     */
     @Override
     public Session doDelete(String id)
     {
         Session s = _sessions.remove(id);
-        if (s != null && !(s instanceof PlaceHolderSession))
+        if (s != null)
             _stats.decrement();
-        return  s;
+        return s;
     }
-    
-
-
-
 
     @Override
-    public void shutdown ()
+    public void shutdown()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Shutdown sessions, invalidating = {}", isInvalidateOnShutdown());
+
         // loop over all the sessions in memory (a few times if necessary to catch sessions that have been
         // added while we're running
-        int loop=100;
+        int loop = 100;
+
         while (!_sessions.isEmpty() && loop-- > 0)
         {
-            for (Session session: _sessions.values())
+            for (Session session : _sessions.values())
             {
-                //if we have a backing store so give the session to it to write out if necessary
-                if (_sessionDataStore != null)
-                {
-                    session.willPassivate();
-                    try
-                    {
-                        _sessionDataStore.store(session.getId(), session.getSessionData());
-                    }
-                    catch (Exception e)
-                    {
-                        LOG.warn(e);
-                    }
-                    doDelete (session.getId()); //remove from memory
-                    session.setResident(false);
-                }
-                else
+                if (isInvalidateOnShutdown())
                 {
                     //not preserving sessions on exit
                     try
@@ -177,51 +151,47 @@ public class DefaultSessionCache extends AbstractSessionCache
                     }
                     catch (Exception e)
                     {
-                        LOG.ignore(e);
+                        LOG.trace("IGNORED", e);
                     }
+                }
+                else
+                {
+                    //write out the session and remove from the cache
+                    if (_sessionDataStore.isPassivating())
+                        session.willPassivate();
+                    try
+                    {
+                        _sessionDataStore.store(session.getId(), session.getSessionData());
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.warn("Unable to store {}", session, e);
+                    }
+                    doDelete(session.getId()); //remove from memory
+                    session.setResident(false);
                 }
             }
         }
     }
 
-
- 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(javax.servlet.http.HttpServletRequest, org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public Session newSession(HttpServletRequest request, SessionData data)
     {
-        Session s =  new Session(getSessionHandler(),request, data);
+        Session s = new Session(getSessionHandler(), request, data);
         return s;
     }
 
-
-
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public Session newSession(SessionData data)
     {
-        Session s = new Session (getSessionHandler(), data);
+        Session s = new Session(getSessionHandler(), data);
         return s;
     }
 
-
-
-
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doReplace(java.lang.String, org.eclipse.jetty.server.session.Session, org.eclipse.jetty.server.session.Session)
-     */
     @Override
     public boolean doReplace(String id, Session oldValue, Session newValue)
     {
-        boolean result = _sessions.replace(id,  oldValue, newValue);
-        if (result && (oldValue instanceof PlaceHolderSession))
-            _stats.increment();
+        boolean result = _sessions.replace(id, oldValue, newValue);
         return result;
     }
-
 }

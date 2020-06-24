@@ -1,47 +1,50 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.Objects;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpProxy extends ProxyConfiguration.Proxy
 {
-    private static final Logger LOG = Log.getLogger(HttpProxy.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpProxy.class);
 
     public HttpProxy(String host, int port)
     {
@@ -50,7 +53,27 @@ public class HttpProxy extends ProxyConfiguration.Proxy
 
     public HttpProxy(Origin.Address address, boolean secure)
     {
-        super(address, secure);
+        this(address, secure, null, new Origin.Protocol(List.of("http/1.1"), false));
+    }
+
+    public HttpProxy(Origin.Address address, boolean secure, Origin.Protocol protocol)
+    {
+        this(address, secure, null, Objects.requireNonNull(protocol));
+    }
+
+    public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory)
+    {
+        this(address, true, sslContextFactory, new Origin.Protocol(List.of("http/1.1"), false));
+    }
+
+    public HttpProxy(Origin.Address address, SslContextFactory.Client sslContextFactory, Origin.Protocol protocol)
+    {
+        this(address, true, sslContextFactory, Objects.requireNonNull(protocol));
+    }
+
+    private HttpProxy(Origin.Address address, boolean secure, SslContextFactory.Client sslContextFactory, Origin.Protocol protocol)
+    {
+        super(address, secure, sslContextFactory, Objects.requireNonNull(protocol));
     }
 
     @Override
@@ -62,8 +85,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
     @Override
     public URI getURI()
     {
-        String scheme = isSecure() ? HttpScheme.HTTPS.asString() : HttpScheme.HTTP.asString();
-        return URI.create(new Origin(scheme, getAddress()).asString());
+        return URI.create(getOrigin().asString());
     }
 
     private class HttpProxyClientConnectionFactory implements ClientConnectionFactory
@@ -79,38 +101,59 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
         {
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-            SslContextFactory sslContextFactory = destination.getHttpClient().getSslContextFactory();
-            if (destination.isSecure())
+            Origin.Protocol serverProtocol = destination.getOrigin().getProtocol();
+            boolean sameProtocol = proxySpeaksServerProtocol(serverProtocol);
+            if (destination.isSecure() || !sameProtocol)
             {
-                if (sslContextFactory != null)
+                @SuppressWarnings("unchecked")
+                Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+                Promise<Connection> wrapped = promise;
+                if (promise instanceof Promise.Wrapper)
+                    wrapped = ((Promise.Wrapper<Connection>)promise).unwrap();
+                if (wrapped instanceof TunnelPromise)
                 {
-                    @SuppressWarnings("unchecked")
-                    Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-                    Promise<Connection> wrapped = promise;
-                    if (promise instanceof Promise.Wrapper)
-                        wrapped = ((Promise.Wrapper<Connection>)promise).unwrap();
-                    if (wrapped instanceof TunnelPromise)
-                    {
-                        ((TunnelPromise)wrapped).setEndPoint(endPoint);
-                        return connectionFactory.newConnection(endPoint, context);
-                    }
-                    else
-                    {
-                        // Replace the promise with the proxy promise that creates the tunnel to the server.
-                        CreateTunnelPromise tunnelPromise = new CreateTunnelPromise(connectionFactory, endPoint, promise, context);
-                        context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, tunnelPromise);
-                        return connectionFactory.newConnection(endPoint, context);
-                    }
+                    // In case the server closes the tunnel (e.g. proxy authentication
+                    // required: 407 + Connection: close), we will open another tunnel
+                    // so we need to tell the promise about the new EndPoint.
+                    ((TunnelPromise)wrapped).setEndPoint(endPoint);
+                    return connectionFactory.newConnection(endPoint, context);
                 }
                 else
                 {
-                    throw new IOException("Cannot tunnel request, missing " +
-                            SslContextFactory.class.getName() + " in " + HttpClient.class.getName());
+                    return newProxyConnection(endPoint, context);
                 }
             }
             else
             {
                 return connectionFactory.newConnection(endPoint, context);
+            }
+        }
+
+        private boolean proxySpeaksServerProtocol(Origin.Protocol serverProtocol)
+        {
+            return serverProtocol != null && getProtocol().getProtocols().stream().anyMatch(p -> serverProtocol.getProtocols().stream().anyMatch(p::equalsIgnoreCase));
+        }
+
+        private org.eclipse.jetty.io.Connection newProxyConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+        {
+            // Replace the promise with the proxy promise that creates the tunnel to the server.
+            @SuppressWarnings("unchecked")
+            Promise<Connection> promise = (Promise<Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
+            CreateTunnelPromise tunnelPromise = new CreateTunnelPromise(connectionFactory, endPoint, promise, context);
+            context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, tunnelPromise);
+
+            // Replace the destination with the proxy destination.
+            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
+            HttpClient client = destination.getHttpClient();
+            HttpDestination proxyDestination = client.resolveDestination(getOrigin());
+            context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, proxyDestination);
+            try
+            {
+                return connectionFactory.newConnection(endPoint, context);
+            }
+            finally
+            {
+                context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
             }
         }
     }
@@ -121,7 +164,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
      * tunnel after the TCP connection is succeeded, and needs to notify
      * the nested promise when the tunnel is established (or failed).</p>
      */
-    private class CreateTunnelPromise implements Promise<Connection>
+    private static class CreateTunnelPromise implements Promise<Connection>
     {
         private final ClientConnectionFactory connectionFactory;
         private final EndPoint endPoint;
@@ -139,6 +182,8 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         @Override
         public void succeeded(Connection connection)
         {
+            // Replace the promise back with the original.
+            context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             tunnel(destination, connection);
         }
@@ -154,61 +199,33 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             String target = destination.getOrigin().getAddress().asString();
             Origin.Address proxyAddress = destination.getConnectAddress();
             HttpClient httpClient = destination.getHttpClient();
-            long connectTimeout = httpClient.getConnectTimeout();
-            Request connect = httpClient.newRequest(proxyAddress.getHost(), proxyAddress.getPort())
-                    .method(HttpMethod.CONNECT)
-                    .path(target)
-                    .header(HttpHeader.HOST, target)
-                    .idleTimeout(2 * connectTimeout, TimeUnit.MILLISECONDS)
-                    .timeout(connectTimeout, TimeUnit.MILLISECONDS);
+            Request connect = new TunnelRequest(httpClient, proxyAddress)
+                .method(HttpMethod.CONNECT)
+                .path(target)
+                .headers(headers -> headers.put(HttpHeader.HOST, target));
             ProxyConfiguration.Proxy proxy = destination.getProxy();
-            if (proxy != null && proxy.isSecure())
+            if (proxy.isSecure())
                 connect.scheme(HttpScheme.HTTPS.asString());
 
-            final HttpConversation conversation = ((HttpRequest)connect).getConversation();
-            conversation.setAttribute(EndPoint.class.getName(), endPoint);
-
             connect.attribute(Connection.class.getName(), new ProxyConnection(destination, connection, promise));
-
-            connection.send(connect, result ->
-            {
-                // The EndPoint may have changed during the conversation, get the latest.
-                EndPoint endPoint = (EndPoint)conversation.getAttribute(EndPoint.class.getName());
-                if (result.isSucceeded())
-                {
-                    Response response = result.getResponse();
-                    if (response.getStatus() == HttpStatus.OK_200)
-                    {
-                        tunnelSucceeded(endPoint);
-                    }
-                    else
-                    {
-                        HttpResponseException failure = new HttpResponseException("Unexpected " + response +
-                                " for " + result.getRequest(), response);
-                        tunnelFailed(endPoint, failure);
-                    }
-                }
-                else
-                {
-                    tunnelFailed(endPoint, result.getFailure());
-                }
-            });
+            connection.send(connect, new TunnelListener(connect));
         }
 
         private void tunnelSucceeded(EndPoint endPoint)
         {
             try
             {
-                // Replace the promise back with the original
-                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-                HttpClient client = destination.getHttpClient();
-                ClientConnectionFactory sslConnectionFactory = client.newSslClientConnectionFactory(connectionFactory);
-                HttpConnectionOverHTTP oldConnection = (HttpConnectionOverHTTP)endPoint.getConnection();
-                org.eclipse.jetty.io.Connection newConnection = sslConnectionFactory.newConnection(endPoint, context);
-                // Creating the connection will link the new Connection the EndPoint,
-                // but we need the old Connection linked for the upgrade to do its job.
-                endPoint.setConnection(oldConnection);
+                ClientConnectionFactory connectionFactory = this.connectionFactory;
+                if (destination.isSecure())
+                {
+                    // Don't want to do DNS resolution here.
+                    InetSocketAddress address = InetSocketAddress.createUnresolved(destination.getHost(), destination.getPort());
+                    context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
+                    connectionFactory = destination.newSslClientConnectionFactory(null, connectionFactory);
+                }
+                var oldConnection = endPoint.getConnection();
+                var newConnection = connectionFactory.newConnection(endPoint, context);
                 endPoint.upgrade(newConnection);
                 if (LOG.isDebugEnabled())
                     LOG.debug("HTTP tunnel established: {} over {}", oldConnection, newConnection);
@@ -224,9 +241,42 @@ public class HttpProxy extends ProxyConfiguration.Proxy
             endPoint.close();
             promise.failed(failure);
         }
+
+        private class TunnelListener extends Response.Listener.Adapter
+        {
+            private final HttpConversation conversation;
+
+            private TunnelListener(Request request)
+            {
+                this.conversation = ((HttpRequest)request).getConversation();
+            }
+
+            @Override
+            public void onHeaders(Response response)
+            {
+                // The EndPoint may have changed during the conversation, get the latest.
+                EndPoint endPoint = (EndPoint)conversation.getAttribute(EndPoint.class.getName());
+                if (response.getStatus() == HttpStatus.OK_200)
+                {
+                    tunnelSucceeded(endPoint);
+                }
+                else
+                {
+                    HttpResponseException failure = new HttpResponseException("Unexpected " + response + " for " + response.getRequest(), response);
+                    tunnelFailed(endPoint, failure);
+                }
+            }
+
+            @Override
+            public void onComplete(Result result)
+            {
+                if (result.isFailed())
+                    tunnelFailed(endPoint, result.getFailure());
+            }
+        }
     }
 
-    private class ProxyConnection implements Connection
+    private static class ProxyConnection implements Connection
     {
         private final Destination destination;
         private final Connection connection;
@@ -265,7 +315,7 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         }
     }
 
-    private class TunnelPromise implements Promise<Connection>
+    private static class TunnelPromise implements Promise<Connection>
     {
         private final Request request;
         private final Response.CompleteListener listener;
@@ -294,6 +344,14 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         {
             HttpConversation conversation = ((HttpRequest)request).getConversation();
             conversation.setAttribute(EndPoint.class.getName(), endPoint);
+        }
+    }
+
+    public static class TunnelRequest extends HttpRequest
+    {
+        private TunnelRequest(HttpClient client, Origin.Address address)
+        {
+            super(client, new HttpConversation(), URI.create("http://" + address.asString()));
         }
     }
 }

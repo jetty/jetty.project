@@ -1,23 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.session;
 
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.http.HttpServletRequest;
 
@@ -28,29 +30,24 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * SessionCookieTest
  */
 public class SessionCookieTest
 {
-   
-    
-    
-    public class MockSessionStore extends AbstractSessionCache
+
+    public class MockSessionCache extends AbstractSessionCache
     {
 
-        public MockSessionStore(SessionHandler manager)
+        public MockSessionCache(SessionHandler manager)
         {
             super(manager);
         }
 
         @Override
         public void shutdown()
-        {        
+        {
         }
-
 
         @Override
         public Session newSession(SessionData data)
@@ -58,20 +55,18 @@ public class SessionCookieTest
             return null;
         }
 
-
         @Override
         public Session doGet(String key)
         {
             return null;
         }
 
-
         @Override
         public Session doPutIfAbsent(String key, Session session)
         {
             return null;
         }
-      
+
         @Override
         public Session doDelete(String key)
         {
@@ -89,10 +84,14 @@ public class SessionCookieTest
         {
             return null;
         }
+
+        @Override
+        protected Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction)
+        {
+            return mappingFunction.apply(id);
+        }
     }
 
-    
-    
     public class MockSessionIdManager extends DefaultSessionIdManager
     {
         public MockSessionIdManager(Server server)
@@ -116,27 +115,24 @@ public class SessionCookieTest
         public String renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request)
         {
             return "";
-            
         }
     }
-  
-  
 
     @Test
-    public void testSecureSessionCookie () throws Exception
+    public void testSecureSessionCookie() throws Exception
     {
         Server server = new Server();
         MockSessionIdManager idMgr = new MockSessionIdManager(server);
         idMgr.setWorkerName("node1");
         SessionHandler mgr = new SessionHandler();
-        MockSessionStore store = new MockSessionStore(mgr);
-        store.setSessionDataStore(new NullSessionDataStore());
-        mgr.setSessionCache(store);
+        MockSessionCache cache = new MockSessionCache(mgr);
+        cache.setSessionDataStore(new NullSessionDataStore());
+        mgr.setSessionCache(cache);
         mgr.setSessionIdManager(idMgr);
-        
+
         long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        
-        Session session = new Session(mgr, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30)); 
+
+        Session session = new Session(mgr, new SessionData("123", "_foo", "0.0.0.0", now, now, now, 30));
 
         SessionCookieConfig sessionCookieConfig = mgr.getSessionCookieConfig();
         sessionCookieConfig.setSecure(true);

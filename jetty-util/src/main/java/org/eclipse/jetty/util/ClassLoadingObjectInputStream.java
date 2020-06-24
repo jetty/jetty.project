@@ -1,21 +1,20 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.util;
 
@@ -24,45 +23,40 @@ import java.io.ObjectInputStream;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 
-
 /**
  * ClassLoadingObjectInputStream
  *
  * For re-inflating serialized objects, this class uses the thread context classloader
  * rather than the jvm's default classloader selection.
- * 
  */
 public class ClassLoadingObjectInputStream extends ObjectInputStream
 {
-    
+
     protected static class ClassLoaderThreadLocal extends ThreadLocal<ClassLoader>
     {
-        protected static final ClassLoader UNSET = new ClassLoader() {}; 
+        protected static final ClassLoader UNSET = new ClassLoader() {};
+
         @Override
         protected ClassLoader initialValue()
         {
             return UNSET;
         }
-        
     }
-    
+
     private ThreadLocal<ClassLoader> _classloader = new ClassLoaderThreadLocal();
-    
-    /* ------------------------------------------------------------ */
+
     public ClassLoadingObjectInputStream(java.io.InputStream in) throws IOException
     {
         super(in);
     }
 
-    /* ------------------------------------------------------------ */
-    public ClassLoadingObjectInputStream () throws IOException
+    public ClassLoadingObjectInputStream() throws IOException
     {
         super();
     }
 
-    
-    public Object readObject (ClassLoader loader)
-    throws IOException, ClassNotFoundException
+    public Object readObject(ClassLoader loader)
+        throws IOException, ClassNotFoundException
     {
         try
         {
@@ -74,18 +68,16 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream
             _classloader.set(ClassLoaderThreadLocal.UNSET);
         }
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     @Override
-    public Class<?> resolveClass (java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException
+    public Class<?> resolveClass(java.io.ObjectStreamClass cl) throws IOException, ClassNotFoundException
     {
         try
         {
             ClassLoader loader = _classloader.get();
             if (ClassLoaderThreadLocal.UNSET == loader)
                 loader = Thread.currentThread().getContextClassLoader();
-            
+
             return Class.forName(cl.getName(), false, loader);
         }
         catch (ClassNotFoundException e)
@@ -93,11 +85,10 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream
             return super.resolveClass(cl);
         }
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     protected Class<?> resolveProxyClass(String[] interfaces)
-            throws IOException, ClassNotFoundException
+        throws IOException, ClassNotFoundException
     {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
 
@@ -106,20 +97,20 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream
 
         // define proxy in class loader of non-public interface(s), if any
         Class<?>[] classObjs = new Class[interfaces.length];
-        for (int i = 0; i < interfaces.length; i++) 
+        for (int i = 0; i < interfaces.length; i++)
         {
             Class<?> cl = Class.forName(interfaces[i], false, loader);
-            if ((cl.getModifiers() & Modifier.PUBLIC) == 0) 
+            if ((cl.getModifiers() & Modifier.PUBLIC) == 0)
             {
-                if (hasNonPublicInterface) 
+                if (hasNonPublicInterface)
                 {
-                    if (nonPublicLoader != cl.getClassLoader()) 
+                    if (nonPublicLoader != cl.getClassLoader())
                     {
                         throw new IllegalAccessError(
-                                "conflicting non-public interface class loaders");
+                            "conflicting non-public interface class loaders");
                     }
-                } 
-                else 
+                }
+                else
                 {
                     nonPublicLoader = cl.getClassLoader();
                     hasNonPublicInterface = true;
@@ -127,13 +118,14 @@ public class ClassLoadingObjectInputStream extends ObjectInputStream
             }
             classObjs[i] = cl;
         }
-        try 
+        try
         {
-            return Proxy.getProxyClass(hasNonPublicInterface ? nonPublicLoader : loader,classObjs);
-        } 
-        catch (IllegalArgumentException e) 
+            // TODO: This is @Deprecated and not useable in the new JPMS reality
+            return Proxy.getProxyClass(hasNonPublicInterface ? nonPublicLoader : loader, classObjs);
+        }
+        catch (IllegalArgumentException e)
         {
             throw new ClassNotFoundException(null, e);
-        }    
+        }
     }
 }

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.parser;
@@ -61,17 +61,23 @@ public class HeadersBodyParser extends BodyParser
     @Override
     protected void emptyBody(ByteBuffer buffer)
     {
-        if (hasFlag(Flags.END_HEADERS))
+        if (hasFlag(Flags.PRIORITY))
+        {
+            connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_headers_priority_frame");
+        }
+        else if (hasFlag(Flags.END_HEADERS))
         {
             MetaData metaData = headerBlockParser.parse(BufferUtil.EMPTY_BUFFER, 0);
-            onHeaders(0, 0, false, metaData);
+            HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, null, isEndStream());
+            if (!rateControlOnEvent(frame))
+                connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
+            else
+                onHeaders(frame);
         }
         else
         {
             headerBlockFragments.setStreamId(getStreamId());
             headerBlockFragments.setEndStream(isEndStream());
-            if (hasFlag(Flags.PRIORITY))
-                connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_headers_priority_frame");
         }
     }
 
@@ -179,7 +185,15 @@ public class HeadersBodyParser extends BodyParser
                             state = State.PADDING;
                             loop = paddingLength == 0;
                             if (metaData != HeaderBlockParser.STREAM_FAILURE)
+                            {
                                 onHeaders(parentStreamId, weight, exclusive, metaData);
+                            }
+                            else
+                            {
+                                HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, null, isEndStream());
+                                if (!rateControlOnEvent(frame))
+                                    connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
+                            }
                         }
                     }
                     else
@@ -230,6 +244,11 @@ public class HeadersBodyParser extends BodyParser
         if (hasFlag(Flags.PRIORITY))
             priorityFrame = new PriorityFrame(getStreamId(), parentStreamId, weight, exclusive);
         HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, priorityFrame, isEndStream());
+        onHeaders(frame);
+    }
+
+    private void onHeaders(HeadersFrame frame)
+    {
         notifyHeaders(frame);
     }
 

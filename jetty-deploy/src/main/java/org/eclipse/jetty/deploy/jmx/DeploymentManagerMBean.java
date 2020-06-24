@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.deploy.jmx;
@@ -24,11 +24,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
@@ -42,10 +42,10 @@ public class DeploymentManagerMBean extends ObjectMBean
     public DeploymentManagerMBean(Object managedObject)
     {
         super(managedObject);
-        _manager = (DeploymentManager) managedObject;
+        _manager = (DeploymentManager)managedObject;
     }
 
-    @ManagedOperation(value = "list apps being tracked", impact = "INFO")
+    @ManagedAttribute(value = "list apps being tracked")
     public Collection<String> getApps()
     {
         List<String> ret = new ArrayList<>();
@@ -54,12 +54,6 @@ public class DeploymentManagerMBean extends ObjectMBean
             ret.add(toRef(entry.getApp()));
         }
         return ret;
-    }
-
-    @ManagedOperation(value = "list nodes that are tracked by DeploymentManager", impact = "INFO")
-    public Collection<String> getNodes()
-    {
-        return _manager.getNodes().stream().map(Node::getName).collect(Collectors.toList());
     }
 
     @ManagedOperation(value = "list apps that are located at specified App LifeCycle nodes", impact = "ACTION")
@@ -82,6 +76,12 @@ public class DeploymentManagerMBean extends ObjectMBean
         return ret;
     }
 
+    @ManagedOperation(value = "list nodes that are tracked by DeploymentManager", impact = "INFO")
+    public Collection<String> getNodes()
+    {
+        return _manager.getNodes().stream().map(Node::getName).collect(Collectors.toList());
+    }
+
     private String toRef(App app)
     {
         return String.format("originId=%s,contextPath=%s,appProvider=%s", app.getContextPath(), app.getOriginId(), app.getAppProvider().getClass().getName());
@@ -91,13 +91,16 @@ public class DeploymentManagerMBean extends ObjectMBean
     {
         List<ContextHandler> apps = new ArrayList<ContextHandler>();
         for (App app : _manager.getApps())
+        {
             apps.add(app.getContextHandler());
+        }
         return apps;
     }
 
-    public Collection<AppProvider> getAppProviders()
+    @ManagedAttribute("Registered AppProviders")
+    public List<String> getAppProviders()
     {
-        return _manager.getAppProviders();
+        return _manager.getAppProviders().stream().map(String::valueOf).collect(Collectors.toList());
     }
 
     public void requestAppGoal(String appId, String nodeName)

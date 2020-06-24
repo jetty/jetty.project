@@ -1,0 +1,66 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[hot-deployment]]
+=== Hot Deployment
+
+Jetty allows for deploying an arbitrary context or web application by monitoring a directory for changes.
+If a web application or a context descriptor is added to the directory, Jetty's `DeploymentManager` (DM) deploys a new context.
+If a context descriptor is touched or updated, the DM stops, reconfigures, and redeploys its context.
+If a context is removed, the DM stops it and removes it from the server.
+
+This behavior can be controlled by configuring `WebAppProvider` properties.
+
+monitoredDirName::
+  The directory to scan for possible deployable Web Applications (or Deployment Descriptor XML files).
+scanInterval::
+  Number of seconds between scans of the provided `monitoredDirName`.
+  A value of `0` disables the continuous hot deployment scan, Web Applications will be deployed on startup only.
+
+The default location for this configuration is in the `${jetty.home}/etc/jetty-deploy.xml` file.
+To modify it as part of the Jetty distribution, first enable the `deploy` module.
+Once it is enabled, you can edit these properties in either the `$JETTY_BASE/start.d/deploy.ini` or `$JETTY_BASE/start.ini` file, depending on link:#start-vs-startd[how your implementation is configured.]
+
+[source, screen, subs="{sub-order}"]
+----
+<?xml version="1.0"?>
+# ---------------------------------------
+# Module: deploy
+# Enables webapplication deployment from the webapps directory.
+# ---------------------------------------
+--module=deploy
+
+# Monitored directory name (relative to $jetty.base)
+# jetty.deploy.monitoredDir=webapps
+# - OR -
+# Monitored directory path (fully qualified)
+# jetty.deploy.monitoredPath=/var/www/webapps
+
+# Defaults Descriptor for all deployed webapps
+# jetty.deploy.defaultsDescriptorPath=${jetty.base}/etc/webdefault.xml
+
+# Monitored directory scan period (seconds)
+# jetty.deploy.scanInterval=1
+
+# Whether to extract *.war files
+# jetty.deploy.extractWars=true
+----
+
+See xref:default-web-app-provider[] for more configuration details.
+
+See also xref:deployment-architecture[] for detailed conceptual information.

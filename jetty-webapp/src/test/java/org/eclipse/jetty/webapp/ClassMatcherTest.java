@@ -1,32 +1,32 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.webapp;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.function.Supplier;
 
+import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.webapp.ClassMatcher.ByLocationOrModule;
+import org.eclipse.jetty.webapp.ClassMatcher.ByPackageOrName;
+import org.eclipse.jetty.webapp.ClassMatcher.Entry;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,10 +34,22 @@ import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class ClassMatcherTest
 {
     private final ClassMatcher _pattern = new ClassMatcher();
-
+    
+    protected static Supplier<URI> NULL_SUPPLIER = new Supplier<URI>()
+    {
+        public URI get()
+        {
+            return null;
+        } 
+    };
+    
     @BeforeEach
     public void before()
     {
@@ -47,18 +59,18 @@ public class ClassMatcherTest
         _pattern.add("org.example.FooBar");
         _pattern.add("-org.example.Excluded");
         _pattern.addAll(Arrays.asList(
-                "-org.example.Nested$Minus",
-                "org.example.Nested",
-                "org.example.Nested$Something"));
+            "-org.example.Nested$Minus",
+            "org.example.Nested",
+            "org.example.Nested$Something"));
 
         assertThat(_pattern, Matchers.containsInAnyOrder(
-                "org.package.",
-                "-org.excluded.",
-                "org.example.FooBar",
-                "-org.example.Excluded",
-                "-org.example.Nested$Minus",
-                "org.example.Nested",
-                "org.example.Nested$Something"
+            "org.package.",
+            "-org.excluded.",
+            "org.example.FooBar",
+            "-org.example.Excluded",
+            "-org.example.Nested$Minus",
+            "org.example.Nested",
+            "org.example.Nested$Something"
         ));
     }
 
@@ -121,16 +133,13 @@ public class ClassMatcherTest
     public void testIncludedLocations() throws Exception
     {
         // jar from JVM classloader
-        URI loc_string = TypeUtil.getLocationOfClass(String.class);
-        // System.err.println(loc_string);
+        URI locString = TypeUtil.getLocationOfClass(String.class);
 
         // a jar from maven repo jar
-        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
-        // System.err.println(loc_junit);
+        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
 
         // class file 
-        URI loc_test = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
-        // System.err.println(loc_test);
+        URI locTest = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
 
         ClassMatcher pattern = new ClassMatcher();
         pattern.include("something");
@@ -139,10 +148,10 @@ public class ClassMatcherTest
         assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
 
         // Add directory for both JVM classes
-        pattern.include(Paths.get(loc_string).getParent().toUri().toString());
+        pattern.include(locString.toASCIIString());
 
         // Add jar for individual class and classes directory
-        pattern.include(loc_junit.toString(), loc_test.toString());
+        pattern.include(locJunit.toString(), locTest.toString());
 
         assertThat(pattern.match(String.class), Matchers.is(true));
         assertThat(pattern.match(Test.class), Matchers.is(true));
@@ -160,16 +169,16 @@ public class ClassMatcherTest
     public void testIncludedLocationsOrModule() throws Exception
     {
         // jar from JVM classloader
-        URI mod_string = TypeUtil.getLocationOfClass(String.class);
-        // System.err.println(mod_string);
+        URI modString = TypeUtil.getLocationOfClass(String.class);
+        // System.err.println(modString);
 
         // a jar from maven repo jar
-        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
-        // System.err.println(loc_junit);
+        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
+        // System.err.println(locJunit);
 
         // class file
-        URI loc_test = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
-        // System.err.println(loc_test);
+        URI locTest = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
+        // System.err.println(locTest);
 
         ClassMatcher pattern = new ClassMatcher();
         pattern.include("something");
@@ -181,7 +190,7 @@ public class ClassMatcherTest
         pattern.include("jrt:/java.base");
 
         // Add jar for individual class and classes directory
-        pattern.include(loc_junit.toString(), loc_test.toString());
+        pattern.include(locJunit.toString(), locTest.toString());
 
         assertThat(pattern.match(String.class), Matchers.is(true));
         assertThat(pattern.match(Test.class), Matchers.is(true));
@@ -199,16 +208,16 @@ public class ClassMatcherTest
     public void testExcludeLocations() throws Exception
     {
         // jar from JVM classloader
-        URI loc_string = TypeUtil.getLocationOfClass(String.class);
-        // System.err.println(loc_string);
+        URI locString = TypeUtil.getLocationOfClass(String.class);
+        // System.err.println(locString);
 
         // a jar from maven repo jar
-        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
-        // System.err.println(loc_junit);
+        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
+        // System.err.println(locJunit);
 
         // class file 
-        URI loc_test = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
-        // System.err.println(loc_test);
+        URI locTest = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
+        // System.err.println(locTest);
 
         ClassMatcher pattern = new ClassMatcher();
 
@@ -220,10 +229,10 @@ public class ClassMatcherTest
         assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(true));
 
         // Add directory for both JVM classes
-        pattern.exclude(Paths.get(loc_string).getParent().toUri().toString());
+        pattern.exclude(locString.toString());
 
         // Add jar for individual class and classes directory
-        pattern.exclude(loc_junit.toString(), loc_test.toString());
+        pattern.exclude(locJunit.toString(), locTest.toString());
 
         assertThat(pattern.match(String.class), Matchers.is(false));
         assertThat(pattern.match(Test.class), Matchers.is(false));
@@ -236,16 +245,16 @@ public class ClassMatcherTest
     public void testExcludeLocationsOrModule() throws Exception
     {
         // jar from JVM classloader
-        URI mod_string = TypeUtil.getLocationOfClass(String.class);
-        // System.err.println(mod_string);
+        URI modString = TypeUtil.getLocationOfClass(String.class);
+        // System.err.println(modString);
 
         // a jar from maven repo jar
-        URI loc_junit = TypeUtil.getLocationOfClass(Test.class);
-        // System.err.println(loc_junit);
+        URI locJunit = TypeUtil.getLocationOfClass(Test.class);
+        // System.err.println(locJunit);
 
         // class file
-        URI loc_test = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
-        // System.err.println(loc_test);
+        URI locTest = TypeUtil.getLocationOfClass(ClassMatcherTest.class);
+        // System.err.println(locTest);
 
         ClassMatcher pattern = new ClassMatcher();
 
@@ -260,11 +269,49 @@ public class ClassMatcherTest
         pattern.exclude("jrt:/java.base/");
 
         // Add jar for individual class and classes directory
-        pattern.exclude(loc_junit.toString(), loc_test.toString());
+        pattern.exclude(locJunit.toString(), locTest.toString());
 
         assertThat(pattern.match(String.class), Matchers.is(false));
         assertThat(pattern.match(Test.class), Matchers.is(false));
         assertThat(pattern.match(ClassMatcherTest.class), Matchers.is(false));
+    }
+    
+    @Test
+    public void testWithNullLocation() throws Exception
+    {
+        ClassMatcher matcher = new ClassMatcher();
+        
+        IncludeExcludeSet<Entry, String> names = new IncludeExcludeSet<>(ByPackageOrName.class);
+        IncludeExcludeSet<Entry, URI> locations = new IncludeExcludeSet<>(ByLocationOrModule.class);
+
+        //Test no name or location includes or excludes - should match
+        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), Matchers.is(true));
+        
+        names.include(matcher.newEntry("a.b.", true));
+        names.exclude(matcher.newEntry("d.e.", false));
+       
+        //Test explicit include by name no locations - should match
+        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), Matchers.is(true));
+        
+        //Test explicit exclude by name no locations - should not match
+        assertThat(ClassMatcher.combine(names, "d.e.f", locations, NULL_SUPPLIER), Matchers.is(false));
+        
+        //Test include by name with location includes - should match
+        locations.include(matcher.newEntry("file:/foo/bar", true));
+        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), Matchers.is(true));
+        
+        //Test include by name but with location exclusions - should not match
+        locations.clear();
+        locations.exclude(matcher.newEntry("file:/high/low", false));
+        assertThat(ClassMatcher.combine(names, "a.b.c", locations, NULL_SUPPLIER), Matchers.is(false));
+        
+        //Test neither included or excluded by name, but with location exclusions - should not match
+        assertThat(ClassMatcher.combine(names, "g.b.r", locations, NULL_SUPPLIER), Matchers.is(false));
+        
+        //Test neither included nor excluded by name, but with location inclusions - should not match
+        locations.clear();
+        locations.include(matcher.newEntry("file:/foo/bar", true));
+        assertThat(ClassMatcher.combine(names, "g.b.r", locations, NULL_SUPPLIER), Matchers.is(false));
     }
 
     @Test
@@ -281,7 +328,6 @@ public class ClassMatcherTest
             assertTrue(pattern.match("n" + i + "." + Integer.toHexString(100 + i) + ".Name"));
         }
     }
-
 
     @Test
     public void testJvmModule()

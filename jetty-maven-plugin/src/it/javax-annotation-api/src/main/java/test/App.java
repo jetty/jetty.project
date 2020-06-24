@@ -1,22 +1,27 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package test;
+
+import java.io.InputStream;
+import java.util.Properties;
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,41 +29,37 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import java.io.InputStream;
-import java.util.Properties;
-
 /**
  * Hello world!
- *
  */
-public class App extends SpringBootServletInitializer {
+public class App extends SpringBootServletInitializer
+{
 
-    private Logger logger = LoggerFactory.getLogger( getClass() );
+    private Logger logger = LoggerFactory.getLogger(getClass());
 
-    @Resource(name="my.properties")
+    @Resource(name = "my.properties")
     private Properties somePropertyFile;
 
     @Override
-    protected SpringApplicationBuilder configure(SpringApplicationBuilder builder ) {
-        return builder.sources( App.class );
+    protected SpringApplicationBuilder configure(SpringApplicationBuilder builder)
+    {
+        return builder.sources(App.class);
     }
 
     @PostConstruct
-    public void done(){
-        logger.info( "all good guys get a good {}", somePropertyFile.get( "drink" ) );
-
+    public void done()
+    {
+        logger.info("all good guys get a good {}", somePropertyFile.get("drink"));
     }
 
     @Bean(name = "my.properties")
-    public Properties getSomeProperties() throws Exception{
-        Properties properties = new Properties( );
-        try(InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream( "my.properties" ))
+    public Properties getSomeProperties() throws Exception
+    {
+        Properties properties = new Properties();
+        try (InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("my.properties"))
         {
-            properties.load( inputStream );
+            properties.load(inputStream);
         }
         return properties;
     }
-
 }

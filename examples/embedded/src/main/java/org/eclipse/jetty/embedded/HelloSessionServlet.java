@@ -1,26 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.embedded;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -30,21 +29,23 @@ import javax.servlet.http.HttpSession;
 @SuppressWarnings("serial")
 public class HelloSessionServlet extends HttpServlet
 {
-    public HelloSessionServlet() {}
+    public HelloSessionServlet()
+    {
+    }
 
     @Override
-    protected void doGet( HttpServletRequest request,
-                          HttpServletResponse response ) throws ServletException,
-            IOException
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response) throws ServletException,
+        IOException
     {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.addHeader("Cache-Control","no-cache");
-        
+        response.addHeader("Cache-Control", "no-cache");
+
         HttpSession session = request.getSession();
         String message;
         String link;
-        
+
         String greeting = request.getParameter("greeting");
         if (greeting != null)
         {
@@ -56,7 +57,7 @@ public class HelloSessionServlet extends HttpServlet
         {
             greeting = (String)session.getAttribute("greeting");
 
-            if (greeting != null) 
+            if (greeting != null)
             {
                 message = "Greeting '" + greeting + "' set from session.";
             }
@@ -68,17 +69,15 @@ public class HelloSessionServlet extends HttpServlet
 
             link = "Click <a href=\"/?greeting=Hola\">here</a> to set a new greeting.";
         }
-        
+
         PrintWriter out = response.getWriter();
         out.println("<h1>" + greeting + " from HelloSessionServlet</h1>");
         out.println("<p>" + message + "</p>");
         out.println("<pre>");
-        out.println("session.getId() = " +session.getId());
-        out.println("session.isNew() = " +session.isNew());
+        out.println("session.getId() = " + session.getId());
+        out.println("session.isNew() = " + session.isNew());
         out.println("</pre>");
         out.println("<p>" + link + "</p>");
-        
     }
-
 }
 

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -31,9 +31,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Creates {@link SocketAddress} instances, returning them through a {@link Promise}.</p>
@@ -43,7 +43,8 @@ public interface SocketAddressResolver
     /**
      * Resolves the given host and port, returning a {@link SocketAddress} through the given {@link Promise}
      * with the default timeout.
-     *  @param host the host to resolve
+     *
+     * @param host the host to resolve
      * @param port the port of the resulting socket address
      * @param promise the callback invoked when the resolution succeeds or fails
      */
@@ -64,7 +65,9 @@ public interface SocketAddressResolver
 
                 List<InetSocketAddress> result = new ArrayList<>(addresses.length);
                 for (InetAddress address : addresses)
+                {
                     result.add(new InetSocketAddress(address, port));
+                }
 
                 if (result.isEmpty())
                     promise.failed(new UnknownHostException());
@@ -104,7 +107,7 @@ public interface SocketAddressResolver
     @ManagedObject("The asynchronous address resolver")
     public static class Async implements SocketAddressResolver
     {
-        private static final Logger LOG = Log.getLogger(SocketAddressResolver.class);
+        private static final Logger LOG = LoggerFactory.getLogger(SocketAddressResolver.class);
 
         private final Executor executor;
         private final Scheduler scheduler;
@@ -114,9 +117,9 @@ public interface SocketAddressResolver
          * Creates a new instance with the given executor (to perform DNS resolution in a separate thread),
          * the given scheduler (to cancel the operation if it takes too long) and the given timeout, in milliseconds.
          *
-         * @param executor  the thread pool to use to perform DNS resolution in pooled threads
+         * @param executor the thread pool to use to perform DNS resolution in pooled threads
          * @param scheduler the scheduler to schedule tasks to cancel DNS resolution if it takes too long
-         * @param timeout   the timeout, in milliseconds, for the DNS resolution to complete
+         * @param timeout the timeout, in milliseconds, for the DNS resolution to complete
          */
         public Async(Executor executor, Scheduler scheduler, long timeout)
         {
@@ -171,7 +174,9 @@ public interface SocketAddressResolver
 
                     List<InetSocketAddress> result = new ArrayList<>(addresses.length);
                     for (InetAddress address : addresses)
+                    {
                         result.add(new InetSocketAddress(address, port));
+                    }
 
                     if (complete.compareAndSet(false, true))
                     {

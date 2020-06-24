@@ -1,25 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.ssl;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -28,7 +25,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.KeyStore;
 import java.util.Arrays;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
@@ -49,7 +45,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
+ *
  */
 public class SslUploadTest
 {
@@ -60,14 +60,11 @@ public class SslUploadTest
     @BeforeAll
     public static void startServer() throws Exception
     {
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
 
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStorePath(keystore.getAbsolutePath());
-        sslContextFactory.setTrustStorePassword("storepwd");
 
         server = new Server();
         connector = new ServerConnector(server, sslContextFactory);
@@ -90,7 +87,7 @@ public class SslUploadTest
     public void test() throws Exception
     {
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        SslContextFactory ctx=connector.getConnectionFactory(SslConnectionFactory.class).getSslContextFactory();
+        SslContextFactory ctx = connector.getConnectionFactory(SslConnectionFactory.class).getSslContextFactory();
         try (InputStream stream = new FileInputStream(ctx.getKeyStorePath()))
         {
             keystore.load(stream, "storepwd".toCharArray());
@@ -100,7 +97,7 @@ public class SslUploadTest
         SSLContext sslContext = SSLContext.getInstance("SSL");
         sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 
-        final SSLSocket socket =  (SSLSocket)sslContext.getSocketFactory().createSocket("localhost",connector.getLocalPort());
+        final SSLSocket socket = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort());
 
         // Simulate async close
         /*
@@ -143,7 +140,7 @@ public class SslUploadTest
 
         InputStream in = socket.getInputStream();
         String response = IO.toString(in);
-        assertTrue (response.indexOf("200")>0);
+        assertTrue(response.indexOf("200") > 0);
         // System.err.println(response);
 
         // long end = System.nanoTime();
@@ -158,11 +155,13 @@ public class SslUploadTest
         {
             request.setHandled(true);
             InputStream in = request.getInputStream();
-            byte[] b = new byte[4096*4];
+            byte[] b = new byte[4096 * 4];
             int read;
-            while((read = in.read(b))>=0)
+            while ((read = in.read(b)) >= 0)
+            {
                 total += read;
-            System.err.println("Read "+ total);
+            }
+            System.err.println("Read " + total);
         }
     }
 }

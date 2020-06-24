@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.http.HttpVersion;
@@ -67,7 +66,7 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
     {
         return negotiatedProtocols;
     }
-    
+
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
@@ -76,12 +75,12 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
         {
             // Generate list of protocols that we can negotiate.
             negotiated = connector.getProtocols().stream()
-                    .filter(p ->
-                    {
-                        ConnectionFactory f = connector.getConnectionFactory(p);
-                        return !(f instanceof SslConnectionFactory) && !(f instanceof NegotiatingServerConnectionFactory);
-                    })
-                    .collect(Collectors.toList());
+                .filter(p ->
+                {
+                    ConnectionFactory f = connector.getConnectionFactory(p);
+                    return !(f instanceof SslConnectionFactory) && !(f instanceof NegotiatingServerConnectionFactory);
+                })
+                .collect(Collectors.toList());
         }
 
         // If default protocol is not set, then it is
@@ -90,9 +89,9 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
         if (dft == null && !negotiated.isEmpty())
         {
             dft = negotiated.stream()
-                    .filter(HttpVersion.HTTP_1_1::is)
-                    .findFirst()
-                    .orElse(negotiated.get(0));
+                .filter(HttpVersion.HTTP_1_1::is)
+                .findFirst()
+                .orElse(negotiated.get(0));
         }
 
         SSLEngine engine = null;

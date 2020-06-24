@@ -14,8 +14,8 @@
     <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
     <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <pax.exam.version>4.13.0</pax.exam.version>
-    <pax.url.version>2.5.4</pax.url.version>
+    <pax.exam.version>4.13.1</pax.exam.version>
+    <pax.url.version>2.6.1</pax.url.version>
     <injection.bundle.version>1.0</injection.bundle.version>
   </properties>
   <dependencies>
@@ -34,10 +34,10 @@
     </dependency>
     <!-- Use the forked container so we can pass it system properties eg for alpn -->
     <dependency>
-        <groupId>org.ops4j.pax.exam</groupId>
-        <artifactId>pax-exam-container-forked</artifactId>
-        <version>${pax.exam.version}</version>
-        <scope>test</scope>
+      <groupId>org.ops4j.pax.exam</groupId>
+      <artifactId>pax-exam-container-forked</artifactId>
+      <version>${pax.exam.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.swissbox</groupId>
@@ -72,39 +72,58 @@
     <dependency>
       <groupId>org.ops4j.pax.tinybundles</groupId>
       <artifactId>tinybundles</artifactId>
-      <version>2.1.1</version>
+      <version>3.0.0</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>biz.aQute.bnd</groupId>
+          <artifactId>bnd</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.url</groupId>
       <artifactId>pax-url-wrap</artifactId>
       <version>${pax.url.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>biz.aQute.bnd</groupId>
+          <artifactId>bndlib</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>biz.aQute.bnd</groupId>
-      <artifactId>bndlib</artifactId>
-      <version>2.4.0</version>
+      <artifactId>biz.aQute.bndlib</artifactId>
+      <version>5.0.0</version>
       <exclusions>
-          <exclusion>
-              <groupId>org.osgi</groupId>
-              <artifactId>org.osgi.core</artifactId>
-          </exclusion>
+        <exclusion>
+          <groupId>org.osgi</groupId>
+          <artifactId>org.osgi.core</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.platform</groupId>
       <artifactId>org.eclipse.osgi</artifactId>
-      <version>3.13.100</version>
+      <version>3.15.100</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.platform</groupId>
-        <artifactId>org.eclipse.osgi.services</artifactId>
-        <version>3.7.100</version>
-        <scope>test</scope>
+      <groupId>org.eclipse.platform</groupId>
+      <artifactId>org.eclipse.osgi.services</artifactId>
+      <version>3.7.100</version>
+      <scope>test</scope>
     </dependency>
 
     <!-- Jetty OSGi Deps -->
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
       <artifactId>jetty-osgi-boot</artifactId>
@@ -146,8 +165,7 @@
 
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-osgi-servlet-api</artifactId>
-      <version>4.0.1</version>
+      <artifactId>jetty-servlet-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
@@ -162,27 +180,27 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-     <groupId>org.apache.aries.spifly</groupId>
+      <groupId>org.apache.aries.spifly</groupId>
       <artifactId>org.apache.aries.spifly.dynamic.bundle</artifactId>
-      <version>1.2</version>
-     <scope>test</scope>
-     <exclusions>
-         <exclusion>
-             <groupId>org.apache.felix</groupId>
-             <artifactId>org.apache.felix.framework</artifactId>
-         </exclusion>
-     </exclusions>
+      <version>1.2.4</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>org.apache.felix.framework</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
-     <groupId>com.sun.activation</groupId>
+      <groupId>com.sun.activation</groupId>
       <artifactId>javax.activation</artifactId>
       <version>1.2.0</version>
-     <scope>test</scope>
+      <scope>test</scope>
     </dependency>
     <dependency>
-       <groupId>org.glassfish.web</groupId>
-       <artifactId>javax.servlet.jsp.jstl</artifactId>
-       <version>1.2.2</version>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>javax.servlet.jsp.jstl</artifactId>
+      <version>1.2.2</version>
       <exclusions>
         <exclusion>
           <groupId>javax.servlet.jsp.jstl</groupId>
@@ -203,19 +221,19 @@
       </exclusions>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.jetty.orbit</groupId>
-        <artifactId>javax.servlet.jsp.jstl</artifactId>
-        <version>1.2.0.v201105211821</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.eclipse.jetty.orbit</groupId>
-            <artifactId>javax.servlet.jsp</artifactId>
-          </exclusion>
-        </exclusions>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.servlet.jsp.jstl</artifactId>
+      <version>1.2.0.v201105211821</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.jetty.orbit</groupId>
+          <artifactId>javax.servlet.jsp</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- Jetty Deps -->
@@ -281,48 +299,48 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-api</artifactId>
+      <artifactId>websocket-jetty-api</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-common</artifactId>
+      <artifactId>websocket-jetty-common</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-client</artifactId>
+      <artifactId>websocket-jetty-client</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-client</artifactId>
+      <artifactId>websocket-javax-client</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-servlet</artifactId>
+      <artifactId>websocket-util-server</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-server</artifactId>
+      <artifactId>websocket-jetty-server</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>javax.websocket</groupId>
-      <artifactId>javax.websocket-api</artifactId>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-javax-websocket-api</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-server</artifactId>
+      <artifactId>websocket-javax-server</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
     </dependency>
@@ -347,11 +365,6 @@
       <artifactId>jetty-alpn-server</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-schemas</artifactId>
-      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -416,12 +429,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-      <version>${slf4j.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
       <scope>test</scope>
@@ -478,11 +485,20 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <!-- No point building javadoc on testing projects -->
+            <skip>true</skip>
+          </configuration>
+        </plugin>
+        <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <skipTests>${skipTests}</skipTests>
             <systemPropertyVariables>
               <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
+              <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
             </systemPropertyVariables>
             <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
           </configuration>

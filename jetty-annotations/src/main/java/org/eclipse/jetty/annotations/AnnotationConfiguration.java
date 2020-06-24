@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.annotations;
@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -39,7 +38,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
 
@@ -51,102 +51,97 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.FragmentDescriptor;
 import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.webapp.MetaDataComplete;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebDescriptor;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Configuration for Annotations
  */
 public class AnnotationConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(AnnotationConfiguration.class);
-    
+    private static final Logger LOG = LoggerFactory.getLogger(AnnotationConfiguration.class);
+
     public static final String SERVLET_CONTAINER_INITIALIZER_EXCLUSION_PATTERN = "org.eclipse.jetty.containerInitializerExclusionPattern";
     public static final String SERVLET_CONTAINER_INITIALIZER_ORDER = "org.eclipse.jetty.containerInitializerOrder";
-    public static final String CLASS_INHERITANCE_MAP  = "org.eclipse.jetty.classInheritanceMap";
+    public static final String CLASS_INHERITANCE_MAP = "org.eclipse.jetty.classInheritanceMap";
     public static final String CONTAINER_INITIALIZERS = "org.eclipse.jetty.containerInitializers";
     public static final String CONTAINER_INITIALIZER_STARTER = "org.eclipse.jetty.containerInitializerStarter";
     public static final String MULTI_THREADED = "org.eclipse.jetty.annotations.multiThreaded";
     public static final String MAX_SCAN_WAIT = "org.eclipse.jetty.annotations.maxWait";
-    
-    
-    public static final int DEFAULT_MAX_SCAN_WAIT = 60; /* time in sec */  
+
+    public static final int DEFAULT_MAX_SCAN_WAIT = 60; /* time in sec */
     public static final boolean DEFAULT_MULTI_THREADED = true;
-    
+
     protected final List<AbstractDiscoverableAnnotationHandler> _discoverableAnnotationHandlers = new ArrayList<>();
     protected ClassInheritanceHandler _classInheritanceHandler;
     protected final List<ContainerInitializerAnnotationHandler> _containerInitializerAnnotationHandlers = new ArrayList<>();
-   
+
     protected List<ParserTask> _parserTasks;
 
     protected CounterStatistic _containerPathStats;
     protected CounterStatistic _webInfLibStats;
     protected CounterStatistic _webInfClassesStats;
     protected Pattern _sciExcludePattern;
-    protected List<ServletContainerInitializer> _initializers;    
+    protected List<ServletContainerInitializer> _initializers;
 
     public AnnotationConfiguration()
     {
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class, PlusConfiguration.class);
         addDependents(JettyWebXmlConfiguration.class);
-        protectAndExpose("org.eclipse.jetty.util.annotation.");
+        protectAndExpose("org.eclipse.jetty.util.annotations.");
         hide("org.objectweb.asm.");
     }
-    
+
     /**
      * TimeStatistic
      *
      * Simple class to capture elapsed time of an operation.
-     * 
      */
-    public class TimeStatistic 
+    public class TimeStatistic
     {
         public long _start = 0;
         public long _end = 0;
-        
-        public void start ()
+
+        public void start()
         {
             _start = System.nanoTime();
         }
-        
-        public void end ()
+
+        public void end()
         {
             _end = System.nanoTime();
         }
-        
+
         public long getStart()
         {
             return _start;
         }
-        
-        public long getEnd ()
+
+        public long getEnd()
         {
             return _end;
         }
-        
-        public long getElapsed ()
+
+        public long getElapsed()
         {
-            return (_end > _start?(_end-_start):0);
+            return (_end > _start ? (_end - _start) : 0);
         }
     }
-    
-    
+
     /**
      * ParserTask
      *
      * Task to executing scanning of a resource for annotations.
-     * 
      */
     public class ParserTask implements Callable<Void>
     {
@@ -155,80 +150,79 @@ public class AnnotationConfiguration extends AbstractConfiguration
         protected final Set<? extends Handler> _handlers;
         protected final Resource _resource;
         protected TimeStatistic _stat;
-        
-        public ParserTask (AnnotationParser parser, Set<? extends Handler>handlers, Resource resource)
+
+        public ParserTask(AnnotationParser parser, Set<? extends Handler> handlers, Resource resource)
         {
             _parser = parser;
             _handlers = handlers;
             _resource = resource;
         }
-        
+
         public void setStatistic(TimeStatistic stat)
         {
-           _stat = stat; 
+            _stat = stat;
         }
 
         @Override
         public Void call() throws Exception
-        {            
+        {
             if (_stat != null)
                 _stat.start();
             if (_parser != null)
-                _parser.parse(_handlers, _resource); 
+                _parser.parse(_handlers, _resource);
             if (_stat != null)
                 _stat.end();
             return null;
         }
-        
+
         public TimeStatistic getStatistic()
         {
             return _stat;
         }
-        
+
         public Resource getResource()
         {
             return _resource;
-        }   
+        }
     }
-    
-    
+
     /**
      * ServletContainerInitializerOrdering
-     *
-     * A list of classnames of ServletContainerInitializers in the order in which
-     * they are to be called back. One name only in the list can be "*", which is a
+     * <p>Applies an ordering to the {@link ServletContainerInitializer}s for the context, using
+     * the value of the "org.eclipse.jetty.containerInitializerOrder" context attribute.
+     * The attribute value is a list of classnames of ServletContainerInitializers in the order in which
+     * they are to be called. One name only in the list can be "*", which is a
      * wildcard which matches any other ServletContainerInitializer name not already
-     * matched.
+     * matched.</p>
      */
-    public class ServletContainerInitializerOrdering 
+    public class ServletContainerInitializerOrdering
     {
         private Map<String, Integer> _indexMap = new HashMap<String, Integer>();
         private Integer _star = null;
         private String _ordering = null;
-        
-        public ServletContainerInitializerOrdering (String ordering)
+
+        public ServletContainerInitializerOrdering(String ordering)
         {
             if (ordering != null)
             {
                 _ordering = ordering;
-                
+
                 String[] tmp = StringUtil.csvSplit(ordering);
-                
-                for (int i=0; i<tmp.length; i++)
+
+                for (int i = 0; i < tmp.length; i++)
                 {
                     String s = tmp[i].trim();
-                    _indexMap.put(s, Integer.valueOf(i));
+                    _indexMap.put(s, i);
                     if ("*".equals(s))
                     {
                         if (_star != null)
-                            throw new IllegalArgumentException("Duplicate wildcards in ServletContainerInitializer ordering "+ordering);
-                        _star = Integer.valueOf(i);
+                            throw new IllegalArgumentException("Duplicate wildcards in ServletContainerInitializer ordering " + ordering);
+                        _star = i;
                     }
-                    
                 }
             }
         }
-        
+
         /**
          * @return true if "*" is one of the values.
          */
@@ -236,7 +230,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         {
             return _star != null;
         }
-        
+
         /**
          * @return the index of the "*" element, if it is specified. -1 otherwise.
          */
@@ -246,37 +240,39 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 return -1;
             return _star.intValue();
         }
-        
+
         /**
          * @return true if the ordering contains a single value of "*"
          */
-        public boolean isDefaultOrder ()
+        public boolean isDefaultOrder()
         {
             return (getSize() == 1 && hasWildcard());
         }
-        
+
         /**
          * Get the order index of the given classname
+         *
          * @param name the classname to look up
          * @return the index of the class name (or -1 if not found)
          */
-        public int getIndexOf (String name)
+        public int getIndexOf(String name)
         {
             Integer i = _indexMap.get(name);
             if (i == null)
                 return -1;
             return i.intValue();
         }
-        
+
         /**
          * Get the number of elements of the ordering
+         *
          * @return the size of the index
          */
         public int getSize()
         {
             return _indexMap.size();
         }
-        
+
         @Override
         public String toString()
         {
@@ -285,23 +281,21 @@ public class AnnotationConfiguration extends AbstractConfiguration
             return _ordering;
         }
     }
-    
-    
-    
+
     /**
      * ServletContainerInitializerComparator
      *
      * Comparator impl that orders a set of ServletContainerInitializers according to the
      * list of classnames (optionally containing a "*" wildcard character) established in a
      * ServletContainerInitializerOrdering.
+     *
      * @see ServletContainerInitializerOrdering
      */
     public class ServletContainerInitializerComparator implements Comparator<ServletContainerInitializer>
     {
         private ServletContainerInitializerOrdering _ordering;
-        
-        
-        public ServletContainerInitializerComparator (ServletContainerInitializerOrdering ordering)
+
+        public ServletContainerInitializerComparator(ServletContainerInitializerOrdering ordering)
         {
             _ordering = ordering;
         }
@@ -309,76 +303,73 @@ public class AnnotationConfiguration extends AbstractConfiguration
         @Override
         public int compare(ServletContainerInitializer sci1, ServletContainerInitializer sci2)
         {
-            String c1 = (sci1 != null? sci1.getClass().getName() : null);
-            String c2 = (sci2 != null? sci2.getClass().getName() : null);
+            String c1 = (sci1 != null ? sci1.getClass().getName() : null);
+            String c2 = (sci2 != null ? sci2.getClass().getName() : null);
 
             if (c1 == null && c2 == null)
                 return 0;
-            
+
             int i1 = _ordering.getIndexOf(c1);
             if (i1 < 0 && _ordering.hasWildcard())
                 i1 = _ordering.getWildcardIndex();
             int i2 = _ordering.getIndexOf(c2);
             if (i2 < 0 && _ordering.hasWildcard())
                 i2 = _ordering.getWildcardIndex();
-           
+
             return Integer.compare(i1, i2);
         }
     }
-    
+
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
         String tmp = (String)context.getAttribute(SERVLET_CONTAINER_INITIALIZER_EXCLUSION_PATTERN);
-        _sciExcludePattern = (tmp==null?null:Pattern.compile(tmp));
+        _sciExcludePattern = (tmp == null ? null : Pattern.compile(tmp));
     }
-   
+
     public void addDiscoverableAnnotationHandler(AbstractDiscoverableAnnotationHandler handler)
     {
         _discoverableAnnotationHandlers.add(handler);
     }
 
-    /** 
-     * @see org.eclipse.jetty.webapp.AbstractConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
-     */
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-       context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
+        //handle introspectable annotations (postconstruct,predestroy, multipart etc etc)
+        context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
 
-       if (!context.getMetaData().isMetaDataComplete())
-       {
-           //If metadata isn't complete, if this is a servlet 3 webapp or isConfigDiscovered is true, we need to search for annotations
-           if (context.getServletContext().getEffectiveMajorVersion() >= 3 || context.isConfigurationDiscovered())
-           {
-               _discoverableAnnotationHandlers.add(new WebServletAnnotationHandler(context));
-               _discoverableAnnotationHandlers.add(new WebFilterAnnotationHandler(context));
-               _discoverableAnnotationHandlers.add(new WebListenerAnnotationHandler(context));
-           }
-       }
-       
-       //Regardless of metadata, if there are any ServletContainerInitializers with @HandlesTypes, then we need to scan all the
-       //classes so we can call their onStartup() methods correctly
-       createServletContainerInitializerAnnotationHandlers(context, getNonExcludedInitializers(context));
+        if (!context.getMetaData().isMetaDataComplete())
+        {
+            //If web.xml not metadata-complete, if this is a servlet 3 webapp or above
+            //or configDiscovered is true, we need to search for annotations
+            if (context.getServletContext().getEffectiveMajorVersion() >= 3 || context.isConfigurationDiscovered())
+            {
+                _discoverableAnnotationHandlers.add(new WebServletAnnotationHandler(context));
+                _discoverableAnnotationHandlers.add(new WebFilterAnnotationHandler(context));
+                _discoverableAnnotationHandlers.add(new WebListenerAnnotationHandler(context));
+            }
+        }
 
-       if (!_discoverableAnnotationHandlers.isEmpty() || _classInheritanceHandler != null || !_containerInitializerAnnotationHandlers.isEmpty())
-           scanForAnnotations(context);   
+        //Regardless of metadata, if there are any ServletContainerInitializers with @HandlesTypes, then we need to scan all the
+        //classes so we can call their onStartup() methods correctly
+        createServletContainerInitializerAnnotationHandlers(context, getNonExcludedInitializers(context));
 
-       // Resolve container initializers
-       List<ContainerInitializer> initializers = 
-           (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
-       if (initializers != null && initializers.size()>0)
-       {
-           Map<String, Set<String>> map = ( Map<String, Set<String>>) context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
-           for (ContainerInitializer i : initializers)
-               i.resolveClasses(context,map);
-       } 
+        if (!_discoverableAnnotationHandlers.isEmpty() || _classInheritanceHandler != null || !_containerInitializerAnnotationHandlers.isEmpty())
+            scanForAnnotations(context);
+
+        // Resolve container initializers
+        List<ContainerInitializer> initializers =
+            (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
+        if (initializers != null && initializers.size() > 0)
+        {
+            Map<String, Set<String>> map = (Map<String, Set<String>>)context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
+            for (ContainerInitializer i : initializers)
+            {
+                i.resolveClasses(context, map);
+            }
+        }
     }
 
-
-    /** 
-     * @see org.eclipse.jetty.webapp.AbstractConfiguration#postConfigure(org.eclipse.jetty.webapp.WebAppContext)
-     */
     @Override
     public void postConfigure(WebAppContext context) throws Exception
     {
@@ -391,7 +382,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (initializers != null)
             initializers.clear();
         context.removeAttribute(CONTAINER_INITIALIZERS);
-        
+
         if (_discoverableAnnotationHandlers != null)
             _discoverableAnnotationHandlers.clear();
 
@@ -417,37 +408,33 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
         super.postConfigure(context);
     }
-    
-    
-    
+
     /**
-     * Perform scanning of classes for annotations
-     * 
+     * Perform scanning of classes for discoverable
+     * annotations such as WebServlet/WebFilter/WebListener
+     *
      * @param context the context for the scan
      * @throws Exception if unable to scan
      */
-    protected void scanForAnnotations (WebAppContext context)
-    throws Exception
+    protected void scanForAnnotations(WebAppContext context)
+        throws Exception
     {
         int javaPlatform = 0;
         Object target = context.getAttribute(JavaVersion.JAVA_TARGET_PLATFORM);
-        if (target!=null)
+        if (target != null)
             javaPlatform = Integer.parseInt(target.toString());
         AnnotationParser parser = createAnnotationParser(javaPlatform);
         _parserTasks = new ArrayList<ParserTask>();
 
-        long start = 0; 
-
-
         if (LOG.isDebugEnabled())
-            LOG.debug("Annotation scanning commencing: webxml={}, metadatacomplete={}, configurationDiscovered={}, multiThreaded={}, maxScanWait={}", 
-                      context.getServletContext().getEffectiveMajorVersion(), 
-                      context.getMetaData().isMetaDataComplete(),
-                      context.isConfigurationDiscovered(),
-                      isUseMultiThreading(context),
-                      getMaxScanWait(context));
+            LOG.debug("Annotation scanning commencing: webxml={}, metadatacomplete={}, configurationDiscovered={}, multiThreaded={}, maxScanWait={}",
+                context.getServletContext().getEffectiveMajorVersion(),
+                context.getMetaData().isMetaDataComplete(),
+                context.isConfigurationDiscovered(),
+                isUseMultiThreading(context),
+                getMaxScanWait(context));
 
-             
+        //scan selected jars on the container classpath first
         parseContainerPath(context, parser);
         //email from Rajiv Mordani jsrs 315 7 April 2010
         //    If there is a <others/> then the ordering should be
@@ -455,16 +442,17 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //    In case there is no others then it is
         //          WEB-INF/classes + order of the elements.
         parseWebInfClasses(context, parser);
-        parseWebInfLib (context, parser); 
-        
-        start = System.nanoTime();
-        
+        //scan non-excluded, non medatadata-complete jars in web-inf lib
+        parseWebInfLib(context, parser);
+
+        long start = System.nanoTime();
+
         //execute scan, either effectively synchronously (1 thread only), or asynchronously (limited by number of processors available) 
-        final Semaphore task_limit = (isUseMultiThreading(context)? new Semaphore(ProcessorUtils.availableProcessors()):new Semaphore( 1));
+        final Semaphore task_limit = (isUseMultiThreading(context) ? new Semaphore(ProcessorUtils.availableProcessors()) : new Semaphore(1));
         final CountDownLatch latch = new CountDownLatch(_parserTasks.size());
         final MultiException me = new MultiException();
-    
-        for (final ParserTask p:_parserTasks)
+
+        for (final ParserTask p : _parserTasks)
         {
             task_limit.acquire();
             context.getServer().getThreadPool().execute(new Runnable()
@@ -472,48 +460,48 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 @Override
                 public void run()
                 {
-                   try
-                   {
-                       p.call();
-                   }
-                   catch (Exception e)
-                   {
-                       me.add(e);
-                   }
-                   finally
-                   {
-                       task_limit.release();
-                       latch.countDown();
-                   }
-                }         
+                    try
+                    {
+                        p.call();
+                    }
+                    catch (Exception e)
+                    {
+                        me.add(e);
+                    }
+                    finally
+                    {
+                        task_limit.release();
+                        latch.countDown();
+                    }
+                }
             });
         }
-       
+
         boolean timeout = !latch.await(getMaxScanWait(context), TimeUnit.SECONDS);
-        long elapsedMs = TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS);
-        
-        LOG.info("Scanning elapsed time={}ms",elapsedMs);
-          
+        long elapsedMs = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+
+        LOG.info("Annotation scanning elapsed time={}ms", elapsedMs);
+
         if (LOG.isDebugEnabled())
         {
-            for (ParserTask p:_parserTasks)
+            for (ParserTask p : _parserTasks)
+            {
                 LOG.debug("Scanned {} in {}ms", p.getResource(), TimeUnit.MILLISECONDS.convert(p.getStatistic().getElapsed(), TimeUnit.NANOSECONDS));
+            }
 
             LOG.debug("Scanned {} container path jars, {} WEB-INF/lib jars, {} WEB-INF/classes dirs in {}ms for context {}",
-                    (_containerPathStats==null?-1:_containerPathStats.getTotal()), 
-                    (_webInfLibStats==null?-1:_webInfLibStats.getTotal()), 
-                    (_webInfClassesStats==null?-1:_webInfClassesStats.getTotal()),
-                    elapsedMs,
-                    context);
+                (_containerPathStats == null ? -1 : _containerPathStats.getTotal()),
+                (_webInfLibStats == null ? -1 : _webInfLibStats.getTotal()),
+                (_webInfClassesStats == null ? -1 : _webInfClassesStats.getTotal()),
+                elapsedMs,
+                context);
         }
 
         if (timeout)
             me.add(new Exception("Timeout scanning annotations"));
-        me.ifExceptionThrow();   
+        me.ifExceptionThrow();
     }
 
-    
-    
     /**
      * @param javaPlatform The java platform to scan for.
      * @return a new AnnotationParser. This method can be overridden to use a different implementation of
@@ -523,9 +511,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         return new AnnotationParser(javaPlatform);
     }
-    
+
     /**
      * Check if we should use multiple threads to scan for annotations or not
+     *
      * @param context the context of the multi threaded setting
      * @return true if multi threading is enabled on the context, server, or via a System property.
      * @see #MULTI_THREADED
@@ -548,16 +537,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
         return Boolean.parseBoolean(System.getProperty(MULTI_THREADED, Boolean.toString(DEFAULT_MULTI_THREADED)));
     }
 
-   
-    
     /**
      * Work out how long we should wait for the async scanning to occur.
-     * 
+     *
      * @param context the context of the max scan wait setting
      * @return the max scan wait setting on the context, or server, or via a System property.
      * @see #MAX_SCAN_WAIT
      */
-    protected int getMaxScanWait (WebAppContext context)
+    protected int getMaxScanWait(WebAppContext context)
     {
         //try context attribute to get max time in sec to wait for scan completion
         Object o = context.getAttribute(MAX_SCAN_WAIT);
@@ -574,18 +561,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //try system property to get max time in sec to wait for scan completion
         return Integer.getInteger(MAX_SCAN_WAIT, DEFAULT_MAX_SCAN_WAIT).intValue();
     }
-    
-    /** 
-     * @see org.eclipse.jetty.webapp.AbstractConfiguration#cloneConfigure(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.webapp.WebAppContext)
-     */
+
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
         context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
     }
 
-    public void createServletContainerInitializerAnnotationHandlers (WebAppContext context, List<ServletContainerInitializer> scis)
-    throws Exception
+    public void createServletContainerInitializerAnnotationHandlers(WebAppContext context, List<ServletContainerInitializer> scis)
+        throws Exception
     {
         if (scis == null || scis.isEmpty())
             return; // nothing to do
@@ -598,14 +582,17 @@ public class AnnotationConfiguration extends AbstractConfiguration
             HandlesTypes annotation = service.getClass().getAnnotation(HandlesTypes.class);
             ContainerInitializer initializer = null;
             if (annotation != null)
-            {    
+            {
                 //There is a HandlesTypes annotation on the on the ServletContainerInitializer
                 Class<?>[] classes = annotation.value();
                 if (classes != null)
                 {
 
-                    if (LOG.isDebugEnabled()){LOG.debug("HandlesTypes {} on initializer {}",Arrays.asList(classes),service.getClass());}
-                    
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("HandlesTypes {} on initializer {}", Arrays.asList(classes), service.getClass());
+                    }
+
                     initializer = new ContainerInitializer(service, classes);
 
                     //If we haven't already done so, we need to register a handler that will
@@ -618,33 +605,35 @@ public class AnnotationConfiguration extends AbstractConfiguration
                         _classInheritanceHandler = new ClassInheritanceHandler(map);
                     }
 
-                    for (Class<?> c: classes)
+                    for (Class<?> c : classes)
                     {
                         //The value of one of the HandlesTypes classes is actually an Annotation itself so
                         //register a handler for it
                         if (c.isAnnotation())
                         {
-                            if (LOG.isDebugEnabled()) LOG.debug("Registering annotation handler for "+c.getName());
-                           _containerInitializerAnnotationHandlers.add(new ContainerInitializerAnnotationHandler(initializer, c));
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Registering annotation handler for " + c.getName());
+                            _containerInitializerAnnotationHandlers.add(new ContainerInitializerAnnotationHandler(initializer, c));
                         }
                     }
                 }
                 else
                 {
                     initializer = new ContainerInitializer(service, null);
-                    if (LOG.isDebugEnabled()) LOG.debug("No classes in HandlesTypes on initializer "+service.getClass());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("No classes in HandlesTypes on initializer " + service.getClass());
                 }
             }
             else
             {
                 initializer = new ContainerInitializer(service, null);
-                if (LOG.isDebugEnabled()) LOG.debug("No HandlesTypes annotation on initializer "+service.getClass());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("No HandlesTypes annotation on initializer " + service.getClass());
             }
-            
+
             initializers.add(initializer);
         }
-        
-        
+
         //add a bean to the context which will call the servletcontainerinitializers when appropriate
         ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(CONTAINER_INITIALIZER_STARTER);
         if (starter != null)
@@ -654,95 +643,95 @@ public class AnnotationConfiguration extends AbstractConfiguration
         context.addBean(starter, true);
     }
 
-    public Resource getJarFor (ServletContainerInitializer service) 
-    throws MalformedURLException, IOException
+    public Resource getJarFor(ServletContainerInitializer service)
+        throws MalformedURLException, IOException
     {
         URI uri = TypeUtil.getLocationOfClass(service.getClass());
         if (uri == null)
             return null;
         return Resource.newResource(uri);
     }
-    
+
     /**
      * Check to see if the ServletContainerIntializer loaded via the ServiceLoader came
      * from a jar that is excluded by the fragment ordering. See ServletSpec 3.0 p.85.
-     * 
+     *
      * @param context the context for the jars
      * @param sci the servlet container initializer
-     * @param sciResource  the resource for the servlet container initializer
+     * @param sciResource the resource for the servlet container initializer
      * @return true if excluded
      * @throws Exception if unable to determine exclusion
      */
-    public boolean isFromExcludedJar (WebAppContext context, ServletContainerInitializer sci, Resource sciResource)
-    throws Exception
+    public boolean isFromExcludedJar(WebAppContext context, ServletContainerInitializer sci, Resource sciResource)
+        throws Exception
     {
         if (sci == null)
             throw new IllegalArgumentException("ServletContainerInitializer null");
         if (context == null)
             throw new IllegalArgumentException("WebAppContext null");
-        
+
         //if we don't know where its from it can't be excluded
         if (sciResource == null)
         {
-            if (LOG.isDebugEnabled()) 
+            if (LOG.isDebugEnabled())
                 LOG.debug("!Excluded {} null resource", sci);
-            return false; 
+            return false;
         }
-        
+
         //A ServletContainerInitialier that came from WEB-INF/classes or equivalent cannot be excluded by an ordering
         if (isFromWebInfClasses(context, sciResource))
         {
-            if (LOG.isDebugEnabled()) 
+            if (LOG.isDebugEnabled())
                 LOG.debug("!Excluded {} from web-inf/classes", sci);
             return false;
         }
-                
+
         //A ServletContainerInitializer that came from the container's classpath cannot be excluded by an ordering
         //of WEB-INF/lib jars
         if (isFromContainerClassPath(context, sci))
         {
-            if (LOG.isDebugEnabled()) 
+            if (LOG.isDebugEnabled())
                 LOG.debug("!Excluded {} from container classpath", sci);
             return false;
         }
-        
+
         //If no ordering, nothing is excluded
-        if (context.getMetaData().getOrdering() == null)
+        if (!context.getMetaData().isOrdered())
         {
-            if (LOG.isDebugEnabled()) 
+            if (LOG.isDebugEnabled())
                 LOG.debug("!Excluded {} no ordering", sci);
             return false;
         }
-        
-        List<Resource> orderedJars = context.getMetaData().getOrderedWebInfJars();
+
+        List<Resource> orderedJars = context.getMetaData().getWebInfResources(true);
 
         //there is an ordering, but there are no jars resulting from the ordering, everything excluded
         if (orderedJars.isEmpty())
         {
-            if (LOG.isDebugEnabled()) 
+            if (LOG.isDebugEnabled())
                 LOG.debug("Excluded {} empty ordering", sci);
             return true;
         }
 
         //Check if it is excluded by an ordering
         URI loadingJarURI = sciResource.getURI();
-        boolean found = false;
-        Iterator<Resource> itor = orderedJars.iterator();
-        while (!found && itor.hasNext())
+        boolean included = false;
+        for (Resource r : orderedJars)
         {
-            Resource r = itor.next();
-            found = r.getURI().equals(loadingJarURI);
+            included = r.getURI().equals(loadingJarURI);
+            if (included)
+                break;
         }
 
-        if (LOG.isDebugEnabled()) 
-            LOG.debug("{}Excluded {} found={}",found?"!":"",sci,found);
-        return !found;
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}Excluded {} found={}", included ? "!" : "", sci, included);
+        return !included;
     }
 
     /**
-     * Test if the ServletContainerIntializer is excluded by the 
+     * Test if the ServletContainerIntializer is excluded by the
      * o.e.j.containerInitializerExclusionPattern
-     * 
+     *
      * @param sci the ServletContainerIntializer
      * @return true if the ServletContainerIntializer is excluded
      */
@@ -751,36 +740,35 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //no exclusion pattern, no SCI is excluded by it
         if (_sciExcludePattern == null)
             return false;
-        
+
         //test if name of class matches the regex
-        if (LOG.isDebugEnabled()) 
-            LOG.debug("Checking {} against containerInitializerExclusionPattern",sci.getClass().getName());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Checking {} against containerInitializerExclusionPattern", sci.getClass().getName());
         return _sciExcludePattern.matcher(sci.getClass().getName()).matches();
     }
-    
-    
+
     /**
      * Test if the ServletContainerInitializer is from the container classpath
-     * 
+     *
      * @param context the context for the webapp classpath
      * @param sci the ServletContainerIntializer
      * @return true if ServletContainerIntializer is from container classpath
      */
-    public boolean isFromContainerClassPath (WebAppContext context, ServletContainerInitializer sci)
+    public boolean isFromContainerClassPath(WebAppContext context, ServletContainerInitializer sci)
     {
         if (sci == null)
             return false;
-        
+
         ClassLoader sciLoader = sci.getClass().getClassLoader();
-        
+
         //if loaded by bootstrap loader, then its the container classpath
-        if ( sciLoader == null)
+        if (sciLoader == null)
             return true;
-        
+
         //if there is no context classloader, then its the container classpath
         if (context.getClassLoader() == null)
             return true;
-        
+
         ClassLoader loader = sciLoader;
         while (loader != null)
         {
@@ -789,23 +777,23 @@ public class AnnotationConfiguration extends AbstractConfiguration
             else
                 loader = loader.getParent();
         }
-        
+
         return true;
     }
-    
-    /** 
+
+    /**
      * Test if the ServletContainerInitializer is from WEB-INF/classes
-     * 
+     *
      * @param context the webapp to test
      * @param sci a Resource representing the SCI
      * @return true if the sci Resource is inside a WEB-INF/classes directory, false otherwise
      */
-    public boolean isFromWebInfClasses (WebAppContext context, Resource sci)
+    public boolean isFromWebInfClasses(WebAppContext context, Resource sci)
     {
-        for (Resource dir : context.getMetaData().getWebInfClassesDirs())
-        {                
+        for (Resource dir : context.getMetaData().getWebInfClassesResources())
+        {
             if (dir.equals(sci))
-            { 
+            {
                 return true;
             }
         }
@@ -814,45 +802,48 @@ public class AnnotationConfiguration extends AbstractConfiguration
 
     /**
      * Get SCIs that are not excluded from consideration
-     * @param context the web app context 
+     *
+     * @param context the web app context
      * @return the list of non-excluded servlet container initializers
-     * @throws Exception if unable to get list 
+     * @throws Exception if unable to get list
      */
-    public List<ServletContainerInitializer> getNonExcludedInitializers (WebAppContext context)
-    throws Exception
+    public List<ServletContainerInitializer> getNonExcludedInitializers(WebAppContext context)
+        throws Exception
     {
         ArrayList<ServletContainerInitializer> nonExcludedInitializers = new ArrayList<ServletContainerInitializer>();
-      
+
         //We use the ServiceLoader mechanism to find the ServletContainerInitializer classes to inspect
         long start = 0;
         if (LOG.isDebugEnabled())
             start = System.nanoTime();
-        ServiceLoader<ServletContainerInitializer> loader = ServiceLoader.load(ServletContainerInitializer.class);
+        List<ServletContainerInitializer> scis = TypeUtil.serviceProviderStream(ServiceLoader.load(ServletContainerInitializer.class)).flatMap(provider ->
+        {
+            try
+            {
+                return Stream.of(provider.get());
+            }
+            catch (Error e)
+            {
+                // Probably a SCI discovered on the system classpath that is hidden by the context classloader
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Error: {} for {}", e.getMessage(), context, e);
+                else
+                    LOG.info("Error: {} for {}", e.getMessage(), context);
+                return Stream.of();
+            }
+        }).collect(Collectors.toList());
+
         if (LOG.isDebugEnabled())
-            LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime()-start), TimeUnit.NANOSECONDS)));
-        
-        Map<ServletContainerInitializer,Resource> sciResourceMap = new HashMap<ServletContainerInitializer,Resource>();
+            LOG.debug("Service loaders found in {}ms", (TimeUnit.MILLISECONDS.convert((System.nanoTime() - start), TimeUnit.NANOSECONDS)));
+
+        Map<ServletContainerInitializer, Resource> sciResourceMap = new HashMap<>();
         ServletContainerInitializerOrdering initializerOrdering = getInitializerOrdering(context);
 
         //Get initial set of SCIs that aren't from excluded jars or excluded by the containerExclusionPattern, or excluded
         //because containerInitializerOrdering omits it
-        Iterator<ServletContainerInitializer> iter = loader.iterator();
-        while(iter.hasNext())
-        { 
-            ServletContainerInitializer sci;
-            try
-            {
-                sci=iter.next();
-            }
-            catch(Error e)
-            {
-                // Probably a SCI discovered on the system classpath that is hidden by the context classloader
-                LOG.info("Error: "+e.getMessage()+" for "+context);
-                LOG.debug(e);
-                continue;
-            }
-            
-            if (matchesExclusionPattern(sci)) 
+        for (ServletContainerInitializer sci : scis)
+        {
+            if (matchesExclusionPattern(sci))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} excluded by pattern", sci);
@@ -860,23 +851,22 @@ public class AnnotationConfiguration extends AbstractConfiguration
             }
 
             Resource sciResource = getJarFor(sci);
-            if (isFromExcludedJar(context, sci, sciResource)) 
-            { 
+            if (isFromExcludedJar(context, sci, sciResource))
+            {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} is from excluded jar", sci);
                 continue;
             }
-            
+
             //check containerInitializerOrdering doesn't exclude it
             String name = sci.getClass().getName();
-            if (initializerOrdering != null
-                && (!initializerOrdering.hasWildcard() && initializerOrdering.getIndexOf(name) < 0))
+            if (initializerOrdering != null && (!initializerOrdering.hasWildcard() && initializerOrdering.getIndexOf(name) < 0))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} is excluded by ordering", sci);
                 continue;
             }
-            
+
             sciResourceMap.put(sci, sciResource);
         }
 
@@ -884,7 +874,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (initializerOrdering != null && !initializerOrdering.isDefaultOrder())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Ordering ServletContainerInitializers with "+initializerOrdering);
+                LOG.debug("Ordering ServletContainerInitializers with {}", initializerOrdering);
 
             //There is an ordering that is not just "*".
             //Arrange ServletContainerInitializers according to the ordering of classnames given, irrespective of coming from container or webapp classpaths
@@ -896,12 +886,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //No jetty-specific ordering specified, or just the wildcard value "*" specified.
             //Fallback to ordering the ServletContainerInitializers according to:
             //container classpath first, WEB-INF/classes then WEB-INF/lib (obeying any web.xml jar ordering)
-            
+
             //First add in all SCIs that can't be excluded
             int lastContainerSCI = -1;
-            for (Map.Entry<ServletContainerInitializer, Resource> entry:sciResourceMap.entrySet())
+            for (Map.Entry<ServletContainerInitializer, Resource> entry : sciResourceMap.entrySet())
             {
-                if (entry.getKey().getClass().getClassLoader()==context.getClassLoader().getParent())
+                if (entry.getKey().getClass().getClassLoader() == context.getClassLoader().getParent())
                 {
                     nonExcludedInitializers.add(++lastContainerSCI, entry.getKey()); //add all container SCIs before any webapp SCIs
                 }
@@ -911,20 +901,22 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 }
                 else
                 {
-                    for (Resource dir : context.getMetaData().getWebInfClassesDirs())
-                    {                
+                    for (Resource dir : context.getMetaData().getWebInfClassesResources())
+                    {
                         if (dir.equals(entry.getValue()))//from WEB-INF/classes so can't be ordered/excluded
-                        { 
+                        {
                             nonExcludedInitializers.add(entry.getKey());
                         }
                     }
                 }
             }
-            
+
             //throw out the ones we've already accounted for
-            for (ServletContainerInitializer s:nonExcludedInitializers)
+            for (ServletContainerInitializer s : nonExcludedInitializers)
+            {
                 sciResourceMap.remove(s);
-            
+            }
+
             if (context.getMetaData().getOrdering() == null)
             {
                 if (LOG.isDebugEnabled())
@@ -935,20 +927,20 @@ public class AnnotationConfiguration extends AbstractConfiguration
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Ordering ServletContainerInitializers with ordering {}",context.getMetaData().getOrdering());
-                
+                    LOG.debug("Ordering ServletContainerInitializers with ordering {}", context.getMetaData().getOrdering());
+
                 //add SCIs according to the ordering of its containing jar
-                for (Resource webInfJar:context.getMetaData().getOrderedWebInfJars())
+                for (Resource webInfJar : context.getMetaData().getWebInfResources(true))
                 {
-                    for (Map.Entry<ServletContainerInitializer, Resource> entry:sciResourceMap.entrySet())
+                    for (Map.Entry<ServletContainerInitializer, Resource> entry : sciResourceMap.entrySet())
                     {
-                      if (webInfJar.equals(entry.getValue()))
+                        if (webInfJar.equals(entry.getValue()))
                             nonExcludedInitializers.add(entry.getKey());
                     }
                 }
             }
         }
-        
+
         //final pass over the non-excluded SCIs if the webapp version is < 3, in which case 
         //we will only call SCIs that are on the server's classpath
         if (context.getServletContext().getEffectiveMajorVersion() < 3 && !context.isConfigurationDiscovered())
@@ -956,56 +948,56 @@ public class AnnotationConfiguration extends AbstractConfiguration
             ListIterator<ServletContainerInitializer> it = nonExcludedInitializers.listIterator();
             while (it.hasNext())
             {
-                ServletContainerInitializer sci = it.next(); 
+                ServletContainerInitializer sci = it.next();
                 if (!isFromContainerClassPath(context, sci))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Ignoring SCI {}: old web.xml version {}.{}", sci.getClass().getName(),
-                                  context.getServletContext().getEffectiveMajorVersion(), 
-                                  context.getServletContext().getEffectiveMinorVersion());
+                            context.getServletContext().getEffectiveMajorVersion(),
+                            context.getServletContext().getEffectiveMinorVersion());
                     it.remove();
                 }
             }
         }
 
-        if (LOG.isDebugEnabled()) 
+        if (LOG.isDebugEnabled())
         {
-            int i=0;
-            for (ServletContainerInitializer sci:nonExcludedInitializers)
-                LOG.debug("ServletContainerInitializer: {} {} from {}",(++i), sci.getClass().getName(), sciResourceMap.get(sci));
-        }    
-        
+            int i = 0;
+            for (ServletContainerInitializer sci : nonExcludedInitializers)
+            {
+                LOG.debug("ServletContainerInitializer: {} {} from {}", (++i), sci.getClass().getName(), sciResourceMap.get(sci));
+            }
+        }
+
         return nonExcludedInitializers;
     }
 
-
     /**
      * Jetty-specific extension that allows an ordering to be applied across ALL ServletContainerInitializers.
-     * 
-     * @param context the context for the initializer ordering configuration 
+     *
+     * @param context the context for the initializer ordering configuration
      * @return the ordering of the ServletContainerIntializer's
      */
-    public ServletContainerInitializerOrdering getInitializerOrdering (WebAppContext context)
+    public ServletContainerInitializerOrdering getInitializerOrdering(WebAppContext context)
     {
         if (context == null)
             return null;
-        
+
         String tmp = (String)context.getAttribute(SERVLET_CONTAINER_INITIALIZER_ORDER);
-        if (tmp == null || "".equals(tmp.trim()))
+        if (StringUtil.isBlank(tmp))
             return null;
-        
+
         return new ServletContainerInitializerOrdering(tmp);
     }
 
-
     /**
      * Scan jars on container path.
-     * 
+     *
      * @param context the context for the scan
      * @param parser the parser to scan with
      * @throws Exception if unable to scan
      */
-    public void parseContainerPath (final WebAppContext context, final AnnotationParser parser) throws Exception
+    public void parseContainerPath(final WebAppContext context, final AnnotationParser parser) throws Exception
     {
         //always parse for discoverable annotations as well as class hierarchy and servletcontainerinitializer related annotations
         final Set<Handler> handlers = new HashSet<Handler>();
@@ -1017,46 +1009,42 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (LOG.isDebugEnabled())
             _containerPathStats = new CounterStatistic();
 
+        //scan the container classpath jars that were selected by
+        //filtering in MetaInfConfiguration
         for (Resource r : context.getMetaData().getContainerResources())
         {
-            //queue it up for scanning if using multithreaded mode
             if (_parserTasks != null)
             {
                 ParserTask task = new ParserTask(parser, handlers, r);
-                _parserTasks.add(task);  
+                _parserTasks.add(task);
                 if (LOG.isDebugEnabled())
                 {
                     _containerPathStats.increment();
                     task.setStatistic(new TimeStatistic());
                 }
             }
-        } 
+        }
     }
 
-
     /**
-     * Scan jars in WEB-INF/lib
-     * 
+     * Scan jars in WEB-INF/lib.
+     *
+     * Only jars selected by MetaInfConfiguration, and that are not excluded
+     * by an ordering will be considered.
+     *
      * @param context the context for the scan
      * @param parser the annotation parser to use
      * @throws Exception if unable to scan and/or parse
      */
-    public void parseWebInfLib (final WebAppContext context, final AnnotationParser parser) throws Exception
-    {   
-        List<FragmentDescriptor> frags = context.getMetaData().getFragments();
-
+    public void parseWebInfLib(final WebAppContext context, final AnnotationParser parser) throws Exception
+    {
         //email from Rajiv Mordani jsrs 315 7 April 2010
         //jars that do not have a web-fragment.xml are still considered fragments
         //they have to participate in the ordering
-        ArrayList<URI> webInfUris = new ArrayList<URI>();
 
-        List<Resource> jars = null;
-
-        if (context.getMetaData().getOrdering() != null)
-            jars = context.getMetaData().getOrderedWebInfJars();
-        else
-            //No ordering just use the jars in any order
-            jars = context.getMetaData().getWebInfJars();
+        //if there is an ordering, the ordered jars should be used.
+        //If there is no ordering, jars will be unordered.
+        List<Resource> jars = context.getMetaData().getWebInfResources(context.getMetaData().isOrdered());
 
         if (LOG.isDebugEnabled())
         {
@@ -1069,13 +1057,13 @@ public class AnnotationConfiguration extends AbstractConfiguration
             //for each jar, we decide which set of annotations we need to parse for
             final Set<Handler> handlers = new HashSet<Handler>();
 
-            FragmentDescriptor f = getFragmentFromJar(r, frags);
+            FragmentDescriptor f = context.getMetaData().getFragmentDescriptorForJar(r);
 
             //if its from a fragment jar that is metadata complete, we should skip scanning for @webservlet etc
             // but yet we still need to do the scanning for the classes on behalf of  the servletcontainerinitializers
             //if a jar has no web-fragment.xml we scan it (because it is not excluded by the ordering)
             //or if it has a fragment we scan it if it is not metadata complete
-            if (f == null || !isMetaDataComplete(f) || _classInheritanceHandler != null ||  !_containerInitializerAnnotationHandlers.isEmpty())
+            if (f == null || !WebDescriptor.isMetaDataComplete(f) || _classInheritanceHandler != null || !_containerInitializerAnnotationHandlers.isEmpty())
             {
                 //register the classinheritance handler if there is one
                 if (_classInheritanceHandler != null)
@@ -1085,13 +1073,13 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 handlers.addAll(_containerInitializerAnnotationHandlers);
 
                 //only register the discoverable annotation handlers if this fragment is not metadata complete, or has no fragment descriptor
-                if (f == null || !isMetaDataComplete(f))
+                if (f == null || !WebDescriptor.isMetaDataComplete(f))
                     handlers.addAll(_discoverableAnnotationHandlers);
 
                 if (_parserTasks != null)
                 {
-                    ParserTask task = new ParserTask(parser, handlers,r);
-                    _parserTasks.add (task);
+                    ParserTask task = new ParserTask(parser, handlers, r);
+                    _parserTasks.add(task);
                     if (LOG.isDebugEnabled())
                     {
                         _webInfLibStats.increment();
@@ -1102,16 +1090,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
     }
 
-
     /**
-     * Scan classes in WEB-INF/classes
-     * 
+     * Scan classes in WEB-INF/classes.
+     *
      * @param context the context for the scan
      * @param parser the annotation parser to use
      * @throws Exception if unable to scan and/or parse
      */
-    public void parseWebInfClasses (final WebAppContext context, final AnnotationParser parser)
-            throws Exception
+    public void parseWebInfClasses(final WebAppContext context, final AnnotationParser parser)
+        throws Exception
     {
         Set<Handler> handlers = new HashSet<Handler>();
         handlers.addAll(_discoverableAnnotationHandlers);
@@ -1122,7 +1109,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (LOG.isDebugEnabled())
             _webInfClassesStats = new CounterStatistic();
 
-        for (Resource dir : context.getMetaData().getWebInfClassesDirs())
+        for (Resource dir : context.getMetaData().getWebInfClassesResources())
         {
             if (_parserTasks != null)
             {
@@ -1137,47 +1124,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
     }
 
-
-
-    /**
-     * Get the web-fragment.xml from a jar
-     * 
-     * @param jar the jar to look in for a fragment
-     * @param frags the fragments previously found
-     * @return true if the fragment if found, or null of not found
-     * @throws Exception if unable to determine the the fragment contains
-     */
-    public FragmentDescriptor getFragmentFromJar (Resource jar,  List<FragmentDescriptor> frags)
-    throws Exception
-    {
-        //check if the jar has a web-fragment.xml
-        FragmentDescriptor d = null;
-        for (FragmentDescriptor frag: frags)
-        {
-            Resource fragResource = frag.getResource(); //eg jar:file:///a/b/c/foo.jar!/META-INF/web-fragment.xml
-            if (Resource.isContainedIn(fragResource,jar))
-            {
-                d = frag;
-                break;
-            }
-        }
-        return d;
-    }
-
-    public boolean isMetaDataComplete (WebDescriptor d)
-    {
-        return (d!=null && d.getMetaDataComplete() == MetaDataComplete.True);
-    }
-
     public static class ClassInheritanceMap extends ConcurrentHashMap<String, Set<String>>
     {
-        
         @Override
         public String toString()
         {
-            return String.format("ClassInheritanceMap@%x{size=%d}",hashCode(),size());
+            return String.format("ClassInheritanceMap@%x{size=%d}", hashCode(), size());
         }
     }
 }
-
-

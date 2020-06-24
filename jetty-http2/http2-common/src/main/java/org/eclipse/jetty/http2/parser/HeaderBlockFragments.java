@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.parser;
@@ -21,20 +21,33 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.io.ByteBufferPool;
 
 public class HeaderBlockFragments
 {
+    private final ByteBufferPool byteBufferPool;
     private PriorityFrame priorityFrame;
     private boolean endStream;
     private int streamId;
     private ByteBuffer storage;
+
+    public HeaderBlockFragments(ByteBufferPool byteBufferPool)
+    {
+        this.byteBufferPool = byteBufferPool;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return byteBufferPool;
+    }
 
     public void storeFragment(ByteBuffer fragment, int length, boolean last)
     {
         if (storage == null)
         {
             int space = last ? length : length * 2;
-            storage = ByteBuffer.allocate(space);
+            storage = byteBufferPool.acquire(space, fragment.isDirect());
+            storage.clear();
         }
 
         // Grow the storage if necessary.
@@ -42,9 +55,11 @@ public class HeaderBlockFragments
         {
             int space = last ? length : length * 2;
             int capacity = storage.position() + space;
-            ByteBuffer newStorage = ByteBuffer.allocate(capacity);
+            ByteBuffer newStorage = byteBufferPool.acquire(capacity, storage.isDirect());
+            newStorage.clear();
             storage.flip();
             newStorage.put(storage);
+            byteBufferPool.release(storage);
             storage = newStorage;
         }
 

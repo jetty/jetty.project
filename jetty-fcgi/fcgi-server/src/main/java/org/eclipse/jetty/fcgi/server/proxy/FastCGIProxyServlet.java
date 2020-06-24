@@ -1,30 +1,32 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
+import java.util.stream.Stream;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -45,24 +47,26 @@ import org.eclipse.jetty.util.ProcessorUtils;
 /**
  * Specific implementation of {@link org.eclipse.jetty.proxy.AsyncProxyServlet.Transparent} for FastCGI.
  * <p>
- * This servlet accepts a HTTP request and transforms it into a FastCGI request
+ * This servlet accepts an HTTP request and transforms it into a FastCGI request
  * that is sent to the FastCGI server specified in the {@code proxyTo}
  * init-param.
  * <p>
- * This servlet accepts two additional init-params:
+ * This servlet accepts these additional {@code init-param}s:
  * <ul>
- *     <li>{@code scriptRoot}, mandatory, that must be set to the directory where
- *     the application that must be served via FastCGI is installed and corresponds to
- *     the FastCGI DOCUMENT_ROOT parameter</li>
- *     <li>{@code scriptPattern}, optional, defaults to {@code (.+?\.php)},
- *     that specifies a regular expression with at least 1 and at most 2 groups that specify
- *     respectively:
- *     <ul>
- *         <li>the FastCGI SCRIPT_NAME parameter</li>
- *         <li>the FastCGI PATH_INFO parameter</li>
- *     </ul></li>
- *     <li>{@code fastCGI.HTTPS}, optional, defaults to false, that specifies whether
- *     to force the FastCGI {@code HTTPS} parameter to the value {@code on}</li>
+ * <li>{@code scriptRoot}, mandatory, that must be set to the directory where
+ * the application that must be served via FastCGI is installed and corresponds to
+ * the FastCGI DOCUMENT_ROOT parameter</li>
+ * <li>{@code scriptPattern}, optional, defaults to {@code (.+?\.php)},
+ * that specifies a regular expression with at least 1 and at most 2 groups that specify
+ * respectively:
+ * <ul>
+ * <li>the FastCGI SCRIPT_NAME parameter</li>
+ * <li>the FastCGI PATH_INFO parameter</li>
+ * </ul></li>
+ * <li>{@code fastCGI.HTTPS}, optional, defaults to false, that specifies whether
+ * to force the FastCGI {@code HTTPS} parameter to the value {@code on}</li>
+ * <li>{@code fastCGI.envNames}, optional, a comma separated list of environment variable
+ * names read via {@link System#getenv(String)} that are forwarded as FastCGI parameters.</li>
  * </ul>
  *
  * @see TryFilesFilter
@@ -74,6 +78,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
     public static final String ORIGINAL_URI_ATTRIBUTE_INIT_PARAM = "originalURIAttribute";
     public static final String ORIGINAL_QUERY_ATTRIBUTE_INIT_PARAM = "originalQueryAttribute";
     public static final String FASTCGI_HTTPS_INIT_PARAM = "fastCGI.HTTPS";
+    public static final String FASTCGI_ENV_NAMES_INIT_PARAM = "fastCGI.envNames";
 
     private static final String REMOTE_ADDR_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".remoteAddr";
     private static final String REMOTE_PORT_ATTRIBUTE = FastCGIProxyServlet.class.getName() + ".remotePort";
@@ -88,6 +93,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
     private String originalURIAttribute;
     private String originalQueryAttribute;
     private boolean fcgiHTTPS;
+    private Set<String> fcgiEnvNames;
 
     @Override
     public void init() throws ServletException
@@ -103,6 +109,15 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         originalQueryAttribute = getInitParameter(ORIGINAL_QUERY_ATTRIBUTE_INIT_PARAM);
 
         fcgiHTTPS = Boolean.parseBoolean(getInitParameter(FASTCGI_HTTPS_INIT_PARAM));
+
+        fcgiEnvNames = Collections.emptySet();
+        String envNames = getInitParameter(FASTCGI_ENV_NAMES_INIT_PARAM);
+        if (envNames != null)
+        {
+            fcgiEnvNames = Stream.of(envNames.split(","))
+                .map(String::trim)
+                .collect(Collectors.toSet());
+        }
     }
 
     @Override
@@ -112,11 +127,11 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         String scriptRoot = config.getInitParameter(SCRIPT_ROOT_INIT_PARAM);
         if (scriptRoot == null)
             throw new IllegalArgumentException("Mandatory parameter '" + SCRIPT_ROOT_INIT_PARAM + "' not configured");
-        int selectors = Math.max( 1, ProcessorUtils.availableProcessors() / 2);
+        int selectors = Math.max(1, ProcessorUtils.availableProcessors() / 2);
         String value = config.getInitParameter("selectors");
         if (value != null)
             selectors = Integer.parseInt(value);
-        return new HttpClient(new ProxyHttpClientTransportOverFCGI(selectors, scriptRoot), null);
+        return new HttpClient(new ProxyHttpClientTransportOverFCGI(selectors, scriptRoot));
     }
 
     @Override
@@ -165,14 +180,16 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             proxyRequest.attribute(REQUEST_QUERY_ATTRIBUTE, originalQuery);
 
         // If the Host header is missing, add it.
-        if (!proxyRequest.getHeaders().containsKey(HttpHeader.HOST.asString()))
+        if (!proxyRequest.getHeaders().contains(HttpHeader.HOST))
         {
-            String host = request.getServerName();
+            String server = request.getServerName();
             int port = request.getServerPort();
             if (!getHttpClient().isDefaultPort(request.getScheme(), port))
-                host += ":" + port;
-            proxyRequest.header(HttpHeader.HOST, host);
-            proxyRequest.header(HttpHeader.X_FORWARDED_HOST, host);
+                server += ":" + port;
+            String host = server;
+            proxyRequest.headers(headers -> headers
+                .put(HttpHeader.HOST, host)
+                .put(HttpHeader.X_FORWARDED_HOST, host));
         }
 
         // PHP does not like multiple Cookie headers, coalesce into one.
@@ -187,15 +204,21 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
                 String cookie = cookies.get(i);
                 builder.append(cookie);
             }
-            proxyRequest.header(HttpHeader.COOKIE, null);
-            proxyRequest.header(HttpHeader.COOKIE, builder.toString());
+            proxyRequest.headers(headers -> headers.put(HttpHeader.COOKIE, builder.toString()));
         }
 
         super.sendProxyRequest(request, proxyResponse, proxyRequest);
     }
 
-    protected void customizeFastCGIHeaders(Request proxyRequest, HttpFields fastCGIHeaders)
+    protected void customizeFastCGIHeaders(Request proxyRequest, HttpFields.Mutable fastCGIHeaders)
     {
+        for (String envName : fcgiEnvNames)
+        {
+            String envValue = System.getenv(envName);
+            if (envValue != null)
+                fastCGIHeaders.put(envName, envValue);
+        }
+
         fastCGIHeaders.remove("HTTP_PROXY");
 
         fastCGIHeaders.put(FCGI.Headers.REMOTE_ADDR, (String)proxyRequest.getAttributes().get(REMOTE_ADDR_ATTRIBUTE));
@@ -249,7 +272,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         }
 
         @Override
-        protected void customize(Request request, HttpFields fastCGIHeaders)
+        protected void customize(Request request, HttpFields.Mutable fastCGIHeaders)
         {
             super.customize(request, fastCGIHeaders);
             customizeFastCGIHeaders(request, fastCGIHeaders);
@@ -257,11 +280,13 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             {
                 TreeMap<String, String> fcgi = new TreeMap<>();
                 for (HttpField field : fastCGIHeaders)
+                {
                     fcgi.put(field.getName(), field.getValue());
+                }
                 String eol = System.lineSeparator();
-                _log.debug("FastCGI variables{}{}", eol, fcgi.entrySet().stream()
-                        .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
-                        .collect(Collectors.joining(eol)));
+                _log.debug("FastCGI variables {}{}", eol, fcgi.entrySet().stream()
+                    .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
+                    .collect(Collectors.joining(eol)));
             }
         }
     }

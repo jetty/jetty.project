@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -23,17 +23,16 @@ import java.io.InterruptedIOException;
 import java.io.PrintWriter;
 import java.util.Formatter;
 import java.util.Locale;
-
 import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.Callback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-
-/* ------------------------------------------------------------ */
-/** Specialized PrintWriter for servlet Responses
+/**
+ * Specialized PrintWriter for servlet Responses
  * <p>An instance of ResponseWriter is the {@link PrintWriter} subclass returned by {@link Response#getWriter()}.
  * It differs from the standard {@link PrintWriter} in that:<ul>
  * <li>It does not support autoflush</li>
@@ -41,15 +40,14 @@ import org.eclipse.jetty.util.log.Logger;
  * <li>If a write or print method is called while {@link #checkError()}  returns true, then a {@link RuntimeIOException} is thrown to stop needless iterations.</li>
  * <li>The writer may be reopen to allow for recycling</li>
  * </ul>
- * 
  */
 public class ResponseWriter extends PrintWriter
 {
-    private static final Logger LOG = Log.getLogger(ResponseWriter.class);
-    private final static String __lineSeparator = System.getProperty("line.separator");
-    private final static String __trueln = "true"+__lineSeparator;
-    private final static String __falseln = "false"+__lineSeparator;
-    
+    private static final Logger LOG = LoggerFactory.getLogger(ResponseWriter.class);
+    private static final String __lineSeparator = System.getProperty("line.separator");
+    private static final String __trueln = "true" + __lineSeparator;
+    private static final String __falseln = "false" + __lineSeparator;
+
     private final HttpWriter _httpWriter;
     private final Locale _locale;
     private final String _encoding;
@@ -57,19 +55,19 @@ public class ResponseWriter extends PrintWriter
     private boolean _isClosed = false;
     private Formatter _formatter;
 
-    public ResponseWriter(HttpWriter httpWriter,Locale locale,String encoding)
+    public ResponseWriter(HttpWriter httpWriter, Locale locale, String encoding)
     {
-        super(httpWriter,false);
-        _httpWriter=httpWriter;
-        _locale=locale;
-        _encoding=encoding;
+        super(httpWriter, false);
+        _httpWriter = httpWriter;
+        _locale = locale;
+        _encoding = encoding;
     }
 
     public boolean isFor(Locale locale, String encoding)
     {
-        if (_locale==null && locale!=null)
+        if (_locale == null && locale != null)
             return false;
-        if (_encoding==null && encoding!=null)
+        if (_encoding == null && encoding != null)
             return false;
         return _encoding.equalsIgnoreCase(encoding) && _locale.equals(locale);
     }
@@ -78,9 +76,9 @@ public class ResponseWriter extends PrintWriter
     {
         synchronized (lock)
         {
-            _isClosed=false;
+            _isClosed = false;
             clearError();
-            out=_httpWriter;
+            out = _httpWriter;
         }
     }
 
@@ -89,36 +87,35 @@ public class ResponseWriter extends PrintWriter
     {
         synchronized (lock)
         {
-            _ioException=null;
+            _ioException = null;
             super.clearError();
         }
     }
-    
+
     @Override
     public boolean checkError()
     {
         synchronized (lock)
         {
-            return _ioException!=null || super.checkError();
+            return _ioException != null || super.checkError();
         }
     }
-    
+
     private void setError(Throwable th)
     {
         super.setError();
 
         if (th instanceof IOException)
-            _ioException=(IOException)th;
+            _ioException = (IOException)th;
         else
         {
-            _ioException=new IOException(String.valueOf(th));
+            _ioException = new IOException(String.valueOf(th));
             _ioException.initCause(th);
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug(th);
+            LOG.debug("PrintWriter Error is set", th);
     }
-
 
     @Override
     protected void setError()
@@ -126,14 +123,19 @@ public class ResponseWriter extends PrintWriter
         setError(new IOException());
     }
 
-    /** Check to make sure that the stream has not been closed */
+    /**
+     * Check to make sure that the stream has not been closed
+     */
     private void isOpen() throws IOException
-    {       
-        if (_ioException!=null)
-            throw new RuntimeIOException(_ioException); 
-        
+    {
+        if (_ioException != null)
+            throw _ioException;
+
         if (_isClosed)
-            throw new EofException("Stream closed");
+        {
+            _ioException = new EofException("Stream closed");
+            throw _ioException;
+        }
     }
 
     @Override
@@ -147,7 +149,7 @@ public class ResponseWriter extends PrintWriter
                 out.flush();
             }
         }
-        catch (IOException ex)
+        catch (Throwable ex)
         {
             setError(ex);
         }
@@ -170,6 +172,15 @@ public class ResponseWriter extends PrintWriter
         }
     }
 
+    public void complete(Callback callback)
+    {
+        synchronized (lock)
+        {
+            _isClosed = true;
+        }
+        _httpWriter.complete(callback);
+    }
+
     @Override
     public void write(int c)
     {
@@ -183,29 +194,7 @@ public class ResponseWriter extends PrintWriter
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
-            Thread.currentThread().interrupt();
-        }
-        catch (IOException ex)
-        {
-            setError(ex);
-        }
-    }
-    
-    @Override
-    public void write(char buf[], int off, int len)
-    {
-        try
-        {
-            synchronized (lock)
-            {
-                isOpen();
-                out.write(buf,off,len);
-            }
-        }
-        catch (InterruptedIOException ex)
-        {
-            LOG.debug(ex);
+            LOG.debug("Write interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -215,9 +204,31 @@ public class ResponseWriter extends PrintWriter
     }
 
     @Override
-    public void write(char buf[])
-    { 
-        this.write(buf,0,buf.length);
+    public void write(char[] buf, int off, int len)
+    {
+        try
+        {
+            synchronized (lock)
+            {
+                isOpen();
+                out.write(buf, off, len);
+            }
+        }
+        catch (InterruptedIOException ex)
+        {
+            LOG.debug("Write interrupted", ex);
+            Thread.currentThread().interrupt();
+        }
+        catch (IOException ex)
+        {
+            setError(ex);
+        }
+    }
+
+    @Override
+    public void write(char[] buf)
+    {
+        this.write(buf, 0, buf.length);
     }
 
     @Override
@@ -228,12 +239,12 @@ public class ResponseWriter extends PrintWriter
             synchronized (lock)
             {
                 isOpen();
-                out.write(s,off,len);
+                out.write(s, off, len);
             }
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("Write interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -245,15 +256,15 @@ public class ResponseWriter extends PrintWriter
     @Override
     public void write(String s)
     {
-        this.write(s,0,s.length());
+        this.write(s, 0, s.length());
     }
 
     @Override
     public void print(boolean b)
     {
-        this.write(b?"true":"false");
+        this.write(b ? "true" : "false");
     }
-    
+
     @Override
     public void print(char c)
     {
@@ -285,7 +296,7 @@ public class ResponseWriter extends PrintWriter
     }
 
     @Override
-    public void print(char s[])
+    public void print(char[] s)
     {
         this.write(s);
     }
@@ -317,7 +328,7 @@ public class ResponseWriter extends PrintWriter
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("write interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -329,7 +340,7 @@ public class ResponseWriter extends PrintWriter
     @Override
     public void println(boolean b)
     {
-        println(b?__trueln:__falseln);
+        println(b ? __trueln : __falseln);
     }
 
     @Override
@@ -345,7 +356,7 @@ public class ResponseWriter extends PrintWriter
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("Write interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -365,7 +376,7 @@ public class ResponseWriter extends PrintWriter
     {
         this.println(String.valueOf(x));
     }
-    
+
     @Override
     public void println(float x)
     {
@@ -379,20 +390,20 @@ public class ResponseWriter extends PrintWriter
     }
 
     @Override
-    public void println(char s[])
+    public void println(char[] s)
     {
         try
         {
             synchronized (lock)
             {
                 isOpen();
-                out.write(s,0,s.length);
+                out.write(s, 0, s.length);
                 out.write(__lineSeparator);
             }
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("Write interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -406,19 +417,19 @@ public class ResponseWriter extends PrintWriter
     {
         if (s == null)
             s = "null";
-        
+
         try
         {
             synchronized (lock)
             {
                 isOpen();
-                out.write(s,0,s.length());
+                out.write(s, 0, s.length());
                 out.write(__lineSeparator);
             }
         }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("Write interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -436,51 +447,51 @@ public class ResponseWriter extends PrintWriter
     @Override
     public PrintWriter printf(String format, Object... args)
     {
-        return format(_locale,format,args);
+        return format(_locale, format, args);
     }
 
     @Override
     public PrintWriter printf(Locale l, String format, Object... args)
     {
-        return format(l,format,args);
+        return format(l, format, args);
     }
 
     @Override
     public PrintWriter format(String format, Object... args)
     {
-        return format(_locale,format,args);
+        return format(_locale, format, args);
     }
 
     @Override
     public PrintWriter format(Locale locale, String format, Object... args)
-    { 
-        try 
+    {
+        try
         {
             
             /* If the passed locale is null then 
             use any locale set on the response as the default. */
-            if(locale == null) 
+            if (locale == null)
                 locale = _locale;
-            
-            synchronized (lock) 
+
+            synchronized (lock)
             {
                 isOpen();
 
-                if(_formatter == null)
+                if (_formatter == null)
                 {
                     _formatter = new Formatter(this, locale);
-                } 
+                }
                 else if (!_formatter.locale().equals(locale))
                 {
                     _formatter = new Formatter(this, locale);
                 }
-                
+
                 _formatter.format(locale, format, args);
             }
-        } 
+        }
         catch (InterruptedIOException ex)
         {
-            LOG.debug(ex);
+            LOG.debug("format interrupted", ex);
             Thread.currentThread().interrupt();
         }
         catch (IOException ex)
@@ -489,7 +500,4 @@ public class ResponseWriter extends PrintWriter
         }
         return this;
     }
-
-    
-    
 }

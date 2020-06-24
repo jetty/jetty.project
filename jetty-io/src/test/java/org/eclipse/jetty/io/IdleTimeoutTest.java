@@ -1,35 +1,33 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io;
-
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class IdleTimeoutTest
 {
@@ -42,16 +40,16 @@ public class IdleTimeoutTest
     @BeforeEach
     public void setUp() throws Exception
     {
-        _open=true;
-        _expired=null;
-        _timer=new TimerScheduler();
+        _open = true;
+        _expired = null;
+        _timer = new TimerScheduler();
         _timer.start();
-        _timeout=new IdleTimeout(_timer)
+        _timeout = new IdleTimeout(_timer)
         {
             @Override
             protected void onIdleExpired(TimeoutException timeout)
             {
-                _expired=timeout;
+                _expired = timeout;
             }
 
             @Override
@@ -66,15 +64,14 @@ public class IdleTimeoutTest
     @AfterEach
     public void tearDown() throws Exception
     {
-        _open=false;
+        _open = false;
         _timer.stop();
-
     }
 
     @Test
     public void testNotIdle() throws Exception
     {
-        for (int i=0;i<20;i++)
+        for (int i = 0; i < 20; i++)
         {
             Thread.sleep(100);
             _timeout.notIdle();
@@ -86,7 +83,7 @@ public class IdleTimeoutTest
     @Test
     public void testIdle() throws Exception
     {
-        for (int i=0;i<5;i++)
+        for (int i = 0; i < 5; i++)
         {
             Thread.sleep(100);
             _timeout.notIdle();
@@ -98,7 +95,7 @@ public class IdleTimeoutTest
     @Test
     public void testClose() throws Exception
     {
-        for (int i=0;i<5;i++)
+        for (int i = 0; i < 5; i++)
         {
             Thread.sleep(100);
             _timeout.notIdle();
@@ -111,40 +108,42 @@ public class IdleTimeoutTest
     @Test
     public void testClosed() throws Exception
     {
-        for (int i=0;i<5;i++)
+        for (int i = 0; i < 5; i++)
         {
             Thread.sleep(100);
             _timeout.notIdle();
         }
-        _open=false;
+        _open = false;
         Thread.sleep(1500);
         assertNull(_expired);
     }
 
     @Test
     public void testShorten() throws Exception
-    {        
+    {
         _timeout.setIdleTimeout(2000);
 
-        for (int i=0;i<30;i++)
+        for (int i = 0; i < 30; i++)
         {
             Thread.sleep(100);
             _timeout.notIdle();
         }
         assertNull(_expired);
         _timeout.setIdleTimeout(100);
-        
+
         long start = System.nanoTime();
-        while (_expired==null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-start)<5)
+        while (_expired == null && TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 5)
+        {
             Thread.sleep(200);
-        
+        }
+
         assertNotNull(_expired);
     }
 
     @Test
     public void testLengthen() throws Exception
     {
-        for (int i=0;i<5;i++)
+        for (int i = 0; i < 5; i++)
         {
             Thread.sleep(100);
             _timeout.notIdle();
@@ -159,11 +158,8 @@ public class IdleTimeoutTest
     {
         Thread.sleep(1500);
         assertNotNull(_expired);
-        _expired=null;
+        _expired = null;
         Thread.sleep(1000);
         assertNotNull(_expired);
     }
-
-
-
 }

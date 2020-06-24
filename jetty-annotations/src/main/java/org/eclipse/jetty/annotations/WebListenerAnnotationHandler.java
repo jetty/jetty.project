@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.annotations;
@@ -21,25 +21,25 @@ package org.eclipse.jetty.annotations;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
 import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotationHandler
 {
-    private static final Logger LOG = Log.getLogger(WebListenerAnnotationHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WebListenerAnnotationHandler.class);
 
-    public WebListenerAnnotationHandler (WebAppContext context)
+    public WebListenerAnnotationHandler(WebAppContext context)
     {
-       super(context);
+        super(context);
     }
-    
+
     @Override
     public void handle(ClassInfo info, String annotationName)
     {
         if (annotationName == null || !"javax.servlet.annotation.WebListener".equals(annotationName))
             return;
-        
+
         WebListenerAnnotation wlAnnotation = new WebListenerAnnotation(_context, info.getClassName(), info.getContainingResource());
         addAnnotation(wlAnnotation);
     }
@@ -49,7 +49,7 @@ public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotation
     {
         if (annotationName == null || !"javax.servlet.annotation.WebListener".equals(annotationName))
             return;
-        LOG.warn ("@WebListener is not applicable to fields: "+info.getClassInfo().getClassName()+"."+info.getFieldName());
+        LOG.warn("@WebListener is not applicable to fields: " + info.getClassInfo().getClassName() + "." + info.getFieldName());
     }
 
     @Override
@@ -57,6 +57,6 @@ public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotation
     {
         if (annotationName == null || !"javax.servlet.annotation.WebListener".equals(annotationName))
             return;
-        LOG.warn ("@WebListener is not applicable to methods: "+info.getClassInfo().getClassName()+"."+info.getMethodName()+" "+info.getSignature());
+        LOG.warn("@WebListener is not applicable to methods: " + info.getClassInfo().getClassName() + "." + info.getMethodName() + " " + info.getSignature());
     }
 }

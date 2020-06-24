@@ -1,26 +1,27 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
 
 import java.security.cert.X509Certificate;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
@@ -30,17 +31,20 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
+import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.ssl.X509;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Customizer that extracts the attribute from an {@link SSLContext}
@@ -49,17 +53,17 @@ import org.eclipse.jetty.util.ssl.X509;
  */
 public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
-    private static final Logger LOG = Log.getLogger(SecureRequestCustomizer.class);
-
-    /**
-     * The name of the SSLSession attribute that will contain any cached information.
-     */
-    public static final String CACHED_INFO_ATTR = CachedInfo.class.getName();
+    private static final Logger LOG = LoggerFactory.getLogger(SecureRequestCustomizer.class);
+    public static final String JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE = "javax.servlet.request.X509Certificate";
+    public static final String JAVAX_SERVLET_REQUEST_CIPHER_SUITE = "javax.servlet.request.cipher_suite";
+    public static final String JAVAX_SERVLET_REQUEST_KEY_SIZE = "javax.servlet.request.key_size";
+    public static final String JAVAX_SERVLET_REQUEST_SSL_SESSION_ID = "javax.servlet.request.ssl_session_id";
 
     private String sslSessionAttribute = "org.eclipse.jetty.servlet.request.ssl_session";
 
+    private boolean _sniRequired;
     private boolean _sniHostCheck;
-    private long _stsMaxAge=-1;
+    private long _stsMaxAge = -1;
     private boolean _stsIncludeSubDomains;
     private HttpField _stsField;
 
@@ -68,29 +72,45 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         this(true);
     }
 
-    public SecureRequestCustomizer(@Name("sniHostCheck")boolean sniHostCheck)
+    public SecureRequestCustomizer(@Name("sniHostCheck") boolean sniHostCheck)
     {
-        this(sniHostCheck,-1,false);
+        this(sniHostCheck, -1, false);
     }
-    
+
     /**
      * @param sniHostCheck True if the SNI Host name must match.
      * @param stsMaxAgeSeconds The max age in seconds for a Strict-Transport-Security response header. If set less than zero then no header is sent.
      * @param stsIncludeSubdomains If true, a include subdomain property is sent with any Strict-Transport-Security header
      */
     public SecureRequestCustomizer(
-            @Name("sniHostCheck")boolean sniHostCheck,
-            @Name("stsMaxAgeSeconds")long stsMaxAgeSeconds,
-            @Name("stsIncludeSubdomains")boolean stsIncludeSubdomains)
+        @Name("sniHostCheck") boolean sniHostCheck,
+        @Name("stsMaxAgeSeconds") long stsMaxAgeSeconds,
+        @Name("stsIncludeSubdomains") boolean stsIncludeSubdomains)
     {
-        _sniHostCheck=sniHostCheck;
-        _stsMaxAge=stsMaxAgeSeconds;
-        _stsIncludeSubDomains=stsIncludeSubdomains;
+        this(false, sniHostCheck, stsMaxAgeSeconds, stsIncludeSubdomains);
+    }
+
+    /**
+     * @param sniRequired True if a SNI certificate is required.
+     * @param sniHostCheck True if the SNI Host name must match.
+     * @param stsMaxAgeSeconds The max age in seconds for a Strict-Transport-Security response header. If set less than zero then no header is sent.
+     * @param stsIncludeSubdomains If true, a include subdomain property is sent with any Strict-Transport-Security header
+     */
+    public SecureRequestCustomizer(
+        @Name("sniRequired") boolean sniRequired,
+        @Name("sniHostCheck") boolean sniHostCheck,
+        @Name("stsMaxAgeSeconds") long stsMaxAgeSeconds,
+        @Name("stsIncludeSubdomains") boolean stsIncludeSubdomains)
+    {
+        _sniRequired = sniRequired;
+        _sniHostCheck = sniHostCheck;
+        _stsMaxAge = stsMaxAgeSeconds;
+        _stsIncludeSubDomains = stsIncludeSubdomains;
         formatSTS();
     }
 
     /**
-     * @return True if the SNI Host name must match.
+     * @return True if the SNI Host name must match when there is an SNI certificate.
      */
     public boolean isSniHostCheck()
     {
@@ -98,11 +118,29 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
-     * @param sniHostCheck  True if the SNI Host name must match. 
+     * @param sniHostCheck True if the SNI Host name must match when there is an SNI certificate.
      */
     public void setSniHostCheck(boolean sniHostCheck)
     {
         _sniHostCheck = sniHostCheck;
+    }
+
+    /**
+     * @return True if SNI is required, else requests will be rejected with 400 response.
+     * @see SslContextFactory.Server#isSniRequired()
+     */
+    public boolean isSniRequired()
+    {
+        return _sniRequired;
+    }
+
+    /**
+     * @param sniRequired True if SNI is required, else requests will be rejected with 400 response.
+     * @see SslContextFactory.Server#setSniRequired(boolean)
+     */
+    public void setSniRequired(boolean sniRequired)
+    {
+        _sniRequired = sniRequired;
     }
 
     /**
@@ -115,6 +153,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
     /**
      * Set the Strict-Transport-Security max age.
+     *
      * @param stsMaxAgeSeconds The max age in seconds for a Strict-Transport-Security response header. If set less than zero then no header is sent.
      */
     public void setStsMaxAge(long stsMaxAgeSeconds)
@@ -125,10 +164,11 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
     /**
      * Convenience method to call {@link #setStsMaxAge(long)}
+     *
      * @param period The period in units
      * @param units The {@link TimeUnit} of the period
      */
-    public void setStsMaxAge(long period,TimeUnit units)
+    public void setStsMaxAge(long period, TimeUnit units)
     {
         _stsMaxAge = units.toSeconds(period);
         formatSTS();
@@ -153,10 +193,10 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
     private void formatSTS()
     {
-        if (_stsMaxAge<0)
-            _stsField=null;
+        if (_stsMaxAge < 0)
+            _stsField = null;
         else
-            _stsField=new PreEncodedHttpField(HttpHeader.STRICT_TRANSPORT_SECURITY,String.format("max-age=%d%s",_stsMaxAge,_stsIncludeSubDomains?"; includeSubDomains":""));
+            _stsField = new PreEncodedHttpField(HttpHeader.STRICT_TRANSPORT_SECURITY, String.format("max-age=%d%s", _stsMaxAge, _stsIncludeSubDomains ? "; includeSubDomains" : ""));
     }
 
     @Override
@@ -165,37 +205,22 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         EndPoint endp = request.getHttpChannel().getEndPoint();
         if (endp instanceof DecryptedEndPoint)
         {
-            SslConnection.DecryptedEndPoint ssl_endp = (DecryptedEndPoint)endp;
-            SslConnection sslConnection = ssl_endp.getSslConnection();
-            SSLEngine sslEngine=sslConnection.getSSLEngine();
-            customize(sslEngine,request);
+            SslConnection.DecryptedEndPoint sslEndp = (DecryptedEndPoint)endp;
+            SslConnection sslConnection = sslEndp.getSslConnection();
+            SSLEngine sslEngine = sslConnection.getSSLEngine();
+            customize(sslEngine, request);
 
-            request.setScheme(HttpScheme.HTTPS.asString());
+            request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS));
         }
         else if (endp instanceof ProxyConnectionFactory.ProxyEndPoint)
         {
             ProxyConnectionFactory.ProxyEndPoint proxy = (ProxyConnectionFactory.ProxyEndPoint)endp;
-            if (request.getHttpURI().getScheme()==null && proxy.getAttribute(ProxyConnectionFactory.TLS_VERSION)!=null)
-                request.setScheme(HttpScheme.HTTPS.asString());       
+            if (request.getHttpURI().getScheme() == null && proxy.getAttribute(ProxyConnectionFactory.TLS_VERSION) != null)
+                request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS));
         }
 
         if (HttpScheme.HTTPS.is(request.getScheme()))
             customizeSecure(request);
-    }
-
-    /**
-     * Customizes the request attributes for general secure settings.
-     * The default impl calls {@link Request#setSecure(boolean)} with true
-     * and sets a response header if the Strict-Transport-Security options 
-     * are set.
-     * @param request the request being customized
-     */
-    protected void customizeSecure(Request request)
-    {
-        request.setSecure(true);
-        
-        if (_stsField!=null)
-            request.getResponse().getHttpFields().add(_stsField);
     }
 
     /**
@@ -214,71 +239,65 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      * trust. The first certificate in the chain is the one set by the client, the next is the one used to authenticate
      * the first, and so on.</li>
      * </ul>
-     * 
-     * @param sslEngine
-     *            the sslEngine to be customized.
-     * @param request
-     *            HttpRequest to be customized.
+     *
+     * @param sslEngine the sslEngine to be customized.
+     * @param request HttpRequest to be customized.
      */
     protected void customize(SSLEngine sslEngine, Request request)
     {
         SSLSession sslSession = sslEngine.getSession();
 
-        if (_sniHostCheck)
+        if (_sniHostCheck || _sniRequired)
         {
-            String name = request.getServerName();
             X509 x509 = (X509)sslSession.getValue(SniX509ExtendedKeyManager.SNI_X509);
-
-            if (x509!=null && !x509.matches(name))
-            {
-                LOG.warn("Host {} does not match SNI {}",name,x509);
-                throw new BadMessageException(400,"Host does not match SNI");
-            }
-
             if (LOG.isDebugEnabled())
-                LOG.debug("Host {} matched SNI {}",name,x509);
-        }
+                LOG.debug("Host {} with SNI {}", request.getServerName(), x509);
 
-        try
-        {
-            String cipherSuite=sslSession.getCipherSuite();
-            Integer keySize;
-            X509Certificate[] certs;
-            String idStr;
-
-            CachedInfo cachedInfo=(CachedInfo)sslSession.getValue(CACHED_INFO_ATTR);
-            if (cachedInfo!=null)
+            if (x509 == null)
             {
-                keySize=cachedInfo.getKeySize();
-                certs=cachedInfo.getCerts();
-                idStr=cachedInfo.getIdStr();
+                if (_sniRequired)
+                    throw new BadMessageException(400, "SNI required");
             }
-            else
+            else if (_sniHostCheck && !x509.matches(request.getServerName()))
             {
-                keySize=SslContextFactory.deduceKeyLength(cipherSuite);
-                certs=SslContextFactory.getCertChain(sslSession);
-                byte[] bytes = sslSession.getId();
-                idStr = TypeUtil.toHexString(bytes);
-                cachedInfo=new CachedInfo(keySize,certs,idStr);
-                sslSession.putValue(CACHED_INFO_ATTR,cachedInfo);
+                throw new BadMessageException(400, "Host does not match SNI");
             }
-
-            if (certs!=null)
-                request.setAttribute("javax.servlet.request.X509Certificate",certs);
-
-            request.setAttribute("javax.servlet.request.cipher_suite",cipherSuite);
-            request.setAttribute("javax.servlet.request.key_size",keySize);
-            request.setAttribute("javax.servlet.request.ssl_session_id", idStr);
-            String sessionAttribute = getSslSessionAttribute();
-            if (sessionAttribute != null && !sessionAttribute.isEmpty())
-                request.setAttribute(sessionAttribute, sslSession);
         }
-        catch (Exception e)
-        {
-            LOG.warn(Log.EXCEPTION,e);
-        }
+
+        request.setAttributes(new SslAttributes(request, sslSession, request.getAttributes()));
     }
     
+    /**
+     * Customizes the request attributes for general secure settings.
+     * The default impl calls {@link Request#setSecure(boolean)} with true
+     * and sets a response header if the Strict-Transport-Security options
+     * are set.
+     *
+     * @param request the request being customized
+     */
+    protected void customizeSecure(Request request)
+    {
+        request.setSecure(true);
+
+        if (_stsField != null)
+            request.getResponse().getHttpFields().add(_stsField);
+    }
+
+    private X509Certificate[] getCertChain(Connector connector, SSLSession sslSession)
+    {
+        // The in-use SslContextFactory should be present in the Connector's SslConnectionFactory
+        SslConnectionFactory sslConnectionFactory = connector.getConnectionFactory(SslConnectionFactory.class);
+        if (sslConnectionFactory != null)
+        {
+            SslContextFactory sslContextFactory = sslConnectionFactory.getSslContextFactory();
+            if (sslContextFactory != null)
+                return sslContextFactory.getX509CertChain(sslSession);
+        }
+
+        // Fallback, either no SslConnectionFactory or no SslContextFactory instance found
+        return SslContextFactory.getCertChain(sslSession);
+    }
+
     public void setSslSessionAttribute(String attribute)
     {
         this.sslSessionAttribute = attribute;
@@ -292,37 +311,124 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     @Override
     public String toString()
     {
-        return String.format("%s@%x",this.getClass().getSimpleName(),hashCode());
+        return String.format("%s@%x", this.getClass().getSimpleName(), hashCode());
+    }
+
+    private class SslAttributes extends Attributes.Wrapper
+    {
+        private final Request _request;
+        private final SSLSession _session;
+
+        public SslAttributes(Request request, SSLSession sslSession, Attributes attributes)
+        {
+            super(attributes);
+            this._request = request;
+            this._session = sslSession;
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            Object value = _attributes.getAttribute(name);
+            if (value != null)
+                return value;
+            try
+            {
+                switch (name)
+                {
+                    case JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE:
+                        return getSslSessionData().getCerts();
+
+                    case JAVAX_SERVLET_REQUEST_CIPHER_SUITE:
+                        return _session.getCipherSuite();
+
+                    case JAVAX_SERVLET_REQUEST_KEY_SIZE:
+                        return getSslSessionData().getKeySize();
+
+                    case JAVAX_SERVLET_REQUEST_SSL_SESSION_ID:
+                        return getSslSessionData().getIdStr();
+
+                    default:
+                        String sessionAttribute = getSslSessionAttribute();
+                        if (!StringUtil.isEmpty(sessionAttribute) && sessionAttribute.equals(name))
+                            return _session;
+                }
+            }
+            catch (Exception e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to get secure details ", e);
+            }
+            return null;
+        }
+
+        /**
+         * Get data belonging to the {@link SSLSession}.
+         *
+         * @return the SslSessionData
+         */
+        private SslSessionData getSslSessionData()
+        {
+            String key = SslSessionData.class.getName();
+            SslSessionData sslSessionData = (SslSessionData)_session.getValue(key);
+            if (sslSessionData == null)
+            {
+                String cipherSuite = _session.getCipherSuite();
+                int keySize = SslContextFactory.deduceKeyLength(cipherSuite);
+
+                X509Certificate[] certs = getCertChain(_request.getHttpChannel().getConnector(), _session);
+
+                byte[] bytes = _session.getId();
+                String idStr = TypeUtil.toHexString(bytes);
+
+                sslSessionData = new SslSessionData(keySize, certs, idStr);
+                _session.putValue(key, sslSessionData);
+            }
+            return sslSessionData;
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            Set<String> names = new HashSet<>(_attributes.getAttributeNameSet());
+            names.add(JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE);
+            names.add(JAVAX_SERVLET_REQUEST_CIPHER_SUITE);
+            names.add(JAVAX_SERVLET_REQUEST_KEY_SIZE);
+            names.add(JAVAX_SERVLET_REQUEST_SSL_SESSION_ID);
+            String sessionAttribute = getSslSessionAttribute();
+            if (!StringUtil.isEmpty(sessionAttribute))
+                names.add(sessionAttribute);
+            return names;
+        }
     }
 
     /**
-     * Simple bundle of information that is cached in the SSLSession. Stores the
-     * effective keySize and the client certificate chain.
+     * Simple bundle of data that is cached in the SSLSession.
      */
-    private static class CachedInfo
+    private static class SslSessionData
     {
-        private final X509Certificate[] _certs;
         private final Integer _keySize;
+        private final X509Certificate[] _certs;
         private final String _idStr;
 
-        CachedInfo(Integer keySize, X509Certificate[] certs,String idStr)
+        private SslSessionData(Integer keySize, X509Certificate[] certs, String idStr)
         {
-            this._keySize=keySize;
-            this._certs=certs;
-            this._idStr=idStr;
+            this._keySize = keySize;
+            this._certs = certs;
+            this._idStr = idStr;
         }
 
-        X509Certificate[] getCerts()
-        {
-            return _certs;
-        }
-
-        Integer getKeySize()
+        private Integer getKeySize()
         {
             return _keySize;
         }
 
-        String getIdStr()
+        private X509Certificate[] getCerts()
+        {
+            return _certs;
+        }
+
+        private String getIdStr()
         {
             return _idStr;
         }

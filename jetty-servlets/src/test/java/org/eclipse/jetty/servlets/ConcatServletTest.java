@@ -1,27 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlets;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,7 +26,6 @@ import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -45,9 +39,13 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConcatServletTest
 {
@@ -92,8 +90,8 @@ public class ConcatServletTest
         String resource1 = "/resource/one.js";
         String resource2 = "/resource/two.js";
         String uri = contextPath + concatPath + "?" + resource1 + "&" + resource2;
-        String request = "" +
-                "GET " + uri + " HTTP/1.1\r\n" +
+        String request =
+            "GET " + uri + " HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
@@ -139,8 +137,8 @@ public class ConcatServletTest
         // Having a path segment and then ".." triggers a special case
         // that the ConcatServlet must detect and avoid.
         String uri = contextPath + concatPath + "?/trick/../WEB-INF/one.js";
-        String request = "" +
-                "GET " + uri + " HTTP/1.1\r\n" +
+        String request =
+            "GET " + uri + " HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
@@ -149,8 +147,8 @@ public class ConcatServletTest
 
         // Make sure ConcatServlet behaves well if it's case insensitive.
         uri = contextPath + concatPath + "?/trick/../web-inf/one.js";
-        request = "" +
-                "GET " + uri + " HTTP/1.1\r\n" +
+        request =
+            "GET " + uri + " HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
@@ -159,8 +157,8 @@ public class ConcatServletTest
 
         // Make sure ConcatServlet behaves well if encoded.
         uri = contextPath + concatPath + "?/trick/..%2FWEB-INF%2Fone.js";
-        request = "" +
-                "GET " + uri + " HTTP/1.1\r\n" +
+        request =
+            "GET " + uri + " HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
@@ -169,8 +167,8 @@ public class ConcatServletTest
 
         // Make sure ConcatServlet cannot see file system files.
         uri = contextPath + concatPath + "?/trick/../../" + directoryFile.getName();
-        request = "" +
-                "GET " + uri + " HTTP/1.1\r\n" +
+        request =
+            "GET " + uri + " HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";

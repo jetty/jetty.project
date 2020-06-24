@@ -1,26 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -51,7 +50,7 @@ public class IncludeExcludeBasedFilterTest
     {
         _tester = new ServletTester();
         _tester.setContextPath("/context");
-        _tester.addServlet(NullServlet.class,"/test/*");
+        _tester.addServlet(NullServlet.class, "/test/*");
 
         _tester.start();
     }
@@ -66,256 +65,256 @@ public class IncludeExcludeBasedFilterTest
     public void testIncludeExcludeFilterIncludedPathMatch() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("includedPaths","^/test/0$");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("includedPaths", "^/test/0$");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value", "1"));
     }
 
     @Test
     public void testIncludeExcludeFilterIncludedPathNoMatch() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("includedPaths","^/nomatchtest$");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("includedPaths", "^/nomatchtest$");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value", "1")));
     }
 
     @Test
     public void testIncludeExcludeFilterExcludedPathMatch() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("excludedPaths","^/test/0$");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("excludedPaths", "^/test/0$");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value", "1")));
     }
 
     @Test
     public void testIncludeExcludeFilterExcludedPathNoMatch() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("excludedPaths","^/nomatchtest$");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("excludedPaths", "^/nomatchtest$");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value", "1"));
     }
 
     @Test
     public void testIncludeExcludeFilterExcludeOverridesInclude() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("includedPaths","^/test/0$");
-        holder.setInitParameter("excludedPaths","^/test/0$");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("includedPaths", "^/test/0$");
+        holder.setInitParameter("excludedPaths", "^/test/0$");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value", "1")));
     }
 
     @Test
     public void testIncludeExcludeFilterIncludeMethodMatch() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("includedHttpMethods","GET");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("includedHttpMethods", "GET");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value", "1"));
     }
 
     @Test
     public void testIncludeExcludeFilterIncludeMethodNoMatch() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("includedHttpMethods","POST,PUT");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("includedHttpMethods", "POST,PUT");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value", "1")));
     }
 
     @Test
     public void testIncludeExcludeFilterExcludeMethodMatch() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("excludedHttpMethods","GET");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("excludedHttpMethods", "GET");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value", "1")));
     }
 
     @Test
     public void testIncludeExcludeFilterExcludeMethodNoMatch() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("excludedHttpMethods","POST,PUT");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("excludedHttpMethods", "POST,PUT");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/0");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value", "1"));
     }
 
     @Test
     public void testIncludeExcludeFilterIncludeMimeTypeMatch() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("includedMimeTypes","application/json");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("includedMimeTypes", "application/json");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/json.json");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value", "1"));
     }
 
     @Test
     public void testIncludeExcludeFilterIncludeMimeTypeMatchWithQueryString() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("includedMimeTypes","application/json");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("includedMimeTypes", "application/json");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/json.json?some=value");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value", "1"));
     }
 
     @Test
     public void testIncludeExcludeFilterIncludeMimeTypeNoMatch() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("includedMimeTypes","application/xml");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("includedMimeTypes", "application/xml");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/json.json");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value", "1")));
     }
 
     @Test
     public void testIncludeExcludeFilterIncludeMimeTypeNoMatchNoExtension() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("includedMimeTypes","application/json");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("includedMimeTypes", "application/json");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/abcdef");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value", "1")));
     }
 
     @Test
     public void testIncludeExcludeFilterExcludeMimeTypeMatch() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("excludedMimeTypes","application/json");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("excludedMimeTypes", "application/json");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/json.json");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, not(containsHeaderValue("X-Custom-Value","1")));
+        assertThat(response, not(containsHeaderValue("X-Custom-Value", "1")));
     }
 
     @Test
     public void testIncludeExcludeFilterExcludeMimeTypeNoMatch() throws Exception
     {
         FilterHolder holder = new FilterHolder(MockIncludeExcludeFilter.class);
-        holder.setInitParameter("excludedMimeTypes","application/xml");
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST));
+        holder.setInitParameter("excludedMimeTypes", "application/xml");
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setVersion("HTTP/1.1");
-        request.setHeader("Host","localhost");
+        request.setHeader("Host", "localhost");
         request.setURI("/context/test/json.json");
 
         HttpTester.Response response = HttpTester.parseResponse(_tester.getResponses(request.generate()));
-        assertThat(response, containsHeaderValue("X-Custom-Value","1"));
+        assertThat(response, containsHeaderValue("X-Custom-Value", "1"));
     }
 
     public static class MockIncludeExcludeFilter extends IncludeExcludeBasedFilter
@@ -323,15 +322,15 @@ public class IncludeExcludeBasedFilterTest
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
-            HttpServletRequest http_request = (HttpServletRequest)request;
-            HttpServletResponse http_response = (HttpServletResponse)response;
+            HttpServletRequest httpRequest = (HttpServletRequest)request;
+            HttpServletResponse httpResponse = (HttpServletResponse)response;
 
-            if (super.shouldFilter(http_request,http_response))
+            if (super.shouldFilter(httpRequest, httpResponse))
             {
-                http_response.setHeader("X-Custom-Value","1");
+                httpResponse.setHeader("X-Custom-Value", "1");
             }
 
-            chain.doFilter(request,response);
+            chain.doFilter(request, response);
         }
     }
 
@@ -343,6 +342,5 @@ public class IncludeExcludeBasedFilterTest
             resp.setStatus(HttpStatus.NO_CONTENT_204);
             resp.flushBuffer();
         }
-
     }
 }

@@ -1,32 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.annotations;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.util.Arrays;
 import java.util.List;
-
 import javax.servlet.annotation.HttpConstraint;
 import javax.servlet.annotation.HttpMethodConstraint;
 import javax.servlet.annotation.ServletSecurity;
@@ -43,30 +36,44 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 public class TestSecurityAnnotationConversions
 {
-    @ServletSecurity(value=@HttpConstraint(value=EmptyRoleSemantic.DENY))
+    @ServletSecurity(value = @HttpConstraint(value = EmptyRoleSemantic.DENY))
     public static class DenyServlet extends HttpServlet
-    {}
+    {
+    }
 
     @ServletSecurity
     public static class PermitServlet extends HttpServlet
-    {}
+    {
+    }
 
-    @ServletSecurity(value=@HttpConstraint(value=EmptyRoleSemantic.PERMIT, transportGuarantee=TransportGuarantee.CONFIDENTIAL, rolesAllowed={"tom", "dick", "harry"}))
+    @ServletSecurity(value = @HttpConstraint(value = EmptyRoleSemantic.PERMIT, transportGuarantee = TransportGuarantee.CONFIDENTIAL, rolesAllowed = {
+        "tom", "dick", "harry"
+    }))
     public static class RolesServlet extends HttpServlet
-    {}
+    {
+    }
 
-    @ServletSecurity(value=@HttpConstraint(value=EmptyRoleSemantic.PERMIT, transportGuarantee=TransportGuarantee.CONFIDENTIAL, rolesAllowed={"tom", "dick", "harry"}),
-                     httpMethodConstraints={@HttpMethodConstraint(value="GET")})
+    @ServletSecurity(value = @HttpConstraint(value = EmptyRoleSemantic.PERMIT, transportGuarantee = TransportGuarantee.CONFIDENTIAL, rolesAllowed = {
+        "tom", "dick", "harry"
+    }), httpMethodConstraints = {@HttpMethodConstraint(value = "GET")})
     public static class Method1Servlet extends HttpServlet
-    {}
+    {
+    }
 
-    @ServletSecurity(value=@HttpConstraint(value=EmptyRoleSemantic.PERMIT, transportGuarantee=TransportGuarantee.CONFIDENTIAL, rolesAllowed={"tom", "dick", "harry"}),
-                     httpMethodConstraints={@HttpMethodConstraint(value="GET", transportGuarantee=TransportGuarantee.CONFIDENTIAL)})
+    @ServletSecurity(value = @HttpConstraint(value = EmptyRoleSemantic.PERMIT, transportGuarantee = TransportGuarantee.CONFIDENTIAL, rolesAllowed = {
+        "tom", "dick", "harry"
+    }), httpMethodConstraints = {@HttpMethodConstraint(value = "GET", transportGuarantee = TransportGuarantee.CONFIDENTIAL)})
     public static class Method2Servlet extends HttpServlet
-    {}
-
+    {
+    }
 
     public void setUp()
     {
@@ -76,11 +83,13 @@ public class TestSecurityAnnotationConversions
     public void testDenyAllOnClass() throws Exception
     {
 
-        WebAppContext wac = makeWebAppContext(DenyServlet.class.getCanonicalName(), "denyServlet", new String[]{"/foo/*", "*.foo"});
+        WebAppContext wac = makeWebAppContext(DenyServlet.class.getCanonicalName(), "denyServlet", new String[]{
+            "/foo/*", "*.foo"
+        });
 
         //Assume we found 1 servlet with a @HttpConstraint with value=EmptyRoleSemantic.DENY security annotation
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
-        AnnotationIntrospector introspector = new AnnotationIntrospector();
+        AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         introspector.registerHandler(annotationHandler);
 
         //set up the expected outcomes:
@@ -99,7 +108,7 @@ public class TestSecurityAnnotationConversions
         expectedMappings[1].setConstraint(expectedConstraint);
         expectedMappings[1].setPathSpec("*.foo");
 
-        introspector.introspect(DenyServlet.class);
+        introspector.introspect(new DenyServlet(), null);
 
         compareResults(expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
@@ -108,22 +117,22 @@ public class TestSecurityAnnotationConversions
     public void testPermitAll() throws Exception
     {
         //Assume we found 1 servlet with a @ServletSecurity security annotation
-        WebAppContext wac = makeWebAppContext(PermitServlet.class.getCanonicalName(), "permitServlet", new String[]{"/foo/*", "*.foo"});
+        WebAppContext wac = makeWebAppContext(PermitServlet.class.getCanonicalName(), "permitServlet", new String[]{
+            "/foo/*", "*.foo"
+        });
 
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
-        AnnotationIntrospector introspector = new AnnotationIntrospector();
+        AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         introspector.registerHandler(annotationHandler);
-
 
         //set up the expected outcomes - no constraints at all as per Servlet Spec 3.1 pg 129
         //1 ConstraintMapping per ServletMapping pathSpec
-       
 
         ConstraintMapping[] expectedMappings = new ConstraintMapping[]{};
-       
-        introspector.introspect(PermitServlet.class);
+        PermitServlet permit = new PermitServlet();
+        introspector.introspect(permit, null);
 
-        compareResults (expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
+        compareResults(expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
 
     @Test
@@ -132,10 +141,12 @@ public class TestSecurityAnnotationConversions
         //Assume we found 1 servlet with annotation with roles defined and
         //and a TransportGuarantee
 
-        WebAppContext wac = makeWebAppContext(RolesServlet.class.getCanonicalName(), "rolesServlet", new String[]{"/foo/*", "*.foo"});
+        WebAppContext wac = makeWebAppContext(RolesServlet.class.getCanonicalName(), "rolesServlet", new String[]{
+            "/foo/*", "*.foo"
+        });
 
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
-        AnnotationIntrospector introspector = new AnnotationIntrospector();
+        AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         introspector.registerHandler(annotationHandler);
 
         //set up the expected outcomes:compareResults
@@ -153,18 +164,19 @@ public class TestSecurityAnnotationConversions
         expectedMappings[1] = new ConstraintMapping();
         expectedMappings[1].setConstraint(expectedConstraint);
         expectedMappings[1].setPathSpec("*.foo");
-
-        introspector.introspect(RolesServlet.class);
-        compareResults (expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
+        introspector.introspect(new RolesServlet(), null);
+        compareResults(expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
 
     @Test
     public void testMethodAnnotation() throws Exception
     {
         //ServletSecurity annotation with HttpConstraint of TransportGuarantee.CONFIDENTIAL, and a list of rolesAllowed, and
-        //a HttpMethodConstraint for GET method that permits all and has TransportGuarantee.NONE (ie is default)
+        //an HttpMethodConstraint for GET method that permits all and has TransportGuarantee.NONE (ie is default)
 
-        WebAppContext wac = makeWebAppContext(Method1Servlet.class.getCanonicalName(), "method1Servlet",  new String[]{"/foo/*", "*.foo"});
+        WebAppContext wac = makeWebAppContext(Method1Servlet.class.getCanonicalName(), "method1Servlet", new String[]{
+            "/foo/*", "*.foo"
+        });
 
         //set up the expected outcomes: - a Constraint for the RolesAllowed on the class
         //with userdata constraint of DC_CONFIDENTIAL
@@ -198,11 +210,11 @@ public class TestSecurityAnnotationConversions
         expectedMappings[3].setPathSpec("*.foo");
         expectedMappings[3].setMethod("GET");
 
-        AnnotationIntrospector introspector = new AnnotationIntrospector();
+        AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
         introspector.registerHandler(annotationHandler);
-        introspector.introspect(Method1Servlet.class);
-        compareResults (expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
+        introspector.introspect(new Method1Servlet(), null);
+        compareResults(expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
 
     @Test
@@ -210,9 +222,11 @@ public class TestSecurityAnnotationConversions
     {
         //A ServletSecurity annotation that has HttpConstraint of CONFIDENTIAL with defined roles, but a
         //HttpMethodConstraint for GET that permits all, but also requires CONFIDENTIAL
-        WebAppContext wac = makeWebAppContext(Method2Servlet.class.getCanonicalName(), "method2Servlet",  new String[]{"/foo/*", "*.foo"});
+        WebAppContext wac = makeWebAppContext(Method2Servlet.class.getCanonicalName(), "method2Servlet", new String[]{
+            "/foo/*", "*.foo"
+        });
 
-        AnnotationIntrospector introspector = new AnnotationIntrospector();
+        AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         ServletSecurityAnnotationHandler annotationHandler = new ServletSecurityAnnotationHandler(wac);
         introspector.registerHandler(annotationHandler);
 
@@ -248,26 +262,26 @@ public class TestSecurityAnnotationConversions
         expectedMappings[3].setPathSpec("*.foo");
         expectedMappings[3].setMethod("GET");
 
-        introspector.introspect(Method2Servlet.class);
-        compareResults (expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
+        introspector.introspect(new Method2Servlet(), null);
+        compareResults(expectedMappings, ((ConstraintAware)wac.getSecurityHandler()).getConstraintMappings());
     }
 
-    private void compareResults (ConstraintMapping[] expectedMappings, List<ConstraintMapping> actualMappings)
+    private void compareResults(ConstraintMapping[] expectedMappings, List<ConstraintMapping> actualMappings)
     {
         assertNotNull(actualMappings);
         assertEquals(expectedMappings.length, actualMappings.size());
 
-        for (int k=0; k < actualMappings.size(); k++)
+        for (int k = 0; k < actualMappings.size(); k++)
         {
             ConstraintMapping am = actualMappings.get(k);
-            boolean matched  = false;
+            boolean matched = false;
 
-            for (int i=0; i< expectedMappings.length && !matched; i++)
+            for (int i = 0; i < expectedMappings.length && !matched; i++)
             {
                 ConstraintMapping em = expectedMappings[i];
                 if (em.getPathSpec().equals(am.getPathSpec()))
                 {
-                    if ((em.getMethod()==null && am.getMethod() == null) || em.getMethod() != null && em.getMethod().equals(am.getMethod()))
+                    if ((em.getMethod() == null && am.getMethod() == null) || em.getMethod() != null && em.getMethod().equals(am.getMethod()))
                     {
                         matched = true;
 
@@ -295,12 +309,11 @@ public class TestSecurityAnnotationConversions
             }
 
             if (!matched)
-                fail("No expected ConstraintMapping matching method:"+am.getMethod()+" pathSpec: "+am.getPathSpec());
+                fail("No expected ConstraintMapping matching method:" + am.getMethod() + " pathSpec: " + am.getPathSpec());
         }
     }
 
-
-    private WebAppContext makeWebAppContext (String className, String servletName, String[] paths)
+    private WebAppContext makeWebAppContext(String className, String servletName, String[] paths)
     {
         WebAppContext wac = new WebAppContext();
 

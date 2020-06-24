@@ -1,26 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.nosql.mongodb;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -28,107 +24,138 @@ import java.io.ObjectOutputStream;
 import java.net.UnknownHostException;
 import java.util.Map;
 
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
+import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * MongoTestHelper
- * 
  */
 public class MongoTestHelper
 {
-    private final static Logger LOG = Log.getLogger(MongoTestHelper.class);
-    static int __workers=0;
+    private static final Logger LOG = LoggerFactory.getLogger(MongoTestHelper.class);
+    private static final Logger MONGO_LOG = LoggerFactory.getLogger("org.eclipse.jetty.nosql.mongodb.MongoLogs");
+
     public static final String DB_NAME = "HttpSessions";
     public static final String COLLECTION_NAME = "testsessions";
 
-    static MongoClient _mongoClient;
-    static
+    static GenericContainer mongo =
+        new GenericContainer("mongo:" + System.getProperty("mongo.docker.version", "2.2.7"))
+            .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG));
+
+    static MongoClient mongoClient;
+
+    public static void startMongo()
     {
         try
         {
-            _mongoClient =
-                new MongoClient( System.getProperty( "embedmongo.host" ), Integer.getInteger( "embedmongoPort" ) );
+            long start = System.currentTimeMillis();
+            mongo.start();
+            String containerIpAddress =  mongo.getContainerIpAddress();
+            int mongoPort = mongo.getMappedPort(27017);
+            LOG.info("Mongo container started for {}:{} - {}ms", containerIpAddress, mongoPort,
+                     System.currentTimeMillis() - start);
+            System.setProperty("embedmongoHost", containerIpAddress);
+            System.setProperty("embedmongoPort", Integer.toString(mongoPort));
         }
-        catch ( UnknownHostException e )
+        catch (Exception e)
         {
-            e.printStackTrace();
+            LOG.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         }
     }
-    
-    
-    public static void dropCollection () throws MongoException, UnknownHostException
+
+    public static void stopMongo()
     {
-        _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME).drop();
+        mongo.stop();
+        mongoClient = null;
     }
-    
-    
+
+    public static MongoClient getMongoClient() throws UnknownHostException
+    {
+        boolean restart = false;
+        if (mongo == null || !mongo.isRunning())
+        {
+            startMongo();
+            restart = true;
+        }
+        if (mongoClient == null || restart)
+        {
+            mongoClient = new MongoClient(System.getProperty("embedmongoHost"), Integer.getInteger("embedmongoPort"));
+        }
+        return mongoClient;
+    }
+
+    public static void dropCollection() throws Exception
+    {
+        getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME).drop();
+    }
+
     public static void createCollection() throws UnknownHostException, MongoException
     {
-        _mongoClient.getDB(DB_NAME).createCollection(COLLECTION_NAME, null);
+        getMongoClient().getDB(DB_NAME).createCollection(COLLECTION_NAME, null);
     }
-    
-    
-    public static DBCollection getCollection () throws UnknownHostException, MongoException 
+
+    public static DBCollection getCollection() throws UnknownHostException, MongoException
     {
-        return _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        return getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME);
     }
-    
-    
+
     public static MongoSessionDataStoreFactory newSessionDataStoreFactory()
     {
         MongoSessionDataStoreFactory storeFactory = new MongoSessionDataStoreFactory();
-        storeFactory.setHost( System.getProperty( "embedmongoHost" ) );
-        storeFactory.setPort( Integer.getInteger( "embedmongoPort" ) );
+        storeFactory.setHost(System.getProperty("embedmongoHost"));
+        storeFactory.setPort(Integer.getInteger("embedmongoPort"));
         storeFactory.setCollectionName(COLLECTION_NAME);
         storeFactory.setDbName(DB_NAME);
         return storeFactory;
     }
-    
-    
-    public static boolean checkSessionExists (String id)
-    throws Exception
+
+    public static boolean checkSessionExists(String id)
+        throws Exception
     {
-        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
-        
+        DBCollection collection = getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME);
+
         DBObject fields = new BasicDBObject();
         fields.put(MongoSessionDataStore.__EXPIRY, 1);
         fields.put(MongoSessionDataStore.__VALID, 1);
-        
+
         DBObject sessionDocument = collection.findOne(new BasicDBObject(MongoSessionDataStore.__ID, id), fields);
-        
+
         if (sessionDocument == null)
             return false; //doesn't exist
 
-       return true;
+        return true;
     }
-    
-    
-    public static boolean checkSessionPersisted (SessionData data)
-    throws Exception
+
+    public static boolean checkSessionPersisted(SessionData data)
+        throws Exception
     {
-        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
-        
+        DBCollection collection = getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME);
+
         DBObject fields = new BasicDBObject();
-        
+
         DBObject sessionDocument = collection.findOne(new BasicDBObject(MongoSessionDataStore.__ID, data.getId()), fields);
         if (sessionDocument == null)
             return false; //doesn't exist
-        
-        LOG.info("{}",sessionDocument);
-        
-        Boolean valid = (Boolean)sessionDocument.get(MongoSessionDataStore.__VALID);   
 
+        LOG.debug("{}", sessionDocument);
+
+        Boolean valid = (Boolean)sessionDocument.get(MongoSessionDataStore.__VALID);
 
         if (valid == null || !valid)
             return false;
@@ -139,14 +166,14 @@ public class MongoTestHelper
         Long maxInactive = (Long)sessionDocument.get(MongoSessionDataStore.__MAX_IDLE);
         Long expiry = (Long)sessionDocument.get(MongoSessionDataStore.__EXPIRY);
 
-        Object version = MongoUtils.getNestedValue(sessionDocument, 
-                                        MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() +"."+MongoSessionDataStore.__VERSION);
-        Long lastSaved = (Long)MongoUtils.getNestedValue(sessionDocument, 
-                                              MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() +"."+MongoSessionDataStore.__LASTSAVED);
-        String lastNode = (String)MongoUtils.getNestedValue(sessionDocument, 
-                                                 MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() +"."+MongoSessionDataStore.__LASTNODE);
-        byte[] attributes = (byte[])MongoUtils.getNestedValue(sessionDocument, 
-                                                              MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() +"."+MongoSessionDataStore.__ATTRIBUTES);
+        Object version = MongoUtils.getNestedValue(sessionDocument,
+            MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() + "." + MongoSessionDataStore.__VERSION);
+        Long lastSaved = (Long)MongoUtils.getNestedValue(sessionDocument,
+            MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() + "." + MongoSessionDataStore.__LASTSAVED);
+        String lastNode = (String)MongoUtils.getNestedValue(sessionDocument,
+            MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() + "." + MongoSessionDataStore.__LASTNODE);
+        byte[] attributes = (byte[])MongoUtils.getNestedValue(sessionDocument,
+            MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath() + "." + MongoSessionDataStore.__ATTRIBUTES);
 
         assertEquals(data.getCreated(), created.longValue());
         assertEquals(data.getAccessed(), accessed.longValue());
@@ -158,40 +185,41 @@ public class MongoTestHelper
         assertNotNull(lastSaved);
 
         // get the session for the context
-        DBObject sessionSubDocumentForContext = 
-                (DBObject)MongoUtils.getNestedValue(sessionDocument,
-                                                    MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath());
+        DBObject sessionSubDocumentForContext =
+            (DBObject)MongoUtils.getNestedValue(sessionDocument,
+                MongoSessionDataStore.__CONTEXT + "." + data.getVhost().replace('.', '_') + ":" + data.getContextPath());
 
         assertNotNull(sessionSubDocumentForContext);
 
-        if (! data.getAllAttributes().isEmpty())
+        if (!data.getAllAttributes().isEmpty())
         {
             assertNotNull(attributes);
             SessionData tmp = new SessionData(data.getId(), data.getContextPath(), data.getVhost(), created.longValue(), accessed.longValue(), lastAccessed.longValue(), maxInactive.longValue());
-            try (ByteArrayInputStream bais = new ByteArrayInputStream(attributes);ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bais))
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(attributes);
+                 ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(bais))
             {
                 SessionData.deserializeAttributes(tmp, ois);
             }
-   
+
             //same keys
             assertTrue(data.getKeys().equals(tmp.getKeys()));
             //same values
-            for (String name:data.getKeys())
+            for (String name : data.getKeys())
             {
                 assertTrue(data.getAttribute(name).equals(tmp.getAttribute(name)));
             }
         }
-        
+
         return true;
     }
-    
-    public static void createUnreadableSession (String id, String contextPath, String vhost, 
-                                      String lastNode, long created, long accessed, 
-                                      long lastAccessed, long maxIdle, long expiry,
-                                      Map<String,Object> attributes)
-    throws Exception
+
+    public static void createUnreadableSession(String id, String contextPath, String vhost,
+                                               String lastNode, long created, long accessed,
+                                               long lastAccessed, long maxIdle, long expiry,
+                                               Map<String, Object> attributes)
+        throws Exception
     {
-        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        DBCollection collection = getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME);
 
         // Form query for upsert
         BasicDBObject key = new BasicDBObject(MongoSessionDataStore.__ID, id);
@@ -201,46 +229,46 @@ public class MongoTestHelper
         boolean upsert = false;
         BasicDBObject sets = new BasicDBObject();
 
-        Object version = new Long(1);
+        Object version = 1L;
 
         // New session
 
         upsert = true;
-        sets.put(MongoSessionDataStore.__CREATED,created);
-        sets.put(MongoSessionDataStore.__VALID,true);
-        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__VERSION,version);
-        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__LASTSAVED, System.currentTimeMillis());
-        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__LASTNODE, lastNode);
-       
+        sets.put(MongoSessionDataStore.__CREATED, created);
+        sets.put(MongoSessionDataStore.__VALID, true);
+        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath + "." + MongoSessionDataStore.__VERSION, version);
+        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath + "." + MongoSessionDataStore.__LASTSAVED, System.currentTimeMillis());
+        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath + "." + MongoSessionDataStore.__LASTNODE, lastNode);
+
         //Leaving out __MAX_IDLE to make it an invalid session object!
-        
+
         sets.put(MongoSessionDataStore.__EXPIRY, expiry);
         sets.put(MongoSessionDataStore.__ACCESSED, accessed);
         sets.put(MongoSessionDataStore.__LAST_ACCESSED, lastAccessed);
 
         if (attributes != null)
         {
-            SessionData tmp = new SessionData (id, contextPath, vhost, created, accessed, lastAccessed, maxIdle, attributes);
-            try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream oos = new ObjectOutputStream(baos))
+            SessionData tmp = new SessionData(id, contextPath, vhost, created, accessed, lastAccessed, maxIdle, attributes);
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                 ObjectOutputStream oos = new ObjectOutputStream(baos))
             {
                 SessionData.serializeAttributes(tmp, oos);
-                sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__ATTRIBUTES, baos.toByteArray());
+                sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath + "." + MongoSessionDataStore.__ATTRIBUTES, baos.toByteArray());
             }
         }
 
-        update.put("$set",sets);
-        collection.update(key,update,upsert,false,WriteConcern.SAFE); 
+        update.put("$set", sets);
+        collection.update(key, update, upsert, false, WriteConcern.SAFE);
     }
 
-
-    public static void createSession (String id, String contextPath, String vhost, 
-                                      String lastNode, long created, long accessed, 
-                                      long lastAccessed, long maxIdle, long expiry,
-                                      Map<String,Object> attributes)
-    throws Exception
+    public static void createSession(String id, String contextPath, String vhost,
+                                     String lastNode, long created, long accessed,
+                                     long lastAccessed, long maxIdle, long expiry,
+                                     Map<String, Object> attributes)
+        throws Exception
     {
 
-        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        DBCollection collection = getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME);
 
         // Form query for upsert
         BasicDBObject key = new BasicDBObject(MongoSessionDataStore.__ID, id);
@@ -250,15 +278,15 @@ public class MongoTestHelper
         boolean upsert = false;
         BasicDBObject sets = new BasicDBObject();
 
-        Object version = new Long(1);
+        Object version = 1L;
 
         // New session
         upsert = true;
-        sets.put(MongoSessionDataStore.__CREATED,created);
-        sets.put(MongoSessionDataStore.__VALID,true);
-        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__VERSION,version);
-        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__LASTSAVED, System.currentTimeMillis());
-        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__LASTNODE, lastNode);
+        sets.put(MongoSessionDataStore.__CREATED, created);
+        sets.put(MongoSessionDataStore.__VALID, true);
+        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath + "." + MongoSessionDataStore.__VERSION, version);
+        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath + "." + MongoSessionDataStore.__LASTSAVED, System.currentTimeMillis());
+        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath + "." + MongoSessionDataStore.__LASTNODE, lastNode);
         sets.put(MongoSessionDataStore.__MAX_IDLE, maxIdle);
         sets.put(MongoSessionDataStore.__EXPIRY, expiry);
         sets.put(MongoSessionDataStore.__ACCESSED, accessed);
@@ -266,28 +294,27 @@ public class MongoTestHelper
 
         if (attributes != null)
         {
-            SessionData tmp = new SessionData (id, contextPath, vhost, created, accessed, lastAccessed, maxIdle, attributes);
+            SessionData tmp = new SessionData(id, contextPath, vhost, created, accessed, lastAccessed, maxIdle, attributes);
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                  ObjectOutputStream oos = new ObjectOutputStream(baos);)
             {
                 SessionData.serializeAttributes(tmp, oos);
-                sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__ATTRIBUTES, baos.toByteArray());
+                sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath + "." + MongoSessionDataStore.__ATTRIBUTES, baos.toByteArray());
             }
         }
 
-        update.put("$set",sets);
-        collection.update(key,update,upsert,false,WriteConcern.SAFE);
+        update.put("$set", sets);
+        collection.update(key, update, upsert, false, WriteConcern.SAFE);
     }
 
-    
-    public static void createLegacySession (String id, String contextPath, String vhost, 
-                                      String lastNode, long created, long accessed, 
-                                      long lastAccessed, long maxIdle, long expiry,
-                                      Map<String,Object> attributes)
-    throws Exception
+    public static void createLegacySession(String id, String contextPath, String vhost,
+                                           String lastNode, long created, long accessed,
+                                           long lastAccessed, long maxIdle, long expiry,
+                                           Map<String, Object> attributes)
+        throws Exception
     {
         //make old-style session to test if we can retrieve it
-        DBCollection collection = _mongoClient.getDB(DB_NAME).getCollection(COLLECTION_NAME);
+        DBCollection collection = getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME);
 
         // Form query for upsert
         BasicDBObject key = new BasicDBObject(MongoSessionDataStore.__ID, id);
@@ -297,30 +324,30 @@ public class MongoTestHelper
         boolean upsert = false;
         BasicDBObject sets = new BasicDBObject();
 
-        Object version = new Long(1);
+        Object version = 1L;
 
         // New session
         upsert = true;
-        sets.put(MongoSessionDataStore.__CREATED,created);
-        sets.put(MongoSessionDataStore.__VALID,true);
-        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__VERSION,version);
-        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__LASTSAVED, System.currentTimeMillis());
-        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath +"."+MongoSessionDataStore.__LASTNODE, lastNode);
+        sets.put(MongoSessionDataStore.__CREATED, created);
+        sets.put(MongoSessionDataStore.__VALID, true);
+        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath + "." + MongoSessionDataStore.__VERSION, version);
+        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath + "." + MongoSessionDataStore.__LASTSAVED, System.currentTimeMillis());
+        sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath + "." + MongoSessionDataStore.__LASTNODE, lastNode);
         sets.put(MongoSessionDataStore.__MAX_IDLE, maxIdle);
         sets.put(MongoSessionDataStore.__EXPIRY, expiry);
         sets.put(MongoSessionDataStore.__ACCESSED, accessed);
         sets.put(MongoSessionDataStore.__LAST_ACCESSED, lastAccessed);
-        
+
         if (attributes != null)
         {
             for (String name : attributes.keySet())
             {
                 Object value = attributes.get(name);
-                sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath+ "." + MongoUtils.encodeName(name),
-                         MongoUtils.encodeName(value));
+                sets.put(MongoSessionDataStore.__CONTEXT + "." + vhost.replace('.', '_') + ":" + contextPath + "." + MongoUtils.encodeName(name),
+                    MongoUtils.encodeName(value));
             }
         }
-        update.put("$set",sets);
-        collection.update(key,update,upsert,false,WriteConcern.SAFE);
+        update.put("$set", sets);
+        collection.update(key, update, upsert, false, WriteConcern.SAFE);
     }
 }

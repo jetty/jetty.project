@@ -1,0 +1,89 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[configuring-sessions-file-system]]
+
+=== Persistent Sessions: File System
+
+Note: Persisting sessions to the local file system should *not* be used in a clustered environment.
+
+==== Enabling File System Sessions
+
+When using the Jetty distribution, you will first need to enable the `session-store-file` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+
+$ java -jar ../start.jar --add-to-start=session-store-file
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
+INFO  : session-store-file initialized in ${jetty.base}/start.d/session-store-file.ini
+MKDIR : ${jetty.base}/sessions
+INFO  : Base directory was modified
+----
+
+Doing this enables the File System Session module and any dependent modules or files needed for it to run on the server.
+The example above is using a fresh `${jetty.base}` with nothing else enabled.
+
+When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-file` module as well as the `sessions` and `server` modules, which are required for the File System session management to operate.
+Additionally a `${jetty.base}/sessions` directory was created.
+By default Session files will be saved to this directory.
+
+In addition to adding these modules to the classpath of the server, several ini configuration files were added to the `${jetty.base}/start.d` directory.
+
+____
+[NOTE]
+Session data is now only loaded when requested.
+Previous functionality such as `setLazyLoad` has been removed.
+____
+
+==== Configuring File System Session Properties
+
+Opening `start.d/session-store-file.ini` will show a list of all the configurable options for the file system session module:
+
+[source, screen, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: session-store-file
+# Enables session persistent storage in files.
+# ---------------------------------------
+--module=session-store-file
+
+jetty.session.file.storeDir=${jetty.base}/sessions
+#jetty.session.file.deleteUnrestorableFiles=false
+#jetty.session.savePeriod.seconds=0
+----
+
+jetty.session.storeDir::
+This defines the location for storage of Session files.
+jetty.session.file.deleteUnrestorableFiles::
+Boolean.
+If set to true, unreadable files will be deleted: this is useful to prevent repeated logging of the same error when the scavenger periodically (re-) attempts to load the corrupted information for a session in order to expire it.
+jetty.session.savePeriod.seconds=0::
+By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
+A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
++
+____
+[NOTE]
+Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
+In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
+This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+____

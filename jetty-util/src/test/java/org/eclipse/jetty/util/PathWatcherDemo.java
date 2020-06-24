@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -24,14 +24,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PathWatcherDemo implements PathWatcher.Listener
 {
-    private static final Logger LOG = Log.getLogger(PathWatcherDemo.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PathWatcherDemo.class);
 
     public static void main(String[] args)
     {
@@ -54,7 +56,9 @@ public class PathWatcherDemo implements PathWatcher.Listener
         }
         catch (Throwable t)
         {
-            LOG.warn(t);
+            LOG.warn("Failed to run paths: {}",
+                paths.stream().map(Objects::toString).collect(Collectors.joining(", ", "[", "]")),
+                t);
         }
     }
 
@@ -62,23 +66,26 @@ public class PathWatcherDemo implements PathWatcher.Listener
     {
         PathWatcher watcher = new PathWatcher();
         //watcher.addListener(new PathWatcherDemo());
-        watcher.addListener ((PathWatcher.EventListListener) events -> {
-           if (events == null)
-           {
-               LOG.warn("Null events received");
-           }
-           else if (events.isEmpty())
-           {
-               LOG.warn("Empty events received");
-           }
-           else
-           {
-               LOG.info("Bulk notification received");
-               for (PathWatchEvent e : events)
-                   onPathWatchEvent(e);
-           }
+        watcher.addListener((PathWatcher.EventListListener)events ->
+        {
+            if (events == null)
+            {
+                LOG.warn("Null events received");
+            }
+            else if (events.isEmpty())
+            {
+                LOG.warn("Empty events received");
+            }
+            else
+            {
+                LOG.info("Bulk notification received");
+                for (PathWatchEvent e : events)
+                {
+                    onPathWatchEvent(e);
+                }
+            }
         });
-        
+
         watcher.setNotifyExistingOnStart(false);
 
         List<String> excludes = new ArrayList<>();
@@ -101,7 +108,7 @@ public class PathWatcherDemo implements PathWatcher.Listener
             }
         }
         watcher.start();
-        
+
         Thread.currentThread().join();
     }
 
@@ -113,19 +120,18 @@ public class PathWatcherDemo implements PathWatcher.Listener
         msg.append(event.getType());
         msg.append("] ");
         msg.append(event.getPath());
-        msg.append(" (count=").append(event.getCount()).append(")");
         if (Files.isRegularFile(event.getPath()))
         {
             try
             {
-                String fsize = String.format(" (filesize=%,d)",Files.size(event.getPath()));
+                String fsize = String.format(" (filesize=%,d)", Files.size(event.getPath()));
                 msg.append(fsize);
             }
             catch (IOException e)
             {
-                LOG.warn("Unable to get filesize",e);
+                LOG.warn("Unable to get filesize", e);
             }
         }
-        LOG.info("{}",msg.toString());
+        LOG.info("{}", msg.toString());
     }
 }

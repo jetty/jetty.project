@@ -7,7 +7,6 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty</groupId>
   <artifactId>test-proxy-webapp</artifactId>
   <name>Test :: Jetty Proxy Webapp</name>
   <packaging>war</packaging>
@@ -36,23 +35,24 @@
   </build>
   <dependencies>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-proxy</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-       <groupId>javax.servlet</groupId>
-       <artifactId>javax.servlet-api</artifactId>
-       <scope>provided</scope>
-    </dependency>
-
-<!--
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet</artifactId>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
       <scope>provided</scope>
     </dependency>
--->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
@@ -84,7 +84,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-alpn-server</artifactId>
+      <artifactId>jetty-alpn-java-server</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

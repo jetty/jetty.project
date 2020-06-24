@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.osgi.boot;
@@ -27,14 +27,14 @@ import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.BundleTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * BundleWebAppProvider
@@ -42,57 +42,48 @@ import org.osgi.util.tracker.BundleTracker;
  * A Jetty Provider that knows how to deploy a WebApp contained inside a Bundle.
  */
 public class BundleWebAppProvider extends AbstractWebAppProvider implements BundleProvider
-{     
-    private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
-    
+{
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractWebAppProvider.class);
+
     /**
      * Map of Bundle to App. Used when a Bundle contains a webapp.
      */
     private Map<Bundle, App> _bundleMap = new HashMap<>();
-    
+
     private ServiceRegistration _serviceRegForBundles;
-    
+
     private WebAppTracker _webappTracker;
-    
-    
+
     public class WebAppTracker extends BundleTracker
     {
         protected String _managedServerName;
-        
-        public WebAppTracker (BundleContext bundleContext, String managedServerName)
+
+        public WebAppTracker(BundleContext bundleContext, String managedServerName)
         {
-            super (bundleContext, Bundle.ACTIVE | Bundle.STOPPING,null);
+            super(bundleContext, Bundle.ACTIVE | Bundle.STOPPING, null);
             _managedServerName = managedServerName;
         }
 
-        /** 
-         * @see org.osgi.util.tracker.BundleTracker#addingBundle(org.osgi.framework.Bundle, org.osgi.framework.BundleEvent)
-         */
         @Override
         public Object addingBundle(Bundle bundle, BundleEvent event)
         {
             try
             {
                 String serverName = (String)bundle.getHeaders().get(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME);
-                if ((StringUtil.isBlank(serverName) && _managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME))
-                     || (!StringUtil.isBlank(serverName) && (serverName.equals(_managedServerName))))
+                if ((StringUtil.isBlank(serverName) && _managedServerName.equals(OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME)) ||
+                    (!StringUtil.isBlank(serverName) && (serverName.equals(_managedServerName))))
                 {
-                    if (bundleAdded (bundle))
+                    if (bundleAdded(bundle))
                         return bundle;
                 }
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to add bundle {}", bundle, e);
             }
             return null;
         }
 
-   
-
-        /** 
-         * @see org.osgi.util.tracker.BundleTracker#removedBundle(org.osgi.framework.Bundle, org.osgi.framework.BundleEvent, java.lang.Object)
-         */
         @Override
         public void removedBundle(Bundle bundle, BundleEvent event, Object object)
         {
@@ -102,44 +93,33 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to remove bundle {}", bundle, e);
             }
         }
-        
-        
     }
 
-    /* ------------------------------------------------------------ */
-    public BundleWebAppProvider (ServerInstanceWrapper wrapper)
+    public BundleWebAppProvider(ServerInstanceWrapper wrapper)
     {
         super(wrapper);
     }
-    
-    /* ------------------------------------------------------------ */
-    /** 
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
+
     @Override
     protected void doStart() throws Exception
     {
         _webappTracker = new WebAppTracker(FrameworkUtil.getBundle(this.getClass()).getBundleContext(), getServerInstanceWrapper().getManagedServerName());
         _webappTracker.open();
         //register as an osgi service for deploying bundles, advertising the name of the jetty Server instance we are related to
-        Dictionary<String,String> properties = new Hashtable<>();
+        Dictionary<String, String> properties = new Hashtable<>();
         properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, getServerInstanceWrapper().getManagedServerName());
         _serviceRegForBundles = FrameworkUtil.getBundle(this.getClass()).getBundleContext().registerService(BundleProvider.class.getName(), this, properties);
         super.doStart();
     }
 
-    /* ------------------------------------------------------------ */
-    /** 
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {
         _webappTracker.close();
-        
+
         //unregister ourselves
         if (_serviceRegForBundles != null)
         {
@@ -149,25 +129,20 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to unregister {}", _serviceRegForBundles, e);
             }
         }
-     
+
         super.doStop();
     }
-    
-    
-    
 
-    
-    
-    /* ------------------------------------------------------------ */
     /**
-     * A bundle has been added that could be a webapp 
+     * A bundle has been added that could be a webapp
+     *
      * @param bundle the bundle
      */
     @Override
-    public boolean bundleAdded (Bundle bundle) throws Exception
+    public boolean bundleAdded(Bundle bundle) throws Exception
     {
         if (bundle == null)
             return false;
@@ -175,19 +150,19 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(getServerInstanceWrapper().getParentClassLoaderForWebapps());
         String contextPath = null;
-        try 
+        try
         {
             @SuppressWarnings("unchecked")
-            Dictionary<String,String> headers = bundle.getHeaders();
+            Dictionary<String, String> headers = bundle.getHeaders();
 
             //does the bundle have a OSGiWebappConstants.JETTY_WAR_FOLDER_PATH 
-            String resourcePath = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH, OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, headers);
+            String resourcePath = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, headers);
             if (resourcePath != null)
             {
                 String base = resourcePath;
                 contextPath = getContextPath(bundle);
                 String originId = getOriginId(bundle, base);
- 
+
                 //TODO : we don't know whether an app is actually deployed, as deploymentManager swallows all
                 //exceptions inside the impl of addApp. Need to send the Event and also register as a service
                 //only if the deployment succeeded
@@ -199,19 +174,18 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
                 return true;
             }
 
-
             //does the bundle have a WEB-INF/web.xml
             if (bundle.getEntry("/WEB-INF/web.xml") != null)
             {
                 String base = ".";
                 contextPath = getContextPath(bundle);
                 String originId = getOriginId(bundle, base);
-       
+
                 OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle, originId);
                 app.setContextPath(contextPath);
                 app.setWebAppPath(base);
                 _bundleMap.put(bundle, app);
-                getDeploymentManager().addApp(app);               
+                getDeploymentManager().addApp(app);
                 return true;
             }
 
@@ -221,13 +195,13 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
                 //Could be a static webapp with no web.xml
                 String base = ".";
                 contextPath = headers.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
-                String originId = getOriginId(bundle,base);
-                
+                String originId = getOriginId(bundle, base);
+
                 OSGiApp app = new OSGiApp(getDeploymentManager(), this, bundle, originId);
                 app.setContextPath(contextPath);
                 app.setWebAppPath(base);
                 _bundleMap.put(bundle, app);
-                getDeploymentManager().addApp(app);                
+                getDeploymentManager().addApp(app);
                 return true;
             }
 
@@ -235,7 +209,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
         }
         catch (Exception e)
         {
-            
+
             throw e;
         }
         finally
@@ -244,35 +218,28 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
         }
     }
 
-    
-    /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Bundle has been removed. If it was a webapp we deployed, undeploy it.
-     * 
+     *
      * @param bundle the bundle
      * @return true if this was a webapp we had deployed, false otherwise
      */
     @Override
-    public boolean bundleRemoved (Bundle bundle) throws Exception
+    public boolean bundleRemoved(Bundle bundle) throws Exception
     {
         App app = _bundleMap.remove(bundle);
         if (app != null)
         {
-            getDeploymentManager().removeApp(app); 
+            getDeploymentManager().removeApp(app);
             return true;
         }
         return false;
     }
-    
-   
 
-    
-    
-    /* ------------------------------------------------------------ */
     private static String getContextPath(Bundle bundle)
     {
         Dictionary<?, ?> headers = bundle.getHeaders();
-        String contextPath = (String) headers.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
+        String contextPath = (String)headers.get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
         if (contextPath == null)
         {
             // extract from the last token of the bundle's location:
@@ -280,7 +247,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             // the location will often reflect the version.
             // maybe this is relevant when the file is a war)
             String location = bundle.getLocation();
-            String toks[] = location.replace('\\', '/').split("/");
+            String[] toks = StringUtil.replace(location, '\\', '/').split("/");
             contextPath = toks[toks.length - 1];
             // remove .jar, .war etc:
             int lastDot = contextPath.lastIndexOf('.');
@@ -289,10 +256,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
         }
         if (!contextPath.startsWith("/"))
             contextPath = "/" + contextPath;
- 
+
         return contextPath;
     }
-    
-    
-
 }

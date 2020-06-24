@@ -1,0 +1,117 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[using-persistent-sessions]]
+=== Using Persistent Sessions
+
+It is sometimes useful to preserve existing Sessions across restarts of Jetty. 
+The link:{JDURL}/org/eclipse/jetty/server/session/HashSessionManager.html[`HashSessionManager`] supports this feature. 
+If you enable persistence, the `HashSessionManager` saves all existing, valid Sessions to disk before shutdown completes. 
+On restart, Jetty restores the saved Sessions.
+
+[[enabling-persistence]]
+==== Enabling Persistence
+
+A `SessionManager` does just what its name suggests – it manages the lifecycle and state of sessions on behalf of a webapp. 
+Each webapp must have its own unique `SessionManager` instance. 
+Enabling persistence is as simple as configuring the `HashSessionManager` as the `SessionManager` for a webapp and telling it where on disk to store the sessions:
+
+[source, xml, subs="{sub-order}"]
+----
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  .
+  .
+  .
+  <Set name="sessionHandler">
+    <New class="org.eclipse.jetty.server.session.SessionHandler">
+      <Arg>
+        <New class="org.eclipse.jetty.server.session.HashSessionManager">
+          <Set name="storeDirectory">your/chosen/directory/goes/here</Set>
+        </New>
+      </Arg>
+    </New>
+  </Set>
+  .
+  .
+  .
+</Configure>      
+
+      
+----
+
+The above uses an example of a xref:intro-jetty-configuration-contexts[context configuration file].
+
+[TIP]
+====
+If you want to persist the sessions from multiple webapps: 
+
+1.  Configure a separate `HashSessionManager` for each.
+  
+2.  Assign to each a different value for `storeDirectory`.
+====
+
+[[delaying-session-load]]
+==== Delaying Session Load
+
+You might need to ensure that the sessions are loaded AFTER the servlet environment starts up (by default, Jetty eagerly loads sessions as part of the container startup, but before it initializes the servlet environment). 
+For example, the Wicket web framework requires the servlet environment to be available when sessions are activated.
+
+Using `SessionManager.setLazyLoad(true)`, Jetty loads sessions lazily either when it receives the first request for a session, or the session scavenger runs for the first time, whichever happens first. 
+Here's how the configuration looks in XML:
+
+[source, xml, subs="{sub-order}"]
+----
+<Set name="sessionHandler">
+  <New class="org.eclipse.jetty.server.session.SessionHandler">
+    <Arg>
+      <New class="org.eclipse.jetty.server.session.HashSessionManager">
+        <Set name="lazyLoad">true</Set>
+      </New>
+    </Arg>
+  </New>
+</Set>      
+----
+
+[[enabling-persistence-for-jetty-maven-plugin]]
+==== Enabling Persistence for the Jetty Maven Plugin
+
+To enable session persistence for the Jetty Maven plugin, set up the `HashSessionManager` in the configuration section like so:
+
+[source, xml, subs="{sub-order}"]
+----
+<plugin>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-maven-plugin</artifactId>
+  <version>9.0.0.RC2 (or current version)</version>
+  <configuration>
+    <!-- ... -->
+    <webAppConfig implementation="org.eclipse.jetty.maven.plugin.JettyWebAppContext">
+      <defaultsDescriptor>${project.build.outputDirectory}/META-INF/webdefault.xml</defaultsDescriptor>
+      <contextPath>${jetty.contextRoot}</contextPath>
+      <sessionHandler implementation="org.eclipse.jetty.server.session.SessionHandler">
+        <sessionManager implementation="org.eclipse.jetty.server.session.HashSessionManager">
+          <storeDirectory>${project.basedir}/target/jetty-sessions</storeDirectory>
+          <idleSavePeriod>1</idleSavePeriod>
+        </sessionManager>
+      </sessionHandler>
+    </webAppConfig>
+    <!-- ... -->
+  </configuration>
+</plugin>      
+----

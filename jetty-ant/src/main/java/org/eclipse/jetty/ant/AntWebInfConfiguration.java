@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,7 @@ public class AntWebInfConfiguration extends WebInfConfiguration
     {
         return WebInfConfiguration.class;
     }
-    
+
     /**
      * Adds classpath files into web application classloader, and
      * sets web.xml and base directory for the configured web application.
@@ -50,11 +50,11 @@ public class AntWebInfConfiguration extends WebInfConfiguration
             List<File> classPathFiles = ((AntWebAppContext)context).getClassPathFiles();
             if (classPathFiles != null)
             {
-                for (File cpFile:classPathFiles)
+                for (File cpFile : classPathFiles)
                 {
                     if (cpFile.exists())
                     {
-                        ((WebAppClassLoader) context.getClassLoader()).addClassPath(cpFile.getCanonicalPath());
+                        ((WebAppClassLoader)context.getClassLoader()).addClassPath(cpFile.getCanonicalPath());
                     }
                 }
             }

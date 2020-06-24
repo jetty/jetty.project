@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlets;
@@ -21,7 +21,6 @@ package org.eclipse.jetty.servlets;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
@@ -31,8 +30,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Header Filter
@@ -58,19 +57,21 @@ import org.eclipse.jetty.util.log.Logger;
 public class HeaderFilter extends IncludeExcludeBasedFilter
 {
     private List<ConfiguredHeader> _configuredHeaders = new ArrayList<>();
-    private static final Logger LOG = Log.getLogger(HeaderFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HeaderFilter.class);
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException
     {
         super.init(filterConfig);
-        String header_config = filterConfig.getInitParameter("headerConfig");
+        String headerConfig = filterConfig.getInitParameter("headerConfig");
 
-        if (header_config != null)
+        if (headerConfig != null)
         {
-            String[] configs = StringUtil.csvSplit(header_config);
+            String[] configs = StringUtil.csvSplit(headerConfig);
             for (String config : configs)
+            {
                 _configuredHeaders.add(parseHeaderConfiguration(config));
+            }
         }
 
         if (LOG.isDebugEnabled())
@@ -80,40 +81,40 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        HttpServletRequest http_request = (HttpServletRequest)request;
-        HttpServletResponse http_response = (HttpServletResponse)response;
+        HttpServletRequest httpRequest = (HttpServletRequest)request;
+        HttpServletResponse httpResponse = (HttpServletResponse)response;
 
-        if (super.shouldFilter(http_request,http_response))
+        if (super.shouldFilter(httpRequest, httpResponse))
         {
             for (ConfiguredHeader header : _configuredHeaders)
             {
                 if (header.isDate())
                 {
-                    long header_value = System.currentTimeMillis() + header.getMsOffset();
+                    long headerValue = System.currentTimeMillis() + header.getMsOffset();
                     if (header.isAdd())
                     {
-                        http_response.addDateHeader(header.getName(),header_value);
+                        httpResponse.addDateHeader(header.getName(), headerValue);
                     }
                     else
                     {
-                        http_response.setDateHeader(header.getName(),header_value);
+                        httpResponse.setDateHeader(header.getName(), headerValue);
                     }
                 }
                 else // constant header value
                 {
                     if (header.isAdd())
                     {
-                        http_response.addHeader(header.getName(),header.getValue());
+                        httpResponse.addHeader(header.getName(), header.getValue());
                     }
                     else
                     {
-                        http_response.setHeader(header.getName(),header.getValue());
+                        httpResponse.setHeader(header.getName(), header.getValue());
                     }
                 }
             }
         }
 
-        chain.doFilter(request,response);
+        chain.doFilter(request, response);
     }
 
     @Override
@@ -123,21 +124,23 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
         sb.append(super.toString()).append("\n");
         sb.append("configured headers:\n");
         for (ConfiguredHeader c : _configuredHeaders)
+        {
             sb.append(c).append("\n");
+        }
 
         return sb.toString();
     }
 
     private ConfiguredHeader parseHeaderConfiguration(String config)
     {
-        String[] config_tokens = config.trim().split(" ",2);
-        String method = config_tokens[0].trim();
-        String header = config_tokens[1];
-        String[] header_tokens = header.trim().split(":",2);
-        String header_name = header_tokens[0].trim();
-        String header_value = header_tokens[1].trim();
-        ConfiguredHeader configured_header = new ConfiguredHeader(header_name,header_value,method.startsWith("add"),method.endsWith("Date"));
-        return configured_header;
+        String[] configTokens = config.trim().split(" ", 2);
+        String method = configTokens[0].trim();
+        String header = configTokens[1];
+        String[] headerTokens = header.trim().split(":", 2);
+        String headerName = headerTokens[0].trim();
+        String headerValue = headerTokens[1].trim();
+        ConfiguredHeader configuredHeader = new ConfiguredHeader(headerName, headerValue, method.startsWith("add"), method.endsWith("Date"));
+        return configuredHeader;
     }
 
     private static class ConfiguredHeader
@@ -189,7 +192,7 @@ public class HeaderFilter extends IncludeExcludeBasedFilter
         @Override
         public String toString()
         {
-            return (_add?"add":"set") + (_date?"Date":"") + " " + _name + ": " + _value;
+            return (_add ? "add" : "set") + (_date ? "Date" : "") + " " + _name + ": " + _value;
         }
     }
 }

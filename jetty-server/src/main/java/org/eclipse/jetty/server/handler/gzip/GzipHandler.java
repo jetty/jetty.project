@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.handler.gzip;
@@ -21,7 +21,6 @@ package org.eclipse.jetty.server.handler.gzip;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.ListIterator;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
@@ -31,138 +30,144 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.*;
+import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
-import org.eclipse.jetty.server.DeflaterPool;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.RegexSet;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Handler that can dynamically GZIP uncompress requests, and compress responses.
  * <p>
- *     The GzipHandler can be applied to the entire server (a {@code gzip.mod} is included in
- *     the {@code jetty-home}) or it may be applied to individual contexts.
+ * The GzipHandler can be applied to the entire server (a {@code gzip.mod} is included in
+ * the {@code jetty-home}) or it may be applied to individual contexts.
  * </p>
  * <p>
- *     Both Request uncompress and Response compress are gated by a configurable
- *     {@link DispatcherType} check on the GzipHandler.
- *     (This is similar in behavior to a {@link javax.servlet.Filter} configuration
- *     you would find in a Servlet Descriptor file ({@code WEB-INF/web.xml})
- *     <br>(Default: {@link DispatcherType#REQUEST}).
+ * Both Request uncompress and Response compress are gated by a configurable
+ * {@link DispatcherType} check on the GzipHandler.
+ * (This is similar in behavior to a {@link javax.servlet.Filter} configuration
+ * you would find in a Servlet Descriptor file ({@code WEB-INF/web.xml})
+ * <br>(Default: {@link DispatcherType#REQUEST}).
  * </p>
  * <p>
- *     Requests with a {@code Content-Encoding} header with the value {@code gzip} will
- *     be uncompressed by a {@link GzipHttpInputInterceptor} for any API that uses
- *     {@link HttpServletRequest#getInputStream()} or {@link HttpServletRequest#getReader()}.
+ * Requests with a {@code Content-Encoding} header with the value {@code gzip} will
+ * be uncompressed by a {@link GzipHttpInputInterceptor} for any API that uses
+ * {@link HttpServletRequest#getInputStream()} or {@link HttpServletRequest#getReader()}.
  * </p>
  * <p>
- *     Response compression has a number of checks before GzipHandler will perform compression.
+ * Response compression has a number of checks before GzipHandler will perform compression.
  * </p>
  * <ol>
- *     <li>
- *         Does the request contain a {@code Accept-Encoding} header that specifies
- *         {@code gzip} value?
- *     </li>
- *     <li>
- *         Is the {@link HttpServletRequest#getMethod()} allowed by the configured HTTP Method Filter.
- *         <br> (Default: {@code GET})
- *     </li>
- *     <li>
- *         Is the incoming Path allowed by the configured Path Specs filters?
- *         <br> (Default: all paths are allowed)
- *     </li>
- *     <li>
- *         Is the Request User-Agent allowed by the configured User-Agent filters?
- *         <br> (Default: MSIE 6 is excluded)
- *     </li>
- *     <li>
- *         Is the Response {@code Content-Length} header present, and does its
- *         value meet the minimum gzip size requirements?
- *         <br> (Default: 16 bytes. see {@link GzipHandler#DEFAULT_MIN_GZIP_SIZE})
- *     </li>
- *     <li>
- *         Is the Request {@code Accept} header present and does it contain the
- *         required {@code gzip} value?
- *     </li>
+ * <li>
+ * Does the request contain a {@code Accept-Encoding} header that specifies
+ * {@code gzip} value?
+ * </li>
+ * <li>
+ * Is the {@link HttpServletRequest#getMethod()} allowed by the configured HTTP Method Filter.
+ * <br> (Default: {@code GET})
+ * </li>
+ * <li>
+ * Is the incoming Path allowed by the configured Path Specs filters?
+ * <br> (Default: all paths are allowed)
+ * </li>
+ * <li>
+ * Is the Request User-Agent allowed by the configured User-Agent filters?
+ * <br> (Default: MSIE 6 is excluded)
+ * </li>
+ * <li>
+ * Is the Response {@code Content-Length} header present, and does its
+ * value meet the minimum gzip size requirements (default 32 bytes)?
+ * </li>
+ * <li>
+ * Is the Request {@code Accept} header present and does it contain the
+ * required {@code gzip} value?
+ * </li>
  * </ol>
  * <p>
- *     When you encounter a configurable filter in the GzipHandler (method, paths, user-agent,
- *     mime-types, etc) that has both Included and Excluded values, note that the Included
- *     values always win over the Excluded values.
+ * When you encounter a configurable filter in the GzipHandler (method, paths, user-agent,
+ * mime-types, etc) that has both Included and Excluded values, note that the Included
+ * values always win over the Excluded values.
  * </p>
  * <p>
- *     <em>Important note about Default Values</em>:
- *     It is important to note that the GzipHandler will automatically configure itself from the
- *     MimeType present on the Server, System, and Contexts and the ultimate set of default values
- *     for the various filters (paths, methods, mime-types, etc) can be influenced by the
- *     available mime types to work with.
+ * <em>Important note about Default Values</em>:
+ * It is important to note that the GzipHandler will automatically configure itself from the
+ * MimeType present on the Server, System, and Contexts and the ultimate set of default values
+ * for the various filters (paths, methods, mime-types, etc) can be influenced by the
+ * available mime types to work with.
  * </p>
  * <p>
- *     ETag (or Entity Tag) information: any Request headers for {@code If-None-Match} or
- *     {@code If-Match} will be evaluated by the GzipHandler to determine if it was involved
- *     in compression of the response earlier.  This is usually present as a {@code --gzip} suffix
- *     on the ETag that the Client User-Agent is tracking and handed to the Jetty server.
- *     The special {@code --gzip} suffix on the ETag is how GzipHandler knows that the content
- *     passed through itself, and this suffix will be stripped from the Request header values
- *     before the request is sent onwards to the specific webapp / servlet endpoint for
- *     handling.
- *     If a ETag is present in the Response headers, and GzipHandler is compressing the
- *     contents, it will add the {@code --gzip} suffix before the Response headers are committed
- *     and sent to the User Agent.
+ * ETag (or Entity Tag) information: any Request headers for {@code If-None-Match} or
+ * {@code If-Match} will be evaluated by the GzipHandler to determine if it was involved
+ * in compression of the response earlier.  This is usually present as a {@code --gzip} suffix
+ * on the ETag that the Client User-Agent is tracking and handed to the Jetty server.
+ * The special {@code --gzip} suffix on the ETag is how GzipHandler knows that the content
+ * passed through itself, and this suffix will be stripped from the Request header values
+ * before the request is sent onwards to the specific webapp / servlet endpoint for
+ * handling.
+ * If a ETag is present in the Response headers, and GzipHandler is compressing the
+ * contents, it will add the {@code --gzip} suffix before the Response headers are committed
+ * and sent to the User Agent.
  * </p>
  * <p>
- *     This implementation relies on an Jetty internal {@link org.eclipse.jetty.server.HttpOutput.Interceptor}
- *     mechanism to allow for effective and efficient compression of the response on all Output API usages:
+ * This implementation relies on an Jetty internal {@link org.eclipse.jetty.server.HttpOutput.Interceptor}
+ * mechanism to allow for effective and efficient compression of the response on all Output API usages:
  * </p>
  * <ul>
- *     <li>
- *         {@link javax.servlet.ServletOutputStream} - Obtained from {@link HttpServletResponse#getOutputStream()}
- *         using the traditional Blocking I/O techniques
- *     </li>
- *     <li>
- *         {@link javax.servlet.WriteListener} - Provided to
- *         {@link javax.servlet.ServletOutputStream#setWriteListener(javax.servlet.WriteListener)}
- *         using the new (since Servlet 3.1) Async I/O techniques
- *     </li>
- *     <li>
- *         {@link java.io.PrintWriter} - Obtained from {@link HttpServletResponse#getWriter()}
- *         using Blocking I/O techniques
- *     </li>
+ * <li>
+ * {@link javax.servlet.ServletOutputStream} - Obtained from {@link HttpServletResponse#getOutputStream()}
+ * using the traditional Blocking I/O techniques
+ * </li>
+ * <li>
+ * {@link javax.servlet.WriteListener} - Provided to
+ * {@link javax.servlet.ServletOutputStream#setWriteListener(javax.servlet.WriteListener)}
+ * using the new (since Servlet 3.1) Async I/O techniques
+ * </li>
+ * <li>
+ * {@link java.io.PrintWriter} - Obtained from {@link HttpServletResponse#getWriter()}
+ * using Blocking I/O techniques
+ * </li>
  * </ul>
  * <p>
- *     Historically the compression of responses were accomplished via
- *     Servlet Filters (eg: {@code GzipFilter}) and usage of {@link javax.servlet.http.HttpServletResponseWrapper}.
- *     Since the introduction of Async I/O in Servlet 3.1, this older form of Gzip support
- *     in web applications has been problematic and bug ridden.
+ * Historically the compression of responses were accomplished via
+ * Servlet Filters (eg: {@code GzipFilter}) and usage of {@link javax.servlet.http.HttpServletResponseWrapper}.
+ * Since the introduction of Async I/O in Servlet 3.1, this older form of Gzip support
+ * in web applications has been problematic and bug ridden.
  * </p>
  */
 public class GzipHandler extends HandlerWrapper implements GzipFactory
 {
+    public static final EnumSet<HttpHeader> ETAG_HEADERS = EnumSet.of(HttpHeader.IF_MATCH, HttpHeader.IF_NONE_MATCH);
     public static final String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
-    public static final int DEFAULT_MIN_GZIP_SIZE=16;
-    public static final int COMPRESSION_LEVEL = Deflater.DEFAULT_COMPRESSION;
-    private static final Logger LOG = Log.getLogger(GzipHandler.class);
-    private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding","gzip");
+    public static final int DEFAULT_MIN_GZIP_SIZE = 32;
+    public static final int BREAK_EVEN_GZIP_SIZE = 23;
+    private static final Logger LOG = LoggerFactory.getLogger(GzipHandler.class);
+    private static final HttpField X_CE_GZIP = new PreEncodedHttpField("X-Content-Encoding", "gzip");
     private static final HttpField TE_CHUNKED = new PreEncodedHttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED.asString());
     private static final Pattern COMMA_GZIP = Pattern.compile(".*, *gzip");
 
-    private int POOL_CAPACITY = -1;
+    private int poolCapacity = -1;
     private DeflaterPool _deflaterPool = null;
 
-    private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
+    private int _minGzipSize = DEFAULT_MIN_GZIP_SIZE;
     private boolean _syncFlush = false;
     private int _inflateBufferSize = -1;
     private EnumSet<DispatcherType> _dispatchers = EnumSet.of(DispatcherType.REQUEST);
     // non-static, as other GzipHandler instances may have different configurations
-    private final IncludeExclude<String> _agentPatterns=new IncludeExclude<>(RegexSet.class);
+    private final IncludeExclude<String> _agentPatterns = new IncludeExclude<>(RegexSet.class);
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
@@ -174,12 +179,12 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public GzipHandler()
     {
         _methods.include(HttpMethod.GET.asString());
-        for (String type:MimeTypes.getKnownMimeTypes())
+        for (String type : MimeTypes.getKnownMimeTypes())
         {
             if ("image/svg+xml".equals(type))
                 _paths.exclude("*.svgz");
-            else if (type.startsWith("image/")||
-                type.startsWith("audio/")||
+            else if (type.startsWith("image/") ||
+                type.startsWith("audio/") ||
                 type.startsWith("video/"))
                 _mimeTypes.exclude(type);
         }
@@ -192,8 +197,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _mimeTypes.exclude("application/x-rar-compressed");
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} mime types {}",this,_mimeTypes);
-        
+            LOG.debug("{} mime types {}", this, _mimeTypes);
+
         _agentPatterns.exclude(".*MSIE 6.0.*");
     }
 
@@ -217,7 +222,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public void addExcludedMethods(String... methods)
     {
         for (String m : methods)
+        {
             _methods.exclude(m);
+        }
     }
 
     /**
@@ -254,9 +261,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      * Adds excluded MIME types for response filtering.
      *
      * <p>
-     *     <em>Deprecation Warning: </em>
-     *     For backward compatibility the MIME types parameters may be comma separated strings,
-     *     but this will not be supported in future versions of Jetty.
+     * <em>Deprecation Warning: </em>
+     * For backward compatibility the MIME types parameters may be comma separated strings,
+     * but this will not be supported in future versions of Jetty.
      * </p>
      *
      * @param types The mime types to exclude (without charset or other parameters).
@@ -265,7 +272,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public void addExcludedMimeTypes(String... types)
     {
         for (String t : types)
+        {
             _mimeTypes.exclude(StringUtil.csvSplit(t));
+        }
     }
 
     /**
@@ -276,19 +285,19 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      * Regex based.  This means that the initial characters on the path spec
      * line are very strict, and determine the behavior of the path matching.
      * <ul>
-     *  <li>If the spec starts with <code>'^'</code> the spec is assumed to be
-     *      a regex based path spec and will match with normal Java regex rules.</li>
-     *  <li>If the spec starts with <code>'/'</code> then spec is assumed to be
-     *      a Servlet url-pattern rules path spec for either an exact match
-     *      or prefix based match.</li>
-     *  <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
-     *      a Servlet url-pattern rules path spec for a suffix based match.</li>
-     *  <li>All other syntaxes are unsupported</li> 
+     * <li>If the spec starts with <code>'^'</code> the spec is assumed to be
+     * a regex based path spec and will match with normal Java regex rules.</li>
+     * <li>If the spec starts with <code>'/'</code> then spec is assumed to be
+     * a Servlet url-pattern rules path spec for either an exact match
+     * or prefix based match.</li>
+     * <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
+     * a Servlet url-pattern rules path spec for a suffix based match.</li>
+     * <li>All other syntaxes are unsupported</li>
      * </ul>
      * <p>
      * Note: inclusion takes precedence over exclude.
-     * 
-     * @param pathspecs Path specs (as per servlet spec) to exclude. If a 
+     *
+     * @param pathspecs Path specs (as per servlet spec) to exclude. If a
      * ServletContext is available, the paths are relative to the context path,
      * otherwise they are absolute.<br>
      * For backward compatibility the pathspecs may be comma separated strings, but this
@@ -298,7 +307,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public void addExcludedPaths(String... pathspecs)
     {
         for (String p : pathspecs)
+        {
             _paths.exclude(StringUtil.csvSplit(p));
+        }
     }
 
     /**
@@ -311,7 +322,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         _agentPatterns.include(patterns);
     }
-    
+
     /**
      * Adds included HTTP Methods (eg: POST, PATCH, DELETE) for filtering.
      *
@@ -321,7 +332,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public void addIncludedMethods(String... methods)
     {
         for (String m : methods)
+        {
             _methods.include(m);
+        }
     }
 
     /**
@@ -359,7 +372,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public void addIncludedMimeTypes(String... types)
     {
         for (String t : types)
+        {
             _mimeTypes.include(StringUtil.csvSplit(t));
+        }
     }
 
     /**
@@ -370,65 +385,58 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      * Regex based.  This means that the initial characters on the path spec
      * line are very strict, and determine the behavior of the path matching.
      * <ul>
-     *  <li>If the spec starts with <code>'^'</code> the spec is assumed to be
-     *      a regex based path spec and will match with normal Java regex rules.</li>
-     *  <li>If the spec starts with <code>'/'</code> then spec is assumed to be
-     *      a Servlet url-pattern rules path spec for either an exact match
-     *      or prefix based match.</li>
-     *  <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
-     *      a Servlet url-pattern rules path spec for a suffix based match.</li>
-     *  <li>All other syntaxes are unsupported</li> 
+     * <li>If the spec starts with <code>'^'</code> the spec is assumed to be
+     * a regex based path spec and will match with normal Java regex rules.</li>
+     * <li>If the spec starts with <code>'/'</code> then spec is assumed to be
+     * a Servlet url-pattern rules path spec for either an exact match
+     * or prefix based match.</li>
+     * <li>If the spec starts with <code>'*.'</code> then spec is assumed to be
+     * a Servlet url-pattern rules path spec for a suffix based match.</li>
+     * <li>All other syntaxes are unsupported</li>
      * </ul>
      * <p>
      * Note: inclusion takes precedence over exclusion.
-     * 
-     * @param pathspecs Path specs (as per servlet spec) to include. If a 
+     *
+     * @param pathspecs Path specs (as per servlet spec) to include. If a
      * ServletContext is available, the paths are relative to the context path,
      * otherwise they are absolute
      */
     public void addIncludedPaths(String... pathspecs)
     {
         for (String p : pathspecs)
+        {
             _paths.include(StringUtil.csvSplit(p));
+        }
     }
-    
+
     @Override
     protected void doStart() throws Exception
     {
-        _deflaterPool = newDeflaterPool(POOL_CAPACITY);
-        _vary=(_agentPatterns.size()>0)?GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING_USER_AGENT:GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING;
+        _deflaterPool = newDeflaterPool(poolCapacity);
+        _vary = (_agentPatterns.size() > 0) ? GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING_USER_AGENT : GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING;
         super.doStart();
     }
 
     @Override
-    public Deflater getDeflater(Request request, long content_length)
+    public Deflater getDeflater(Request request, long contentLength)
     {
         String ua = request.getHttpFields().get(HttpHeader.USER_AGENT);
-        if (ua!=null && !isAgentGzipable(ua))
+        if (ua != null && !isAgentGzipable(ua))
         {
-            LOG.debug("{} excluded user agent {}",this,request);
+            LOG.debug("{} excluded user agent {}", this, request);
             return null;
         }
-        
-        if (content_length>=0 && content_length<_minGzipSize)
+
+        if (contentLength >= 0 && contentLength < _minGzipSize)
         {
-            LOG.debug("{} excluded minGzipSize {}",this,request);
+            LOG.debug("{} excluded minGzipSize {}", this, request);
             return null;
         }
 
         // check the accept encoding header
-        HttpField accept = request.getHttpFields().getField(HttpHeader.ACCEPT_ENCODING);
-
-        if (accept==null)
+        if (!request.getHttpFields().contains(HttpHeader.ACCEPT_ENCODING, "gzip"))
         {
-            LOG.debug("{} excluded !accept {}",this,request);
-            return null;
-        }
-        boolean gzip = accept.contains("gzip");
-
-        if (!gzip)
-        {
-            LOG.debug("{} excluded not gzip accept {}",this,request);
+            LOG.debug("{} excluded not gzip accept {}", this, request);
             return null;
         }
 
@@ -443,7 +451,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public String[] getExcludedAgentPatterns()
     {
-        Set<String> excluded=_agentPatterns.getExcluded();
+        Set<String> excluded = _agentPatterns.getExcluded();
         return excluded.toArray(new String[excluded.size()]);
     }
 
@@ -455,7 +463,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public String[] getExcludedMethods()
     {
-        Set<String> excluded=_methods.getExcluded();
+        Set<String> excluded = _methods.getExcluded();
         return excluded.toArray(new String[excluded.size()]);
     }
 
@@ -467,7 +475,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public String[] getExcludedMimeTypes()
     {
-        Set<String> excluded=_mimeTypes.getExcluded();
+        Set<String> excluded = _mimeTypes.getExcluded();
         return excluded.toArray(new String[excluded.size()]);
     }
 
@@ -479,7 +487,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public String[] getExcludedPaths()
     {
-        Set<String> excluded=_paths.getExcluded();
+        Set<String> excluded = _paths.getExcluded();
         return excluded.toArray(new String[excluded.size()]);
     }
 
@@ -491,7 +499,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public String[] getIncludedAgentPatterns()
     {
-        Set<String> includes=_agentPatterns.getIncluded();
+        Set<String> includes = _agentPatterns.getIncluded();
         return includes.toArray(new String[includes.size()]);
     }
 
@@ -503,7 +511,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public String[] getIncludedMethods()
     {
-        Set<String> includes=_methods.getIncluded();
+        Set<String> includes = _methods.getIncluded();
         return includes.toArray(new String[includes.size()]);
     }
 
@@ -515,7 +523,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public String[] getIncludedMimeTypes()
     {
-        Set<String> includes=_mimeTypes.getIncluded();
+        Set<String> includes = _mimeTypes.getIncluded();
         return includes.toArray(new String[includes.size()]);
     }
 
@@ -527,20 +535,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public String[] getIncludedPaths()
     {
-        Set<String> includes=_paths.getIncluded();
+        Set<String> includes = _paths.getIncluded();
         return includes.toArray(new String[includes.size()]);
-    }
-
-    /**
-     * Get the current filter list of included HTTP methods
-     *
-     * @return the filter list of included HTTP methods
-     * @deprecated use {@link #getIncludedMethods()} instead.  (Will be removed in Jetty 10)
-     */
-    @Deprecated
-    public String[] getMethods()
-    {
-        return getIncludedMethods();
     }
 
     /**
@@ -580,147 +576,162 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         _inflateBufferSize = size;
     }
-    
+
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        ServletContext context = baseRequest.getServletContext();
-        String path = context==null?baseRequest.getRequestURI():URIUtil.addPaths(baseRequest.getServletPath(),baseRequest.getPathInfo());
-        LOG.debug("{} handle {} in {}",this,baseRequest,context);
-        
+        final ServletContext context = baseRequest.getServletContext();
+        final String path = baseRequest.getPathInContext();
+        LOG.debug("{} handle {} in {}", this, baseRequest, context);
+
         if (!_dispatchers.contains(baseRequest.getDispatcherType()))
         {
-            LOG.debug("{} excluded by dispatcherType {}",this,baseRequest.getDispatcherType());
-            _handler.handle(target,baseRequest, request, response);
+            LOG.debug("{} excluded by dispatcherType {}", this, baseRequest.getDispatcherType());
+            _handler.handle(target, baseRequest, request, response);
             return;
         }
 
         // Handle request inflation
-        if (_inflateBufferSize>0)
+        HttpFields httpFields = baseRequest.getHttpFields();
+        boolean inflated = _inflateBufferSize > 0 && httpFields.contains(HttpHeader.CONTENT_ENCODING, "gzip");
+        if (inflated)
         {
-            boolean inflate = false;
-            for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext();)
-            {
-                HttpField field = i.next();
-
-                if (field.getHeader()==HttpHeader.CONTENT_ENCODING)
-                {
-                    if (field.getValue().equalsIgnoreCase("gzip"))
-                    {
-                        i.set(X_CE_GZIP);
-                        inflate = true;
-                        break;
-                    }
-
-                    if (COMMA_GZIP.matcher(field.getValue()).matches())
-                    {
-                        String v = field.getValue();
-                        v = v.substring(0, v.lastIndexOf(','));
-                        i.set(new HttpField(HttpHeader.CONTENT_ENCODING, v));
-                        i.add(X_CE_GZIP);
-                        inflate = true;
-                        break;
-                    }
-                }
-            }
-
-            if (inflate)
-            {
-                baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(), _inflateBufferSize));
-
-                for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext();)
-                {
-                    HttpField field = i.next();
-                    if (field.getHeader()==HttpHeader.CONTENT_LENGTH)
-                    {
-                        i.set(new HttpField("X-Content-Length", field.getValue()));
-                        break;
-                    }
-                }
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} inflate {}", this, request);
+            baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(), _inflateBufferSize));
         }
 
         // Are we already being gzipped?
         HttpOutput out = baseRequest.getResponse().getHttpOutput();
         HttpOutput.Interceptor interceptor = out.getInterceptor();
-        while (interceptor!=null)
+        boolean alreadyGzipped = false;
+        while (interceptor != null)
         {
             if (interceptor instanceof GzipHttpOutputInterceptor)
             {
-                LOG.debug("{} already intercepting {}",this,request);
-                _handler.handle(target,baseRequest, request, response);
-                return;
+                alreadyGzipped = true;
+                break;
             }
-            interceptor=interceptor.getNextInterceptor();
+            interceptor = interceptor.getNextInterceptor();
         }
-        
-        // Special handling for etags
-        for (ListIterator<HttpField> fields = baseRequest.getHttpFields().listIterator(); fields.hasNext();)
+
+        // Update headers for etags and inflation
+        if (inflated || httpFields.contains(ETAG_HEADERS))
         {
-            HttpField field = fields.next();
-            if (field.getHeader()==HttpHeader.IF_NONE_MATCH || field.getHeader()==HttpHeader.IF_MATCH)
+            HttpFields.Mutable newFields = HttpFields.build(httpFields.size() + 1);
+            for (HttpField field : httpFields)
             {
-                String etag = field.getValue();
-                int i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote);
-                if (i>0)
+                if (field.getHeader() == null)
                 {
-                    baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag",etag);
-                    while (i>=0)
+                    newFields.add(field);
+                    continue;
+                }
+
+                switch (field.getHeader())
+                {
+                    case IF_MATCH:
+                    case IF_NONE_MATCH:
                     {
-                        etag=etag.substring(0,i)+etag.substring(i+CompressedContentFormat.GZIP._etag.length());
-                        i=etag.indexOf(CompressedContentFormat.GZIP._etagQuote,i);
+                        String etag = field.getValue();
+                        int i = etag.indexOf(CompressedContentFormat.GZIP._etagQuote);
+                        if (i <= 0 || alreadyGzipped)
+                            newFields.add(field);
+                        else
+                        {
+                            baseRequest.setAttribute("o.e.j.s.h.gzip.GzipHandler.etag", etag);
+                            while (i >= 0)
+                            {
+                                etag = etag.substring(0, i) + etag.substring(i + CompressedContentFormat.GZIP._etag.length());
+                                i = etag.indexOf(CompressedContentFormat.GZIP._etagQuote, i);
+                            }
+                            newFields.add(new HttpField(field.getHeader(), etag));
+                        }
+                        break;
                     }
-                    
-                    fields.set(new HttpField(field.getHeader(),etag));
-                }   
+
+                    case CONTENT_LENGTH:
+                        newFields.add(inflated ? new HttpField("X-Content-Length", field.getValue()) : field);
+                        break;
+
+                    case CONTENT_ENCODING:
+                        if (inflated)
+                        {
+                            if (field.getValue().equalsIgnoreCase("gzip"))
+                                newFields.add(X_CE_GZIP);
+                            else if (COMMA_GZIP.matcher(field.getValue()).matches())
+                            {
+                                String v = field.getValue();
+                                v = v.substring(0, v.lastIndexOf(','));
+                                newFields.add(X_CE_GZIP);
+                                newFields.add(new HttpField(HttpHeader.CONTENT_ENCODING, v));
+                            }
+                        }
+                        else
+                        {
+                            newFields.add(field);
+                        }
+                        break;
+
+                    default:
+                        newFields.add(field);
+                }
             }
+            baseRequest.setHttpFields(newFields);
         }
-        
+
+        // Don't gzip if already gzipped;
+        if (alreadyGzipped)
+        {
+            LOG.debug("{} already intercepting {}", this, request);
+            _handler.handle(target, baseRequest, request, response);
+            return;
+        }
+
         // If not a supported method - no Vary because no matter what client, this URI is always excluded
         if (!_methods.test(baseRequest.getMethod()))
         {
-            LOG.debug("{} excluded by method {}",this,request);
-            _handler.handle(target,baseRequest, request, response);
+            LOG.debug("{} excluded by method {}", this, request);
+            _handler.handle(target, baseRequest, request, response);
             return;
         }
-        
+
         // If not a supported URI- no Vary because no matter what client, this URI is always excluded
         // Use pathInfo because this is be
         if (!isPathGzipable(path))
         {
-            LOG.debug("{} excluded by path {}",this,request);
-            _handler.handle(target,baseRequest, request, response);
+            LOG.debug("{} excluded by path {}", this, request);
+            _handler.handle(target, baseRequest, request, response);
             return;
         }
 
         // Exclude non compressible mime-types known from URI extension. - no Vary because no matter what client, this URI is always excluded
-        String mimeType = context==null?MimeTypes.getDefaultMimeByExtension(path):context.getMimeType(path);
-        if (mimeType!=null)
+        String mimeType = context == null ? MimeTypes.getDefaultMimeByExtension(path) : context.getMimeType(path);
+        if (mimeType != null)
         {
             mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
             if (!isMimeTypeGzipable(mimeType))
             {
-                LOG.debug("{} excluded by path suffix mime type {}",this,request);
+                LOG.debug("{} excluded by path suffix mime type {}", this, request);
                 // handle normally without setting vary header
-                _handler.handle(target,baseRequest, request, response);
+                _handler.handle(target, baseRequest, request, response);
                 return;
             }
         }
-        
-        HttpOutput.Interceptor orig_interceptor = out.getInterceptor();
+
+        HttpOutput.Interceptor origInterceptor = out.getInterceptor();
         try
         {
             // install interceptor and handle
-            out.setInterceptor(new GzipHttpOutputInterceptor(this,getVaryField(),baseRequest.getHttpChannel(),orig_interceptor,isSyncFlush()));
+            out.setInterceptor(new GzipHttpOutputInterceptor(this, getVaryField(), baseRequest.getHttpChannel(), origInterceptor, isSyncFlush()));
 
-            if (_handler!=null)
-                _handler.handle(target,baseRequest, request, response);
+            if (_handler != null)
+                _handler.handle(target, baseRequest, request, response);
         }
         finally
         {
             // reset interceptor if request not handled
             if (!baseRequest.isHandled() && !baseRequest.isAsyncStarted())
-                out.setInterceptor(orig_interceptor);
+                out.setInterceptor(origInterceptor);
         }
     }
 
@@ -734,7 +745,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         if (ua == null)
             return false;
-        
+
         return _agentPatterns.test(ua);
     }
 
@@ -760,7 +771,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         if (requestURI == null)
             return true;
-        
+
         return _paths.test(requestURI);
     }
 
@@ -771,9 +782,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
-        if(isStarted())
-            throw new IllegalStateException(getState());
-
+     * if(isStarted())
+     * throw new IllegalStateException(getState());
+     *
      * Set the excluded filter list of User-Agent patterns (replacing any previously set)
      *
      * @param patterns Regular expressions list matching user agents to exclude
@@ -834,7 +845,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _agentPatterns.getIncluded().clear();
         addIncludedAgentPatterns(patterns);
     }
-    
+
     /**
      * Set the included filter list of HTTP methods (replacing any previously set)
      *
@@ -846,7 +857,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _methods.getIncluded().clear();
         _methods.include(methods);
     }
-    
+
     /**
      * Set the included filter list of MIME types (replacing any previously set)
      *
@@ -862,7 +873,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     /**
      * Set the included filter list of Path specs (replacing any previously set)
      *
-     * @param pathspecs Path specs (as per servlet spec) to include. If a 
+     * @param pathspecs Path specs (as per servlet spec) to include. If a
      * ServletContext is available, the paths are relative to the context path,
      * otherwise they are absolute
      * @see #setExcludedPaths(String...)
@@ -874,13 +885,19 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
-     * Set the minimum response size to trigger dynamic compression
+     * Set the minimum response size to trigger dynamic compression.
+     * <p>
+     *     Sizes below {@link #BREAK_EVEN_GZIP_SIZE} will result a compressed response that is larger than the
+     *     original data.
+     * </p>
      *
-     * @param minGzipSize minimum response size in bytes
+     * @param minGzipSize minimum response size in bytes (not allowed to be lower then {@link #BREAK_EVEN_GZIP_SIZE})
      */
     public void setMinGzipSize(int minGzipSize)
     {
-        _minGzipSize = minGzipSize;
+        if (minGzipSize < BREAK_EVEN_GZIP_SIZE)
+            LOG.warn("minGzipSize of {} is inefficient for short content, break even is size {}", minGzipSize, BREAK_EVEN_GZIP_SIZE);
+        _minGzipSize = Math.max(0, minGzipSize);
     }
 
     /**
@@ -929,27 +946,33 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
     /**
      * Gets the maximum number of Deflaters that the DeflaterPool can hold.
+     *
      * @return the Deflater pool capacity
      */
     public int getDeflaterPoolCapacity()
     {
-        return POOL_CAPACITY;
+        return poolCapacity;
     }
 
     /**
      * Sets the maximum number of Deflaters that the DeflaterPool can hold.
-     * @param capacity
      */
     public void setDeflaterPoolCapacity(int capacity)
     {
-        if(isStarted())
+        if (isStarted())
             throw new IllegalStateException(getState());
 
-        POOL_CAPACITY = capacity;
+        poolCapacity = capacity;
     }
 
     protected DeflaterPool newDeflaterPool(int capacity)
     {
         return new DeflaterPool(capacity, Deflater.DEFAULT_COMPRESSION, true);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%s,min=%s,inflate=%s}", getClass().getSimpleName(), hashCode(), getState(), _minGzipSize, _inflateBufferSize);
     }
 }

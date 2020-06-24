@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 <Configure id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
   <!-- =========================================================== -->
   <!-- configure rewrite rule container as a customizer            -->
@@ -7,9 +7,9 @@
   <Call name="addCustomizer">
     <Arg>
       <New id="Rewrite" class="org.eclipse.jetty.rewrite.RewriteCustomizer">
-        <Set name="rewriteRequestURI"><Property name="jetty.rewrite.rewriteRequestURI" default="true"/></Set>
-        <Set name="rewritePathInfo"><Property name="jetty.rewrite.rewritePathInfo" default="true"/></Set>
-        <Set name="originalPathAttribute"><Property name="jetty.rewrite.originalPathAttribute" default="requestedPath"/></Set>
+        <Set name="rewriteRequestURI" property="jetty.rewrite.rewriteRequestURI"/>
+        <Set name="rewritePathInfo" property="jetty.rewrite.rewritePathInfo"/>
+        <Set name="originalPathAttribute" property="jetty.rewrite.originalPathAttribute"/>
       </New>
     </Arg>
   </Call>  

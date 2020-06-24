@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package com.acme;
@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Date;
 import java.util.Enumeration;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -33,19 +32,19 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.util.MultiMap;
 
-/** 
+/**
  * Test Servlet Sessions.
  */
 @SuppressWarnings("serial")
 public class SessionDump extends HttpServlet
 {
-    /** 
-      * Simple object attribute to test serialization
-      */
-    public class ObjectAttributeValue implements java.io.Serializable
+    /**
+     * Simple object attribute to test serialization
+     */
+    public static class ObjectAttributeValue implements java.io.Serializable
     {
         long l;
-        
+
         public ObjectAttributeValue(long l)
         {
             this.l = l;
@@ -57,86 +56,80 @@ public class SessionDump extends HttpServlet
         }
     }
 
-    int redirectCount=0;
-    /* ------------------------------------------------------------ */
-    String pageType;
+    int redirectCount = 0;
 
-    /* ------------------------------------------------------------ */
     @Override
     public void init(ServletConfig config)
-         throws ServletException
+        throws ServletException
     {
         super.init(config);
     }
 
-    /* ------------------------------------------------------------ */
-    protected void handleForm(HttpServletRequest request,
-                          HttpServletResponse response)
+    protected void handleForm(HttpServletRequest request)
     {
         HttpSession session = request.getSession(false);
         String action = request.getParameter("Action");
-        String name =  request.getParameter("Name");
-        String value =  request.getParameter("Value");
+        String name = request.getParameter("Name");
+        String value = request.getParameter("Value");
 
-        if (action!=null)
+        if (action != null)
         {
-            if(action.equals("New Session"))
+            if (action.equals("New Session"))
             {
                 session = request.getSession(true);
-                session.setAttribute("test","value");
+                session.setAttribute("test", "value");
                 session.setAttribute("obj", new ObjectAttributeValue(System.currentTimeMillis()));
                 session.setAttribute("WEBCL", new MultiMap());
             }
-            else if (session!=null)
+            else if (session != null)
             {
                 if (action.equals("Invalidate"))
                     session.invalidate();
-                else if (action.equals("Set") && name!=null && name.length()>0)
-                    session.setAttribute(name,value);
+                else if (action.equals("Set") && name != null && !name.isEmpty())
+                    session.setAttribute(name, value);
                 else if (action.equals("Remove"))
                     session.removeAttribute(name);
             }
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void doPost(HttpServletRequest request,
                        HttpServletResponse response)
-        throws ServletException, IOException
+        throws IOException
     {
-        handleForm(request,response);
-        String nextUrl = getURI(request)+"?R="+redirectCount++;
-        String encodedUrl=response.encodeRedirectURL(nextUrl);
+        handleForm(request);
+        String nextUrl = getURI(request) + "?R=" + redirectCount++;
+        String encodedUrl = response.encodeRedirectURL(nextUrl);
         response.sendRedirect(encodedUrl);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void doGet(HttpServletRequest request,
                       HttpServletResponse response)
-        throws ServletException, IOException
+        throws IOException
     {
-        handleForm(request,response);
+        handleForm(request);
 
         response.setContentType("text/html");
 
-        HttpSession session = request.getSession(getURI(request).indexOf("new")>0);
+        HttpSession session = request.getSession(getURI(request).indexOf("new") > 0);
         try
         {
-            if (session!=null)
+            if (session != null)
                 session.isNew();
         }
-        catch(IllegalStateException e)
+        catch (IllegalStateException e)
         {
-            session=null;
+            log("Session already invalidated", e);
+            session = null;
         }
 
         PrintWriter out = response.getWriter();
         out.println("<h1>Session Dump Servlet:</h1>");
-        out.println("<form action=\""+response.encodeURL(getURI(request))+"\" method=\"post\">");
+        out.println("<form action=\"" + response.encodeURL(getURI(request)) + "\" method=\"post\">");
 
-        if (session==null)
+        if (session == null)
         {
             out.println("<H3>No Session</H3>");
             out.println("<input type=\"submit\" name=\"Action\" value=\"New Session\"/>");
@@ -147,21 +140,20 @@ public class SessionDump extends HttpServlet
                 session.setAttribute("WEBCL", new MultiMap());
             try
             {
-                out.println("<b>ID:</b> "+session.getId()+"<br/>");
-                out.println("<b>New:</b> "+session.isNew()+"<br/>");
-                out.println("<b>Created:</b> "+new Date(session.getCreationTime())+"<br/>");
-                out.println("<b>Last:</b> "+new Date(session.getLastAccessedTime())+"<br/>");
-                out.println("<b>Max Inactive:</b> "+session.getMaxInactiveInterval()+"<br/>");
-                out.println("<b>Context:</b> "+session.getServletContext()+"<br/>");
+                out.println("<b>ID:</b> " + session.getId() + "<br/>");
+                out.println("<b>New:</b> " + session.isNew() + "<br/>");
+                out.println("<b>Created:</b> " + new Date(session.getCreationTime()) + "<br/>");
+                out.println("<b>Last:</b> " + new Date(session.getLastAccessedTime()) + "<br/>");
+                out.println("<b>Max Inactive:</b> " + session.getMaxInactiveInterval() + "<br/>");
+                out.println("<b>Context:</b> " + session.getServletContext() + "<br/>");
 
-
-                Enumeration<String> keys=session.getAttributeNames();
-                while(keys.hasMoreElements())
+                Enumeration<String> keys = session.getAttributeNames();
+                while (keys.hasMoreElements())
                 {
-                    String name=(String)keys.nextElement();
-                    String value=""+session.getAttribute(name);
+                    String name = (String)keys.nextElement();
+                    String value = "" + session.getAttribute(name);
 
-                    out.println("<b>"+name+":</b> "+value+"<br/>");
+                    out.println("<b>" + name + ":</b> " + value + "<br/>");
                 }
 
                 out.println("<b>Name:</b><input type=\"text\" name=\"Name\" /><br/>");
@@ -179,30 +171,26 @@ public class SessionDump extends HttpServlet
 
                 if (request.isRequestedSessionIdFromURL())
                     out.println("<P>Turn on cookies in your browser to try cookie encoding<BR>");
-                out.println("<a href=\""+response.encodeURL(request.getRequestURI()+"?q=0")+"\">Encoded Link</a><BR>");
-
+                out.println("<a href=\"" + response.encodeURL(request.getRequestURI() + "?q=0") + "\">Encoded Link</a><BR>");
             }
             catch (IllegalStateException e)
             {
                 e.printStackTrace();
             }
         }
-
     }
 
-    /* ------------------------------------------------------------ */
     @Override
-    public String getServletInfo() {
+    public String getServletInfo()
+    {
         return "Session Dump Servlet";
     }
 
-    /* ------------------------------------------------------------ */
     private String getURI(HttpServletRequest request)
     {
-        String uri=(String)request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
-        if (uri==null)
-            uri=request.getRequestURI();
+        String uri = (String)request.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+        if (uri == null)
+            uri = request.getRequestURI();
         return uri;
     }
-
 }

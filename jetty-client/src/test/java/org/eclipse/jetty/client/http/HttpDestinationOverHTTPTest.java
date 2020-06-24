@@ -1,23 +1,24 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.http;
 
+import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -26,8 +27,10 @@ import java.util.function.Supplier;
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.DuplexConnectionPool;
+import org.eclipse.jetty.client.DuplexHttpDestination;
 import org.eclipse.jetty.client.EmptyServerHandler;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -35,6 +38,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.util.Callback;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -45,22 +49,44 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 {
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_FirstAcquire_WithEmptyQueue(Scenario scenario) throws Exception
+    public void testAcquireWithEmptyQueue(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
-        try(HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
+        try (HttpDestination destination = new DuplexHttpDestination(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
             destination.start();
             DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-            Connection connection = connectionPool.acquire();
+            Connection connection = connectionPool.acquire(true);
+            assertNull(connection);
+            // There are no queued requests, so no connection should be created.
+            connection = pollIdleConnection(connectionPool, 1, TimeUnit.SECONDS);
+            assertNull(connection);
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testAcquireWithOneExchangeQueued(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+
+        try (TestDestination destination = new TestDestination(client, new Origin("http", "localhost", connector.getLocalPort())))
+        {
+            destination.start();
+            TestDestination.TestConnectionPool connectionPool = (TestDestination.TestConnectionPool)destination.getConnectionPool();
+
+            // Trigger creation of one connection.
+            connectionPool.tryCreate(1);
+
+            Connection connection = connectionPool.acquire(false);
             if (connection == null)
             {
                 // There are no queued requests, so the newly created connection will be idle
@@ -72,23 +98,26 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_SecondAcquire_AfterFirstAcquire_WithEmptyQueue_ReturnsSameConnection(Scenario scenario) throws Exception
+    public void testSecondAcquireAfterFirstAcquireWithEmptyQueueReturnsSameConnection(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
-        try(HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
+        try (TestDestination destination = new TestDestination(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
             destination.start();
+            TestDestination.TestConnectionPool connectionPool = (TestDestination.TestConnectionPool)destination.getConnectionPool();
 
-            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-            Connection connection1 = connectionPool.acquire();
+            // Trigger creation of one connection.
+            connectionPool.tryCreate(1);
+
+            Connection connection1 = connectionPool.acquire(true);
             if (connection1 == null)
             {
                 // There are no queued requests, so the newly created connection will be idle
                 connection1 = peekIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
                 assertNotNull(connection1);
 
-                Connection connection2 = connectionPool.acquire();
+                Connection connection2 = connectionPool.acquire(true);
                 assertSame(connection1, connection2);
             }
         }
@@ -96,18 +125,18 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_SecondAcquire_ConcurrentWithFirstAcquire_WithEmptyQueue_CreatesTwoConnections(Scenario scenario) throws Exception
+    public void testSecondAcquireConcurrentWithFirstAcquireWithEmptyQueueCreatesTwoConnections(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
-        final CountDownLatch idleLatch = new CountDownLatch(1);
-        final CountDownLatch latch = new CountDownLatch(1);
-        HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()))
+        CountDownLatch idleLatch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
+        try (TestDestination destination = new TestDestination(client, new Origin("http", "localhost", connector.getLocalPort()))
         {
             @Override
             protected ConnectionPool newConnectionPool(HttpClient client)
             {
-                return new DuplexConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
+                return new TestConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
                 {
                     @Override
                     protected void onCreated(Connection connection)
@@ -125,21 +154,27 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
                     }
                 };
             }
-        };
+        })
         {
             destination.start();
-            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-            Connection connection1 = connectionPool.acquire();
+            TestDestination.TestConnectionPool connectionPool = (TestDestination.TestConnectionPool)destination.getConnectionPool();
+
+            // Trigger creation of one connection.
+            connectionPool.tryCreate(1);
 
             // Make sure we entered idleCreated().
             assertTrue(idleLatch.await(5, TimeUnit.SECONDS));
 
             // There are no available existing connections, so acquire()
-            // returns null because we delayed idleCreated() above
+            // returns null because we delayed idleCreated() above.
+            Connection connection1 = connectionPool.acquire(true);
             assertNull(connection1);
 
+            // Trigger creation of a second connection.
+            connectionPool.tryCreate(1);
+
             // Second attempt also returns null because we delayed idleCreated() above.
-            Connection connection2 = connectionPool.acquire();
+            Connection connection2 = connectionPool.acquire(true);
             assertNull(connection2);
 
             latch.countDown();
@@ -154,44 +189,56 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_Acquire_Process_Release_Acquire_ReturnsSameConnection(Scenario scenario) throws Exception
+    public void testAcquireProcessReleaseAcquireReturnsSameConnection(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
 
-        try(HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
+        try (TestDestination destination = new TestDestination(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
             destination.start();
-            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-            Connection connection1 = connectionPool.acquire();
+            TestDestination.TestConnectionPool connectionPool = (TestDestination.TestConnectionPool)destination.getConnectionPool();
+
+            // Trigger creation of one connection.
+            connectionPool.tryCreate(1);
+
+            Connection connection1 = connectionPool.acquire(true);
             if (connection1 == null)
             {
                 connection1 = peekIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
                 assertNotNull(connection1);
                 // Acquire the connection to make it active.
-                assertSame(connection1, connectionPool.acquire(),"From idle");
+                assertSame(connection1, connectionPool.acquire(true), "From idle");
             }
 
-            destination.process(connection1);
+            // There are no exchanges so process() is a no-op.
+            Method process = HttpDestination.class.getDeclaredMethod("process", Connection.class);
+            process.setAccessible(true);
+            process.invoke(destination, connection1);
             destination.release(connection1);
 
-            Connection connection2 = connectionPool.acquire();
-            assertSame(connection1, connection2,"After release");
+            Connection connection2 = connectionPool.acquire(true);
+            assertSame(connection1, connection2, "After release");
         }
     }
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_IdleConnection_IdleTimeout(Scenario scenario) throws Exception
+    public void testIdleConnectionIdleTimeout(Scenario scenario) throws Exception
     {
-        startServer(scenario, new EmptyServerHandler());
-        long idleTimeout = 1000;
-        startClient(scenario, null, httpClient -> httpClient.setIdleTimeout(idleTimeout));
+        start(scenario, new EmptyServerHandler());
 
-        try (HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort())))
+        long idleTimeout = 1000;
+        startClient(scenario, httpClient -> httpClient.setIdleTimeout(idleTimeout));
+
+        try (TestDestination destination = new TestDestination(client, new Origin("http", "localhost", connector.getLocalPort())))
         {
             destination.start();
-            DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
-            Connection connection1 = connectionPool.acquire();
+            TestDestination.TestConnectionPool connectionPool = (TestDestination.TestConnectionPool)destination.getConnectionPool();
+
+            // Trigger creation of one connection.
+            connectionPool.tryCreate(1);
+
+            Connection connection1 = connectionPool.acquire(true);
             if (connection1 == null)
             {
                 connection1 = peekIdleConnection(connectionPool, 5, TimeUnit.SECONDS);
@@ -208,7 +255,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void test_Request_Failed_If_MaxRequestsQueuedPerDestination_Exceeded(Scenario scenario) throws Exception
+    public void testRequestFailedIfMaxRequestsQueuedPerDestinationExceeded(Scenario scenario) throws Exception
     {
         start(scenario, new EmptyServerHandler());
         String scheme = scenario.getScheme();
@@ -218,34 +265,34 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
         // Make one request to open the connection and be sure everything is setup properly
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .send();
+            .scheme(scheme)
+            .send();
         assertEquals(200, response.getStatus());
 
         // Send another request that is sent immediately
         CountDownLatch successLatch = new CountDownLatch(1);
         CountDownLatch failureLatch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .path("/one")
-                .onRequestQueued(request ->
-                {
-                    // This request exceeds the maximum queued, should fail
-                    client.newRequest("localhost", connector.getLocalPort())
-                            .scheme(scheme)
-                            .path("/two")
-                            .send(result ->
-                            {
-                                assertTrue(result.isFailed());
-                                assertThat(result.getRequestFailure(), Matchers.instanceOf(RejectedExecutionException.class));
-                                failureLatch.countDown();
-                            });
-                })
-                .send(result ->
-                {
-                    if (result.isSucceeded())
-                        successLatch.countDown();
-                });
+            .scheme(scheme)
+            .path("/one")
+            .onRequestQueued(request ->
+            {
+                // This request exceeds the maximum queued, should fail
+                client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .path("/two")
+                    .send(result ->
+                    {
+                        assertTrue(result.isFailed());
+                        assertThat(result.getRequestFailure(), Matchers.instanceOf(RejectedExecutionException.class));
+                        failureLatch.countDown();
+                    });
+            })
+            .send(result ->
+            {
+                if (result.isSucceeded())
+                    successLatch.countDown();
+            });
 
         assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
         assertTrue(successLatch.await(5, TimeUnit.SECONDS));
@@ -259,28 +306,27 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
         String host = "localhost";
         int port = connector.getLocalPort();
-        Destination destinationBefore = client.getDestination(scenario.getScheme(), host, port);
-
-        ContentResponse response = client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
-                .send();
+        Request request = client.newRequest(host, port)
+            .scheme(scenario.getScheme())
+                .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE));
+        Destination destinationBefore = client.resolveDestination(request);
+        ContentResponse response = request.send();
 
         assertEquals(200, response.getStatus());
 
-        Destination destinationAfter = client.getDestination(scenario.getScheme(), host, port);
+        Destination destinationAfter = client.resolveDestination(request);
         assertSame(destinationBefore, destinationAfter);
 
         client.setRemoveIdleDestinations(true);
 
-        response = client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .header(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString())
-                .send();
+        request = client.newRequest(host, port)
+            .scheme(scenario.getScheme())
+            .headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE));
+        response = request.send();
 
         assertEquals(200, response.getStatus());
 
-        destinationAfter = client.getDestination(scenario.getScheme(), host, port);
+        destinationAfter = client.resolveDestination(request);
         assertNotSame(destinationBefore, destinationAfter);
     }
 
@@ -297,14 +343,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
         server.stop();
         Request request = client.newRequest(host, port).scheme(scenario.getScheme());
-        try
-        {
-            request.send();
-            fail("Request to a closed port must fail");
-        }
-        catch (Exception expected)
-        {
-        }
+        assertThrows(Exception.class, request::send);
 
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(1);
         while (!client.getDestinations().isEmpty() && System.nanoTime() < deadline)
@@ -335,5 +374,39 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
             TimeUnit.MILLISECONDS.sleep(5);
         }
         return null;
+    }
+
+    private static class TestDestination extends DuplexHttpDestination
+    {
+        public TestDestination(HttpClient client, Origin origin)
+        {
+            super(client, origin);
+        }
+
+        @Override
+        protected ConnectionPool newConnectionPool(HttpClient client)
+        {
+            return new TestConnectionPool(this, client.getMaxConnectionsPerDestination(), this);
+        }
+
+        public static class TestConnectionPool extends DuplexConnectionPool
+        {
+            public TestConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
+            {
+                super(destination, maxConnections, requester);
+            }
+
+            @Override
+            public void tryCreate(int maxPending)
+            {
+                super.tryCreate(maxPending);
+            }
+
+            @Override
+            public Connection acquire(boolean create)
+            {
+                return super.acquire(create);
+            }
+        }
     }
 }

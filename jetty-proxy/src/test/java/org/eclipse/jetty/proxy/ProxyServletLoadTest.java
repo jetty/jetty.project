@@ -1,34 +1,29 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.proxy;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -36,7 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -46,26 +41,28 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ProcessorUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProxyServletLoadTest
 {
     public static Stream<Arguments> data()
     {
-        return Arrays.asList(
-                ProxyServlet.class,
-                AsyncProxyServlet.class,
-                AsyncMiddleManServlet.class)
-                .stream().map(Arguments::of);
+        return Stream.of(
+            ProxyServlet.class,
+            AsyncProxyServlet.class,
+            AsyncMiddleManServlet.class)
+            .map(Arguments::of);
     }
 
-    private static final Logger LOG = Log.getLogger(ProxyServletLoadTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProxyServletLoadTest.class);
     private static final String PROXIED_HEADER = "X-Proxied";
 
     private HttpClient client;
@@ -137,7 +134,7 @@ public class ProxyServletLoadTest
         startServer(proxyServletClass, new HttpServlet()
         {
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException
             {
                 if (req.getHeader("Via") != null)
                     resp.addHeader(PROXIED_HEADER, "true");
@@ -206,12 +203,12 @@ public class ProxyServletLoadTest
 
                     byte[] content = new byte[1024];
                     new Random().nextBytes(content);
-                    ContentResponse response = client.newRequest(host, port).method(HttpMethod.POST).content(new BytesContentProvider(content))
-                            .timeout(5, TimeUnit.SECONDS).send();
+                    ContentResponse response = client.newRequest(host, port).method(HttpMethod.POST).body(new BytesRequestContent(content))
+                        .timeout(5, TimeUnit.SECONDS).send();
 
                     if (response.getStatus() != 200)
                     {
-                        LOG.warn("Got response <{}>, expecting <{}> iteration=", response.getStatus(), 200,iterations);
+                        LOG.warn("Got response <{}>, expecting <{}> iteration=", response.getStatus(), 200, iterations);
                         // allow all ClientLoops to finish
                         success.set(false);
                     }
@@ -224,7 +221,7 @@ public class ProxyServletLoadTest
             }
             catch (Throwable x)
             {
-                LOG.warn("Error processing request "+iterations, x);
+                LOG.warn("Error processing request " + iterations, x);
                 success.set(false);
             }
             finally

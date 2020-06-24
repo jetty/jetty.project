@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.example.asyncrest;
@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -52,9 +51,9 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public class AsyncRestServlet extends AbstractRestServlet
 {
-    final static String RESULTS_ATTR = "org.eclipse.jetty.demo.client";
-    final static String DURATION_ATTR = "org.eclipse.jetty.demo.duration";
-    final static String START_ATTR = "org.eclispe.jetty.demo.start";
+    static final String RESULTS_ATTR = "org.eclipse.jetty.demo.client";
+    static final String DURATION_ATTR = "org.eclipse.jetty.demo.duration";
+    static final String START_ATTR = "org.eclispe.jetty.demo.start";
 
     HttpClient _client;
 
@@ -78,17 +77,18 @@ public class AsyncRestServlet extends AbstractRestServlet
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        Long start=System.nanoTime();
+        long start = System.nanoTime();
 
         // Do we have results yet?
-        Queue<Map<String, String>> results = (Queue<Map<String, String>>) request.getAttribute(RESULTS_ATTR);
+        @SuppressWarnings("unchecked")
+        Queue<Map<String, Object>> results = (Queue<Map<String, Object>>)request.getAttribute(RESULTS_ATTR);
 
         // If no results, this must be the first dispatch, so send the REST request(s)
-        if (results==null)
+        if (results == null)
         {
             // define results data structures
-            final Queue<Map<String, String>> resultsQueue = new ConcurrentLinkedQueue<>();
-            request.setAttribute(RESULTS_ATTR, results=resultsQueue);
+            results = new ConcurrentLinkedQueue<>();
+            request.setAttribute(RESULTS_ATTR, results);
 
             // suspend the request
             // This is done before scheduling async handling to avoid race of
@@ -97,24 +97,26 @@ public class AsyncRestServlet extends AbstractRestServlet
             async.setTimeout(30000);
 
             // extract keywords to search for
-            String[] keywords=sanitize(request.getParameter(ITEMS_PARAM)).split(",");
-            final AtomicInteger outstanding=new AtomicInteger(keywords.length);
+            String[] keywords = sanitize(request.getParameter(ITEMS_PARAM)).split(",");
+            final AtomicInteger outstanding = new AtomicInteger(keywords.length);
 
             // Send request each keyword
-            for (final String item:keywords)
+            Queue<Map<String, Object>> resultsQueue = results;
+            for (final String item : keywords)
             {
                 _client.newRequest(restURL(item)).method(HttpMethod.GET).send(
                     new AsyncRestRequest()
                     {
                         @Override
-                        void onAuctionFound(Map<String,String> auction)
+                        void onAuctionFound(Map<String, Object> auction)
                         {
                             resultsQueue.add(auction);
                         }
+
                         @Override
                         void onComplete()
                         {
-                            if (outstanding.decrementAndGet()<=0)
+                            if (outstanding.decrementAndGet() <= 0)
                                 async.dispatch();
                         }
                     });
@@ -130,7 +132,7 @@ public class AsyncRestServlet extends AbstractRestServlet
         // We have results!
 
         // Generate the response
-        String thumbs = generateThumbs(results);
+        final String thumbs = generateThumbs(results);
 
         response.setContentType("text/html");
         PrintWriter out = response.getWriter();
@@ -138,23 +140,23 @@ public class AsyncRestServlet extends AbstractRestServlet
         out.println(STYLE);
         out.println("</head><body><small>");
 
-        long initial = (Long) request.getAttribute(DURATION_ATTR);
-        long start0 = (Long) request.getAttribute(START_ATTR);
+        long initial = (Long)request.getAttribute(DURATION_ATTR);
+        long start0 = (Long)request.getAttribute(START_ATTR);
 
         long now = System.nanoTime();
-        long total=now-start0;
-        long generate=now-start;
-        long thread=initial+generate;
+        long total = now - start0;
+        long generate = now - start;
+        long thread = initial + generate;
 
-        out.print("<b>Asynchronous: "+sanitize(request.getParameter(ITEMS_PARAM))+"</b><br/>");
-        out.print("Total Time: "+ms(total)+"ms<br/>");
+        out.print("<b>Asynchronous: " + sanitize(request.getParameter(ITEMS_PARAM)) + "</b><br/>");
+        out.print("Total Time: " + ms(total) + "ms<br/>");
 
-        out.print("Thread held (<span class='red'>red</span>): "+ms(thread)+"ms (" + ms(initial) + " initial + " + ms(generate) + " generate )<br/>");
-        out.print("Async wait (<span class='green'>green</span>): "+ms(total-thread)+"ms<br/>");
+        out.print("Thread held (<span class='red'>red</span>): " + ms(thread) + "ms (" + ms(initial) + " initial + " + ms(generate) + " generate )<br/>");
+        out.print("Async wait (<span class='green'>green</span>): " + ms(total - thread) + "ms<br/>");
 
-        out.println("<img border='0px' src='asyncrest/red.png'   height='20px' width='"+width(initial)+"px'>"+
-                    "<img border='0px' src='asyncrest/green.png' height='20px' width='"+width(total-thread)+"px'>"+
-                    "<img border='0px' src='asyncrest/red.png'   height='20px' width='"+width(generate)+"px'>");
+        out.println("<img border='0px' src='asyncrest/red.png'   height='20px' width='" + width(initial) + "px'>" +
+            "<img border='0px' src='asyncrest/green.png' height='20px' width='" + width(total - thread) + "px'>" +
+            "<img border='0px' src='asyncrest/red.png'   height='20px' width='" + width(generate) + "px'>");
 
         out.println("<hr />");
         out.println(thumbs);
@@ -162,10 +164,10 @@ public class AsyncRestServlet extends AbstractRestServlet
         out.println("</body></html>");
         out.close();
     }
-    
-    private abstract class AsyncRestRequest extends Response.Listener.Adapter
+
+    private abstract static class AsyncRestRequest extends Response.Listener.Adapter
     {
-        final Utf8StringBuilder _content = new Utf8StringBuilder();
+        private final Utf8StringBuilder _content = new Utf8StringBuilder();
 
         AsyncRestRequest()
         {
@@ -175,27 +177,31 @@ public class AsyncRestServlet extends AbstractRestServlet
         public void onContent(Response response, ByteBuffer content)
         {
             byte[] bytes = BufferUtil.toArray(content);
-            _content.append(bytes,0,bytes.length);
+            _content.append(bytes, 0, bytes.length);
         }
 
         @Override
         public void onComplete(Result result)
         {
             // extract auctions from the results
-            Map<String,?> query = (Map<String,?>) JSON.parse(_content.toString());
-            Object[] auctions = (Object[]) query.get("Item");
+            @SuppressWarnings("unchecked")
+            Map<String, Object> query = (Map<String, Object>)new JSON().fromJSON(_content.toString());
+            Object[] auctions = (Object[])query.get("Item");
             if (auctions != null)
             {
                 for (Object o : auctions)
-                    onAuctionFound((Map<String,String>)o);
+                {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> auction = (Map<String, Object>)o;
+                    onAuctionFound(auction);
+                }
             }
             onComplete();
-
         }
 
-        abstract void onAuctionFound(Map<String,String> details);
         abstract void onComplete();
 
+        abstract void onAuctionFound(Map<String, Object> details);
     }
 
     @Override

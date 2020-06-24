@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.api;
@@ -42,12 +42,14 @@ public interface Authentication
 {
     /**
      * Constant used to indicate that any realm will match.
+     *
      * @see #matches(String, URI, String)
      */
     public static final String ANY_REALM = "<<ANY_REALM>>";
 
     /**
      * Matches {@link Authentication}s based on the given parameters
+     *
      * @param type the {@link Authentication} type such as "Basic" or "Digest"
      * @param uri the request URI
      * @param realm the authentication realm as provided in the {@code WWW-Authenticate} response header
@@ -66,9 +68,9 @@ public interface Authentication
      * @param request the request to execute the authentication mechanism for
      * @param response the 401 response obtained in the previous attempt to request the protected resource
      * @param headerInfo the {@code WWW-Authenticate} (or {@code Proxy-Authenticate}) header chosen for this
-     *                     authentication (among the many that the response may contain)
+     * authentication (among the many that the response may contain)
      * @param context the conversation context in case the authentication needs multiple exchanges
-     *                to be completed and information needs to be stored across exchanges
+     * to be completed and information needs to be stored across exchanges
      * @return the authentication result, or null if the authentication could not be performed
      */
     Result authenticate(Request request, ContentResponse response, HeaderInfo headerInfo, Attributes context);
@@ -80,16 +82,15 @@ public interface Authentication
     {
         private final HttpHeader header;
         private final String type;
-        private final Map<String,String> params;
+        private final Map<String, String> params;
 
-        
-        public HeaderInfo(HttpHeader header, String type, Map<String,String> params) throws IllegalArgumentException
+        public HeaderInfo(HttpHeader header, String type, Map<String, String> params) throws IllegalArgumentException
         {
             this.header = header;
             this.type = type;
             this.params = params;
         }
-        
+
         /**
          * @return the authentication type (for example "Basic" or "Digest")
          */
@@ -113,7 +114,7 @@ public interface Authentication
         {
             return params.get("base64");
         }
-        
+
         /**
          * @return additional authentication parameters
          */
@@ -121,7 +122,7 @@ public interface Authentication
         {
             return params;
         }
-        
+
         /**
          * @return specified authentication parameter or null if does not exist
          */

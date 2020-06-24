@@ -8,7 +8,7 @@
   <artifactId>jetty-runner</artifactId>
   <name>Jetty :: Runner</name>
 
- <properties>
+  <properties>
     <assembly-directory>target/distribution</assembly-directory>
     <bundle-symbolic-name>${project.groupId}.runner</bundle-symbolic-name>
   </properties>
@@ -113,7 +113,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>jetty-websocket-server</artifactId>
+      <artifactId>websocket-jetty-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -121,15 +121,24 @@
       <artifactId>jetty-jndi</artifactId>
       <version>${project.version}</version>
     </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>apache-jsp</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>apache-jstl</artifactId>
-        <version>${project.version}</version>
-      </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jsp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jstl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>runtime</scope>
+    </dependency>
   </dependencies>
 </project>

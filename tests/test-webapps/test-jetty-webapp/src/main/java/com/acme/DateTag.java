@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package com.acme;
@@ -21,7 +21,6 @@ package com.acme;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
-
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.JspTagException;
 import javax.servlet.jsp.PageContext;
@@ -34,30 +33,56 @@ public class DateTag extends BodyTagSupport
 {
     Tag parent;
     BodyContent body;
-    String tz="GMT";
+    String tz = "GMT";
 
     @Override
-    public void setParent(Tag parent) {this.parent=parent;}
-    @Override
-    public Tag getParent() {return parent;}
-    @Override
-    public void setBodyContent(BodyContent content) {body=content;}
-    @Override
-    public void setPageContext(PageContext pageContext) {}
-
-    public void setTz(String value) {tz=value;}
+    public void setParent(Tag parent)
+    {
+        this.parent = parent;
+    }
 
     @Override
-    public int doStartTag() throws JspException {return EVAL_BODY_BUFFERED;}
+    public Tag getParent()
+    {
+        return parent;
+    }
 
     @Override
-    public int doEndTag() throws JspException {return EVAL_PAGE;}
+    public void setBodyContent(BodyContent content)
+    {
+        body = content;
+    }
 
     @Override
-    public void doInitBody() throws JspException {}
+    public void setPageContext(PageContext pageContext)
+    {
+    }
+
+    public void setTz(String value)
+    {
+        tz = value;
+    }
 
     @Override
-    public int doAfterBody() throws JspException {
+    public int doStartTag() throws JspException
+    {
+        return EVAL_BODY_BUFFERED;
+    }
+
+    @Override
+    public int doEndTag() throws JspException
+    {
+        return EVAL_PAGE;
+    }
+
+    @Override
+    public void doInitBody() throws JspException
+    {
+    }
+
+    @Override
+    public int doAfterBody() throws JspException
+    {
         try
         {
             SimpleDateFormat format = new SimpleDateFormat(body.getString());
@@ -65,7 +90,8 @@ public class DateTag extends BodyTagSupport
             body.getEnclosingWriter().write(format.format(new Date()));
             return SKIP_BODY;
         }
-        catch (Exception ex) {
+        catch (Exception ex)
+        {
             ex.printStackTrace();
             throw new JspTagException(ex.toString());
         }
@@ -74,7 +100,7 @@ public class DateTag extends BodyTagSupport
     @Override
     public void release()
     {
-        body=null;
+        body = null;
     }
 }
 

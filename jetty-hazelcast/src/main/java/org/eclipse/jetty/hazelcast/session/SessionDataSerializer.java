@@ -1,21 +1,20 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.hazelcast.session;
 
@@ -24,12 +23,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.StreamSerializer;
+import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 
 /**
  * SessionDataSerializer
@@ -40,6 +38,7 @@ import com.hazelcast.nio.serialization.StreamSerializer;
 public class SessionDataSerializer implements StreamSerializer<SessionData>
 {
     public static final int __TYPEID = 99;
+
     @Override
     public int getTypeId()
     {
@@ -63,8 +62,8 @@ public class SessionDataSerializer implements StreamSerializer<SessionData>
         out.writeLong(data.getCreated());
         out.writeLong(data.getCookieSet());
         out.writeUTF(data.getLastNode());
-  
-        out.writeLong(data.getExpiry()); 
+
+        out.writeLong(data.getExpiry());
         out.writeLong(data.getMaxInactiveMs());
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -77,19 +76,19 @@ public class SessionDataSerializer implements StreamSerializer<SessionData>
 
     @Override
     public SessionData read(ObjectDataInput in) throws IOException
-    {        
-        String id = in.readUTF();
-        String contextPath = in.readUTF();
-        String vhost = in.readUTF();
-        
-        long accessed = in.readLong();
-        long lastAccessed = in.readLong();
-        long created = in.readLong();
-        long cookieSet = in.readLong();
-        String lastNode = in.readUTF();
-        long expiry = in.readLong(); 
-        long maxInactiveMs = in.readLong();
-        
+    {
+        final String id = in.readUTF();
+        final String contextPath = in.readUTF();
+        final String vhost = in.readUTF();
+
+        final long accessed = in.readLong();
+        final long lastAccessed = in.readLong();
+        final long created = in.readLong();
+        final long cookieSet = in.readLong();
+        final String lastNode = in.readUTF();
+        final long expiry = in.readLong();
+        final long maxInactiveMs = in.readLong();
+
         SessionData sd = new SessionData(id, contextPath, vhost, created, accessed, lastAccessed, maxInactiveMs);
 
         ByteArrayInputStream bais = new ByteArrayInputStream(in.readByteArray());
@@ -97,7 +96,7 @@ public class SessionDataSerializer implements StreamSerializer<SessionData>
         {
             SessionData.deserializeAttributes(sd, ois);
         }
-        catch(ClassNotFoundException e)
+        catch (ClassNotFoundException e)
         {
             throw new IOException(e);
         }
@@ -106,5 +105,4 @@ public class SessionDataSerializer implements StreamSerializer<SessionData>
         sd.setExpiry(expiry);
         return sd;
     }
-
 }

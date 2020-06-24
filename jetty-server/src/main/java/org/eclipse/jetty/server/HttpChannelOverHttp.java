@@ -1,21 +1,20 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.server;
 
@@ -25,9 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
-import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -41,19 +40,19 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * A HttpChannel customized to be transported over the HTTP/1 protocol
+ * An HttpChannel customized to be transported over the HTTP/1 protocol
  */
-public class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, HttpParser.ComplianceHandler
+public class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, ComplianceViolation.Listener
 {
-    private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
-    private final static HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
-    private final HttpFields _fields = new HttpFields();
-    private final MetaData.Request _metadata = new MetaData.Request(_fields);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverHttp.class);
+    private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
     private final HttpConnection _httpConnection;
+    private final RequestBuilder _requestBuilder = new RequestBuilder();
+    private MetaData.Request _metadata;
     private HttpField _connection;
     private HttpField _upgrade = null;
     private boolean _delayedForContent;
@@ -61,33 +60,221 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
     private List<String> _complianceViolations;
-    private HttpFields _trailers;
+    private HttpFields.Mutable _trailers;
 
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
     {
         super(connector, config, endPoint, transport);
         _httpConnection = httpConnection;
-        _metadata.setURI(new HttpURI());
     }
 
     @Override
-    protected HttpInput newHttpInput(HttpChannelState state)
+    public void abort(Throwable failure)
     {
-        return new HttpInputOverHTTP(state);
+        super.abort(failure);
+        _httpConnection.getGenerator().setPersistent(false);
     }
 
     @Override
-    public void recycle()
+    public void badMessage(BadMessageException failure)
     {
-        super.recycle();
-        _unknownExpectation = false;
-        _expect100Continue = false;
-        _expect102Processing = false;
-        _metadata.recycle();
-        _connection = null;
-        _fields.clear();
-        _upgrade = null;
-        _trailers = null;
+        _httpConnection.getGenerator().setPersistent(false);
+        try
+        {
+            // Need to call onRequest, so RequestLog can reports as much as possible
+            if (_metadata == null)
+                _metadata = _requestBuilder.build();
+            onRequest(_metadata);
+            getRequest().getHttpInput().earlyEOF();
+        }
+        catch (Exception e)
+        {
+            LOG.trace("IGNORED", e);
+        }
+
+        onBadMessage(failure);
+    }
+
+    @Override
+    public boolean content(ByteBuffer content)
+    {
+        HttpInput.Content c = _httpConnection.newContent(content);
+        boolean handle = onContent(c) || _delayedForContent;
+        _delayedForContent = false;
+        return handle;
+    }
+
+    @Override
+    public boolean contentComplete()
+    {
+        boolean handle = onContentComplete() || _delayedForContent;
+        _delayedForContent = false;
+        return handle;
+    }
+
+    /**
+     * If the associated response has the Expect header set to 100 Continue,
+     * then accessing the input stream indicates that the handler/servlet
+     * is ready for the request body and thus a 100 Continue response is sent.
+     *
+     * @throws IOException if the InputStream cannot be created
+     */
+    @Override
+    public void continue100(int available) throws IOException
+    {
+        // If the client is expecting 100 CONTINUE, then send it now.
+        // TODO: consider using an AtomicBoolean ?
+        if (isExpecting100Continue())
+        {
+            _expect100Continue = false;
+
+            // is content missing?
+            if (available == 0)
+            {
+                if (getResponse().isCommitted())
+                    throw new IOException("Committed before 100 Continues");
+
+                boolean committed = sendResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
+                if (!committed)
+                    throw new IOException("Concurrent commit while trying to send 100-Continue");
+            }
+        }
+    }
+
+    @Override
+    public void earlyEOF()
+    {
+        _httpConnection.getGenerator().setPersistent(false);
+        // If we have no request yet, just close
+        if (_metadata == null)
+            _httpConnection.close();
+        else if (onEarlyEOF() || _delayedForContent)
+        {
+            _delayedForContent = false;
+            handle();
+        }
+    }
+
+    @Override
+    public EndPoint getTunnellingEndPoint()
+    {
+        return getEndPoint();
+    }
+
+    @Override
+    public boolean headerComplete()
+    {
+        _metadata = _requestBuilder.build();
+        onRequest(_metadata);
+
+        if (_complianceViolations != null && !_complianceViolations.isEmpty())
+        {
+            this.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
+            _complianceViolations = null;
+        }
+
+        boolean persistent;
+
+        switch (_metadata.getHttpVersion())
+        {
+            case HTTP_0_9:
+            {
+                persistent = false;
+                break;
+            }
+            case HTTP_1_0:
+            {
+                if (getHttpConfiguration().isPersistentConnectionsEnabled())
+                {
+                    if (_connection != null)
+                    {
+                        if (_connection.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
+                            persistent = true;
+                        else
+                            persistent = _requestBuilder.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+                    }
+                    else
+                        persistent = false;
+                }
+                else
+                    persistent = false;
+
+                if (!persistent)
+                    persistent = HttpMethod.CONNECT.is(_metadata.getMethod());
+                if (persistent)
+                    getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
+
+                break;
+            }
+
+            case HTTP_1_1:
+            {
+                if (_unknownExpectation)
+                {
+                    badMessage(new BadMessageException(HttpStatus.EXPECTATION_FAILED_417));
+                    return false;
+                }
+
+                if (getHttpConfiguration().isPersistentConnectionsEnabled())
+                {
+                    if (_connection != null)
+                    {
+                        if (_connection.contains(HttpHeaderValue.CLOSE.asString()))
+                            persistent = false;
+                        else
+                            persistent = !_requestBuilder.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()); // handle multiple connection fields
+                    }
+                    else
+                        persistent = true;
+                }
+                else
+                    persistent = false;
+
+                if (!persistent)
+                    persistent = HttpMethod.CONNECT.is(_metadata.getMethod());
+                if (!persistent)
+                    getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+
+                if (_upgrade != null && upgrade())
+                    return true;
+
+                break;
+            }
+
+            case HTTP_2:
+            {
+                // Allow direct "upgrade" to HTTP_2_0 only if the connector supports h2c.
+                _upgrade = PREAMBLE_UPGRADE_H2C;
+
+                if (HttpMethod.PRI.is(_metadata.getMethod()) &&
+                    "*".equals(_metadata.getURI().getPath()) &&
+                    _requestBuilder.getFields().size() == 0 &&
+                    upgrade())
+                    return true;
+
+                badMessage(new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426));
+                _httpConnection.getParser().close();
+                return false;
+            }
+
+            default:
+            {
+                throw new IllegalStateException("unsupported version " + _metadata.getHttpVersion());
+            }
+        }
+
+        if (!persistent)
+            _httpConnection.getGenerator().setPersistent(false);
+
+        // Should we delay dispatch until we have some content?
+        // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
+        _delayedForContent = (getHttpConfiguration().isDelayDispatchUntilContent() &&
+            (_httpConnection.getParser().getContentLength() > 0 || _httpConnection.getParser().isChunking()) &&
+            !isExpecting100Continue() &&
+            !isCommitted() &&
+            _httpConnection.isRequestBufferEmpty());
+
+        return !_delayedForContent;
     }
 
     @Override
@@ -103,15 +290,58 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     }
 
     @Override
-    public boolean startRequest(String method, String uri, HttpVersion version)
+    public boolean isTunnellingSupported()
     {
-        _metadata.setMethod(method);
-        _metadata.getURI().parseRequestTarget(method, uri);
-        _metadata.setHttpVersion(version);
-        _unknownExpectation = false;
-        _expect100Continue = false;
-        _expect102Processing = false;
-        return false;
+        return true;
+    }
+
+    @Override
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _httpConnection.isUseOutputDirectByteBuffers();
+    }
+
+    @Override
+    public boolean messageComplete()
+    {
+        if (_trailers != null)
+            onTrailers(_trailers);
+        return onRequestComplete();
+    }
+
+    @Override
+    public void onAsyncWaitForContent()
+    {
+        _httpConnection.asyncReadFillInterested();
+    }
+
+    @Override
+    public void onBlockWaitForContent()
+    {
+        _httpConnection.blockingReadFillInterested();
+    }
+
+    @Override
+    public void onBlockWaitForContentFailure(Throwable failure)
+    {
+        _httpConnection.blockingReadFailure(failure);
+    }
+
+    @Override
+    public void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+    {
+        if (_httpConnection.isRecordHttpComplianceViolations())
+        {
+            if (_complianceViolations == null)
+            {
+                _complianceViolations = new ArrayList<>();
+            }
+            String record = String.format("%s (see %s) in mode %s for %s in %s",
+                violation.getDescription(), violation.getURL(), mode, details, getHttpTransport());
+            _complianceViolations.add(record);
+            if (LOG.isDebugEnabled())
+                LOG.debug(record);
+        }
     }
 
     @Override
@@ -128,13 +358,13 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                     break;
 
                 case HOST:
-                    if (!(field instanceof HostPortHttpField) && value!=null && !value.isEmpty())
+                    if (!(field instanceof HostPortHttpField) && value != null && !value.isEmpty())
                         field = new HostPortHttpField(value);
                     break;
 
                 case EXPECT:
                 {
-                    if (_metadata.getHttpVersion() == HttpVersion.HTTP_1_1)
+                    if (HttpVersion.HTTP_1_1.equals(_requestBuilder.version()))
                     {
                         HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
                         switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
@@ -182,234 +412,61 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                     break;
             }
         }
-        _fields.add(field);
+        _requestBuilder.getFields().add(field);
     }
 
     @Override
     public void parsedTrailer(HttpField field)
     {
         if (_trailers == null)
-            _trailers = new HttpFields();
+            _trailers = HttpFields.build();
         _trailers.add(field);
     }
 
-    /**
-     * If the associated response has the Expect header set to 100 Continue,
-     * then accessing the input stream indicates that the handler/servlet
-     * is ready for the request body and thus a 100 Continue response is sent.
-     *
-     * @throws IOException if the InputStream cannot be created
-     */
     @Override
-    public void continue100(int available) throws IOException
+    public void recycle()
     {
-        // If the client is expecting 100 CONTINUE, then send it now.
-        // TODO: consider using an AtomicBoolean ?
-        if (isExpecting100Continue())
-        {
-            _expect100Continue = false;
-
-            // is content missing?
-            if (available == 0)
-            {
-                if (getResponse().isCommitted())
-                    throw new IOException("Committed before 100 Continues");
-
-                boolean committed = sendResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
-                if (!committed)
-                    throw new IOException("Concurrent commit while trying to send 100-Continue");
-            }
-        }
+        super.recycle();
+        _unknownExpectation = false;
+        _expect100Continue = false;
+        _expect102Processing = false;
+        _connection = null;
+        _upgrade = null;
+        _trailers = null;
+        _metadata = null;
     }
 
     @Override
-    public void earlyEOF()
+    public void startRequest(String method, String uri, HttpVersion version)
+    {
+        _requestBuilder.request(method, uri, version);
+        _unknownExpectation = false;
+        _expect100Continue = false;
+        _expect102Processing = false;
+    }
+
+    @Override
+    protected boolean checkAndPrepareUpgrade()
+    {
+        // TODO: move the code from HttpConnection.upgrade() here?
+        return false;
+    }
+
+    @Override
+    protected void handleException(Throwable x)
     {
         _httpConnection.getGenerator().setPersistent(false);
-        // If we have no request yet, just close
-        if (_metadata.getMethod() == null)
-            _httpConnection.close();
-        else if (onEarlyEOF() || _delayedForContent)
-        { 
-            _delayedForContent = false;
-            handle();
-        }
+        super.handleException(x);
     }
 
     @Override
-    public boolean content(ByteBuffer content)
+    protected HttpInput newHttpInput(HttpChannelState state)
     {
-        HttpInput.Content c = _httpConnection.newContent(content);
-        boolean handle = onContent(c) || _delayedForContent;
-        _delayedForContent = false;
-        return handle;
-    }
-
-    @Override
-    public void onAsyncWaitForContent()
-    {
-        _httpConnection.asyncReadFillInterested();
-    }
-
-    @Override
-    public void onBlockWaitForContent()
-    {
-        _httpConnection.blockingReadFillInterested();
-    }
-
-    @Override
-    public void onBlockWaitForContentFailure(Throwable failure)
-    {
-        _httpConnection.blockingReadFailure(failure);
-    }
-
-    @Override
-    public void badMessage(BadMessageException failure)
-    {
-        _httpConnection.getGenerator().setPersistent(false);
-        try
-        {
-            // Need to call onRequest, so RequestLog can reports as much as possible
-            onRequest(_metadata);
-            getRequest().getHttpInput().earlyEOF();
-        }
-        catch (Exception e)
-        {
-            LOG.ignore(e);
-        }
-
-        onBadMessage(failure);
-    }
-
-    @Override
-    public boolean headerComplete()
-    {
-        if (_complianceViolations != null && !_complianceViolations.isEmpty())
-        {
-            this.getRequest().setAttribute(HttpCompliance.VIOLATIONS_ATTR, _complianceViolations);
-            _complianceViolations=null;
-        }
-
-        boolean persistent;
-
-        switch (_metadata.getHttpVersion())
-        {
-            case HTTP_0_9:
-            {
-                persistent = false;
-                break;
-            }
-            case HTTP_1_0:
-            {
-                if (getHttpConfiguration().isPersistentConnectionsEnabled())
-                {
-                    if (_connection != null)
-                    {
-                        if (_connection.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
-                            persistent = true;
-                        else
-                            persistent = _fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
-                    }
-                    else
-                        persistent = false;
-                }
-                else
-                    persistent = false;
-
-                if (!persistent)
-                    persistent = HttpMethod.CONNECT.is(_metadata.getMethod());
-                if (persistent)
-                    getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
-
-                break;
-            }
-
-            case HTTP_1_1:
-            {
-                if (_unknownExpectation)
-                {
-                    badMessage(new BadMessageException(HttpStatus.EXPECTATION_FAILED_417));
-                    return false;
-                }
-
-                if (getHttpConfiguration().isPersistentConnectionsEnabled())
-                {
-                    if (_connection != null)
-                    {
-                        if (_connection.contains(HttpHeaderValue.CLOSE.asString()))
-                            persistent = false;
-                        else
-                            persistent = !_fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()); // handle multiple connection fields
-                    }
-                    else
-                        persistent = true;
-                }
-                else
-                    persistent = false;
-
-                if (!persistent)
-                    persistent = HttpMethod.CONNECT.is(_metadata.getMethod());
-                if (!persistent)
-                    getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-
-                if (_upgrade != null && upgrade())
-                    return true;
-
-                break;
-            }
-
-            case HTTP_2:
-            {
-                // Allow direct "upgrade" to HTTP_2_0 only if the connector supports h2c.
-                _upgrade = PREAMBLE_UPGRADE_H2C;
-
-                if (HttpMethod.PRI.is(_metadata.getMethod()) &&
-                        "*".equals(_metadata.getURI().toString()) &&
-                        _fields.size() == 0 &&
-                        upgrade())
-                    return true;
-
-                badMessage(new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426));
-                _httpConnection.getParser().close();
-                return false;
-            }
-
-            default:
-            {
-                throw new IllegalStateException("unsupported version " + _metadata.getHttpVersion());
-            }
-        }
-
-        if (!persistent)
-            _httpConnection.getGenerator().setPersistent(false);
-
-        onRequest(_metadata);
-
-        // Should we delay dispatch until we have some content?
-        // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
-        _delayedForContent = (getHttpConfiguration().isDelayDispatchUntilContent()
-                && (_httpConnection.getParser().getContentLength() > 0 || _httpConnection.getParser().isChunking())
-                && !isExpecting100Continue()
-                && !isCommitted()
-                && _httpConnection.isRequestBufferEmpty());
-
-        return !_delayedForContent;
-    }
-
-    boolean onIdleTimeout(Throwable timeout)
-    {
-        if (_delayedForContent)
-        {
-            _delayedForContent = false;
-            getRequest().getHttpInput().onIdleTimeout(timeout);
-            execute(this);
-            return false;
-        }
-        return true;
+        return new HttpInputOverHTTP(state);
     }
 
     /**
-     * <p>Attempts to perform a HTTP/1.1 upgrade.</p>
+     * <p>Attempts to perform an HTTP/1.1 upgrade.</p>
      * <p>The upgrade looks up a {@link ConnectionFactory.Upgrading} from the connector
      * matching the protocol specified in the {@code Upgrade} header.</p>
      * <p>The upgrade may succeed, be ignored (which can allow a later handler to implement)
@@ -424,24 +481,18 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             LOG.debug("upgrade {} {}", this, _upgrade);
 
         @SuppressWarnings("ReferenceEquality")
-        boolean isUpgraded_H2C = (_upgrade == PREAMBLE_UPGRADE_H2C);
+        boolean isUpgradedH2C = (_upgrade == PREAMBLE_UPGRADE_H2C);
 
-        if (!isUpgraded_H2C && (_connection == null || !_connection.contains("upgrade")))
+        if (!isUpgradedH2C && (_connection == null || !_connection.contains("upgrade")))
             throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
 
         // Find the upgrade factory
-        ConnectionFactory.Upgrading factory = null;
-        for (ConnectionFactory f : getConnector().getConnectionFactories())
-        {
-            if (f instanceof ConnectionFactory.Upgrading)
-            {
-                if (f.getProtocols().contains(_upgrade.getValue()))
-                {
-                    factory = (ConnectionFactory.Upgrading)f;
-                    break;
-                }
-            }
-        }
+        ConnectionFactory.Upgrading factory = getConnector().getConnectionFactories().stream()
+            .filter(f -> f instanceof ConnectionFactory.Upgrading)
+            .map(ConnectionFactory.Upgrading.class::cast)
+            .filter(f -> f.getProtocols().contains(_upgrade.getValue()))
+            .findAny()
+            .orElse(null);
 
         if (factory == null)
         {
@@ -451,9 +502,9 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         }
 
         // Create new connection
-        HttpFields response101 = new HttpFields();
-        Connection upgrade_connection = factory.upgradeConnection(getConnector(), getEndPoint(), _metadata, response101);
-        if (upgrade_connection == null)
+        HttpFields.Mutable response101 = HttpFields.build();
+        Connection upgradeConnection = factory.upgradeConnection(getConnector(), getEndPoint(), _metadata, response101);
+        if (upgradeConnection == null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Upgrade ignored for {} by {}", _upgrade, factory);
@@ -463,7 +514,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         // Send 101 if needed
         try
         {
-            if (!isUpgraded_H2C)
+            if (!isUpgradedH2C)
                 sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1, HttpStatus.SWITCHING_PROTOCOLS_101, response101, 0), null, true);
         }
         catch (IOException e)
@@ -472,63 +523,57 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgrade_connection);
-        getRequest().setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, upgrade_connection);
-        getResponse().setStatus(101);
+            LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgradeConnection);
+        getRequest().setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, upgradeConnection);
         getHttpTransport().onCompleted();
         return true;
     }
 
-    @Override
-    protected void handleException(Throwable x)
+    boolean onIdleTimeout(Throwable timeout)
     {
-        _httpConnection.getGenerator().setPersistent(false);
-        super.handleException(x);
-    }
-
-    @Override
-    public void abort(Throwable failure)
-    {
-        super.abort(failure);
-        _httpConnection.getGenerator().setPersistent(false);
-    }
-
-    @Override
-    public boolean contentComplete()
-    {
-        boolean handle = onContentComplete() || _delayedForContent;
-        _delayedForContent = false;
-        return handle;
-    }
-
-    @Override
-    public boolean messageComplete()
-    {
-        if (_trailers != null)
-            onTrailers(_trailers);
-        return onRequestComplete();
-    }
-
-    @Override
-    public int getHeaderCacheSize()
-    {
-        return getHttpConfiguration().getHeaderCacheSize();
-    }
-
-    @Override
-    public void onComplianceViolation(HttpCompliance compliance, HttpComplianceSection violation, String reason)
-    {
-        if (_httpConnection.isRecordHttpComplianceViolations())
+        if (_delayedForContent)
         {
-            if (_complianceViolations == null)
-            {
-                _complianceViolations = new ArrayList<>();
-            }
-            String record = String.format("%s (see %s) in mode %s for %s in %s", 
-                violation.getDescription(), violation.getURL(), compliance, reason, getHttpTransport());
-            _complianceViolations.add(record);
-            if (LOG.isDebugEnabled())
-                LOG.debug(record);
+            _delayedForContent = false;
+            getRequest().getHttpInput().onIdleTimeout(timeout);
+            execute(this);
+            return false;
+        }
+        return true;
+    }
+
+    private static class RequestBuilder
+    {
+        private final HttpFields.Mutable _fieldsBuilder = HttpFields.build();
+        private final HttpURI.Mutable _uriBuilder = HttpURI.build();
+        private String _method;
+        private HttpVersion _version;
+
+        public String method()
+        {
+            return _method;
+        }
+
+        public void request(String method, String uri, HttpVersion version)
+        {
+            _method = method;
+            _uriBuilder.uri(method, uri);
+            _version = version;
+            _fieldsBuilder.clear();
+        }
+
+        public HttpFields.Mutable getFields()
+        {
+            return _fieldsBuilder;
+        }
+
+        public MetaData.Request build()
+        {
+            return new MetaData.Request(_method, _uriBuilder, _version, _fieldsBuilder);
+        }
+
+        public HttpVersion version()
+        {
+            return _version;
         }
     }
 }

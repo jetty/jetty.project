@@ -186,7 +186,17 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-infinispan</artifactId>
+        <artifactId>infinispan-common</artifactId>
+        <version>10.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>infinispan-remote-query</artifactId>
+        <version>10.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>infinispan-embedded-query</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -276,6 +286,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-openid</artifactId>
+        <version>10.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
@@ -296,7 +311,17 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-unixsocket</artifactId>
+        <artifactId>jetty-unixsocket-common</artifactId>
+        <version>10.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-unixsocket-client</artifactId>
+        <version>10.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-unixsocket-server</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -316,47 +341,57 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>javax-websocket-client</artifactId>
+        <artifactId>websocket-javax-client</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>javax-websocket-server</artifactId>
+        <artifactId>websocket-javax-server</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>javax-websocket-common</artifactId>
+        <artifactId>websocket-javax-common</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>jetty-websocket-api</artifactId>
+        <artifactId>websocket-jetty-api</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>jetty-websocket-client</artifactId>
+        <artifactId>websocket-jetty-client</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>jetty-websocket-common</artifactId>
+        <artifactId>websocket-jetty-common</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>jetty-websocket-server</artifactId>
+        <artifactId>websocket-jetty-server</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-servlet</artifactId>
+        <artifactId>websocket-util-server</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
-        <artifactId>websocket-core</artifactId>
+        <artifactId>websocket-core-common</artifactId>
+        <version>10.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>websocket-core-client</artifactId>
+        <version>10.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.websocket</groupId>
+        <artifactId>websocket-core-server</artifactId>
         <version>10.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>

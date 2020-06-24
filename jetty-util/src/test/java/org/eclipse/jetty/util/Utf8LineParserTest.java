@@ -1,33 +1,32 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 
 public class Utf8LineParserTest
 {
@@ -38,14 +37,14 @@ public class Utf8LineParserTest
 
     private void assertEquals(List<String> expected, List<String> actual)
     {
-        assertThat("Expected Line Count",actual.size(),is(expected.size()));
+        assertThat("Expected Line Count", actual.size(), is(expected.size()));
         int len = expected.size();
         for (int i = 0; i < len; i++)
         {
             String expectedLine = expected.get(i);
             String actualLine = actual.get(i);
 
-            assertThat("Line[" + i + "]",actualLine,is(expectedLine));
+            assertThat("Line[" + i + "]", actualLine, is(expectedLine));
         }
     }
 
@@ -56,13 +55,13 @@ public class Utf8LineParserTest
     public void testBasicParse()
     {
         ByteBuffer buf = ByteBuffer.allocate(64);
-        appendUtf8(buf,"Hello World\n");
-        BufferUtil.flipToFlush(buf,0);
+        appendUtf8(buf, "Hello World\n");
+        BufferUtil.flipToFlush(buf, 0);
 
         Utf8LineParser utfparser = new Utf8LineParser();
 
         String line = utfparser.parse(buf);
-        assertThat("Line",line,is("Hello World"));
+        assertThat("Line", line, is("Hello World"));
     }
 
     /**
@@ -72,13 +71,13 @@ public class Utf8LineParserTest
     public void testHttpLineParse()
     {
         ByteBuffer buf = ByteBuffer.allocate(64);
-        appendUtf8(buf,"Hello World\r\n");
-        BufferUtil.flipToFlush(buf,0);
+        appendUtf8(buf, "Hello World\r\n");
+        BufferUtil.flipToFlush(buf, 0);
 
         Utf8LineParser utfparser = new Utf8LineParser();
 
         String line = utfparser.parse(buf);
-        assertThat("Line",line,is("Hello World"));
+        assertThat("Line", line, is("Hello World"));
     }
 
     /**
@@ -101,10 +100,10 @@ public class Utf8LineParserTest
         ByteBuffer buf = ByteBuffer.allocate(512);
         for (String line : expected)
         {
-            appendUtf8(buf,line + "\r\n");
+            appendUtf8(buf, line + "\r\n");
         }
 
-        BufferUtil.flipToFlush(buf,0);
+        BufferUtil.flipToFlush(buf, 0);
 
         // Parse Buffer
         Utf8LineParser utfparser = new Utf8LineParser();
@@ -125,11 +124,11 @@ public class Utf8LineParserTest
                 done = true;
             }
             count++;
-            assertThat("Parse Count is excessive (bug in code!)",count,lessThan(excessive));
+            assertThat("Parse Count is excessive (bug in code!)", count, lessThan(excessive));
         }
 
         // Validate Results
-        assertEquals(expected,actual);
+        assertEquals(expected, actual);
     }
 
     /**
@@ -159,10 +158,10 @@ public class Utf8LineParserTest
         ByteBuffer buf = ByteBuffer.allocate(512);
         for (String line : expected)
         {
-            appendUtf8(buf,line + "\r\n");
+            appendUtf8(buf, line + "\r\n");
         }
 
-        BufferUtil.flipToFlush(buf,0);
+        BufferUtil.flipToFlush(buf, 0);
 
         // Parse Buffer
         Utf8LineParser utfparser = new Utf8LineParser();
@@ -183,10 +182,10 @@ public class Utf8LineParserTest
                 done = true;
             }
             count++;
-            assertThat("Parse Count is excessive (bug in code!)",count,lessThan(excessive));
+            assertThat("Parse Count is excessive (bug in code!)", count, lessThan(excessive));
         }
 
         // Validate Results
-        assertEquals(expected,actual);
+        assertEquals(expected, actual);
     }
 }

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.rewrite.handler;
@@ -22,7 +22,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringReader;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,7 +37,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,10 +45,8 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-
 public class CookiePatternRuleTest
 {
-
     private Server server;
     private LocalConnector localConnector;
 
@@ -76,15 +72,12 @@ public class CookiePatternRuleTest
                 out.printf("baseRequest.requestUri=%s%n", baseRequest.getRequestURI());
                 out.printf("baseRequest.originalUri=%s%n", baseRequest.getOriginalURI());
                 out.printf("request.requestUri=%s%n", request.getRequestURI());
+                out.printf("request.queryString=%s%n", request.getQueryString());
                 baseRequest.setHandled(true);
             }
         };
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(rewriteHandler);
-        handlers.addHandler(dummyHandler);
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(rewriteHandler, dummyHandler));
         server.start();
     }
 
@@ -152,7 +145,40 @@ public class CookiePatternRuleTest
     }
 
     @Test
-    @Disabled("See #2675 for details") // TODO: needs to be fixed in RuleContainer
+    public void testUrlQuery() throws Exception
+    {
+        CookiePatternRule rule = new CookiePatternRule();
+        rule.setPattern("*");
+        rule.setName("fruit");
+        rule.setValue("banana");
+
+        startServer(rule);
+
+        StringBuilder rawRequest = new StringBuilder();
+        rawRequest.append("GET /other?fruit=apple HTTP/1.1\r\n");
+        rawRequest.append("Host: local\r\n");
+        rawRequest.append("Connection: close\r\n");
+        rawRequest.append("\r\n");
+
+        String rawResponse = localConnector.getResponse(rawRequest.toString());
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        String responseContent = response.getContent();
+        assertResponseContentLine(responseContent, "baseRequest.requestUri=", "/other");
+        assertResponseContentLine(responseContent, "request.queryString=", "fruit=apple");
+
+        // verify
+        HttpField setCookieField = response.getField(HttpHeader.SET_COOKIE);
+        assertThat("response should have Set-Cookie", setCookieField, notNullValue());
+        for (String value : setCookieField.getValues())
+        {
+            String[] result = value.split("=");
+            assertThat(result[0], is("fruit"));
+            assertThat(result[1], is("banana"));
+        }
+    }
+
+    @Test
     public void testUrlParameter() throws Exception
     {
         CookiePatternRule rule = new CookiePatternRule();
@@ -172,7 +198,6 @@ public class CookiePatternRuleTest
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         String responseContent = response.getContent();
-        System.out.println(responseContent);
         assertResponseContentLine(responseContent, "baseRequest.requestUri=", "/other;fruit=apple");
 
         // verify

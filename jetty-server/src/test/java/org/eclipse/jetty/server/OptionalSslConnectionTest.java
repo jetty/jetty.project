@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -24,7 +24,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -39,6 +38,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class OptionalSslConnectionTest
 {
@@ -51,17 +51,16 @@ public class OptionalSslConnectionTest
         serverThreads.setName("server");
         server = new Server(serverThreads);
 
-        String keystore = MavenTestingUtils.getTestResourceFile("keystore").getAbsolutePath();
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keystore);
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
 
         HttpConfiguration httpConfig = new HttpConfiguration();
         HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, http.getProtocol());
         OptionalSslConnectionFactory sslOrOther = configFn.apply(ssl);
-        connector = new ServerConnector(server, 1, 1, sslOrOther, ssl, http);
+        connector = new ServerConnector(server, 1, 1, sslOrOther, http);
         server.addConnector(connector);
 
         server.setHandler(handler);
@@ -91,8 +90,8 @@ public class OptionalSslConnectionTest
     {
         startServer(this::optionalSsl, new EmptyServerHandler());
 
-        String request = "" +
-                "GET / HTTP/1.1\r\n" +
+        String request =
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "\r\n";
         byte[] requestBytes = request.getBytes(StandardCharsets.US_ASCII);
@@ -112,8 +111,8 @@ public class OptionalSslConnectionTest
             assertEquals(HttpStatus.OK_200, response.getStatus());
         }
 
-        // Then try a SSL connection.
-        SslContextFactory sslContextFactory = new SslContextFactory(true);
+        // Then try an SSL connection.
+        SslContextFactory sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.start();
         try (Socket ssl = sslContextFactory.newSslSocket())
         {
@@ -182,8 +181,8 @@ public class OptionalSslConnectionTest
     {
         startServer(this::optionalSslNoOtherProtocol, new EmptyServerHandler());
 
-        String request = "" +
-                "GET / HTTP/1.1\r\n" +
+        String request =
+            "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "\r\n";
         byte[] requestBytes = request.getBytes(StandardCharsets.US_ASCII);
@@ -205,10 +204,50 @@ public class OptionalSslConnectionTest
         }
     }
 
-    private static class EmptyServerHandler extends AbstractHandler.ErrorDispatchHandler
+    @Test
+    public void testNextProtocolIsNotNullButNotConfiguredEither() throws Exception
+    {
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
+
+        String keystore = MavenTestingUtils.getTestResourceFile("keystore.p12").getAbsolutePath();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePassword("storepwd");
+
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        HttpConnectionFactory http = new HttpConnectionFactory(httpConfig);
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory, http.getProtocol());
+        OptionalSslConnectionFactory optSsl = new OptionalSslConnectionFactory(ssl, "no-such-protocol");
+        connector = new ServerConnector(server, 1, 1, optSsl, http);
+        server.addConnector(connector);
+        server.setHandler(new EmptyServerHandler());
+        server.start();
+
+        try (Socket socket = new Socket(server.getURI().getHost(), server.getURI().getPort()))
+        {
+            OutputStream sslOutput = socket.getOutputStream();
+            String request =
+                "GET / HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "\r\n";
+            byte[] requestBytes = request.getBytes(StandardCharsets.US_ASCII);
+
+            sslOutput.write(requestBytes);
+            sslOutput.flush();
+
+            socket.setSoTimeout(5000);
+            InputStream sslInput = socket.getInputStream();
+            HttpTester.Response response = HttpTester.parseResponse(sslInput);
+            assertNull(response);
+        }
+    }
+
+    private static class EmptyServerHandler extends AbstractHandler
     {
         @Override
-        protected void doNonErrorHandle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+        public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
         {
             jettyRequest.setHandled(true);
         }

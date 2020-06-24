@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.webapp;
@@ -25,27 +25,26 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A WebAppClassLoader that caches {@link #getResource(String)} results.
  * Specifically this ClassLoader caches not found classes and resources,
- * which can greatly increase performance for applications that search 
+ * which can greatly increase performance for applications that search
  * for resources.
  */
 @ManagedObject
 public class CachingWebAppClassLoader extends WebAppClassLoader
 {
-    private static final Logger LOG = Log.getLogger(CachingWebAppClassLoader.class);
-    
+    private static final Logger LOG = LoggerFactory.getLogger(CachingWebAppClassLoader.class);
+
     private final Set<String> _notFound = ConcurrentHashMap.newKeySet();
-    private final ConcurrentHashMap<String,URL> _cache = new ConcurrentHashMap<>();
-    
+    private final ConcurrentHashMap<String, URL> _cache = new ConcurrentHashMap<>();
+
     public CachingWebAppClassLoader(ClassLoader parent, Context context) throws IOException
     {
-        super(parent,context);
+        super(parent, context);
     }
 
     public CachingWebAppClassLoader(Context context) throws IOException
@@ -59,28 +58,28 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
         if (_notFound.contains(name))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Not found cache hit resource {}",name);
+                LOG.debug("Not found cache hit resource {}", name);
             return null;
         }
-        
+
         URL url = _cache.get(name);
 
         if (url == null)
         {
             // Not found in cache, try parent
             url = super.getResource(name);
-        
-            if (url==null)
+
+            if (url == null)
             {
                 // Still not found, cache the not-found result
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Caching not found resource {}",name);
+                    LOG.debug("Caching not found resource {}", name);
                 _notFound.add(name);
             }
             else
             {
                 // Cache the new result
-                _cache.putIfAbsent(name,url);
+                _cache.putIfAbsent(name, url);
             }
         }
 
@@ -93,8 +92,8 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
         if (_notFound.contains(name))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Not found cache hit resource {}",name);
-            throw new ClassNotFoundException(name+": in notfound cache");
+                LOG.debug("Not found cache hit resource {}", name);
+            throw new ClassNotFoundException(name + ": in notfound cache");
         }
         try
         {
@@ -105,10 +104,9 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
             if (_notFound.add(name))
                 if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("Caching not found {}",name);
-                    LOG.debug(nfe);
+                    LOG.debug("Caching not found {}", name, nfe);
                 }
-            throw nfe; 
+            throw nfe;
         }
     }
 
@@ -118,10 +116,10 @@ public class CachingWebAppClassLoader extends WebAppClassLoader
         _cache.clear();
         _notFound.clear();
     }
-    
+
     @Override
     public String toString()
     {
-        return "Caching["+super.toString()+"]";
+        return "Caching[" + super.toString() + "]";
     }
 }

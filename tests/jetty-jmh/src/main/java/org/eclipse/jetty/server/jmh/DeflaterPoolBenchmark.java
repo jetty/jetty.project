@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.jmh;
@@ -21,7 +21,7 @@ package org.eclipse.jetty.server.jmh;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.Deflater;
 
-import org.eclipse.jetty.server.DeflaterPool;
+import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -87,7 +87,6 @@ public class DeflaterPoolBenchmark
     {
     }
 
-
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
     @SuppressWarnings("deprecation")
@@ -97,7 +96,7 @@ public class DeflaterPoolBenchmark
         deflater.setInput(COMPRESSION_STRING.getBytes());
         deflater.finish();
 
-        byte[] output = new byte[COMPRESSION_STRING.length()+1];
+        byte[] output = new byte[COMPRESSION_STRING.length() + 1];
         int compressedDataLength = deflater.deflate(output);
         _pool.release(deflater);
 
@@ -107,13 +106,13 @@ public class DeflaterPoolBenchmark
     public static void main(String[] args) throws RunnerException
     {
         Options opt = new OptionsBuilder()
-                .include(DeflaterPoolBenchmark.class.getSimpleName())
-                .warmupIterations(20)
-                .measurementIterations(10)
-                .addProfiler(GCProfiler.class)
-                .forks(1)
-                .threads(100)
-                .build();
+            .include(DeflaterPoolBenchmark.class.getSimpleName())
+            .warmupIterations(20)
+            .measurementIterations(10)
+            .addProfiler(GCProfiler.class)
+            .forks(1)
+            .threads(100)
+            .build();
 
         new Runner(opt).run();
     }

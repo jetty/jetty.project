@@ -1,21 +1,20 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.server.session;
 
@@ -25,31 +24,29 @@ import org.junit.jupiter.api.BeforeAll;
 
 /**
  * ClusteredOrphanedSessionTest
- *
- *
  */
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
+    static
+    {
+        LoggingUtil.init();
+    }
+
     public static InfinispanTestSupport __testSupport;
-    
-    
+
     @BeforeAll
-    public static void setup () throws Exception
+    public static void setup() throws Exception
     {
         __testSupport = new InfinispanTestSupport();
         __testSupport.setup();
     }
-    
+
     @AfterAll
-    public static void teardown () throws Exception
+    public static void teardown() throws Exception
     {
         __testSupport.teardown();
     }
-    
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
-     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
@@ -57,7 +54,4 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
         factory.setCache(__testSupport.getCache());
         return factory;
     }
-  
- 
-
 }

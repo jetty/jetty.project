@@ -1,25 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.server;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -48,8 +45,10 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CloseTest extends AbstractServerTest
 {
@@ -66,7 +65,7 @@ public class CloseTest extends AbstractServerTest
                 try
                 {
                     sessionRef.set(stream.getSession());
-                    MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                    MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                     // Reply with HEADERS.
                     stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                     closeLatch.await(5, TimeUnit.SECONDS);
@@ -82,7 +81,7 @@ public class CloseTest extends AbstractServerTest
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
@@ -134,7 +133,7 @@ public class CloseTest extends AbstractServerTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 sessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 return null;
             }
@@ -143,7 +142,7 @@ public class CloseTest extends AbstractServerTest
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
         generator.control(lease, new GoAwayFrame(1, ErrorCode.NO_ERROR.code, "OK".getBytes("UTF-8")));
 
@@ -199,7 +198,7 @@ public class CloseTest extends AbstractServerTest
             {
                 stream.setIdleTimeout(10 * idleTimeout);
                 sessionRef.set(stream.getSession());
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 stream.getSession().close(ErrorCode.NO_ERROR.code, "OK", Callback.NOOP);
                 return null;
@@ -210,7 +209,7 @@ public class CloseTest extends AbstractServerTest
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))

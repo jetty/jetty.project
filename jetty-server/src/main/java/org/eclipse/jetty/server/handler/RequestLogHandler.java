@@ -1,25 +1,24 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -29,45 +28,37 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 
-
 /**
  * <p>This handler provides an alternate way (other than {@link Server#setRequestLog(RequestLog)})
  * to log request, that can be applied to a particular handler (eg context).
  * This handler can be used to wrap an individual context for context logging, or can be listed
  * prior to a handler.
  * </p>
+ *
  * @see Server#setRequestLog(RequestLog)
  */
 public class RequestLogHandler extends HandlerWrapper
 {
     private RequestLog _requestLog;
 
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.server.Handler#handle(java.lang.String, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, int)
-     */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException
+        throws IOException, ServletException
     {
-        if (baseRequest.getDispatcherType()==DispatcherType.REQUEST)
+        if (baseRequest.getDispatcherType() == DispatcherType.REQUEST)
             baseRequest.getHttpChannel().addRequestLog(_requestLog);
-        if (_handler!=null)
-            _handler.handle(target,baseRequest, request, response);
+        if (_handler != null)
+            _handler.handle(target, baseRequest, request, response);
     }
 
-    /* ------------------------------------------------------------ */
     public void setRequestLog(RequestLog requestLog)
     {
-        updateBean(_requestLog,requestLog);
-        _requestLog=requestLog;
+        updateBean(_requestLog, requestLog);
+        _requestLog = requestLog;
     }
 
-    /* ------------------------------------------------------------ */
     public RequestLog getRequestLog()
     {
         return _requestLog;
     }
-    
-
 }

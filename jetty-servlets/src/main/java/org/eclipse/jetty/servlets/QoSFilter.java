@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlets;
@@ -23,7 +23,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -41,8 +40,8 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Quality of Service Filter.
@@ -79,7 +78,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Quality of Service Filter")
 public class QoSFilter implements Filter
 {
-    private static final Logger LOG = Log.getLogger(QoSFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QoSFilter.class);
 
     static final int __DEFAULT_MAX_PRIORITY = 10;
     static final int __DEFAULT_PASSES = 10;
@@ -104,10 +103,10 @@ public class QoSFilter implements Filter
     @Override
     public void init(FilterConfig filterConfig)
     {
-        int max_priority = __DEFAULT_MAX_PRIORITY;
+        int maxPriority = __DEFAULT_MAX_PRIORITY;
         if (filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM) != null)
-            max_priority = Integer.parseInt(filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM));
-        _queues = new Queue[max_priority + 1];
+            maxPriority = Integer.parseInt(filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM));
+        _queues = new Queue[maxPriority + 1];
         _listeners = new AsyncListener[_queues.length];
         for (int p = 0; p < _queues.length; ++p)
         {
@@ -217,6 +216,8 @@ public class QoSFilter implements Filter
         {
             if (accepted)
             {
+                _passes.release();
+
                 for (int p = _queues.length - 1; p >= 0; --p)
                 {
                     AsyncContext asyncContext = _queues[p].poll();
@@ -226,13 +227,20 @@ public class QoSFilter implements Filter
                         Boolean suspended = (Boolean)candidate.getAttribute(_suspended);
                         if (Boolean.TRUE.equals(suspended))
                         {
-                            candidate.setAttribute(_resumed, Boolean.TRUE);
-                            asyncContext.dispatch();
-                            break;
+                            try
+                            {  
+                                candidate.setAttribute(_resumed, Boolean.TRUE);
+                                asyncContext.dispatch();
+                                break;
+                            }
+                            catch (IllegalStateException x)
+                            {
+                                LOG.warn("Unable to resume suspended dispatch", x);
+                                continue;
+                            }
                         }
                     }
                 }
-                _passes.release();
             }
         }
     }
@@ -369,7 +377,8 @@ public class QoSFilter implements Filter
             // redispatched again at the end of the filtering.
             AsyncContext asyncContext = event.getAsyncContext();
             _queues[priority].remove(asyncContext);
-            asyncContext.dispatch();
+            ((HttpServletResponse)event.getSuppliedResponse()).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            asyncContext.complete();
         }
 
         @Override

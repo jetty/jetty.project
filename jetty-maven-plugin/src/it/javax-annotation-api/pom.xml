@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.its</groupId>
@@ -19,19 +18,20 @@
     <maven.compiler.target>8</maven.compiler.target>
     <!--maven.compiler.release>11</maven.compiler.release-->
     <jetty.port.file>${project.build.directory}/jetty-run-mojo-annotation.txt</jetty.port.file>
-    <annotation-api.version>@javax.annotation-api@</annotation-api.version>
+    <jetty.deployMode>EMBED</jetty.deployMode>
+    <logging.slf4j.version>1.7.30</logging.slf4j.version>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
       <version>@servlet.api.version@</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>javax.annotation-api</artifactId>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
       <version>@annotation-api.version@</version>
     </dependency>
     <dependency>
@@ -42,12 +42,17 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>@slf4j.version@</version>
+      <version>${logging.slf4j.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j18-impl</artifactId>
-      <version>@log4j2.version@</version>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>${logging.slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+      <version>${logging.slf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -86,12 +91,9 @@
             </goals>
             <configuration>
               <systemProperties>
-                <systemProperty>
-                  <name>jetty.port.file</name>
-                  <value>${jetty.port.file}</value>
-                </systemProperty>
+                  <jetty.port.file>${jetty.port.file}</jetty.port.file>
               </systemProperties>
-              <nonBlocking>true</nonBlocking>
+              <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
             </configuration>
           </execution>
         </executions>
@@ -100,14 +102,9 @@
 
     <extensions>
       <extension>
-        <groupId>javax.annotation</groupId>
-        <artifactId>javax.annotation-api</artifactId>
+        <groupId>jakarta.annotation</groupId>
+        <artifactId>jakarta.annotation-api</artifactId>
         <version>@annotation-api.version@</version>
-      </extension>
-      <extension>
-        <groupId>javax.annotation</groupId>
-        <artifactId>jsr250-api</artifactId>
-        <version>@jsr250-api.version@</version>
       </extension>
     </extensions>
   </build>

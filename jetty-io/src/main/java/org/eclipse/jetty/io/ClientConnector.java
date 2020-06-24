@@ -1,27 +1,27 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.StandardSocketOptions;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -30,33 +30,35 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ClientConnector extends ContainerLifeCycle
 {
     public static final String CLIENT_CONNECTOR_CONTEXT_KEY = "org.eclipse.jetty.client.connector";
-    public static final String SOCKET_ADDRESS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".socketAddress";
+    public static final String REMOTE_SOCKET_ADDRESS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".remoteSocketAddress";
     public static final String CLIENT_CONNECTION_FACTORY_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".clientConnectionFactory";
     public static final String CONNECTION_PROMISE_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".connectionPromise";
-    private static final Logger LOG = Log.getLogger(ClientConnector.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ClientConnector.class);
 
     private Executor executor;
     private Scheduler scheduler;
     private ByteBufferPool byteBufferPool;
-    private SslContextFactory sslContextFactory;
+    private SslContextFactory.Client sslContextFactory;
     private SelectorManager selectorManager;
     private int selectors = 1;
     private boolean connectBlocking;
     private Duration connectTimeout = Duration.ofSeconds(5);
     private Duration idleTimeout = Duration.ofSeconds(30);
     private SocketAddress bindAddress;
+    private boolean reuseAddress = true;
 
     public Executor getExecutor()
     {
@@ -97,12 +99,12 @@ public class ClientConnector extends ContainerLifeCycle
         this.byteBufferPool = byteBufferPool;
     }
 
-    public SslContextFactory getSslContextFactory()
+    public SslContextFactory.Client getSslContextFactory()
     {
         return sslContextFactory;
     }
 
-    public void setSslContextFactory(SslContextFactory sslContextFactory)
+    public void setSslContextFactory(SslContextFactory.Client sslContextFactory)
     {
         if (isStarted())
             throw new IllegalStateException();
@@ -164,6 +166,16 @@ public class ClientConnector extends ContainerLifeCycle
         this.bindAddress = bindAddress;
     }
 
+    public boolean getReuseAddress()
+    {
+        return reuseAddress;
+    }
+
+    public void setReuseAddress(boolean reuseAddress)
+    {
+        this.reuseAddress = reuseAddress;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
@@ -192,9 +204,9 @@ public class ClientConnector extends ContainerLifeCycle
         removeBean(selectorManager);
     }
 
-    protected SslContextFactory newSslContextFactory()
+    protected SslContextFactory.Client newSslContextFactory()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory(false);
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(false);
         sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         return sslContextFactory;
     }
@@ -212,14 +224,16 @@ public class ClientConnector extends ContainerLifeCycle
             if (context == null)
                 context = new HashMap<>();
             context.put(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, this);
-            context.putIfAbsent(SOCKET_ADDRESS_CONTEXT_KEY, address);
+            context.putIfAbsent(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
 
             channel = SocketChannel.open();
             SocketAddress bindAddress = getBindAddress();
             if (bindAddress != null)
             {
+                boolean reuseAddress = getReuseAddress();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Binding to {} to connect to {}", bindAddress, address);
+                    LOG.debug("Binding to {} to connect to {}{}", bindAddress, address, (reuseAddress ? " reusing address" : ""));
+                channel.setOption(StandardSocketOptions.SO_REUSEADDR, reuseAddress);
                 channel.bind(bindAddress);
             }
             configure(channel);
@@ -252,7 +266,7 @@ public class ClientConnector extends ContainerLifeCycle
             // exception is being thrown, so we attempt to provide a better error message.
             if (x.getClass() == SocketException.class)
                 x = new SocketException("Could not connect to " + address).initCause(x);
-            safeClose(channel);
+            IO.close(channel);
             connectFailed(x, context);
         }
     }
@@ -272,22 +286,10 @@ public class ClientConnector extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Could not accept {}", channel);
-            safeClose(channel);
+            IO.close(channel);
             Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
-            promise.failed(failure);
-        }
-    }
-
-    protected void safeClose(Closeable closeable)
-    {
-        try
-        {
-            if (closeable != null)
-                closeable.close();
-        }
-        catch (Throwable x)
-        {
-            LOG.ignore(x);
+            if (promise != null)
+                promise.failed(failure);
         }
     }
 
@@ -296,17 +298,23 @@ public class ClientConnector extends ContainerLifeCycle
         channel.socket().setTcpNoDelay(true);
     }
 
+    protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey)
+    {
+        return new SocketChannelEndPoint(channel, selector, selectionKey, getScheduler());
+    }
+
     protected void connectFailed(Throwable failure, Map<String, Object> context)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Could not connect to {}", context.get(SOCKET_ADDRESS_CONTEXT_KEY));
+            LOG.debug("Could not connect to {}", context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY));
         Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
-        promise.failed(failure);
+        if (promise != null)
+            promise.failed(failure);
     }
 
     protected class ClientSelectorManager extends SelectorManager
     {
-        protected ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
+        public ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
         }
@@ -314,7 +322,7 @@ public class ClientConnector extends ContainerLifeCycle
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
-            SocketChannelEndPoint endPoint = new SocketChannelEndPoint(channel, selector, selectionKey, getScheduler());
+            EndPoint endPoint = ClientConnector.this.newEndPoint((SocketChannel)channel, selector, selectionKey);
             endPoint.setIdleTimeout(getIdleTimeout().toMillis());
             return endPoint;
         }
@@ -326,6 +334,18 @@ public class ClientConnector extends ContainerLifeCycle
             Map<String, Object> context = (Map<String, Object>)attachment;
             ClientConnectionFactory factory = (ClientConnectionFactory)context.get(CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
             return factory.newConnection(endPoint, context);
+        }
+
+        @Override
+        public void connectionOpened(Connection connection, Object context)
+        {
+            super.connectionOpened(connection, context);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> contextMap = (Map<String, Object>)context;
+            @SuppressWarnings("unchecked")
+            Promise<Connection> promise = (Promise<Connection>)contextMap.get(CONNECTION_PROMISE_CONTEXT_KEY);
+            if (promise != null)
+                promise.succeeded(connection);
         }
 
         @Override

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.start;
@@ -65,7 +65,7 @@ public class StartIni extends TextFile
             return line;
         }
 
-        return line.replace("${start.basedir}",basedir.toString());
+        return line.replace("${start.basedir}", basedir.toString());
     }
 
     @Override
@@ -86,30 +86,30 @@ public class StartIni extends TextFile
         return basedir;
     }
 
-    public void update(BaseHome baseHome,Props props) throws IOException
+    public void update(BaseHome baseHome, Props props) throws IOException
     {
         String update = getFile().getFileName().toString();
-        update = update.substring(0,update.lastIndexOf("."));
+        update = update.substring(0, update.lastIndexOf("."));
         String source = baseHome.toShortForm(getFile());
-        
+
         PrintWriter writer = null;
-        
+
         try
         {
             for (String line : getAllLines())
             {
                 Matcher m = Module.SET_PROPERTY.matcher(line);
-                if (m.matches() && m.groupCount()==3)
+                if (m.matches() && m.groupCount() == 3)
                 {
                     String name = m.group(2);
                     String value = m.group(3);
                     Prop p = props.getProp(name);
-                    
-                    if (p!=null && (p.source==null || !p.source.endsWith("?=")) && ("#".equals(m.group(1)) || !value.equals(p.value)))
+
+                    if (p != null && (p.source == null || !p.source.endsWith("?=")) && ("#".equals(m.group(1)) || !value.equals(p.value)))
                     {
-                        if (writer==null)
+                        if (writer == null)
                         {
-                            writer = new PrintWriter(Files.newBufferedWriter(getFile(),StandardCharsets.UTF_8,StandardOpenOption.TRUNCATE_EXISTING,StandardOpenOption.CREATE));
+                            writer = new PrintWriter(Files.newBufferedWriter(getFile(), StandardCharsets.UTF_8, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE));
                             for (String l : getAllLines())
                             {
                                 if (line.equals(l))
@@ -117,16 +117,16 @@ public class StartIni extends TextFile
                                 writer.println(l);
                             }
                         }
-                        
-                        StartLog.info("%-15s property updated %s=%s",update,name,p.value);
-                        writer.printf("%s=%s%n",name,p.value);
+
+                        StartLog.info("%-15s property updated %s=%s", update, name, p.value);
+                        writer.printf("%s=%s%n", name, p.value);
                     }
-                    else if (writer!=null)
+                    else if (writer != null)
                     {
                         writer.println(line);
                     }
                 }
-                else if (writer!=null)
+                else if (writer != null)
                 {
                     writer.println(line);
                 }
@@ -134,12 +134,11 @@ public class StartIni extends TextFile
         }
         finally
         {
-            if (writer!=null)
+            if (writer != null)
             {
-                StartLog.info("%-15s updated %s",update,source);
+                StartLog.info("%-15s updated %s", update, source);
                 writer.close();
             }
         }
-
     }
 }

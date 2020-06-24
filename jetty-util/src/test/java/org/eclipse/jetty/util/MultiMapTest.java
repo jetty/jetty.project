@@ -1,22 +1,29 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -26,18 +33,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-
-import org.junit.jupiter.api.Test;
-
 public class MultiMapTest
 {
     /**
-     * Tests {@link MultiMap#put(Object, Object)}
+     * Tests {@link MultiMap#put(String, Object)}
      */
     @Test
     public void testPut()
@@ -46,64 +45,64 @@ public class MultiMapTest
 
         String key = "formats";
 
-        mm.put(key,"gzip");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip");
+        mm.put(key, "gzip");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip");
     }
 
     /**
-     * Tests {@link MultiMap#put(Object, Object)}
+     * Tests {@link MultiMap#put(String, Object)}
      */
     @Test
-    public void testPut_Null_String()
+    public void testPutNullString()
     {
         MultiMap<String> mm = new MultiMap<>();
 
         String key = "formats";
         String val = null;
 
-        mm.put(key,val);
-        assertMapSize(mm,1);
-        assertNullValues(mm,key);
+        mm.put(key, val);
+        assertMapSize(mm, 1);
+        assertNullValues(mm, key);
     }
 
     /**
-     * Tests {@link MultiMap#put(Object, Object)}
+     * Tests {@link MultiMap#put(String, Object)}
      */
     @Test
-    public void testPut_Null_List()
+    public void testPutNullList()
     {
         MultiMap<String> mm = new MultiMap<>();
 
         String key = "formats";
         List<String> vals = null;
 
-        mm.put(key,vals);
-        assertMapSize(mm,1);
-        assertNullValues(mm,key);
+        mm.put(key, vals);
+        assertMapSize(mm, 1);
+        assertNullValues(mm, key);
     }
 
     /**
-     * Tests {@link MultiMap#put(Object, Object)}
+     * Tests {@link MultiMap#put(String, Object)}
      */
     @Test
-    public void testPut_Replace()
+    public void testPutReplace()
     {
         MultiMap<String> mm = new MultiMap<>();
 
         String key = "formats";
         Object ret;
 
-        ret = mm.put(key,"gzip");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip");
+        ret = mm.put(key, "gzip");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip");
         assertNull(ret, "Should not have replaced anything");
         Object orig = mm.get(key);
 
         // Now replace it
-        ret = mm.put(key,"jar");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"jar");
+        ret = mm.put(key, "jar");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "jar");
         assertEquals(orig, ret, "Should have replaced original");
     }
 
@@ -111,7 +110,7 @@ public class MultiMapTest
      * Tests {@link MultiMap#putValues(String, List)}
      */
     @Test
-    public void testPutValues_List()
+    public void testPutValuesList()
     {
         MultiMap<String> mm = new MultiMap<>();
 
@@ -122,40 +121,40 @@ public class MultiMapTest
         input.add("jar");
         input.add("pack200");
 
-        mm.putValues(key,input);
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip","jar","pack200");
+        mm.putValues(key, input);
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip", "jar", "pack200");
     }
 
     /**
      * Tests {@link MultiMap#putValues(String, Object[])}
      */
     @Test
-    public void testPutValues_StringArray()
+    public void testPutValuesStringArray()
     {
         MultiMap<String> mm = new MultiMap<>();
 
         String key = "formats";
 
-        String input[] = { "gzip", "jar", "pack200" };
-        mm.putValues(key,input);
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip","jar","pack200");
+        String[] input = {"gzip", "jar", "pack200"};
+        mm.putValues(key, input);
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip", "jar", "pack200");
     }
 
     /**
      * Tests {@link MultiMap#putValues(String, List)}
      */
     @Test
-    public void testPutValues_VarArgs()
+    public void testPutValuesVarArgs()
     {
         MultiMap<String> mm = new MultiMap<>();
 
         String key = "formats";
 
-        mm.putValues(key,"gzip", "jar", "pack200");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip","jar","pack200");
+        mm.putValues(key, "gzip", "jar", "pack200");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip", "jar", "pack200");
     }
 
     /**
@@ -169,111 +168,111 @@ public class MultiMapTest
         String key = "formats";
 
         // Setup the key
-        mm.put(key,"gzip");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip");
+        mm.put(key, "gzip");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip");
 
         // Add to the key
-        mm.add(key,"jar");
-        mm.add(key,"pack200");
+        mm.add(key, "jar");
+        mm.add(key, "pack200");
 
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip","jar","pack200");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip", "jar", "pack200");
     }
 
     /**
      * Tests {@link MultiMap#addValues(String, List)}
      */
     @Test
-    public void testAddValues_List()
+    public void testAddValuesList()
     {
         MultiMap<String> mm = new MultiMap<>();
 
         String key = "formats";
 
         // Setup the key
-        mm.put(key,"gzip");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip");
+        mm.put(key, "gzip");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip");
 
         // Add to the key
         List<String> extras = new ArrayList<String>();
         extras.add("jar");
         extras.add("pack200");
         extras.add("zip");
-        mm.addValues(key,extras);
+        mm.addValues(key, extras);
 
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip","jar","pack200","zip");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip", "jar", "pack200", "zip");
     }
 
     /**
      * Tests {@link MultiMap#addValues(String, List)}
      */
     @Test
-    public void testAddValues_List_Empty()
+    public void testAddValuesListEmpty()
     {
         MultiMap<String> mm = new MultiMap<>();
 
         String key = "formats";
 
         // Setup the key
-        mm.put(key,"gzip");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip");
+        mm.put(key, "gzip");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip");
 
         // Add to the key
         List<String> extras = new ArrayList<String>();
-        mm.addValues(key,extras);
+        mm.addValues(key, extras);
 
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip");
     }
 
     /**
      * Tests {@link MultiMap#addValues(String, Object[])}
      */
     @Test
-    public void testAddValues_StringArray()
+    public void testAddValuesStringArray()
     {
         MultiMap<String> mm = new MultiMap<>();
 
         String key = "formats";
 
         // Setup the key
-        mm.put(key,"gzip");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip");
+        mm.put(key, "gzip");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip");
 
         // Add to the key
-        String extras[] = { "jar", "pack200", "zip" };
-        mm.addValues(key,extras);
+        String[] extras = {"jar", "pack200", "zip"};
+        mm.addValues(key, extras);
 
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip","jar","pack200","zip");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip", "jar", "pack200", "zip");
     }
 
     /**
      * Tests {@link MultiMap#addValues(String, Object[])}
      */
     @Test
-    public void testAddValues_StringArray_Empty()
+    public void testAddValuesStringArrayEmpty()
     {
         MultiMap<String> mm = new MultiMap<>();
 
         String key = "formats";
 
         // Setup the key
-        mm.put(key,"gzip");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip");
+        mm.put(key, "gzip");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip");
 
         // Add to the key
-        String extras[] = new String[0];
-        mm.addValues(key,extras);
+        String[] extras = new String[0];
+        mm.addValues(key, extras);
 
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip");
     }
 
     /**
@@ -287,156 +286,155 @@ public class MultiMapTest
         String key = "formats";
 
         // Setup the key
-        mm.putValues(key,"gzip","jar","pack200");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip","jar","pack200");
+        mm.putValues(key, "gzip", "jar", "pack200");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip", "jar", "pack200");
 
         // Remove a value
-        mm.removeValue(key,"jar");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip","pack200");
-
+        mm.removeValue(key, "jar");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip", "pack200");
     }
 
     /**
      * Tests {@link MultiMap#removeValue(String, Object)}
      */
     @Test
-    public void testRemoveValue_InvalidItem()
+    public void testRemoveValueInvalidItem()
     {
         MultiMap<String> mm = new MultiMap<>();
 
         String key = "formats";
 
         // Setup the key
-        mm.putValues(key,"gzip","jar","pack200");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip","jar","pack200");
+        mm.putValues(key, "gzip", "jar", "pack200");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip", "jar", "pack200");
 
         // Remove a value that isn't there
-        mm.removeValue(key,"msi");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip","jar","pack200");
+        mm.removeValue(key, "msi");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip", "jar", "pack200");
     }
 
     /**
      * Tests {@link MultiMap#removeValue(String, Object)}
      */
     @Test
-    public void testRemoveValue_AllItems()
+    public void testRemoveValueAllItems()
     {
         MultiMap<String> mm = new MultiMap<>();
 
         String key = "formats";
 
         // Setup the key
-        mm.putValues(key,"gzip","jar","pack200");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip","jar","pack200");
+        mm.putValues(key, "gzip", "jar", "pack200");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip", "jar", "pack200");
 
         // Remove a value
-        mm.removeValue(key,"jar");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"gzip","pack200");
+        mm.removeValue(key, "jar");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "gzip", "pack200");
 
         // Remove another value
-        mm.removeValue(key,"gzip");
-        assertMapSize(mm,1);
-        assertValues(mm,key,"pack200");
+        mm.removeValue(key, "gzip");
+        assertMapSize(mm, 1);
+        assertValues(mm, key, "pack200");
 
         // Remove last value
-        mm.removeValue(key,"pack200");
-        assertMapSize(mm,0);  // should be empty now
+        mm.removeValue(key, "pack200");
+        assertMapSize(mm, 0);  // should be empty now
     }
 
     /**
      * Tests {@link MultiMap#removeValue(String, Object)}
      */
     @Test
-    public void testRemoveValue_FromEmpty()
+    public void testRemoveValueFromEmpty()
     {
         MultiMap<String> mm = new MultiMap<>();
 
         String key = "formats";
 
         // Setup the key
-        mm.putValues(key,new String[0]);
-        assertMapSize(mm,1);
-        assertEmptyValues(mm,key);
+        mm.putValues(key, new String[0]);
+        assertMapSize(mm, 1);
+        assertEmptyValues(mm, key);
 
         // Remove a value that isn't in the underlying values
-        mm.removeValue(key,"jar");
-        assertMapSize(mm,1);
-        assertEmptyValues(mm,key);
+        mm.removeValue(key, "jar");
+        assertMapSize(mm, 1);
+        assertEmptyValues(mm, key);
     }
 
     /**
      * Tests {@link MultiMap#putAll(java.util.Map)}
      */
     @Test
-    public void testPutAll_Map()
+    public void testPutAllMap()
     {
         MultiMap<String> mm = new MultiMap<>();
 
-        assertMapSize(mm,0); // Shouldn't have anything yet.
+        assertMapSize(mm, 0); // Shouldn't have anything yet.
 
-        Map<String,String> input = new HashMap<String,String>();
-        input.put("food","apple");
-        input.put("color","red");
-        input.put("amount","bushel");
+        Map<String, String> input = new HashMap<String, String>();
+        input.put("food", "apple");
+        input.put("color", "red");
+        input.put("amount", "bushel");
 
         mm.putAllValues(input);
 
-        assertMapSize(mm,3);
-        assertValues(mm,"food","apple");
-        assertValues(mm,"color","red");
-        assertValues(mm,"amount","bushel");
+        assertMapSize(mm, 3);
+        assertValues(mm, "food", "apple");
+        assertValues(mm, "color", "red");
+        assertValues(mm, "amount", "bushel");
     }
 
     /**
      * Tests {@link MultiMap#putAll(java.util.Map)}
      */
     @Test
-    public void testPutAll_MultiMap_Simple()
+    public void testPutAllMultiMapSimple()
     {
         MultiMap<String> mm = new MultiMap<>();
 
-        assertMapSize(mm,0); // Shouldn't have anything yet.
+        assertMapSize(mm, 0); // Shouldn't have anything yet.
 
         MultiMap<String> input = new MultiMap<>();
-        input.put("food","apple");
-        input.put("color","red");
-        input.put("amount","bushel");
+        input.put("food", "apple");
+        input.put("color", "red");
+        input.put("amount", "bushel");
 
         mm.putAll(input);
 
-        assertMapSize(mm,3);
-        assertValues(mm,"food","apple");
-        assertValues(mm,"color","red");
-        assertValues(mm,"amount","bushel");
+        assertMapSize(mm, 3);
+        assertValues(mm, "food", "apple");
+        assertValues(mm, "color", "red");
+        assertValues(mm, "amount", "bushel");
     }
 
     /**
      * Tests {@link MultiMap#putAll(java.util.Map)}
      */
     @Test
-    public void testPutAll_MultiMapComplex()
+    public void testPutAllMultiMapComplex()
     {
         MultiMap<String> mm = new MultiMap<>();
 
-        assertMapSize(mm,0); // Shouldn't have anything yet.
+        assertMapSize(mm, 0); // Shouldn't have anything yet.
 
         MultiMap<String> input = new MultiMap<>();
-        input.putValues("food","apple","cherry","raspberry");
-        input.put("color","red");
-        input.putValues("amount","bushel","pint");
+        input.putValues("food", "apple", "cherry", "raspberry");
+        input.put("color", "red");
+        input.putValues("amount", "bushel", "pint");
 
         mm.putAll(input);
 
-        assertMapSize(mm,3);
-        assertValues(mm,"food","apple","cherry","raspberry");
-        assertValues(mm,"color","red");
-        assertValues(mm,"amount","bushel","pint");
+        assertMapSize(mm, 3);
+        assertValues(mm, "food", "apple", "cherry", "raspberry");
+        assertValues(mm, "color", "red");
+        assertValues(mm, "amount", "bushel", "pint");
     }
 
     /**
@@ -446,18 +444,18 @@ public class MultiMapTest
     public void testToStringArrayMap()
     {
         MultiMap<String> mm = new MultiMap<>();
-        mm.putValues("food","apple","cherry","raspberry");
-        mm.put("color","red");
-        mm.putValues("amount","bushel","pint");
+        mm.putValues("food", "apple", "cherry", "raspberry");
+        mm.put("color", "red");
+        mm.putValues("amount", "bushel", "pint");
 
-        assertMapSize(mm,3);
+        assertMapSize(mm, 3);
 
-        Map<String,String[]> sam = mm.toStringArrayMap();
+        Map<String, String[]> sam = mm.toStringArrayMap();
         assertEquals(3, sam.size(), "String Array Map.size");
 
-        assertArray("toStringArrayMap(food)", sam.get("food"), "apple","cherry","raspberry");
+        assertArray("toStringArrayMap(food)", sam.get("food"), "apple", "cherry", "raspberry");
         assertArray("toStringArrayMap(color)", sam.get("color"), "red");
-        assertArray("toStringArrayMap(amount)", sam.get("amount"), "bushel","pint");
+        assertArray("toStringArrayMap(amount)", sam.get("amount"), "bushel", "pint");
     }
 
     /**
@@ -467,13 +465,16 @@ public class MultiMapTest
     public void testToString()
     {
         MultiMap<String> mm = new MultiMap<>();
-        mm.put("color","red");
+        mm.put("color", "red");
 
         assertEquals("{color=red}", mm.toString());
 
-        mm.putValues("food","apple","cherry","raspberry");
+        mm.putValues("food", "apple", "cherry", "raspberry");
 
-        assertEquals("{color=red, food=[apple, cherry, raspberry]}", mm.toString());
+        String expected1 = "{color=red, food=[apple, cherry, raspberry]}";
+        String expected2 = "{food=[apple, cherry, raspberry], color=red}";
+        String actual = mm.toString();
+        assertTrue(actual.equals(expected1) || actual.equals(expected2));
     }
 
     /**
@@ -483,15 +484,15 @@ public class MultiMapTest
     public void testClear()
     {
         MultiMap<String> mm = new MultiMap<>();
-        mm.putValues("food","apple","cherry","raspberry");
-        mm.put("color","red");
-        mm.putValues("amount","bushel","pint");
+        mm.putValues("food", "apple", "cherry", "raspberry");
+        mm.put("color", "red");
+        mm.putValues("amount", "bushel", "pint");
 
-        assertMapSize(mm,3);
+        assertMapSize(mm, 3);
 
         mm.clear();
 
-        assertMapSize(mm,0);
+        assertMapSize(mm, 0);
     }
 
     /**
@@ -501,9 +502,9 @@ public class MultiMapTest
     public void testContainsKey()
     {
         MultiMap<String> mm = new MultiMap<>();
-        mm.putValues("food","apple","cherry","raspberry");
-        mm.put("color","red");
-        mm.putValues("amount","bushel","pint");
+        mm.putValues("food", "apple", "cherry", "raspberry");
+        mm.put("color", "red");
+        mm.putValues("amount", "bushel", "pint");
 
         assertTrue(mm.containsKey("color"), "Contains Key [color]");
         assertFalse(mm.containsKey("nutrition"), "Contains Key [nutrition]");
@@ -516,9 +517,9 @@ public class MultiMapTest
     public void testContainsSimpleValue()
     {
         MultiMap<String> mm = new MultiMap<>();
-        mm.putValues("food","apple","cherry","raspberry");
-        mm.put("color","red");
-        mm.putValues("amount","bushel","pint");
+        mm.putValues("food", "apple", "cherry", "raspberry");
+        mm.put("color", "red");
+        mm.putValues("amount", "bushel", "pint");
 
         assertTrue(mm.containsSimpleValue("red"), "Contains Value [red]");
         assertFalse(mm.containsValue("nutrition"), "Contains Value [nutrition]");
@@ -531,9 +532,9 @@ public class MultiMapTest
     public void testContainsValue()
     {
         MultiMap<String> mm = new MultiMap<>();
-        mm.putValues("food","apple","cherry","raspberry");
-        mm.put("color","red");
-        mm.putValues("amount","bushel","pint");
+        mm.putValues("food", "apple", "cherry", "raspberry");
+        mm.put("color", "red");
+        mm.putValues("amount", "bushel", "pint");
 
         List<String> acr = new ArrayList<>();
         acr.add("apple");
@@ -547,12 +548,12 @@ public class MultiMapTest
      * Tests {@link MultiMap#containsValue(Object)}
      */
     @Test
-    public void testContainsValue_LazyList()
+    public void testContainsValueLazyList()
     {
         MultiMap<String> mm = new MultiMap<>();
-        mm.putValues("food","apple","cherry","raspberry");
-        mm.put("color","red");
-        mm.putValues("amount","bushel","pint");
+        mm.putValues("food", "apple", "cherry", "raspberry");
+        mm.put("color", "red");
+        mm.putValues("amount", "bushel", "pint");
 
         Object list = LazyList.add(null, "bushel");
         list = LazyList.add(list, "pint");
@@ -560,13 +561,13 @@ public class MultiMapTest
         assertTrue(mm.containsValue(list), "Contains Value [" + list + "]");
     }
 
-    private void assertArray(String prefix, Object[] actualValues, Object ...expectedValues)
+    private void assertArray(String prefix, Object[] actualValues, Object... expectedValues)
     {
-        assertEquals(expectedValues.length,actualValues.length,prefix + ".size");
+        assertEquals(expectedValues.length, actualValues.length, prefix + ".size");
         int len = actualValues.length;
         for (int i = 0; i < len; i++)
         {
-            assertEquals(expectedValues[i],actualValues[i],prefix + "[" + i + "]");
+            assertEquals(expectedValues[i], actualValues[i], prefix + "[" + i + "]");
         }
     }
 
@@ -597,7 +598,7 @@ public class MultiMapTest
 
         String prefix = "MultiMap.getValues(" + key + ")";
 
-        assertThat(prefix + ".size",values,nullValue());
+        assertThat(prefix + ".size", values, nullValue());
     }
 
     private void assertEmptyValues(MultiMap<String> mm, String key)
@@ -606,7 +607,7 @@ public class MultiMapTest
 
         String prefix = "MultiMap.getValues(" + key + ")";
 
-        assertEquals(0,LazyList.size(values),prefix + ".size");
+        assertEquals(0, LazyList.size(values), prefix + ".size");
     }
 
     private void assertMapSize(MultiMap<String> mm, int expectedSize)

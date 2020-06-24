@@ -1,43 +1,44 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 import java.io.IOException;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class RewritePatternRuleTest extends AbstractRuleTestCase
 {
     // TODO: Parameterize
     private String[][] _tests =
-            {
-                    {"/foo/bar", "/", "/replace"},
-                    {"/foo/bar", "/*", "/replace/foo/bar"},
-                    {"/foo/bar", "/foo/*", "/replace/bar"},
-                    {"/foo/bar", "/foo/bar", "/replace"},
-                    {"/foo/bar.txt", "*.txt", "/replace"},
-                    {"/foo/bar/%20x", "/foo/*", "/replace/bar/%20x"},
-            };
+        {
+            {"/foo/bar", "/", "/replace"},
+            {"/foo/bar", "/*", "/replace/foo/bar"},
+            {"/foo/bar", "/foo/*", "/replace/bar"},
+            {"/foo/bar", "/foo/bar", "/replace"},
+            {"/foo/bar.txt", "*.txt", "/replace"},
+            {"/foo/bar/%20x", "/foo/*", "/replace/bar/%20x"},
+        };
     private RewritePatternRule _rule;
 
     @BeforeEach
@@ -80,7 +81,6 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
         rewritePatternRule.applyURI(_request, null, result);
         assertThat("queryString matches expected", _request.getQueryString(), is(queryString));
         assertThat("request URI matches expected", _request.getRequestURI(), is(path));
-
     }
 
     @Test
@@ -88,8 +88,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
     {
         String replacement = "/replace";
         String queryString = "request=parameter";
-        _request.setURIPathQuery("/old/context");
-        _request.setQueryString(queryString);
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/old/context", null, queryString).asImmutable());
 
         RewritePatternRule rewritePatternRule = new RewritePatternRule();
         rewritePatternRule.setPattern("/old/context");
@@ -111,8 +110,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
         String[] split = replacement.split("\\?", 2);
         String path = split[0];
         String queryString = split[1];
-        _request.setURIPathQuery("/old/context");
-        _request.setQueryString(requestQueryString);
+        _request.setHttpURI(HttpURI.build(_request.getHttpURI(), "/old/context", null, requestQueryString).asImmutable());
 
         RewritePatternRule rewritePatternRule = new RewritePatternRule();
         rewritePatternRule.setPattern("/old/context");
@@ -123,8 +121,7 @@ public class RewritePatternRuleTest extends AbstractRuleTestCase
 
         rewritePatternRule.applyURI(_request, null, result);
         assertThat("queryString matches expected", _request.getQueryString(),
-                is(requestQueryString + "&" + queryString));
+            is(requestQueryString + "&" + queryString));
         assertThat("request URI matches expected", _request.getRequestURI(), is(path));
     }
-
 }

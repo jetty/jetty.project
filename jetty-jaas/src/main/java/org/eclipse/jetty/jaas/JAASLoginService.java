@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.jaas;
@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
@@ -37,10 +36,10 @@ import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 import javax.servlet.ServletRequest;
 
-import org.eclipse.jetty.jaas.callback.ServletRequestCallback;
 import org.eclipse.jetty.jaas.callback.DefaultCallbackHandler;
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
 import org.eclipse.jetty.jaas.callback.RequestParameterCallback;
+import org.eclipse.jetty.jaas.callback.ServletRequestCallback;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
@@ -49,21 +48,19 @@ import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-
-/** 
+/**
  * JAASLoginService
  *
  *
  * Implementation of jetty's LoginService that works with JAAS for
  * authorization and authentication.
- *
  */
 public class JAASLoginService extends AbstractLifeCycle implements LoginService
 {
-    private static final Logger LOG = Log.getLogger(JAASLoginService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JAASLoginService.class);
 
     public static final String DEFAULT_ROLE_CLASS_NAME = "org.eclipse.jetty.jaas.JAASRole";
     public static final String[] DEFAULT_ROLE_CLASS_NAMES = {DEFAULT_ROLE_CLASS_NAME};
@@ -76,16 +73,11 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     protected IdentityService _identityService;
     protected Configuration _configuration;
 
-
-
     public JAASLoginService()
     {
     }
 
-
-
     /**
-     *
      * @param name the name of the realm
      */
     public JAASLoginService(String name)
@@ -94,8 +86,6 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         _realmName = name;
         _loginModuleName = name;
     }
-
-
 
     /**
      * Get the name of the realm.
@@ -108,18 +98,15 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         return _realmName;
     }
 
-
-
     /**
      * Set the name of the realm
      *
      * @param name a <code>String</code> value
      */
-    public void setName (String name)
+    public void setName(String name)
     {
         _realmName = name;
     }
-
 
     /**
      * @return the configuration
@@ -129,8 +116,6 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         return _configuration;
     }
 
-
-
     /**
      * @param configuration the configuration to set
      */
@@ -139,10 +124,9 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         _configuration = configuration;
     }
 
-
-
-    /** 
+    /**
      * Get the identityService.
+     *
      * @return the identityService
      */
     @Override
@@ -151,9 +135,9 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         return _identityService;
     }
 
-
-    /** 
+    /**
      * Set the identityService.
+     *
      * @param identityService the identityService to set
      */
     @Override
@@ -162,55 +146,48 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         _identityService = identityService;
     }
 
-
     /**
      * Set the name to use to index into the config
      * file of LoginModules.
      *
      * @param name a <code>String</code> value
      */
-    public void setLoginModuleName (String name)
+    public void setLoginModuleName(String name)
     {
         _loginModuleName = name;
     }
 
-
-    public void setCallbackHandlerClass (String classname)
+    public void setCallbackHandlerClass(String classname)
     {
         _callbackHandlerClass = classname;
     }
 
-
-    public void setRoleClassNames (String[] classnames)
+    public void setRoleClassNames(String[] classnames)
     {
         if (classnames == null || classnames.length == 0)
         {
             _roleClassNames = DEFAULT_ROLE_CLASS_NAMES;
             return;
         }
-        
+
         _roleClassNames = ArrayUtil.addToArray(classnames, DEFAULT_ROLE_CLASS_NAME, String.class);
     }
-
 
     public String[] getRoleClassNames()
     {
         return _roleClassNames;
     }
 
-
-
     @Override
     protected void doStart() throws Exception
     {
-        if (_identityService==null)
+        if (_identityService == null)
             _identityService = new DefaultIdentityService();
         super.doStart();
     }
 
-
     @Override
-    public UserIdentity login(final String username,final Object credentials, final ServletRequest request)
+    public UserIdentity login(final String username, final Object credentials, final ServletRequest request)
     {
         try
         {
@@ -222,7 +199,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                     @Override
                     public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
                     {
-                        for (Callback callback: callbacks)
+                        for (Callback callback : callbacks)
                         {
                             if (callback instanceof NameCallback)
                             {
@@ -239,7 +216,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                             else if (callback instanceof RequestParameterCallback)
                             {
                                 RequestParameterCallback rpc = (RequestParameterCallback)callback;
-                                if (request!=null)
+                                if (request != null)
                                     rpc.setParameterValues(Arrays.asList(request.getParameterValues(rpc.getParameterName())));
                             }
                             else if (callback instanceof ServletRequestCallback)
@@ -259,17 +236,17 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                 if (DefaultCallbackHandler.class.isAssignableFrom(clazz))
                 {
                     DefaultCallbackHandler dch = (DefaultCallbackHandler)callbackHandler;
-                    if  (request instanceof Request)
+                    if (request instanceof Request)
                         dch.setRequest((Request)request);
                     dch.setCredential(credentials);
                     dch.setUserName(username);
                 }
             }
-            
+
             //set up the login context
             Subject subject = new Subject();
-            LoginContext loginContext = (_configuration==null?new LoginContext(_loginModuleName, subject, callbackHandler)
-                                                              :new LoginContext(_loginModuleName, subject, callbackHandler, _configuration));
+            LoginContext loginContext = (_configuration == null ? new LoginContext(_loginModuleName, subject, callbackHandler)
+                : new LoginContext(_loginModuleName, subject, callbackHandler, _configuration));
 
             loginContext.login();
 
@@ -277,7 +254,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
             JAASUserPrincipal userPrincipal = new JAASUserPrincipal(getUserName(callbackHandler), subject, loginContext);
             subject.getPrincipals().add(userPrincipal);
 
-            return _identityService.newUserIdentity(subject,userPrincipal,getGroups(subject));
+            return _identityService.newUserIdentity(subject, userPrincipal, getGroups(subject));
         }
         catch (FailedLoginException e)
         {
@@ -286,11 +263,10 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         }
         catch (Exception e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
         return null;
     }
-
 
     @Override
     public boolean validate(UserIdentity user)
@@ -299,14 +275,12 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         return true;
     }
 
-
     private String getUserName(CallbackHandler callbackHandler) throws IOException, UnsupportedCallbackException
     {
         NameCallback nameCallback = new NameCallback("foo");
-        callbackHandler.handle(new Callback[] {nameCallback});
+        callbackHandler.handle(new Callback[]{nameCallback});
         return nameCallback.getName();
     }
-
 
     @Override
     public void logout(UserIdentity user)
@@ -319,35 +293,33 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         }
         catch (LoginException e)
         {
-            LOG.warn(e);
+            LOG.warn("Failed to logout {}", user, e);
         }
     }
 
-
     /**
      * Get all of the groups for the user.
-     * 
+     *
      * @param subject the Subject representing the user
-     * 
      * @return all the names of groups that the user is in, or 0 length array if none
      */
-    protected String[] getGroups (Subject subject)
+    protected String[] getGroups(Subject subject)
     {
         Collection<String> groups = new LinkedHashSet<>();
         Set<Principal> principals = subject.getPrincipals();
         for (Principal principal : principals)
         {
             Class<?> c = principal.getClass();
-            while (c!=null)
+            while (c != null)
             {
                 if (roleClassNameMatches(c.getName()))
                 {
                     groups.add(principal.getName());
                     break;
                 }
-                
+
                 boolean added = false;
-                for (Class<?> ci:c.getInterfaces())
+                for (Class<?> ci : c.getInterfaces())
                 {
                     if (roleClassNameMatches(ci.getName()))
                     {
@@ -356,7 +328,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                         break;
                     }
                 }
-                
+
                 if (!added)
                 {
                     c = c.getSuperclass();
@@ -368,12 +340,11 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
 
         return groups.toArray(new String[groups.size()]);
     }
-    
-    
-    private boolean roleClassNameMatches (String classname)
+
+    private boolean roleClassNameMatches(String classname)
     {
         boolean result = false;
-        for (String roleClassName:getRoleClassNames())
+        for (String roleClassName : getRoleClassNames())
         {
             if (roleClassName.equals(classname))
             {
@@ -383,5 +354,4 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
         }
         return result;
     }
-
 }

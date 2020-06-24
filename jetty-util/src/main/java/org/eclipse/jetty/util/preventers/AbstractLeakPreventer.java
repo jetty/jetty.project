@@ -1,27 +1,26 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.util.preventers;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractLeakPreventer
@@ -29,21 +28,17 @@ import org.eclipse.jetty.util.log.Logger;
  * Abstract base class for code that seeks to avoid pinning of webapp classloaders by using the jetty classloader to
  * proactively call the code that pins them (generally pinned as static data members, or as static
  * data members that are daemon threads (which use the context classloader)).
- * 
+ *
  * Instances of subclasses of this class should be set with Server.addBean(), which will
  * ensure that they are called when the Server instance starts up, which will have the jetty
  * classloader in scope.
- *
  */
 public abstract class AbstractLeakPreventer extends AbstractLifeCycle
 {
-    protected static final Logger LOG = Log.getLogger(AbstractLeakPreventer.class);
-    
-    /* ------------------------------------------------------------ */
-    abstract public void prevent(ClassLoader loader);
-    
-    
-    /* ------------------------------------------------------------ */
+    protected static final Logger LOG = LoggerFactory.getLogger(AbstractLeakPreventer.class);
+
+    public abstract void prevent(ClassLoader loader);
+
     @Override
     protected void doStart() throws Exception
     {

@@ -1,91 +1,43 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.io.File;
-import java.util.Iterator;
-
 import org.eclipse.jetty.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * MavenQuickStartConfiguration
- *
- *
  */
 public class MavenQuickStartConfiguration extends QuickStartConfiguration
 {
-    private static final Logger LOG = Log.getLogger(QuickStartConfiguration.class);
-    
-    private Resource _quickStartWebXml; //the descriptor to use for starting/generating quickstart
-
-    public void setQuickStartWebXml(Resource quickStartWebXml)
-    {
-        _quickStartWebXml = quickStartWebXml;
-    }
-    
+    private static final Logger LOG = LoggerFactory.getLogger(QuickStartConfiguration.class);
     
     @Override
-    public Resource getQuickStartWebXml(WebAppContext context) throws Exception
+    public Class<? extends Configuration> replaces()
     {
-        if (_quickStartWebXml == null)
-            return super.getQuickStartWebXml(context);
-        
-        return _quickStartWebXml;
-    }
-
-    @Override
-    public void preConfigure(WebAppContext context) throws Exception
-    {        
-        //check that webapp is suitable for quick start 
-        if (context.getBaseResource() == null)
-            throw new IllegalStateException ("No location for webapp");  
-
-        
-        //look for quickstart-web.xml in WEB-INF of webapp
-        Resource quickStartWebXml = getQuickStartWebXml(context);
-        if (LOG.isDebugEnabled()) LOG.debug("quickStartWebXml={}",quickStartWebXml);
-        super.preConfigure(context);
-    }
-
-    @Override
-    public void configure(WebAppContext context) throws Exception
-    {
-       JettyWebAppContext jwac = (JettyWebAppContext)context;
-        
-        //put the classes dir and all dependencies into the classpath
-        if (jwac.getClassPathFiles() != null)
-        {
-            if (LOG.isDebugEnabled()) LOG.debug("Setting up classpath ...");
-            for(File classPathFile:jwac.getClassPathFiles())
-                ((WebAppClassLoader)context.getClassLoader()).addClassPath(classPathFile.getCanonicalPath());
-        }
-        
-        //Set up the quickstart environment for the context
-        super.configure(context);       
+        return QuickStartConfiguration.class;
     }
     
     @Override
@@ -102,7 +54,7 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
             Resource res = context.getBaseResource();
             if (res instanceof ResourceCollection)
             {
-                for (Resource r:((ResourceCollection)res).getResources())
+                for (Resource r : ((ResourceCollection)res).getResources())
                 {
                     if (originalBaseStr.contains(r.toString()))
                         continue;
@@ -112,5 +64,4 @@ public class MavenQuickStartConfiguration extends QuickStartConfiguration
         }
         super.deconfigure(context);
     }
-    
 }

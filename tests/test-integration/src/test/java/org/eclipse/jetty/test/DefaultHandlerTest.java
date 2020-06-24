@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.test;
@@ -29,7 +29,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.tools.HttpTester;
-import org.eclipse.jetty.test.support.TestableJettyServer;
+import org.eclipse.jetty.test.support.XmlBasedJettyServer;
 import org.eclipse.jetty.test.support.rawhttp.HttpSocketImpl;
 import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.util.IO;
@@ -50,23 +50,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class DefaultHandlerTest
 {
-    private static TestableJettyServer server;
+    private static XmlBasedJettyServer server;
     private int serverPort;
 
     @BeforeAll
     public static void setUpServer() throws Exception
     {
-        server = new TestableJettyServer();
+        server = new XmlBasedJettyServer();
         server.setScheme(HttpScheme.HTTP.asString());
-        server.addConfiguration("DefaultHandler.xml");
-        server.addConfiguration("NIOHttp.xml");
+        server.addXmlConfiguration("DefaultHandler.xml");
+        server.addXmlConfiguration("NIOHttp.xml");
 
         server.load();
         server.start();
     }
-    
+
     @BeforeEach
-    public void testInit() {
+    public void testInit()
+    {
         serverPort = server.getServerPort();
     }
 
@@ -77,7 +78,7 @@ public class DefaultHandlerTest
     }
 
     @Test
-    public void testGET_URL() throws Exception
+    public void testGetURL() throws Exception
     {
         URL url = new URL("http://localhost:" + serverPort + "/tests/alpha.txt");
         URLConnection conn = url.openConnection();
@@ -87,12 +88,12 @@ public class DefaultHandlerTest
 
         String response = IO.toString(in);
         String expected = "ABCDEFGHIJKLMNOPQRSTUVWXYZ\n";
-        
+
         assertEquals(expected, response, "Response");
     }
 
     @Test
-    public void testGET_Raw() throws Exception
+    public void testGetRaw() throws Exception
     {
         StringBuffer rawRequest = new StringBuffer();
         rawRequest.append("GET /tests/alpha.txt HTTP/1.1\r\n");
@@ -100,13 +101,13 @@ public class DefaultHandlerTest
         rawRequest.append("Connection: close\r\n");
         rawRequest.append("\r\n");
 
-        Socket sock = new Socket(InetAddress.getLocalHost(),serverPort);
+        Socket sock = new Socket(InetAddress.getLocalHost(), serverPort);
         sock.setSoTimeout(5000); // 5 second timeout;
 
         InputStream in = new ByteArrayInputStream(rawRequest.toString().getBytes());
 
         // Send request
-        IO.copy(in,sock.getOutputStream());
+        IO.copy(in, sock.getOutputStream());
 
         // Collect response
         String rawResponse = IO.toString(sock.getInputStream());
@@ -117,16 +118,16 @@ public class DefaultHandlerTest
     }
 
     @Test
-    public void testGET_HttpTesting() throws Exception
+    public void testGetHttpTesting() throws Exception
     {
         HttpTester.Request request = HttpTester.newRequest();
         request.setMethod("GET");
         request.setURI("/tests/alpha.txt");
-        request.put("Host","localhost");
-        request.put("Connection","close");
+        request.put("Host", "localhost");
+        request.put("Connection", "close");
         // request.setContent(null);
 
-        HttpTesting testing = new HttpTesting(new HttpSocketImpl(),serverPort);
+        HttpTesting testing = new HttpTesting(new HttpSocketImpl(), serverPort);
         HttpTester.Response response = testing.request(request);
 
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));

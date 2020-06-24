@@ -1,31 +1,27 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -38,12 +34,17 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class LocalAsyncContextTest
 {
+    public static final Logger LOG = LoggerFactory.getLogger(LocalAsyncContextTest.class);
     protected Server _server;
     protected SuspendHandler _handler;
     protected Connector _connector;
@@ -64,7 +65,7 @@ public class LocalAsyncContextTest
 
         reset();
     }
-    
+
     public void reset()
     {
     }
@@ -180,7 +181,7 @@ public class LocalAsyncContextTest
         _handler.setCompleteAfter(100);
         response = process("wibble");
         check(response, "COMPLETED");
-        
+
         _handler.setRead(6);
         _handler.setResumeAfter(0);
         _handler.setCompleteAfter(-1);
@@ -190,7 +191,7 @@ public class LocalAsyncContextTest
         _handler.setResumeAfter(100);
         _handler.setCompleteAfter(-1);
         response = process("wibble");
-        
+
         check(response, "DISPATCHED");
 
         _handler.setResumeAfter(-1);
@@ -202,7 +203,6 @@ public class LocalAsyncContextTest
         _handler.setCompleteAfter(100);
         response = process("wibble");
         check(response, "COMPLETED");
-        
     }
 
     @Test
@@ -235,10 +235,11 @@ public class LocalAsyncContextTest
 
     private synchronized String process(String content) throws Exception
     {
+        LOG.debug("TEST process: {}", content);
         reset();
         String request = "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n";
+            "Host: localhost\r\n" +
+            "Connection: close\r\n";
 
         if (content == null)
             request += "\r\n";
@@ -308,6 +309,7 @@ public class LocalAsyncContextTest
         @Override
         public void handle(String target, final Request baseRequest, final HttpServletRequest request, final HttpServletResponse response) throws IOException, ServletException
         {
+            LOG.debug("handle {} {}", baseRequest.getDispatcherType(), baseRequest);
             if (DispatcherType.REQUEST.equals(baseRequest.getDispatcherType()))
             {
                 if (_read > 0)
@@ -315,19 +317,23 @@ public class LocalAsyncContextTest
                     int read = _read;
                     byte[] buf = new byte[read];
                     while (read > 0)
+                    {
                         read -= request.getInputStream().read(buf);
+                    }
                 }
                 else if (_read < 0)
                 {
                     InputStream in = request.getInputStream();
                     int b = in.read();
                     while (b != -1)
+                    {
                         b = in.read();
+                    }
                 }
 
                 final AsyncContext asyncContext = baseRequest.startAsync();
                 response.getOutputStream().println("STARTASYNC");
-                asyncContext.addListener(__asyncListener);
+                asyncContext.addListener(_asyncListener);
                 if (_suspendFor > 0)
                     asyncContext.setTimeout(_suspendFor);
 
@@ -464,7 +470,7 @@ public class LocalAsyncContextTest
         }
     }
 
-    private AsyncListener __asyncListener = new AsyncListener()
+    private AsyncListener _asyncListener = new AsyncListener()
     {
         @Override
         public void onComplete(AsyncEvent event) throws IOException
@@ -505,7 +511,7 @@ public class LocalAsyncContextTest
         {
             actual = actualSupplier.get();
             if (actual == null && expected == null ||
-                    actual != null && actual.equals(expected))
+                actual != null && actual.equals(expected))
                 break;
             try
             {

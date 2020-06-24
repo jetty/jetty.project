@@ -1,21 +1,20 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.webapp;
 
@@ -23,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,14 +36,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.IncludeExcludeSet;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A matcher for classes based on package and/or location and/or module/
@@ -55,22 +57,22 @@ import org.eclipse.jetty.util.resource.Resource;
  * <li>'org.package.SomeClass$NestedClass ' will match a nested class exactly otherwise.
  * Nested classes are matched by their containing class. (eg. org.example.MyClass
  * matches org.example.MyClass$AnyNestedClass)
- * <li>'file:///some/location/' - A file system directory from which 
+ * <li>'file:///some/location/' - A file system directory from which
  * the class was loaded
- * <li>'file:///some/location.jar' - The URI of a jar file from which 
+ * <li>'file:///some/location.jar' - The URI of a jar file from which
  * the class was loaded
  * <li>'jrt:/modulename' - A Java9 module name</li>
  * <li>Any of the above patterns preceded by '-' will exclude rather than include the match.
  * </ul>
- * When class is initialized from a classpath pattern string, entries 
+ * When class is initialized from a classpath pattern string, entries
  * in this string should be separated by ':' (semicolon) or ',' (comma).
  */
 
 public class ClassMatcher extends AbstractSet<String>
 {
-    private static final Logger LOG = Log.getLogger(ClassMatcher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ClassMatcher.class);
 
-    private static class Entry
+    public static class Entry
     {
         private final String _pattern;
         private final String _name;
@@ -80,7 +82,7 @@ public class ClassMatcher extends AbstractSet<String>
         {
             _name = name;
             _inclusive = inclusive;
-            _pattern = inclusive ? _name : ("-"+_name);
+            _pattern = inclusive ? _name : ("-" + _name);
         }
 
         public String getPattern()
@@ -92,24 +94,23 @@ public class ClassMatcher extends AbstractSet<String>
         {
             return _name;
         }
-        
+
         @Override
         public String toString()
         {
             return _pattern;
         }
-        
-        @Override 
+
+        @Override
         public int hashCode()
         {
             return _pattern.hashCode();
         }
-        
-        @Override 
+
+        @Override
         public boolean equals(Object o)
         {
-            return (o instanceof Entry) 
-                && _pattern.equals(((Entry)o)._pattern);
+            return (o instanceof Entry) && _pattern.equals(((Entry)o)._pattern);
         }
 
         public boolean isInclusive()
@@ -147,7 +148,7 @@ public class ClassMatcher extends AbstractSet<String>
             {
                 _file = Resource.newResource(getName()).getFile();
             }
-            catch(IOException e)
+            catch (IOException e)
             {
                 throw new UncheckedIOException(e);
             }
@@ -177,17 +178,14 @@ public class ClassMatcher extends AbstractSet<String>
         }
     }
 
-
-
-    
-    public static class ByPackage extends AbstractSet<Entry> implements Predicate<String> 
+    public static class ByPackage extends AbstractSet<Entry> implements Predicate<String>
     {
-        private final ArrayTernaryTrie.Growing<Entry> _entries = new ArrayTernaryTrie.Growing<>(false,512,512);
+        private final ArrayTernaryTrie.Growing<Entry> _entries = new ArrayTernaryTrie.Growing<>(false, 512, 512);
 
         @Override
         public boolean test(String name)
         {
-            return _entries.getBest(name)!=null;
+            return _entries.getBest(name) != null;
         }
 
         @Override
@@ -201,50 +199,50 @@ public class ClassMatcher extends AbstractSet<String>
         {
             return _entries.size();
         }
-        
+
         @Override
         public boolean isEmpty()
         {
             return _entries.isEmpty();
         }
-        
+
         @Override
         public boolean add(Entry entry)
         {
             String name = entry.getName();
             if (entry instanceof ClassEntry)
-                name+="$";
+                name += "$";
             else if (!(entry instanceof PackageEntry))
                 throw new IllegalArgumentException(entry.toString());
             else if (".".equals(name))
-                name="";
-                
-            if (_entries.get(name)!=null)
+                name = "";
+
+            if (_entries.get(name) != null)
                 return false;
-            
-            return _entries.put(name,entry);
+
+            return _entries.put(name, entry);
         }
-        
+
         @Override
         public boolean remove(Object entry)
         {
             if (!(entry instanceof Entry))
                 return false;
 
-            return _entries.remove(((Entry)entry).getName())!=null;
+            return _entries.remove(((Entry)entry).getName()) != null;
         }
-        
+
         @Override
         public void clear()
         {
             _entries.clear();
         }
     }
-    
+
     @SuppressWarnings("serial")
     public static class ByClass extends HashSet<Entry> implements Predicate<String>
     {
-        private final Map<String,Entry> _entries = new HashMap<>();
+        private final Map<String, Entry> _entries = new HashMap<>();
 
         @Override
         public boolean test(String name)
@@ -263,35 +261,34 @@ public class ClassMatcher extends AbstractSet<String>
         {
             return _entries.size();
         }
-        
+
         @Override
         public boolean add(Entry entry)
         {
             if (!(entry instanceof ClassEntry))
                 throw new IllegalArgumentException(entry.toString());
-            return _entries.put(entry.getName(),entry)==null;
+            return _entries.put(entry.getName(), entry) == null;
         }
-        
+
         @Override
         public boolean remove(Object entry)
         {
             if (!(entry instanceof Entry))
                 return false;
 
-            return _entries.remove(((Entry)entry).getName())!=null;
+            return _entries.remove(((Entry)entry).getName()) != null;
         }
     }
 
-    public static class ByPackageOrName extends AbstractSet<Entry> implements Predicate<String> 
+    public static class ByPackageOrName extends AbstractSet<Entry> implements Predicate<String>
     {
         private final ByClass _byClass = new ByClass();
         private final ByPackage _byPackage = new ByPackage();
-        
+
         @Override
         public boolean test(String name)
         {
-            return _byPackage.test(name)
-                   || _byClass.test(name) ;
+            return _byPackage.test(name) || _byClass.test(name);
         }
 
         @Override
@@ -344,13 +341,15 @@ public class ClassMatcher extends AbstractSet<String>
             _byClass.clear();
         }
     }
-    
+
     @SuppressWarnings("serial")
     public static class ByLocation extends HashSet<Entry> implements Predicate<URI>
-    {        
+    {
         @Override
         public boolean test(URI uri)
         {
+            if ((uri == null) || (!uri.isAbsolute()))
+                return false;
             if (!uri.getScheme().equals("file"))
                 return false;
             Path path = Paths.get(uri);
@@ -368,7 +367,8 @@ public class ClassMatcher extends AbstractSet<String>
                     {
                         return true;
                     }
-                } else
+                }
+                else
                 {
                     if (path.equals(file.toPath()))
                     {
@@ -383,18 +383,20 @@ public class ClassMatcher extends AbstractSet<String>
     @SuppressWarnings("serial")
     public static class ByModule extends HashSet<Entry> implements Predicate<URI>
     {
-        private final ArrayTernaryTrie.Growing<Entry> _entries = new ArrayTernaryTrie.Growing<>(false,512,512);
+        private final ArrayTernaryTrie.Growing<Entry> _entries = new ArrayTernaryTrie.Growing<>(false, 512, 512);
 
         @Override
         public boolean test(URI uri)
         {
+            if ((uri == null) || (!uri.isAbsolute()))
+                return false;
             if (!uri.getScheme().equalsIgnoreCase("jrt"))
                 return false;
             String module = uri.getPath();
-            int end = module.indexOf('/',1);
-            if (end<1)
+            int end = module.indexOf('/', 1);
+            if (end < 1)
                 end = module.length();
-            return _entries.get(module,1,end-1)!=null;
+            return _entries.get(module, 1, end - 1) != null;
         }
 
         @Override
@@ -416,9 +418,9 @@ public class ClassMatcher extends AbstractSet<String>
                 throw new IllegalArgumentException(entry.toString());
             String module = ((ModuleEntry)entry).getModule();
 
-            if (_entries.get(module)!=null)
+            if (_entries.get(module) != null)
                 return false;
-            _entries.put(module,entry);
+            _entries.put(module, entry);
             return true;
         }
 
@@ -428,10 +430,9 @@ public class ClassMatcher extends AbstractSet<String>
             if (!(entry instanceof Entry))
                 return false;
 
-            return _entries.remove(((Entry)entry).getName())!=null;
+            return _entries.remove(((Entry)entry).getName()) != null;
         }
     }
-
 
     public static class ByLocationOrModule extends AbstractSet<Entry> implements Predicate<URI>
     {
@@ -441,6 +442,8 @@ public class ClassMatcher extends AbstractSet<String>
         @Override
         public boolean test(URI name)
         {
+            if ((name == null) || (!name.isAbsolute()))
+                return false;
             return _byLocation.test(name) || _byModule.test(name);
         }
 
@@ -456,7 +459,7 @@ public class ClassMatcher extends AbstractSet<String>
         @Override
         public int size()
         {
-            return _byLocation.size()+_byModule.size();
+            return _byLocation.size() + _byModule.size();
         }
 
         @Override
@@ -488,105 +491,91 @@ public class ClassMatcher extends AbstractSet<String>
         }
     }
 
-    Map<String,Entry> _entries = new HashMap<>();
-    IncludeExcludeSet<Entry,String> _patterns = new IncludeExcludeSet<>(ByPackageOrName.class);
-    IncludeExcludeSet<Entry,URI> _locations = new IncludeExcludeSet<>(ByLocationOrModule.class);
-    
+    Map<String, Entry> _entries = new HashMap<>();
+    IncludeExcludeSet<Entry, String> _patterns = new IncludeExcludeSet<>(ByPackageOrName.class);
+    IncludeExcludeSet<Entry, URI> _locations = new IncludeExcludeSet<>(ByLocationOrModule.class);
+
     public ClassMatcher()
     {
     }
 
     public ClassMatcher(ClassMatcher patterns)
     {
-        if (patterns!=null)
+        if (patterns != null)
             setAll(patterns.getPatterns());
     }
-    
+
     public ClassMatcher(String... patterns)
     {
-        if (patterns!=null && patterns.length>0)
+        if (patterns != null && patterns.length > 0)
             setAll(patterns);
     }
-    
+
     public ClassMatcher(String pattern)
     {
         add(pattern);
     }
-    
+
     public boolean include(String name)
     {
-        if (name==null)
+        if (name == null)
             return false;
-        return add(newEntry(name,true));
+        return add(newEntry(name, true));
     }
-    
+
     public boolean include(String... name)
     {
         boolean added = false;
-        for (String n:name)
-            if (n!=null)
-                added = add(newEntry(n,true)) || added;
+        for (String n : name)
+        {
+            if (n != null)
+                added = add(newEntry(n, true)) || added;
+        }
         return added;
     }
-    
+
     public boolean exclude(String name)
     {
-        if (name==null)
+        if (name == null)
             return false;
-        return add(newEntry(name,false));
+        return add(newEntry(name, false));
     }
-    
+
     public boolean exclude(String... name)
     {
         boolean added = false;
-        for (String n:name)
-            if (n!=null)
-                added = add(newEntry(n,false)) || added;
+        for (String n : name)
+        {
+            if (n != null)
+                added = add(newEntry(n, false)) || added;
+        }
         return added;
     }
-    
+
     @Override
     public boolean add(String pattern)
     {
-        if (pattern==null)
+        if (pattern == null)
             return false;
         return add(newEntry(pattern));
     }
-    
+
     public boolean add(String... pattern)
     {
         boolean added = false;
-        for (String p:pattern)
-            if (p!=null)
+        for (String p : pattern)
+        {
+            if (p != null)
                 added = add(newEntry(p)) || added;
+        }
         return added;
-    }
-
-    protected Entry newEntry(String pattern)
-    {
-        if (pattern.startsWith("-"))
-            return newEntry(pattern.substring(1),false);
-        return newEntry(pattern,true);
-    }
-
-    protected Entry newEntry(String name, boolean inclusive)
-    {
-        if (name.startsWith("-"))
-            throw new IllegalStateException(name);
-        if (name.startsWith("file:"))
-            return new LocationEntry(name, inclusive);
-        if (name.startsWith("jrt:"))
-            return new ModuleEntry(name, inclusive);
-        if (name.endsWith("."))
-            return new PackageEntry(name, inclusive);
-        return new ClassEntry(name,inclusive);
     }
 
     protected boolean add(Entry entry)
     {
         if (_entries.containsKey(entry.getPattern()))
             return false;
-        _entries.put(entry.getPattern(),entry);
+        _entries.put(entry.getPattern(), entry);
 
         if (entry instanceof LocationEntry || entry instanceof ModuleEntry)
         {
@@ -605,6 +594,26 @@ public class ClassMatcher extends AbstractSet<String>
         return true;
     }
 
+    protected Entry newEntry(String pattern)
+    {
+        if (pattern.startsWith("-"))
+            return newEntry(pattern.substring(1), false);
+        return newEntry(pattern, true);
+    }
+
+    protected Entry newEntry(String name, boolean inclusive)
+    {
+        if (name.startsWith("-"))
+            throw new IllegalStateException(name);
+        if (name.startsWith("file:"))
+            return new LocationEntry(name, inclusive);
+        if (name.startsWith("jrt:"))
+            return new ModuleEntry(name, inclusive);
+        if (name.endsWith("."))
+            return new PackageEntry(name, inclusive);
+        return new ClassEntry(name, inclusive);
+    }
+
     @Override
     public boolean remove(Object o)
     {
@@ -613,13 +622,15 @@ public class ClassMatcher extends AbstractSet<String>
         String pattern = (String)o;
 
         Entry entry = _entries.remove(pattern);
-        if (entry==null)
+        if (entry == null)
             return false;
 
         List<Entry> saved = new ArrayList<>(_entries.values());
         clear();
-        for (Entry e:saved)
+        for (Entry e : saved)
+        {
             add(e);
+        }
         return true;
     }
 
@@ -645,7 +656,7 @@ public class ClassMatcher extends AbstractSet<String>
 
     /**
      * Initialize the matcher by parsing each classpath pattern in an array
-     * 
+     *
      * @param classes array of classpath patterns
      */
     private void setAll(String[] classes)
@@ -653,16 +664,16 @@ public class ClassMatcher extends AbstractSet<String>
         _entries.clear();
         addAll(classes);
     }
-    
+
     /**
      * @param classes array of classpath patterns
      */
     private void addAll(String[] classes)
     {
-        if (classes!=null)
+        if (classes != null)
             addAll(Arrays.asList(classes));
     }
-    
+
     /**
      * @return array of classpath patterns
      */
@@ -684,9 +695,9 @@ public class ClassMatcher extends AbstractSet<String>
      */
     public String[] getExclusions()
     {
-        return _entries.values().stream().filter(e->!e.isInclusive()).map(Entry::getName).toArray(String[]::new);
+        return _entries.values().stream().filter(e -> !e.isInclusive()).map(Entry::getName).toArray(String[]::new);
     }
-    
+
     /**
      * Match the class name against the pattern
      *
@@ -694,10 +705,10 @@ public class ClassMatcher extends AbstractSet<String>
      * @return true if class matches the pattern
      */
     public boolean match(String name)
-    {       
+    {
         return _patterns.test(name);
     }
-    
+
     /**
      * Match the class name against the pattern
      *
@@ -705,28 +716,14 @@ public class ClassMatcher extends AbstractSet<String>
      * @return true if class matches the pattern
      */
     public boolean match(Class<?> clazz)
-    {       
+    {
         try
         {
-            Boolean byName = _patterns.isIncludedAndNotExcluded(clazz.getName());
-            if (Boolean.FALSE.equals(byName))
-                return byName; // Already excluded so no need to check location.
-            URI location = TypeUtil.getLocationOfClass(clazz);
-            Boolean byLocation = location == null ? null
-                    : _locations.isIncludedAndNotExcluded(location);
-            
-            if (LOG.isDebugEnabled())
-                LOG.debug("match {} from {} byName={} byLocation={} in {}",clazz,location,byName,byLocation,this);
-            
-            // Combine the tri-state match of both IncludeExclude Sets
-            boolean included = Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation)
-                || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());
-            boolean excluded = Boolean.FALSE.equals(byName) || Boolean.FALSE.equals(byLocation);
-            return included && !excluded;
+            return combine(_patterns, clazz.getName(), _locations, () -> TypeUtil.getLocationOfClass(clazz));
         }
         catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to match against {}", clazz, e);
         }
         return false;
     }
@@ -735,34 +732,62 @@ public class ClassMatcher extends AbstractSet<String>
     {
         // Strip class suffix for name matching
         if (name.endsWith(".class"))
-            name=name.substring(0,name.length()-6);
-        
+            name = name.substring(0, name.length() - 6);
+
         // Treat path elements as packages for name matching
-        name=name.replace("/",".");
+        name = StringUtil.replace(name, '/', '.');
 
-        Boolean byName = _patterns.isIncludedAndNotExcluded(name);
-        if (Boolean.FALSE.equals(byName))
-            return byName; // Already excluded so no need to check location.
-        
-        // Try to find a file path for location matching
-        Boolean byLocation = null;
-        try
+        return combine(_patterns, name, _locations, () ->
         {
-            URI jarUri = URIUtil.getJarSource(url.toURI());
-            if ("file".equalsIgnoreCase(jarUri.getScheme()))
+            try
             {
-                byLocation = _locations.isIncludedAndNotExcluded(jarUri);
+                return URIUtil.getJarSource(url.toURI());
             }
-        }
-        catch(Exception e)
-        {
-            LOG.ignore(e);
-        }
+            catch (URISyntaxException e)
+            {
+                LOG.trace("IGNORED", e);
+                return null;
+            }
+        });
+    }
+    
+    /**
+     * Match a class against inclusions and exclusions by name and location.
+     * Name based checks are performed before location checks. For a class to match,
+     * it must not be excluded by either name or location, and must either be explicitly
+     * included, or for there to be no inclusions. In the case where the location
+     * of the class is null, it will match if it is included by name, or
+     * if there are no location exclusions.
+     * 
+     * @param names configured inclusions and exclusions by name
+     * @param name the name to check
+     * @param locations configured inclusions and exclusions by location
+     * @param location the location of the class (can be null)
+     * @return true if the class is not excluded but is included, or there are
+     * no inclusions. False otherwise.
+     */
+    static boolean combine(IncludeExcludeSet<Entry, String> names, String name, IncludeExcludeSet<Entry, URI> locations, Supplier<URI> location)
+    {
+        // check the name set
+        Boolean byName = names.isIncludedAndNotExcluded(name);
 
-        // Combine the tri-state match of both IncludeExclude Sets
-        boolean included = Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation)
-            || (byName==null && !_patterns.hasIncludes() && byLocation==null && !_locations.hasIncludes());
-        boolean excluded = Boolean.FALSE.equals(byName) || Boolean.FALSE.equals(byLocation);
-        return included && !excluded;
-    }    
+        // If we excluded by name, then no match
+        if (Boolean.FALSE == byName)
+            return false;
+
+        // check the location set
+        URI uri = location.get();
+        Boolean byLocation = uri == null ? null : locations.isIncludedAndNotExcluded(uri);
+
+        // If we excluded by location or couldn't check location exclusion, then no match
+        if (Boolean.FALSE == byLocation || (locations.hasExcludes() && uri == null))
+            return false;
+
+        // If there are includes, then we must be included to match.
+        if (names.hasIncludes() || locations.hasIncludes())
+            return byName == Boolean.TRUE || byLocation == Boolean.TRUE;
+
+        // Otherwise there are no includes and it was not excluded, so match
+        return true;
+    }
 }

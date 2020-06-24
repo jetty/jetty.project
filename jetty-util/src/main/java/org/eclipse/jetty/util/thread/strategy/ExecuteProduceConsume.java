@@ -1,32 +1,31 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.thread.strategy;
 
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
-import org.eclipse.jetty.util.thread.Locker;
-import org.eclipse.jetty.util.thread.Locker.Lock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A strategy where the thread that produces will always run the resulting task.</p>
@@ -43,9 +42,9 @@ import org.eclipse.jetty.util.thread.Locker.Lock;
  */
 public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
 {
-    private static final Logger LOG = Log.getLogger(ExecuteProduceConsume.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExecuteProduceConsume.class);
 
-    private final Locker _locker = new Locker();
+    private final AutoLock _lock = new AutoLock();
     private final Runnable _runProduce = new RunProduce();
     private final Producer _producer;
     private final Executor _executor;
@@ -54,13 +53,12 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
     private boolean _producing;
     private boolean _pending;
 
-
     public ExecuteProduceConsume(Producer producer, Executor executor)
     {
         this._producer = producer;
         _executor = executor;
     }
-    
+
     @Override
     public void produce()
     {
@@ -68,7 +66,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
             LOG.debug("{} execute", this);
 
         boolean produce = false;
-        try (Lock locked = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             // If we are idle and a thread is not producing
             if (_idle)
@@ -99,7 +97,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
         if (LOG.isDebugEnabled())
             LOG.debug("{} spawning", this);
         boolean dispatch = false;
-        try (Lock locked = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             if (_idle)
                 dispatch = true;
@@ -116,7 +114,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
         if (LOG.isDebugEnabled())
             LOG.debug("{} run", this);
         boolean produce = false;
-        try (Lock locked = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             _pending = false;
             if (!_idle && !_producing)
@@ -146,7 +144,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
                 LOG.debug("{} produced {}", this, task);
 
             boolean dispatch = false;
-            try (Lock locked = _locker.lock())
+            try (AutoLock lock = _lock.lock())
             {
                 // Finished producing
                 _producing = false;
@@ -174,7 +172,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
                 if (!_pending)
                 {
                     // dispatch one
-                    dispatch = _pending = Invocable.getInvocationType(task)!=InvocationType.NON_BLOCKING;
+                    dispatch = _pending = Invocable.getInvocationType(task) != InvocationType.NON_BLOCKING;
                 }
 
                 _execute = false;
@@ -192,13 +190,12 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
             // Run the task.
             if (LOG.isDebugEnabled())
                 LOG.debug("{} run {}", this, task);
-            if (task != null)
-                task.run();
+            task.run();
             if (LOG.isDebugEnabled())
                 LOG.debug("{} ran {}", this, task);
 
             // Once we have run the task, we can try producing again.
-            try (Lock locked = _locker.lock())
+            try (AutoLock lock = _lock.lock())
             {
                 // Is another thread already producing or we are now idle?
                 if (_producing || _idle)
@@ -213,7 +210,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
 
     public Boolean isIdle()
     {
-        try (Lock locked = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             return _idle;
         }
@@ -224,7 +221,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
     {
         StringBuilder builder = new StringBuilder();
         builder.append("EPC ");
-        try (Lock locked = _locker.lock())
+        try (AutoLock lock = _lock.lock())
         {
             builder.append(_idle ? "Idle/" : "");
             builder.append(_producing ? "Prod/" : "");

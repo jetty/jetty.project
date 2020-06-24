@@ -1,0 +1,131 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[configuring-sessions-mongo]]
+
+=== Persistent Sessions: MongoDB
+
+==== Enabling MongoDB Sessions
+
+When using the Jetty distribution, you will first need to enable the `session-store-mongo` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+
+$ java -jar ../start.jar --add-to-start=session-store-mongo
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: session-store-mongo
+  + The java driver for the MongoDB document-based database system is hosted on GitHub and released under the Apache 2.0 license.
+  + http://www.mongodb.org/
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+Proceed (y/N)? y
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
+INFO  : session-store-mongo initialized in ${jetty.base}/start.d/session-store-mongo.ini
+INFO  : sessions/mongo/address dynamic dependency of session-store-mongo
+MKDIR : ${jetty.base}/lib/nosql
+DOWNLD: https://repo1.maven.org/maven2/org/mongodb/mongo-java-driver/2.13.2/mongo-java-driver-2.13.2.jar to ${jetty.base}/lib/nosql/mongo-java-driver-2.13.2.jar
+INFO  : Base directory was modified
+----
+
+Doing this enables the MongoDB Session module and any dependent modules or files needed for it to run on the server.
+The example above is using a fresh `${jetty.base}` with nothing else enabled.
+
+Because MongoDB is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-mongo` module as well as the `sessions` and `server` modules, which are required for MongoDB session management to operate..
+It also downloaded the needed Mongo-specific jar file and created a directory named `${jetty.base}/lib/nosql/` to house it.
+
+In addition to adding these modules to the classpath of the server, several ini configuration files were added to the `${jetty.base}/start.d` directory.
+
+____
+[NOTE]
+If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+____
+
+==== Configuring MongoDB Session Properties
+
+Opening the `start.d/session-store-mongo.ini` will show a list of all the configurable options for the MongoDB module:
+
+[source, screen, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: session-store-mongo
+# Enables NoSql session management with a MongoDB driver.
+# ---------------------------------------
+--module=session-store-mongo
+
+#jetty.session.mongo.dbName=HttpSessions
+#jetty.session.mongo.collectionName=jettySessions
+#jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0
+
+connection-type=address
+#jetty.session.mongo.host=localhost
+#jetty.session.mongo.port=27017
+
+#connection-type=uri
+#jetty.session.mongo.connectionString=mongodb://localhost
+----
+
+jetty.session.gracePeriod.seconds::
+Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
+jetty.session.savePeriod.seconds=0::
+By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
+A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
++
+____
+[NOTE]
+Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
+In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
+This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+____
+
+jetty.session.mongo.dbName::
+Name of the database in Mongo used to store the Session collection.
+jetty.session.mongo.collectionName::
+Name of the collection in Mongo used to keep all of the Sessions.
+jetty.session.gracePeriod.seconds::
+Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
+connection-type=address::
+Used when utilizing a direct connection to the Mongo server.
+jetty.session.mongo.host;;
+Host name or address for the remote Mongo instance.
+jetty.session.mongo.port;;
+Port number for the remote Mongo instance.
+connection-type=uri::
+Used when utilizing MongoURI for secured connections.
+jetty.session.mongo.connectionString;;
+The string defining the MongoURI value, such as `mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]`.
+More information on how to format the MongoURI string can be found in the https://docs.mongodb.com/manual/reference/connection-string/[official documentation for mongo.]
++
+____
+[NOTE]
+You will only use *one* `connection-type` at a time, `address` or `uri`.
+If both are utilized in your `session-store-mongo.ini`, only the last `connection-type` configured in the file will be used.
+By default, the `connection-type` of `address` is used.
+____

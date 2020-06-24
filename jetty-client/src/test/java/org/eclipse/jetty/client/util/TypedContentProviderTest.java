@@ -1,31 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.util;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -42,6 +36,10 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 public class TypedContentProviderTest extends AbstractHttpClientServerTest
 {
     @ParameterizedTest
@@ -52,12 +50,13 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         final String value1 = "1";
         final String name2 = "b";
         final String value2 = "2";
+        // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         final String value3 = "\u20AC";
 
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 assertEquals("POST", request.getMethod());
@@ -90,13 +89,13 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         Fields fields = new Fields();
         fields.put(name1, value1);
         fields.add(name2, value2);
-        final String content = FormContentProvider.convert(fields);
+        final String content = FormRequestContent.convert(fields);
         final String contentType = "text/plain;charset=UTF-8";
 
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 assertEquals("POST", request.getMethod());
@@ -106,11 +105,11 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .method(HttpMethod.POST)
-                .content(new FormContentProvider(fields))
-                .header(HttpHeader.CONTENT_TYPE, contentType)
-                .send();
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .body(new FormRequestContent(fields))
+            .headers(headers -> headers.put(HttpHeader.CONTENT_TYPE, contentType))
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -124,7 +123,7 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 assertEquals("GET", request.getMethod());
@@ -134,9 +133,9 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scenario.getScheme())
-                .content(new StringContentProvider(null, content, StandardCharsets.UTF_8))
-                .send();
+            .scheme(scenario.getScheme())
+            .body(new StringRequestContent(null, content, StandardCharsets.UTF_8))
+            .send();
 
         assertEquals(200, response.getStatus());
     }

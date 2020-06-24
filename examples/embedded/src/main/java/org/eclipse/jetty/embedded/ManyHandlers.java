@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.embedded;
@@ -21,7 +21,6 @@ package org.eclipse.jetty.embedded;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,6 +30,8 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -72,17 +73,17 @@ public class ManyHandlers
     public static class ParamHandler extends AbstractHandler
     {
         @Override
-        public void handle( String target,
-                            Request baseRequest,
-                            HttpServletRequest request,
-                            HttpServletResponse response ) throws IOException,
-                                                          ServletException
+        public void handle(String target,
+                           Request baseRequest,
+                           HttpServletRequest request,
+                           HttpServletResponse response) throws IOException,
+            ServletException
         {
             Map<String, String[]> params = request.getParameterMap();
-            if (params.size() > 0)
+            if (!params.isEmpty())
             {
                 response.setContentType("text/plain");
-                response.getWriter().println(JSON.toString(params));
+                response.getWriter().println(new JSON().toJSON(params));
                 baseRequest.setHandled(true);
             }
         }
@@ -94,43 +95,77 @@ public class ManyHandlers
     public static class WelcomeWrapHandler extends HandlerWrapper
     {
         @Override
-        public void handle( String target,
-                            Request baseRequest,
-                            HttpServletRequest request,
-                            HttpServletResponse response ) throws IOException,
-                                                          ServletException
+        public void handle(String target,
+                           Request baseRequest,
+                           HttpServletRequest request,
+                           HttpServletResponse response) throws IOException,
+            ServletException
         {
-            request.setAttribute("welcome", "Hello");
+            response.setHeader("X-Welcome", "Greetings from WelcomeWrapHandler");
             super.handle(target, baseRequest, request, response);
         }
     }
 
-    public static void main( String[] args ) throws Exception
+    public static Server createServer(int port) throws IOException
     {
-        Server server = new Server(8080);
+        Server server = new Server(port);
 
         // create the handlers
         Handler param = new ParamHandler();
         HandlerWrapper wrapper = new WelcomeWrapHandler();
         Handler hello = new HelloHandler();
-        Handler dft = new DefaultHandler();
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.setMinGzipSize(10);
+        gzipHandler.addIncludedMimeTypes("text/plain");
+        gzipHandler.addIncludedMimeTypes("text/html");
 
         // configure request logging
         File requestLogFile = File.createTempFile("demo", "log");
         CustomRequestLog ncsaLog = new CustomRequestLog(requestLogFile.getAbsolutePath());
         server.setRequestLog(ncsaLog);
 
-        // create the handler collections
-        HandlerCollection handlers = new HandlerCollection();
-        HandlerList list = new HandlerList();
+        // create the handlers list
+        HandlerList handlers = new HandlerList();
 
-        // link them all together
+        // wrap contexts around specific handlers
         wrapper.setHandler(hello);
-        list.setHandlers(new Handler[] { param, new GzipHandler() });
-        handlers.setHandlers(new Handler[] { list, dft });
+        ContextHandler helloContext = new ContextHandler("/hello");
+        helloContext.setHandler(wrapper);
 
+        ContextHandler paramContext = new ContextHandler("/params");
+        paramContext.setHandler(param);
+
+        ContextHandlerCollection contexts = new ContextHandlerCollection(helloContext, paramContext);
+
+        // Wrap Contexts with GZIP
+        gzipHandler.setHandler(contexts);
+
+        // Set the top level Handler List
+        handlers.addHandler(gzipHandler);
+        handlers.addHandler(new DefaultHandler());
         server.setHandler(handlers);
 
+        /* At this point you have the following handler hierarchy.
+         *
+         * Server.handler:
+         * HandlerList
+         *    \- GzipHandler
+         *    |   \- ContextHandlerCollection
+         *    |       \- ContextHandler ("/hello")
+         *    |       |   \- WelcomeWrapHandler
+         *    |       |       \- HelloHandler
+         *    |       \- ContextHandler ("/params")
+         *    |           \- ParamHandler
+         *    \- DefaultHandler
+         */
+
+        return server;
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        int port = ExampleUtil.getPort(args, "jetty.http.port", 8080);
+        Server server = createServer(port);
         server.start();
         server.join();
     }

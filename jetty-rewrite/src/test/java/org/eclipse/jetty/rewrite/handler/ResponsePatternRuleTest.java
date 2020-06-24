@@ -1,29 +1,31 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.io.IOException;
 
+import org.eclipse.jetty.server.Dispatcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ResponsePatternRuleTest extends AbstractRuleTestCase
 {
@@ -38,57 +40,27 @@ public class ResponsePatternRuleTest extends AbstractRuleTestCase
     }
 
     @Test
-    public void testStatusCodeNoReason() throws IOException
+    public void testStatusCodeNoMessage() throws IOException
     {
-        for (int i = 1; i < 400; i++)
+        for (int i = 1; i < 600; i++)
         {
             _rule.setCode("" + i);
+            _rule.setMessage(null);
             _rule.apply(null, _request, _response);
 
             assertEquals(i, _response.getStatus());
+            assertNull(_request.getAttribute(Dispatcher.ERROR_MESSAGE));
         }
     }
 
     @Test
-    public void testStatusCodeWithReason() throws IOException
+    public void testStatusCodeMessage() throws IOException
     {
-        for (int i = 1; i < 400; i++)
-        {
-            _rule.setCode("" + i);
-            _rule.setReason("reason" + i);
-            _rule.apply(null, _request, _response);
+        _rule.setCode("499");
+        _rule.setMessage("Message 499");
+        _rule.apply(null, _request, _response);
 
-            assertEquals(i, _response.getStatus());
-            assertEquals(null, _response.getReason());
-        }
-    }
-
-    @Test
-    public void testErrorStatusNoReason() throws IOException
-    {
-        for (int i = 400; i < 600; i++)
-        {
-            _rule.setCode("" + i);
-            _rule.apply(null, _request, _response);
-
-            assertEquals(i, _response.getStatus());
-            assertEquals("", _response.getReason());
-            super.reset();
-        }
-    }
-
-    @Test
-    public void testErrorStatusWithReason() throws IOException
-    {
-        for (int i = 400; i < 600; i++)
-        {
-            _rule.setCode("" + i);
-            _rule.setReason("reason-" + i);
-            _rule.apply(null, _request, _response);
-
-            assertEquals(i, _response.getStatus());
-            assertEquals("reason-" + i, _response.getReason());
-            super.reset();
-        }
+        assertEquals(499, _response.getStatus());
+        assertEquals("Message 499", _request.getAttribute(Dispatcher.ERROR_MESSAGE));
     }
 }

@@ -1,28 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.either;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -33,6 +27,13 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.either;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpGeneratorServerHTTPTest
 {
@@ -70,14 +71,14 @@ public class HttpGeneratorServerHTTPTest
         assertEquals("OK??Test", _reason);
 
         if (_content == null)
-            assertTrue(run.result._body == null, msg);
+            assertNull(run.result._body, msg);
         else
             assertThat(msg, run.result._contentLength, either(equalTo(_content.length())).or(equalTo(-1)));
     }
 
     private static class Result
     {
-        private HttpFields _fields = new HttpFields();
+        private HttpFields.Mutable _fields = HttpFields.build();
         private final String _body;
         private final int _code;
         private String _connection;
@@ -155,6 +156,12 @@ public class HttpGeneratorServerHTTPTest
                         header = BufferUtil.allocate(2048);
                         continue;
 
+                    case HEADER_OVERFLOW:
+                        if (header.capacity() >= 8192)
+                            throw new BadMessageException(500, "Header too large");
+                        header = BufferUtil.allocate(8192);
+                        continue;
+
                     case NEED_CHUNK:
                         chunk = BufferUtil.allocate(HttpGenerator.CHUNK_SIZE);
                         continue;
@@ -162,7 +169,6 @@ public class HttpGeneratorServerHTTPTest
                     case NEED_CHUNK_TRAILER:
                         chunk = BufferUtil.allocate(2048);
                         continue;
-
 
                     case FLUSH:
                         if (BufferUtil.hasContent(header))
@@ -201,7 +207,7 @@ public class HttpGeneratorServerHTTPTest
             return "[" + _code + "," + _contentType + "," + _contentLength + "," + (_body == null ? "null" : "content") + "]";
         }
 
-        public HttpFields getHttpFields()
+        public HttpFields.Mutable getHttpFields()
         {
             return _fields;
         }
@@ -249,10 +255,9 @@ public class HttpGeneratorServerHTTPTest
         }
 
         @Override
-        public boolean startResponse(HttpVersion version, int status, String reason)
+        public void startResponse(HttpVersion version, int status, String reason)
         {
             _reason = reason;
-            return false;
         }
 
         @Override
@@ -260,15 +265,9 @@ public class HttpGeneratorServerHTTPTest
         {
             throw failure;
         }
-
-        @Override
-        public int getHeaderCacheSize()
-        {
-            return 4096;
-        }
     }
 
-    public final static String CONTENT = "The quick brown fox jumped over the lazy dog.\nNow is the time for all good men to come to the aid of the party\nThe moon is blue to a fish in love.\n";
+    public static final String CONTENT = "The quick brown fox jumped over the lazy dog.\nNow is the time for all good men to come to the aid of the party\nThe moon is blue to a fish in love.\n";
 
     private static class Run
     {
@@ -321,18 +320,17 @@ public class HttpGeneratorServerHTTPTest
         }
     }
 
-
     public static Stream<Arguments> data()
     {
         Result[] results = {
-                new Result(200, null, -1, null, false),
-                new Result(200, null, -1, CONTENT, false),
-                new Result(200, null, CONTENT.length(), null, true),
-                new Result(200, null, CONTENT.length(), CONTENT, false),
-                new Result(200, "text/html", -1, null, true),
-                new Result(200, "text/html", -1, CONTENT, false),
-                new Result(200, "text/html", CONTENT.length(), null, true),
-                new Result(200, "text/html", CONTENT.length(), CONTENT, false)
+            new Result(200, null, -1, null, false),
+            new Result(200, null, -1, CONTENT, false),
+            new Result(200, null, CONTENT.length(), null, true),
+            new Result(200, null, CONTENT.length(), CONTENT, false),
+            new Result(200, "text/html", -1, null, true),
+            new Result(200, "text/html", -1, CONTENT, false),
+            new Result(200, "text/html", CONTENT.length(), null, true),
+            new Result(200, "text/html", CONTENT.length(), CONTENT, false)
         };
 
         ArrayList<Arguments> data = new ArrayList<>();

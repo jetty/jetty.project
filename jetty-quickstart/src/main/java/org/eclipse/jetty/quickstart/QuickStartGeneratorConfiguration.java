@@ -1,21 +1,20 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.quickstart;
 
@@ -25,11 +24,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EventListener;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletContext;
@@ -56,22 +53,22 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.MetaData;
 import org.eclipse.jetty.webapp.MetaData.OriginInfo;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.xml.XmlAppendable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * QuickStartDescriptorGenerator
+ * QuickStartGeneratorConfiguration
  * <p>
- * Generate an effective web.xml from a WebAppContext, including all components 
+ * Generate an effective web.xml from a WebAppContext, including all components
  * from web.xml, web-fragment.xmls annotations etc.
  * <p>
  * If generating quickstart for a different java platform than the current running
@@ -80,16 +77,15 @@ import org.eclipse.jetty.xml.XmlAppendable;
  */
 public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(QuickStartGeneratorConfiguration.class);
+    static final Logger LOG = LoggerFactory.getLogger(QuickStartGeneratorConfiguration.class);
     public static final String ORIGIN = "org.eclipse.jetty.originAttribute";
     public static final String DEFAULT_ORIGIN_ATTRIBUTE_NAME = "origin";
 
     protected final boolean _abort;
     protected String _originAttribute;
-    protected boolean _generateOrigin;
     protected int _count;
     protected Resource _quickStartWebXml;
-
+   
     public QuickStartGeneratorConfiguration()
     {
         this(false);
@@ -97,7 +93,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
     public QuickStartGeneratorConfiguration(boolean abort)
     {
-        super(true);
+        super(false);
         _count = 0;
         _abort = abort;
     }
@@ -108,7 +104,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         return _abort;
     }
 
-    public void setOriginAttribute (String name)
+    public void setOriginAttribute(String name)
     {
         _originAttribute = name;
     }
@@ -121,121 +117,114 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         return _originAttribute;
     }
 
-    /**
-     * @return the generateOrigin
-     */
-    public boolean isGenerateOrigin()
-    {
-        return _generateOrigin;
-    }
-
-    /**
-     * @param generateOrigin the generateOrigin to set
-     */
-    public void setGenerateOrigin(boolean generateOrigin)
-    {
-        _generateOrigin = generateOrigin;
-    }
-    
-    
     public Resource getQuickStartWebXml()
     {
         return _quickStartWebXml;
     }
-
 
     public void setQuickStartWebXml(Resource quickStartWebXml)
     {
         _quickStartWebXml = quickStartWebXml;
     }
 
-
     /**
      * Perform the generation of the xml file
+     *
      * @param stream the stream to generate the quickstart-web.xml to
      * @throws IOException if unable to generate the quickstart-web.xml
-     * @throws FileNotFoundException if unable to find the file 
+     * @throws FileNotFoundException if unable to find the file
      */
-    public void generateQuickStartWebXml (WebAppContext context,OutputStream stream) throws FileNotFoundException, IOException 
-    {   
+    public void generateQuickStartWebXml(WebAppContext context, OutputStream stream) throws FileNotFoundException, IOException
+    {
         if (context == null)
             throw new IllegalStateException("No webapp for quickstart generation");
         if (stream == null)
             throw new IllegalStateException("No output for quickstart generation");
-        
+
         if (_originAttribute == null)
             _originAttribute = DEFAULT_ORIGIN_ATTRIBUTE_NAME;
         context.getMetaData().getOrigins();
 
-        if (context.getBaseResource()==null)
-            throw new IllegalArgumentException("No base resource for "+this);
-
-        LOG.info("Quickstart generating");
-
-        XmlAppendable out = new XmlAppendable(stream,"UTF-8");
+        if (context.getBaseResource() == null)
+            throw new IllegalArgumentException("No base resource for " + this);
 
         MetaData md = context.getMetaData();
 
         Map<String, String> webappAttr = new HashMap<>();
         int major = context.getServletContext().getEffectiveMajorVersion();
         int minor = context.getServletContext().getEffectiveMinorVersion();
-        webappAttr.put("xmlns","http://xmlns.jcp.org/xml/ns/javaee");
-        webappAttr.put("xmlns:xsi","http://www.w3.org/2001/XMLSchema-instance");
-        webappAttr.put("xsi:schemaLocation","http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_"+(major+"_"+minor)+".xsd");
-        webappAttr.put("metadata-complete","true");
-        webappAttr.put("version",major+"."+minor);        
+        webappAttr.put("xmlns", "http://xmlns.jcp.org/xml/ns/javaee");
+        webappAttr.put("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
+        webappAttr.put("xsi:schemaLocation", "http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_" + (major + "_" + minor) + ".xsd");
+        webappAttr.put("metadata-complete", "true");
+        webappAttr.put("version", major + "." + minor);
 
-        out.openTag("web-app",webappAttr);
+        XmlAppendable out = new XmlAppendable(stream, "UTF-8");
+        out.openTag("web-app", webappAttr);
         if (context.getDisplayName() != null)
-            out.tag("display-name",context.getDisplayName());
-        
+            out.tag("display-name", context.getDisplayName());
+
         // Set some special context parameters
 
         // The location of the war file on disk
         AttributeNormalizer normalizer = new AttributeNormalizer(context.getBaseResource());
 
         // The library order
-        addContextParamFromAttribute(context,out,ServletContext.ORDERED_LIBS);
+        addContextParamFromAttribute(context, out, ServletContext.ORDERED_LIBS);
         //the servlet container initializers
-        addContextParamFromAttribute(context,out,AnnotationConfiguration.CONTAINER_INITIALIZERS);
+        addContextParamFromAttribute(context, out, AnnotationConfiguration.CONTAINER_INITIALIZERS);
         //the tlds discovered
-        addContextParamFromAttribute(context,out,MetaInfConfiguration.METAINF_TLDS,normalizer);
+        addContextParamFromAttribute(context, out, MetaInfConfiguration.METAINF_TLDS, normalizer);
         //the META-INF/resources discovered
-        addContextParamFromAttribute(context,out,MetaInfConfiguration.METAINF_RESOURCES,normalizer);
+        addContextParamFromAttribute(context, out, MetaInfConfiguration.METAINF_RESOURCES, normalizer);
 
-        // the default-context-path, if presernt
-        String defaultContextPath = (String) context.getAttribute("default-context-path");
-        if (defaultContextPath != null) out.tag("default-context-path", defaultContextPath);
+        // the default-context-path, if present
+        String defaultContextPath = (String)context.getAttribute("default-context-path");
+        if (defaultContextPath != null)
+            out.tag("default-context-path", defaultContextPath);
+        
+        String requestEncoding = (String)context.getAttribute("request-character-encoding");
+        if (!StringUtil.isBlank(requestEncoding))
+            out.tag("request-character-encoding", requestEncoding);
+        
+        String responseEncoding = (String)context.getAttribute("response-character-encoding");
+        if (!StringUtil.isBlank(responseEncoding))
+            out.tag("response-character-encoding", responseEncoding);
 
         //add the name of the origin attribute, if it is being used
-        if (_generateOrigin)
+        if (StringUtil.isNotBlank(_originAttribute))
         {
             out.openTag("context-param")
-            .tag("param-name", ORIGIN)
-            .tag("param-value", _originAttribute)
-            .closeTag();    
+                .tag("param-name", ORIGIN)
+                .tag("param-value", _originAttribute)
+                .closeTag();
         }
-        
-        
+
         // init params
         for (String p : context.getInitParams().keySet())
-            out.openTag("context-param",origin(md,"context-param." + p))
-            .tag("param-name",p)
-            .tag("param-value",context.getInitParameter(p))
-            .closeTag();
+        {
+            out.openTag("context-param", origin(md, "context-param." + p))
+                .tag("param-name", p)
+                .tag("param-value", context.getInitParameter(p))
+                .closeTag();
+        }
 
         if (context.getServletHandler().getListeners() != null)
             for (ListenerHolder e : context.getServletHandler().getListeners())
-                out.openTag("listener",origin(md,e.getClassName() + ".listener"))
-                .tag("listener-class",e.getClassName())
-                .closeTag();
+            {
+                out.openTag("listener", origin(md, e.getClassName() + ".listener"))
+                    .tag("listener-class", e.getClassName())
+                    .closeTag();
+            }
 
         ServletHandler servlets = context.getServletHandler();
 
         if (servlets.getFilters() != null)
         {
             for (FilterHolder holder : servlets.getFilters())
-                outholder(out,md,holder);
+            {
+                outholder(out, md, holder);
+            }
         }
 
         if (servlets.getFilterMappings() != null)
@@ -243,26 +232,30 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             for (FilterMapping mapping : servlets.getFilterMappings())
             {
                 out.openTag("filter-mapping");
-                out.tag("filter-name",mapping.getFilterName());
+                out.tag("filter-name", mapping.getFilterName());
                 if (mapping.getPathSpecs() != null)
                     for (String s : mapping.getPathSpecs())
-                        out.tag("url-pattern",s);
+                    {
+                        out.tag("url-pattern", s);
+                    }
                 if (mapping.getServletNames() != null)
                     for (String n : mapping.getServletNames())
-                        out.tag("servlet-name",n);
+                    {
+                        out.tag("servlet-name", n);
+                    }
 
                 if (!mapping.isDefaultDispatches())
                 {
                     if (mapping.appliesTo(DispatcherType.REQUEST))
-                        out.tag("dispatcher","REQUEST");
+                        out.tag("dispatcher", "REQUEST");
                     if (mapping.appliesTo(DispatcherType.ASYNC))
-                        out.tag("dispatcher","ASYNC");
+                        out.tag("dispatcher", "ASYNC");
                     if (mapping.appliesTo(DispatcherType.ERROR))
-                        out.tag("dispatcher","ERROR");
+                        out.tag("dispatcher", "ERROR");
                     if (mapping.appliesTo(DispatcherType.FORWARD))
-                        out.tag("dispatcher","FORWARD");
+                        out.tag("dispatcher", "FORWARD");
                     if (mapping.appliesTo(DispatcherType.INCLUDE))
-                        out.tag("dispatcher","INCLUDE");
+                        out.tag("dispatcher", "INCLUDE");
                 }
                 out.closeTag();
             }
@@ -271,39 +264,42 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         if (servlets.getServlets() != null)
         {
             for (ServletHolder holder : servlets.getServlets())
-                outholder(out,md,holder);
+            {
+                outholder(out, md, holder);
+            }
         }
 
         if (servlets.getServletMappings() != null)
         {
             for (ServletMapping mapping : servlets.getServletMappings())
             {
-                out.openTag("servlet-mapping",origin(md,mapping.getServletName() + ".servlet.mappings"));
-                out.tag("servlet-name",mapping.getServletName());
+                out.openTag("servlet-mapping", origin(md, mapping.getServletName() + ".servlet.mappings"));
+                out.tag("servlet-name", mapping.getServletName());
                 if (mapping.getPathSpecs() != null)
                     for (String s : mapping.getPathSpecs())
-                        out.tag("url-pattern",s);
+                    {
+                        out.tag("url-pattern", s);
+                    }
                 out.closeTag();
             }
         }
 
         // Security elements
-        SecurityHandler security =context. getSecurityHandler();
+        SecurityHandler security = context.getSecurityHandler();
 
-        if (security!=null && (security.getRealmName()!=null || security.getAuthMethod()!=null))
+        if (security != null && (security.getRealmName() != null || security.getAuthMethod() != null))
         {
             out.openTag("login-config");
-            if (security.getAuthMethod()!=null)
-                out.tag("auth-method",origin(md,"auth-method"),security.getAuthMethod());
-            if (security.getRealmName()!=null)
-                out.tag("realm-name",origin(md,"realm-name"),security.getRealmName());
-
+            if (security.getAuthMethod() != null)
+                out.tag("auth-method", origin(md, "auth-method"), security.getAuthMethod());
+            if (security.getRealmName() != null)
+                out.tag("realm-name", origin(md, "realm-name"), security.getRealmName());
 
             if (Constraint.__FORM_AUTH.equalsIgnoreCase(security.getAuthMethod()))
             {
                 out.openTag("form-login-config");
-                out.tag("form-login-page",origin(md,"form-login-page"),security.getInitParameter(FormAuthenticator.__FORM_LOGIN_PAGE));
-                out.tag("form-error-page",origin(md,"form-error-page"),security.getInitParameter(FormAuthenticator.__FORM_ERROR_PAGE));
+                out.tag("form-login-page", origin(md, "form-login-page"), security.getInitParameter(FormAuthenticator.__FORM_LOGIN_PAGE));
+                out.tag("form-error-page", origin(md, "form-error-page"), security.getInitParameter(FormAuthenticator.__FORM_ERROR_PAGE));
                 out.closeTag();
             }
 
@@ -313,10 +309,12 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         if (security instanceof ConstraintAware)
         {
             ConstraintAware ca = (ConstraintAware)security;
-            for (String r:ca.getRoles())
+            for (String r : ca.getRoles())
+            {
                 out.openTag("security-role")
-                .tag("role-name",r)
-                .closeTag();
+                    .tag("role-name", r)
+                    .closeTag();
+            }
 
             for (ConstraintMapping m : ca.getConstraintMappings())
             {
@@ -324,16 +322,18 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
                 out.openTag("web-resource-collection");
                 {
-                    if (m.getConstraint().getName()!=null)
-                        out.tag("web-resource-name",m.getConstraint().getName());
-                    if (m.getPathSpec()!=null)
-                        out.tag("url-pattern",origin(md,"constraint.url."+m.getPathSpec()),m.getPathSpec());
-                    if (m.getMethod()!=null)
-                        out.tag("http-method",m.getMethod());
+                    if (m.getConstraint().getName() != null)
+                        out.tag("web-resource-name", m.getConstraint().getName());
+                    if (m.getPathSpec() != null)
+                        out.tag("url-pattern", origin(md, "constraint.url." + m.getPathSpec()), m.getPathSpec());
+                    if (m.getMethod() != null)
+                        out.tag("http-method", m.getMethod());
 
-                    if (m.getMethodOmissions()!=null)
-                        for (String o:m.getMethodOmissions())
-                            out.tag("http-method-omission",o);
+                    if (m.getMethodOmissions() != null)
+                        for (String o : m.getMethodOmissions())
+                        {
+                            out.tag("http-method-omission", o);
+                        }
 
                     out.closeTag();
                 }
@@ -341,12 +341,14 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 if (m.getConstraint().getAuthenticate())
                 {
                     String[] roles = m.getConstraint().getRoles();
-                    if (roles!=null && roles.length>0)
+                    if (roles != null && roles.length > 0)
                     {
                         out.openTag("auth-constraint");
-                        if (m.getConstraint().getRoles()!=null)
+                        if (m.getConstraint().getRoles() != null)
                             for (String r : m.getConstraint().getRoles())
-                                out.tag("role-name",r);
+                            {
+                                out.tag("role-name", r);
+                            }
                         out.closeTag();
                     }
                     else
@@ -356,44 +358,42 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 switch (m.getConstraint().getDataConstraint())
                 {
                     case Constraint.DC_NONE:
-                        out.openTag("user-data-constraint").tag("transport-guarantee","NONE").closeTag();
+                        out.openTag("user-data-constraint").tag("transport-guarantee", "NONE").closeTag();
                         break;
 
                     case Constraint.DC_INTEGRAL:
-                        out.openTag("user-data-constraint").tag("transport-guarantee","INTEGRAL").closeTag();
+                        out.openTag("user-data-constraint").tag("transport-guarantee", "INTEGRAL").closeTag();
                         break;
 
                     case Constraint.DC_CONFIDENTIAL:
-                        out.openTag("user-data-constraint").tag("transport-guarantee","CONFIDENTIAL").closeTag();
+                        out.openTag("user-data-constraint").tag("transport-guarantee", "CONFIDENTIAL").closeTag();
                         break;
 
                     default:
                         break;
-
                 }
 
                 out.closeTag();
-
             }
         }
 
         if (context.getWelcomeFiles() != null)
         {
             out.openTag("welcome-file-list");
-            for (String welcomeFile:context.getWelcomeFiles())
+            for (String welcomeFile : context.getWelcomeFiles())
             {
                 out.tag("welcome-file", welcomeFile);
             }
             out.closeTag();
         }
 
-        Map<String,String> localeEncodings = context.getLocaleEncodings();
+        Map<String, String> localeEncodings = context.getLocaleEncodings();
         if (localeEncodings != null && !localeEncodings.isEmpty())
         {
             out.openTag("locale-encoding-mapping-list");
-            for (Map.Entry<String, String> entry:localeEncodings.entrySet())
+            for (Map.Entry<String, String> entry : localeEncodings.entrySet())
             {
-                out.openTag("locale-encoding-mapping", origin(md,"locale-encoding."+entry.getKey()));
+                out.openTag("locale-encoding-mapping", origin(md, "locale-encoding." + entry.getKey()));
                 out.tag("locale", entry.getKey());
                 out.tag("encoding", entry.getValue());
                 out.closeTag();
@@ -406,8 +406,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         {
             out.openTag("session-config");
             int maxInactiveSec = context.getSessionHandler().getMaxInactiveInterval();
-            out.tag("session-timeout", (maxInactiveSec==0?"0":Integer.toString(maxInactiveSec/60)));
-
+            out.tag("session-timeout", (maxInactiveSec == 0 ? "0" : Integer.toString(maxInactiveSec / 60)));
 
             //cookie-config
             SessionCookieConfig cookieConfig = context.getSessionHandler().getSessionCookieConfig();
@@ -415,7 +414,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             {
                 out.openTag("cookie-config");
                 if (cookieConfig.getName() != null)
-                    out.tag("name", origin(md,"cookie-config.name"), cookieConfig.getName());
+                    out.tag("name", origin(md, "cookie-config.name"), cookieConfig.getName());
 
                 if (cookieConfig.getDomain() != null)
                     out.tag("domain", origin(md, "cookie-config.domain"), cookieConfig.getDomain());
@@ -431,25 +430,27 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 out.tag("max-age", origin(md, "cookie-config.max-age"), Integer.toString(cookieConfig.getMaxAge()));
                 out.closeTag();
             }
-            
+
             // tracking-modes
-            Set<SessionTrackingMode> modes =context. getSessionHandler().getEffectiveSessionTrackingModes();
+            Set<SessionTrackingMode> modes = context.getSessionHandler().getEffectiveSessionTrackingModes();
             if (modes != null)
             {
-                for (SessionTrackingMode mode:modes)
+                for (SessionTrackingMode mode : modes)
+                {
                     out.tag("tracking-mode", mode.toString());
+                }
             }
-            
-            out.closeTag();     
+
+            out.closeTag();
         }
 
         //error-pages
-        Map<String,String> errorPages = ((ErrorPageErrorHandler)context.getErrorHandler()).getErrorPages();
+        Map<String, String> errorPages = ((ErrorPageErrorHandler)context.getErrorHandler()).getErrorPages();
         if (errorPages != null)
         {
-            for (Map.Entry<String, String> entry:errorPages.entrySet())
+            for (Map.Entry<String, String> entry : errorPages.entrySet())
             {
-                out.openTag("error-page", origin(md, "error."+entry.getKey()));
+                out.openTag("error-page", origin(md, "error." + entry.getKey()));
                 //a global or default error page has no code or exception               
                 if (!ErrorPageErrorHandler.GLOBAL_ERROR_PAGE.equals(entry.getKey()))
                 {
@@ -467,10 +468,10 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         MimeTypes mimeTypes = context.getMimeTypes();
         if (mimeTypes != null)
         {
-            for (Map.Entry<String, String> entry:mimeTypes.getMimeMap().entrySet())
+            for (Map.Entry<String, String> entry : mimeTypes.getMimeMap().entrySet())
             {
                 out.openTag("mime-mapping");
-                out.tag("extension", origin(md, "extension."+entry.getKey()), entry.getKey());
+                out.tag("extension", origin(md, "extension." + entry.getKey()), entry.getKey());
                 out.tag("mime-type", entry.getValue());
                 out.closeTag();
             }
@@ -484,7 +485,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             Collection<TaglibDescriptor> tlds = jspConfig.getTaglibs();
             if (tlds != null && !tlds.isEmpty())
             {
-                for (TaglibDescriptor tld:tlds)
+                for (TaglibDescriptor tld : tlds)
                 {
                     out.openTag("taglib");
                     out.tag("taglib-uri", tld.getTaglibURI());
@@ -496,14 +497,16 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             Collection<JspPropertyGroupDescriptor> jspPropertyGroups = jspConfig.getJspPropertyGroups();
             if (jspPropertyGroups != null && !jspPropertyGroups.isEmpty())
             {
-                for (JspPropertyGroupDescriptor jspPropertyGroup:jspPropertyGroups)
+                for (JspPropertyGroupDescriptor jspPropertyGroup : jspPropertyGroups)
                 {
                     out.openTag("jsp-property-group");
                     Collection<String> strings = jspPropertyGroup.getUrlPatterns();
                     if (strings != null && !strings.isEmpty())
                     {
-                        for (String urlPattern:strings)
+                        for (String urlPattern : strings)
+                        {
                             out.tag("url-pattern", urlPattern);
+                        }
                     }
 
                     if (jspPropertyGroup.getElIgnored() != null)
@@ -536,15 +539,19 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                     strings = jspPropertyGroup.getIncludePreludes();
                     if (strings != null && !strings.isEmpty())
                     {
-                        for (String prelude:strings)
+                        for (String prelude : strings)
+                        {
                             out.tag("include-prelude", prelude);
+                        }
                     }
 
                     strings = jspPropertyGroup.getIncludeCodas();
                     if (strings != null && !strings.isEmpty())
                     {
-                        for (String coda:strings)
+                        for (String coda : strings)
+                        {
                             out.tag("include-coda", coda);
+                        }
                     }
 
                     out.closeTag();
@@ -560,7 +567,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         {
             Collection<LifeCycleCallback> tmp = lifecycles.getPostConstructCallbacks();
 
-            for (LifeCycleCallback c:tmp)
+            for (LifeCycleCallback c : tmp)
             {
                 out.openTag("post-construct");
                 out.tag("lifecycle-callback-class", c.getTargetClassName());
@@ -569,7 +576,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             }
 
             tmp = lifecycles.getPreDestroyCallbacks();
-            for (LifeCycleCallback c:tmp)
+            for (LifeCycleCallback c : tmp)
             {
                 out.openTag("pre-destroy");
                 out.tag("lifecycle-callback-class", c.getTargetClassName());
@@ -585,101 +592,87 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
     /**
      * Turn attribute into context-param to store.
-     * 
-     * @param out
-     * @param attribute
-     * @throws IOException
      */
     private void addContextParamFromAttribute(WebAppContext context, XmlAppendable out, String attribute) throws IOException
     {
         Object o = context.getAttribute(attribute);
         if (o == null)
             return;
-                
-        Collection<?> c =  (o instanceof Collection)? (Collection<?>)o:Collections.singletonList(o);
-        StringBuilder v=new StringBuilder();
-        for (Object i:c)
+
+        Collection<?> c = (o instanceof Collection) ? (Collection<?>)o : Collections.singletonList(o);
+        StringBuilder v = new StringBuilder();
+        for (Object i : c)
         {
-            if (i!=null)
+            if (i != null)
             {
-                if (v.length()>0)
+                if (v.length() > 0)
                     v.append(",\n    ");
                 else
                     v.append("\n    ");
-                QuotedStringTokenizer.quote(v,i.toString());
+                QuotedStringTokenizer.quote(v, i.toString());
             }
         }
         out.openTag("context-param")
-        .tag("param-name",attribute)
-        .tagCDATA("param-value",v.toString())
-        .closeTag();        
+            .tag("param-name", attribute)
+            .tagCDATA("param-value", v.toString())
+            .closeTag();
     }
-    
+
     /**
      * Turn context attribute into context-param to store.
-     * 
-     * @param out
-     * @param attribute
-     * @throws IOException
      */
     private void addContextParamFromAttribute(WebAppContext context, XmlAppendable out, String attribute, AttributeNormalizer normalizer) throws IOException
     {
         Object o = context.getAttribute(attribute);
         if (o == null)
             return;
-        
-        Collection<?> c =  (o instanceof Collection)? (Collection<?>)o:Collections.singletonList(o);
-        StringBuilder v=new StringBuilder();
-        for (Object i:c)
+
+        Collection<?> c = (o instanceof Collection) ? (Collection<?>)o : Collections.singletonList(o);
+        StringBuilder v = new StringBuilder();
+        for (Object i : c)
         {
-            if (i!=null)
+            if (i != null)
             {
-                if (v.length()>0)
+                if (v.length() > 0)
                     v.append(",\n    ");
                 else
                     v.append("\n    ");
-                QuotedStringTokenizer.quote(v,normalizer.normalize(i));
+                QuotedStringTokenizer.quote(v, normalizer.normalize(i));
             }
         }
         out.openTag("context-param")
-        .tag("param-name",attribute)
-        .tagCDATA("param-value",v.toString())
-        .closeTag();  
-        
+            .tag("param-name", attribute)
+            .tagCDATA("param-value", v.toString())
+            .closeTag();
     }
 
     /**
      * Generate xml for a Holder (Filter/Servlet)
-     * 
-     * @param out
-     * @param md
-     * @param holder
-     * @throws IOException
      */
     private void outholder(XmlAppendable out, MetaData md, FilterHolder holder) throws IOException
     {
         if (LOG.isDebugEnabled())
-            out.openTag("filter",Collections.singletonMap("source",holder.getSource().toString()));
+            out.openTag("filter", Collections.singletonMap("source", holder.getSource().toString()));
         else
             out.openTag("filter");
-        
+
         String n = holder.getName();
-        out.tag("filter-name",n);
+        out.tag("filter-name", n);
 
         String ot = n + ".filter.";
-        
+
         if (holder instanceof FilterHolder)
         {
-            out.tag("filter-class",origin(md,ot + "filter-class"),holder.getClassName());
-            out.tag("async-supported",origin(md,ot + "async-supported"),holder.isAsyncSupported()?"true":"false");
+            out.tag("filter-class", origin(md, ot + "filter-class"), holder.getClassName());
+            out.tag("async-supported", origin(md, ot + "async-supported"), holder.isAsyncSupported() ? "true" : "false");
         }
-        
+
         for (String p : holder.getInitParameters().keySet())
         {
-            out.openTag("init-param",origin(md,ot + "init-param." + p))
-            .tag("param-name",p)
-            .tag("param-value",holder.getInitParameter(p))
-            .closeTag();
+            out.openTag("init-param", origin(md, ot + "init-param." + p))
+                .tag("param-name", p)
+                .tag("param-value", holder.getInitParameter(p))
+                .closeTag();
         }
 
         out.closeTag();
@@ -687,55 +680,55 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
     private void outholder(XmlAppendable out, MetaData md, ServletHolder holder) throws IOException
     {
-        
+
         if (LOG.isDebugEnabled())
-            out.openTag("servlet",Collections.singletonMap("source",holder.getSource().toString()));
+            out.openTag("servlet", Collections.singletonMap("source", holder.getSource().toString()));
         else
             out.openTag("servlet");
-        
+
         String n = holder.getName();
-        out.tag("servlet-name",n);
+        out.tag("servlet-name", n);
 
         String ot = n + ".servlet.";
 
         ServletHolder s = (ServletHolder)holder;
         if (s.getForcedPath() != null && s.getClassName() == null)
-            out.tag("jsp-file",s.getForcedPath());
+            out.tag("jsp-file", s.getForcedPath());
         else
-            out.tag("servlet-class",origin(md,ot + "servlet-class"),s.getClassName());
+            out.tag("servlet-class", origin(md, ot + "servlet-class"), s.getClassName());
 
         for (String p : holder.getInitParameters().keySet())
         {
             if ("jsp".equalsIgnoreCase(n) && "scratchdir".equalsIgnoreCase(p)) //don't preconfigure the temp dir for jsp output
                 continue;
-            out.openTag("init-param",origin(md,ot + "init-param." + p))
-            .tag("param-name",p)
-            .tag("param-value",holder.getInitParameter(p))
-            .closeTag();
+            out.openTag("init-param", origin(md, ot + "init-param." + p))
+                .tag("param-name", p)
+                .tag("param-value", holder.getInitParameter(p))
+                .closeTag();
         }
 
         if (s.getInitOrder() >= 0)
-            out.tag("load-on-startup",Integer.toString(s.getInitOrder()));
+            out.tag("load-on-startup", Integer.toString(s.getInitOrder()));
 
         if (!s.isEnabled())
-            out.tag("enabled",origin(md,ot + "enabled"),"false");
+            out.tag("enabled", origin(md, ot + "enabled"), "false");
 
-        out.tag("async-supported",origin(md,ot + "async-supported"),holder.isAsyncSupported()?"true":"false");
+        out.tag("async-supported", origin(md, ot + "async-supported"), holder.isAsyncSupported() ? "true" : "false");
 
         if (s.getRunAsRole() != null)
-            out.openTag("run-as",origin(md,ot + "run-as"))
-            .tag("role-name",s.getRunAsRole())
-            .closeTag();
+            out.openTag("run-as", origin(md, ot + "run-as"))
+                .tag("role-name", s.getRunAsRole())
+                .closeTag();
 
-        Map<String,String> roles = s.getRoleRefMap();
-        if (roles!=null)
+        Map<String, String> roles = s.getRoleRefMap();
+        if (roles != null)
         {
             for (Map.Entry<String, String> e : roles.entrySet())
             {
-                out.openTag("security-role-ref",origin(md,ot+"role-name."+e.getKey()))
-                .tag("role-name",e.getKey())
-                .tag("role-link",e.getValue())
-                .closeTag();
+                out.openTag("security-role-ref", origin(md, ot + "role-name." + e.getKey()))
+                    .tag("role-name", e.getKey())
+                    .tag("role-link", e.getValue())
+                    .closeTag();
             }
         }
 
@@ -743,7 +736,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         MultipartConfigElement multipartConfig = ((ServletHolder.Registration)s.getRegistration()).getMultipartConfig();
         if (multipartConfig != null)
         {
-            out.openTag("multipart-config", origin(md, s.getName()+".servlet.multipart-config"));
+            out.openTag("multipart-config", origin(md, s.getName() + ".servlet.multipart-config"));
             if (multipartConfig.getLocation() != null)
                 out.tag("location", multipartConfig.getLocation());
             out.tag("max-file-size", Long.toString(multipartConfig.getMaxFileSize()));
@@ -754,54 +747,55 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
 
         out.closeTag();
     }
-    
-    
+
     /**
      * Find the origin (web.xml, fragment, annotation etc) of a web artifact from MetaData.
-     * 
+     *
      * @param md the metadata
      * @param name the name
      * @return the origin map
      */
     public Map<String, String> origin(MetaData md, String name)
     {
-        if (!(_generateOrigin || LOG.isDebugEnabled()))
+        if (StringUtil.isBlank(_originAttribute))
             return Collections.emptyMap();
         if (name == null)
             return Collections.emptyMap();
         OriginInfo origin = md.getOriginInfo(name);
-        if (LOG.isDebugEnabled()) LOG.debug("origin of "+name+" is "+origin);
+        if (LOG.isDebugEnabled())
+            LOG.debug("origin of " + name + " is " + origin);
         if (origin == null)
             return Collections.emptyMap();
-        return Collections.singletonMap(_originAttribute,origin.toString()+":"+(_count++));
+        return Collections.singletonMap(_originAttribute, origin.toString() + ":" + (_count++));
     }
-    
-    
+
     @Override
     public void preConfigure(WebAppContext context) throws Exception
     {
         ExtraXmlDescriptorProcessor extraXmlProcessor = new ExtraXmlDescriptorProcessor();
         context.getMetaData().addDescriptorProcessor(extraXmlProcessor);
-        context.setAttribute(ExtraXmlDescriptorProcessor.class.getName(),extraXmlProcessor);
+        context.setAttribute(ExtraXmlDescriptorProcessor.class.getName(), extraXmlProcessor);
         super.preConfigure(context);
     }
-
-
 
     @Override
     public void configure(WebAppContext context) throws Exception
     {
         MetaData metadata = context.getMetaData();
         metadata.resolve(context);
-
-        Resource quickStartWebXml = _quickStartWebXml;
-        if (_quickStartWebXml == null)
-            quickStartWebXml = context.getBaseResource().addPath("/WEB-INF/quickstart-web.xml");
-        if (!quickStartWebXml.exists())
-            quickStartWebXml.getFile().createNewFile();
-        try (FileOutputStream fos = new FileOutputStream(quickStartWebXml.getFile(),false))
+        try (FileOutputStream fos = new FileOutputStream(_quickStartWebXml.getFile(), false))
         {
-            generateQuickStartWebXml(context,fos);
+            generateQuickStartWebXml(context, fos);
+            LOG.info("Generated {}", _quickStartWebXml);
+            if (context.getAttribute(WebInfConfiguration.TEMPORARY_RESOURCE_BASE) != null && !context.isPersistTempDirectory())
+                LOG.warn("Generated to non persistent location: " + _quickStartWebXml);
         }
     }
+
+    @Override
+    public void deconfigure(WebAppContext context) throws Exception
+    {
+        super.deconfigure(context);
+    }
+
 }

@@ -1,0 +1,99 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[creating-custom-protocol]]
+=== Creating a Custom Protocol
+
+You can create custom protocols with Jetty. This page provides an example of how to do so, with Telnet as the protocol.
+
+To create a custom Telnet protocol, complete the following tasks:
+
+* Implement a `TelnetServerConnectionFactory`.
+* Implement a `TelnetServerConnection` by extending `o.e.j.io.AbstractConnection`.
+* Create a parser/interpreter for the bytes you receive (this is totally independent from Jetty).
+* If needed, design an API for the application to use to process the bytes received (also independent from Jetty). 
+The API likely has a _respond back_ primitive that uses a Jetty provided `EndPoint` and `EndPoint.write(Callback, Buffer...)` to write the response bytes.
+
+[[server-connection-factory]]
+==== Implementing a TelnetServerConnectionFactory
+
+Begin with an `org.eclipse.jetty.server.ServerConnector`, which you can use as is. `ServerConnector` takes a `o.e.j.server.ConnectionFactory`, which creates `o.e.j.io.Connection` objects that interpret the bytes the connector receives. 
+You must implement `ConnectionFactory` with a `TelnetServerConnectionFactory`, where you return a Connection implementation (for example, `TelnetServerConnection`).
+
+[[telnet-server-connection]]
+==== Implementing the TelnetServerConnection
+
+For the Connection implementation you need to extend from `o.e.j.io.AbstractConnection` because it provides many facilities that you would otherwise need to re-implement from scratch.
+
+For each Connection instance there is associated an `o.e.j.io.EndPoint` instance. 
+Think of `EndPoint` as a specialized version of JDK’s `SocketChannel`. 
+You use the `EndPoint` to read, write, and close. 
+You don’t need to implement `EndPoint`, because Jetty provides concrete
+classes for you to use.
+
+The Connection is the _passive_ side (that is, Jetty calls it when there is data to read), while the `EndPoint` is the active part (that is, applications call it to write data to the other end). 
+When there is data to read, Jetty calls `AbstractConnection.onFillable()`, which you must implement in your `TelnetServerConnection`.
+
+A typical implementation reads bytes from the `EndPoint` by calling `EndPoint.fill(ByteBuffer)`. 
+For examples, look at both the simpler `SPDYConnection` (in the SPDY client package, but server also uses it), and the slightly more complex `HttpConnection`.
+
+[[parser-interpreter]]
+==== Parsing the Bytes Received
+
+After you read the bytes, you need to parse them. 
+For the Telnet protocol there is not much to parse, but perhaps you have your own commands that you want to interpret and execute. 
+Therefore typically every connection has an associated parser instance. 
+In turn, a parser usually emits parse events that a parser listener interprets, as the following examples illustrate:
+
+* In HTTP, the Jetty HTTP parser parses the request line (and emits a parser event), then parses the headers (and emits a parser event for each) until it recognizes the end of the headers (and emits another parser event). 
+At that point, the _interpreter_ or parser listener (which for HTTP is `o.e.j.server.HttpChannel`) has all the information necessary to build a `HttpServletRequest` object and can call the user code (the web application, that is, servlets/filters). 
+* In SPDY, the Jetty SPDY parser parses a SPDY frame (and emits a parser event), and the parser listener (an instance of o.e.j.spdy.StandardSession) interprets the parser events and calls user code (application-provided listeners).
+
+With `ConnectionFactory`, Connection, parser, and parser listeners in place, you have configured the read side.
+
+[[api-byte-processor]]
+==== Designing an API to Process Bytes
+
+At this point, server applications typically write data back to the client.
+
+The Servlet API (for HTTP) or application-provided listeners (for SPDY) expose an interface to web applications so that they can write data back to the client. 
+The implementation of those interfaces must link back to the `EndPoint` instance associated with the Connection instance so that it can write data via `EndPoint.write(Callback, ByteBuffer...)`. 
+This is an asynchronous call, and it notifies the callback when all the buffers have been fully written.
+
+For example, in the Servlet API, applications use a `ServletOutputStream` to write the response content. 
+`ServletOutputStream` is an abstract class that Jetty implements, enabling Jetty to handle the writes from the web application; the writes eventually end up in an `EndPoint.write(...)` call.
+
+[[api-tips]]
+===== Tips for Designing an API
+
+If you want to write a completely asynchronous implementation, your API to write data to the client must have a callback/promise concept: “Call me back when you are done, and (possibly) give me the result of the computation."
+
+SPDY’s Stream class is a typical example. 
+Notice how the methods there exist in two versions, a synchronous (blocking) one, and an asynchronous one that takes as last parameter a Callback (if no result is needed), or a Promise (if a result is needed). 
+It is trivial to write the synchronous version in terms of the asynchronous version.
+
+You can use `EndPoint.write(Callback, ByteBuffer...)` in a blocking way as follows:
+
+[source, java, subs="{sub-order}"]
+----
+FutureCallback callback = new FutureCallback();
+endPoint.write(callback, buffers);
+callback.get();
+----
+
+With the snippet above your API can be synchronous or asynchronous (your choice), but implemented synchronously.

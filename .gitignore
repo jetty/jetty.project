@@ -19,6 +19,7 @@ bin/
 *.backup
 *.debug
 *.dump
+.attach_pid*
 
 # vim 
 .*.sw[a-p]

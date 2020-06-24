@@ -1,47 +1,47 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.alpn.conscrypt.server;
 
-import java.lang.reflect.Method;
 import java.security.Security;
 import java.util.List;
-import java.util.function.BiFunction;
-
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSocket;
 
+import org.conscrypt.ApplicationProtocolSelector;
+import org.conscrypt.Conscrypt;
 import org.conscrypt.OpenSSLProvider;
 import org.eclipse.jetty.alpn.server.ALPNServerConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ssl.ALPNProcessor;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.io.ssl.SslHandshakeListener;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
 {
-    private static final Logger LOG = Log.getLogger(ConscryptServerALPNProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConscryptServerALPNProcessor.class);
 
     @Override
     public void init()
     {
-        if (Security.getProvider("Conscrypt")==null)
+        if (Security.getProvider("Conscrypt") == null)
         {
             Security.addProvider(new OpenSSLProvider());
             if (LOG.isDebugEnabled())
@@ -56,13 +56,11 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
     }
 
     @Override
-    public void configure(SSLEngine sslEngine,Connection connection)
+    public void configure(SSLEngine sslEngine, Connection connection)
     {
         try
         {
-            Method method = sslEngine.getClass().getMethod("setHandshakeApplicationProtocolSelector", BiFunction.class);
-            method.setAccessible(true);
-            method.invoke(sslEngine,new ALPNCallback((ALPNServerConnection)connection));
+            Conscrypt.setApplicationProtocolSelector(sslEngine, new ALPNCallback((ALPNServerConnection)connection));
         }
         catch (RuntimeException x)
         {
@@ -74,23 +72,30 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
         }
     }
 
-    private final class ALPNCallback implements BiFunction<SSLEngine,List<String>,String>, SslHandshakeListener
+    private final class ALPNCallback extends ApplicationProtocolSelector implements SslHandshakeListener
     {
         private final ALPNServerConnection alpnConnection;
 
         private ALPNCallback(ALPNServerConnection connection)
         {
-            alpnConnection = connection;            
+            alpnConnection = connection;
             ((DecryptedEndPoint)alpnConnection.getEndPoint()).getSslConnection().addHandshakeListener(this);
         }
 
         @Override
-        public String apply(SSLEngine engine, List<String> protocols)
+        public String selectApplicationProtocol(SSLEngine engine, List<String> protocols)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("apply {} {}", alpnConnection, protocols);
             alpnConnection.select(protocols);
-            return alpnConnection.getProtocol();
+            String protocol = alpnConnection.getProtocol();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Selected {} among {} for {}", protocol, protocols, alpnConnection);
+            return protocol;
+        }
+
+        @Override
+        public String selectApplicationProtocol(SSLSocket socket, List<String> protocols)
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -99,7 +104,7 @@ public class ConscryptServerALPNProcessor implements ALPNProcessor.Server
             String protocol = alpnConnection.getProtocol();
             if (LOG.isDebugEnabled())
                 LOG.debug("TLS handshake succeeded, protocol={} for {}", protocol, alpnConnection);
-            if (protocol ==null)
+            if (protocol == null)
                 alpnConnection.unsupported();
         }
 

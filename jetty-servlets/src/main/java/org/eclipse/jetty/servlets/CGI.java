@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlets;
@@ -25,11 +25,11 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -41,8 +41,8 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * CGI Servlet.
@@ -72,7 +72,7 @@ public class CGI extends HttpServlet
 {
     private static final long serialVersionUID = -6182088932884791074L;
 
-    private static final Logger LOG = Log.getLogger(CGI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CGI.class);
 
     private boolean _ok;
     private File _docRoot;
@@ -221,10 +221,10 @@ public class CGI extends HttpServlet
     /**
      * executes the CGI process
      *
-     * @param command  the command to execute, this command is prefixed by
-     *                 the context parameter "commandPrefix".
+     * @param command the command to execute, this command is prefixed by
+     * the context parameter "commandPrefix".
      * @param pathInfo The PATH_INFO to process,
-     *                 see http://docs.oracle.com/javaee/6/api/javax/servlet/http/HttpServletRequest.html#getPathInfo%28%29. Cannot be null
+     * see http://docs.oracle.com/javaee/6/api/javax/servlet/http/HttpServletRequest.html#getPathInfo%28%29. Cannot be null
      * @param req the HTTP request
      * @param res the HTTP response
      * @throws IOException if the execution of the CGI process throws
@@ -252,7 +252,11 @@ public class CGI extends HttpServlet
                 String parameterName = names.nextElement();
                 parameterMap.addValues(parameterName, req.getParameterValues(parameterName));
             }
-            bodyFormEncoded = UrlEncoded.encode(parameterMap, Charset.forName(req.getCharacterEncoding()), true);
+
+            String characterEncoding = req.getCharacterEncoding();
+            Charset charset = characterEncoding != null
+                ? Charset.forName(characterEncoding) : StandardCharsets.UTF_8;
+            bodyFormEncoded = UrlEncoded.encode(parameterMap, charset, true);
         }
 
         EnvList env = new EnvList(_env);
@@ -324,7 +328,7 @@ public class CGI extends HttpServlet
             if (name.equalsIgnoreCase("Proxy"))
                 continue;
             String value = req.getHeader(name);
-            env.set("HTTP_" + name.toUpperCase(Locale.ENGLISH).replace('-', '_'), value);
+            env.set("HTTP_" + StringUtil.replace(name.toUpperCase(Locale.ENGLISH), '-', '_'), value);
         }
 
         // these extra ones were from printenv on www.dev.nomura.co.uk
@@ -374,7 +378,7 @@ public class CGI extends HttpServlet
                     }
                     catch (IOException e)
                     {
-                        LOG.warn(e);
+                        LOG.warn("Unable to copy error stream", e);
                     }
                 }
             });
@@ -435,23 +439,13 @@ public class CGI extends HttpServlet
             // terminate and clean up...
             LOG.debug("CGI: Client closed connection!", e);
         }
-        catch (InterruptedException ie)
+        catch (InterruptedException ex)
         {
             LOG.debug("CGI: interrupted!");
         }
         finally
         {
-            if (os != null)
-            {
-                try
-                {
-                    os.close();
-                }
-                catch (Exception e)
-                {
-                    LOG.debug(e);
-                }
-            }
+            IO.close(os);
             p.destroy();
             // LOG.debug("CGI: terminated!");
             async.complete();
@@ -474,7 +468,7 @@ public class CGI extends HttpServlet
                 }
                 catch (IOException e)
                 {
-                    LOG.debug(e);
+                    LOG.debug("Unable to write out to CGI", e);
                 }
             }
         }).start();
@@ -482,7 +476,8 @@ public class CGI extends HttpServlet
 
     private static void writeProcessInput(final Process p, final InputStream input, final int len)
     {
-        if (len <= 0) return;
+        if (len <= 0)
+            return;
 
         new Thread(new Runnable()
         {
@@ -491,13 +486,14 @@ public class CGI extends HttpServlet
             {
                 try
                 {
-                    OutputStream outToCgi = p.getOutputStream();
-                    IO.copy(input, outToCgi, len);
-                    outToCgi.close();
+                    try (OutputStream outToCgi = p.getOutputStream())
+                    {
+                        IO.copy(input, outToCgi, len);
+                    }
                 }
                 catch (IOException e)
                 {
-                    LOG.debug(e);
+                    LOG.debug("Unable to write out to CGI", e);
                 }
             }
         }).start();
@@ -550,10 +546,10 @@ public class CGI extends HttpServlet
             envMap.put(name, name + "=" + StringUtil.nonNull(value));
         }
 
-        /** 
-         * Get representation suitable for passing to exec. 
+        /**
+         * Get representation suitable for passing to exec.
          *
-         * @return the env map as an array 
+         * @return the env map as an array
          */
         public String[] getEnvArray()
         {

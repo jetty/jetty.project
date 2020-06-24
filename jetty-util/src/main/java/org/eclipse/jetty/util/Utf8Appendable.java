@@ -1,31 +1,29 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
-import java.lang.reflect.GenericArrayType;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/* ------------------------------------------------------------ */
 /**
  * Utf8 Appendable abstract base class
  *
@@ -51,9 +49,11 @@ import org.eclipse.jetty.util.log.Logger;
  **/
 public abstract class Utf8Appendable
 {
-    protected static final Logger LOG = Log.getLogger(Utf8Appendable.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(Utf8Appendable.class);
+    // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
     public static final char REPLACEMENT = '\ufffd';
-    public static final byte[] REPLACEMENT_UTF8 = new byte[] {(byte)0xEF,(byte)0xBF,(byte)0xBD };
+    // @checkstyle-enable-check : AvoidEscapedUnicodeCharactersCheck
+    public static final byte[] REPLACEMENT_UTF8 = new byte[]{(byte)0xEF, (byte)0xBF, (byte)0xBD};
     private static final int UTF8_ACCEPT = 0;
     private static final int UTF8_REJECT = 12;
 
@@ -64,25 +64,25 @@ public abstract class Utf8Appendable
     {
         // The first part of the table maps bytes to character classes that
         // to reduce the size of the transition table and create bitmasks.
-         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,  9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,
-         7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,  7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
-         8,8,2,2,2,2,2,2,2,2,2,2,2,2,2,2,  2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
-        10,3,3,3,3,3,3,3,3,3,3,3,3,4,3,3, 11,6,6,6,5,8,8,8,8,8,8,8,8,8,8,8
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+        8, 8, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+        10, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 3, 3, 11, 6, 6, 6, 5, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8
     };
 
     private static final byte[] TRANS_TABLE =
     {
         // The second part is a transition table that maps a combination
         // of a state of the automaton and a character class to a state.
-         0,12,24,36,60,96,84,12,12,12,48,72, 12,12,12,12,12,12,12,12,12,12,12,12,
-        12, 0,12,12,12,12,12, 0,12, 0,12,12, 12,24,12,12,12,12,12,24,12,24,12,12,
-        12,12,12,12,12,12,12,24,12,12,12,12, 12,24,12,12,12,12,12,12,12,24,12,12,
-        12,12,12,12,12,12,12,36,12,36,12,12, 12,36,12,12,12,12,12,36,12,36,12,12,
-        12,36,12,12,12,12,12,12,12,12,12,12
+        0, 12, 24, 36, 60, 96, 84, 12, 12, 12, 48, 72, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
+        12, 0, 12, 12, 12, 12, 12, 0, 12, 0, 12, 12, 12, 24, 12, 12, 12, 12, 12, 24, 12, 24, 12, 12,
+        12, 12, 12, 12, 12, 12, 12, 24, 12, 12, 12, 12, 12, 24, 12, 12, 12, 12, 12, 12, 12, 24, 12, 12,
+        12, 12, 12, 12, 12, 12, 12, 36, 12, 36, 12, 12, 12, 36, 12, 12, 12, 12, 12, 36, 12, 36, 12, 12,
+        12, 36, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12
     };
 
     private int _codep;
@@ -99,24 +99,23 @@ public abstract class Utf8Appendable
         _state = UTF8_ACCEPT;
     }
 
-    
     private void checkCharAppend() throws IOException
     {
         if (_state != UTF8_ACCEPT)
         {
             _appendable.append(REPLACEMENT);
-            int state=_state;
-            _state=UTF8_ACCEPT;
-            throw new NotUtf8Exception("char appended in state "+state);
+            int state = _state;
+            _state = UTF8_ACCEPT;
+            throw new NotUtf8Exception("char appended in state " + state);
         }
     }
-    
+
     public void append(char c)
     {
         try
         {
             checkCharAppend();
-            _appendable.append(c); 
+            _appendable.append(c);
         }
         catch (IOException e)
         {
@@ -129,28 +128,27 @@ public abstract class Utf8Appendable
         try
         {
             checkCharAppend();
-            _appendable.append(s); 
+            _appendable.append(s);
         }
         catch (IOException e)
         {
             throw new RuntimeException(e);
         }
     }
-    
-    public void append(String s,int offset,int length)
+
+    public void append(String s, int offset, int length)
     {
         try
         {
             checkCharAppend();
-            _appendable.append(s,offset,offset+length); 
+            _appendable.append(s, offset, offset + length);
         }
         catch (IOException e)
         {
             throw new RuntimeException(e);
         }
     }
-    
-    
+
     public void append(byte b)
     {
         try
@@ -162,7 +160,7 @@ public abstract class Utf8Appendable
             throw new RuntimeException(e);
         }
     }
-    
+
     public void append(ByteBuffer buf)
     {
         try
@@ -177,19 +175,21 @@ public abstract class Utf8Appendable
             throw new RuntimeException(e);
         }
     }
-    
+
     public void append(byte[] b)
     {
-        append(b,0,b.length);
+        append(b, 0, b.length);
     }
-    
+
     public void append(byte[] b, int offset, int length)
     {
         try
         {
             int end = offset + length;
             for (int i = offset; i < end; i++)
+            {
                 appendByte(b[i]);
+            }
         }
         catch (IOException e)
         {
@@ -230,10 +230,10 @@ public abstract class Utf8Appendable
             _codep = _state == UTF8_ACCEPT ? (0xFF >> type) & i : (i & 0x3F) | (_codep << 6);
             int next = TRANS_TABLE[_state + type];
 
-            switch(next)
+            switch (next)
             {
                 case UTF8_ACCEPT:
-                    _state=next;
+                    _state = next;
                     if (_codep < Character.MIN_HIGH_SURROGATE)
                     {
                         _appendable.append((char)_codep);
@@ -241,20 +241,21 @@ public abstract class Utf8Appendable
                     else
                     {
                         for (char c : Character.toChars(_codep))
+                        {
                             _appendable.append(c);
+                        }
                     }
                     break;
-                    
+
                 case UTF8_REJECT:
-                    String reason = "byte "+TypeUtil.toHexString(b)+" in state "+(_state/12);
-                    _codep=0;
+                    final String reason = "byte " + TypeUtil.toHexString(b) + " in state " + (_state / 12);
+                    _codep = 0;
                     _state = UTF8_ACCEPT;
                     _appendable.append(REPLACEMENT);
                     throw new NotUtf8Exception(reason);
-                    
+
                 default:
-                    _state=next;
-                    
+                    _state = next;
             }
         }
     }
@@ -269,7 +270,7 @@ public abstract class Utf8Appendable
     {
         public NotUtf8Exception(String reason)
         {
-            super("Not valid UTF8! "+reason);
+            super("Not valid UTF8! " + reason);
         }
     }
 
@@ -277,60 +278,58 @@ public abstract class Utf8Appendable
     {
         if (!isUtf8SequenceComplete())
         {
-            _codep=0;
+            _codep = 0;
             _state = UTF8_ACCEPT;
             try
             {
                 _appendable.append(REPLACEMENT);
             }
-            catch(IOException e)
+            catch (IOException e)
             {
                 throw new RuntimeException(e);
             }
             throw new NotUtf8Exception("incomplete UTF8 sequence");
         }
     }
-    
+
     /**
-     * @return The UTF8 so far decoded, ignoring partial code points 
+     * @return The UTF8 so far decoded, ignoring partial code points
      */
     public abstract String getPartialString();
-
 
     /**
      * Take the partial string an reset in internal buffer, but retain
      * partial code points.
-     * @return The UTF8 so far decoded, ignoring partial code points 
+     *
+     * @return The UTF8 so far decoded, ignoring partial code points
      */
     public String takePartialString()
     {
         String partial = getPartialString();
-        int save = _state; 
+        int save = _state;
         reset();
         _state = save;
         return partial;
     }
-    
-    
+
     public String toReplacedString()
     {
         if (!isUtf8SequenceComplete())
         {
-            _codep=0;
+            _codep = 0;
             _state = UTF8_ACCEPT;
             try
             {
                 _appendable.append(REPLACEMENT);
             }
-            catch(IOException e)
+            catch (IOException e)
             {
                 throw new RuntimeException(e);
             }
-            Throwable th= new NotUtf8Exception("incomplete UTF8 sequence");
+            Throwable th = new NotUtf8Exception("incomplete UTF8 sequence");
             LOG.warn(th.toString());
-            LOG.debug(th);
+            LOG.debug("Unable to get replacement string", th);
         }
         return _appendable.toString();
     }
-
 }

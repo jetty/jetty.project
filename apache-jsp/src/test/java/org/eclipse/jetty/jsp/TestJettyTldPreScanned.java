@@ -1,25 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.jsp;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.net.URL;
@@ -34,10 +31,12 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * TestJettyTldPreScanned
- *
- *
  */
 public class TestJettyTldPreScanned
 {
@@ -47,21 +46,21 @@ public class TestJettyTldPreScanned
      */
     @Test
     public void testIt()
-    throws Exception
+        throws Exception
     {
         File jar = MavenTestingUtils.getTestResourceFile("taglib.jar");
         File tld = MavenTestingUtils.getTestResourceFile("META-INF/foo-taglib.tld");
-        
+
         List<URL> list = new ArrayList<>();
-        list.add(new URL("jar:"+jar.toURI().toURL().toString()+"!/META-INF/bar-taglib.tld"));
+        list.add(new URL("jar:" + jar.toURI().toURL().toString() + "!/META-INF/bar-taglib.tld"));
         list.add(tld.toURI().toURL());
-        
-        JettyTldPreScanned preScanned = new JettyTldPreScanned(new ServletContextHandler().getServletContext(),false,false,false,list);
+
+        JettyTldPreScanned preScanned = new JettyTldPreScanned(new ServletContextHandler().getServletContext(), false, false, false, list);
         preScanned.scanJars();
         Map<TldResourcePath, TaglibXml> map = preScanned.getTldResourcePathTaglibXmlMap();
         assertNotNull(map);
         assertEquals(2, map.size());
-        for (TldResourcePath p: map.keySet())
+        for (TldResourcePath p : map.keySet())
         {
             URL u = p.getUrl();
             TaglibXml tlx = map.get(p);
@@ -70,5 +69,4 @@ public class TestJettyTldPreScanned
                 fail("unknown tag");
         }
     }
-
 }

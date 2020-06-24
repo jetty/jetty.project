@@ -1,26 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.component;
-
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +24,10 @@ import java.util.List;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
 
 /**
  * Testing for LifeCycleListener events on nested components
@@ -37,8 +37,8 @@ import org.junit.jupiter.api.Test;
 public class LifeCycleListenerNestedTest
 {
     // Set this true to use test-specific workaround.
-    private final boolean WORKAROUND = false;
-    
+    private final boolean workaround = false;
+
     public static class Foo extends ContainerLifeCycle
     {
         @Override
@@ -113,37 +113,37 @@ public class LifeCycleListenerNestedTest
 
         private void addEvent(Object obj, LifeCycleEvent event)
         {
-            events.add(String.format("%s - %s",obj.toString(),event.name()));
+            events.add(String.format("%s - %s", obj.toString(), event.name()));
         }
 
         @Override
         public void lifeCycleStarting(LifeCycle event)
         {
-            addEvent(event,LifeCycleEvent.STARTING);
+            addEvent(event, LifeCycleEvent.STARTING);
         }
 
         @Override
         public void lifeCycleStarted(LifeCycle event)
         {
-            addEvent(event,LifeCycleEvent.STARTED);
+            addEvent(event, LifeCycleEvent.STARTED);
         }
 
         @Override
         public void lifeCycleFailure(LifeCycle event, Throwable cause)
         {
-            addEvent(event,LifeCycleEvent.FAILURE);
+            addEvent(event, LifeCycleEvent.FAILURE);
         }
 
         @Override
         public void lifeCycleStopping(LifeCycle event)
         {
-            addEvent(event,LifeCycleEvent.STOPPING);
+            addEvent(event, LifeCycleEvent.STOPPING);
         }
 
         @Override
         public void lifeCycleStopped(LifeCycle event)
         {
-            addEvent(event,LifeCycleEvent.STOPPED);
+            addEvent(event, LifeCycleEvent.STOPPED);
         }
 
         public List<String> getEvents()
@@ -153,30 +153,30 @@ public class LifeCycleListenerNestedTest
 
         public void assertEvents(Matcher<Iterable<? super String>> matcher)
         {
-            assertThat(events,matcher);
+            assertThat(events, matcher);
         }
 
         @Override
         public void beanAdded(Container parent, Object child)
         {
-            if(child instanceof LifeCycle)
+            if (child instanceof LifeCycle)
             {
-                ((LifeCycle)child).addLifeCycleListener(this);
+                ((LifeCycle)child).addEventListener(this);
             }
         }
 
         @Override
         public void beanRemoved(Container parent, Object child)
         {
-            if(child instanceof LifeCycle)
+            if (child instanceof LifeCycle)
             {
-                ((LifeCycle)child).removeLifeCycleListener(this);
+                ((LifeCycle)child).removeEventListener(this);
             }
         }
     }
 
     @Test
-    public void testAddBean_AddListener_Start() throws Exception
+    public void testAddBeanAddListenerStart() throws Exception
     {
         Foo foo = new Foo();
         Bar bara = new Bar("a");
@@ -185,17 +185,17 @@ public class LifeCycleListenerNestedTest
         foo.addBean(barb);
 
         CapturingListener listener = new CapturingListener();
-        foo.addLifeCycleListener(listener);
-        if(WORKAROUND)
+        foo.addEventListener(listener);
+        if (workaround)
             foo.addEventListener(listener);
 
         try
         {
             foo.start();
 
-            assertThat("Foo.started",foo.isStarted(),is(true));
-            assertThat("Bar(a).started",bara.isStarted(),is(true));
-            assertThat("Bar(b).started",barb.isStarted(),is(true));
+            assertThat("Foo.started", foo.isStarted(), is(true));
+            assertThat("Bar(a).started", bara.isStarted(), is(true));
+            assertThat("Bar(b).started", barb.isStarted(), is(true));
 
             listener.assertEvents(hasItem("Foo - STARTING"));
             listener.assertEvents(hasItem("Foo - STARTED"));
@@ -211,13 +211,13 @@ public class LifeCycleListenerNestedTest
     }
 
     @Test
-    public void testAddListener_AddBean_Start() throws Exception
+    public void testAddListenerAddBeanStart() throws Exception
     {
         Foo foo = new Foo();
 
         CapturingListener listener = new CapturingListener();
-        foo.addLifeCycleListener(listener);
-        if(WORKAROUND)
+        foo.addEventListener(listener);
+        if (workaround)
             foo.addEventListener(listener);
 
         Bar bara = new Bar("a");
@@ -229,9 +229,9 @@ public class LifeCycleListenerNestedTest
         {
             foo.start();
 
-            assertThat("Foo.started",foo.isStarted(),is(true));
-            assertThat("Bar(a).started",bara.isStarted(),is(true));
-            assertThat("Bar(b).started",barb.isStarted(),is(true));
+            assertThat("Foo.started", foo.isStarted(), is(true));
+            assertThat("Bar(a).started", bara.isStarted(), is(true));
+            assertThat("Bar(b).started", barb.isStarted(), is(true));
 
             listener.assertEvents(hasItem("Foo - STARTING"));
             listener.assertEvents(hasItem("Foo - STARTED"));
@@ -247,15 +247,15 @@ public class LifeCycleListenerNestedTest
     }
 
     @Test
-    public void testAddListener_Start_AddBean() throws Exception
+    public void testAddListenerStartAddBean() throws Exception
     {
         Foo foo = new Foo();
         Bar bara = new Bar("a");
         Bar barb = new Bar("b");
 
         CapturingListener listener = new CapturingListener();
-        foo.addLifeCycleListener(listener);
-        if(WORKAROUND)
+        foo.addEventListener(listener);
+        if (workaround)
             foo.addEventListener(listener);
 
         try
@@ -271,8 +271,8 @@ public class LifeCycleListenerNestedTest
             bara.start();
             barb.start();
 
-            assertThat("Bar(a).started",bara.isStarted(),is(true));
-            assertThat("Bar(b).started",barb.isStarted(),is(true));
+            assertThat("Bar(a).started", bara.isStarted(), is(true));
+            assertThat("Bar(b).started", barb.isStarted(), is(true));
 
             listener.assertEvents(hasItem("Bar(a) - STARTING"));
             listener.assertEvents(hasItem("Bar(a) - STARTED"));

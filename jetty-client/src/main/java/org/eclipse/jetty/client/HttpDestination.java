@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -46,15 +46,16 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.Sweeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject
 public abstract class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Callback, Dumpable
 {
-    protected static final Logger LOG = Log.getLogger(HttpDestination.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpDestination.class);
 
     private final HttpClient client;
     private final Origin origin;
@@ -76,8 +77,13 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
         this.requestNotifier = new RequestNotifier(client);
         this.responseNotifier = new ResponseNotifier();
-        
+
         this.timeout = new TimeoutTask(client.getScheduler());
+
+        String host = HostPort.normalizeHost(getHost());
+        if (!client.isDefaultPort(getScheme(), getPort()))
+            host += ":" + getPort();
+        hostField = new HttpField(HttpHeader.HOST, host);
 
         ProxyConfiguration proxyConfig = client.getProxyConfiguration();
         proxy = proxyConfig.match(origin);
@@ -86,19 +92,22 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         {
             connectionFactory = proxy.newClientConnectionFactory(connectionFactory);
             if (proxy.isSecure())
-                connectionFactory = newSslClientConnectionFactory(connectionFactory);
+                connectionFactory = newSslClientConnectionFactory(proxy.getSslContextFactory(), connectionFactory);
         }
         else
         {
             if (isSecure())
-                connectionFactory = newSslClientConnectionFactory(connectionFactory);
+                connectionFactory = newSslClientConnectionFactory(null, connectionFactory);
         }
+        Object tag = origin.getTag();
+        if (tag instanceof ClientConnectionFactory.Decorator)
+            connectionFactory = ((ClientConnectionFactory.Decorator)tag).apply(connectionFactory);
         this.connectionFactory = connectionFactory;
+    }
 
-        String host = HostPort.normalizeHost(getHost());
-        if (!client.isDefaultPort(getScheme(), getPort()))
-            host += ":" + getPort();
-        hostField = new HttpField(HttpHeader.HOST, host);
+    public void accept(Connection connection)
+    {
+        connectionPool.accept(connection);
     }
 
     @Override
@@ -132,9 +141,9 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         return new BlockingArrayQueue<>(client.getMaxRequestsQueuedPerDestination());
     }
 
-    protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
+    protected ClientConnectionFactory newSslClientConnectionFactory(SslContextFactory.Client sslContextFactory, ClientConnectionFactory connectionFactory)
     {
-        return client.newSslClientConnectionFactory(connectionFactory);
+        return client.newSslClientConnectionFactory(sslContextFactory, connectionFactory);
     }
 
     public boolean isSecure()
@@ -181,7 +190,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @ManagedAttribute(value = "The destination scheme", readonly = true)
     public String getScheme()
     {
-        return origin.getScheme();
+        return getOrigin().getScheme();
     }
 
     @Override
@@ -190,14 +199,14 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     {
         // InetSocketAddress.getHostString() transforms the host string
         // in case of IPv6 addresses, so we return the original host string
-        return origin.getAddress().getHost();
+        return getOrigin().getAddress().getHost();
     }
 
     @Override
     @ManagedAttribute(value = "The destination port", readonly = true)
     public int getPort()
     {
-        return origin.getAddress().getPort();
+        return getOrigin().getAddress().getPort();
     }
 
     @ManagedAttribute(value = "The number of queued requests", readonly = true)
@@ -208,7 +217,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public Origin.Address getConnectAddress()
     {
-        return proxy == null ? origin.getAddress() : proxy.getAddress();
+        return proxy == null ? getOrigin().getAddress() : proxy.getAddress();
     }
 
     public HttpField getHostField()
@@ -225,7 +234,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     @Override
     public void succeeded()
     {
-        send();
+        send(false);
     }
 
     @Override
@@ -235,7 +244,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
     }
 
     protected void send(HttpRequest request, List<Response.ResponseListener> listeners)
-    {        
+    {
         if (!getScheme().equalsIgnoreCase(request.getScheme()))
             throw new IllegalArgumentException("Invalid request scheme " + request.getScheme() + " for destination " + this);
         if (!getHost().equalsIgnoreCase(request.getHost()))
@@ -289,28 +298,38 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public void send()
     {
-        if (getHttpExchanges().isEmpty())
-            return;
-        process();
+        send(true);
     }
 
-    private void process()
+    private void send(boolean create)
     {
+        if (getHttpExchanges().isEmpty())
+            return;
+        process(create);
+    }
+
+    private void process(boolean create)
+    {
+        // The loop is necessary in case of a new multiplexed connection,
+        // when a single thread notified of the connection opening must
+        // process all queued exchanges.
+        // In other cases looping is a work-stealing optimization.
         while (true)
         {
-            Connection connection = connectionPool.acquire();
+            Connection connection = connectionPool.acquire(create);
             if (connection == null)
                 break;
-            boolean proceed = process(connection);
-            if (!proceed)
+            ProcessResult result = process(connection);
+            if (result == ProcessResult.FINISH)
                 break;
+            create = result == ProcessResult.RESTART;
         }
     }
 
-    public boolean process(final Connection connection)
+    private ProcessResult process(Connection connection)
     {
         HttpClient client = getHttpClient();
-        final HttpExchange exchange = getHttpExchanges().poll();
+        HttpExchange exchange = getHttpExchanges().poll();
         if (LOG.isDebugEnabled())
             LOG.debug("Processing exchange {} on {} of {}", exchange, connection, this);
         if (exchange == null)
@@ -323,42 +342,55 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                     LOG.debug("{} is stopping", client);
                 connection.close();
             }
-            return false;
+            return ProcessResult.FINISH;
         }
         else
         {
-            final Request request = exchange.getRequest();
+            Request request = exchange.getRequest();
             Throwable cause = request.getAbortCause();
             if (cause != null)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Aborted before processing {}: {}", exchange, cause);
                 // Won't use this connection, release it back.
-                if (!connectionPool.release(connection))
+                boolean released = connectionPool.release(connection);
+                if (!released)
                     connection.close();
                 // It may happen that the request is aborted before the exchange
                 // is created. Aborting the exchange a second time will result in
                 // a no-operation, so we just abort here to cover that edge case.
                 exchange.abort(cause);
+                return getHttpExchanges().size() > 0
+                    ?  (released ? ProcessResult.CONTINUE : ProcessResult.RESTART)
+                    : ProcessResult.FINISH;
             }
-            else
+
+            SendFailure failure = send((IConnection)connection, exchange);
+            if (failure == null)
             {
-                SendFailure result = send(connection, exchange);
-                if (result != null)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Send failed {} for {}", result, exchange);
-                    if (result.retry)
-                        send(exchange);
-                    else
-                        request.abort(result.failure);
-                }
+                // Aggressively send other queued requests
+                // in case connections are multiplexed.
+                return getHttpExchanges().size() > 0 ? ProcessResult.CONTINUE : ProcessResult.FINISH;
             }
-            return getHttpExchanges().peek() != null;
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Send failed {} for {}", failure, exchange);
+            if (failure.retry)
+            {
+                // Resend this exchange, likely on another connection,
+                // and return false to avoid to re-enter this method.
+                send(exchange);
+                return ProcessResult.FINISH;
+            }
+            request.abort(failure.failure);
+            return getHttpExchanges().size() > 0 ? ProcessResult.RESTART : ProcessResult.FINISH;
         }
     }
 
-    protected abstract SendFailure send(Connection connection, HttpExchange exchange);
+    protected SendFailure send(IConnection connection, HttpExchange exchange)
+    {
+        return connection.send(exchange);
+    }
 
     @Override
     public void newConnection(Promise<Connection> promise)
@@ -396,7 +428,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             if (connectionPool.isActive(connection))
             {
                 if (connectionPool.release(connection))
-                    send();
+                    send(false);
                 else
                     connection.close();
             }
@@ -416,25 +448,20 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public boolean remove(Connection connection)
     {
-        return connectionPool.remove(connection);
-    }
-
-    public void close(Connection connection)
-    {
-        boolean removed = remove(connection);
+        boolean removed = connectionPool.remove(connection);
 
         if (getHttpExchanges().isEmpty())
         {
             tryRemoveIdleDestination();
         }
-        else
+        else if (removed)
         {
-            // We need to execute queued requests even if this connection failed.
-            // We may create a connection that is not needed, but it will eventually
-            // idle timeout, so no worries.
-            if (removed)
-                process();
+            // Process queued requests that may be waiting.
+            // We may create a connection that is not
+            // needed, but it will eventually idle timeout.
+            process(true);
         }
+        return removed;
     }
 
     /**
@@ -449,7 +476,9 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         // and we don't want to fail it immediately as if it was queued before the failure.
         // The call to Request.abort() will remove the exchange from the exchanges queue.
         for (HttpExchange exchange : new ArrayList<>(exchanges))
+        {
             exchange.getRequest().abort(cause);
+        }
         if (exchanges.isEmpty())
             tryRemoveIdleDestination();
     }
@@ -476,22 +505,32 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
 
     public String asString()
     {
-        return origin.asString();
+        return getOrigin().asString();
     }
 
     @Override
     public String toString()
     {
         return String.format("%s[%s]@%x%s,queue=%d,pool=%s",
-                HttpDestination.class.getSimpleName(),
-                asString(),
-                hashCode(),
-                proxy == null ? "" : "(via " + proxy + ")",
-                exchanges.size(),
-                connectionPool);
+            HttpDestination.class.getSimpleName(),
+            getOrigin(),
+            hashCode(),
+            proxy == null ? "" : "(via " + proxy + ")",
+            exchanges.size(),
+            connectionPool);
     }
-    
-    // The TimeoutTask that expires when the next check of expiry is needed
+
+    @FunctionalInterface
+    public interface Multiplexed
+    {
+        void setMaxRequestsPerConnection(int maxRequestsPerConnection);
+    }
+
+    /**
+     * This class enforces the total timeout for exchanges that are still in the queue.
+     * The total timeout for exchanges that are not in the destination queue is enforced
+     * by {@link HttpChannel}.
+     */
     private class TimeoutTask extends CyclicTimeout
     {
         private final AtomicLong nextTimeout = new AtomicLong(Long.MAX_VALUE);
@@ -504,10 +543,13 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         @Override
         public void onTimeoutExpired()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} timeout expired", this);
+
             nextTimeout.set(Long.MAX_VALUE);
             long now = System.nanoTime();
             long nextExpiresAt = Long.MAX_VALUE;
-            
+
             // Check all queued exchanges for those that have expired
             // and to determine when the next check must be.
             for (HttpExchange exchange : exchanges)
@@ -521,7 +563,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
                 else if (expiresAt < nextExpiresAt)
                     nextExpiresAt = expiresAt;
             }
-            
+
             if (nextExpiresAt < Long.MAX_VALUE && client.isRunning())
                 schedule(nextExpiresAt);
         }
@@ -536,13 +578,22 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             if (timeoutAt != expiresAt)
             {
                 long delay = expiresAt - System.nanoTime();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Scheduled timeout in {} ms", TimeUnit.NANOSECONDS.toMillis(delay));
                 if (delay <= 0)
+                {
                     onTimeoutExpired();
+                }
                 else
+                {
                     schedule(delay, TimeUnit.NANOSECONDS);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} scheduled timeout in {} ms", this, TimeUnit.NANOSECONDS.toMillis(delay));
+                }
             }
         }
+    }
+
+    private enum ProcessResult
+    {
+        RESTART, CONTINUE, FINISH
     }
 }

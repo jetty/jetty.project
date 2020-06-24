@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -23,21 +23,24 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.Callback;
 
-
-/* ------------------------------------------------------------ */
-/** Abstraction of the outbound HTTP transport.
+/**
+ * Abstraction of the outbound HTTP transport.
  */
 public interface HttpTransport
 {
-    /** Asynchronous call to send a response (or part) over the transport
-     * @param info The header info to send, or null if just sending more data.
+    String UPGRADE_CONNECTION_ATTRIBUTE = HttpTransport.class.getName() + ".UPGRADE";
+
+    /**
+     * Asynchronous call to send a response (or part) over the transport
+     *
+     * @param request True if the response if for a HEAD request (and the data should not be sent).
+     * @param response The header info to send, or null if just sending more data.
      *             The first call to send for a response must have a non null info.
-     * @param head True if the response if for a HEAD request (and the data should not be sent).
      * @param content A buffer of content to be sent.
      * @param lastContent True if the content is the last content for the current response.
      * @param callback The Callback instance that success or failure of the send is notified on
      */
-    void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback);
+    void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback);
 
     /**
      * @return true if responses can be pushed over this transport
@@ -70,10 +73,4 @@ public interface HttpTransport
      * @param failure the failure that caused the abort.
      */
     void abort(Throwable failure);
-
-    /* ------------------------------------------------------------ */
-    /** Is the underlying transport optimized for DirectBuffer usage
-     * @return True if direct buffers can be used optimally.
-     */
-    boolean isOptimizedForDirectBuffers();
 }

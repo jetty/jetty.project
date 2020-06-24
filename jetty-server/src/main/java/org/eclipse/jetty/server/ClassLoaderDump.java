@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -42,51 +42,51 @@ public class ClassLoaderDump implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        if (_loader==null)
+        if (_loader == null)
             out.append("No ClassLoader\n");
         else if (_loader instanceof Dumpable)
         {
-            ((Dumpable)_loader).dump(out,indent);
+            ((Dumpable)_loader).dump(out, indent);
         }
         else if (_loader instanceof URLClassLoader)
         {
             String loader = _loader.toString();
             DumpableCollection urls = DumpableCollection.fromArray("URLs", ((URLClassLoader)_loader).getURLs());
             ClassLoader parent = _loader.getParent();
-            if (parent==null)
-                Dumpable.dumpObjects(out,indent,loader,urls);
+            if (parent == null)
+                Dumpable.dumpObjects(out, indent, loader, urls);
             else if (parent == Server.class.getClassLoader())
-                Dumpable.dumpObjects(out,indent,loader,urls,parent.toString());
+                Dumpable.dumpObjects(out, indent, loader, urls, parent.toString());
             else if (parent instanceof Dumpable)
-                Dumpable.dumpObjects(out,indent,loader,urls,parent);
+                Dumpable.dumpObjects(out, indent, loader, urls, parent);
             else
-                Dumpable.dumpObjects(out,indent,loader,urls,new ClassLoaderDump(parent));
+                Dumpable.dumpObjects(out, indent, loader, urls, new ClassLoaderDump(parent));
         }
-        else if (_loader.getDefinedPackages()!=null)
+        else if (_loader.getDefinedPackages() != null)
         {
-            DumpableCollection packages = DumpableCollection.from("packages", _loader.getDefinedPackages());
+            DumpableCollection packages = DumpableCollection.from("packages", (Object[])_loader.getDefinedPackages());
             ClassLoader parent = _loader.getParent();
-            if (parent==Server.class.getClassLoader())
-                Dumpable.dumpObjects(out,indent,_loader,packages,"Server loader: " + parent);
+            if (parent == Server.class.getClassLoader())
+                Dumpable.dumpObjects(out, indent, _loader, packages, "Server loader: " + parent);
             else if (parent instanceof Dumpable)
-                Dumpable.dumpObjects(out,indent,_loader,packages,parent);
-            else if (parent!=null)
-                Dumpable.dumpObjects(out,indent,_loader,packages,new ClassLoaderDump(parent));
+                Dumpable.dumpObjects(out, indent, _loader, packages, parent);
+            else if (parent != null)
+                Dumpable.dumpObjects(out, indent, _loader, packages, new ClassLoaderDump(parent));
             else
-                Dumpable.dumpObjects(out,indent,_loader,packages);
+                Dumpable.dumpObjects(out, indent, _loader, packages);
         }
         else
         {
             String loader = _loader.toString();
             ClassLoader parent = _loader.getParent();
-            if (parent==null)
-                Dumpable.dumpObject(out,loader);
-            if (parent==Server.class.getClassLoader())
-                Dumpable.dumpObjects(out,indent,loader,parent.toString());
+            if (parent == null)
+                Dumpable.dumpObject(out, loader);
+            if (parent == Server.class.getClassLoader())
+                Dumpable.dumpObjects(out, indent, loader, parent.toString());
             else if (parent instanceof Dumpable)
-                Dumpable.dumpObjects(out,indent,loader,parent);
-            else if (parent!=null)
-                Dumpable.dumpObjects(out,indent,loader,new ClassLoaderDump(parent));
+                Dumpable.dumpObjects(out, indent, loader, parent);
+            else if (parent != null)
+                Dumpable.dumpObjects(out, indent, loader, new ClassLoaderDump(parent));
         }
     }
 }

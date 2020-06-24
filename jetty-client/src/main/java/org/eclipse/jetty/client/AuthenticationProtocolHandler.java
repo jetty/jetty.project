@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -23,13 +23,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.client.api.Authentication;
 import org.eclipse.jetty.client.api.Authentication.HeaderInfo;
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -39,13 +39,13 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.QuotedCSV;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AuthenticationProtocolHandler implements ProtocolHandler
 {
-    public static final int DEFAULT_MAX_CONTENT_LENGTH = 16*1024;
-    public static final Logger LOG = Log.getLogger(AuthenticationProtocolHandler.class);
+    public static final int DEFAULT_MAX_CONTENT_LENGTH = 16 * 1024;
+    public static final Logger LOG = LoggerFactory.getLogger(AuthenticationProtocolHandler.class);
     private final HttpClient client;
     private final int maxContentLength;
     private final ResponseNotifier notifier;
@@ -79,18 +79,17 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         return new AuthenticationListener();
     }
 
-
     protected List<HeaderInfo> getHeaderInfo(String header) throws IllegalArgumentException
     {
         List<HeaderInfo> headerInfos = new ArrayList<>();
         Matcher m;
 
-        for(String value : new QuotedCSV(true, header))
+        for (String value : new QuotedCSV(true, header))
         {
             m = CHALLENGE_PATTERN.matcher(value);
             if (m.matches())
             {
-                if(m.group("schemeOnly") != null)
+                if (m.group("schemeOnly") != null)
                 {
                     headerInfos.add(new HeaderInfo(getAuthorizationHeader(), m.group(1), new HashMap<>()));
                     continue;
@@ -187,8 +186,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 return;
             }
 
-            ContentProvider requestContent = request.getContent();
-            if (requestContent != null && !requestContent.isReproducible())
+            Request.Content requestContent = request.getBody();
+            if (!requestContent.isReproducible())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Request content not reproducible for {}", request);
@@ -217,6 +216,8 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                     path = request.getPath();
                 }
                 Request newRequest = client.copyRequest(request, requestURI);
+                // Disable the timeout so that only the one from the initial request applies.
+                newRequest.timeout(0, TimeUnit.MILLISECONDS);
                 if (path != null)
                     newRequest.path(path);
 
@@ -255,7 +256,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
         {
             HttpField field = oldRequest.getHeaders().getField(header);
             if (field != null && !newRequest.getHeaders().contains(header))
-                newRequest.getHeaders().put(field);
+                newRequest.headers(headers -> headers.put(field));
         }
 
         private void forwardSuccessComplete(HttpRequest request, Response response)
@@ -288,7 +289,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
                 {
                     result.addAll(getHeaderInfo(value));
                 }
-                catch(IllegalArgumentException e)
+                catch (IllegalArgumentException e)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Failed to parse authentication header", e);

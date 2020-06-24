@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.fcgi.generator;
@@ -40,7 +40,12 @@ public class ClientGenerator extends Generator
 
     public ClientGenerator(ByteBufferPool byteBufferPool)
     {
-        super(byteBufferPool);
+        this(byteBufferPool, true);
+    }
+
+    public ClientGenerator(ByteBufferPool byteBufferPool, boolean useDirectByteBuffers)
+    {
+        super(byteBufferPool, useDirectByteBuffers);
     }
 
     public Result generateRequestHeaders(int request, HttpFields fields, Callback callback)
@@ -79,9 +84,9 @@ public class ClientGenerator extends Generator
 
         // One FCGI_BEGIN_REQUEST + N FCGI_PARAMS + one last FCGI_PARAMS
 
-        ByteBuffer beginRequestBuffer = byteBufferPool.acquire(16, false);
+        ByteBuffer beginRequestBuffer = acquire(16);
         BufferUtil.clearToFill(beginRequestBuffer);
-        Result result = new Result(byteBufferPool, callback);
+        Result result = new Result(getByteBufferPool(), callback);
         result = result.append(beginRequestBuffer, true);
 
         // Generate the FCGI_BEGIN_REQUEST frame
@@ -95,7 +100,7 @@ public class ClientGenerator extends Generator
         while (fieldsLength > 0)
         {
             int capacity = 8 + Math.min(maxCapacity, fieldsLength);
-            ByteBuffer buffer = byteBufferPool.acquire(capacity, true);
+            ByteBuffer buffer = acquire(capacity);
             BufferUtil.clearToFill(buffer);
             result = result.append(buffer, true);
 
@@ -132,8 +137,7 @@ public class ClientGenerator extends Generator
             BufferUtil.flipToFlush(buffer, 0);
         }
 
-
-        ByteBuffer lastParamsBuffer = byteBufferPool.acquire(8, false);
+        ByteBuffer lastParamsBuffer = acquire(8);
         BufferUtil.clearToFill(lastParamsBuffer);
         result = result.append(lastParamsBuffer, true);
 

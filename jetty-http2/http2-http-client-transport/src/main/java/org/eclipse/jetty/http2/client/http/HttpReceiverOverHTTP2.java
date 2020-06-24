@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.client.http;
@@ -21,37 +21,43 @@ package org.eclipse.jetty.http2.client.http;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.function.BiFunction;
 
 import org.eclipse.jetty.client.HttpChannel;
+import org.eclipse.jetty.client.HttpConversation;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.client.HttpUpgrader;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.Retainable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listener
+public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.Client
 {
-    private final ContentNotifier contentNotifier = new ContentNotifier();
+    private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP2.class);
+
+    private final ContentNotifier contentNotifier = new ContentNotifier(this);
 
     public HttpReceiverOverHTTP2(HttpChannel channel)
     {
@@ -65,14 +71,19 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
+    protected void receive()
+    {
+        contentNotifier.process(true);
+    }
+
+    @Override
     protected void reset()
     {
         super.reset();
         contentNotifier.reset();
     }
 
-    @Override
-    public void onHeaders(Stream stream, HeadersFrame frame)
+    void onHeaders(Stream stream, HeadersFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -94,6 +105,23 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
                         return;
                 }
 
+                HttpRequest httpRequest = exchange.getRequest();
+                if (HttpMethod.CONNECT.is(httpRequest.getMethod()) && httpResponse.getStatus() == HttpStatus.OK_200)
+                {
+                    ClientHTTP2StreamEndPoint endPoint = new ClientHTTP2StreamEndPoint((IStream)stream);
+                    long idleTimeout = httpRequest.getIdleTimeout();
+                    if (idleTimeout > 0)
+                        endPoint.setIdleTimeout(idleTimeout);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Successful HTTP2 tunnel on {} via {}", stream, endPoint);
+                    ((IStream)stream).setAttachment(endPoint);
+                    HttpConversation conversation = httpRequest.getConversation();
+                    conversation.setAttribute(EndPoint.class.getName(), endPoint);
+                    HttpUpgrader upgrader = (HttpUpgrader)conversation.getAttribute(HttpUpgrader.class.getName());
+                    if (upgrader != null)
+                        upgrade(upgrader, httpResponse, endPoint);
+                }
+
                 if (responseHeaders(exchange))
                 {
                     int status = response.getStatus();
@@ -101,25 +129,48 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
                     if (frame.isEndStream() || informational)
                         responseSuccess(exchange);
                 }
+                else
+                {
+                    if (frame.isEndStream())
+                    {
+                        // There is no demand to trigger response success, so add
+                        // a poison pill to trigger it when there will be demand.
+                        notifyContent(exchange, new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
+                    }
+                }
             }
         }
         else // Response trailers.
         {
             HttpFields trailers = metaData.getFields();
             trailers.forEach(httpResponse::trailer);
+            // Previous DataFrames had endStream=false, so
+            // add a poison pill to trigger response success
+            // after all normal DataFrames have been consumed.
             notifyContent(exchange, new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
         }
     }
 
-    @Override
-    public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
+    private void upgrade(HttpUpgrader upgrader, HttpResponse response, EndPoint endPoint)
+    {
+        try
+        {
+            upgrader.upgrade(response, endPoint, Callback.from(Callback.NOOP::succeeded, this::responseFailure));
+        }
+        catch (Throwable x)
+        {
+            responseFailure(x);
+        }
+    }
+
+    Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return null;
 
         HttpRequest request = exchange.getRequest();
-        MetaData.Request metaData = (MetaData.Request)frame.getMetaData();
+        MetaData.Request metaData = frame.getMetaData();
         HttpRequest pushRequest = (HttpRequest)getHttpDestination().getHttpClient().newRequest(metaData.getURIString());
         // TODO: copy PUSH_PROMISE headers into pushRequest.
 
@@ -130,8 +181,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             if (listener != null)
             {
                 HttpChannelOverHTTP2 pushChannel = getHttpChannel().getHttpConnection().acquireHttpChannel();
-                List<Response.ResponseListener> listeners = Collections.singletonList(listener);
-                HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest, listeners);
+                HttpExchange pushExchange = new HttpExchange(getHttpDestination(), pushRequest, List.of(listener));
                 pushChannel.associate(pushExchange);
                 pushChannel.setStream(stream);
                 // TODO: idle timeout ?
@@ -146,7 +196,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
-    public void onData(Stream stream, DataFrame frame, Callback callback)
+    public void onData(DataFrame frame, Callback callback)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -159,8 +209,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
         }
     }
 
-    @Override
-    public void onReset(Stream stream, ResetFrame frame)
+    void onReset(Stream stream, ResetFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -170,39 +219,55 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
-    public boolean onIdleTimeout(Stream stream, Throwable x)
+    public boolean onTimeout(Throwable failure)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
             return false;
-        return !exchange.abort(x);
+        return !exchange.abort(failure);
     }
 
     @Override
-    public void onFailure(Stream stream, int error, String reason, Callback callback)
+    public void onFailure(Throwable failure, Callback callback)
     {
-        responseFailure(new IOException(String.format("%s/%s", ErrorCode.toString(error, null), reason)));
+        responseFailure(failure);
         callback.succeeded();
     }
 
-    @Override
-    public void onClosed(Stream stream)
+    void onClosed(Stream stream)
     {
         getHttpChannel().onStreamClosed((IStream)stream);
     }
 
     private void notifyContent(HttpExchange exchange, DataFrame frame, Callback callback)
     {
-        contentNotifier.offer(new DataInfo(exchange, frame, callback));
-        contentNotifier.iterate();
+        contentNotifier.offer(exchange, frame, callback);
     }
 
-    private class ContentNotifier extends IteratingCallback implements Retainable
+    private class ContentNotifier
     {
         private final Queue<DataInfo> queue = new ArrayDeque<>();
+        private final HttpReceiverOverHTTP2 receiver;
         private DataInfo dataInfo;
+        private boolean active;
+        private boolean resume;
+        private boolean stalled;
 
-        private void offer(DataInfo dataInfo)
+        private ContentNotifier(HttpReceiverOverHTTP2 receiver)
+        {
+            this.receiver = receiver;
+        }
+
+        private void offer(HttpExchange exchange, DataFrame frame, Callback callback)
+        {
+            DataInfo dataInfo = new DataInfo(exchange, frame, callback);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Queueing content {}", dataInfo);
+            enqueue(dataInfo);
+            process(false);
+        }
+
+        private void enqueue(DataInfo dataInfo)
         {
             synchronized (this)
             {
@@ -210,72 +275,164 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
             }
         }
 
-        @Override
-        protected Action process()
+        private void process(boolean resume)
         {
-            DataInfo dataInfo;
+            // Allow only one thread at a time.
+            boolean busy = active(resume);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Resuming({}) processing({}) of content", resume, !busy);
+            if (busy)
+                return;
+
+            // Process only if there is demand.
             synchronized (this)
             {
-                dataInfo = queue.poll();
+                if (!resume && demand() <= 0)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Stalling processing, content available but no demand");
+                    active = false;
+                    stalled = true;
+                    return;
+                }
             }
 
-            if (dataInfo == null)
+            while (true)
             {
-                DataInfo prevDataInfo = this.dataInfo;
-                if (prevDataInfo != null && prevDataInfo.frame.isEndStream())
-                    return Action.SUCCEEDED;
-                return Action.IDLE;
+                if (dataInfo != null)
+                {
+                    if (dataInfo.frame.isEndStream())
+                    {
+                        receiver.responseSuccess(dataInfo.exchange);
+                        // Return even if active, as reset() will be called later.
+                        return;
+                    }
+                }
+
+                synchronized (this)
+                {
+                    dataInfo = queue.poll();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Processing content {}", dataInfo);
+                    if (dataInfo == null)
+                    {
+                        active = false;
+                        return;
+                    }
+                }
+
+
+                ByteBuffer buffer = dataInfo.frame.getData();
+                Callback callback = dataInfo.callback;
+                if (buffer.hasRemaining())
+                {
+                    boolean proceed = receiver.responseContent(dataInfo.exchange, buffer, Callback.from(callback::succeeded, x -> fail(callback, x)));
+                    if (!proceed)
+                    {
+                        // The call to responseContent() said we should
+                        // stall, but another thread may have just resumed.
+                        boolean stall = stall();
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Stalling({}) processing", stall);
+                        if (stall)
+                            return;
+                    }
+                }
+                else
+                {
+                    callback.succeeded();
+                }
+            }
+        }
+
+        private boolean active(boolean resume)
+        {
+            synchronized (this)
+            {
+                if (active)
+                {
+                    // There is a thread in process(),
+                    // but it may be about to exit, so
+                    // remember "resume" to signal the
+                    // processing thread to continue.
+                    if (resume)
+                        this.resume = true;
+                    return true;
+                }
+
+                // If there is no demand (i.e. stalled
+                // and not resuming) then don't process.
+                if (stalled && !resume)
+                    return true;
+
+                // Start processing.
+                active = true;
+                stalled = false;
+                return false;
+            }
+        }
+
+        /**
+         * Called when there is no demand, this method checks whether
+         * the processing should really stop or it should continue.
+         *
+         * @return true to stop processing, false to continue processing
+         */
+        private boolean stall()
+        {
+            synchronized (this)
+            {
+                if (resume)
+                {
+                    // There was no demand, but another thread
+                    // just demanded, continue processing.
+                    resume = false;
+                    return false;
+                }
+
+                // There is no demand, stop processing.
+                active = false;
+                stalled = true;
+                return true;
+            }
+        }
+
+        private void reset()
+        {
+            dataInfo = null;
+            synchronized (this)
+            {
+                queue.clear();
+                active = false;
+                resume = false;
+                stalled = false;
+            }
+        }
+
+        private void fail(Callback callback, Throwable failure)
+        {
+            callback.failed(failure);
+            receiver.responseFailure(failure);
+        }
+
+        private class DataInfo
+        {
+            private final HttpExchange exchange;
+            private final DataFrame frame;
+            private final Callback callback;
+
+            private DataInfo(HttpExchange exchange, DataFrame frame, Callback callback)
+            {
+                this.exchange = exchange;
+                this.frame = frame;
+                this.callback = callback;
             }
 
-            this.dataInfo = dataInfo;
-            ByteBuffer buffer = dataInfo.frame.getData();
-            if (buffer.hasRemaining())
-                responseContent(dataInfo.exchange, buffer, this);
-            else
-                succeeded();
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        public void retain()
-        {
-            Callback callback = dataInfo.callback;
-            if (callback instanceof Retainable)
-                ((Retainable)callback).retain();
-        }
-
-        @Override
-        public void succeeded()
-        {
-            dataInfo.callback.succeeded();
-            super.succeeded();
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            responseSuccess(dataInfo.exchange);
-        }
-
-        @Override
-        protected void onCompleteFailure(Throwable failure)
-        {
-            dataInfo.callback.failed(failure);
-            responseFailure(failure);
-        }
-    }
-
-    private static class DataInfo
-    {
-        private final HttpExchange exchange;
-        private final DataFrame frame;
-        private final Callback callback;
-
-        private DataInfo(HttpExchange exchange, DataFrame frame, Callback callback)
-        {
-            this.exchange = exchange;
-            this.frame = frame;
-            this.callback = callback;
+            @Override
+            public String toString()
+            {
+                return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), frame);
+            }
         }
     }
 }

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -26,8 +26,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,14 +33,19 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HotSwapHandler;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpServerTestFixture
-{    // Useful constants
-    protected static final long PAUSE=10L;
+{
+    private static final Logger LOG = LoggerFactory.getLogger(HttpServerTestFixture.class);
+
+    // Useful constants
+    protected static final long PAUSE = 10L;
     protected static final int LOOPS = 50;
 
     protected QueuedThreadPool _threadPool;
@@ -50,11 +53,11 @@ public class HttpServerTestFixture
     protected URI _serverURI;
     protected HttpConfiguration _httpConfiguration;
     protected ServerConnector _connector;
-    protected String _scheme="http";
+    protected String _scheme = "http";
 
-    protected Socket newSocket(String host,int port) throws Exception
+    protected Socket newSocket(String host, int port) throws Exception
     {
-        Socket socket = new Socket(host,port);
+        Socket socket = new Socket(host, port);
         socket.setSoTimeout(10000);
         socket.setTcpNoDelay(true);
         return socket;
@@ -69,14 +72,13 @@ public class HttpServerTestFixture
 
     protected void startServer(ServerConnector connector) throws Exception
     {
-        startServer(connector,new HotSwapHandler());
+        startServer(connector, new HotSwapHandler());
     }
-    
+
     protected void startServer(ServerConnector connector, Handler handler) throws Exception
     {
         _connector = connector;
-        _httpConfiguration=_connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
-        _httpConfiguration.setBlockingTimeout(-1);
+        _httpConfiguration = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _httpConfiguration.setSendDateHeader(false);
         _server.addConnector(_connector);
         _server.setHandler(handler);
@@ -99,50 +101,50 @@ public class HttpServerTestFixture
         handler.start();
     }
 
-
     protected static class EchoHandler extends AbstractHandler
     {
-        boolean _musthavecontent=true;
+        boolean _musthavecontent = true;
 
         public EchoHandler()
-        {}
+        {
+        }
 
         public EchoHandler(boolean content)
         {
-            _musthavecontent=false;
+            _musthavecontent = false;
         }
 
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            Log.getRootLogger().debug("handle "+target);
+            LOG.debug("handle " + target);
             baseRequest.setHandled(true);
 
-            if (request.getContentType()!=null)
+            if (request.getContentType() != null)
                 response.setContentType(request.getContentType());
-            if (request.getParameter("charset")!=null)
+            if (request.getParameter("charset") != null)
                 response.setCharacterEncoding(request.getParameter("charset"));
-            else if (request.getCharacterEncoding()!=null)
+            else if (request.getCharacterEncoding() != null)
                 response.setCharacterEncoding(request.getCharacterEncoding());
 
-            PrintWriter writer=response.getWriter();
+            PrintWriter writer = response.getWriter();
 
-            int count=0;
-            BufferedReader reader=request.getReader();
+            int count = 0;
+            BufferedReader reader = request.getReader();
 
-            if (request.getContentLength()!=0)
+            if (request.getContentLength() != 0)
             {
-                String line=reader.readLine();
-                while (line!=null)
+                String line = reader.readLine();
+                while (line != null)
                 {
                     writer.print(line);
                     writer.print("\n");
-                    count+=line.length();
-                    line=reader.readLine();
+                    count += line.length();
+                    line = reader.readLine();
                 }
             }
 
-            if (count==0)
+            if (count == 0)
             {
                 if (_musthavecontent)
                     throw new IllegalStateException("no input received");
@@ -154,10 +156,10 @@ public class HttpServerTestFixture
             reader.close();
             writer.close();
 
-            if (reader.read()>=0)
+            if (reader.read() >= 0)
                 throw new IllegalStateException("Not closed");
 
-            Log.getRootLogger().debug("handled "+target);
+            LOG.debug("handled " + target);
         }
     }
 
@@ -175,7 +177,7 @@ public class HttpServerTestFixture
             response.setHeader("Allow", "GET");
         }
     }
-    
+
     protected static class HelloWorldHandler extends AbstractHandler
     {
         @Override
@@ -187,8 +189,31 @@ public class HttpServerTestFixture
         }
     }
 
+    protected static class SendErrorHandler extends AbstractHandler
+    {
+        private final int code;
+        private final String message;
 
-    protected static class ReadExactHandler extends AbstractHandler.ErrorDispatchHandler
+        public SendErrorHandler()
+        {
+            this(500, null);
+        }
+
+        public SendErrorHandler(int code, String message)
+        {
+            this.code = code;
+            this.message = message;
+        }
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.sendError(code, message);
+        }
+    }
+
+    protected static class ReadExactHandler extends AbstractHandler
     {
         private int expected;
 
@@ -203,38 +228,28 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            int len = expected<0?request.getContentLength():expected;
-            if (len<0)
+            int len = expected < 0 ? request.getContentLength() : expected;
+            if (len < 0)
                 throw new IllegalStateException();
             byte[] content = new byte[len];
             int offset = 0;
-            while (offset<len)
+            while (offset < len)
             {
-                int read = request.getInputStream().read(content,offset,len-offset);
-                if (read<0)
+                int read = request.getInputStream().read(content, offset, len - offset);
+                if (read < 0)
                     break;
-                offset+=read;
+                offset += read;
             }
             response.setStatus(200);
             String reply = "Read " + offset + "\r\n";
             response.setContentLength(reply.length());
             response.getOutputStream().write(reply.getBytes(StandardCharsets.ISO_8859_1));
         }
-
-        @Override
-        protected void doError(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            System.err.println("ERROR: "+request.getAttribute(RequestDispatcher.ERROR_MESSAGE));
-            Throwable th = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-            if (th!=null)
-                th.printStackTrace();
-            super.doError(target, baseRequest, request, response);
-        }
     }
-    
+
     protected static class ReadHandler extends AbstractHandler
     {
         @Override
@@ -246,16 +261,16 @@ public class HttpServerTestFixture
             try
             {
                 InputStream in = request.getInputStream();
-                String input= IO.toString(in);
-                response.getWriter().printf("read %d%n",input.length());
+                String input = IO.toString(in);
+                response.getWriter().printf("read %d%n", input.length());
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                response.getWriter().printf("caught %s%n",e); 
+                response.getWriter().printf("caught %s%n", e);
             }
         }
     }
-    
+
     protected static class DataHandler extends AbstractHandler
     {
         @Override
@@ -265,26 +280,28 @@ public class HttpServerTestFixture
             response.setStatus(200);
 
             InputStream in = request.getInputStream();
-            String input= IO.toString(in);
+            String input = IO.toString(in);
 
             String tmp = request.getParameter("writes");
-            int writes=Integer.parseInt(tmp==null?"10":tmp);
+            int writes = Integer.parseInt(tmp == null ? "10" : tmp);
             tmp = request.getParameter("block");
-            int block=Integer.parseInt(tmp==null?"10":tmp);
-            String encoding=request.getParameter("encoding");
-            String chars=request.getParameter("chars");
+            int block = Integer.parseInt(tmp == null ? "10" : tmp);
+            String encoding = request.getParameter("encoding");
+            String chars = request.getParameter("chars");
 
             String data = "\u0a870123456789A\u0a87CDEFGHIJKLMNOPQRSTUVWXYZ\u0250bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            while (data.length()<block)
-                data+=data;
-
-            String chunk = (input+data).substring(0,block);
-            response.setContentType("text/plain");
-            if (encoding==null)
+            while (data.length() < block)
             {
-                byte[] bytes=chunk.getBytes(StandardCharsets.ISO_8859_1);
-                OutputStream out=response.getOutputStream();
-                for (int i=0;i<writes;i++)
+                data += data;
+            }
+
+            String chunk = (input + data).substring(0, block);
+            response.setContentType("text/plain");
+            if (encoding == null)
+            {
+                byte[] bytes = chunk.getBytes(StandardCharsets.ISO_8859_1);
+                OutputStream out = response.getOutputStream();
+                for (int i = 0; i < writes; i++)
                 {
                     out.write(bytes);
                 }
@@ -292,9 +309,9 @@ public class HttpServerTestFixture
             else if ("true".equals(chars))
             {
                 response.setCharacterEncoding(encoding);
-                PrintWriter out=response.getWriter();
-                char[] c=chunk.toCharArray();
-                for (int i=0;i<writes;i++)
+                PrintWriter out = response.getWriter();
+                char[] c = chunk.toCharArray();
+                for (int i = 0; i < writes; i++)
                 {
                     out.write(c);
                     if (out.checkError())
@@ -304,17 +321,14 @@ public class HttpServerTestFixture
             else
             {
                 response.setCharacterEncoding(encoding);
-                PrintWriter out=response.getWriter();
-                for (int i=0;i<writes;i++)
+                PrintWriter out = response.getWriter();
+                for (int i = 0; i < writes; i++)
                 {
                     out.write(chunk);
                     if (out.checkError())
                         break;
                 }
             }
-
         }
     }
-
-
 }

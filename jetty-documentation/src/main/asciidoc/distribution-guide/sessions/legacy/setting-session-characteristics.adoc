@@ -1,0 +1,281 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[setting-session-characteristics]]
+=== Setting Session Characteristics
+
+Sessions are a concept within the Servlet api which allow requests to store and retrieve information across the time a user spends in an application.  
+Choosing the correct session manager implementation is an important consideration for every application as each can fit and perform optimally in different situations.
+If you need a simple in-memory session manager that can persist to disk then the `HashSessionManager` can be a good place to start.  
+If you need a session manager that can work in a clustered scenario with multiple instances of Jetty, then the JDBC session manager can be an excellent option.
+Jetty also offers more niche session managers that leverage backends such as MongoDB, Inifinispan, or even Google's Cloud Data Store.
+
+To modify the session characteristics of a web application, you can use the following parameters, applying them as in one of the example configurations:
+
+[[using-init-parameters]]
+==== Using Init Parameters
+
+Use these parameters to set session characteristics.
+
+.Init Parameters
+[cols=",,",options="header",]
+|=======================================================================
+|Context Parameter |Default Value |Description
+|org.eclipse.jetty.servlet.SessionCookie |JSESSIONID |Session cookie
+name defaults to JSESSIONID, but can be set for a particular webapp with
+this context param.
+
+|org.eclipse.jetty.servlet.SessionIdPathParameterName |jsessionid
+|Session URL parameter name. Defaults to jsessionid, but can be set for
+a particular webapp with this context param. Set to "none" to disable
+URL rewriting.
+
+|org.eclipse.jetty.servlet.SessionDomain |- |Session Domain. If this
+property is set as a ServletContext param, then it is used as the domain
+for session cookies.If it is not set, then no domain is specified for
+the session cookie.
+
+|org.eclipse.jetty.servlet.SessionPath |- |Session Path. If this
+property is set as a ServletContext param, then it is used as the path
+for the session cookie. If it is not set, then the context path is used
+as the path for the cookie.
+
+|org.eclipse.jetty.servlet.MaxAge |-1 |Session Max Age. If this property
+is set as a ServletContext param, then it is used as the max age for the
+session cookie. If it is not set, then a max age of -1 is used.
+
+|org.eclipse.jetty.servlet.CheckingRemoteSessionIdEncoding |false |If
+true, Jetty will add JSESSIONID parameter even when encoding external
+urls with calls to encodeURL(). False by default.
+|=======================================================================
+
+[[applying-init-parameters]]
+===== Applying Init Parameters
+
+The following sections provide examples of how to apply the init parameters.
+
+[[context-parameter-example]]
+====== Context Parameter Example
+
+You can set these parameters as context parameters in a web application's `WEB-INF/web.xml` file:
+
+[source, xml, subs="{sub-order}"]
+----
+
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app
+  xmlns="http://java.sun.com/xml/ns/javaee"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+  version="2.5">
+  ...
+  <context-param>
+    <param-name>org.eclipse.jetty.servlet.SessionCookie</param-name>
+    <param-value>XSESSIONID</param-value>
+  </context-param>
+  <context-param>
+    <param-name>org.eclipse.jetty.servlet.SessionIdPathParameterName</param-name>
+    <param-value>xsessionid</param-value>
+  </context-param>
+  ...
+</web-app>
+
+        
+----
+
+[[web-application-examples]]
+====== Web Application Examples
+
+You can configure init parameters on a web application, either in code, or in a Jetty context xml file equivalent:
+
+[source, xml, subs="{sub-order}"]
+----
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/test</Set>
+  <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/test</Set>
+ 
+  ...
+ 
+  <Call name="setInitParameter">
+        <Arg>org.eclipse.jetty.servlet.SessionCookie</Arg>
+        <Arg>XSESSIONID</Arg>
+  </Call>
+  <Call name="setInitParameter">
+        <Arg>org.eclipse.jetty.servlet.SessionIdPathParameterName</Arg>
+        <Arg>xsessionid</Arg>
+  </Call>
+</Configure>
+
+        
+----
+
+[[init-parameter-examples]]
+====== SessionManager Examples
+
+You can configure init parameters directly on a `SessionManager` instance, either in code or the equivalent in xml:
+
+[source, xml, subs="{sub-order}"]
+----
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/test</Set>
+  <Set name="war"><SystemProperty name="jetty.home" default="."/>/webapps/test</Set>
+ 
+   ...
+
+  <Get name="sessionHandler">
+     <Set name="sessionManager">
+         <New class="org.eclipse.jetty.server.session.HashSessionManager">
+            <Set name="sessionCookie">XSESSIONID</Set>
+            <Set name="sessionIdPathParameterName">xsessionid</Set>
+         </New>
+     </Set>
+  </Get>
+</Configure>
+
+        
+----
+
+==== Using Servlet 3.0 Session Configuration
+
+With the advent of http://jcp.org/en/jsr/detail?id=315[Servlet Specification 3.0] there are new APIs for configuring session handling characteristics. 
+What was achievable before only via Jetty-specific link:#session-init-params[init-parameters] can now be achieved in a container-agnostic manner either in code, or via `web.xml`.
+
+[[session-cookie-configuration]]
+===== SessionCookieConfiguration
+
+The http://docs.oracle.com/javaee/6/api/javax/servlet/SessionCookieConfig.html[javax.servlet.SessionCookieConfig] class can be used to set up session handling characteristics. 
+For full details, consult the http://docs.oracle.com/javaee/6/api/javax/servlet/SessionCookieConfig.html[javadoc].
+
+Below is an example of this implementation: a `ServletContextListener` retrieves the `SessionCookieConfig` and sets up some new values when the context is being initialized:
+
+[source, java, subs="{sub-order}"]
+----
+import javax.servlet.SessionCookieConfig;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+
+public class TestListener implements ServletContextListener 
+{
+
+    public void contextInitialized(ServletContextEvent sce) 
+    {
+        String comment = "This is my special cookie configuration";
+        String domain = "foo.com";
+        String path = "/my/special/path";
+        boolean isSecure = true;
+        boolean httpOnly = false;
+        int maxAge = 30000;
+        String cookieName = "FOO_SESSION";
+
+
+        SessionCookieConfig scf = sce.getServletContext().getSessionCookieConfig();
+
+        scf.setComment(comment);
+        scf.setDomain(domain);
+        scf.setHttpOnly(httpOnly);
+        scf.setMaxAge(maxAge);
+        scf.setPath(path);
+        scf.setSecure(isSecure);
+        scf.setName(cookieName);
+    }
+
+    public void contextDestroyed(ServletContextEvent sce) 
+    {
+
+    }
+}
+----
+
+You can also use `web.xml` to configure the session handling characteristics instead: here's an example doing exactly the same as above instead of using code:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app
+   xmlns="http://java.sun.com/xml/ns/javaee"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+   metadata-complete="true"
+   version="3.0">
+
+   <session-config>
+      <cookie-config>
+         <comment>This is my special cookie configuration</comment>
+         <domain>foo.com</domain>
+         <http-only>false</http-only>
+         <max-age>30000</max-age>
+         <path>/my/special/path</path>
+         <secure>true</secure>
+         <name>FOO_SESSION</name>
+      </cookie-config>
+   </session-config>
+</web-app>
+----
+
+[[session-tracking-modes]]
+===== SessionTrackingModes
+
+In addition to the configuration of link:#session-cookie-configuration[session cookies], since Servlet 3.0 you can also use the http://docs.oracle.com/javaee/6/api/javax/servlet/SessionTrackingMode.html[javax.servlet.SessionTrackingMode] to configure session tracking.
+
+To determine what are the _default_ session tracking characteristics used by the container, call:
+
+[source, java, subs="{sub-order}"]
+----
+javax.servlet.SessionContext.getDefaultSessionTrackingModes();
+----
+
+This returns a java.util.Set of javax.servlet.SessionTrackingMode. The
+_default_ session tracking modes for Jetty are:
+
+* http://docs.oracle.com/javaee/6/api/javax/servlet/SessionTrackingMode.html#COOKIE[SessionTrackingMode.COOKIE]
+* http://docs.oracle.com/javaee/6/api/javax/servlet/SessionTrackingMode.html#URL[SessionTrackingMode.URL]
+
+To see which session tracking modes are actually in effect for this Context, the following call returns a `java.util.Set` of `javax.servlet.SessionTrackingMode`:
+
+[source, java, subs="{sub-order}"]
+----
+javax.servlet.SessionContext.getEffectiveSessionTrackingModes();
+----
+
+To change the session tracking modes, call:
+
+[source, java, subs="{sub-order}"]
+----
+javax.servlet.SessionContext.setSessionTrackingModes(Set<SessionTrackingMode>);
+----
+
+You may also set the tracking mode in `web.xml`, e.g.:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app
+   xmlns="http://java.sun.com/xml/ns/javaee"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+   metadata-complete="true"
+   version="3.0">
+
+   <session-config>
+      <tracking-mode>URL</tracking-mode>
+      <tracking-mode>COOKIE</tracking-mode>
+   </session-config>
+</web-app>
+----

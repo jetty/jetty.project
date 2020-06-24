@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http.client;
@@ -31,7 +31,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -41,36 +40,39 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
+import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.ProcessorUtils;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTransportScenario>
 {
-    private final Logger logger = Log.getLogger(HttpClientLoadTest.class);
+    private final Logger logger = LoggerFactory.getLogger(HttpClientLoadTest.class);
     private final AtomicLong requestCount = new AtomicLong();
     private final AtomicLong connectionLeaks = new AtomicLong();
 
@@ -96,12 +98,16 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         int runs = 1;
         int iterations = 500;
         for (int i = 0; i < runs; ++i)
+        {
             run(iterations);
+        }
 
         // Re-run after warmup
         iterations = 5_000;
         for (int i = 0; i < runs; ++i)
+        {
             run(iterations);
+        }
 
         System.gc();
 
@@ -138,12 +144,11 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
             client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         });
 
-
         int runs = 1;
         int iterations = 256;
         IntStream.range(0, 16).parallel().forEach(i ->
-                IntStream.range(0, runs).forEach(j ->
-                        run(iterations)));
+            IntStream.range(0, runs).forEach(j ->
+                run(iterations)));
     }
 
     private void run(int iterations)
@@ -158,8 +163,8 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         Scheduler.Task task = scenario.client.getScheduler().schedule(() ->
         {
             logger.warn("Interrupting test, it is taking too long{}{}{}{}",
-                    System.lineSeparator(), scenario.server.dump(),
-                    System.lineSeparator(), scenario.client.dump());
+                System.lineSeparator(), scenario.server.dump(),
+                System.lineSeparator(), scenario.client.dump());
             testThread.interrupt();
         }, iterations * factor, TimeUnit.MILLISECONDS);
 
@@ -176,9 +181,11 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         logger.info("{} requests in {} ms, {} req/s", iterations, elapsed, elapsed > 0 ? iterations * 1000 / elapsed : -1);
 
         for (String failure : failures)
+        {
             logger.info("FAILED: {}", failure);
+        }
 
-        assertTrue(failures.isEmpty(),failures.toString());
+        assertTrue(failures.isEmpty(), failures.toString());
     }
 
     private void test(final CountDownLatch latch, final List<String> failures)
@@ -213,29 +220,29 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     {
         long requestId = requestCount.incrementAndGet();
         Request request = scenario.client.newRequest(host, scenario.getNetworkConnectorLocalPortInt().orElse(0))
-                .scheme(scheme)
-                .path("/" + requestId)
-                .method(method);
+            .scheme(scheme)
+            .path("/" + requestId)
+            .method(method);
 
         if (clientClose)
-            request.header(HttpHeader.CONNECTION, "close");
+            request.headers(headers -> headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE));
         else if (serverClose)
-            request.header("X-Close", "true");
+            request.headers(headers -> headers.put("X-Close", "true"));
 
         if (clientTimeout > 0)
         {
-            request.header("X-Timeout", String.valueOf(clientTimeout));
+            request.headers(headers -> headers.put("X-Timeout", String.valueOf(clientTimeout)));
             request.idleTimeout(clientTimeout, TimeUnit.MILLISECONDS);
         }
 
         switch (method)
         {
             case "GET":
-                request.header("X-Download", String.valueOf(contentLength));
+                request.headers(headers -> headers.put("X-Download", String.valueOf(contentLength)));
                 break;
             case "POST":
-                request.header("X-Upload", String.valueOf(contentLength));
-                request.content(new BytesContentProvider(new byte[contentLength]));
+                request.headers(headers -> headers.put("X-Upload", String.valueOf(contentLength)));
+                request.body(new BytesRequestContent(new byte[contentLength]));
                 break;
         }
 
@@ -287,8 +294,8 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         if (!await(requestLatch, 5, TimeUnit.SECONDS))
         {
             logger.warn("Request {} took too long{}{}{}{}", requestId,
-                    System.lineSeparator(), scenario.server.dump(),
-                    System.lineSeparator(), scenario.client.dump());
+                System.lineSeparator(), scenario.server.dump(),
+                System.lineSeparator(), scenario.client.dump());
         }
     }
 
@@ -304,7 +311,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         }
     }
 
-    private class LoadHandler extends AbstractHandler
+    private static class LoadHandler extends AbstractHandler
     {
         @Override
         public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -364,31 +371,32 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         }
 
         @Override
-        public Connector newServerConnector( Server server)
+        public Connector newServerConnector(Server server)
         {
-            if (transport == Transport.UNIX_SOCKET)
-            {
-                UnixSocketConnector
-                        unixSocketConnector = new UnixSocketConnector( server, provideServerConnectionFactory( transport ));
-                unixSocketConnector.setUnixSocket( sockFile.toString() );
-                return unixSocketConnector;
-            }
-            int cores = ProcessorUtils.availableProcessors();
+            int selectors = Math.min(1, ProcessorUtils.availableProcessors() / 2);
             ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
             byteBufferPool = new LeakTrackingByteBufferPool(byteBufferPool);
-            return new ServerConnector(server, null, null, byteBufferPool,
-                    1, Math.min(1, cores / 2), provideServerConnectionFactory(transport));
+            if (transport == Transport.UNIX_SOCKET)
+            {
+                UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, null, null, byteBufferPool, selectors, provideServerConnectionFactory(transport));
+                unixSocketConnector.setUnixSocket(sockFile.toString());
+                return unixSocketConnector;
+            }
+            return new ServerConnector(server, null, null, byteBufferPool, 1, selectors, provideServerConnectionFactory(transport));
         }
 
         @Override
-        public HttpClientTransport provideClientTransport(Transport transport)
+        public HttpClientTransport provideClientTransport(Transport transport, SslContextFactory.Client sslContextFactory)
         {
             switch (transport)
             {
                 case HTTP:
                 case HTTPS:
                 {
-                    HttpClientTransport clientTransport = new HttpClientTransportOverHTTP(1);
+                    ClientConnector clientConnector = new ClientConnector();
+                    clientConnector.setSelectors(1);
+                    clientConnector.setSslContextFactory(sslContextFactory);
+                    HttpClientTransport clientTransport = new HttpClientTransportOverHTTP(clientConnector);
                     clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
                     {
                         @Override
@@ -416,7 +424,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 }
                 case UNIX_SOCKET:
                 {
-                    HttpClientTransportOverUnixSockets clientTransport = new HttpClientTransportOverUnixSockets( sockFile.toString() );
+                    HttpClientTransportOverUnixSockets clientTransport = new HttpClientTransportOverUnixSockets(sockFile.toString());
                     clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
                     {
                         @Override
@@ -430,7 +438,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 }
                 default:
                 {
-                    return super.provideClientTransport(transport);
+                    return super.provideClientTransport(transport, sslContextFactory);
                 }
             }
         }

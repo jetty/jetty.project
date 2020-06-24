@@ -1,45 +1,44 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.apache.jsp;
 
-public class JuliLog implements org.apache.juli.logging.Log 
+import org.slf4j.LoggerFactory;
+
+public class JuliLog implements org.apache.juli.logging.Log
 {
     public static org.apache.juli.logging.Log getInstance(String name)
     {
         return new JuliLog(name);
     }
-    
-    private final org.eclipse.jetty.util.log.Logger _logger;
-    private final org.eclipse.jetty.util.log.StdErrLog _stdErrLog;
+
+    private final org.slf4j.Logger _logger;
 
     public JuliLog()
-    {    
-        _logger=org.eclipse.jetty.util.log.Log.getRootLogger();
-        _stdErrLog=(_logger instanceof org.eclipse.jetty.util.log.StdErrLog) ? (org.eclipse.jetty.util.log.StdErrLog)_logger:null;
+    {
+        _logger = LoggerFactory.getLogger("");
     }
-    
+
     public JuliLog(String name)
     {
-        _logger=org.eclipse.jetty.util.log.Log.getLogger(name);
-        _stdErrLog=(_logger instanceof org.eclipse.jetty.util.log.StdErrLog) ? (org.eclipse.jetty.util.log.StdErrLog)_logger:null;
+        _logger = LoggerFactory.getLogger(name);
     }
-    
+
     @Override
     public boolean isDebugEnabled()
     {
@@ -49,31 +48,31 @@ public class JuliLog implements org.apache.juli.logging.Log
     @Override
     public boolean isErrorEnabled()
     {
-        return _stdErrLog==null?true:_stdErrLog.getLevel()<=org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return _logger.isErrorEnabled();
     }
 
     @Override
     public boolean isFatalEnabled()
     {
-        return _stdErrLog==null?true:_stdErrLog.getLevel()<=org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return _logger.isErrorEnabled();
     }
 
     @Override
     public boolean isInfoEnabled()
     {
-        return _stdErrLog==null?true:_stdErrLog.getLevel()<=org.eclipse.jetty.util.log.StdErrLog.LEVEL_INFO;
+        return _logger.isInfoEnabled();
     }
 
     @Override
     public boolean isTraceEnabled()
     {
-        return _stdErrLog==null?true:_stdErrLog.getLevel()<=org.eclipse.jetty.util.log.StdErrLog.LEVEL_DEBUG;
+        return _logger.isTraceEnabled();
     }
 
     @Override
     public boolean isWarnEnabled()
     {
-        return _stdErrLog==null?true:_stdErrLog.getLevel()<=org.eclipse.jetty.util.log.StdErrLog.LEVEL_WARN;
+        return _logger.isWarnEnabled();
     }
 
     @Override
@@ -82,16 +81,16 @@ public class JuliLog implements org.apache.juli.logging.Log
         if (message instanceof String)
             _logger.debug((String)message);
         else
-            _logger.debug("{}",message);
+            _logger.debug("{}", message);
     }
 
     @Override
     public void trace(Object message, Throwable t)
     {
         if (message instanceof String)
-            _logger.debug((String)message,t);
+            _logger.debug((String)message, t);
         else
-            _logger.debug("{}",message,t);
+            _logger.debug("{}", message, t);
     }
 
     @Override
@@ -100,16 +99,16 @@ public class JuliLog implements org.apache.juli.logging.Log
         if (message instanceof String)
             _logger.debug((String)message);
         else
-            _logger.debug("{}",message);
+            _logger.debug("{}", message);
     }
 
     @Override
     public void debug(Object message, Throwable t)
     {
         if (message instanceof String)
-            _logger.debug((String)message,t);
+            _logger.debug((String)message, t);
         else
-            _logger.debug("{}",message,t);
+            _logger.debug("{}", message, t);
     }
 
     @Override
@@ -118,16 +117,16 @@ public class JuliLog implements org.apache.juli.logging.Log
         if (message instanceof String)
             _logger.info((String)message);
         else
-            _logger.info("{}",message);
+            _logger.info("{}", message);
     }
 
     @Override
     public void info(Object message, Throwable t)
     {
         if (message instanceof String)
-            _logger.info((String)message,t);
+            _logger.info((String)message, t);
         else
-            _logger.info("{}",message,t);
+            _logger.info("{}", message, t);
     }
 
     @Override
@@ -136,16 +135,16 @@ public class JuliLog implements org.apache.juli.logging.Log
         if (message instanceof String)
             _logger.warn((String)message);
         else
-            _logger.warn("{}",message);
+            _logger.warn("{}", message);
     }
 
     @Override
     public void warn(Object message, Throwable t)
     {
         if (message instanceof String)
-            _logger.warn((String)message,t);
+            _logger.warn((String)message, t);
         else
-            _logger.warn("{}",message,t);
+            _logger.warn("{}", message, t);
     }
 
     @Override
@@ -154,16 +153,16 @@ public class JuliLog implements org.apache.juli.logging.Log
         if (message instanceof String)
             _logger.warn((String)message);
         else
-            _logger.warn("{}",message);
+            _logger.warn("{}", message);
     }
 
     @Override
     public void error(Object message, Throwable t)
     {
         if (message instanceof String)
-            _logger.warn((String)message,t);
+            _logger.warn((String)message, t);
         else
-            _logger.warn("{}",message,t);
+            _logger.warn("{}", message, t);
     }
 
     @Override
@@ -172,16 +171,16 @@ public class JuliLog implements org.apache.juli.logging.Log
         if (message instanceof String)
             _logger.warn((String)message);
         else
-            _logger.warn("{}",message);
+            _logger.warn("{}", message);
     }
 
     @Override
     public void fatal(Object message, Throwable t)
     {
         if (message instanceof String)
-            _logger.warn((String)message,t);
+            _logger.warn((String)message, t);
         else
-            _logger.warn("{}",message,t);
+            _logger.warn("{}", message, t);
     }
 }
 

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.osgi.boot.jasper;
@@ -23,22 +23,20 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.jsp.JspFactory;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * 
  * JSTLBundleDiscoverer
- * 
+ *
  * Fix various shortcomings with the way jasper parses the tld files. Plugs the
  * JSTL tlds assuming that they are packaged with the bundle that contains the
  * JSTL classes.
@@ -49,8 +47,7 @@ import org.osgi.framework.FrameworkUtil;
  */
 public class JSTLBundleDiscoverer implements TldBundleDiscoverer
 {
-    private static final Logger LOG = Log.getLogger(JSTLBundleDiscoverer.class);
-    
+    private static final Logger LOG = LoggerFactory.getLogger(JSTLBundleDiscoverer.class);
 
     /**
      * Default name of a class that belongs to the jstl bundle. From that class
@@ -59,15 +56,13 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
      */
     private static String DEFAULT_JSTL_BUNDLE_CLASS = "org.apache.taglibs.standard.tag.el.core.WhenTag";
 
- 
-
     /**
      * Default jsp factory implementation. Idally jasper is osgified and we can
      * use services. In the mean time we statically set the jsp factory
      * implementation. bug #299733
      */
     private static String DEFAULT_JSP_FACTORY_IMPL_CLASS = "org.apache.jasper.runtime.JspFactoryImpl";
-    
+
     private static final Set<URL> __tldBundleCache = new HashSet<URL>();
 
     public JSTLBundleDiscoverer()
@@ -89,15 +84,14 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
             JspFactory fact = JspFactory.getDefaultFactory();
             if (fact == null)
             { // bug #299733
-              // JspFactory does a simple
-              // Class.getForName("org.apache.jasper.runtime.JspFactoryImpl")
-              // however its bundles does not import the jasper package
-              // so it fails. let's help things out:
-                fact = (JspFactory) JettyBootstrapActivator.class.getClassLoader()
+                // JspFactory does a simple
+                // Class.getForName("org.apache.jasper.runtime.JspFactoryImpl")
+                // however its bundles does not import the jasper package
+                // so it fails. let's help things out:
+                fact = (JspFactory)JettyBootstrapActivator.class.getClassLoader()
                     .loadClass(DEFAULT_JSP_FACTORY_IMPL_CLASS).getDeclaredConstructor().newInstance();
                 JspFactory.setDefaultFactory(fact);
             }
-
         }
         catch (Exception e)
         {
@@ -111,15 +105,15 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
      * such tag-libraries. Please note that it will work if and only if the
      * bundle is a jar (!) Currently we just hardcode the bundle that contains
      * the jstl implemenation.
-     * 
+     *
      * A workaround when the tld cannot be parsed with this method is to copy
      * and paste it inside the WEB-INF of the webapplication where it is used.
-     * 
+     *
      * Support only 2 types of packaging for the bundle: - the bundle is a jar
      * (recommended for runtime.) - the bundle is a folder and contain jars in
      * the root and/or in the lib folder (nice for PDE development situations)
      * Unsupported: the bundle is a jar that embeds more jars.
-     * 
+     *
      * @return array of URLs
      * @throws Exception In case of errors during resolving TLDs files
      */
@@ -142,13 +136,13 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
         {
             LOG.info("jstl not on classpath", e);
         }
-        
+
         if (jstlClass != null)
         {
             //get the bundle containing jstl
             Bundle tldBundle = FrameworkUtil.getBundle(jstlClass);
             File tldBundleLocation = locatorHelper.getBundleInstallLocation(tldBundle);
-            
+
             if (tldBundleLocation != null && tldBundleLocation.isDirectory())
             {
                 // try to find the jar files inside this folder
@@ -169,23 +163,21 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
                         }
                     }
                 }
-
             }
             else if (tldBundleLocation != null)
             {
                 urls.add(tldBundleLocation.toURI().toURL());
-              
+
                 String pattern = (String)deployer.getContextAttribute("org.eclipse.jetty.server.webapp.containerIncludeBundlePattern");
-                pattern = (pattern==null?"":pattern);
+                pattern = (pattern == null ? "" : pattern);
                 if (!pattern.contains(tldBundle.getSymbolicName()))
                 {
-                    pattern += "|"+tldBundle.getSymbolicName();
+                    pattern += "|" + tldBundle.getSymbolicName();
                     deployer.setContextAttribute("org.eclipse.jetty.server.webapp.containerIncludeBundlePattern", pattern);
                 }
             }
         }
-        
+
         return urls.toArray(new URL[urls.size()]);
     }
-
 }

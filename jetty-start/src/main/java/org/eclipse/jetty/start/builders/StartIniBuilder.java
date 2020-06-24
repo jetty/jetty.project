@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.start.builders;
@@ -64,7 +64,7 @@ public class StartIniBuilder implements BaseBuilder.Config
 
     private void parseIni() throws IOException
     {
-        try (BufferedReader reader = Files.newBufferedReader(startIni,StandardCharsets.UTF_8))
+        try (BufferedReader reader = Files.newBufferedReader(startIni, StandardCharsets.UTF_8))
         {
             String line;
             while ((line = reader.readLine()) != null)
@@ -77,7 +77,7 @@ public class StartIniBuilder implements BaseBuilder.Config
                 }
                 else if (!line.startsWith("-") && line.contains("="))
                 {
-                    String key = line.substring(0,line.indexOf('='));
+                    String key = line.substring(0, line.indexOf('='));
                     this.propsPresent.add(key);
                 }
             }
@@ -89,7 +89,7 @@ public class StartIniBuilder implements BaseBuilder.Config
     {
         if (modulesPresent.contains(module.getName()))
         {
-            StartLog.info("%-15s already initialised in %s",module.getName(),baseHome.toShortForm(startIni));
+            StartLog.info("%-15s already initialised in %s", module.getName(), baseHome.toShortForm(startIni));
             // skip, already present
             return null;
         }
@@ -99,7 +99,7 @@ public class StartIniBuilder implements BaseBuilder.Config
             if (module.hasIniTemplate())
             {
                 // warn
-                StartLog.warn("%-15s not adding [ini-template] from dynamic module",module.getName());
+                StartLog.warn("%-15s not adding [ini-template] from dynamic module", module.getName());
             }
             return null;
         }
@@ -107,7 +107,7 @@ public class StartIniBuilder implements BaseBuilder.Config
         if (module.hasIniTemplate() || !module.isTransitive())
         {
             // Append to start.ini
-            try (BufferedWriter writer = Files.newBufferedWriter(startIni,StandardCharsets.UTF_8,StandardOpenOption.APPEND,StandardOpenOption.CREATE))
+            try (BufferedWriter writer = Files.newBufferedWriter(startIni, StandardCharsets.UTF_8, StandardOpenOption.APPEND, StandardOpenOption.CREATE))
             {
                 module.writeIniSection(writer, props);
             }

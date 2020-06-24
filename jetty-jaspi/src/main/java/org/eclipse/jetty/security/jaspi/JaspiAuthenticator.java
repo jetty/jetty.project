@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.security.jaspi;
@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
-
 import javax.security.auth.Subject;
 import javax.security.auth.message.AuthException;
 import javax.security.auth.message.AuthStatus;
@@ -45,16 +44,16 @@ import org.eclipse.jetty.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
  */
 public class JaspiAuthenticator extends LoginAuthenticator
 {
-    private static final Logger LOG = Log.getLogger(JaspiAuthenticator.class.getName());
-    
+    private static final Logger LOG = LoggerFactory.getLogger(JaspiAuthenticator.class.getName());
+
     private final ServerAuthConfig _authConfig;
 
     private final Map _authProperties;
@@ -67,14 +66,14 @@ public class JaspiAuthenticator extends LoginAuthenticator
 
     private final IdentityService _identityService;
 
- 
-
     public JaspiAuthenticator(ServerAuthConfig authConfig, Map authProperties, ServletCallbackHandler callbackHandler, Subject serviceSubject,
                               boolean allowLazyAuthentication, IdentityService identityService)
     {
         // TODO maybe pass this in via setConfiguration ?
-        if (callbackHandler == null) throw new NullPointerException("No CallbackHandler");
-        if (authConfig == null) throw new NullPointerException("No AuthConfig");
+        if (callbackHandler == null)
+            throw new NullPointerException("No CallbackHandler");
+        if (authConfig == null)
+            throw new NullPointerException("No AuthConfig");
         this._authConfig = authConfig;
         this._authProperties = authProperties;
         this._callbackHandler = callbackHandler;
@@ -96,35 +95,8 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
-    {
-        JaspiMessageInfo info = new JaspiMessageInfo(request, response, mandatory);
-        request.setAttribute("org.eclipse.jetty.security.jaspi.info", info);
-
-        Authentication a = validateRequest(info);
-        
-        //if its not mandatory to authenticate, and the authenticator returned UNAUTHENTICATED, we treat it as authentication deferred
-        if (_allowLazyAuthentication && !info.isAuthMandatory() && a == Authentication.UNAUTHENTICATED)
-            a = new DeferredAuthentication(this);
-        return a;
-    }
-
-    // most likely validatedUser is not needed here.
-    @Override
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
-    {
-        JaspiMessageInfo info = (JaspiMessageInfo) req.getAttribute("org.eclipse.jetty.security.jaspi.info");
-        if (info == null) throw new NullPointerException("MessageInfo from request missing: " + req);
-        return secureResponse(info, validatedUser);
-    }
-
-
-    /** 
-     * @see org.eclipse.jetty.security.authentication.LoginAuthenticator#login(java.lang.String, java.lang.Object, javax.servlet.ServletRequest)
-     */
-    @Override
     public UserIdentity login(String username, Object password, ServletRequest request)
-    { 
+    {
         UserIdentity user = _loginService.login(username, password, request);
         if (user != null)
         {
@@ -139,7 +111,19 @@ public class JaspiAuthenticator extends LoginAuthenticator
         return user;
     }
 
-    
+    @Override
+    public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
+    {
+        JaspiMessageInfo info = new JaspiMessageInfo(request, response, mandatory);
+        request.setAttribute("org.eclipse.jetty.security.jaspi.info", info);
+
+        Authentication a = validateRequest(info);
+
+        //if its not mandatory to authenticate, and the authenticator returned UNAUTHENTICATED, we treat it as authentication deferred
+        if (_allowLazyAuthentication && !info.isAuthMandatory() && a == Authentication.UNAUTHENTICATED)
+            a = new DeferredAuthentication(this);
+        return a;
+    }
 
     public Authentication validateRequest(JaspiMessageInfo messageInfo) throws ServerAuthException
     {
@@ -151,8 +135,10 @@ public class JaspiAuthenticator extends LoginAuthenticator
 
             AuthStatus authStatus = authContext.validateRequest(messageInfo, clientSubject, _serviceSubject);
 
-            if (authStatus == AuthStatus.SEND_CONTINUE) return Authentication.SEND_CONTINUE;
-            if (authStatus == AuthStatus.SEND_FAILURE) return Authentication.SEND_FAILURE;
+            if (authStatus == AuthStatus.SEND_CONTINUE)
+                return Authentication.SEND_CONTINUE;
+            if (authStatus == AuthStatus.SEND_FAILURE)
+                return Authentication.SEND_FAILURE;
 
             if (authStatus == AuthStatus.SUCCESS)
             {
@@ -165,7 +151,10 @@ public class JaspiAuthenticator extends LoginAuthenticator
                 else
                 {
                     CallerPrincipalCallback principalCallback = _callbackHandler.getThreadCallerPrincipalCallback();
-                    if (principalCallback == null) { return Authentication.UNAUTHENTICATED; }
+                    if (principalCallback == null)
+                    {
+                        return Authentication.UNAUTHENTICATED;
+                    }
                     Principal principal = principalCallback.getPrincipal();
                     if (principal == null)
                     {
@@ -179,18 +168,21 @@ public class JaspiAuthenticator extends LoginAuthenticator
                                 break;
                             }
                         }
-                        if (principal == null) { return Authentication.UNAUTHENTICATED; }
+                        if (principal == null)
+                        {
+                            return Authentication.UNAUTHENTICATED;
+                        }
                     }
                     GroupPrincipalCallback groupPrincipalCallback = _callbackHandler.getThreadGroupPrincipalCallback();
                     String[] groups = groupPrincipalCallback == null ? null : groupPrincipalCallback.getGroups();
                     userIdentity = _identityService.newUserIdentity(clientSubject, principal, groups);
                 }
-                
+
                 HttpSession session = ((HttpServletRequest)messageInfo.getRequestMessage()).getSession(false);
-                Authentication cached = (session == null?null:(SessionAuthentication)session.getAttribute(SessionAuthentication.__J_AUTHENTICATED));
+                Authentication cached = (session == null ? null : (SessionAuthentication)session.getAttribute(SessionAuthentication.__J_AUTHENTICATED));
                 if (cached != null)
                     return cached;
-                
+
                 return new UserAuthentication(getAuthMethod(), userIdentity);
             }
             if (authStatus == AuthStatus.SEND_SUCCESS)
@@ -200,17 +192,27 @@ public class JaspiAuthenticator extends LoginAuthenticator
             }
             if (authStatus == AuthStatus.FAILURE)
             {
-                HttpServletResponse response = (HttpServletResponse) messageInfo.getResponseMessage();
+                HttpServletResponse response = (HttpServletResponse)messageInfo.getResponseMessage();
                 response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 return Authentication.SEND_FAILURE;
             }
             // should not happen
             throw new IllegalStateException("No AuthStatus returned");
         }
-        catch (IOException|AuthException e)
+        catch (IOException | AuthException e)
         {
             throw new ServerAuthException(e);
         }
+    }
+
+    // most likely validatedUser is not needed here.
+    @Override
+    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
+    {
+        JaspiMessageInfo info = (JaspiMessageInfo)req.getAttribute("org.eclipse.jetty.security.jaspi.info");
+        if (info == null)
+            throw new NullPointerException("MessageInfo from request missing: " + req);
+        return secureResponse(info, validatedUser);
     }
 
     public boolean secureResponse(JaspiMessageInfo messageInfo, Authentication validatedUser) throws ServerAuthException
@@ -229,5 +231,4 @@ public class JaspiAuthenticator extends LoginAuthenticator
             throw new ServerAuthException(e);
         }
     }
-
 }

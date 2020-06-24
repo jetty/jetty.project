@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -55,6 +55,7 @@ public interface Callback extends Invocable
 
     /**
      * <p>Callback invoked when the operation fails.</p>
+     *
      * @param x the reason for the operation failure
      */
     default void failed(Throwable x)
@@ -113,6 +114,7 @@ public interface Callback extends Invocable
 
     /**
      * Create a callback from the passed success and failure
+     *
      * @param success Called when the callback succeeds
      * @param failure Called when the callback fails
      * @return a new Callback
@@ -135,7 +137,9 @@ public interface Callback extends Invocable
         };
     }
 
-    /** Creaste a callback that runs completed when it succeeds or fails
+    /**
+     * Creaste a callback that runs completed when it succeeds or fails
+     *
      * @param completed The completion to run on success or failure
      * @return a new callback
      */
@@ -153,6 +157,7 @@ public interface Callback extends Invocable
     /**
      * Create a nested callback that runs completed after
      * completing the nested callback.
+     *
      * @param callback The nested callback
      * @param completed The completion to run after the nested callback is completed
      * @return a new callback.
@@ -171,9 +176,10 @@ public interface Callback extends Invocable
     /**
      * Create a nested callback that runs completed before
      * completing the nested callback.
+     *
      * @param callback The nested callback
      * @param completed The completion to run before the nested callback is completed. Any exceptions thrown
-     *                  from completed will result in a callback failure.
+     * from completed will result in a callback failure.
      * @return a new callback.
      */
     static Callback from(Runnable completed, Callback callback)
@@ -188,7 +194,7 @@ public interface Callback extends Invocable
                     completed.run();
                     callback.succeeded();
                 }
-                catch(Throwable t)
+                catch (Throwable t)
                 {
                     callback.failed(t);
                 }
@@ -201,7 +207,7 @@ public interface Callback extends Invocable
                 {
                     completed.run();
                 }
-                catch(Throwable t)
+                catch (Throwable t)
                 {
                     x.addSuppressed(t);
                 }
@@ -210,6 +216,58 @@ public interface Callback extends Invocable
         };
     }
 
+    /**
+     * Create a nested callback which always fails the nested callback on completion.
+     *
+     * @param callback The nested callback
+     * @param cause The cause to fail the nested callback, if the new callback is failed the reason
+     * will be added to this cause as a suppressed exception.
+     * @return a new callback.
+     */
+    static Callback from(Callback callback, Throwable cause)
+    {
+        return new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                callback.failed(cause);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                cause.addSuppressed(x);
+                callback.failed(cause);
+            }
+        };
+    }
+
+    /**
+     * Create a callback which combines two other callbacks and will succeed or fail them both.
+     * @param callback1 The first callback
+     * @param callback2 The second callback
+     * @return a new callback.
+     */
+    static Callback from(Callback callback1, Callback callback2)
+    {
+        return new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                callback1.succeeded();
+                callback2.succeeded();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                callback1.failed(x);
+                callback2.failed(x);
+            }
+        };
+    }
 
     class Completing implements Callback
     {
@@ -224,10 +282,10 @@ public interface Callback extends Invocable
         {
             completed();
         }
-        
+
         public void completed()
         {
-        }  
+        }
     }
 
     /**
@@ -285,6 +343,59 @@ public interface Callback extends Invocable
             return callback.getInvocationType();
         }
     }
+
+    interface InvocableCallback extends Invocable, Callback
+    {
+    }
+
+    static Callback combine(Callback cb1, Callback cb2)
+    {
+        if (cb1 == null || cb1 == cb2)
+            return cb2;
+        if (cb2 == null)
+            return cb1;
+
+        return new InvocableCallback()
+        {
+            @Override
+            public void succeeded()
+            {
+                try
+                {
+                    cb1.succeeded();
+                }
+                finally
+                {
+                    cb2.succeeded();
+                }
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                try
+                {
+                    cb1.failed(x);
+                }
+                catch (Throwable t)
+                {
+                    if (x != t)
+                        x.addSuppressed(t);
+                }
+                finally
+                {
+                    cb2.failed(x);
+                }
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return Invocable.combine(Invocable.getInvocationType(cb1), Invocable.getInvocationType(cb2));
+            }
+        };
+    }
+
     /**
      * <p>A CompletableFuture that is also a Callback.</p>
      */

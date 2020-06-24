@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.thread;
@@ -21,27 +21,28 @@ package org.eclipse.jetty.util.thread;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 
-/** 
- * A variation of Executor that can confirm if a thread is available immediately 
+/**
+ * A variation of Executor that can confirm if a thread is available immediately
  */
 public interface TryExecutor extends Executor
 {
     /**
      * Attempt to execute a task.
+     *
      * @param task The task to be executed
-     * @return True IFF the task has been given directly to a thread to execute.  The task cannot be queued pending the later availability of a Thread. 
+     * @return True IFF the task has been given directly to a thread to execute.  The task cannot be queued pending the later availability of a Thread.
      */
     boolean tryExecute(Runnable task);
-    
+
     @Override
     default void execute(Runnable task)
     {
         if (!tryExecute(task))
             throw new RejectedExecutionException();
     }
-    
+
     public static TryExecutor asTryExecutor(Executor executor)
-    {        
+    {
         if (executor instanceof TryExecutor)
             return (TryExecutor)executor;
         return new NoTryExecutor(executor);
@@ -75,5 +76,18 @@ public interface TryExecutor extends Executor
         }
     }
 
-    public static final TryExecutor NO_TRY = task -> false;
+    TryExecutor NO_TRY = new TryExecutor()
+    {
+        @Override
+        public boolean tryExecute(Runnable task)
+        {
+            return false;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "NO_TRY";
+        }
+    };
 }

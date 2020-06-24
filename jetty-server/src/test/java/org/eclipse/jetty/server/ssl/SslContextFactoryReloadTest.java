@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.ssl;
@@ -25,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -60,28 +59,26 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class SslContextFactoryReloadTest
 {
-    public static final String KEYSTORE_1 = "src/test/resources/reload_keystore_1.jks";
-    public static final String KEYSTORE_2 = "src/test/resources/reload_keystore_2.jks";
+    public static final String KEYSTORE_1 = "src/test/resources/reload_keystore_1.p12";
+    public static final String KEYSTORE_2 = "src/test/resources/reload_keystore_2.p12";
 
     private Server server;
-    private SslContextFactory sslContextFactory;
+    private SslContextFactory.Server sslContextFactory;
     private ServerConnector connector;
 
     private void start(Handler handler) throws Exception
     {
         server = new Server();
 
-        sslContextFactory = new SslContextFactory();
+        sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(KEYSTORE_1);
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyStoreType("JKS");
-        sslContextFactory.setKeyStoreProvider(null);
 
         HttpConfiguration httpsConfig = new HttpConfiguration();
         httpsConfig.addCustomizer(new SecureRequestCustomizer());
         connector = new ServerConnector(server,
-                new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
-                new HttpConnectionFactory(httpsConfig));
+            new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+            new HttpConnectionFactory(httpsConfig));
         server.addConnector(connector);
 
         server.setHandler(handler);
@@ -109,8 +106,8 @@ public class SslContextFactoryReloadTest
             String serverDN1 = client1.getSession().getPeerPrincipal().getName();
             assertThat(serverDN1, Matchers.startsWith("CN=localhost1"));
 
-            String request = "" +
-                    "GET / HTTP/1.1\r\n" +
+            String request =
+                "GET / HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "\r\n";
 
@@ -216,8 +213,8 @@ public class SslContextFactoryReloadTest
                     // use session resumption and fallback to the normal TLS handshake.
                     client.getSession().invalidate();
 
-                    String request1 = "" +
-                            "POST / HTTP/1.1\r\n" +
+                    String request1 =
+                        "POST / HTTP/1.1\r\n" +
                             "Host: localhost\r\n" +
                             "Content-Length: " + content.length + "\r\n" +
                             "\r\n";
@@ -231,8 +228,8 @@ public class SslContextFactoryReloadTest
                     assertNotNull(response1);
                     assertThat(response1.getStatus(), Matchers.equalTo(HttpStatus.OK_200));
 
-                    String request2 = "" +
-                            "GET / HTTP/1.1\r\n" +
+                    String request2 =
+                        "GET / HTTP/1.1\r\n" +
                             "Host: localhost\r\n" +
                             "Connection: close\r\n" +
                             "\r\n";

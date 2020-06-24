@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -41,6 +41,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.api.ContentProvider;
@@ -48,8 +50,9 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.internal.RequestContentAdapter;
 import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.eclipse.jetty.client.util.PathContentProvider;
+import org.eclipse.jetty.client.util.PathRequestContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -62,30 +65,34 @@ public class HttpRequest implements Request
 {
     private static final URI NULL_URI = URI.create("null:0");
 
-    private final HttpFields headers = new HttpFields();
+    private final HttpFields.Mutable headers = HttpFields.build();
     private final Fields params = new Fields(true);
     private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
     private final HttpClient client;
     private final HttpConversation conversation;
-    private final String host;
-    private final int port;
-    private URI uri;
     private String scheme;
+    private String host;
+    private int port;
     private String path;
     private String query;
+    private URI uri;
     private String method = HttpMethod.GET.asString();
     private HttpVersion version = HttpVersion.HTTP_1_1;
+    private boolean versionExplicit;
     private long idleTimeout = -1;
     private long timeout;
     private long timeoutAt;
-    private ContentProvider content;
+    private Content content;
     private boolean followRedirects;
     private List<HttpCookie> cookies;
     private Map<String, Object> attributes;
     private List<RequestListener> requestListeners;
     private BiFunction<Request, Request, Response.CompleteListener> pushListener;
     private Supplier<HttpFields> trailers;
+    private String upgradeProtocol;
+    private Object tag;
+    private boolean normalized;
 
     protected HttpRequest(HttpClient client, HttpConversation conversation, URI uri)
     {
@@ -133,9 +140,25 @@ public class HttpRequest implements Request
     }
 
     @Override
+    public Request host(String host)
+    {
+        this.host = host;
+        this.uri = null;
+        return this;
+    }
+
+    @Override
     public int getPort()
     {
         return port;
+    }
+
+    @Override
+    public Request port(int port)
+    {
+        this.port = port;
+        this.uri = null;
+        return this;
     }
 
     @Override
@@ -203,7 +226,7 @@ public class HttpRequest implements Request
     {
         if (uri == null)
             uri = buildURI(true);
-        
+
         @SuppressWarnings("ReferenceEquality")
         boolean isNullURI = (uri == NULL_URI);
         return isNullURI ? null : uri;
@@ -215,10 +238,16 @@ public class HttpRequest implements Request
         return version;
     }
 
+    public boolean isVersionExplicit()
+    {
+        return versionExplicit;
+    }
+
     @Override
     public Request version(HttpVersion version)
     {
         this.version = Objects.requireNonNull(version);
+        this.versionExplicit = true;
         return this;
     }
 
@@ -278,6 +307,7 @@ public class HttpRequest implements Request
     }
 
     @Override
+    @Deprecated
     public Request header(String name, String value)
     {
         if (value == null)
@@ -288,6 +318,7 @@ public class HttpRequest implements Request
     }
 
     @Override
+    @Deprecated
     public Request header(HttpHeader header, String value)
     {
         if (value == null)
@@ -300,7 +331,7 @@ public class HttpRequest implements Request
     @Override
     public List<HttpCookie> getCookies()
     {
-        return cookies != null ? cookies : Collections.<HttpCookie>emptyList();
+        return cookies != null ? cookies : Collections.emptyList();
     }
 
     @Override
@@ -310,6 +341,19 @@ public class HttpRequest implements Request
             cookies = new ArrayList<>();
         cookies.add(cookie);
         return this;
+    }
+
+    @Override
+    public Request tag(Object tag)
+    {
+        this.tag = tag;
+        return this;
+    }
+
+    @Override
+    public Object getTag()
+    {
+        return tag;
     }
 
     @Override
@@ -324,13 +368,26 @@ public class HttpRequest implements Request
     @Override
     public Map<String, Object> getAttributes()
     {
-        return attributes != null ? attributes : Collections.<String, Object>emptyMap();
+        return attributes != null ? attributes : Collections.emptyMap();
     }
 
     @Override
-    public HttpFields getHeaders()
+    public HttpFields.Mutable getHeaders()
     {
         return headers;
+    }
+
+    @Override
+    public Request headers(Consumer<HttpFields.Mutable> consumer)
+    {
+        consumer.accept(headers);
+        return this;
+    }
+
+    public HttpRequest addHeader(HttpField header)
+    {
+        headers.add(header);
+        return this;
     }
 
     @Override
@@ -340,12 +397,14 @@ public class HttpRequest implements Request
         // This method is invoked often in a request/response conversation,
         // so we avoid allocation if there is no need to filter.
         if (type == null || requestListeners == null)
-            return requestListeners != null ? (List<T>)requestListeners : Collections.<T>emptyList();
+            return requestListeners != null ? (List<T>)requestListeners : Collections.emptyList();
 
         ArrayList<T> result = new ArrayList<>();
         for (RequestListener listener : requestListeners)
+        {
             if (type.isInstance(listener))
                 result.add((T)listener);
+        }
         return result;
     }
 
@@ -499,20 +558,12 @@ public class HttpRequest implements Request
     @Override
     public Request onResponseContent(final Response.ContentListener listener)
     {
-        this.responseListeners.add(new Response.AsyncContentListener()
+        this.responseListeners.add(new Response.ContentListener()
         {
             @Override
-            public void onContent(Response response, ByteBuffer content, Callback callback)
+            public void onContent(Response response, ByteBuffer content)
             {
-                try
-                {
-                    listener.onContent(response, content);
-                    callback.succeeded();
-                }
-                catch (Throwable x)
-                {
-                    callback.failed(x);
-                }
+                listener.onContent(response, content);
             }
         });
         return this;
@@ -527,6 +578,26 @@ public class HttpRequest implements Request
             public void onContent(Response response, ByteBuffer content, Callback callback)
             {
                 listener.onContent(response, content, callback);
+            }
+        });
+        return this;
+    }
+
+    @Override
+    public Request onResponseContentDemanded(Response.DemandedContentListener listener)
+    {
+        this.responseListeners.add(new Response.DemandedContentListener()
+        {
+            @Override
+            public void onBeforeContent(Response response, LongConsumer demand)
+            {
+                listener.onBeforeContent(response, demand);
+            }
+
+            @Override
+            public void onContent(Response response, LongConsumer demand, ByteBuffer content, Callback callback)
+            {
+                listener.onContent(response, demand, content, callback);
             }
         });
         return this;
@@ -600,10 +671,18 @@ public class HttpRequest implements Request
         return this;
     }
 
+    public HttpRequest upgradeProtocol(String upgradeProtocol)
+    {
+        this.upgradeProtocol = upgradeProtocol;
+        return this;
+    }
+
     @Override
     public ContentProvider getContent()
     {
-        return content;
+        if (content instanceof RequestContentAdapter)
+            return ((RequestContentAdapter)content).getContentProvider();
+        return null;
     }
 
     @Override
@@ -616,7 +695,19 @@ public class HttpRequest implements Request
     public Request content(ContentProvider content, String contentType)
     {
         if (contentType != null)
-            header(HttpHeader.CONTENT_TYPE, contentType);
+            headers.put(HttpHeader.CONTENT_TYPE, contentType);
+        return body(ContentProvider.toRequestContent(content));
+    }
+
+    @Override
+    public Content getBody()
+    {
+        return content;
+    }
+
+    @Override
+    public Request body(Content content)
+    {
         this.content = content;
         return this;
     }
@@ -630,7 +721,7 @@ public class HttpRequest implements Request
     @Override
     public Request file(Path file, String contentType) throws IOException
     {
-        return content(new PathContentProvider(contentType, file));
+        return body(new PathRequestContent(contentType, file));
     }
 
     @Override
@@ -683,7 +774,7 @@ public class HttpRequest implements Request
             return listener.get();
         }
         catch (ExecutionException x)
-        {            
+        {
             // Previously this method used a timed get on the future, which was in a race
             // with the timeouts implemented in HttpDestination and HttpConnection. The change to
             // make those timeouts relative to the timestamp taken in sent() has made that race
@@ -695,7 +786,7 @@ public class HttpRequest implements Request
             // Thus for backwards compatibility we unwrap the timeout exception here
             if (x.getCause() instanceof TimeoutException)
             {
-                TimeoutException t = (TimeoutException) (x.getCause());
+                TimeoutException t = (TimeoutException)(x.getCause());
                 abort(t);
                 throw t;
             }
@@ -704,7 +795,7 @@ public class HttpRequest implements Request
             throw x;
         }
         catch (Throwable x)
-        {   
+        {
             // Differently from the Future, the semantic of this method is that if
             // the send() is interrupted or times out, we abort the request.
             abort(x);
@@ -717,7 +808,7 @@ public class HttpRequest implements Request
     {
         send(this, listener);
     }
-    
+
     private void send(HttpRequest request, Response.CompleteListener listener)
     {
         if (listener != null)
@@ -731,7 +822,7 @@ public class HttpRequest implements Request
         long timeout = getTimeout();
         timeoutAt = timeout > 0 ? System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout) : -1;
     }
-    
+
     /**
      * @return The nanoTime at which the timeout expires or -1 if there is no timeout.
      * @see #timeout(long, TimeUnit)
@@ -740,7 +831,7 @@ public class HttpRequest implements Request
     {
         return timeoutAt;
     }
-    
+
     protected List<Response.ResponseListener> getResponseListeners()
     {
         return responseListeners;
@@ -756,15 +847,16 @@ public class HttpRequest implements Request
         return trailers;
     }
 
+    public String getUpgradeProtocol()
+    {
+        return upgradeProtocol;
+    }
+
     @Override
     public boolean abort(Throwable cause)
     {
         if (aborted.compareAndSet(null, Objects.requireNonNull(cause)))
-        {
-            if (content instanceof Callback)
-                ((Callback)content).failed(cause);
             return conversation.abort(cause);
-        }
         return false;
     }
 
@@ -772,6 +864,23 @@ public class HttpRequest implements Request
     public Throwable getAbortCause()
     {
         return aborted.get();
+    }
+
+    /**
+     * <p>Marks this request as <em>normalized</em>.</p>
+     * <p>A request is normalized by setting things that applications give
+     * for granted such as defaulting the method to {@code GET}, adding the
+     * {@code Host} header, adding the cookies, adding {@code Authorization}
+     * headers, etc.</p>
+     *
+     * @return whether this request was already normalized
+     * @see HttpConnection#normalizeRequest(HttpRequest)
+     */
+    boolean normalized()
+    {
+        boolean result = normalized;
+        normalized = true;
+        return result;
     }
 
     private String buildQuery()
@@ -867,7 +976,7 @@ public class HttpRequest implements Request
         }
         catch (URISyntaxException x)
         {
-            // The "path" of a HTTP request may not be a URI,
+            // The "path" of an HTTP request may not be a URI,
             // for example for CONNECT 127.0.0.1:8080.
             return null;
         }
@@ -876,6 +985,6 @@ public class HttpRequest implements Request
     @Override
     public String toString()
     {
-        return String.format("%s[%s %s %s]@%x", this.getClass().getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
+        return String.format("%s[%s %s %s]@%x", getClass().getSimpleName(), getMethod(), getPath(), getVersion(), hashCode());
     }
 }

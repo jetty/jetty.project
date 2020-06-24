@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -9,12 +9,12 @@
   <!-- ===================================================================== -->
   <Call name="addBean">
    <Arg>
-    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory">      
+    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory">
        <Set name="gracePeriodSec"><Property name="jetty.session.gracePeriod.seconds" default="3600" /></Set>
-       <Set name="savePeriodSec"><Property name="jetty.session.savePeriod.seconds" default="0" /></Set>
+       <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
        <Set name="maxRetries"><Property name="jetty.session.gcloud.maxRetries" default="5"/></Set>
-       <Set name="backoffMs"><Property name="jetty.session.gcloud.backoffMs" default="1000"/></Set>
-       <Set name="namespace"><Property name="jetty.session.gcloud.namespace" default=""/></Set>
+       <Set name="backoffMs" property="jetty.session.gcloud.backoffMs"/>
+       <Set name="namespace" property="jetty.session.gcloud.namespace"/>
        <Set name="entityDataModel">
           <New class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStore$EntityDataModel">
               <Set name="kind">

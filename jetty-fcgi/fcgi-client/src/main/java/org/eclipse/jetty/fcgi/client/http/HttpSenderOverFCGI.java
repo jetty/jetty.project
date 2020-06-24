@@ -1,28 +1,30 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.fcgi.client.http;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.EnumSet;
 import java.util.Locale;
 
 import org.eclipse.jetty.client.HttpChannel;
-import org.eclipse.jetty.client.HttpContent;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.Request;
@@ -32,9 +34,9 @@ import org.eclipse.jetty.fcgi.generator.Generator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
+import org.eclipse.jetty.util.StringUtil;
 
 public class HttpSenderOverFCGI extends HttpSender
 {
@@ -43,7 +45,8 @@ public class HttpSenderOverFCGI extends HttpSender
     public HttpSenderOverFCGI(HttpChannel channel)
     {
         super(channel);
-        this.generator = new ClientGenerator(channel.getHttpDestination().getHttpClient().getByteBufferPool());
+        HttpClient httpClient = channel.getHttpDestination().getHttpClient();
+        this.generator = new ClientGenerator(httpClient.getByteBufferPool(), httpClient.isUseOutputDirectByteBuffers());
     }
 
     @Override
@@ -53,14 +56,12 @@ public class HttpSenderOverFCGI extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, HttpContent content, Callback callback)
+    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         Request request = exchange.getRequest();
         // Copy the request headers to be able to convert them properly
-        HttpFields headers = new HttpFields();
-        for (HttpField field : request.getHeaders())
-            headers.put(field);
-        HttpFields fcgiHeaders = new HttpFields();
+        HttpFields headers = request.getHeaders();
+        HttpFields.Mutable fcgiHeaders = HttpFields.build();
 
         // FastCGI headers based on the URI
         URI uri = request.getURI();
@@ -70,12 +71,15 @@ public class HttpSenderOverFCGI extends HttpSender
         fcgiHeaders.put(FCGI.Headers.QUERY_STRING, query == null ? "" : query);
 
         // FastCGI headers based on HTTP headers
-        HttpField httpField = headers.remove(HttpHeader.AUTHORIZATION);
+        HttpField httpField = headers.getField(HttpHeader.AUTHORIZATION);
+        EnumSet<HttpHeader> toRemove = EnumSet.of(HttpHeader.AUTHORIZATION);
         if (httpField != null)
             fcgiHeaders.put(FCGI.Headers.AUTH_TYPE, httpField.getValue());
-        httpField = headers.remove(HttpHeader.CONTENT_LENGTH);
+        httpField = headers.getField(HttpHeader.CONTENT_LENGTH);
+        toRemove.add(HttpHeader.CONTENT_LENGTH);
         fcgiHeaders.put(FCGI.Headers.CONTENT_LENGTH, httpField == null ? "" : httpField.getValue());
-        httpField = headers.remove(HttpHeader.CONTENT_TYPE);
+        httpField = headers.getField(HttpHeader.CONTENT_TYPE);
+        toRemove.add(HttpHeader.CONTENT_TYPE);
         fcgiHeaders.put(FCGI.Headers.CONTENT_TYPE, httpField == null ? "" : httpField.getValue());
 
         // FastCGI headers that are not based on HTTP headers nor URI
@@ -87,8 +91,10 @@ public class HttpSenderOverFCGI extends HttpSender
         // Translate remaining HTTP header into the HTTP_* format
         for (HttpField field : headers)
         {
+            if (toRemove.contains(field.getHeader()))
+                continue;
             String name = field.getName();
-            String fcgiName = "HTTP_" + name.replaceAll("-", "_").toUpperCase(Locale.ENGLISH);
+            String fcgiName = "HTTP_" + StringUtil.replace(name, '-', '_').toUpperCase(Locale.ENGLISH);
             fcgiHeaders.add(fcgiName, field.getValue());
         }
 
@@ -97,38 +103,31 @@ public class HttpSenderOverFCGI extends HttpSender
         transport.customize(request, fcgiHeaders);
 
         int id = getHttpChannel().getRequest();
-        boolean hasContent = content.hasContent();
-        Generator.Result headersResult = generator.generateRequestHeaders(id, fcgiHeaders,
-                hasContent ? callback : Callback.NOOP);
-        if (hasContent)
+        if (contentBuffer.hasRemaining() || lastContent)
         {
-            getHttpChannel().flush(headersResult);
+            Generator.Result headersResult = generator.generateRequestHeaders(id, fcgiHeaders, Callback.NOOP);
+            Generator.Result contentResult = generator.generateRequestContent(id, contentBuffer, lastContent, callback);
+            getHttpChannel().flush(headersResult, contentResult);
         }
         else
         {
-            Generator.Result noContentResult = generator.generateRequestContent(id, BufferUtil.EMPTY_BUFFER, true, callback);
-            getHttpChannel().flush(headersResult, noContentResult);
+            Generator.Result headersResult = generator.generateRequestHeaders(id, fcgiHeaders, callback);
+            getHttpChannel().flush(headersResult);
         }
     }
 
     @Override
-    protected void sendContent(HttpExchange exchange, HttpContent content, Callback callback)
+    protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
-        if (content.isConsumed())
+        if (contentBuffer.hasRemaining() || lastContent)
+        {
+            int request = getHttpChannel().getRequest();
+            Generator.Result result = generator.generateRequestContent(request, contentBuffer, lastContent, callback);
+            getHttpChannel().flush(result);
+        }
+        else
         {
             callback.succeeded();
         }
-        else
-        {
-            int request = getHttpChannel().getRequest();
-            Generator.Result result = generator.generateRequestContent(request, content.getByteBuffer(), content.isLast(), callback);
-            getHttpChannel().flush(result);
-        }
-    }
-
-    @Override
-    protected void sendTrailers(HttpExchange exchange, Callback callback)
-    {
-        callback.succeeded();
     }
 }

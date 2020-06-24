@@ -1,21 +1,20 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.webapp;
 
@@ -25,11 +24,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -49,7 +45,7 @@ public class MetaInfConfigurationTest
             _expectedContainerScanTypes = expectedContainerScanTypes;
             _expectedWebAppScanTypes = expectedWebAppScanTypes;
         }
-        
+
         @Override
         public void scanJars(WebAppContext context, Collection<Resource> jars, boolean useCaches, List<String> scanTypes) throws Exception
         {
@@ -57,7 +53,7 @@ public class MetaInfConfigurationTest
             List<String> expectedScanTypes = null;
             switch (_invocationCount)
             {
-                case 0: 
+                case 0:
                 {
                     expectedScanTypes = _expectedContainerScanTypes;
                     break;
@@ -87,46 +83,46 @@ public class MetaInfConfigurationTest
         File web25 = MavenTestingUtils.getTestResourceFile("web25.xml");
         File web31 = MavenTestingUtils.getTestResourceFile("web31.xml");
         File web31false = MavenTestingUtils.getTestResourceFile("web31false.xml");
-        
-        //test a 2.5 webapp will not look for fragments by default
+
+        //test a 2.5 webapp will not look for fragments as manually configured
         MetaInfConfiguration meta25 = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
-                                                                       Arrays.asList(MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES));
+            Arrays.asList(MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES));
         WebAppContext context25 = new WebAppContext();
-        context25.getMetaData().setWebXml(Resource.newResource(web25));
+        context25.setConfigurationDiscovered(false);
+        context25.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
         context25.getServletContext().setEffectiveMajorVersion(2);
         context25.getServletContext().setEffectiveMinorVersion(5);
         meta25.preConfigure(context25);
-        
-        //test a 2.5 webapp will look for fragments if configurationDiscovered==true
+
+        //test a 2.5 webapp will look for fragments as configurationDiscovered default true
         MetaInfConfiguration meta25b = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
-                                                                        MetaInfConfiguration.__allScanTypes);
+            MetaInfConfiguration.__allScanTypes);
         WebAppContext context25b = new WebAppContext();
-        context25b.setConfigurationDiscovered(true);
-        context25b.getMetaData().setWebXml(Resource.newResource(web25));
+        context25b.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
         context25b.getServletContext().setEffectiveMajorVersion(2);
         context25b.getServletContext().setEffectiveMinorVersion(5);
         meta25b.preConfigure(context25b);
-        
+
         //test a 3.x metadata-complete webapp will not look for fragments
         MetaInfConfiguration meta31 = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
-                                                                       Arrays.asList(MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES));
+            Arrays.asList(MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES));
         WebAppContext context31 = new WebAppContext();
-        context31.getMetaData().setWebXml(Resource.newResource(web31));
+        context31.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31)));
         context31.getServletContext().setEffectiveMajorVersion(3);
         context31.getServletContext().setEffectiveMinorVersion(1);
         meta31.preConfigure(context31);
 
         //test a 3.x non metadata-complete webapp will look for fragments
         MetaInfConfiguration meta31false = new TestableMetaInfConfiguration(MetaInfConfiguration.__allScanTypes,
-                                                                            MetaInfConfiguration.__allScanTypes);
+            MetaInfConfiguration.__allScanTypes);
         WebAppContext context31false = new WebAppContext();
         context31false.setConfigurationDiscovered(true);
-        context31false.getMetaData().setWebXml(Resource.newResource(web31false));
+        context31false.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31false)));
         context31false.getServletContext().setEffectiveMajorVersion(3);
         context31false.getServletContext().setEffectiveMinorVersion(1);
         meta31false.preConfigure(context31false);
     }
-    
+
     /**
      * This test examines both the classpath and the module path to find
      * container resources.
@@ -135,7 +131,7 @@ public class MetaInfConfigurationTest
      * we can use the --add-module argument to put the foo-bar-janb.jar onto the
      * module path, but this doesn't seem to work in jetty-10.0.x.  So this test
      * will find foo-bar.janb.jar on the classpath, and jetty-util from the module path.
-     * 
+     *
      * @throws Exception if the test fails
      */
     @Test
@@ -149,7 +145,7 @@ public class MetaInfConfigurationTest
         config.findAndFilterContainerPaths(context);
         List<Resource> containerResources = context.getMetaData().getContainerResources();
         assertEquals(2, containerResources.size());
-        for (Resource r:containerResources)
+        for (Resource r : containerResources)
         {
             String s = r.toString();
             assertTrue(s.endsWith("foo-bar-janb.jar") || s.contains("jetty-util"));

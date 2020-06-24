@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.component;
@@ -21,64 +21,63 @@ package org.eclipse.jetty.util.component;
 import java.io.FileWriter;
 import java.io.Writer;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-
-/* ------------------------------------------------------------ */
-/** A LifeCycle Listener that writes state changes to a file.
+/**
+ * A LifeCycle Listener that writes state changes to a file.
  * <p>This can be used with the jetty.sh script to wait for successful startup.
  */
 public class FileNoticeLifeCycleListener implements LifeCycle.Listener
 {
-    private static final Logger LOG = Log.getLogger(FileNoticeLifeCycleListener.class);
-    
+    private static final Logger LOG = LoggerFactory.getLogger(FileNoticeLifeCycleListener.class);
+
     private final String _filename;
-    
+
     public FileNoticeLifeCycleListener(String filename)
     {
-        _filename=filename;
+        _filename = filename;
     }
 
     private void writeState(String action, LifeCycle lifecycle)
     {
-        try (Writer out = new FileWriter(_filename,true))
+        try (Writer out = new FileWriter(_filename, true))
         {
             out.append(action).append(" ").append(lifecycle.toString()).append("\n");
         }
-        catch(Exception e)
+        catch (Exception e)
         {
-            LOG.warn(e);
+            LOG.warn("Unable to write state", e);
         }
     }
-    
+
     @Override
     public void lifeCycleStarting(LifeCycle event)
-    {  
-        writeState("STARTING",event);      
+    {
+        writeState("STARTING", event);
     }
 
     @Override
     public void lifeCycleStarted(LifeCycle event)
-    {        
-        writeState("STARTED",event); 
+    {
+        writeState("STARTED", event);
     }
 
     @Override
     public void lifeCycleFailure(LifeCycle event, Throwable cause)
-    {        
-        writeState("FAILED",event);
+    {
+        writeState("FAILED", event);
     }
 
     @Override
     public void lifeCycleStopping(LifeCycle event)
-    {        
-        writeState("STOPPING",event);
+    {
+        writeState("STOPPING", event);
     }
 
     @Override
     public void lifeCycleStopped(LifeCycle event)
-    {        
-        writeState("STOPPED",event);
+    {
+        writeState("STOPPED", event);
     }
 }

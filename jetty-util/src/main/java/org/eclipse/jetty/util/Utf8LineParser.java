@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -47,12 +47,10 @@ public class Utf8LineParser
     /**
      * Parse a ByteBuffer (could be a partial buffer), and return once a complete line of UTF8 parsed text has been reached.
      *
-     * @param buf
-     *            the buffer to parse (could be an incomplete buffer)
+     * @param buf the buffer to parse (could be an incomplete buffer)
      * @return the line of UTF8 parsed text, or null if no line end termination has been reached within the {@link ByteBuffer#remaining() remaining} bytes of
-     *         the provided ByteBuffer. (In the case of a null, a subsequent ByteBuffer with a line end termination should be provided)
-     * @throws NotUtf8Exception
-     *             if the input buffer has bytes that do not conform to UTF8 validation (validation performed by {@link Utf8StringBuilder}
+     * the provided ByteBuffer. (In the case of a null, a subsequent ByteBuffer with a line end termination should be provided)
+     * @throws NotUtf8Exception if the input buffer has bytes that do not conform to UTF8 validation (validation performed by {@link Utf8StringBuilder}
      */
     public String parse(ByteBuffer buf)
     {
@@ -78,6 +76,7 @@ public class Utf8LineParser
                 utf = new Utf8StringBuilder();
                 state = State.PARSE;
                 return parseByte(b);
+
             case PARSE:
                 // not waiting on more UTF sequence parts.
                 if (utf.isUtf8SequenceComplete() && ((b == '\r') || (b == '\n')))
@@ -86,7 +85,8 @@ public class Utf8LineParser
                     return parseByte(b);
                 }
                 utf.append(b);
-                break;
+                return false;
+
             case END:
                 if (b == '\n')
                 {
@@ -94,8 +94,10 @@ public class Utf8LineParser
                     state = State.START;
                     return true;
                 }
-                break;
+                return false;
+
+            default:
+                throw new IllegalStateException();
         }
-        return false;
     }
 }

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -24,7 +24,7 @@ import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 
-/** 
+/**
  * User object that encapsulates user identity and operations such as run-as-role actions,
  * checking isUserInRole and getUserPrincipal.
  * <p>
@@ -33,30 +33,28 @@ import org.eclipse.jetty.server.handler.ContextHandler;
  */
 public interface UserIdentity
 {
-    /* ------------------------------------------------------------ */
+
     /**
      * @return The user subject
      */
     Subject getSubject();
 
-    /* ------------------------------------------------------------ */
     /**
      * @return The user principal
      */
     Principal getUserPrincipal();
 
-    /* ------------------------------------------------------------ */
-    /** Check if the user is in a role.
+    /**
+     * Check if the user is in a role.
      * This call is used to satisfy authorization calls from
      * container code which will be using translated role names.
+     *
      * @param role A role name.
      * @param scope the scope
      * @return True if the user can act in that role.
      */
     boolean isUserInRole(String role, Scope scope);
 
-
-    /* ------------------------------------------------------------ */
     /**
      * A UserIdentity Scope.
      * A scope is the environment in which a User Identity is to
@@ -65,38 +63,33 @@ public interface UserIdentity
      */
     interface Scope
     {
-        /* ------------------------------------------------------------ */
+
         /**
          * @return The context handler that the identity is being considered within
          */
         ContextHandler getContextHandler();
 
-        /* ------------------------------------------------------------ */
         /**
          * @return The context path that the identity is being considered within
          */
         String getContextPath();
 
-        /* ------------------------------------------------------------ */
         /**
          * @return The name of the identity context. Typically this is the servlet name.
          */
         String getName();
 
-        /* ------------------------------------------------------------ */
         /**
          * @return A map of role reference names that converts from names used by application code
          * to names used by the context deployment.
          */
-        Map<String,String> getRoleRefMap();
+        Map<String, String> getRoleRefMap();
     }
 
-    /* ------------------------------------------------------------ */
     public interface UnauthenticatedUserIdentity extends UserIdentity
     {
     }
 
-    /* ------------------------------------------------------------ */
     public static final UserIdentity UNAUTHENTICATED_IDENTITY = new UnauthenticatedUserIdentity()
     {
         @Override

@@ -1,86 +1,77 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.server.session;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * NullSessionCacheFactory
  *
  * Factory for NullSessionCaches.
  */
-public class NullSessionCacheFactory implements SessionCacheFactory
-{    
-    boolean _saveOnCreate;
-    boolean _removeUnloadableSessions;
+public class NullSessionCacheFactory extends AbstractSessionCacheFactory
+{
+    private static final Logger LOG = LoggerFactory.getLogger(NullSessionCacheFactory.class);
     
-
-    /**
-     * @return the saveOnCreate
-     */
-    public boolean isSaveOnCreate()
-    {
-        return _saveOnCreate;
-    }
-
-
-
-    /**
-     * @param saveOnCreate the saveOnCreate to set
-     */
-    public void setSaveOnCreate(boolean saveOnCreate)
-    {
-        _saveOnCreate = saveOnCreate;
-    }
-
-
-
-    /**
-     * @return the removeUnloadableSessions
-     */
-    public boolean isRemoveUnloadableSessions()
-    {
-        return _removeUnloadableSessions;
-    }
-
-
-
-    /**
-     * @param removeUnloadableSessions the removeUnloadableSessions to set
-     */
-    public void setRemoveUnloadableSessions(boolean removeUnloadableSessions)
-    {
-        _removeUnloadableSessions = removeUnloadableSessions;
-    }
-
-
-
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionCacheFactory#getSessionCache(org.eclipse.jetty.server.session.SessionHandler)
-     */
     @Override
-    public SessionCache getSessionCache(SessionHandler handler)
+    public int getEvictionPolicy()
     {
-        NullSessionCache cache = new NullSessionCache(handler);
-        cache.setSaveOnCreate(isSaveOnCreate());
-        cache.setRemoveUnloadableSessions(isRemoveUnloadableSessions());
-        return cache;
-        
+        return SessionCache.EVICT_ON_SESSION_EXIT; //never actually stored
     }
 
+    @Override
+    public void setEvictionPolicy(int evictionPolicy)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Ignoring eviction policy setting for NullSessionCaches");
+    }
+
+    @Override
+    public boolean isSaveOnInactiveEvict()
+    {
+        return false; //never kept in cache
+    }
+
+    @Override
+    public void setSaveOnInactiveEvict(boolean saveOnInactiveEvict)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Ignoring eviction policy setting for NullSessionCaches");
+    }
+    
+    @Override
+    public boolean isInvalidateOnShutdown()
+    {
+        return false; //meaningless for NullSessionCache
+    }
+
+    @Override
+    public void setInvalidateOnShutdown(boolean invalidateOnShutdown)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Ignoring invalidateOnShutdown setting for NullSessionCaches");
+    }
+
+    @Override
+    public SessionCache newSessionCache(SessionHandler handler)
+    {
+        return new NullSessionCache(handler);
+    }
 }

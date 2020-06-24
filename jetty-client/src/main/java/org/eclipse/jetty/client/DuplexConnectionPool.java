@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -31,26 +31,25 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject
 public class DuplexConnectionPool extends AbstractConnectionPool implements Sweeper.Sweepable
 {
-    private static final Logger LOG = Log.getLogger(DuplexConnectionPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DuplexConnectionPool.class);
 
     private final ReentrantLock lock = new ReentrantLock();
     private final Deque<Connection> idleConnections;
     private final Set<Connection> activeConnections;
 
-    public DuplexConnectionPool(Destination destination, int maxConnections, Callback requester)
+    public DuplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
     {
         super(destination, maxConnections, requester);
         this.idleConnections = new ArrayDeque<>(maxConnections);
@@ -245,8 +244,8 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
         lock();
         try
         {
-            active = new DumpableCollection("active",new ArrayList<>(activeConnections));
-            idle = new DumpableCollection("idle",new ArrayList<>(idleConnections));
+            active = new DumpableCollection("active", new ArrayList<>(activeConnections));
+            idle = new DumpableCollection("idle", new ArrayList<>(idleConnections));
         }
         finally
         {
@@ -268,8 +267,8 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
         try
         {
             toSweep = activeConnections.stream()
-                    .filter(connection -> connection instanceof Sweeper.Sweepable)
-                    .collect(Collectors.toList());
+                .filter(connection -> connection instanceof Sweeper.Sweepable)
+                .collect(Collectors.toList());
         }
         finally
         {
@@ -282,11 +281,11 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
             {
                 boolean removed = remove(connection, true);
                 LOG.warn("Connection swept: {}{}{} from active connections{}{}",
-                        connection,
-                        System.lineSeparator(),
-                        removed ? "Removed" : "Not removed",
-                        System.lineSeparator(),
-                        dump());
+                    connection,
+                    System.lineSeparator(),
+                    removed ? "Removed" : "Not removed",
+                    System.lineSeparator(),
+                    dump());
             }
         }
 
@@ -309,12 +308,13 @@ public class DuplexConnectionPool extends AbstractConnectionPool implements Swee
             unlock();
         }
 
-        return String.format("%s@%x[c=%d/%d,a=%d,i=%d]",
-                getClass().getSimpleName(),
-                hashCode(),
-                getConnectionCount(),
-                getMaxConnectionCount(),
-                activeSize,
-                idleSize);
+        return String.format("%s@%x[c=%d/%d/%d,a=%d,i=%d]",
+            getClass().getSimpleName(),
+            hashCode(),
+            getPendingConnectionCount(),
+            getConnectionCount(),
+            getMaxConnectionCount(),
+            activeSize,
+            idleSize);
     }
 }

@@ -1,31 +1,30 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This rule can be used to protect against invalid unicode characters in a url making it into applications.
@@ -39,38 +38,35 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ValidUrlRule extends Rule
 {
-    private static final Logger LOG = Log.getLogger(ValidUrlRule.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ValidUrlRule.class);
 
     String _code = "400";
-    String _reason = "Illegal Url";
-    
+    String _message = "Illegal Url";
+
     public ValidUrlRule()
     {
         _handling = true;
         _terminating = true;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Sets the response status code.
-     * 
-     * @param code
-     *            response code
+     *
+     * @param code response code
      */
     public void setCode(String code)
     {
         _code = code;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Sets the reason for the response status code. Reasons will only reflect if the code value is greater or equal to 400.
-     * 
-     * @param reason the reason
+     * Sets the message for the {@link org.eclipse.jetty.server.Response#sendError(int, String)} method.
+     *
+     * @param message the message
      */
-    public void setReason(String reason)
+    public void setMessage(String message)
     {
-        _reason = reason;
+        _message = message;
     }
 
     @Override
@@ -80,7 +76,7 @@ public class ValidUrlRule extends Rule
         // String uri = request.getRequestURI();
         String uri = URIUtil.decodePath(request.getRequestURI());
 
-        for (int i = 0; i < uri.length();)
+        for (int i = 0; i < uri.length(); )
         {
             int codepoint = uri.codePointAt(i);
 
@@ -90,14 +86,10 @@ public class ValidUrlRule extends Rule
                 int code = Integer.parseInt(_code);
 
                 // status code 400 and up are error codes so include a reason
-                if (code >= 400)
-                {
-                    response.sendError(code,_reason);
-                }
+                if (_message != null && !_message.isEmpty())
+                    response.sendError(code, _message);
                 else
-                {
                     response.setStatus(code);
-                }
 
                 // we have matched, return target and consider it is handled
                 return target;
@@ -112,15 +104,15 @@ public class ValidUrlRule extends Rule
     protected boolean isValidChar(int codepoint)
     {
         Character.UnicodeBlock block = Character.UnicodeBlock.of(codepoint);
-        
+
         LOG.debug("{} {} {} {}", Character.charCount(codepoint), codepoint, block, Character.isISOControl(codepoint));
-        
-        return (!Character.isISOControl(codepoint)) && block != null && !Character.UnicodeBlock.SPECIALS.equals(block);       
+
+        return (!Character.isISOControl(codepoint)) && block != null && !Character.UnicodeBlock.SPECIALS.equals(block);
     }
 
     @Override
     public String toString()
     {
-        return super.toString() + "[" + _code + ":" + _reason + "]";
+        return super.toString() + "[" + _code + ":" + _message + "]";
     }
 }

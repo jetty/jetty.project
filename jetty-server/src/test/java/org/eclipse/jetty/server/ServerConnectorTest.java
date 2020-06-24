@@ -1,34 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,20 +33,31 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerConnectorTest
 {
@@ -70,28 +69,28 @@ public class ServerConnectorTest
             response.setContentType("text/plain");
 
             EndPoint endPoint = baseRequest.getHttpChannel().getEndPoint();
-            assertThat("Endpoint",endPoint,instanceOf(SocketChannelEndPoint.class));
+            assertThat("Endpoint", endPoint, instanceOf(SocketChannelEndPoint.class));
             SocketChannelEndPoint channelEndPoint = (SocketChannelEndPoint)endPoint;
-            Socket socket = channelEndPoint.getSocket();
+            Socket socket = channelEndPoint.getChannel().socket();
             ServerConnector connector = (ServerConnector)baseRequest.getHttpChannel().getConnector();
 
             PrintWriter out = response.getWriter();
-            out.printf("connector.getReuseAddress() = %b%n",connector.getReuseAddress());
+            out.printf("connector.getReuseAddress() = %b%n", connector.getReuseAddress());
 
             try
             {
                 Field fld = connector.getClass().getDeclaredField("_reuseAddress");
-                assertThat("Field[_reuseAddress]",fld,notNullValue());
+                assertThat("Field[_reuseAddress]", fld, notNullValue());
                 fld.setAccessible(true);
                 Object val = fld.get(connector);
-                out.printf("connector._reuseAddress() = %b%n",val);
+                out.printf("connector._reuseAddress() = %b%n", val);
             }
             catch (Throwable t)
             {
                 t.printStackTrace(out);
             }
 
-            out.printf("socket.getReuseAddress() = %b%n",socket.getReuseAddress());
+            out.printf("socket.getReuseAddress() = %b%n", socket.getReuseAddress());
 
             baseRequest.setHandled(true);
         }
@@ -105,33 +104,29 @@ public class ServerConnectorTest
             host = "localhost";
         }
         int port = connector.getLocalPort();
-        return new URI(String.format("http://%s:%d/",host,port));
+        return new URI(String.format("http://%s:%d/", host, port));
     }
 
     private String getResponse(URI uri) throws IOException
     {
         HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
-        assertThat("Valid Response Code",http.getResponseCode(),anyOf(is(200),is(404)));
+        assertThat("Valid Response Code", http.getResponseCode(), anyOf(is(200), is(404)));
 
         try (InputStream in = http.getInputStream())
         {
-            return IO.toString(in,StandardCharsets.UTF_8);
+            return IO.toString(in, StandardCharsets.UTF_8);
         }
     }
 
     @Test
-    public void testReuseAddress_Default() throws Exception
+    public void testReuseAddressDefault() throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         connector.setPort(0);
         server.addConnector(connector);
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(new ReuseInfoHandler());
-        handlers.addHandler(new DefaultHandler());
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(new ReuseInfoHandler(), new DefaultHandler()));
 
         try
         {
@@ -139,13 +134,13 @@ public class ServerConnectorTest
 
             URI uri = toServerURI(connector);
             String response = getResponse(uri);
-            assertThat("Response",response,containsString("connector.getReuseAddress() = true"));
-            assertThat("Response",response,containsString("connector._reuseAddress() = true"));
+            assertThat("Response", response, containsString("connector.getReuseAddress() = true"));
+            assertThat("Response", response, containsString("connector._reuseAddress() = true"));
 
             // Java on Windows is incapable of propagating reuse-address this to the opened socket.
             if (!org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
             {
-                assertThat("Response",response,containsString("socket.getReuseAddress() = true"));
+                assertThat("Response", response, containsString("socket.getReuseAddress() = true"));
             }
         }
         finally
@@ -155,7 +150,7 @@ public class ServerConnectorTest
     }
 
     @Test
-    public void testReuseAddress_True() throws Exception
+    public void testReuseAddressTrue() throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -163,11 +158,7 @@ public class ServerConnectorTest
         connector.setReuseAddress(true);
         server.addConnector(connector);
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(new ReuseInfoHandler());
-        handlers.addHandler(new DefaultHandler());
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(new ReuseInfoHandler(), new DefaultHandler()));
 
         try
         {
@@ -175,13 +166,13 @@ public class ServerConnectorTest
 
             URI uri = toServerURI(connector);
             String response = getResponse(uri);
-            assertThat("Response",response,containsString("connector.getReuseAddress() = true"));
-            assertThat("Response",response,containsString("connector._reuseAddress() = true"));
+            assertThat("Response", response, containsString("connector.getReuseAddress() = true"));
+            assertThat("Response", response, containsString("connector._reuseAddress() = true"));
 
             // Java on Windows is incapable of propagating reuse-address this to the opened socket.
             if (!org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
             {
-                assertThat("Response",response,containsString("socket.getReuseAddress() = true"));
+                assertThat("Response", response, containsString("socket.getReuseAddress() = true"));
             }
         }
         finally
@@ -191,7 +182,7 @@ public class ServerConnectorTest
     }
 
     @Test
-    public void testReuseAddress_False() throws Exception
+    public void testReuseAddressFalse() throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -199,11 +190,7 @@ public class ServerConnectorTest
         connector.setReuseAddress(false);
         server.addConnector(connector);
 
-        HandlerList handlers = new HandlerList();
-        handlers.addHandler(new ReuseInfoHandler());
-        handlers.addHandler(new DefaultHandler());
-
-        server.setHandler(handlers);
+        server.setHandler(new HandlerList(new ReuseInfoHandler(), new DefaultHandler()));
 
         try
         {
@@ -211,13 +198,13 @@ public class ServerConnectorTest
 
             URI uri = toServerURI(connector);
             String response = getResponse(uri);
-            assertThat("Response",response,containsString("connector.getReuseAddress() = false"));
-            assertThat("Response",response,containsString("connector._reuseAddress() = false"));
+            assertThat("Response", response, containsString("connector.getReuseAddress() = false"));
+            assertThat("Response", response, containsString("connector._reuseAddress() = false"));
 
             // Java on Windows is incapable of propagating reuse-address this to the opened socket.
             if (!org.junit.jupiter.api.condition.OS.WINDOWS.isCurrentOs())
             {
-                assertThat("Response",response,containsString("socket.getReuseAddress() = false"));
+                assertThat("Response", response, containsString("socket.getReuseAddress() = false"));
             }
         }
         finally
@@ -227,7 +214,7 @@ public class ServerConnectorTest
     }
 
     @Test
-    public void testAddFirstConnectionFactory() throws Exception
+    public void testAddFirstConnectionFactory()
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -249,10 +236,10 @@ public class ServerConnectorTest
     public void testExceptionWhileAccepting() throws Exception
     {
         Server server = new Server();
-        try (StacklessLogging stackless = new StacklessLogging(AbstractConnector.class))
+        try (StacklessLogging ignored = new StacklessLogging(AbstractConnector.class))
         {
             AtomicLong spins = new AtomicLong();
-            ServerConnector connector = new ServerConnector(server,1,1)
+            ServerConnector connector = new ServerConnector(server, 1, 1)
             {
                 @Override
                 public void accept(int acceptorID) throws IOException
@@ -272,33 +259,33 @@ public class ServerConnectorTest
             server.stop();
         }
     }
-    
+
     @Test
     public void testOpenWithServerSocketChannel() throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
-        
+
         ServerSocketChannel channel = ServerSocketChannel.open();
         channel.bind(new InetSocketAddress(0));
-        
+
         assertTrue(channel.isOpen());
         int port = channel.socket().getLocalPort();
-        assertThat(port,greaterThan(0));
-        
+        assertThat(port, greaterThan(0));
+
         connector.open(channel);
-        
-        assertThat(connector.getLocalPort(),is(port));
-        
+
+        assertThat(connector.getLocalPort(), is(port));
+
         server.start();
-        
-        assertThat(connector.getLocalPort(),is(port));
-        assertThat(connector.getTransport(),is(channel));
-        
+
+        assertThat(connector.getLocalPort(), is(port));
+        assertThat(connector.getTransport(), is(channel));
+
         server.stop();
-        
-        assertThat(connector.getTransport(),Matchers.nullValue());
+
+        assertThat(connector.getTransport(), Matchers.nullValue());
     }
 
     @Test
@@ -313,12 +300,9 @@ public class ServerConnectorTest
             connector.setPort(port);
             server.addConnector(connector);
 
-            HandlerList handlers = new HandlerList();
-            handlers.addHandler(new DefaultHandler());
+            server.setHandler(new HandlerList(new DefaultHandler()));
 
-            server.setHandler(handlers);
-
-            IOException x = assertThrows(IOException.class, () -> server.start());
+            IOException x = assertThrows(IOException.class, server::start);
             assertThat(x.getCause(), instanceOf(BindException.class));
             assertThat(x.getMessage(), containsString("0.0.0.0:" + port));
         }

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util;
@@ -33,17 +33,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 
-import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-
-/* ------------------------------------------------------------------------------- */
 /**
  * Buffer utility methods.
  * <p>The standard JVM {@link ByteBuffer} can exist in two modes: In fill mode the valid
  * data is between 0 and pos; In flush mode the valid data is between the pos and the limit.
  * The various ByteBuffer methods assume a mode and some of them will switch or enforce a mode:
- * Allocate and clear set fill mode; flip and compact switch modes; read and write assume fill 
+ * Allocate and clear set fill mode; flip and compact switch modes; read and write assume fill
  * and flush modes.    This duality can result in confusing code such as:
  * </p>
  * <pre>
@@ -57,10 +56,10 @@ import org.eclipse.jetty.util.resource.Resource;
  * The BufferUtil class provides a set of utilities that operate on the convention that ByteBuffers
  * will always be left, passed in an API or returned from a method in the flush mode - ie with
  * valid data between the pos and limit.    This convention is adopted so as to avoid confusion as to
- * what state a buffer is in and to avoid excessive copying of data that can result with the usage 
- * of compress.</p> 
+ * what state a buffer is in and to avoid excessive copying of data that can result with the usage
+ * of compress.</p>
  * <p>
- * Thus this class provides alternate implementations of {@link #allocate(int)}, 
+ * Thus this class provides alternate implementations of {@link #allocate(int)},
  * {@link #allocateDirect(int)} and {@link #clear(ByteBuffer)} that leave the buffer
  * in flush mode.   Thus the following tests will pass:
  * </p>
@@ -70,10 +69,10 @@ import org.eclipse.jetty.util.resource.Resource;
  *     BufferUtil.clear(buffer);
  *     assert(buffer.remaining()==0);
  * </pre>
- * <p>If the BufferUtil methods {@link #fill(ByteBuffer, byte[], int, int)}, 
+ * <p>If the BufferUtil methods {@link #fill(ByteBuffer, byte[], int, int)},
  * {@link #append(ByteBuffer, byte[], int, int)} or {@link #put(ByteBuffer, ByteBuffer)} are used,
- * then the caller does not need to explicitly switch the buffer to fill mode.    
- * If the caller wishes to use other ByteBuffer bases libraries to fill a buffer, 
+ * then the caller does not need to explicitly switch the buffer to fill mode.
+ * If the caller wishes to use other ByteBuffer bases libraries to fill a buffer,
  * then they can use explicit calls of #flipToFill(ByteBuffer) and #flipToFlush(ByteBuffer, int)
  * to change modes.  Note because this convention attempts to avoid the copies of compact, the position
  * is not set to zero on each fill cycle and so its value must be remembered:
@@ -95,19 +94,25 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public class BufferUtil
 {
+    private static final Logger LOG = LoggerFactory.getLogger(BufferUtil.class);
+
     static final int TEMP_BUFFER_SIZE = 4096;
     static final byte SPACE = 0x20;
     static final byte MINUS = '-';
     static final byte[] DIGIT =
-            {(byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9', (byte)'A', (byte)'B', (byte)'C', (byte)'D',
-                    (byte)'E', (byte)'F'};
+        {
+            (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7', (byte)'8', (byte)'9',
+            (byte)'A', (byte)'B', (byte)'C', (byte)'D',
+            (byte)'E', (byte)'F'
+        };
 
     public static final ByteBuffer EMPTY_BUFFER = ByteBuffer.wrap(new byte[0]);
 
-    /* ------------------------------------------------------------ */
-    /** Allocate ByteBuffer in flush mode.
+    /**
+     * Allocate ByteBuffer in flush mode.
      * The position and limit will both be zero, indicating that the buffer is
      * empty and must be flipped before any data is put to it.
+     *
      * @param capacity capacity of the allocated ByteBuffer
      * @return Buffer
      */
@@ -118,10 +123,11 @@ public class BufferUtil
         return buf;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Allocate ByteBuffer in flush mode.
+    /**
+     * Allocate ByteBuffer in flush mode.
      * The position and limit will both be zero, indicating that the buffer is
      * empty and in flush mode.
+     *
      * @param capacity capacity of the allocated ByteBuffer
      * @return Buffer
      */
@@ -132,26 +138,42 @@ public class BufferUtil
         return buf;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Deep copy of a buffer
+    /**
+     * Allocates a ByteBuffer in flush mode.
+     * The position and limit will both be zero, indicating that the buffer is
+     * empty and must be flipped before any data is put to it.
+     *
+     * @param capacity capacity of the allocated ByteBuffer
+     * @param direct whether the ByteBuffer is direct
+     * @return the newly allocated ByteBuffer
+     */
+    public static ByteBuffer allocate(int capacity, boolean direct)
+    {
+        return direct ? allocateDirect(capacity) : allocate(capacity);
+    }
+
+    /**
+     * Deep copy of a buffer
+     *
      * @param buffer The buffer to copy
      * @return A copy of the buffer
      */
     public static ByteBuffer copy(ByteBuffer buffer)
     {
-        if (buffer==null)
+        if (buffer == null)
             return null;
         int p = buffer.position();
-        ByteBuffer clone = buffer.isDirect()?ByteBuffer.allocateDirect(buffer.remaining()):ByteBuffer.allocate(buffer.remaining());
+        ByteBuffer clone = buffer.isDirect() ? ByteBuffer.allocateDirect(buffer.remaining()) : ByteBuffer.allocate(buffer.remaining());
         clone.put(buffer);
         clone.flip();
         buffer.position(p);
         return clone;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Clear the buffer to be empty in flush mode.
+    /**
+     * Clear the buffer to be empty in flush mode.
      * The position and limit are set to 0;
+     *
      * @param buffer The buffer to clear.
      */
     public static void clear(ByteBuffer buffer)
@@ -163,9 +185,10 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /** Clear the buffer to be empty in fill mode.
+    /**
+     * Clear the buffer to be empty in fill mode.
      * The position is set to 0 and the limit is set to the capacity.
+     *
      * @param buffer The buffer to clear.
      */
     public static void clearToFill(ByteBuffer buffer)
@@ -177,8 +200,8 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /** Flip the buffer to fill mode.
+    /**
+     * Flip the buffer to fill mode.
      * The position is set to the first unused position in the buffer
      * (the old limit) and the limit is set to the capacity.
      * If the buffer is empty, then this call is effectively {@link #clearToFill(ByteBuffer)}.
@@ -214,14 +237,14 @@ public class BufferUtil
         return position;
     }
 
-
-    /* ------------------------------------------------------------ */
-    /** Flip the buffer to Flush mode.
+    /**
+     * Flip the buffer to Flush mode.
      * The limit is set to the first unused byte(the old position) and
      * the position is set to the passed position.
      * <p>
      * This method is used as a replacement of {@link Buffer#flip()}.
-     * @param buffer   the buffer to be flipped
+     *
+     * @param buffer the buffer to be flipped
      * @param position The position of valid data to flip to. This should
      * be the return value of the previous call to {@link #flipToFill(ByteBuffer)}
      */
@@ -231,9 +254,23 @@ public class BufferUtil
         buffer.position(position);
     }
 
+    /** Put an integer little endian
+     * @param buffer The buffer to put to
+     * @param value The value to put.
+     */
+    public static void putIntLittleEndian(ByteBuffer buffer, int value)
+    {
+        int p = flipToFill(buffer);
+        buffer.put((byte)(value & 0xFF));
+        buffer.put((byte)((value >>> 8) & 0xFF));
+        buffer.put((byte)((value >>> 16) & 0xFF));
+        buffer.put((byte)((value >>> 24) & 0xFF));
+        flipToFlush(buffer, p);
+    }
 
-    /* ------------------------------------------------------------ */
-    /** Convert a ByteBuffer to a byte array.
+    /**
+     * Convert a ByteBuffer to a byte array.
+     *
      * @param buffer The buffer to convert in flush mode. The buffer is not altered.
      * @return An array of bytes duplicated from the buffer.
      */
@@ -242,8 +279,8 @@ public class BufferUtil
         if (buffer.hasArray())
         {
             byte[] array = buffer.array();
-            int from=buffer.arrayOffset() + buffer.position();
-            return Arrays.copyOfRange(array,from,from+buffer.remaining());
+            int from = buffer.arrayOffset() + buffer.position();
+            return Arrays.copyOfRange(array, from, from + buffer.remaining());
         }
         else
         {
@@ -260,12 +297,13 @@ public class BufferUtil
     public static boolean isTheEmptyBuffer(ByteBuffer buf)
     {
         @SuppressWarnings("ReferenceEquality")
-        boolean isTheEmptyBuffer_ = (buf == EMPTY_BUFFER);
-        return isTheEmptyBuffer_;
+        boolean isTheEmptyBuffer = (buf == EMPTY_BUFFER);
+        return isTheEmptyBuffer;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Check for an empty or null buffer.
+    /**
+     * Check for an empty or null buffer.
+     *
      * @param buf the buffer to check
      * @return true if the buffer is null or empty.
      */
@@ -274,8 +312,45 @@ public class BufferUtil
         return buf == null || buf.remaining() == 0;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Check for a non null and non empty buffer.
+    /**
+     * Check for an empty or null buffers.
+     *
+     * @param buf the buffer to check
+     * @return true if the buffer is null or empty.
+     */
+    public static boolean isEmpty(ByteBuffer[] buf)
+    {
+        if (buf == null || buf.length == 0)
+            return true;
+        for (ByteBuffer b : buf)
+        {
+            if (b != null && b.hasRemaining())
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * Get the remaining bytes in 0 or more buffers.
+     *
+     * @param buf the buffers to check
+     * @return number of bytes remaining in all buffers.
+     */
+    public static long remaining(ByteBuffer... buf)
+    {
+        long remaining = 0;
+        if (buf != null)
+            for (ByteBuffer b : buf)
+            {
+                if (b != null)
+                    remaining += b.remaining();
+            }
+        return remaining;
+    }
+
+    /**
+     * Check for a non null and non empty buffer.
+     *
      * @param buf the buffer to check
      * @return true if the buffer is not null and not empty.
      */
@@ -284,8 +359,9 @@ public class BufferUtil
         return buf != null && buf.remaining() > 0;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Check for a non null and full buffer.
+    /**
+     * Check for a non null and full buffer.
+     *
      * @param buf the buffer to check
      * @return true if the buffer is not null and the limit equals the capacity.
      */
@@ -294,8 +370,9 @@ public class BufferUtil
         return buf != null && buf.limit() == buf.capacity();
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get remaining from null checked buffer
+    /**
+     * Get remaining from null checked buffer
+     *
      * @param buffer The buffer to get the remaining from, in flush mode.
      * @return 0 if the buffer is null, else the bytes remaining in the buffer.
      */
@@ -304,8 +381,9 @@ public class BufferUtil
         return buffer == null ? 0 : buffer.remaining();
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the space from the limit to the capacity
+    /**
+     * Get the space from the limit to the capacity
+     *
      * @param buffer the buffer to get the space from
      * @return space
      */
@@ -316,25 +394,26 @@ public class BufferUtil
         return buffer.capacity() - buffer.limit();
     }
 
-    /* ------------------------------------------------------------ */
-    /** Compact the buffer
+    /**
+     * Compact the buffer
+     *
      * @param buffer the buffer to compact
      * @return true if the compact made a full buffer have space
      */
     public static boolean compact(ByteBuffer buffer)
     {
-        if (buffer.position()==0)
+        if (buffer.position() == 0)
             return false;
         boolean full = buffer.limit() == buffer.capacity();
         buffer.compact().flip();
         return full && buffer.limit() < buffer.capacity();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Put data from one buffer into another, avoiding over/under flows
+     *
      * @param from Buffer to take bytes from in flush mode
-     * @param to   Buffer to put bytes to in fill mode.
+     * @param to Buffer to put bytes to in fill mode.
      * @return number of bytes moved
      */
     public static int put(ByteBuffer from, ByteBuffer to)
@@ -370,21 +449,9 @@ public class BufferUtil
         return put;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Put data from one buffer into another, avoiding over/under flows
-     * @param from Buffer to take bytes from in flush mode
-     * @param to   Buffer to put bytes to in flush mode. The buffer is flipToFill before the put and flipToFlush after.
-     * @return number of bytes moved
-     * @deprecated use {@link #append(ByteBuffer, ByteBuffer)}
-     */
-    public static int flipPutFlip(ByteBuffer from, ByteBuffer to)
-    {
-        return append(to,from);
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Append bytes to a buffer.
+     * Append bytes to a buffer.
+     *
      * @param to Buffer is flush mode
      * @param b bytes to append
      * @param off offset into byte
@@ -403,20 +470,22 @@ public class BufferUtil
             flipToFlush(to, pos);
         }
     }
-    
-    /* ------------------------------------------------------------ */
-    /** Append bytes to a buffer.
+
+    /**
+     * Append bytes to a buffer.
+     *
      * @param to Buffer is flush mode
      * @param b bytes to append
      * @throws BufferOverflowException if unable to append buffer due to space limits
      */
     public static void append(ByteBuffer to, byte[] b) throws BufferOverflowException
     {
-        append(to,b,0,b.length);
+        append(to, b, 0, b.length);
     }
-    
-    /* ------------------------------------------------------------ */
-    /** Append a string to a buffer.
+
+    /**
+     * Append a string to a buffer.
+     *
      * @param to Buffer is flush mode
      * @param s String to append as UTF8
      * @throws BufferOverflowException if unable to append buffer due to space limits
@@ -424,13 +493,15 @@ public class BufferUtil
     public static void append(ByteBuffer to, String s) throws BufferOverflowException
     {
         byte[] b = s.getBytes(StandardCharsets.UTF_8);
-        append(to,b,0,b.length);
+        append(to, b, 0, b.length);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Appends a byte to a buffer
+    /**
+     * Appends a byte to a buffer
+     *
      * @param to Buffer is flush mode
      * @param b byte to append
+     * @throws BufferOverflowException if unable to append buffer due to space limits
      */
     public static void append(ByteBuffer to, byte b)
     {
@@ -445,8 +516,9 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /** Appends a buffer to a buffer
+    /**
+     * Appends a buffer to a buffer
+     *
      * @param to Buffer is flush mode
      * @param b buffer to append
      * @return The position of the valid data before the flipped position.
@@ -464,9 +536,9 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Like append, but does not throw {@link BufferOverflowException}
+     *
      * @param to Buffer The buffer to fill to. The buffer will be flipped to fill mode and then flipped back to flush mode.
      * @param b bytes The bytes to fill
      * @param off offset into bytes
@@ -489,21 +561,20 @@ public class BufferUtil
         }
     }
 
-
-    /* ------------------------------------------------------------ */
     public static void readFrom(File file, ByteBuffer buffer) throws IOException
     {
-        try(RandomAccessFile raf = new RandomAccessFile(file,"r"))
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r"))
         {
             FileChannel channel = raf.getChannel();
-            long needed=raf.length();
+            long needed = raf.length();
 
-            while (needed>0 && buffer.hasRemaining())
-                needed=needed-channel.read(buffer);
+            while (needed > 0 && buffer.hasRemaining())
+            {
+                needed = needed - channel.read(buffer);
+            }
         }
     }
 
-    /* ------------------------------------------------------------ */
     public static void readFrom(InputStream is, int needed, ByteBuffer buffer) throws IOException
     {
         ByteBuffer tmp = allocate(8192);
@@ -519,28 +590,29 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
     public static void writeTo(ByteBuffer buffer, OutputStream out) throws IOException
     {
         if (buffer.hasArray())
         {
-            out.write(buffer.array(),buffer.arrayOffset() + buffer.position(),buffer.remaining());
+            out.write(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
             // update buffer position, in way similar to non-array version of writeTo
             buffer.position(buffer.position() + buffer.remaining());
         }
         else
         {
             byte[] bytes = new byte[TEMP_BUFFER_SIZE];
-            while(buffer.hasRemaining()){
+            while (buffer.hasRemaining())
+            {
                 int byteCountToWrite = Math.min(buffer.remaining(), TEMP_BUFFER_SIZE);
                 buffer.get(bytes, 0, byteCountToWrite);
-                out.write(bytes,0 , byteCountToWrite);
+                out.write(bytes, 0, byteCountToWrite);
             }
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /** Convert the buffer to an ISO-8859-1 String
+    /**
+     * Convert the buffer to an ISO-8859-1 String
+     *
      * @param buffer The buffer to convert in flush mode. The buffer is unchanged
      * @return The buffer as a string.
      */
@@ -549,19 +621,10 @@ public class BufferUtil
         return toString(buffer, StandardCharsets.ISO_8859_1);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Convert the buffer to an UTF-8 String
+    /**
+     * Convert the buffer to an ISO-8859-1 String
+     *
      * @param buffer The buffer to convert in flush mode. The buffer is unchanged
-     * @return The buffer as a string.
-     */
-    public static String toUTF8String(ByteBuffer buffer)
-    {
-        return toString(buffer, StandardCharsets.UTF_8);
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Convert the buffer to an ISO-8859-1 String
-     * @param buffer  The buffer to convert in flush mode. The buffer is unchanged
      * @param charset The {@link Charset} to use to convert the bytes
      * @return The buffer as a string.
      */
@@ -579,14 +642,14 @@ public class BufferUtil
         return new String(array, buffer.arrayOffset() + buffer.position(), buffer.remaining(), charset);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Convert a partial buffer to a String.
-     * 
-     * @param buffer the buffer to convert 
+    /**
+     * Convert a partial buffer to a String.
+     *
+     * @param buffer the buffer to convert
      * @param position The position in the buffer to start the string from
      * @param length The length of the buffer
      * @param charset The {@link Charset} to use to convert the bytes
-     * @return  The buffer as a string.
+     * @return The buffer as a string.
      */
     public static String toString(ByteBuffer buffer, int position, int length, Charset charset)
     {
@@ -605,30 +668,35 @@ public class BufferUtil
         return new String(array, buffer.arrayOffset() + position, length, charset);
     }
 
-    /* ------------------------------------------------------------ */
+    /**
+     * Convert the buffer to an UTF-8 String
+     *
+     * @param buffer The buffer to convert in flush mode. The buffer is unchanged
+     * @return The buffer as a string.
+     */
+    public static String toUTF8String(ByteBuffer buffer)
+    {
+        return toString(buffer, StandardCharsets.UTF_8);
+    }
+
     /**
      * Convert buffer to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
      *
-     * @param buffer
-     *            A buffer containing an integer in flush mode. The position is not changed.
+     * @param buffer A buffer containing an integer in flush mode. The position is not changed.
      * @return an int
      */
     public static int toInt(ByteBuffer buffer)
     {
-        return toInt(buffer,buffer.position(),buffer.remaining());
+        return toInt(buffer, buffer.position(), buffer.remaining());
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Convert buffer to an integer. Parses up to the first non-numeric character. If no number is found an
      * IllegalArgumentException is thrown
      *
-     * @param buffer
-     *            A buffer containing an integer in flush mode. The position is not changed.
-     * @param position
-     *            the position in the buffer to start reading from
-     * @param length
-     *            the length of the buffer to use for conversion
+     * @param buffer A buffer containing an integer in flush mode. The position is not changed.
+     * @param position the position in the buffer to start reading from
+     * @param length the length of the buffer to use for conversion
      * @return an int of the buffer bytes
      */
     public static int toInt(ByteBuffer buffer, int position, int length)
@@ -637,11 +705,11 @@ public class BufferUtil
         boolean started = false;
         boolean minus = false;
 
-        int limit = position+length;
-        
-        if (length<=0)
-            throw new NumberFormatException(toString(buffer,position,length,StandardCharsets.UTF_8));
-        
+        int limit = position + length;
+
+        if (length <= 0)
+            throw new NumberFormatException(toString(buffer, position, length, StandardCharsets.UTF_8));
+
         for (int i = position; i < limit; i++)
         {
             byte b = buffer.get(i);
@@ -667,13 +735,11 @@ public class BufferUtil
             return minus ? (-val) : val;
         throw new NumberFormatException(toString(buffer));
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Convert buffer to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
      *
-     * @param buffer
-     *            A buffer containing an integer in flush mode. The position is updated.
+     * @param buffer A buffer containing an integer in flush mode. The position is updated.
      * @return an int
      */
     public static int takeInt(ByteBuffer buffer)
@@ -714,8 +780,7 @@ public class BufferUtil
     /**
      * Convert buffer to an long. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
      *
-     * @param buffer
-     *            A buffer containing an integer in flush mode. The position is not changed.
+     * @param buffer A buffer containing an integer in flush mode. The position is not changed.
      * @return an int
      */
     public static long toLong(ByteBuffer buffer)
@@ -797,7 +862,6 @@ public class BufferUtil
         }
     }
 
-    /* ------------------------------------------------------------ */
     public static void putDecInt(ByteBuffer buffer, int n)
     {
         if (n < 0)
@@ -907,8 +971,7 @@ public class BufferUtil
     /**
      * Create a new ByteBuffer using provided byte array.
      *
-     * @param array
-     *            the byte array to back buffer with.
+     * @param array the byte array to back buffer with.
      * @return ByteBuffer with provided byte array, in flush mode
      */
     public static ByteBuffer toBuffer(byte[] array)
@@ -921,19 +984,39 @@ public class BufferUtil
     /**
      * Create a new ByteBuffer using the provided byte array.
      *
-     * @param array
-     *            the byte array to use.
-     * @param offset
-     *            the offset within the byte array to use from
-     * @param length
-     *            the length in bytes of the array to use
+     * @param array the byte array to use.
+     * @param offset the offset within the byte array to use from
+     * @param length the length in bytes of the array to use
      * @return ByteBuffer with provided byte array, in flush mode
      */
-    public static ByteBuffer toBuffer(byte array[], int offset, int length)
+    public static ByteBuffer toBuffer(byte[] array, int offset, int length)
     {
         if (array == null)
             return EMPTY_BUFFER;
         return ByteBuffer.wrap(array, offset, length);
+    }
+
+    public static ByteBuffer toBuffer(Resource resource, boolean direct) throws IOException
+    {
+        int len = (int)resource.length();
+        if (len < 0)
+            throw new IllegalArgumentException("invalid resource: " + String.valueOf(resource) + " len=" + len);
+
+        ByteBuffer buffer = direct ? BufferUtil.allocateDirect(len) : BufferUtil.allocate(len);
+
+        int pos = BufferUtil.flipToFill(buffer);
+        if (resource.getFile() != null)
+            BufferUtil.readFrom(resource.getFile(), buffer);
+        else
+        {
+            try (InputStream is = resource.getInputStream();)
+            {
+                BufferUtil.readFrom(is, len, buffer);
+            }
+        }
+        BufferUtil.flipToFlush(buffer, pos);
+
+        return buffer;
     }
 
     public static ByteBuffer toDirectBuffer(String s)
@@ -954,44 +1037,10 @@ public class BufferUtil
 
     public static ByteBuffer toMappedBuffer(File file) throws IOException
     {
-        try (FileChannel channel = FileChannel.open(file.toPath(),StandardOpenOption.READ))
+        try (FileChannel channel = FileChannel.open(file.toPath(), StandardOpenOption.READ))
         {
             return channel.map(MapMode.READ_ONLY, 0, file.length());
         }
-    }
-
-    /**
-     * @param buffer the buffer to test
-     * @return {@code false}
-     * @deprecated don't use - there is no way to reliably tell if a ByteBuffer is mapped.
-     */
-    @Deprecated
-    public static boolean isMappedBuffer(ByteBuffer buffer)
-    {
-        return false;
-    }
-
-    public static ByteBuffer toBuffer(Resource resource,boolean direct) throws IOException
-    {
-        int len=(int)resource.length();
-        if (len<0)
-            throw new IllegalArgumentException("invalid resource: "+String.valueOf(resource)+" len="+len);
-        
-        ByteBuffer buffer = direct?BufferUtil.allocateDirect(len):BufferUtil.allocate(len);
-
-        int pos=BufferUtil.flipToFill(buffer);
-        if (resource.getFile()!=null)
-            BufferUtil.readFrom(resource.getFile(),buffer);
-        else
-        {
-            try (InputStream is = resource.getInputStream();)
-            {
-                BufferUtil.readFrom(is,len,buffer);
-            }
-        }
-        BufferUtil.flipToFlush(buffer,pos);
-        
-        return buffer;
     }
 
     public static String toSummaryString(ByteBuffer buffer)
@@ -1017,50 +1066,17 @@ public class BufferUtil
         builder.append('[');
         for (int i = 0; i < buffer.length; i++)
         {
-            if (i > 0) builder.append(',');
+            if (i > 0)
+                builder.append(',');
             builder.append(toDetailString(buffer[i]));
         }
         builder.append(']');
         return builder.toString();
     }
 
-
-    
-    /* ------------------------------------------------------------ */
-    /** Convert Buffer to string ID independent of content
-     */
-    private static void idString(ByteBuffer buffer, StringBuilder out) 
-    {
-        out.append(buffer.getClass().getSimpleName());
-        out.append("@");
-        if (buffer.hasArray() && buffer.arrayOffset()==4)
-        {
-            out.append('T');
-            byte[] array = buffer.array();
-            TypeUtil.toHex(array[0],out);
-            TypeUtil.toHex(array[1],out);
-            TypeUtil.toHex(array[2],out);
-            TypeUtil.toHex(array[3],out);
-        }
-        else
-            out.append(Integer.toHexString(System.identityHashCode(buffer)));
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Convert Buffer to string ID independent of content
-     * @param buffer the buffet to generate a string ID from
-     * @return A string showing the buffer ID
-     */
-    public static String toIDString(ByteBuffer buffer)
-    {
-        StringBuilder buf = new StringBuilder();
-        idString(buffer,buf);
-        return buf.toString();
-    }
-    
-    
-    /* ------------------------------------------------------------ */
-    /** Convert Buffer to a detail debug string of pointers and content
+    /**
+     * Convert Buffer to a detail debug string of pointers and content
+     *
      * @param buffer the buffer to generate a detail string from
      * @return A string showing the pointers and content of the buffer
      */
@@ -1070,7 +1086,7 @@ public class BufferUtil
             return "null";
 
         StringBuilder buf = new StringBuilder();
-        idString(buffer,buf);
+        idString(buffer, buf);
         buf.append("[p=");
         buf.append(buffer.position());
         buf.append(",l=");
@@ -1081,34 +1097,69 @@ public class BufferUtil
         buf.append(buffer.remaining());
         buf.append("]={");
 
-        appendDebugString(buf,buffer);
+        appendDebugString(buf, buffer);
 
         buf.append("}");
 
         return buf.toString();
     }
 
-    private static void appendDebugString(StringBuilder buf,ByteBuffer buffer)
+    /**
+     * Convert Buffer to string ID independent of content
+     */
+    private static void idString(ByteBuffer buffer, StringBuilder out)
     {
+        out.append(buffer.getClass().getSimpleName());
+        out.append("@");
+        if (buffer.hasArray() && buffer.arrayOffset() == 4)
+        {
+            out.append('T');
+            byte[] array = buffer.array();
+            TypeUtil.toHex(array[0], out);
+            TypeUtil.toHex(array[1], out);
+            TypeUtil.toHex(array[2], out);
+            TypeUtil.toHex(array[3], out);
+        }
+        else
+            out.append(Integer.toHexString(System.identityHashCode(buffer)));
+    }
+
+    /**
+     * Convert Buffer to string ID independent of content
+     *
+     * @param buffer the buffet to generate a string ID from
+     * @return A string showing the buffer ID
+     */
+    public static String toIDString(ByteBuffer buffer)
+    {
+        StringBuilder buf = new StringBuilder();
+        idString(buffer, buf);
+        return buf.toString();
+    }
+
+    private static void appendDebugString(StringBuilder buf, ByteBuffer buffer)
+    {
+        // Take a readonly copy so we can adjust the limit
+        buffer = buffer.asReadOnlyBuffer();
         try
         {
             for (int i = 0; i < buffer.position(); i++)
             {
-                appendContentChar(buf,buffer.get(i));
-                if (i == 16 && buffer.position() > 32)
+                appendContentChar(buf, buffer.get(i));
+                if (i == 8 && buffer.position() > 16)
                 {
                     buf.append("...");
-                    i = buffer.position() - 16;
+                    i = buffer.position() - 8;
                 }
             }
             buf.append("<<<");
             for (int i = buffer.position(); i < buffer.limit(); i++)
             {
-                appendContentChar(buf,buffer.get(i));
-                if (i == buffer.position() + 16 && buffer.limit() > buffer.position() + 32)
+                appendContentChar(buf, buffer.get(i));
+                if (i == buffer.position() + 24 && buffer.limit() > buffer.position() + 48)
                 {
                     buf.append("...");
-                    i = buffer.limit() - 16;
+                    i = buffer.limit() - 24;
                 }
             }
             buf.append(">>>");
@@ -1116,18 +1167,18 @@ public class BufferUtil
             buffer.limit(buffer.capacity());
             for (int i = limit; i < buffer.capacity(); i++)
             {
-                appendContentChar(buf,buffer.get(i));
-                if (i == limit + 16 && buffer.capacity() > limit + 32)
+                appendContentChar(buf, buffer.get(i));
+                if (i == limit + 8 && buffer.capacity() > limit + 16)
                 {
                     buf.append("...");
-                    i = buffer.capacity() - 16;
+                    i = buffer.capacity() - 8;
                 }
             }
             buffer.limit(limit);
         }
-        catch(Throwable x)
+        catch (Throwable x)
         {
-            Log.getRootLogger().ignore(x);
+            LOG.trace("IGNORED", x);
             buf.append("!!concurrent mod!!");
         }
     }
@@ -1136,7 +1187,7 @@ public class BufferUtil
     {
         if (b == '\\')
             buf.append("\\\\");
-        else if ((b >= 0x20) && (b<=0x7E)) // limit to 7-bit printable US-ASCII character space
+        else if ((b >= 0x20) && (b <= 0x7E)) // limit to 7-bit printable US-ASCII character space
             buf.append((char)b);
         else if (b == '\r')
             buf.append("\\r");
@@ -1147,9 +1198,10 @@ public class BufferUtil
         else
             buf.append("\\x").append(TypeUtil.toHexString(b));
     }
-    
-    /* ------------------------------------------------------------ */
-    /** Convert buffer to a Hex Summary String.
+
+    /**
+     * Convert buffer to a Hex Summary String.
+     *
      * @param buffer the buffer to generate a hex byte summary from
      * @return A string showing a summary of the content in hex
      */
@@ -1158,11 +1210,11 @@ public class BufferUtil
         if (buffer == null)
             return "null";
         StringBuilder buf = new StringBuilder();
-        
+
         buf.append("b[").append(buffer.remaining()).append("]=");
         for (int i = buffer.position(); i < buffer.limit(); i++)
         {
-            TypeUtil.toHex(buffer.get(i),buf);
+            TypeUtil.toHex(buffer.get(i), buf);
             if (i == buffer.position() + 24 && buffer.limit() > buffer.position() + 32)
             {
                 buf.append("...");
@@ -1172,8 +1224,9 @@ public class BufferUtil
         return buf.toString();
     }
 
-    /* ------------------------------------------------------------ */
-    /** Convert buffer to a Hex String.
+    /**
+     * Convert buffer to a Hex String.
+     *
      * @param buffer the buffer to generate a hex byte summary from
      * @return A hex string
      */
@@ -1184,16 +1237,22 @@ public class BufferUtil
         return TypeUtil.toHexString(toArray(buffer));
     }
 
+    private static final int[] decDivisors =
+    {
+        1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1
+    };
 
-    private final static int[] decDivisors =
-            {1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1};
+    private static final int[] hexDivisors =
+    {
+        0x10000000, 0x1000000, 0x100000, 0x10000, 0x1000, 0x100, 0x10, 0x1
+    };
 
-    private final static int[] hexDivisors =
-            {0x10000000, 0x1000000, 0x100000, 0x10000, 0x1000, 0x100, 0x10, 0x1};
-
-    private final static long[] decDivisorsL =
-            {1000000000000000000L, 100000000000000000L, 10000000000000000L, 1000000000000000L, 100000000000000L, 10000000000000L, 1000000000000L, 100000000000L,
-                    10000000000L, 1000000000L, 100000000L, 10000000L, 1000000L, 100000L, 10000L, 1000L, 100L, 10L, 1L};
+    private static final long[] decDivisorsL =
+    {
+        1000000000000000000L, 100000000000000000L, 10000000000000000L, 1000000000000000L, 100000000000000L, 10000000000000L,
+        1000000000000L, 100000000000L,
+        10000000000L, 1000000000L, 100000000L, 10000000L, 1000000L, 100000L, 10000L, 1000L, 100L, 10L, 1L
+    };
 
     public static void putCRLF(ByteBuffer buffer)
     {
@@ -1207,26 +1266,24 @@ public class BufferUtil
             return false;
         int bi = buffer.position();
         for (int i = prefix.position(); i < prefix.limit(); i++)
+        {
             if (prefix.get(i) != buffer.get(bi++))
                 return false;
+        }
         return true;
     }
 
     public static ByteBuffer ensureCapacity(ByteBuffer buffer, int capacity)
     {
-        if (buffer==null)
+        if (buffer == null)
             return allocate(capacity);
-        
-        if (buffer.capacity()>=capacity)
+
+        if (buffer.capacity() >= capacity)
             return buffer;
-        
+
         if (buffer.hasArray())
-            return ByteBuffer.wrap(Arrays.copyOfRange(buffer.array(), buffer.arrayOffset(), buffer.arrayOffset()+capacity),buffer.position(),buffer.remaining());
-        
+            return ByteBuffer.wrap(Arrays.copyOfRange(buffer.array(), buffer.arrayOffset(), buffer.arrayOffset() + capacity), buffer.position(), buffer.remaining());
+
         throw new UnsupportedOperationException();
     }
-
-
-
-
 }

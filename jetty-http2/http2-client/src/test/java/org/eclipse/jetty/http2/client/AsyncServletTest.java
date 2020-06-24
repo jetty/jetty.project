@@ -1,27 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.client;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,7 +24,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -60,8 +54,12 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AsyncServletTest extends AbstractTest
 {
@@ -96,8 +94,7 @@ public class AsyncServletTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         CountDownLatch latch = new CountDownLatch(1);
@@ -133,29 +130,31 @@ public class AsyncServletTest extends AbstractTest
         client.setIdleTimeout(idleTimeout);
 
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
-        CountDownLatch clientLatch = new CountDownLatch(1);
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        CountDownLatch resetLatch = new CountDownLatch(1);
         session.newStream(frame, promise, new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response response = (MetaData.Response)frame.getMetaData();
-                if (response.getStatus() == HttpStatus.INTERNAL_SERVER_ERROR_500 && frame.isEndStream())
-                    clientLatch.countDown();
+                responseLatch.countDown();
+            }
+
+            @Override
+            public void onReset(Stream stream, ResetFrame frame)
+            {
+                resetLatch.countDown();
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
         stream.setIdleTimeout(10 * idleTimeout);
 
-        // When the client closes, the server receives the
-        // corresponding frame and acts by notifying the failure,
-        // which sends back to the client the error response.
         assertTrue(serverLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
-        assertTrue(clientLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        assertFalse(responseLatch.await(idleTimeout + 1000, TimeUnit.MILLISECONDS));
+        assertTrue(resetLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -167,8 +166,7 @@ public class AsyncServletTest extends AbstractTest
         client.setIdleTimeout(10 * idleTimeout);
 
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         CountDownLatch clientLatch = new CountDownLatch(1);
@@ -216,8 +214,7 @@ public class AsyncServletTest extends AbstractTest
         prepareClient();
         client.start();
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, new Stream.Listener.Adapter());
@@ -237,11 +234,12 @@ public class AsyncServletTest extends AbstractTest
         ServletOutputStream output = response.getOutputStream();
 
         assertThrows(IOException.class,
-                () -> {
-                    // Large writes or explicit flush() must
-                    // fail because the stream has been reset.
-                    output.flush();
-                });
+            () ->
+            {
+                // Large writes or explicit flush() must
+                // fail because the stream has been reset.
+                output.flush();
+            });
     }
 
     @Test
@@ -326,8 +324,7 @@ public class AsyncServletTest extends AbstractTest
         client.start();
 
         Session session = newClient(new Session.Listener.Adapter());
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = newRequest("GET", fields);
+        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         CountDownLatch clientLatch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()

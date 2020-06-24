@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure id="OtherServer" class="org.eclipse.jetty.server.Server">
     <Set name="handler">
-      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerList">
         <Set name="handlers">
          <Array type="org.eclipse.jetty.server.Handler">
            <Item>

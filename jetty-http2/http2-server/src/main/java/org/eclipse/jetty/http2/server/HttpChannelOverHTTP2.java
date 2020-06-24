@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.server;
@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -44,17 +45,18 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, WriteFlusher.Listener
+public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, WriteFlusher.Listener, HTTP2Channel.Server
 {
-    private static final Logger LOG = Log.getLogger(HttpChannelOverHTTP2.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverHTTP2.class);
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
     private static final HttpField POWERED_BY = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
 
     private boolean _expect100Continue;
     private boolean _delayedUntilContent;
+    private boolean _useOutputDirectByteBuffers;
 
     public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
     {
@@ -64,6 +66,17 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     protected IStream getStream()
     {
         return getHttpTransport().getStream();
+    }
+
+    @Override
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _useOutputDirectByteBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
     @Override
@@ -97,21 +110,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
             HttpFields fields = request.getFields();
 
-            // HTTP/2 sends the Host header as the :authority
-            // pseudo-header, so we need to synthesize a Host header.
-            if (!fields.contains(HttpHeader.HOST))
-            {
-                String authority = request.getURI().getAuthority();
-                if (authority != null)
-                {
-                    // Lower-case to be consistent with other HTTP/2 headers.
-                    fields.put("host", authority);
-                }
-            }
-
             _expect100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
-            HttpFields response = getResponse().getHttpFields();
+            HttpFields.Mutable response = getResponse().getHttpFields();
             if (getHttpConfiguration().getSendServerVersion())
                 response.add(SERVER_VERSION);
             if (getHttpConfiguration().getSendXPoweredBy())
@@ -126,8 +127,13 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
                 onRequestComplete();
             }
 
+            boolean connect = request instanceof MetaData.ConnectRequest;
             _delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
-                    !endStream && !_expect100Continue;
+                    !endStream && !_expect100Continue && !connect;
+
+            // Delay the demand of DATA frames for CONNECT with :protocol.
+            if (!connect || request.getProtocol() == null)
+                getStream().demand(1);
 
             if (LOG.isDebugEnabled())
             {
@@ -143,6 +149,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         }
         catch (BadMessageException x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onRequest", x);
             onBadMessage(x);
             return null;
         }
@@ -213,6 +221,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         }
     }
 
+    @Override
+    public Runnable onData(DataFrame frame, Callback callback)
+    {
+        return onRequestContent(frame, callback);
+    }
+
     public Runnable onRequestContent(DataFrame frame, final Callback callback)
     {
         Stream stream = getStream();
@@ -252,9 +266,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         boolean endStream = frame.isEndStream();
         if (endStream)
         {
-            boolean handle_content = onContentComplete();
-            boolean handle_request = onRequestComplete();
-            handle |= handle_content | handle_request;
+            boolean handleContent = onContentComplete();
+            boolean handleRequest = onRequestComplete();
+            handle |= handleContent | handleRequest;
         }
 
         if (LOG.isDebugEnabled())
@@ -272,7 +286,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         return handle || wasDelayed ? this : null;
     }
 
-    public Runnable onRequestTrailers(HeadersFrame frame)
+    @Override
+    public Runnable onTrailer(HeadersFrame frame)
     {
         HttpFields trailers = frame.getMetaData().getFields();
         if (trailers.size() > 0)
@@ -293,17 +308,19 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         return handle || wasDelayed ? this : null;
     }
 
-    public boolean isRequestIdle()
+    @Override
+    public boolean isIdle()
     {
         return getState().isIdle();
     }
 
-    public boolean onStreamTimeout(Throwable failure, Consumer<Runnable> consumer)
+    @Override
+    public boolean onTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
-        boolean delayed = _delayedUntilContent;
+        final boolean delayed = _delayedUntilContent;
         _delayedUntilContent = false;
 
-        boolean result = isRequestIdle();
+        boolean result = isIdle();
         if (result)
             consumeInput();
 
@@ -317,6 +334,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         return result;
     }
 
+    @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
         getHttpTransport().onStreamFailure(failure);
@@ -366,6 +384,18 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
                     throw new IOException("Concurrent commit while trying to send 100-Continue");
             }
         }
+    }
+
+    @Override
+    public boolean isTunnellingSupported()
+    {
+        return true;
+    }
+
+    @Override
+    public EndPoint getTunnellingEndPoint()
+    {
+        return new ServerHTTP2StreamEndPoint(getStream());
     }
 
     @Override

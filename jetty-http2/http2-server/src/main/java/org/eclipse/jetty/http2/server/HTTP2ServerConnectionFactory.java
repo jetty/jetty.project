@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.server;
@@ -34,17 +34,19 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NegotiatingServerConnection.CipherDiscriminator;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionFactory implements CipherDiscriminator
 {
-    private static final Logger LOG = Log.getLogger(HTTP2ServerConnectionFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP2ServerConnectionFactory.class);
 
     public HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
@@ -53,7 +55,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
 
     public HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
     {
-        super(httpConfiguration,protocols);
+        super(httpConfiguration, protocols);
     }
 
     @Override
@@ -68,7 +70,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         // Implement 9.2.2 for draft 14
         boolean acceptable = "h2-14".equals(protocol) || !(HTTP2Cipher.isBlackListProtocol(tlsProtocol) && HTTP2Cipher.isBlackListCipher(tlsCipher));
         if (LOG.isDebugEnabled())
-            LOG.debug("proto={} tls={} cipher={} 9.2.2-acceptable={}",protocol,tlsProtocol,tlsCipher,acceptable);
+            LOG.debug("proto={} tls={} cipher={} 9.2.2-acceptable={}", protocol, tlsProtocol, tlsCipher, acceptable);
         return acceptable;
     }
 
@@ -102,6 +104,15 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
+        public void onBeforeData(Stream stream)
+        {
+            // Do not notify DATA frame listeners until demanded.
+            // This allows CONNECT requests with pseudo header :protocol
+            // (e.g. WebSocket over HTTP/2) to buffer DATA frames
+            // until they upgrade and are ready to process them.
+        }
+
+        @Override
         public boolean onIdleTimeout(Session session)
         {
             boolean close = super.onIdleTimeout(session);
@@ -116,9 +127,10 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         public void onClose(Session session, GoAwayFrame frame, Callback callback)
         {
             String reason = frame.tryConvertPayload();
-            if (reason != null && !reason.isEmpty())
+            if (!StringUtil.isEmpty(reason))
                 reason = " (" + reason + ")";
-            getConnection().onSessionFailure(new EofException(String.format("Close %s/%s", ErrorCode.toString(frame.getError(), null), reason)), callback);
+            EofException failure = new EofException(String.format("Close %s/%s", ErrorCode.toString(frame.getError(), null), reason));
+            onFailure(session, failure, callback);
         }
 
         @Override
@@ -153,13 +165,21 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public void onReset(Stream stream, ResetFrame frame, Callback callback)
         {
-            getConnection().onStreamFailure((IStream)stream, new EofException("Reset " + ErrorCode.toString(frame.getError(), null)), callback);
+            EofException failure = new EofException("Reset " + ErrorCode.toString(frame.getError(), null));
+            onFailure(stream, failure, callback);
         }
 
         @Override
-        public void onFailure(Stream stream, int error, String reason, Callback callback)
+        public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
         {
-            getConnection().onStreamFailure((IStream)stream, new EofException(String.format("Failure %s/%s", ErrorCode.toString(error, null), reason)), callback);
+            if (!(failure instanceof QuietException))
+                failure = new EofException(failure);
+            onFailure(stream, failure, callback);
+        }
+
+        private void onFailure(Stream stream, Throwable failure, Callback callback)
+        {
+            getConnection().onStreamFailure((IStream)stream, failure, callback);
         }
 
         @Override

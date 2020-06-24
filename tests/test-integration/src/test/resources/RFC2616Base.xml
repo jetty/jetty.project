@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <!-- =============================================================== -->
 <!-- Configure the Jetty Server                                      -->
@@ -20,7 +20,7 @@
       <Set name="responseHeaderSize">8192</Set>
       <Set name="sendServerVersion">true</Set>
       <Set name="sendDateHeader">false</Set>
-      <Set name="headerCacheSize">4096</Set>
+      <Set name="headerCacheSize">1024</Set>
 
       <!-- Uncomment to enable handling of X-Forwarded- style headers
       <Call name="addCustomizer">
@@ -33,7 +33,7 @@
     <!-- Set handler Collection Structure                            -->
     <!-- =========================================================== -->
     <Set name="handler">
-      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+      <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerList">
         <Set name="handlers">
          <Array type="org.eclipse.jetty.server.Handler">
            <Item>
@@ -48,7 +48,7 @@
                  </Array>
                </Set>
                <Set name="ResourceBase"><Property name="test.docroot.base"/>/virtualhost</Set>
-               <Set name="Handler"><New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
+               <Set name="Handler"><New id="reshandler1" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
                <Set name="DisplayName">virtual</Set>
              </New>
            </Item>
@@ -56,7 +56,7 @@
              <New id="defcontext" class="org.eclipse.jetty.server.handler.ContextHandler">
                <Set name="contextPath">/tests</Set>
                <Set name="ResourceBase"><Property name="test.docroot.base"/>/default</Set>
-               <Set name="Handler"><New id="reshandler" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
+               <Set name="Handler"><New id="reshandler2" class="org.eclipse.jetty.server.handler.ResourceHandler"/></Set>
                <Set name="DisplayName">default</Set>
              </New>
            </Item>
@@ -80,7 +80,7 @@
         </Set>
         <Call name="setContextAttribute">
           <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-          <Arg>.*/servlet-api-[^/]*\.jar$</Arg>
+          <Arg>.*/jetty-servlet-api-[^/]*\.jar$</Arg>
         </Call>
 
         <Call id="webappprovider" name="addAppProvider">

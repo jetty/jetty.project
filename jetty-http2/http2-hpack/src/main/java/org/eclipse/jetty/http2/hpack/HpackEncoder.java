@@ -1,32 +1,34 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
@@ -34,58 +36,63 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
-import org.eclipse.jetty.util.ArrayTrie;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.Trie;
-import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HpackEncoder
 {
-    public static final Logger LOG = Log.getLogger(HpackEncoder.class);
-    private final static HttpField[] __status= new HttpField[599];
-    final static EnumSet<HttpHeader> __DO_NOT_HUFFMAN =
-            EnumSet.of(
-                    HttpHeader.AUTHORIZATION,
-                    HttpHeader.CONTENT_MD5,
-                    HttpHeader.PROXY_AUTHENTICATE,
-                    HttpHeader.PROXY_AUTHORIZATION);
-    final static EnumSet<HttpHeader> __DO_NOT_INDEX =
-            EnumSet.of(
-                    // HttpHeader.C_PATH,  // TODO more data needed
-                    // HttpHeader.DATE,    // TODO more data needed
-                    HttpHeader.AUTHORIZATION,
-                    HttpHeader.CONTENT_MD5,
-                    HttpHeader.CONTENT_RANGE,
-                    HttpHeader.ETAG,
-                    HttpHeader.IF_MODIFIED_SINCE,
-                    HttpHeader.IF_UNMODIFIED_SINCE,
-                    HttpHeader.IF_NONE_MATCH,
-                    HttpHeader.IF_RANGE,
-                    HttpHeader.IF_MATCH,
-                    HttpHeader.LOCATION,
-                    HttpHeader.RANGE,
-                    HttpHeader.RETRY_AFTER,
-                    // HttpHeader.EXPIRES,
-                    HttpHeader.LAST_MODIFIED,
-                    HttpHeader.SET_COOKIE,
-                    HttpHeader.SET_COOKIE2);
-    final static EnumSet<HttpHeader> __NEVER_INDEX =
-            EnumSet.of(
-                    HttpHeader.AUTHORIZATION,
-                    HttpHeader.SET_COOKIE,
-                    HttpHeader.SET_COOKIE2);
-    private static final PreEncodedHttpField CONNECTION_TE = new PreEncodedHttpField(HttpHeader.CONNECTION, "te");
+    private static final Logger LOG = LoggerFactory.getLogger(HpackEncoder.class);
+    private static final HttpField[] STATUSES = new HttpField[599];
+    static final EnumSet<HttpHeader> DO_NOT_HUFFMAN =
+        EnumSet.of(
+            HttpHeader.AUTHORIZATION,
+            HttpHeader.CONTENT_MD5,
+            HttpHeader.PROXY_AUTHENTICATE,
+            HttpHeader.PROXY_AUTHORIZATION);
+    static final EnumSet<HttpHeader> DO_NOT_INDEX =
+        EnumSet.of(
+            // HttpHeader.C_PATH,  // TODO more data needed
+            // HttpHeader.DATE,    // TODO more data needed
+            HttpHeader.AUTHORIZATION,
+            HttpHeader.CONTENT_MD5,
+            HttpHeader.CONTENT_RANGE,
+            HttpHeader.ETAG,
+            HttpHeader.IF_MODIFIED_SINCE,
+            HttpHeader.IF_UNMODIFIED_SINCE,
+            HttpHeader.IF_NONE_MATCH,
+            HttpHeader.IF_RANGE,
+            HttpHeader.IF_MATCH,
+            HttpHeader.LOCATION,
+            HttpHeader.RANGE,
+            HttpHeader.RETRY_AFTER,
+            // HttpHeader.EXPIRES,
+            HttpHeader.LAST_MODIFIED,
+            HttpHeader.SET_COOKIE,
+            HttpHeader.SET_COOKIE2);
+    static final EnumSet<HttpHeader> NEVER_INDEX =
+        EnumSet.of(
+            HttpHeader.AUTHORIZATION,
+            HttpHeader.SET_COOKIE,
+            HttpHeader.SET_COOKIE2);
+    private static final EnumSet<HttpHeader> IGNORED_HEADERS = EnumSet.of(HttpHeader.CONNECTION, HttpHeader.KEEP_ALIVE,
+        HttpHeader.PROXY_CONNECTION, HttpHeader.TRANSFER_ENCODING, HttpHeader.UPGRADE);
     private static final PreEncodedHttpField TE_TRAILERS = new PreEncodedHttpField(HttpHeader.TE, "trailers");
-    private static final Trie<Boolean> specialHopHeaders = new ArrayTrie<>(6);
+    private static final PreEncodedHttpField C_SCHEME_HTTP = new PreEncodedHttpField(HttpHeader.C_SCHEME, "http");
+    private static final PreEncodedHttpField C_SCHEME_HTTPS = new PreEncodedHttpField(HttpHeader.C_SCHEME, "https");
+    private static final EnumMap<HttpMethod, PreEncodedHttpField> C_METHODS = new EnumMap<>(HttpMethod.class);
 
     static
     {
         for (HttpStatus.Code code : HttpStatus.Code.values())
-            __status[code.getCode()]=new PreEncodedHttpField(HttpHeader.C_STATUS,Integer.toString(code.getCode()));
-        specialHopHeaders.put("close", true);
-        specialHopHeaders.put("te", true);
+        {
+            STATUSES[code.getCode()] = new PreEncodedHttpField(HttpHeader.C_STATUS, Integer.toString(code.getCode()));
+        }
+        for (HttpMethod method : HttpMethod.values())
+        {
+            C_METHODS.put(method, new PreEncodedHttpField(HttpHeader.C_METHOD, method.asString()));
+        }
     }
 
     private final HpackContext _context;
@@ -94,29 +101,30 @@ public class HpackEncoder
     private int _localMaxDynamicTableSize;
     private int _maxHeaderListSize;
     private int _headerListSize;
+    private boolean _validateEncoding = true;
 
     public HpackEncoder()
     {
-        this(4096,4096,-1);
+        this(4096, 4096, -1);
     }
 
     public HpackEncoder(int localMaxDynamicTableSize)
     {
-        this(localMaxDynamicTableSize,4096,-1);
+        this(localMaxDynamicTableSize, 4096, -1);
     }
-    
-    public HpackEncoder(int localMaxDynamicTableSize,int remoteMaxDynamicTableSize)
+
+    public HpackEncoder(int localMaxDynamicTableSize, int remoteMaxDynamicTableSize)
     {
-        this(localMaxDynamicTableSize,remoteMaxDynamicTableSize,-1);
+        this(localMaxDynamicTableSize, remoteMaxDynamicTableSize, -1);
     }
-    
-    public HpackEncoder(int localMaxDynamicTableSize,int remoteMaxDynamicTableSize, int maxHeaderListSize)
+
+    public HpackEncoder(int localMaxDynamicTableSize, int remoteMaxDynamicTableSize, int maxHeaderListSize)
     {
-        _context=new HpackContext(remoteMaxDynamicTableSize);
-        _remoteMaxDynamicTableSize=remoteMaxDynamicTableSize;
-        _localMaxDynamicTableSize=localMaxDynamicTableSize;
-        _maxHeaderListSize=maxHeaderListSize;
-        _debug=LOG.isDebugEnabled();
+        _context = new HpackContext(remoteMaxDynamicTableSize);
+        _remoteMaxDynamicTableSize = remoteMaxDynamicTableSize;
+        _localMaxDynamicTableSize = localMaxDynamicTableSize;
+        _maxHeaderListSize = maxHeaderListSize;
+        _debug = LOG.isDebugEnabled();
     }
 
     public int getMaxHeaderListSize()
@@ -136,171 +144,229 @@ public class HpackEncoder
 
     public void setRemoteMaxDynamicTableSize(int remoteMaxDynamicTableSize)
     {
-        _remoteMaxDynamicTableSize=remoteMaxDynamicTableSize;
+        _remoteMaxDynamicTableSize = remoteMaxDynamicTableSize;
     }
 
     public void setLocalMaxDynamicTableSize(int localMaxDynamicTableSize)
     {
-        _localMaxDynamicTableSize=localMaxDynamicTableSize;
+        _localMaxDynamicTableSize = localMaxDynamicTableSize;
     }
 
-    public void encode(ByteBuffer buffer, MetaData metadata)
+    public boolean isValidateEncoding()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug(String.format("CtxTbl[%x] encoding",_context.hashCode()));
+        return _validateEncoding;
+    }
 
-        _headerListSize=0;
-        int pos = buffer.position();
+    public void setValidateEncoding(boolean validateEncoding)
+    {
+        _validateEncoding = validateEncoding;
+    }
 
-        // Check the dynamic table sizes!
-        int maxDynamicTableSize=Math.min(_remoteMaxDynamicTableSize,_localMaxDynamicTableSize);
-        if (maxDynamicTableSize!=_context.getMaxDynamicTableSize())
-            encodeMaxDynamicTableSize(buffer,maxDynamicTableSize);
-
-        // Add Request/response meta fields
-        if (metadata.isRequest())
+    public void encode(ByteBuffer buffer, MetaData metadata) throws HpackException
+    {
+        try
         {
-            MetaData.Request request = (MetaData.Request)metadata;
-
-            // TODO optimise these to avoid HttpField creation
-            String scheme=request.getURI().getScheme();
-            encode(buffer,new HttpField(HttpHeader.C_SCHEME,scheme==null?HttpScheme.HTTP.asString():scheme));
-            encode(buffer,new HttpField(HttpHeader.C_METHOD,request.getMethod()));
-            encode(buffer,new HttpField(HttpHeader.C_AUTHORITY,request.getURI().getAuthority()));
-            encode(buffer,new HttpField(HttpHeader.C_PATH,request.getURI().getPathQuery()));
-        }
-        else if (metadata.isResponse())
-        {
-            MetaData.Response response = (MetaData.Response)metadata;
-            int code=response.getStatus();
-            HttpField status = code<__status.length?__status[code]:null;
-            if (status==null)
-                status=new HttpField.IntValueHttpField(HttpHeader.C_STATUS,code);
-            encode(buffer,status);
-        }
-
-        // Add all non-connection fields.
-        HttpFields fields = metadata.getFields();
-        if (fields != null)
-        {
-            Set<String> hopHeaders = fields.getCSV(HttpHeader.CONNECTION, false).stream()
-                    .filter(v -> specialHopHeaders.get(v) == Boolean.TRUE)
-                    .map(StringUtil::asciiToLowerCase)
-                    .collect(Collectors.toSet());
-            for (HttpField field : fields)
-            {
-                if (field.getHeader() == HttpHeader.CONNECTION)
-                    continue;
-                if (!hopHeaders.isEmpty() && hopHeaders.contains(StringUtil.asciiToLowerCase(field.getName())))
-                    continue;
-                if (field.getHeader() == HttpHeader.TE)
-                {
-                    if (!field.contains("trailers"))
-                        continue;
-                    encode(buffer, CONNECTION_TE);
-                    encode(buffer, TE_TRAILERS);
-                }
-                encode(buffer,field);
-            }
-        }
-
-        // Check size
-        if (_maxHeaderListSize>0 && _headerListSize>_maxHeaderListSize)
-        {
-            LOG.warn("Header list size too large {} > {} for {}",_headerListSize,_maxHeaderListSize);
             if (LOG.isDebugEnabled())
-                LOG.debug("metadata={}",metadata);
+                LOG.debug(String.format("CtxTbl[%x] encoding", _context.hashCode()));
+
+            HttpFields fields = metadata.getFields();
+            // Verify that we can encode without errors.
+            if (isValidateEncoding() && fields != null)
+            {
+                for (HttpField field : fields)
+                {
+                    String name = field.getName();
+                    char firstChar = name.charAt(0);
+                    if (firstChar <= ' ' || firstChar == ':')
+                        throw new HpackException.StreamException("Invalid header name: '%s'", name);
+                }
+            }
+
+            _headerListSize = 0;
+            int pos = buffer.position();
+
+            // Check the dynamic table sizes!
+            int maxDynamicTableSize = Math.min(_remoteMaxDynamicTableSize, _localMaxDynamicTableSize);
+            if (maxDynamicTableSize != _context.getMaxDynamicTableSize())
+                encodeMaxDynamicTableSize(buffer, maxDynamicTableSize);
+
+            // Add Request/response meta fields
+            if (metadata.isRequest())
+            {
+                MetaData.Request request = (MetaData.Request)metadata;
+
+                String method = request.getMethod();
+                HttpMethod httpMethod = method == null ? null : HttpMethod.fromString(method);
+                HttpField methodField = C_METHODS.get(httpMethod);
+                encode(buffer, methodField == null ? new HttpField(HttpHeader.C_METHOD, method) : methodField);
+                encode(buffer, new HttpField(HttpHeader.C_AUTHORITY, request.getURI().getAuthority()));
+                boolean isConnect = HttpMethod.CONNECT.is(request.getMethod());
+                String protocol = request.getProtocol();
+                if (!isConnect || protocol != null)
+                {
+                    String scheme = request.getURI().getScheme();
+                    encode(buffer, HttpScheme.HTTPS.is(scheme) ? C_SCHEME_HTTPS : C_SCHEME_HTTP);
+                    encode(buffer, new HttpField(HttpHeader.C_PATH, request.getURI().getPathQuery()));
+                    if (protocol != null)
+                        encode(buffer,new HttpField(HttpHeader.C_PROTOCOL,protocol));
+                }
+            }
+            else if (metadata.isResponse())
+            {
+                MetaData.Response response = (MetaData.Response)metadata;
+                int code = response.getStatus();
+                HttpField status = code < STATUSES.length ? STATUSES[code] : null;
+                if (status == null)
+                    status = new HttpField.IntValueHttpField(HttpHeader.C_STATUS, code);
+                encode(buffer, status);
+            }
+
+            // Remove fields as specified in RFC 7540, 8.1.2.2.
+            if (fields != null)
+            {
+                // Remove the headers specified in the Connection header,
+                // for example: Connection: Close, TE, Upgrade, Custom.
+                Set<String> hopHeaders = null;
+                for (String value : fields.getCSV(HttpHeader.CONNECTION, false))
+                {
+                    if (hopHeaders == null)
+                        hopHeaders = new HashSet<>();
+                    hopHeaders.add(StringUtil.asciiToLowerCase(value));
+                }
+
+                boolean contentLengthEncoded = false;
+                for (HttpField field : fields)
+                {
+                    HttpHeader header = field.getHeader();
+                    if (header != null && IGNORED_HEADERS.contains(header))
+                        continue;
+                    if (header == HttpHeader.TE)
+                    {
+                        if (field.contains("trailers"))
+                            encode(buffer, TE_TRAILERS);
+                        continue;
+                    }
+                    String name = field.getLowerCaseName();
+                    if (hopHeaders != null && hopHeaders.contains(name))
+                        continue;
+                    if (header == HttpHeader.CONTENT_LENGTH)
+                        contentLengthEncoded = true;
+                    encode(buffer, field);
+                }
+
+                if (!contentLengthEncoded)
+                {
+                    long contentLength = metadata.getContentLength();
+                    if (contentLength >= 0)
+                        encode(buffer, new HttpField(HttpHeader.CONTENT_LENGTH, String.valueOf(contentLength)));
+                }
+            }
+
+            // Check size
+            if (_maxHeaderListSize > 0 && _headerListSize > _maxHeaderListSize)
+            {
+                LOG.warn("Header list size too large {} > {} for {}", _headerListSize, _maxHeaderListSize);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("metadata={}", metadata);
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug(String.format("CtxTbl[%x] encoded %d octets", _context.hashCode(), buffer.position() - pos));
         }
-        
-        if (LOG.isDebugEnabled())
-            LOG.debug(String.format("CtxTbl[%x] encoded %d octets",_context.hashCode(), buffer.position() - pos));
+        catch (HpackException x)
+        {
+            throw x;
+        }
+        catch (Throwable x)
+        {
+            HpackException.SessionException failure = new HpackException.SessionException("Could not hpack encode %s", metadata);
+            failure.initCause(x);
+            throw failure;
+        }
     }
 
     public void encodeMaxDynamicTableSize(ByteBuffer buffer, int maxDynamicTableSize)
     {
-        if (maxDynamicTableSize>_remoteMaxDynamicTableSize)
+        if (maxDynamicTableSize > _remoteMaxDynamicTableSize)
             throw new IllegalArgumentException();
         buffer.put((byte)0x20);
-        NBitInteger.encode(buffer,5,maxDynamicTableSize);
+        NBitInteger.encode(buffer, 5, maxDynamicTableSize);
         _context.resize(maxDynamicTableSize);
     }
 
     public void encode(ByteBuffer buffer, HttpField field)
     {
-        if (field.getValue()==null)
-            field = new HttpField(field.getHeader(),field.getName(),"");
-        
-        int field_size = field.getName().length() + field.getValue().length();
-        _headerListSize+=field_size+32;
-        
-        final int p=_debug?buffer.position():-1;
+        if (field.getValue() == null)
+            field = new HttpField(field.getHeader(), field.getName(), "");
 
-        String encoding=null;
+        int fieldSize = field.getName().length() + field.getValue().length();
+        _headerListSize += fieldSize + 32;
 
-        // Is there an entry for the field?
+        String encoding = null;
+
+        // Is there an index entry for the field?
         Entry entry = _context.get(field);
-        if (entry!=null)
+        if (entry != null)
         {
-            // Known field entry, so encode it as indexed
+            // This is a known indexed field, send as static or dynamic indexed.
             if (entry.isStatic())
             {
                 buffer.put(((StaticEntry)entry).getEncodedField());
                 if (_debug)
-                    encoding="IdxFieldS1";
+                    encoding = "IdxFieldS1";
             }
             else
             {
-                int index=_context.index(entry);
+                int index = _context.index(entry);
                 buffer.put((byte)0x80);
-                NBitInteger.encode(buffer,7,index);
+                NBitInteger.encode(buffer, 7, index);
                 if (_debug)
-                    encoding="IdxField"+(entry.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(7,index));
+                    encoding = "IdxField" + (entry.isStatic() ? "S" : "") + (1 + NBitInteger.octectsNeeded(7, index));
             }
         }
         else
         {
-            // Unknown field entry, so we will have to send literally.
+            // Unknown field entry, so we will have to send literally, but perhaps add an index.
             final boolean indexed;
 
-            // But do we know it's name?
+            // Do we know its name?
             HttpHeader header = field.getHeader();
 
             // Select encoding strategy
-            if (header==null)
+            if (header == null)
             {
                 // Select encoding strategy for unknown header names
                 Entry name = _context.get(field.getName());
 
                 if (field instanceof PreEncodedHttpField)
                 {
-                    int i=buffer.position();
-                    ((PreEncodedHttpField)field).putTo(buffer,HttpVersion.HTTP_2);
-                    byte b=buffer.get(i);
-                    indexed=b<0||b>=0x40;
+                    int i = buffer.position();
+                    ((PreEncodedHttpField)field).putTo(buffer, HttpVersion.HTTP_2);
+                    byte b = buffer.get(i);
+                    indexed = b < 0 || b >= 0x40;
                     if (_debug)
-                        encoding=indexed?"PreEncodedIdx":"PreEncoded";
+                        encoding = indexed ? "PreEncodedIdx" : "PreEncoded";
                 }
-                // has the custom header name been seen before?
-                else if (name==null)
+                else if (name == null && fieldSize < _context.getMaxDynamicTableSize())
                 {
-                    // unknown name and value, so let's index this just in case it is
-                    // the first time we have seen a custom name or a custom field.
-                    // unless the name is changing, this is worthwhile
-                    indexed=true;
-                    encodeName(buffer,(byte)0x40,6,field.getName(),null);
-                    encodeValue(buffer,true,field.getValue());
+                    // unknown name and value that will fit in dynamic table, so let's index
+                    // this just in case it is the first time we have seen a custom name or a
+                    // custom field.  Unless the name is once only, this is worthwhile
+                    indexed = true;
+                    encodeName(buffer, (byte)0x40, 6, field.getName(), null);
+                    encodeValue(buffer, true, field.getValue());
                     if (_debug)
-                        encoding="LitHuffNHuffVIdx";
+                        encoding = "LitHuffNHuffVIdx";
                 }
                 else
                 {
-                    // known custom name, but unknown value.
+                    // Known name, but different value.
                     // This is probably a custom field with changing value, so don't index.
-                    indexed=false;
-                    encodeName(buffer,(byte)0x00,4,field.getName(),null);
-                    encodeValue(buffer,true,field.getValue());
+                    indexed = false;
+                    encodeName(buffer, (byte)0x00, 4, field.getName(), null);
+                    encodeValue(buffer, true, field.getValue());
                     if (_debug)
-                        encoding="LitHuffNHuffV!Idx";
+                        encoding = "LitHuffNHuffV!Idx";
                 }
             }
             else
@@ -311,47 +377,47 @@ public class HpackEncoder
                 if (field instanceof PreEncodedHttpField)
                 {
                     // Preencoded field
-                    int i=buffer.position();
-                    ((PreEncodedHttpField)field).putTo(buffer,HttpVersion.HTTP_2);
-                    byte b=buffer.get(i);
-                    indexed=b<0||b>=0x40;
+                    int i = buffer.position();
+                    ((PreEncodedHttpField)field).putTo(buffer, HttpVersion.HTTP_2);
+                    byte b = buffer.get(i);
+                    indexed = b < 0 || b >= 0x40;
                     if (_debug)
-                        encoding=indexed?"PreEncodedIdx":"PreEncoded";
+                        encoding = indexed ? "PreEncodedIdx" : "PreEncoded";
                 }
-                else if (__DO_NOT_INDEX.contains(header))
+                else if (DO_NOT_INDEX.contains(header))
                 {
                     // Non indexed field
-                    indexed=false;
-                    boolean never_index=__NEVER_INDEX.contains(header);
-                    boolean huffman=!__DO_NOT_HUFFMAN.contains(header);
-                    encodeName(buffer,never_index?(byte)0x10:(byte)0x00,4,header.asString(),name);
-                    encodeValue(buffer,huffman,field.getValue());
+                    indexed = false;
+                    boolean neverIndex = NEVER_INDEX.contains(header);
+                    boolean huffman = !DO_NOT_HUFFMAN.contains(header);
+                    encodeName(buffer, neverIndex ? (byte)0x10 : (byte)0x00, 4, header.asString(), name);
+                    encodeValue(buffer, huffman, field.getValue());
 
                     if (_debug)
-                        encoding="Lit"+
-                                ((name==null)?"HuffN":("IdxN"+(name.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(4,_context.index(name)))))+
-                                (huffman?"HuffV":"LitV")+
-                                (never_index?"!!Idx":"!Idx");
+                        encoding = "Lit" +
+                            ((name == null) ? "HuffN" : ("IdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octectsNeeded(4, _context.index(name))))) +
+                            (huffman ? "HuffV" : "LitV") +
+                            (neverIndex ? "!!Idx" : "!Idx");
                 }
-                else if (field_size>=_context.getMaxDynamicTableSize() || header==HttpHeader.CONTENT_LENGTH && field.getValue().length()>2)
+                else if (fieldSize >= _context.getMaxDynamicTableSize() || header == HttpHeader.CONTENT_LENGTH && !"0".equals(field.getValue()))
                 {
-                    // Non indexed if field too large or a content length for 3 digits or more
-                    indexed=false;
-                    encodeName(buffer,(byte)0x00,4,header.asString(),name);
-                    encodeValue(buffer,true,field.getValue());
+                    // The field is too large or a non zero content length, so do not index.
+                    indexed = false;
+                    encodeName(buffer, (byte)0x00, 4, header.asString(), name);
+                    encodeValue(buffer, true, field.getValue());
                     if (_debug)
-                        encoding="LitIdxNS"+(1+NBitInteger.octectsNeeded(4,_context.index(name)))+"HuffV!Idx";
+                        encoding = "LitIdxNS" + (1 + NBitInteger.octectsNeeded(4, _context.index(name))) + "HuffV!Idx";
                 }
                 else
                 {
                     // indexed
-                    indexed=true;
-                    boolean huffman=!__DO_NOT_HUFFMAN.contains(header);
-                    encodeName(buffer,(byte)0x40,6,header.asString(),name);
-                    encodeValue(buffer,huffman,field.getValue());
+                    indexed = true;
+                    boolean huffman = !DO_NOT_HUFFMAN.contains(header);
+                    encodeName(buffer, (byte)0x40, 6, header.asString(), name);
+                    encodeValue(buffer, huffman, field.getValue());
                     if (_debug)
-                        encoding=((name==null)?"LitHuffN":("LitIdxN"+(name.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(6,_context.index(name)))))+
-                                (huffman?"HuffVIdx":"LitVIdx");
+                        encoding = ((name == null) ? "LitHuffN" : ("LitIdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octectsNeeded(6, _context.index(name))))) +
+                            (huffman ? "HuffVIdx" : "LitVIdx");
                 }
             }
 
@@ -362,26 +428,25 @@ public class HpackEncoder
 
         if (_debug)
         {
-            int e=buffer.position();
             if (LOG.isDebugEnabled())
-                LOG.debug("encode {}:'{}' to '{}'",encoding,field,TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+p,e-p));
+                LOG.debug("encode {}:'{}' to '{}'", encoding, field, BufferUtil.toHexString(buffer.duplicate().flip()));
         }
     }
 
     private void encodeName(ByteBuffer buffer, byte mask, int bits, String name, Entry entry)
     {
         buffer.put(mask);
-        if (entry==null)
+        if (entry == null)
         {
             // leave name index bits as 0
             // Encode the name always with lowercase huffman
             buffer.put((byte)0x80);
-            NBitInteger.encode(buffer,7,Huffman.octetsNeededLC(name));
-            Huffman.encodeLC(buffer,name);
+            NBitInteger.encode(buffer, 7, Huffman.octetsNeededLC(name));
+            Huffman.encodeLC(buffer, name);
         }
         else
         {
-            NBitInteger.encode(buffer,bits,_context.index(entry));
+            NBitInteger.encode(buffer, bits, _context.index(entry));
         }
     }
 
@@ -391,19 +456,38 @@ public class HpackEncoder
         {
             // huffman literal value
             buffer.put((byte)0x80);
-            NBitInteger.encode(buffer,7,Huffman.octetsNeeded(value));
-            Huffman.encode(buffer,value);
+
+            int needed = Huffman.octetsNeeded(value);
+            if (needed >= 0)
+            {
+                NBitInteger.encode(buffer, 7, needed);
+                Huffman.encode(buffer, value);
+            }
+            else
+            {
+                // Not iso_8859_1
+                byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+                NBitInteger.encode(buffer, 7, Huffman.octetsNeeded(bytes));
+                Huffman.encode(buffer, bytes);
+            }
         }
         else
         {
             // add literal assuming iso_8859_1
-            buffer.put((byte)0x00);
-            NBitInteger.encode(buffer,7,value.length());
-            for (int i=0;i<value.length();i++)
+            buffer.put((byte)0x00).mark();
+            NBitInteger.encode(buffer, 7, value.length());
+            for (int i = 0; i < value.length(); i++)
             {
-                char c=value.charAt(i);
-                if (c<' '|| c>127)
-                    throw new IllegalArgumentException();
+                char c = value.charAt(i);
+                if (c < ' ' || c > 127)
+                {
+                    // Not iso_8859_1, so re-encode as UTF-8
+                    buffer.reset();
+                    byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+                    NBitInteger.encode(buffer, 7, bytes.length);
+                    buffer.put(bytes, 0, bytes.length);
+                    return;
+                }
                 buffer.put((byte)c);
             }
         }

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.jmx;
@@ -30,23 +30,25 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
+import javax.management.DynamicMBean;
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
+import javax.management.MXBean;
 import javax.management.ObjectName;
 import javax.management.modelmbean.ModelMBean;
 
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Container class for the MBean instances
@@ -54,13 +56,13 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("The component that registers beans as MBeans")
 public class MBeanContainer implements Container.InheritedListener, Dumpable, Destroyable
 {
-    private static final Logger LOG = Log.getLogger(MBeanContainer.class.getName());
+    private static final Logger LOG = LoggerFactory.getLogger(MBeanContainer.class.getName());
     private static final ConcurrentMap<String, AtomicInteger> __unique = new ConcurrentHashMap<>();
     private static final Container ROOT = new ContainerLifeCycle();
 
     private final MBeanServer _mbeanServer;
     private final boolean _useCacheForOtherClassLoaders;
-    private final ConcurrentMap<Class, MetaData> _metaData = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, MetaData> _metaData = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, Container> _beans = new ConcurrentHashMap<>();
     private final ConcurrentMap<Object, ObjectName> _mbeans = new ConcurrentHashMap<>();
     private String _domain = null;
@@ -78,9 +80,9 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     /**
      * Constructs MBeanContainer
      *
-     * @param server                 instance of MBeanServer for use by container
+     * @param server instance of MBeanServer for use by container
      * @param cacheOtherClassLoaders If true,  MBeans from other classloaders (eg WebAppClassLoader) will be cached.
-     *                               The cache is never flushed, so this should be false if some classloaders do not live forever.
+     * The cache is never flushed, so this should be false if some classloaders do not live forever.
      */
     public MBeanContainer(MBeanServer server, boolean cacheOtherClassLoaders)
     {
@@ -151,6 +153,25 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     {
         if (o == null)
             return null;
+        if (o instanceof DynamicMBean)
+            return o;
+        Class<?> klass = o.getClass();
+        while (klass != Object.class)
+        {
+            MXBean mxbean = klass.getAnnotation(MXBean.class);
+            if (mxbean != null && mxbean.value())
+                return o;
+            String mbeanName = klass.getName() + "MBean";
+            String mxbeanName = klass.getName() + "MXBean";
+            Class<?>[] interfaces = klass.getInterfaces();
+            for (Class<?> type : interfaces)
+            {
+                String name = type.getName();
+                if (name.equals(mbeanName) || name.equals(mxbeanName))
+                    return o;
+            }
+            klass = klass.getSuperclass();
+        }
         Object mbean = findMetaData(container, o.getClass()).newInstance(o);
         if (mbean instanceof ObjectMBean)
             ((ObjectMBean)mbean).setMBeanContainer(container);
@@ -161,9 +182,13 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             {
                 MBeanInfo info = ((ObjectMBean)mbean).getMBeanInfo();
                 for (Object a : info.getAttributes())
+                {
                     LOG.debug("  {}", a);
+                }
                 for (Object a : info.getOperations())
+                {
                     LOG.debug("  {}", a);
+                }
             }
         }
         return mbean;
@@ -196,8 +221,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             return new MetaData(klass, null, null, Collections.emptyList());
 
         List<MetaData> interfaces = Arrays.stream(klass.getInterfaces())
-                .map(intf -> findMetaData(container, intf))
-                .collect(Collectors.toList());
+            .map(intf -> findMetaData(container, intf))
+            .collect(Collectors.toList());
         MetaData metaData = new MetaData(klass, findConstructor(klass), findMetaData(container, klass.getSuperclass()), interfaces);
 
         if (container != null)
@@ -227,8 +252,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         {
             Class<?> mbeanClass = Loader.loadClass(klass, mName);
             Constructor<?> constructor = ModelMBean.class.isAssignableFrom(mbeanClass)
-                    ? mbeanClass.getConstructor()
-                    : mbeanClass.getConstructor(Object.class);
+                ? mbeanClass.getConstructor()
+                : mbeanClass.getConstructor(Object.class);
             if (LOG.isDebugEnabled())
                 LOG.debug("Found MBean wrapper: {} for {}", mName, klass.getName());
             return constructor;
@@ -315,7 +340,9 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             {
                 Class<?> klass = obj.getClass();
                 while (klass.isArray())
+                {
                     klass = klass.getComponentType();
+                }
 
                 // If no explicit domain, create one.
                 String domain = _domain;
@@ -332,7 +359,9 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
 
                 StringBuilder buf = new StringBuilder();
 
-                String context = (mbean instanceof ObjectMBean) ? makeName(((ObjectMBean)mbean).getObjectContextBasis()) : null;
+                String context = (mbean instanceof ObjectMBean)
+                    ? makeName(((ObjectMBean)mbean).getObjectContextBasis())
+                    : makeName(reflectContextBasis(mbean));
                 if (context == null && parentObjectName != null)
                     context = parentObjectName.getKeyProperty("context");
 
@@ -341,7 +370,9 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
 
                 buf.append("type=").append(type);
 
-                String name = (mbean instanceof ObjectMBean) ? makeName(((ObjectMBean)mbean).getObjectNameBasis()) : context;
+                String name = (mbean instanceof ObjectMBean)
+                    ? makeName(((ObjectMBean)mbean).getObjectNameBasis())
+                    : makeName(reflectNameBasis(mbean));
                 if (name != null && name.length() > 1)
                     buf.append(",").append("name=").append(name);
 
@@ -388,21 +419,35 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         }
     }
 
+    private String reflectContextBasis(Object mbean)
+    {
+        return reflectBasis(mbean, "jmxContext");
+    }
+
+    private String reflectNameBasis(Object mbean)
+    {
+        return reflectBasis(mbean, "jmxName");
+    }
+
+    private String reflectBasis(Object mbean, String methodName)
+    {
+        try
+        {
+            return (String)mbean.getClass().getMethod(methodName).invoke(mbean);
+        }
+        catch (Throwable x)
+        {
+            return null;
+        }
+    }
+
     /**
      * @param basis name to strip of special characters.
      * @return normalized name
      */
     public String makeName(String basis)
     {
-        if (basis == null)
-            return null;
-        return basis
-                .replace(':', '_')
-                .replace('*', '_')
-                .replace('?', '_')
-                .replace('=', '_')
-                .replace(',', '_')
-                .replace(' ', '_');
+        return StringUtil.sanitizeFileSystemName(basis);
     }
 
     @Override
@@ -422,8 +467,8 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
     {
         _metaData.clear();
         _mbeans.values().stream()
-                .filter(Objects::nonNull)
-                .forEach(this::unregister);
+            .filter(Objects::nonNull)
+            .forEach(this::unregister);
         _mbeans.clear();
         _beans.clear();
     }
@@ -438,11 +483,11 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
         }
         catch (MBeanRegistrationException | InstanceNotFoundException x)
         {
-            LOG.ignore(x);
+            LOG.trace("IGNORED", x);
         }
         catch (Throwable x)
         {
-            LOG.warn(x);
+            LOG.warn("Unable to unregister {}", objectName, x);
         }
     }
 }

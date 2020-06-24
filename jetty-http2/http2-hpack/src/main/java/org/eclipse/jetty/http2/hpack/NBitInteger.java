@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.hpack;
@@ -22,35 +22,35 @@ import java.nio.ByteBuffer;
 
 public class NBitInteger
 {
-    public static int octectsNeeded(int n,int i)
+    public static int octectsNeeded(int n, int i)
     {
-        if (n==8)
+        if (n == 8)
         {
             int nbits = 0xFF;
-            i=i-nbits;
-            if (i<0)
+            i = i - nbits;
+            if (i < 0)
                 return 1;
-            if (i==0)
+            if (i == 0)
                 return 2;
-            int lz=Integer.numberOfLeadingZeros(i);
-            int log=32-lz;
-            return 1+(log+6)/7;
+            int lz = Integer.numberOfLeadingZeros(i);
+            int log = 32 - lz;
+            return 1 + (log + 6) / 7;
         }
-        
+
         int nbits = 0xFF >>> (8 - n);
-        i=i-nbits;
-        if (i<0)
+        i = i - nbits;
+        if (i < 0)
             return 0;
-        if (i==0)
+        if (i == 0)
             return 1;
-        int lz=Integer.numberOfLeadingZeros(i);
-        int log=32-lz;
-        return (log+6)/7;
+        int lz = Integer.numberOfLeadingZeros(i);
+        int log = 32 - lz;
+        return (log + 6) / 7;
     }
-    
+
     public static void encode(ByteBuffer buf, int n, int i)
     {
-        if (n==8)
+        if (n == 8)
         {
             if (i < 0xFF)
             {
@@ -78,16 +78,16 @@ public class NBitInteger
         }
         else
         {
-            int p=buf.position()-1;
+            int p = buf.position() - 1;
             int bits = 0xFF >>> (8 - n);
 
             if (i < bits)
             {
-                buf.put(p,(byte)((buf.get(p)&~bits)|i));
+                buf.put(p, (byte)((buf.get(p) & ~bits) | i));
             }
             else
             {
-                buf.put(p,(byte)(buf.get(p)|bits));
+                buf.put(p, (byte)(buf.get(p) | bits));
 
                 int length = i - bits;
                 while (true)
@@ -109,42 +109,42 @@ public class NBitInteger
 
     public static int decode(ByteBuffer buffer, int n)
     {
-        if (n==8)
+        if (n == 8)
         {
             int nbits = 0xFF;
 
-            int i=buffer.get()&0xff;
-            
+            int i = buffer.get() & 0xff;
+
             if (i == nbits)
-            {       
-                int m=1;
+            {
+                int m = 1;
                 int b;
                 do
                 {
-                    b = 0xff&buffer.get();
-                    i = i + (b&127) * m;
-                    m = m*128;
+                    b = 0xff & buffer.get();
+                    i = i + (b & 127) * m;
+                    m = m * 128;
                 }
-                while ((b&128) == 128);
+                while ((b & 128) == 128);
             }
             return i;
         }
-        
+
         int nbits = 0xFF >>> (8 - n);
 
-        int i=buffer.get(buffer.position()-1)&nbits;
-        
+        int i = buffer.get(buffer.position() - 1) & nbits;
+
         if (i == nbits)
-        {       
-            int m=1;
+        {
+            int m = 1;
             int b;
             do
             {
-                b = 0xff&buffer.get();
-                i = i + (b&127) * m;
-                m = m*128;
+                b = 0xff & buffer.get();
+                i = i + (b & 127) * m;
+                m = m * 128;
             }
-            while ((b&128) == 128);
+            while ((b & 128) == 128);
         }
         return i;
     }

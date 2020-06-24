@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.annotations;
@@ -24,8 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
 import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ClassInheritanceHandler
@@ -34,11 +34,10 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ClassInheritanceHandler extends AbstractHandler
 {
-    private static final Logger LOG = Log.getLogger(ClassInheritanceHandler.class);
-    
+    private static final Logger LOG = LoggerFactory.getLogger(ClassInheritanceHandler.class);
+
     Map<String, Set<String>> _inheritanceMap;
- 
-    
+
     public ClassInheritanceHandler(Map<String, Set<String>> map)
     {
         _inheritanceMap = map;
@@ -52,8 +51,8 @@ public class ClassInheritanceHandler extends AbstractHandler
             //Don't scan Object
             if ("java.lang.Object".equals(classInfo.getClassName()))
                 return;
-            
-            for (int i=0; classInfo.getInterfaces() != null && i < classInfo.getInterfaces().length;i++)
+
+            for (int i = 0; classInfo.getInterfaces() != null && i < classInfo.getInterfaces().length; i++)
             {
                 addToInheritanceMap(classInfo.getInterfaces()[i], classInfo.getClassName());
             }
@@ -65,13 +64,13 @@ public class ClassInheritanceHandler extends AbstractHandler
         }
         catch (Exception e)
         {
-            LOG.warn(e);
-        }  
+            LOG.warn("Failed to handle {}", classInfo, e);
+        }
     }
-    
-    private void addToInheritanceMap (String interfaceOrSuperClassName, String implementingOrExtendingClassName)
+
+    private void addToInheritanceMap(String interfaceOrSuperClassName, String implementingOrExtendingClassName)
     {
-      
+
         //As it is likely that the interfaceOrSuperClassName is already in the map, try getting it first
         Set<String> implementingClasses = _inheritanceMap.get(interfaceOrSuperClassName);
         //If it isn't in the map, then add it in, but test to make sure that someone else didn't get in 
@@ -83,7 +82,7 @@ public class ClassInheritanceHandler extends AbstractHandler
             if (tmp != null)
                 implementingClasses = tmp;
         }
-        
+
         implementingClasses.add(implementingOrExtendingClassName);
     }
 }

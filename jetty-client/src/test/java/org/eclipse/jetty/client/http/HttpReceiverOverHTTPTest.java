@@ -1,49 +1,42 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.http;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.EOFException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.client.DuplexHttpDestination;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
@@ -54,30 +47,39 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class HttpReceiverOverHTTPTest
-{    
+{
     private HttpClient client;
-    private HttpDestinationOverHTTP destination;
+    private HttpDestination destination;
     private ByteArrayEndPoint endPoint;
     private HttpConnectionOverHTTP connection;
-    
-    public static Stream<Arguments> complianceModes() throws Exception
+
+    public static Stream<Arguments> complianceModes()
     {
         return Stream.of(
-                HttpCompliance.RFC7230,
-                HttpCompliance.RFC2616,
-                HttpCompliance.LEGACY,
-                HttpCompliance.RFC2616_LEGACY,
-                HttpCompliance.RFC7230_LEGACY
+            HttpCompliance.RFC7230,
+            HttpCompliance.RFC2616,
+            HttpCompliance.LEGACY,
+            HttpCompliance.RFC2616_LEGACY,
+            HttpCompliance.RFC7230_LEGACY
         ).map(Arguments::of);
     }
-    
+
     public void init(HttpCompliance compliance) throws Exception
     {
         client = new HttpClient();
         client.setHttpCompliance(compliance);
         client.start();
-        destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", 8080));
+        destination = new DuplexHttpDestination(client, new Origin("http", "localhost", 8080));
         destination.start();
         endPoint = new ByteArrayEndPoint();
         connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<>());
@@ -94,7 +96,7 @@ public class HttpReceiverOverHTTPTest
     {
         HttpRequest request = (HttpRequest)client.newRequest("http://localhost");
         FutureResponseListener listener = new FutureResponseListener(request);
-        HttpExchange exchange = new HttpExchange(destination, request, Collections.<Response.ResponseListener>singletonList(listener));
+        HttpExchange exchange = new HttpExchange(destination, request, List.of(listener));
         boolean associated = connection.getHttpChannel().associate(exchange);
         assertTrue(associated);
         exchange.requestComplete(null);
@@ -104,11 +106,11 @@ public class HttpReceiverOverHTTPTest
 
     @ParameterizedTest
     @MethodSource("complianceModes")
-    public void test_Receive_NoResponseContent(HttpCompliance compliance) throws Exception
+    public void testReceiveNoResponseContent(HttpCompliance compliance) throws Exception
     {
         init(compliance);
-        endPoint.addInput("" +
-                "HTTP/1.1 200 OK\r\n" +
+        endPoint.addInput(
+            "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 0\r\n" +
                 "\r\n");
         HttpExchange exchange = newExchange();
@@ -128,12 +130,12 @@ public class HttpReceiverOverHTTPTest
 
     @ParameterizedTest
     @MethodSource("complianceModes")
-    public void test_Receive_ResponseContent(HttpCompliance compliance) throws Exception
+    public void testReceiveResponseContent(HttpCompliance compliance) throws Exception
     {
         init(compliance);
         String content = "0123456789ABCDEF";
-        endPoint.addInput("" +
-                "HTTP/1.1 200 OK\r\n" +
+        endPoint.addInput(
+            "HTTP/1.1 200 OK\r\n" +
                 "Content-length: " + content.length() + "\r\n" +
                 "\r\n" +
                 content);
@@ -156,13 +158,13 @@ public class HttpReceiverOverHTTPTest
 
     @ParameterizedTest
     @MethodSource("complianceModes")
-    public void test_Receive_ResponseContent_EarlyEOF(HttpCompliance compliance) throws Exception
+    public void testReceiveResponseContentEarlyEOF(HttpCompliance compliance) throws Exception
     {
         init(compliance);
         String content1 = "0123456789";
         String content2 = "ABCDEF";
-        endPoint.addInput("" +
-                "HTTP/1.1 200 OK\r\n" +
+        endPoint.addInput(
+            "HTTP/1.1 200 OK\r\n" +
                 "Content-length: " + (content1.length() + content2.length()) + "\r\n" +
                 "\r\n" +
                 content1);
@@ -172,17 +174,17 @@ public class HttpReceiverOverHTTPTest
         endPoint.addInputEOF();
         connection.getHttpChannel().receive();
 
-        ExecutionException e = assertThrows(ExecutionException.class, ()->listener.get(5, TimeUnit.SECONDS));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
         assertThat(e.getCause(), instanceOf(EOFException.class));
     }
 
     @ParameterizedTest
     @MethodSource("complianceModes")
-    public void test_Receive_ResponseContent_IdleTimeout(HttpCompliance compliance) throws Exception
+    public void testReceiveResponseContentIdleTimeout(HttpCompliance compliance) throws Exception
     {
         init(compliance);
-        endPoint.addInput("" +
-                "HTTP/1.1 200 OK\r\n" +
+        endPoint.addInput(
+            "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 1\r\n" +
                 "\r\n");
         HttpExchange exchange = newExchange();
@@ -193,32 +195,32 @@ public class HttpReceiverOverHTTPTest
         Thread.sleep(100);
         connection.onIdleExpired();
 
-        ExecutionException e = assertThrows(ExecutionException.class, ()->listener.get(5, TimeUnit.SECONDS));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
         assertThat(e.getCause(), instanceOf(TimeoutException.class));
     }
 
     @ParameterizedTest
     @MethodSource("complianceModes")
-    public void test_Receive_BadResponse(HttpCompliance compliance) throws Exception
+    public void testReceiveBadResponse(HttpCompliance compliance) throws Exception
     {
         init(compliance);
-        endPoint.addInput("" +
-                "HTTP/1.1 200 OK\r\n" +
+        endPoint.addInput(
+            "HTTP/1.1 200 OK\r\n" +
                 "Content-length: A\r\n" +
                 "\r\n");
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         connection.getHttpChannel().receive();
 
-        ExecutionException e = assertThrows(ExecutionException.class, ()->listener.get(5, TimeUnit.SECONDS));
+        ExecutionException e = assertThrows(ExecutionException.class, () -> listener.get(5, TimeUnit.SECONDS));
         assertThat(e.getCause(), instanceOf(HttpResponseException.class));
-        assertThat(e.getCause().getCause(),instanceOf(BadMessageException.class));
-        assertThat(e.getCause().getCause().getCause(),instanceOf(NumberFormatException.class));
+        assertThat(e.getCause().getCause(), instanceOf(BadMessageException.class));
+        assertThat(e.getCause().getCause().getCause(), instanceOf(NumberFormatException.class));
     }
 
     @ParameterizedTest
     @MethodSource("complianceModes")
-    public void test_FillInterested_RacingWith_BufferRelease(HttpCompliance compliance) throws Exception
+    public void testFillInterestedRacingWithBufferRelease(HttpCompliance compliance) throws Exception
     {
         init(compliance);
         connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<>())
@@ -249,10 +251,10 @@ public class HttpReceiverOverHTTPTest
             }
         };
         endPoint.setConnection(connection);
-        
+
         // Partial response to trigger the call to fillInterested().
-        endPoint.addInput("" +
-                "HTTP/1.1 200 OK\r\n" +
+        endPoint.addInput(
+            "HTTP/1.1 200 OK\r\n" +
                 "Content-Length: 1\r\n" +
                 "\r\n");
 

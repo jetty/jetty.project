@@ -1,26 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.api;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -36,24 +32,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BasicAuthentication;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
-import org.eclipse.jetty.client.util.InputStreamContentProvider;
+import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.client.util.OutputStreamContentProvider;
+import org.eclipse.jetty.client.util.OutputStreamRequestContent;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.FuturePromise;
-
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @Disabled
+// @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class Usage
 {
     @Test
-    public void testGETBlocking_ShortAPI() throws Exception
+    public void testGETBlockingShortAPI() throws Exception
     {
         HttpClient client = new HttpClient();
         client.start();
@@ -76,15 +76,15 @@ public class Usage
 
         // Address must be provided, it's the only thing non defaultable
         Request request = client.newRequest("localhost", 8080)
-                .scheme("https")
-                .method(HttpMethod.GET)
-                .path("/uri")
-                .version(HttpVersion.HTTP_1_1)
-                .param("a", "b")
-                .header("X-Header", "Y-value")
-                .agent("Jetty HTTP Client")
-                .idleTimeout(5000, TimeUnit.MILLISECONDS)
-                .timeout(20, TimeUnit.SECONDS);
+            .scheme("https")
+            .method(HttpMethod.GET)
+            .path("/uri")
+            .version(HttpVersion.HTTP_1_1)
+            .param("a", "b")
+            .headers(headers -> headers.put("X-Header", "Y-value"))
+            .agent("Jetty HTTP Client")
+            .idleTimeout(5000, TimeUnit.MILLISECONDS)
+            .timeout(20, TimeUnit.SECONDS);
 
         ContentResponse response = request.send();
         assertEquals(200, response.getStatus());
@@ -100,19 +100,15 @@ public class Usage
         final CountDownLatch latch = new CountDownLatch(1);
 
         client.newRequest("localhost", 8080)
-                // Send asynchronously
-                .send(new Response.CompleteListener()
-        {
-            @Override
-            public void onComplete(Result result)
+            // Send asynchronously
+            .send(result ->
             {
                 if (result.isSucceeded())
                 {
                     responseRef.set(result.getResponse());
                     latch.countDown();
                 }
-            }
-        });
+            });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         Response response = responseRef.get();
@@ -121,7 +117,7 @@ public class Usage
     }
 
     @Test
-    public void testPOSTWithParams_ShortAPI() throws Exception
+    public void testPOSTWithParamsShortAPI() throws Exception
     {
         HttpClient client = new HttpClient();
         client.start();
@@ -137,14 +133,14 @@ public class Usage
         client.start();
 
         Response response = client.newRequest("localhost", 8080)
-                // Add a request listener
-                .listener(new Request.Listener.Adapter()
+            // Add a request listener
+            .listener(new Request.Listener.Adapter()
+            {
+                @Override
+                public void onSuccess(Request request)
                 {
-                    @Override
-                    public void onSuccess(Request request)
-                    {
-                    }
-                }).send();
+                }
+            }).send();
         assertEquals(200, response.getStatus());
     }
 
@@ -154,13 +150,13 @@ public class Usage
         HttpClient client = new HttpClient();
         client.start();
 
+        Request request = client.newRequest("localhost", 8080);
+
         // Create an explicit connection, and use try-with-resources to manage it
         FuturePromise<Connection> futureConnection = new FuturePromise<>();
-        client.getDestination("http", "localhost", 8080).newConnection(futureConnection);
+        client.resolveDestination(request).newConnection(futureConnection);
         try (Connection connection = futureConnection.get(5, TimeUnit.SECONDS))
         {
-            Request request = client.newRequest("localhost", 8080);
-
             // Asynchronous send but using FutureResponseListener
             FutureResponseListener listener = new FutureResponseListener(request);
             connection.send(request, listener);
@@ -226,10 +222,10 @@ public class Usage
         client.setFollowRedirects(false);
 
         ContentResponse response = client.newRequest("localhost", 8080)
-                // Follow redirects for this request only
-                .followRedirects(true)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            // Follow redirects for this request only
+            .followRedirects(true)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -277,9 +273,9 @@ public class Usage
         InputStream input = new ByteArrayInputStream("content".getBytes(StandardCharsets.UTF_8));
 
         ContentResponse response = client.newRequest("localhost", 8080)
-                // Provide the content as InputStream
-                .content(new InputStreamContentProvider(input))
-                .send();
+            // Provide the content as InputStream
+            .body(new InputStreamRequestContent(input))
+            .send();
 
         assertEquals(200, response.getStatus());
     }
@@ -290,19 +286,12 @@ public class Usage
         HttpClient client = new HttpClient();
         client.start();
 
-        OutputStreamContentProvider content = new OutputStreamContentProvider();
+        OutputStreamRequestContent content = new OutputStreamRequestContent();
         try (OutputStream output = content.getOutputStream())
         {
             client.newRequest("localhost", 8080)
-                    .content(content)
-                    .send(new Response.CompleteListener()
-                    {
-                        @Override
-                        public void onComplete(Result result)
-                        {
-                            assertEquals(200, result.getResponse().getStatus());
-                        }
-                    });
+                    .body(content)
+                    .send(result -> assertEquals(200, result.getResponse().getStatus()));
 
             output.write(new byte[1024]);
             output.write(new byte[512]);
@@ -315,24 +304,24 @@ public class Usage
     public void testProxyUsage() throws Exception
     {
         // In proxies, we receive the headers but not the content, so we must be able to send the request with
-        // a lazy content provider that does not block request.send(...)
+        // a lazy request content that does not block request.send(...)
 
         HttpClient client = new HttpClient();
         client.start();
 
-        final AtomicBoolean sendContent = new AtomicBoolean(true);
-        DeferredContentProvider async = new DeferredContentProvider(ByteBuffer.wrap(new byte[]{0, 1, 2}));
+        AtomicBoolean sendContent = new AtomicBoolean(true);
+        AsyncRequestContent async = new AsyncRequestContent(ByteBuffer.wrap(new byte[]{0, 1, 2}));
         client.newRequest("localhost", 8080)
-                .content(async)
-                .send(new Response.Listener.Adapter()
+            .body(async)
+            .send(new Response.Listener.Adapter()
+            {
+                @Override
+                public void onBegin(Response response)
                 {
-                    @Override
-                    public void onBegin(Response response)
-                    {
-                        if (response.getStatus() == 404)
-                            sendContent.set(false);
-                    }
-                });
+                    if (response.getStatus() == 404)
+                        sendContent.set(false);
+                }
+            });
 
         Thread.sleep(100);
 

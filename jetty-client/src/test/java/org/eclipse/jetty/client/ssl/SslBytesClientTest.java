@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.ssl;
@@ -30,7 +30,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
@@ -38,9 +37,11 @@ import javax.net.ssl.SSLSocket;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -61,7 +62,7 @@ public class SslBytesClientTest extends SslBytesTest
 {
     private ExecutorService threadPool;
     private HttpClient client;
-    private SslContextFactory sslContextFactory;
+    private SslContextFactory.Client sslContextFactory;
     private SSLServerSocket acceptor;
     private SimpleProxy proxy;
 
@@ -70,10 +71,13 @@ public class SslBytesClientTest extends SslBytesTest
     {
         threadPool = Executors.newCachedThreadPool();
 
-        sslContextFactory = new SslContextFactory(true);
-        client = new HttpClient(sslContextFactory);
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        sslContextFactory = new SslContextFactory.Client(true);
+        clientConnector.setSslContextFactory(sslContextFactory);
+        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         client.setMaxConnectionsPerDestination(1);
-        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
+        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
         client.start();
@@ -163,13 +167,15 @@ public class SslBytesClientTest extends SslBytesTest
             String line = reader.readLine();
             assertTrue(line.startsWith("GET"));
             while (line.length() > 0)
+            {
                 line = reader.readLine();
+            }
 
             // Write response
             OutputStream output = server.getOutputStream();
             output.write(("HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "\r\n").getBytes(StandardCharsets.UTF_8));
+                "Content-Length: 0\r\n" +
+                "\r\n").getBytes(StandardCharsets.UTF_8));
             output.flush();
             assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
@@ -206,7 +212,9 @@ public class SslBytesClientTest extends SslBytesTest
             String line = reader.readLine();
             assertTrue(line.startsWith("GET"));
             while (line.length() > 0)
+            {
                 line = reader.readLine();
+            }
 
             OutputStream serverOutput = server.getOutputStream();
             byte[] data1 = new byte[1024];
@@ -217,10 +225,10 @@ public class SslBytesClientTest extends SslBytesTest
             final String content2 = new String(data2, StandardCharsets.UTF_8);
             // Write first part of the response
             serverOutput.write(("HTTP/1.1 200 OK\r\n" +
-                    "Content-Type: text/plain\r\n" +
-                    "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
-                    "\r\n" +
-                    content1).getBytes(StandardCharsets.UTF_8));
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
+                "\r\n" +
+                content1).getBytes(StandardCharsets.UTF_8));
             serverOutput.flush();
             assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 
@@ -243,7 +251,7 @@ public class SslBytesClientTest extends SslBytesTest
 
             // Trigger a read to have the server write the final renegotiation steps
             server.setSoTimeout(100);
-            assertThrows(SocketTimeoutException.class, ()->serverInput.read());
+            assertThrows(SocketTimeoutException.class, () -> serverInput.read());
 
             // Renegotiation Handshake
             record = proxy.readFromServer();
@@ -314,7 +322,9 @@ public class SslBytesClientTest extends SslBytesTest
             String line = reader.readLine();
             assertTrue(line.startsWith("GET"));
             while (line.length() > 0)
+            {
                 line = reader.readLine();
+            }
 
             OutputStream serverOutput = server.getOutputStream();
             byte[] data1 = new byte[1024];
@@ -325,10 +335,10 @@ public class SslBytesClientTest extends SslBytesTest
             final String content2 = new String(data2, StandardCharsets.UTF_8);
             // Write first part of the response
             serverOutput.write(("HTTP/1.1 200 OK\r\n" +
-                    "Content-Type: text/plain\r\n" +
-                    "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
-                    "\r\n" +
-                    content1).getBytes(StandardCharsets.UTF_8));
+                "Content-Type: text/plain\r\n" +
+                "Content-Length: " + (content1.length() + content2.length()) + "\r\n" +
+                "\r\n" +
+                content1).getBytes(StandardCharsets.UTF_8));
             serverOutput.flush();
             assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
 

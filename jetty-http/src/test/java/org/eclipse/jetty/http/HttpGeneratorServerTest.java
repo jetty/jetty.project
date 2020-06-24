@@ -1,22 +1,27 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http;
+
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -27,16 +32,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.nio.ByteBuffer;
-import java.util.function.Supplier;
-
-import org.eclipse.jetty.util.BufferUtil;
-import org.junit.jupiter.api.Test;
-
 public class HttpGeneratorServerTest
-{ 
+{
     @Test
-    public void test_0_9() throws Exception
+    public void test09() throws Exception
     {
         ByteBuffer header = BufferUtil.allocate(8096);
         ByteBuffer content = BufferUtil.toBuffer("0123456789");
@@ -47,9 +46,10 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_0_9, 200, null, new HttpFields(), 10);
-        info.getFields().add("Content-Type", "test/data");
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Content-Type", "test/data");
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_0_9, 200, null, fields, 10);
 
         result = gen.generateResponse(info, false, null, null, content, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
@@ -57,20 +57,20 @@ public class HttpGeneratorServerTest
         String response = BufferUtil.toString(header);
         BufferUtil.clear(header);
         response += BufferUtil.toString(content);
-        BufferUtil.clear(content);        
+        BufferUtil.clear(content);
 
         result = gen.generateResponse(null, false, null, null, content, false);
         assertEquals(HttpGenerator.Result.SHUTDOWN_OUT, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
-        
+
         assertEquals(10, gen.getContentPrepared());
-        
+
         assertThat(response, not(containsString("200 OK")));
         assertThat(response, not(containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT")));
         assertThat(response, not(containsString("Content-Length: 10")));
         assertThat(response, containsString("0123456789"));
     }
-    
+
     @Test
     public void testSimple() throws Exception
     {
@@ -83,9 +83,10 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 10);
-        info.getFields().add("Content-Type", "test/data");
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Content-Type", "test/data");
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, 10);
 
         result = gen.generateResponse(info, false, null, null, content, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -96,20 +97,53 @@ public class HttpGeneratorServerTest
         String response = BufferUtil.toString(header);
         BufferUtil.clear(header);
         response += BufferUtil.toString(content);
-        BufferUtil.clear(content);        
+        BufferUtil.clear(content);
 
         result = gen.generateResponse(null, false, null, null, content, false);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
-        
+
         assertEquals(10, gen.getContentPrepared());
-        
+
         assertThat(response, containsString("HTTP/1.1 200 OK"));
         assertThat(response, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(response, containsString("Content-Length: 10"));
         assertThat(response, containsString("\r\n0123456789"));
     }
-    
+
+    @Test
+    public void testHeaderOverflow() throws Exception
+    {
+        HttpGenerator gen = new HttpGenerator();
+
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Location", "http://somewhere/else");
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 302, null, fields, 0);
+
+        HttpGenerator.Result result = gen.generateResponse(info, false, null, null, null, true);
+        assertEquals(HttpGenerator.Result.NEED_HEADER, result);
+
+        ByteBuffer header = BufferUtil.allocate(16);
+        result = gen.generateResponse(info, false, header, null, null, true);
+        assertEquals(HttpGenerator.Result.HEADER_OVERFLOW, result);
+
+        header = BufferUtil.allocate(8096);
+        result = gen.generateResponse(info, false, header, null, null, true);
+        assertEquals(HttpGenerator.Result.FLUSH, result);
+        assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
+        String response = BufferUtil.toString(header);
+        BufferUtil.clear(header);
+
+        result = gen.generateResponse(null, false, null, null, null, false);
+        assertEquals(HttpGenerator.Result.DONE, result);
+        assertEquals(HttpGenerator.State.END, gen.getState());
+
+        assertEquals(0, gen.getContentPrepared());
+
+        assertThat(response, containsString("HTTP/1.1 302 Found"));
+        assertThat(response, containsString("Location: http://somewhere/else"));
+    }
+
     @Test
     public void test204() throws Exception
     {
@@ -117,23 +151,24 @@ public class HttpGeneratorServerTest
         ByteBuffer content = BufferUtil.toBuffer("0123456789");
 
         HttpGenerator gen = new HttpGenerator();
-        
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 204, "Foo", new HttpFields(), 10);
-        info.getFields().add("Content-Type", "test/data");
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
+
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Content-Type", "test/data");
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 204, "Foo", fields, 10);
 
         HttpGenerator.Result result = gen.generateResponse(info, false, header, null, content, true);
-     
-        assertEquals(gen.isNoContent(), true);    
+
+        assertEquals(gen.isNoContent(), true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         String responseheaders = BufferUtil.toString(header);
-        BufferUtil.clear(header);     
+        BufferUtil.clear(header);
 
         result = gen.generateResponse(null, false, null, null, content, false);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
-        
+
         assertThat(responseheaders, containsString("HTTP/1.1 204 Foo"));
         assertThat(responseheaders, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(responseheaders, not(containsString("Content-Length: 10")));
@@ -141,8 +176,7 @@ public class HttpGeneratorServerTest
         //Note: the HttpConnection.process() method is responsible for actually
         //excluding the content from the response based on generator.isNoContent()==true
     }
-    
-    
+
     @Test
     public void testComplexChars() throws Exception
     {
@@ -155,9 +189,10 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, "ØÆ", new HttpFields(), 10);
-        info.getFields().add("Content-Type", "test/data;\r\nextra=value");
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Content-Type", "test/data;\r\nextra=value");
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, "ØÆ", fields, 10);
 
         result = gen.generateResponse(info, false, null, null, content, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -168,14 +203,14 @@ public class HttpGeneratorServerTest
         String response = BufferUtil.toString(header);
         BufferUtil.clear(header);
         response += BufferUtil.toString(content);
-        BufferUtil.clear(content);        
+        BufferUtil.clear(content);
 
         result = gen.generateResponse(null, false, null, null, content, false);
         assertEquals(HttpGenerator.Result.DONE, result);
         assertEquals(HttpGenerator.State.END, gen.getState());
-                
+
         assertEquals(10, gen.getContentPrepared());
-        
+
         assertThat(response, containsString("HTTP/1.1 200 ØÆ"));
         assertThat(response, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(response, containsString("Content-Type: test/data;  extra=value"));
@@ -187,11 +222,12 @@ public class HttpGeneratorServerTest
     public void testSendServerXPoweredBy() throws Exception
     {
         ByteBuffer header = BufferUtil.allocate(8096);
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), -1);
-        HttpFields fields = new HttpFields();
-        fields.add(HttpHeader.SERVER, "SomeServer");
-        fields.add(HttpHeader.X_POWERED_BY, "SomePower");
-        MetaData.Response infoF = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, -1);
+        HttpFields.Mutable fields1 = HttpFields.build();
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields1, -1);
+        HttpFields.Mutable fields2 = HttpFields.build();
+        fields2.add(HttpHeader.SERVER, "SomeServer");
+        fields2.add(HttpHeader.X_POWERED_BY, "SomePower");
+        MetaData.Response infoF = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields2, -1);
         String head;
 
         HttpGenerator gen = new HttpGenerator(true, true);
@@ -242,14 +278,16 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 10);
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
-        info.getFields().add("Content-Length", "11");
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        fields.add("Content-Length", "11");
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, 10);
 
         result = gen.generateResponse(info, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
 
-        BadMessageException e = assertThrows(BadMessageException.class, ()->{
+        BadMessageException e = assertThrows(BadMessageException.class, () ->
+        {
             gen.generateResponse(info, false, header, null, null, true);
         });
         assertEquals(500, e._code);
@@ -266,8 +304,9 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 0);
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, 0);
 
         result = gen.generateResponse(info, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -299,9 +338,10 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 0);
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
-        info.getFields().add("Connection", "close");
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        fields.add("Connection", "close");
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, 0);
 
         result = gen.generateResponse(info, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -333,10 +373,11 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 101, null, new HttpFields(), -1);
-        info.getFields().add("Upgrade", "WebSocket");
-        info.getFields().add("Connection", "Upgrade");
-        info.getFields().add("Sec-WebSocket-Accept", "123456789==");
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Upgrade", "WebSocket");
+        fields.add("Connection", "Upgrade");
+        fields.add("Sec-WebSocket-Accept", "123456789==");
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 101, null, fields, -1);
 
         result = gen.generateResponse(info, false, header, null, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
@@ -368,8 +409,9 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), -1);
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, -1);
         result = gen.generateResponse(info, false, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -409,16 +451,16 @@ public class HttpGeneratorServerTest
         assertThat(out, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(out, not(containsString("Content-Length")));
         assertThat(out, containsString("Transfer-Encoding: chunked"));
-        
+
         assertThat(out, endsWith(
-            "\r\n\r\nD\r\n"+
-            "Hello World! \r\n"+
-            "2E\r\n"+
-            "The quick brown fox jumped over the lazy dog. \r\n"+
-            "0\r\n"+
-            "\r\n"));
+            "\r\n\r\nD\r\n" +
+                "Hello World! \r\n" +
+                "2E\r\n" +
+                "The quick brown fox jumped over the lazy dog. \r\n" +
+                "0\r\n" +
+                "\r\n"));
     }
-    
+
     @Test
     public void testResponseWithHintedChunkedContent() throws Exception
     {
@@ -433,9 +475,10 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), -1);
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
-        info.getFields().add(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        fields.add(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, -1);
         result = gen.generateResponse(info, false, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -451,7 +494,7 @@ public class HttpGeneratorServerTest
 
         result = gen.generateResponse(null, false, null, null, content1, false);
         assertEquals(HttpGenerator.Result.NEED_CHUNK, result);
-        
+
         result = gen.generateResponse(null, false, null, chunk, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
@@ -478,14 +521,14 @@ public class HttpGeneratorServerTest
         assertThat(out, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(out, not(containsString("Content-Length")));
         assertThat(out, containsString("Transfer-Encoding: chunked"));
-        
+
         assertThat(out, endsWith(
-            "\r\n\r\nD\r\n"+
-            "Hello World! \r\n"+
-            "2E\r\n"+
-            "The quick brown fox jumped over the lazy dog. \r\n"+
-            "0\r\n"+
-            "\r\n"));
+            "\r\n\r\nD\r\n" +
+                "Hello World! \r\n" +
+                "2E\r\n" +
+                "The quick brown fox jumped over the lazy dog. \r\n" +
+                "0\r\n" +
+                "\r\n"));
     }
 
     @Test
@@ -503,22 +546,19 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), -1);
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
-        info.getFields().add(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
-        info.setTrailerSupplier(new Supplier<HttpFields>()
-        {
-            @Override
-            public HttpFields get()
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        fields.add(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, -1,
+            () ->
             {
-                HttpFields trailer = new HttpFields();
-                trailer.add("T-Name0","T-ValueA");
-                trailer.add("T-Name0","T-ValueB");
-                trailer.add("T-Name1","T-ValueC");
-                return trailer;
-            }
-        });
-        
+                HttpFields.Mutable trailer1 = HttpFields.build();
+                trailer1.add("T-Name0", "T-ValueA");
+                trailer1.add("T-Name0", "T-ValueB");
+                trailer1.add("T-Name1", "T-ValueC");
+                return trailer1.asImmutable();
+            });
+
         result = gen.generateResponse(info, false, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -534,7 +574,7 @@ public class HttpGeneratorServerTest
 
         result = gen.generateResponse(null, false, null, null, content1, false);
         assertEquals(HttpGenerator.Result.NEED_CHUNK, result);
-        
+
         result = gen.generateResponse(null, false, null, chunk, content1, false);
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMMITTED, gen.getState());
@@ -551,9 +591,9 @@ public class HttpGeneratorServerTest
 
         assertEquals(HttpGenerator.Result.NEED_CHUNK_TRAILER, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        
+
         result = gen.generateResponse(null, false, null, trailer, null, true);
-        
+
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         out += BufferUtil.toString(trailer);
@@ -567,17 +607,17 @@ public class HttpGeneratorServerTest
         assertThat(out, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(out, not(containsString("Content-Length")));
         assertThat(out, containsString("Transfer-Encoding: chunked"));
-        
+
         assertThat(out, endsWith(
-            "\r\n\r\nD\r\n"+
-            "Hello World! \r\n"+
-            "2E\r\n"+
-            "The quick brown fox jumped over the lazy dog. \r\n"+
-            "0\r\n"+
-            "T-Name0: T-ValueA\r\n"+
-            "T-Name0: T-ValueB\r\n"+
-            "T-Name1: T-ValueC\r\n"+
-            "\r\n"));
+            "\r\n\r\nD\r\n" +
+                "Hello World! \r\n" +
+                "2E\r\n" +
+                "The quick brown fox jumped over the lazy dog. \r\n" +
+                "0\r\n" +
+                "T-Name0: T-ValueA\r\n" +
+                "T-Name0: T-ValueB\r\n" +
+                "T-Name1: T-ValueC\r\n" +
+                "\r\n"));
     }
 
     @Test
@@ -593,22 +633,19 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), -1);
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
-        info.getFields().add(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
-        info.setTrailerSupplier(new Supplier<HttpFields>()
-        {
-            @Override
-            public HttpFields get()
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        fields.add(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, -1,
+            () ->
             {
-                HttpFields trailer = new HttpFields();
-                trailer.add("T-Name0","T-ValueA");
-                trailer.add("T-Name0","T-ValueB");
-                trailer.add("T-Name1","T-ValueC");
-                return trailer;
-            }
-        });
-        
+                HttpFields.Mutable trailer1 = HttpFields.build();
+                trailer1.add("T-Name0", "T-ValueA");
+                trailer1.add("T-Name0", "T-ValueB");
+                trailer1.add("T-Name1", "T-ValueC");
+                return trailer1;
+            });
+
         result = gen.generateResponse(info, false, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -627,9 +664,9 @@ public class HttpGeneratorServerTest
         result = gen.generateResponse(null, false, null, chunk, null, true);
         assertEquals(HttpGenerator.Result.NEED_CHUNK_TRAILER, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
-        
+
         result = gen.generateResponse(null, false, null, trailer, null, true);
-        
+
         assertEquals(HttpGenerator.Result.FLUSH, result);
         assertEquals(HttpGenerator.State.COMPLETING, gen.getState());
         out += BufferUtil.toString(trailer);
@@ -643,14 +680,14 @@ public class HttpGeneratorServerTest
         assertThat(out, containsString("Last-Modified: Thu, 01 Jan 1970 00:00:00 GMT"));
         assertThat(out, not(containsString("Content-Length")));
         assertThat(out, containsString("Transfer-Encoding: chunked"));
-        
+
         assertThat(out, endsWith(
-            "\r\n\r\n"+
-            "0\r\n"+
-            "T-Name0: T-ValueA\r\n"+
-            "T-Name0: T-ValueB\r\n"+
-            "T-Name1: T-ValueC\r\n"+
-            "\r\n"));
+            "\r\n\r\n" +
+                "0\r\n" +
+                "T-Name0: T-ValueA\r\n" +
+                "T-Name0: T-ValueB\r\n" +
+                "T-Name1: T-ValueC\r\n" +
+                "\r\n"));
     }
 
     @Test
@@ -665,8 +702,9 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 59);
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, 59);
         result = gen.generateResponse(info, false, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -713,9 +751,10 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), -1);
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
-        info.getFields().add("Content-Length",""+(content0.remaining()+content1.remaining()));
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        fields.add("Content-Length", "" + (content0.remaining() + content1.remaining()));
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, -1);
         result = gen.generateResponse(info, false, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -749,9 +788,6 @@ public class HttpGeneratorServerTest
         assertThat(out, containsString("Content-Length: 59"));
         assertThat(out, containsString("\r\n\r\nHello World! The quick brown fox jumped over the lazy dog. "));
     }
-    
-    
-    
 
     @Test
     public void test100ThenResponseWithContent() throws Exception
@@ -780,8 +816,9 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), BufferUtil.length(content0)+BufferUtil.length(content1));
-        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        HttpFields.Mutable fields = HttpFields.build();
+        fields.add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, BufferUtil.length(content0) + BufferUtil.length(content1));
         result = gen.generateResponse(info, false, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -821,7 +858,7 @@ public class HttpGeneratorServerTest
     {
         HttpGenerator generator = new HttpGenerator();
 
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
         String customValue = "test";
         fields.add(HttpHeader.CONNECTION, customValue);

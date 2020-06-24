@@ -1,0 +1,42 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[automatic-webapp-deployment]]
+=== Automatic Web Application Deployment
+
+The most basic technique for deploying Web Applications is to put a WAR file or Exploded WAR directory into the `${jetty.base}/webapps/` directory and let Jetty's deployment scanner find it and deploy it under a Context path of the same name.
+
+Only Web Applications that follow the Web Application Layout will be detected by Jetty and deployed this way.
+
+The Context Path assigned to this automatic deployment is based the filename (or directory name) of the WAR.
+
+[cols=",",options="header",]
+|=======================================================================
+|File or Directory Name |Assigned Context Path
+|`/webapps/footrope.war` |http://host/footrope/
+
+|`/webapps/baggywrinkle-1.0.war` |http://host/baggywrinkle-1.0/
+
+|`/webapps/lazaret-2.1.3-SNAPSHOT.war` |http://host/lazaret-2.1.3-SNAPSHOT/
+
+|`/webapps/belaying-pins/WEB-INF/web.xml` |http://host/belaying-pins/
+
+|`/webapps/root.war` _(reserved name)_ |http://host/
+
+|`/webapps/root/WEB-INF/web.xml` _(reserved name)_ |http://host/
+|=======================================================================

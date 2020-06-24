@@ -1,26 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package com.acme.osgi;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
@@ -31,27 +30,26 @@ import org.osgi.framework.ServiceRegistration;
 
 /**
  * Bootstrap a ContextHandler
- * 
- * 
  */
 public class Activator implements BundleActivator
 {
 
     private ServiceRegistration _sr;
+
     /**
-     * 
-     * @param context
+     *
      */
     @Override
     public void start(final BundleContext context) throws Exception
     {
         ContextHandler ch = new ContextHandler();
-        ch.addEventListener(new ServletContextListener () {
+        ch.addEventListener(new ServletContextListener()
+        {
 
             @Override
             public void contextInitialized(ServletContextEvent sce)
             {
-               //System.err.println("Context is initialized");
+                //System.err.println("Context is initialized");
             }
 
             @Override
@@ -59,19 +57,17 @@ public class Activator implements BundleActivator
             {
                 //System.err.println("CONTEXT IS DESTROYED!");                
             }
-            
         });
         Dictionary props = new Hashtable();
-        props.put("contextPath","/acme");
+        props.put("Web-ContextPath", "/acme");
         props.put("Jetty-ContextFilePath", "acme.xml");
-        _sr = context.registerService(ContextHandler.class.getName(),ch,props);
+        _sr = context.registerService(ContextHandler.class.getName(), ch, props);
     }
 
     /**
      * Stop the activator.
-     * 
-     * @see
-     * org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
+     *
+     * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
      */
     @Override
     public void stop(BundleContext context) throws Exception

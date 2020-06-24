@@ -1,25 +1,24 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.server;
 
-
+import java.nio.ByteBuffer;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 
@@ -33,12 +32,17 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class SslConnectionFactory extends AbstractConnectionFactory
+public class SslConnectionFactory extends AbstractConnectionFactory implements ConnectionFactory.Detecting, ConnectionFactory.Configuring
 {
-    private final SslContextFactory _sslContextFactory;
+    private static final int TLS_ALERT_FRAME_TYPE = 0x15;
+    private static final int TLS_HANDSHAKE_FRAME_TYPE = 0x16;
+    private static final int TLS_MAJOR_VERSION = 3;
+
+    private final SslContextFactory.Server _sslContextFactory;
     private final String _nextProtocol;
     private boolean _directBuffersForEncryption = false;
     private boolean _directBuffersForDecryption = false;
+    private boolean _ensureSecureRequestCustomizer = true;
 
     public SslConnectionFactory()
     {
@@ -47,18 +51,18 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 
     public SslConnectionFactory(@Name("next") String nextProtocol)
     {
-        this(null,nextProtocol);
+        this(null, nextProtocol);
     }
 
-    public SslConnectionFactory(@Name("sslContextFactory") SslContextFactory factory, @Name("next") String nextProtocol)
+    public SslConnectionFactory(@Name("sslContextFactory") SslContextFactory.Server factory, @Name("next") String nextProtocol)
     {
         super("SSL");
-        _sslContextFactory=factory==null?new SslContextFactory():factory;
-        _nextProtocol=nextProtocol;
+        _sslContextFactory = factory == null ? new SslContextFactory.Server() : factory;
+        _nextProtocol = nextProtocol;
         addBean(_sslContextFactory);
     }
 
-    public SslContextFactory getSslContextFactory()
+    public SslContextFactory.Server getSslContextFactory()
     {
         return _sslContextFactory;
     }
@@ -88,6 +92,21 @@ public class SslConnectionFactory extends AbstractConnectionFactory
         return _nextProtocol;
     }
 
+    public boolean isEnsureSecureRequestCustomizer()
+    {
+        return _ensureSecureRequestCustomizer;
+    }
+
+    /**
+     * @param ensureSecureRequestCustomizer True if this factory ensures that all {@link HttpConfiguration}s on
+     * associated {@link Connector}s have an {@link SecureRequestCustomizer} instance.
+     * @see ConnectionFactory.Configuring
+     */
+    public void setEnsureSecureRequestCustomizer(boolean ensureSecureRequestCustomizer)
+    {
+        _ensureSecureRequestCustomizer = ensureSecureRequestCustomizer;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
@@ -95,10 +114,34 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 
         SSLEngine engine = _sslContextFactory.newSSLEngine();
         engine.setUseClientMode(false);
-        SSLSession session=engine.getSession();
+        SSLSession session = engine.getSession();
 
-        if (session.getPacketBufferSize()>getInputBufferSize())
+        if (session.getPacketBufferSize() > getInputBufferSize())
             setInputBufferSize(session.getPacketBufferSize());
+    }
+
+    @Override
+    public void configure(Connector connector)
+    {
+        if (isEnsureSecureRequestCustomizer())
+        {
+            connector.getContainedBeans(HttpConfiguration.class).forEach(configuration ->
+            {
+                if (configuration.getCustomizer(SecureRequestCustomizer.class) == null)
+                    configuration.addCustomizer(new SecureRequestCustomizer());
+            });
+        }
+    }
+
+    @Override
+    public Detection detect(ByteBuffer buffer)
+    {
+        if (buffer.remaining() < 2)
+            return Detection.NEED_MORE_BYTES;
+        int tlsFrameType = buffer.get(0) & 0xFF;
+        int tlsMajorVersion = buffer.get(1) & 0xFF;
+        boolean seemsSsl = (tlsFrameType == TLS_HANDSHAKE_FRAME_TYPE || tlsFrameType == TLS_ALERT_FRAME_TYPE) && tlsMajorVersion == TLS_MAJOR_VERSION;
+        return seemsSsl ? Detection.RECOGNIZED : Detection.NOT_RECOGNIZED;
     }
 
     @Override
@@ -144,7 +187,6 @@ public class SslConnectionFactory extends AbstractConnectionFactory
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s->%s}",this.getClass().getSimpleName(),hashCode(),getProtocol(),_nextProtocol);
+        return String.format("%s@%x{%s->%s}", this.getClass().getSimpleName(), hashCode(), getProtocol(), _nextProtocol);
     }
-
 }

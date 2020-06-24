@@ -1,72 +1,71 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.component;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A LifeCycle that when started will stop another LifeCycle
  */
 public class StopLifeCycle extends AbstractLifeCycle implements LifeCycle.Listener
 {
-    private static final Logger LOG = Log.getLogger(StopLifeCycle.class);
-    
+    private static final Logger LOG = LoggerFactory.getLogger(StopLifeCycle.class);
+
     private final LifeCycle _lifecycle;
-    
+
     public StopLifeCycle(LifeCycle lifecycle)
     {
         _lifecycle = lifecycle;
-        addLifeCycleListener(this);
+        addEventListener(this);
     }
 
     @Override
     public void lifeCycleStarting(LifeCycle lifecycle)
-    {        
+    {
     }
 
     @Override
     public void lifeCycleStarted(LifeCycle lifecycle)
-    {          
+    {
         try
         {
             _lifecycle.stop();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
-            LOG.warn(e);
-        }  
+            LOG.warn("Unable to stop", e);
+        }
     }
 
     @Override
     public void lifeCycleFailure(LifeCycle lifecycle, Throwable cause)
-    {      
+    {
     }
 
     @Override
     public void lifeCycleStopping(LifeCycle lifecycle)
-    {        
+    {
     }
 
     @Override
     public void lifeCycleStopped(LifeCycle lifecycle)
-    {        
+    {
     }
 }

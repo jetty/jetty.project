@@ -1,40 +1,34 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.nosql.mongodb;
 
 import java.net.UnknownHostException;
 
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientURI;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.server.session.SessionDataStore;
-
-
-import com.mongodb.Mongo;
-import com.mongodb.MongoException;
-import com.mongodb.MongoURI;
 
 /**
  * MongoSessionDataStoreFactory
- *
- *
  */
 public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
@@ -101,7 +95,7 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
     }
 
     /**
-     * @param  connectionString the connection string to set. This has priority over dbHost and port
+     * @param connectionString the connection string to set. This has priority over dbHost and port
      */
     public void setConnectionString(String connectionString)
     {
@@ -124,9 +118,8 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
         _collectionName = collectionName;
     }
 
-
     /**
-     * @throws Exception  {@link UnknownHostException} if any issue while resolving MongoDB Host
+     * @throws Exception {@link UnknownHostException} if any issue while resolving MongoDB Host
      * @see org.eclipse.jetty.server.session.SessionDataStoreFactory#getSessionDataStore(org.eclipse.jetty.server.session.SessionHandler)
      */
     @Override
@@ -135,20 +128,17 @@ public class MongoSessionDataStoreFactory extends AbstractSessionDataStoreFactor
         MongoSessionDataStore store = new MongoSessionDataStore();
         store.setGracePeriodSec(getGracePeriodSec());
         store.setSavePeriodSec(getSavePeriodSec());
-        Mongo mongo;
+        MongoClient mongo;
 
         if (!StringUtil.isBlank(getConnectionString()))
-            mongo = new Mongo(new MongoURI(getConnectionString()));
+            mongo = new MongoClient(new MongoClientURI(getConnectionString()));
         else if (!StringUtil.isBlank(getHost()) && getPort() != -1)
-            mongo = new Mongo(getHost(), getPort());
+            mongo = new MongoClient(getHost(), getPort());
         else if (!StringUtil.isBlank(getHost()))
-            mongo = new Mongo(getHost());
+            mongo = new MongoClient(getHost());
         else
-            mongo = new Mongo();
+            mongo = new MongoClient();
         store.setDBCollection(mongo.getDB(getDbName()).getCollection(getCollectionName()));
         return store;
     }
-
-
-
 }

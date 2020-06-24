@@ -1,26 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.annotations;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.ServletSecurityElement;
 import javax.servlet.annotation.ServletSecurity;
 import javax.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
@@ -32,10 +31,10 @@ import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ServletSecurityAnnotationHandler
@@ -56,19 +55,13 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    private static final Logger LOG = Log.getLogger(ServletSecurityAnnotationHandler.class);
-
-    private WebAppContext _context;
+    private static final Logger LOG = LoggerFactory.getLogger(ServletSecurityAnnotationHandler.class);
 
     public ServletSecurityAnnotationHandler(WebAppContext wac)
     {
-        super(false);
-        _context = wac;
+        super(false, wac);
     }
 
-    /**
-     * @see org.eclipse.jetty.annotations.AnnotationIntrospector.IntrospectableAnnotationHandler#handle(java.lang.Class)
-     */
     @Override
     public void doHandle(Class clazz)
     {
@@ -78,66 +71,65 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
             return;
         }
 
-       ServletSecurity servletSecurity = (ServletSecurity)clazz.getAnnotation(ServletSecurity.class);
-       if (servletSecurity == null)
-           return;
+        ServletSecurity servletSecurity = (ServletSecurity)clazz.getAnnotation(ServletSecurity.class);
+        if (servletSecurity == null)
+            return;
 
-       //If there are already constraints defined (ie from web.xml) that match any 
-       //of the url patterns defined for this servlet, then skip the security annotation.
+        //If there are already constraints defined (ie from web.xml) that match any
+        //of the url patterns defined for this servlet, then skip the security annotation.
 
-       List<ServletMapping> servletMappings = getServletMappings(clazz.getCanonicalName());
-       List<ConstraintMapping> constraintMappings =  ((ConstraintAware)_context.getSecurityHandler()).getConstraintMappings();
+        List<ServletMapping> servletMappings = getServletMappings(clazz.getCanonicalName());
+        List<ConstraintMapping> constraintMappings = ((ConstraintAware)_context.getSecurityHandler()).getConstraintMappings();
 
-       if (constraintsExist(servletMappings, constraintMappings))
-       {
-           LOG.warn("Constraints already defined for "+clazz.getName()+", skipping ServletSecurity annotation");
-           return;
-       }
+        if (constraintsExist(servletMappings, constraintMappings))
+        {
+            LOG.warn("Constraints already defined for " + clazz.getName() + ", skipping ServletSecurity annotation");
+            return;
+        }
 
-       //Make a fresh list
-       constraintMappings = new ArrayList<ConstraintMapping>();
+        //Make a fresh list
+        constraintMappings = new ArrayList<ConstraintMapping>();
 
-       ServletSecurityElement securityElement = new ServletSecurityElement(servletSecurity);
-       for (ServletMapping sm : servletMappings)
-       {
-           for (String url : sm.getPathSpecs())
-           {
-               _context.getMetaData().setOrigin("constraint.url."+url,servletSecurity,clazz);
-               constraintMappings.addAll(ConstraintSecurityHandler.createConstraintsWithMappingsForPath(clazz.getName(), url, securityElement));
-           }
-       }
+        ServletSecurityElement securityElement = new ServletSecurityElement(servletSecurity);
+        for (ServletMapping sm : servletMappings)
+        {
+            for (String url : sm.getPathSpecs())
+            {
+                _context.getMetaData().setOrigin("constraint.url." + url, servletSecurity, clazz);
+                constraintMappings.addAll(ConstraintSecurityHandler.createConstraintsWithMappingsForPath(clazz.getName(), url, securityElement));
+            }
+        }
 
-       //set up the security constraints produced by the annotation
-       ConstraintAware securityHandler = (ConstraintAware)_context.getSecurityHandler();
+        //set up the security constraints produced by the annotation
+        ConstraintAware securityHandler = (ConstraintAware)_context.getSecurityHandler();
 
-       for (ConstraintMapping m:constraintMappings)
-           securityHandler.addConstraintMapping(m);
-       
-       //Servlet Spec 3.1 requires paths with uncovered http methods to be reported
-       securityHandler.checkPathsWithUncoveredHttpMethods();
+        for (ConstraintMapping m : constraintMappings)
+        {
+            securityHandler.addConstraintMapping(m);
+        }
+
+        //Servlet Spec 3.1 requires paths with uncovered http methods to be reported
+        securityHandler.checkPathsWithUncoveredHttpMethods();
     }
-
-
 
     /**
      * Make a jetty Constraint object, which represents the <code>&lt;auth-constraint&gt;</code> and
      * <code>&lt;user-data-constraint&gt;</code> elements, based on the security annotation.
-     * 
+     *
      * @param servlet the servlet
      * @param rolesAllowed the roles allowed
      * @param permitOrDeny the role / permission semantic
      * @param transport the transport guarantee
      * @return the constraint
      */
-    protected Constraint makeConstraint (Class servlet, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
+    protected Constraint makeConstraint(Class servlet, String[] rolesAllowed, EmptyRoleSemantic permitOrDeny, TransportGuarantee transport)
     {
         return ConstraintSecurityHandler.createConstraint(servlet.getName(), rolesAllowed, permitOrDeny, transport);
     }
 
-
-
     /**
      * Get the ServletMappings for the servlet's class.
+     *
      * @param className the class name
      * @return the servlet mappings for the class
      */
@@ -150,22 +142,20 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
             //Check the name of the servlet that this mapping applies to, and then find the ServletHolder for it to find it's class
             ServletHolder holder = _context.getServletHandler().getServlet(mapping.getServletName());
             if (holder.getClassName() != null && holder.getClassName().equals(className))
-              results.add(mapping);
+                results.add(mapping);
         }
         return results;
     }
 
-
-
     /**
      * Check if there are already <code>&lt;security-constraint&gt;</code> elements defined that match the url-patterns for
      * the servlet.
-     * 
+     *
      * @param servletMappings the servlet mappings
      * @param constraintMappings the constraint mappings
      * @return true if constraint exists
      */
-    protected boolean constraintsExist (List<ServletMapping> servletMappings, List<ConstraintMapping> constraintMappings)
+    protected boolean constraintsExist(List<ServletMapping> servletMappings, List<ConstraintMapping> constraintMappings)
     {
         boolean exists = false;
 
@@ -181,20 +171,19 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
             //Check through the constraints to see if there are any whose pathSpecs (url mappings)
             //match the servlet. If so, then we already have constraints defined for this servlet,
             //and we will not be processing the annotation (ie web.xml or programmatic override).
-           for (int i=0; constraintMappings != null && i < constraintMappings.size() && !exists; i++)
-           {
-               for (int j=0; j < pathSpecs.length; j++)
-               {
-                   //TODO decide if we need to check the origin
-                   if (pathSpecs[j].equals(constraintMappings.get(i).getPathSpec()))
-                   {
-                       exists = true;
-                       break;
-                   }
-               }
-           }
+            for (int i = 0; constraintMappings != null && i < constraintMappings.size() && !exists; i++)
+            {
+                for (int j = 0; j < pathSpecs.length; j++)
+                {
+                    //TODO decide if we need to check the origin
+                    if (pathSpecs[j].equals(constraintMappings.get(i).getPathSpec()))
+                    {
+                        exists = true;
+                        break;
+                    }
+                }
+            }
         }
         return exists;
     }
-
 }

@@ -1,0 +1,248 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[configuring-sessions-infinispan]]
+
+=== Persistent Sessions: Inifinspan
+
+==== Enabling Infinispan Sessions
+
+When using the Jetty distribution, you will first need to enable the `session-store-infinispan-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+
+$ java -jar ../start.jar --add-to-start=session-store-infinispan-remote
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
+ + contains software not provided by the Eclipse Foundation!
+ + contains software not covered by the Eclipse Public License!
+ + has not been audited for compliance with its license
+
+ Module: session-store-infinispan-remote
+  + Infinispan is an open source project hosted on Github and released under the Apache 2.0 license.
+  + http://infinispan.org/
+  + http://www.apache.org/licenses/LICENSE-2.0.html
+
+Proceed (y/N)? y
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
+INFO  : session-store-infinispan-remote initialized in ${jetty.base}/start.d/session-store-infinispan-remote.ini
+MKDIR : ${jetty.base}/lib/infinispan
+DOWNLD: https://repo1.maven.org/maven2/org/infinispan/infinispan-remote-it/9.4.8.Final/infinispan-remote-it-9.4.8.Final.jar to ${jetty.base}/lib/infinispan/infinispan-remote-it-9.4.8.Final.jar
+MKDIR : ${jetty.base}/resources
+COPY  : ${jetty.home}/modules/session-store-infinispan-remote/resources/hotrod-client.properties to ${jetty.base}/resources/hotrod-client.properties
+INFO  : Base directory was modified
+----
+
+Doing this enables the remote Infinispan Session module and any dependent modules or files needed for it to run on the server.
+The example above is using a fresh `${jetty.base}` with nothing else enabled.
+Because Infinispan is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+
+When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-infinispan-remote` module as well as the `sessions` and `server` modules, which are required for Infinispan session management to operate.
+It also downloaded the needed Infinispan-specific jar files and created a directory named `${jetty.base}/lib/infinispan/` to house them.
+
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `${jetty.base}/start.d` directory.
+
+____
+[NOTE]
+If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+____
+
+==== Configuring Inifinspan Remote Properties
+
+Opening the `start.d/session-store-infinispan-remote.ini` will show a list of all the configurable options for the JDBC module:
+
+[source, screen, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: session-store-infinispan-remote
+# Enables session data store in a remote Infinispan cache
+# ---------------------------------------
+--module=session-store-infinispan-remote
+
+#jetty.session.infinispan.remoteCacheName=sessions
+#jetty.session.infinispan.idleTimeout.seconds=0
+#jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0
+----
+
+jetty.session.infinispan.remoteCacheName::
+Name of the cache in Infinispan where sessions will be stored.
+jetty.session.infinispan.idleTimeout.seconds::
+Amount of time, in seconds, that a session entry in infinispan can be idle (ie not read or written) before infinispan will delete its entry.
+Usually, you do *not* want to set a value for this, as you want jetty to handle all session expiration (and call any SessionListeners).
+However, if there is the possibility that sessions can be left in infinispan but no longer referenced by any jetty node (so called "zombie" or "orphan" sessions), then you might want to use this feature.
+You should make sure that the number of seconds you specify is sufficiently large to avoid the situation where a session is still being referenced by jetty, but is rarely accessed and thus deleted by infinispan.
+Alternatively, you can enable the `infinispan-remote-query` module, which will allow jetty to search the infinispan session cache to proactively find and properly (ie calling any SessionListeners) scavenge defunct sessions.
+jetty.session.gracePeriod.seconds::
+Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
+jetty.session.savePeriod.seconds=0::
+By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
+A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
+
+____
+[NOTE]
+Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
+In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
+This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+____
+
+==== Configuring the Remote Infinispan Query Module
+
+Enabling this module allows jetty to search infinispan for expired sessions that are no longer being referenced by any jetty node.
+Note that this is an *additional* module, to be used in conjuction with the `session-store-infinispan-remote` module.
+
+[source, screen, subs="{sub-order}"]
+----
+java -jar ../start.jar --add-to-start=infinispan-remote-query
+----
+
+There are no configuration properties associated with this module.
+
+
+==== Configuring Embedded Inifinspan Clustering
+
+During testing, it can be helpful to run an in-process instance of Infinispan.
+To enable this you will first need to enable the `session-store-infinispan-embedded` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+____
+[IMPORTANT]
+If you are running Jetty with JDK 9 or greater, enable `session-store-infinispan-embedded-910.mod` instead.
+____
+
+[source, screen, subs="{sub-order}"]
+----
+java -jar ../start.jar --add-to-start=session-store-infinispan-embedded
+
+ALERT: There are enabled module(s) with licenses.
+The following 1 module(s):
++ contains software not provided by the Eclipse Foundation!
++ contains software not covered by the Eclipse Public License!
++ has not been audited for compliance with its license
+
+Module: session-store-infinispan-embedded
+ + Infinispan is an open source project hosted on Github and released under the Apache 2.0 license.
+ + http://infinispan.org/
+ + http://www.apache.org/licenses/LICENSE-2.0.html
+
+Proceed (y/N)? y
+INFO : server          initialised (transitively) in ${jetty.base}/start.d/server.ini
+INFO : sessions        initialised (transitively) in ${jetty.base}/start.d/sessions.ini
+INFO : session-store-infinispan-embedded initialised in ${jetty.base}/start.d/session-store-infinispan-embedded.ini
+DOWNLOAD: https://repo1.maven.org/maven2/org/infinispan/infinispan-embedded-it/9.4.8.Final/infinispan-embedded-it-9.4.8.Final.jar to ${jetty.base}/lib/infinispan/infinispan-embedded-it-9.4.8.Final.jar
+INFO : Base directory was modified
+----
+
+Doing this enables the embedded Infinispan Session module and any dependent modules or files needed for it to run on the server.
+The example above is using a fresh `${jetty.base}` with nothing else enabled.
+Because Infinispan is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+
+When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-infinispan-embedded` module as well as the `sessions` and `server` modules, which are required for Infinispan session management to operate.
+It also downloaded the needed Infinispan-specific jar files and created a directory named `${jetty.base}/lib/infinispan/` to house them.
+
+In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `${jetty.base}/start.d` directory.
+
+==== Configuring Inifinspan Embedded Properties
+
+Opening the `start.d/session-store-infinispan-remote.ini` will show a list of all the configurable options for the JDBC module:
+
+[source, screen, subs="{sub-order}"]
+----
+# ---------------------------------------
+# Module: session-store-infinispan-embedded
+# Enables session data store in a local Infinispan cache
+# ---------------------------------------
+--module=session-store-infinispan-embedded
+
+#jetty.session.gracePeriod.seconds=3600
+#jetty.session.savePeriod.seconds=0
+----
+
+jetty.session.gracePeriod.seconds::
+Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
+jetty.session.savePeriod.seconds=0::
+By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
+A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
++
+____
+[NOTE]
+Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
+In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
+This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+____
+
+
+==== Configuring Inifinspan Embedded Query
+
+Similarly to the `session-store-infinispan-remote` module, the `session-store-infinispan-embedded` module has an adjunct module `infinispan-embedded-query`, which when enabled, will allow jetty to detect and properly scavenge defunct sessions stranded in infinispan.
+
+[source, screen, subs="{sub-order}"]
+----
+java -jar ../start.jar --add-to-start=infinispan-embedded-query
+----
+
+There are no configuration properties associated with this module.
+
+
+==== Converting Session Format for Jetty-9.4.13
+
+From Jetty-9.4.13 onwards, we have changed the format of the serialized session when using a remote cache (ie using hotrod).
+Prior to release 9.4.13 we used the default Infinispan serialization, however this was not able to store sufficient information to allow jetty to properly deserialize session attributes in all circumstances.
+See issue https://github.com/eclipse/jetty.project/issues/2919 for more background.
+
+We have provided a conversion program which will convert any sessions stored in Infinispan to the new format.
+____
+[IMPORTANT]
+We recommend that you backup your stored sessions before running the conversion program.
+____
+
+How to use the converter:
+
+[source, screen, subs="{sub-order}"]
+----
+java -cp jetty-servlet-api-4.0.2.jar:jetty-util-{VERSION}.jar:jetty-server-{VERSION}.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-{VERSION}.jar:[other classpath]  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter
+
+Usage:  InfinispanSessionLegacyConverter [-Dhost=127.0.0.1] [-Dverbose=true|false] <cache-name> [check]
+----
+
+The classpath::
+Must contain the servlet-api, jetty-util, jetty-server, jetty-infinispan and infinispan-remote jars. If your sessions contain attributes that use application classes, you will also need to also put those classes onto the classpath. If your session has been authenticated, you may also need to include the jetty-security and jetty-http jars on the classpath.
+Parameters::
+When used with no arguments the usage message is printed. When used with the `cache-name` parameter the conversion is performed. When used with both `cache-name` and `check` parameters, sessions are checked for whether or not they are converted.
+
+ -Dhost:::  you can optionally provide a system property with the address of your remote Infinispan server. Defaults to the localhost.
+ -Dverbose::: defaults to false. If true, prints more comprehensive stacktrace information about failures. Useful to diagnose why a session is not converted.
+ cache-name::: the name of the remote cache containing your sessions. This is mandatory.
+ check::: the optional check command will verify sessions have been converted. Use it _after_ doing the conversion.
+
+To perform the conversion, run the InfinispanSessionLegacyConverter with just the `cache-name`, and optionally the `host` system property.
+The following command will attempt to convert all sessions in the cached named `my-remote-cache` on the machine `myhost`, ensuring that application classes in the `/my/custom/classes` directory are on the classpath:
+
+[source, screen, subs="{sub-order}"]
+----
+java -cp jetty-servlet-api-4.0.2.jar:jetty-util-{VERSION}.jar:jetty-server-{VERSION}.jar:infinispan-remote-9.1.0.Final.jar:jetty-infinispan-{VERSION}.jar:/my/custom/classes  org.eclipse.jetty.session.infinispan.InfinispanSessionLegacyConverter -Dhost=myhost my-remote-cache
+----
+
+If the converter fails to convert a session, an error message and stacktrace will be printed and the conversion will abort. The failed session should be untouched, however _it is prudent to take a backup of your cache before attempting the conversion_.

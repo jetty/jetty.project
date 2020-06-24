@@ -1,29 +1,32 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
+
+import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.annotation.Name;
 
-/** A Connection Factory for HTTP Connections.
+/**
+ * A Connection Factory for HTTP Connections.
  * <p>Accepts connections either directly or via SSL and/or ALPN chained connection factories.  The accepted
  * {@link HttpConnection}s are configured by a {@link HttpConfiguration} instance that is either created by
  * default or passed in to the constructor.
@@ -31,20 +34,22 @@ import org.eclipse.jetty.util.annotation.Name;
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private final HttpConfiguration _config;
-    private boolean _recordHttpComplianceViolations = false;
+    private boolean _recordHttpComplianceViolations;
+    private boolean _useInputDirectByteBuffers;
+    private boolean _useOutputDirectByteBuffers;
 
     public HttpConnectionFactory()
     {
         this(new HttpConfiguration());
     }
-    
+
     public HttpConnectionFactory(@Name("config") HttpConfiguration config)
     {
         super(HttpVersion.HTTP_1_1.asString());
-        _config=config;
-        if (config==null)
-            throw new IllegalArgumentException("Null HttpConfiguration");
+        _config = Objects.requireNonNull(config);
         addBean(_config);
+        setUseInputDirectByteBuffers(_config.isUseInputDirectByteBuffers());
+        setUseOutputDirectByteBuffers(_config.isUseOutputDirectByteBuffers());
     }
 
     @Override
@@ -58,16 +63,37 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         return _recordHttpComplianceViolations;
     }
 
-    @Override
-    public Connection newConnection(Connector connector, EndPoint endPoint)
-    {
-        HttpConnection conn = new HttpConnection(_config, connector, endPoint, isRecordHttpComplianceViolations());
-        return configure(conn, connector, endPoint);
-    }
-    
-    
     public void setRecordHttpComplianceViolations(boolean recordHttpComplianceViolations)
     {
         this._recordHttpComplianceViolations = recordHttpComplianceViolations;
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return _useInputDirectByteBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        _useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return _useOutputDirectByteBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        _useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
+    @Override
+    public Connection newConnection(Connector connector, EndPoint endPoint)
+    {
+        HttpConnection connection = new HttpConnection(_config, connector, endPoint, isRecordHttpComplianceViolations());
+        connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+        connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
+        return configure(connection, connector, endPoint);
     }
 }

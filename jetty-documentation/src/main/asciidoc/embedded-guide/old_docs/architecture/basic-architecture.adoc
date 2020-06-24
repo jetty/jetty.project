@@ -1,0 +1,178 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[basic-architecture]]
+=== Jetty Architecture
+
+==== View from 20,000 feet
+
+The Jetty link:{JDURL}/org/eclipse/jetty/server/Server.html[Server] is the plumbing between
+a collection of `Connector`s that accept connections and a collection of `Handler`s that
+service requests from the connections and produce responses, with threads from a thread pool doing the work.
+
+image:jetty-high-level-architecture.png[image,width=576]
+
+While the Jetty request/responses are derived from the Servlet API, the full features of the Servlet API
+are only available if you configure the appropriate handlers.
+For example, the session API on the request is inactive unless the request has been passed to a `SessionHandler`.
+The concept of a Servlet itself is implemented by a `ServletHandler`.
+If Servlets are not required, there is very little overhead in the use of the servlet request/response APIs.
+Thus you can build a Jetty server using only connectors and handlers, without using Servlets.
+
+The job of configuring Jetty is building a tree of connectors and handlers and providing their individual configurations.
+As Jetty components are simply Plain Old Java Objects (POJOs), you can accomplish this assembly
+and configuration of components by a variety of techniques:
+
+* In code, see the examples in the Jetty Source XRef.
+* Using Jetty XML, a dependency injection style in XML format.
+* With your dependency injection framework of choice, Spring or XBean.
+* Using Jetty WebApp and Context Deployers.
+
+==== Patterns
+
+The implementation of Jetty follows some fairly standard patterns.
+Most abstract concepts such as `Connector`s and `Handler`s are captured by interfaces.
+Generic handling for those interfaces is then provided in an abstract implementation
+such as `AbstractConnector` and `AbstractHandler`.
+
+image:basic-architecture-patterns.png[image,width=576]
+
+The JSR77 inspired life cycle of most Jetty components is represented by the `LifeCycle`
+interface and the `AbstractLifeCycle` implementation used as the base of many Jetty components.
+
+==== Connectors
+
+A `Connector` is the component that accepts TCP connections.
+For each accepted TCP connection, the `Connector` asks a `ConnectionFactory` to create
+a `Connection` object that handles the network traffic on that TCP connection, parsing
+and generating bytes for a specific protocol.
+
+A `ServerConnector` can therefore be configured with one or more `ConnectionFactory`.
+
+The simplest case is a single `ConnectionFactory` such as `HttpConnectionFactory`, that
+creates `HttpConnection` objects that parse and generate bytes for the HTTP/1.1 protocol.
+
+A more complex case can be a `ServerConnector` configured with three factories:
+`ProxyConnectionFactory`, `SslConnectionFactory` and `HttpConnectionFactory`.
+Such connector will be able to handle PROXY protocol bytes coming from a load balancer
+such as HAProxy (with the `ProxyConnectionFactory`), then handle TLS bytes (with
+`SslConnectionFactory`) and therefore decrypting/encrypting the bytes from/to a remote
+client, and finally handling HTTP/1.1 bytes (with `HttpConnectionFactory`).
+Each `ConnectionFactory` is asked to create a `Connection` object for each TCP connection;
+the `Connection` objects will be chained together to handle the bytes, each for its
+own protocol.
+Therefore the `ProxyConnection` will handle the PROXY protocol bytes, `SslConnection`
+will handle the encryption/decryption of the bytes, and `HttpConnection` will handle
+the HTTP/1.1 bytes producing a request and response object that will be processed by
+applications.
+
+Advanced usages of Jetty will allow users to write their own `ConnectionFactory` to
+handle custom protocols that are not implemented directly by the Jetty project,
+therefore using Jetty as a generic network server.
+
+==== Handlers
+
+A `Handler` is the component that deals with HTTP requests and responses.
+The core API of a handler is the handle method:
+
+image:basic-architecture-handlers.png[image,width=576]
+
+[source, java, subs="{sub-order}"]
+----
+public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+----
+
+Parameters:
+
+* `target` – the target of the request, either a URI or a name.
+* `baseRequest` – the original unwrapped request object.
+* `request` – the request object, either as the `baseRequest` object or a wrapper of `baseRequest`.
+You can use the HttpConnection.getCurrentConnection() method to access the Request object if required.
+* response – the response object, either unwrapped as `Response` or a wrapper of that response.
+You can use the HttpConnection.getCurrentConnection() method to access the `Response` object if required.
+
+An implementation of this method can handle the request, pass the request onto another handler (or servlet)
+or it might modify and/or wrap the request and then pass it on.
+This gives three styles of Handler:
+
+* Coordinating handlers – handlers that route requests to other handlers (`HandlerCollection`, `ContextHandlerCollection`)
+* Filtering handlers – handlers that augment a request and pass it on to other handlers (`HandlerWrapper`, `ContextHandler`, `SessionHandler`)
+* Generating handlers – handlers that produce content (`ResourceHandler` and `ServletHandler`)
+
+===== Nested Handlers and Handlers Called Sequentially
+
+You can combine handlers to handle different aspects of a request by nesting them,
+calling them in sequence, or by combining the two models.
+
+image:basic-architecture-nested-handlers.png[image,width=576]
+
+Handlers called in sequence perform actions that do not depend on the next invocation, nor on the handler order.
+They handle a request and generate the response without interacting with other handlers.
+The main class for this model is `HandlerCollection`.
+
+Nested handlers are called according to a before/invokeNext/after pattern.
+The main class for nested handlers is `HandlerWrapper`.
+Nested handlers are much more common than those called in sequence.
+
+See also xref:writing-custom-handlers[].
+
+===== Servlet Handler
+
+The `ServletHandler` is a `Handler` that generates content by passing the request to any
+configured Servlet Filters and then to a Servlet mapped by a URI pattern.
+
+image:basic-architecture-servlet-handler.png[image,width=576]
+
+A `ServletHandler` is normally deployed within the scope of a `ServletContext`, which is a
+`ContextHandler` that provides convenience methods for mapping URIs to servlets.
+
+Filters and Servlets can also use a `RequestDispatcher` to reroute a request to another context
+or another Servlet in the current context.
+
+[[what-is-a-context]]
+==== Contexts
+
+Contexts are handlers that group other handlers below a particular URI context path or a virtual host.
+Typically a context can have:
+
+* A context path that defines which requests are handled by the context (e.g. `/myapp`)
+* A resource base for static content (a document root)
+* A class loader to obtain classes specific to the context (typically from `/WEB-INF/classes` and `/WEB-INF/lib`)
+* Virtual host names
+
+Contexts implementations include:
+
+* `ContextHandler`
+* `ServletContextHandler`
+* `WebAppContext`
+
+A web application context combines handlers for security, session and servlets in a single unit
+that you can configure with a `web.xml` descriptor.
+
+==== Web Application
+
+A `WebAppContext` is a derivation of `ServletContextHandler` that supports the standardized layout
+of a web application and configuration of session, security, listeners, filter, servlets, and JSP
+via a `web.xml` descriptor normally found in the `/WEB-INF` directory of a web application.
+
+image:basic-architecture-web-application.png[image,width=576]
+
+Essentially `WebAppContext` is a convenience class that assists the construction and configuration
+of other handlers to achieve a standard web application configuration.
+Configuration is actually done by pluggable implementations of the Configuration class and the
+prime among these is `WebXmlConfiguration.`

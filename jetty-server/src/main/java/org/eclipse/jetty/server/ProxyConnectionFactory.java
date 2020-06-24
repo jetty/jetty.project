@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
@@ -27,7 +27,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
@@ -36,8 +37,8 @@ import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>ConnectionFactory for the PROXY Protocol.</p>
@@ -46,431 +47,517 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * @see <a href="http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt">http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt</a>
  */
-public class ProxyConnectionFactory extends AbstractConnectionFactory
+public class ProxyConnectionFactory extends DetectorConnectionFactory
 {
-    private static final Logger LOG = Log.getLogger(ProxyConnectionFactory.class);
     public static final String TLS_VERSION = "TLS_VERSION";
+    private static final Logger LOG = LoggerFactory.getLogger(ProxyConnectionFactory.class);
 
-    private final String _next;
-    private int _maxProxyHeader = 1024;
-
-    /**
-     * Proxy Connection Factory that uses the next ConnectionFactory
-     * on the connector as the next protocol
-     */
     public ProxyConnectionFactory()
     {
-        super("proxy");
-        _next = null;
+        this(null);
     }
 
     public ProxyConnectionFactory(String nextProtocol)
     {
-        super("proxy");
-        _next = nextProtocol;
+        super(new ProxyV1ConnectionFactory(nextProtocol), new ProxyV2ConnectionFactory(nextProtocol));
+    }
+
+    private static ConnectionFactory findNextConnectionFactory(String nextProtocol, Connector connector, String currentProtocol, EndPoint endp)
+    {
+        currentProtocol = "[" + currentProtocol + "]";
+        if (LOG.isDebugEnabled())
+            LOG.debug("finding connection factory following {} for protocol {}", currentProtocol, nextProtocol);
+        String nextProtocolToFind = nextProtocol;
+        if (nextProtocol == null)
+            nextProtocolToFind = AbstractConnectionFactory.findNextProtocol(connector, currentProtocol);
+        if (nextProtocolToFind == null)
+            throw new IllegalStateException("Cannot find protocol following '" + currentProtocol + "' in connector's protocol list " + connector.getProtocols() + " for " + endp);
+        ConnectionFactory connectionFactory = connector.getConnectionFactory(nextProtocolToFind);
+        if (connectionFactory == null)
+            throw new IllegalStateException("Cannot find protocol '" + nextProtocol + "' in connector's protocol list " + connector.getProtocols() + " for " + endp);
+        if (LOG.isDebugEnabled())
+            LOG.debug("found next connection factory {} for protocol {}", connectionFactory, nextProtocol);
+        return connectionFactory;
     }
 
     public int getMaxProxyHeader()
     {
-        return _maxProxyHeader;
+        ProxyV2ConnectionFactory v2 = getBean(ProxyV2ConnectionFactory.class);
+        return v2.getMaxProxyHeader();
     }
 
     public void setMaxProxyHeader(int maxProxyHeader)
     {
-        _maxProxyHeader = maxProxyHeader;
+        ProxyV2ConnectionFactory v2 = getBean(ProxyV2ConnectionFactory.class);
+        v2.setMaxProxyHeader(maxProxyHeader);
     }
 
-    @Override
-    public Connection newConnection(Connector connector, EndPoint endp)
+    private static class ProxyV1ConnectionFactory extends AbstractConnectionFactory implements Detecting
     {
-        String next = _next;
-        if (next == null)
+        private static final byte[] SIGNATURE = "PROXY".getBytes(StandardCharsets.US_ASCII);
+
+        private final String _nextProtocol;
+
+        private ProxyV1ConnectionFactory(String nextProtocol)
         {
-            for (Iterator<String> i = connector.getProtocols().iterator(); i.hasNext(); )
-            {
-                String p = i.next();
-                if (getProtocol().equalsIgnoreCase(p))
-                {
-                    next = i.next();
-                    break;
-                }
-            }
-        }
-
-        return new ProxyProtocolV1orV2Connection(endp, connector, next);
-    }
-
-    public class ProxyProtocolV1orV2Connection extends AbstractConnection
-    {
-        private final Connector _connector;
-        private final String _next;
-        private ByteBuffer _buffer = BufferUtil.allocate(16);
-
-        protected ProxyProtocolV1orV2Connection(EndPoint endp, Connector connector, String next)
-        {
-            super(endp, connector.getExecutor());
-            _connector = connector;
-            _next = next;
+            super("proxy");
+            this._nextProtocol = nextProtocol;
         }
 
         @Override
-        public void onOpen()
+        public Detection detect(ByteBuffer buffer)
         {
-            super.onOpen();
-            fillInterested();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Proxy v1 attempting detection with {} bytes", buffer.remaining());
+            if (buffer.remaining() < SIGNATURE.length)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v1 detection requires more bytes");
+                return Detection.NEED_MORE_BYTES;
+            }
+
+            for (int i = 0; i < SIGNATURE.length; i++)
+            {
+                byte signatureByte = SIGNATURE[i];
+                byte byteInBuffer = buffer.get(i);
+                if (byteInBuffer != signatureByte)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Proxy v1 detection unsuccessful");
+                    return Detection.NOT_RECOGNIZED;
+                }
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Proxy v1 detection succeeded");
+            return Detection.RECOGNIZED;
         }
 
         @Override
-        public void onFillable()
+        public Connection newConnection(Connector connector, EndPoint endp)
         {
-            try
+            ConnectionFactory nextConnectionFactory = findNextConnectionFactory(_nextProtocol, connector, getProtocol(), endp);
+            return configure(new ProxyProtocolV1Connection(endp, connector, nextConnectionFactory), connector, endp);
+        }
+
+        private static class ProxyProtocolV1Connection extends AbstractConnection implements Connection.UpgradeFrom, Connection.UpgradeTo
+        {
+            // 0     1 2       3       4 5 6
+            // 98765432109876543210987654321
+            // PROXY P R.R.R.R L.L.L.L R Lrn
+            private static final int CR_INDEX = 6;
+            private static final int LF_INDEX = 7;
+
+            private final Connector _connector;
+            private final ConnectionFactory _next;
+            private final ByteBuffer _buffer;
+            private final StringBuilder _builder = new StringBuilder();
+            private final String[] _fields = new String[6];
+            private int _index;
+            private int _length;
+
+            private ProxyProtocolV1Connection(EndPoint endp, Connector connector, ConnectionFactory next)
             {
-                while (BufferUtil.space(_buffer) > 0)
+                super(endp, connector.getExecutor());
+                _connector = connector;
+                _next = next;
+                _buffer = _connector.getByteBufferPool().acquire(getInputBufferSize(), true);
+            }
+
+            @Override
+            public void onFillable()
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v1 onFillable current index = ", _index);
+                try
                 {
-                    // Read data
-                    int fill = getEndPoint().fill(_buffer);
-                    if (fill < 0)
+                    while (_index < LF_INDEX)
                     {
-                        getEndPoint().shutdownOutput();
-                        return;
+                        // Read data
+                        int fill = getEndPoint().fill(_buffer);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Proxy v1 filled buffer with {} bytes", fill);
+                        if (fill < 0)
+                        {
+                            _connector.getByteBufferPool().release(_buffer);
+                            getEndPoint().shutdownOutput();
+                            return;
+                        }
+                        if (fill == 0)
+                        {
+                            fillInterested();
+                            return;
+                        }
+
+                        if (parse())
+                            break;
                     }
-                    if (fill == 0)
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Proxy v1 onFillable parsing done, now upgrading");
+                    upgrade();
+                }
+                catch (Throwable x)
+                {
+                    LOG.warn("Proxy v1 error for {}", getEndPoint(), x);
+                    releaseAndClose();
+                }
+            }
+
+            @Override
+            public void onOpen()
+            {
+                super.onOpen();
+
+                try
+                {
+                    while (_index < LF_INDEX)
                     {
-                        fillInterested();
-                        return;
+                        if (!parse())
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Proxy v1 onOpen parsing ran out of bytes, marking as fillInterested");
+                            fillInterested();
+                            return;
+                        }
+                    }
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Proxy v1 onOpen parsing done, now upgrading");
+                    upgrade();
+                }
+                catch (Throwable x)
+                {
+                    LOG.warn("Proxy v1 error for {}", getEndPoint(), x);
+                    releaseAndClose();
+                }
+            }
+
+            @Override
+            public ByteBuffer onUpgradeFrom()
+            {
+                return _buffer;
+            }
+
+            @Override
+            public void onUpgradeTo(ByteBuffer prefilled)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v1 copying prefilled buffer {}", BufferUtil.toDetailString(prefilled));
+                if (BufferUtil.hasContent(prefilled))
+                    BufferUtil.append(_buffer, prefilled);
+            }
+
+            /**
+             * @return true when parsing is done, false when more bytes are needed.
+             */
+            private boolean parse() throws IOException
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v1 parsing {}", BufferUtil.toDetailString(_buffer));
+                _length += _buffer.remaining();
+
+                // Parse fields
+                while (_buffer.hasRemaining())
+                {
+                    byte b = _buffer.get();
+                    if (_index < CR_INDEX)
+                    {
+                        if (b == ' ' || b == '\r')
+                        {
+                            _fields[_index++] = _builder.toString();
+                            _builder.setLength(0);
+                            if (b == '\r')
+                                _index = CR_INDEX;
+                        }
+                        else if (b < ' ')
+                        {
+                            throw new IOException("Proxy v1 bad character " + (b & 0xFF));
+                        }
+                        else
+                        {
+                            _builder.append((char)b);
+                        }
+                    }
+                    else
+                    {
+                        if (b == '\n')
+                        {
+                            _index = LF_INDEX;
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Proxy v1 parsing is done");
+                            return true;
+                        }
+
+                        throw new IOException("Proxy v1 bad CRLF " + (b & 0xFF));
                     }
                 }
 
-                // Is it a V1?
-                switch (_buffer.get(0))
-                {
-                    case 'P':
-                    {
-                        ProxyProtocolV1Connection v1 = new ProxyProtocolV1Connection(getEndPoint(), _connector, _next, _buffer);
-                        getEndPoint().upgrade(v1);
-                        return;
-                    }
-                    case 0x0D:
-                    {
-                        ProxyProtocolV2Connection v2 = new ProxyProtocolV2Connection(getEndPoint(), _connector, _next, _buffer);
-                        getEndPoint().upgrade(v2);
-                        return;
-                    }
-                    default:
-                        LOG.warn("Not PROXY protocol for {}", getEndPoint());
-                        close();
-                }
+                // Not enough bytes.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v1 parsing requires more bytes");
+                return false;
             }
-            catch (Throwable x)
+
+            private void releaseAndClose()
             {
-                LOG.warn("PROXY error for " + getEndPoint(), x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v1 releasing buffer and closing");
+                _connector.getByteBufferPool().release(_buffer);
                 close();
             }
-        }
-    }
 
-    public static class ProxyProtocolV1Connection extends AbstractConnection
-    {
-        // 0     1 2       3       4 5 6
-        // 98765432109876543210987654321
-        // PROXY P R.R.R.R L.L.L.L R Lrn
-
-        private final int[] __size = {29, 23, 21, 13, 5, 3, 1};
-        private final Connector _connector;
-        private final String _next;
-        private final StringBuilder _builder = new StringBuilder();
-        private final String[] _field = new String[6];
-        private int _fields;
-        private int _length;
-
-        protected ProxyProtocolV1Connection(EndPoint endp, Connector connector, String next, ByteBuffer buffer)
-        {
-            super(endp, connector.getExecutor());
-            _connector = connector;
-            _next = next;
-            _length = buffer.remaining();
-            parse(buffer);
-        }
-
-        @Override
-        public void onOpen()
-        {
-            super.onOpen();
-            fillInterested();
-        }
-
-        private boolean parse(ByteBuffer buffer)
-        {
-            // parse fields
-            while (buffer.hasRemaining())
+            private void upgrade()
             {
-                byte b = buffer.get();
-                if (_fields < 6)
+                int proxyLineLength = _length - _buffer.remaining();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v1 pre-upgrade packet length (including CRLF) is {}", proxyLineLength);
+                if (proxyLineLength >= 110)
                 {
-                    if (b == ' ' || b == '\r' && _fields == 5)
-                    {
-                        _field[_fields++] = _builder.toString();
-                        _builder.setLength(0);
-                    }
-                    else if (b < ' ')
-                    {
-                        LOG.warn("Bad character {} for {}", b & 0xFF, getEndPoint());
-                        close();
-                        return false;
-                    }
-                    else
-                    {
-                        _builder.append((char)b);
-                    }
-                }
-                else
-                {
-                    if (b == '\n')
-                    {
-                        _fields = 7;
-                        return true;
-                    }
-
-                    LOG.warn("Bad CRLF for {}", getEndPoint());
-                    close();
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        @Override
-        public void onFillable()
-        {
-            try
-            {
-                ByteBuffer buffer = null;
-                while (_fields < 7)
-                {
-                    // Create a buffer that will not read too much data
-                    // since once read it is impossible to push back for the 
-                    // real connection to read it.
-                    int size = Math.max(1, __size[_fields] - _builder.length());
-                    if (buffer == null || buffer.capacity() != size)
-                        buffer = BufferUtil.allocate(size);
-                    else
-                        BufferUtil.clear(buffer);
-
-                    // Read data
-                    int fill = getEndPoint().fill(buffer);
-                    if (fill < 0)
-                    {
-                        getEndPoint().shutdownOutput();
-                        return;
-                    }
-                    if (fill == 0)
-                    {
-                        fillInterested();
-                        return;
-                    }
-
-                    _length += fill;
-                    if (_length >= 108)
-                    {
-                        LOG.warn("PROXY line too long {} for {}", _length, getEndPoint());
-                        close();
-                        return;
-                    }
-
-                    if (!parse(buffer))
-                        return;
+                    LOG.warn("Proxy v1 PROXY line too long {} for {}", proxyLineLength, getEndPoint());
+                    releaseAndClose();
+                    return;
                 }
 
                 // Check proxy
-                if (!"PROXY".equals(_field[0]))
+                if (!"PROXY".equals(_fields[0]))
                 {
-                    LOG.warn("Not PROXY protocol for {}", getEndPoint());
-                    close();
+                    LOG.warn("Proxy v1 not PROXY protocol for {}", getEndPoint());
+                    releaseAndClose();
                     return;
                 }
 
-                // Extract Addresses
-                InetSocketAddress remote = new InetSocketAddress(_field[2], Integer.parseInt(_field[4]));
-                InetSocketAddress local = new InetSocketAddress(_field[3], Integer.parseInt(_field[5]));
-
-                // Create the next protocol
-                ConnectionFactory connectionFactory = _connector.getConnectionFactory(_next);
-                if (connectionFactory == null)
+                String srcIP = _fields[2];
+                String srcPort = _fields[4];
+                String dstIP = _fields[3];
+                String dstPort = _fields[5];
+                // If UNKNOWN, we must ignore the information sent, so use the EndPoint's.
+                boolean unknown = "UNKNOWN".equalsIgnoreCase(_fields[1]);
+                if (unknown)
                 {
-                    LOG.warn("No Next protocol '{}' for {}", _next, getEndPoint());
-                    close();
-                    return;
+                    srcIP = getEndPoint().getRemoteAddress().getAddress().getHostAddress();
+                    srcPort = String.valueOf(getEndPoint().getRemoteAddress().getPort());
+                    dstIP = getEndPoint().getLocalAddress().getAddress().getHostAddress();
+                    dstPort = String.valueOf(getEndPoint().getLocalAddress().getPort());
                 }
+                InetSocketAddress remote = new InetSocketAddress(srcIP, Integer.parseInt(srcPort));
+                InetSocketAddress local = new InetSocketAddress(dstIP, Integer.parseInt(dstPort));
 
                 if (LOG.isDebugEnabled())
-                    LOG.warn("Next protocol '{}' for {} r={} l={}", _next, getEndPoint(), remote, local);
+                    LOG.debug("Proxy v1 next protocol '{}' for {} r={} l={}", _next, getEndPoint(), remote, local);
 
                 EndPoint endPoint = new ProxyEndPoint(getEndPoint(), remote, local);
-                Connection newConnection = connectionFactory.newConnection(_connector, endPoint);
-                endPoint.upgrade(newConnection);
-            }
-            catch (Throwable x)
-            {
-                LOG.warn("PROXY error for " + getEndPoint(), x);
-                close();
+                upgradeToConnectionFactory(_next, _connector, endPoint);
             }
         }
     }
 
-    private enum Family
+    private static class ProxyV2ConnectionFactory extends AbstractConnectionFactory implements Detecting
     {
-        UNSPEC, INET, INET6, UNIX
-    }
-
-    private enum Transport
-    {
-        UNSPEC, STREAM, DGRAM
-    }
-
-    private static final byte[] MAGIC = new byte[]{0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A};
-
-    public class ProxyProtocolV2Connection extends AbstractConnection
-    {
-        private final Connector _connector;
-        private final String _next;
-        private final boolean _local;
-        private final Family _family;
-        private final Transport _transport;
-        private final int _length;
-        private final ByteBuffer _buffer;
-
-        protected ProxyProtocolV2Connection(EndPoint endp, Connector connector, String next, ByteBuffer buffer) throws IOException
+        private enum Family
         {
-            super(endp, connector.getExecutor());
-            _connector = connector;
-            _next = next;
+            UNSPEC, INET, INET6, UNIX
+        }
 
-            if (buffer.remaining() != 16)
-                throw new IllegalStateException();
+        private enum Transport
+        {
+            UNSPEC, STREAM, DGRAM
+        }
+
+        private static final byte[] SIGNATURE = new byte[]
+        {
+            0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A
+        };
+
+        private final String _nextProtocol;
+        private int _maxProxyHeader = 1024;
+
+        private ProxyV2ConnectionFactory(String nextProtocol)
+        {
+            super("proxy");
+            this._nextProtocol = nextProtocol;
+        }
+
+        @Override
+        public Detection detect(ByteBuffer buffer)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Proxy v2 attempting detection with {} bytes", buffer.remaining());
+            if (buffer.remaining() < SIGNATURE.length)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v2 detection requires more bytes");
+                return Detection.NEED_MORE_BYTES;
+            }
+
+            for (int i = 0; i < SIGNATURE.length; i++)
+            {
+                byte signatureByte = SIGNATURE[i];
+                byte byteInBuffer = buffer.get(i);
+                if (byteInBuffer != signatureByte)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Proxy v2 detection unsuccessful");
+                    return Detection.NOT_RECOGNIZED;
+                }
+            }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("PROXYv2 header {} for {}", BufferUtil.toHexSummary(buffer), this);
+                LOG.debug("Proxy v2 detection succeeded");
+            return Detection.RECOGNIZED;
+        }
 
-            // struct proxy_hdr_v2 {
-            //     uint8_t sig[12];  /* hex 0D 0A 0D 0A 00 0D 0A 51 55 49 54 0A */
-            //     uint8_t ver_cmd;  /* protocol version and command */
-            //     uint8_t fam;      /* protocol family and address */
-            //     uint16_t len;     /* number of following bytes part of the header */
-            // };
-            for (byte magic : MAGIC)
-            {
-                if (buffer.get() != magic)
-                    throw new IOException("Bad PROXY protocol v2 signature");
-            }
+        public int getMaxProxyHeader()
+        {
+            return _maxProxyHeader;
+        }
 
-            int versionAndCommand = 0xff & buffer.get();
-            if ((versionAndCommand & 0xf0) != 0x20)
-                throw new IOException("Bad PROXY protocol v2 version");
-            _local = (versionAndCommand & 0xf) == 0x00;
-
-            int transportAndFamily = 0xff & buffer.get();
-            switch (transportAndFamily >> 4)
-            {
-                case 0:
-                    _family = Family.UNSPEC;
-                    break;
-                case 1:
-                    _family = Family.INET;
-                    break;
-                case 2:
-                    _family = Family.INET6;
-                    break;
-                case 3:
-                    _family = Family.UNIX;
-                    break;
-                default:
-                    throw new IOException("Bad PROXY protocol v2 family");
-            }
-
-            switch (0xf & transportAndFamily)
-            {
-                case 0:
-                    _transport = Transport.UNSPEC;
-                    break;
-                case 1:
-                    _transport = Transport.STREAM;
-                    break;
-                case 2:
-                    _transport = Transport.DGRAM;
-                    break;
-                default:
-                    throw new IOException("Bad PROXY protocol v2 family");
-            }
-
-            _length = buffer.getChar();
-
-            if (!_local && (_family == Family.UNSPEC || _family == Family.UNIX || _transport != Transport.STREAM))
-                throw new IOException(String.format("Unsupported PROXY protocol v2 mode 0x%x,0x%x", versionAndCommand, transportAndFamily));
-
-            if (_length > getMaxProxyHeader())
-                throw new IOException(String.format("Unsupported PROXY protocol v2 mode 0x%x,0x%x,0x%x", versionAndCommand, transportAndFamily, _length));
-
-            _buffer = _length > 0 ? BufferUtil.allocate(_length) : BufferUtil.EMPTY_BUFFER;
+        public void setMaxProxyHeader(int maxProxyHeader)
+        {
+            _maxProxyHeader = maxProxyHeader;
         }
 
         @Override
-        public void onOpen()
+        public Connection newConnection(Connector connector, EndPoint endp)
         {
-            super.onOpen();
-            if (_buffer.remaining() == _length)
-                next();
-            else
-                fillInterested();
+            ConnectionFactory nextConnectionFactory = findNextConnectionFactory(_nextProtocol, connector, getProtocol(), endp);
+            return configure(new ProxyProtocolV2Connection(endp, connector, nextConnectionFactory), connector, endp);
         }
 
-        @Override
-        public void onFillable()
+        private class ProxyProtocolV2Connection extends AbstractConnection implements Connection.UpgradeFrom, Connection.UpgradeTo
         {
-            try
+            private static final int HEADER_LENGTH = 16;
+
+            private final Connector _connector;
+            private final ConnectionFactory _next;
+            private final ByteBuffer _buffer;
+            private boolean _local;
+            private Family _family;
+            private int _length;
+            private boolean _headerParsed;
+
+            protected ProxyProtocolV2Connection(EndPoint endp, Connector connector, ConnectionFactory next)
             {
-                while (_buffer.remaining() < _length)
+                super(endp, connector.getExecutor());
+                _connector = connector;
+                _next = next;
+                _buffer = _connector.getByteBufferPool().acquire(getInputBufferSize(), true);
+            }
+
+            @Override
+            public void onUpgradeTo(ByteBuffer prefilled)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v2 copying prefilled buffer {}", BufferUtil.toDetailString(prefilled));
+                if (BufferUtil.hasContent(prefilled))
+                    BufferUtil.append(_buffer, prefilled);
+            }
+
+            @Override
+            public void onOpen()
+            {
+                super.onOpen();
+
+                try
                 {
-                    // Read data
-                    int fill = getEndPoint().fill(_buffer);
-                    if (fill < 0)
+                    parseHeader();
+                    if (_headerParsed && _buffer.remaining() >= _length)
                     {
-                        getEndPoint().shutdownOutput();
-                        return;
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Proxy v2 onOpen parsing fixed length packet part done, now upgrading");
+                        parseBodyAndUpgrade();
                     }
-                    if (fill == 0)
+                    else
                     {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Proxy v2 onOpen parsing fixed length packet ran out of bytes, marking as fillInterested");
                         fillInterested();
-                        return;
                     }
                 }
-                next();
-            }
-            catch (Throwable x)
-            {
-                LOG.warn("PROXY error for " + getEndPoint(), x);
-                close();
-            }
-        }
-
-        private void next()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("PROXYv2 next {} from {} for {}", _next, BufferUtil.toHexSummary(_buffer), this);
-
-            // Create the next protocol
-            ConnectionFactory connectionFactory = _connector.getConnectionFactory(_next);
-            if (connectionFactory == null)
-            {
-                LOG.info("Next protocol '{}' for {}", _next, getEndPoint());
-                close();
-                return;
+                catch (Exception x)
+                {
+                    LOG.warn("Proxy v2 error for {}", getEndPoint(), x);
+                    releaseAndClose();
+                }
             }
 
-            // Do we need to wrap the endpoint?
-            EndPoint endPoint = getEndPoint();
-            if (!_local)
+            @Override
+            public void onFillable()
             {
                 try
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Proxy v2 onFillable header parsed? ", _headerParsed);
+                    while (!_headerParsed)
+                    {
+                        // Read data
+                        int fill = getEndPoint().fill(_buffer);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Proxy v2 filled buffer with {} bytes", fill);
+                        if (fill < 0)
+                        {
+                            _connector.getByteBufferPool().release(_buffer);
+                            getEndPoint().shutdownOutput();
+                            return;
+                        }
+                        if (fill == 0)
+                        {
+                            fillInterested();
+                            return;
+                        }
+
+                        parseHeader();
+                    }
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Proxy v2 onFillable header parsed, length = {}, buffer = {}", _length, BufferUtil.toDetailString(_buffer));
+
+                    while (_buffer.remaining() < _length)
+                    {
+                        // Read data
+                        int fill = getEndPoint().fill(_buffer);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Proxy v2 filled buffer with {} bytes", fill);
+                        if (fill < 0)
+                        {
+                            _connector.getByteBufferPool().release(_buffer);
+                            getEndPoint().shutdownOutput();
+                            return;
+                        }
+                        if (fill == 0)
+                        {
+                            fillInterested();
+                            return;
+                        }
+                    }
+
+                    parseBodyAndUpgrade();
+                }
+                catch (Throwable x)
+                {
+                    LOG.warn("Proxy v2 error for " + getEndPoint(), x);
+                    releaseAndClose();
+                }
+            }
+
+            @Override
+            public ByteBuffer onUpgradeFrom()
+            {
+                return _buffer;
+            }
+
+            private void parseBodyAndUpgrade() throws IOException
+            {
+                int nonProxyRemaining = _buffer.remaining() - _length;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v2 parsing body, length = {}, buffer = {}", _length, BufferUtil.toHexSummary(_buffer));
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v2 body {} from {} for {}", _next, BufferUtil.toHexSummary(_buffer), this);
+
+                // Do we need to wrap the endpoint?
+                EndPoint endPoint = getEndPoint();
+                if (!_local)
                 {
                     InetAddress src;
                     InetAddress dst;
@@ -514,98 +601,239 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                     endPoint = proxyEndPoint;
 
                     // Any additional info?
-                    while (_buffer.hasRemaining())
+                    while (_buffer.remaining() > nonProxyRemaining)
                     {
                         int type = 0xff & _buffer.get();
-                        int length = _buffer.getShort();
+                        int length = _buffer.getChar();
                         byte[] value = new byte[length];
                         _buffer.get(value);
 
                         if (LOG.isDebugEnabled())
-                            LOG.debug(String.format("T=%x L=%d V=%s for %s", type, length, TypeUtil.toHexString(value), this));
+                            LOG.debug(String.format("Proxy v2 T=%x L=%d V=%s for %s", type, length, TypeUtil.toHexString(value), this));
 
-                        switch (type)
+                        // PP2_TYPE_NOOP is only used for byte alignment, skip them.
+                        if (type != ProxyEndPoint.PP2_TYPE_NOOP)
+                            proxyEndPoint.putTLV(type, value);
+
+                        if (type == ProxyEndPoint.PP2_TYPE_SSL)
                         {
-                            case 0x20: // PP2_TYPE_SSL
+                            int client = value[0] & 0xFF;
+                            if (client == ProxyEndPoint.PP2_TYPE_SSL_PP2_CLIENT_SSL)
                             {
-                                int client = value[0] & 0xFF;
-                                switch (client)
+                                int i = 5; // Index of the first sub_tlv, after verify.
+                                while (i < length)
                                 {
-                                    case 0x01: // PP2_CLIENT_SSL
+                                    int subType = value[i++] & 0xFF;
+                                    int subLength = (value[i++] & 0xFF) * 256 + (value[i++] & 0xFF);
+                                    byte[] subValue = new byte[subLength];
+                                    System.arraycopy(value, i, subValue, 0, subLength);
+                                    i += subLength;
+                                    if (subType == ProxyEndPoint.PP2_SUBTYPE_SSL_VERSION)
                                     {
-                                        int i = 5; // Index of the first sub_tlv, after verify.
-                                        while (i < length)
-                                        {
-                                            int subType = value[i++] & 0xFF;
-                                            int subLength = (value[i++] & 0xFF) * 256 + (value[i++] & 0xFF);
-                                            byte[] subValue = new byte[subLength];
-                                            System.arraycopy(value, i, subValue, 0, subLength);
-                                            i += subLength;
-                                            switch (subType)
-                                            {
-                                                case 0x21: // PP2_SUBTYPE_SSL_VERSION
-                                                    String tlsVersion = new String(subValue, StandardCharsets.US_ASCII);
-                                                    proxyEndPoint.setAttribute(TLS_VERSION, tlsVersion);
-                                                    break;
-                                                case 0x22: // PP2_SUBTYPE_SSL_CN
-                                                case 0x23: // PP2_SUBTYPE_SSL_CIPHER
-                                                case 0x24: // PP2_SUBTYPE_SSL_SIG_ALG
-                                                case 0x25: // PP2_SUBTYPE_SSL_KEY_ALG
-                                                default:
-                                                    break;
-                                            }
-                                        }
-                                        break;
+                                        String tlsVersion = new String(subValue, StandardCharsets.US_ASCII);
+                                        proxyEndPoint.setAttribute(TLS_VERSION, tlsVersion);
                                     }
-                                    case 0x02: // PP2_CLIENT_CERT_CONN
-                                    case 0x04: // PP2_CLIENT_CERT_SESS
-                                    default:
-                                        break;
                                 }
-                                break;
                             }
-                            case 0x01: // PP2_TYPE_ALPN
-                            case 0x02: // PP2_TYPE_AUTHORITY
-                            case 0x03: // PP2_TYPE_CRC32C
-                            case 0x04: // PP2_TYPE_NOOP
-                            case 0x30: // PP2_TYPE_NETNS
-                            default:
-                                break;
                         }
                     }
 
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} {}", getEndPoint(), proxyEndPoint.toString());
-
+                        LOG.debug("Proxy v2 {} {}", getEndPoint(), proxyEndPoint.toString());
                 }
-                catch (Exception e)
+                else
                 {
-                    LOG.warn(e);
+                    _buffer.position(_buffer.position() + _length);
                 }
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v2 parsing dynamic packet part is now done, upgrading to {}", _nextProtocol);
+                upgradeToConnectionFactory(_next, _connector, endPoint);
             }
 
-            Connection newConnection = connectionFactory.newConnection(_connector, endPoint);
-            endPoint.upgrade(newConnection);
+            private void parseHeader() throws IOException
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v2 parsing fixed length packet part, buffer = {}", BufferUtil.toDetailString(_buffer));
+                if (_buffer.remaining() < HEADER_LENGTH)
+                    return;
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v2 header {} for {}", BufferUtil.toHexSummary(_buffer), this);
+
+                // struct proxy_hdr_v2 {
+                //     uint8_t sig[12];  /* hex 0D 0A 0D 0A 00 0D 0A 51 55 49 54 0A */
+                //     uint8_t ver_cmd;  /* protocol version and command */
+                //     uint8_t fam;      /* protocol family and address */
+                //     uint16_t len;     /* number of following bytes part of the header */
+                // };
+                for (byte signatureByte : SIGNATURE)
+                {
+                    if (_buffer.get() != signatureByte)
+                        throw new IOException("Proxy v2 bad PROXY signature");
+                }
+
+                int versionAndCommand = 0xFF & _buffer.get();
+                if ((versionAndCommand & 0xF0) != 0x20)
+                    throw new IOException("Proxy v2 bad PROXY version");
+                _local = (versionAndCommand & 0xF) == 0x00;
+
+                int transportAndFamily = 0xFF & _buffer.get();
+                switch (transportAndFamily >> 4)
+                {
+                    case 0:
+                        _family = Family.UNSPEC;
+                        break;
+                    case 1:
+                        _family = Family.INET;
+                        break;
+                    case 2:
+                        _family = Family.INET6;
+                        break;
+                    case 3:
+                        _family = Family.UNIX;
+                        break;
+                    default:
+                        throw new IOException("Proxy v2 bad PROXY family");
+                }
+
+                Transport transport;
+                switch (0xF & transportAndFamily)
+                {
+                    case 0:
+                        transport = Transport.UNSPEC;
+                        break;
+                    case 1:
+                        transport = Transport.STREAM;
+                        break;
+                    case 2:
+                        transport = Transport.DGRAM;
+                        break;
+                    default:
+                        throw new IOException("Proxy v2 bad PROXY family");
+                }
+
+                _length = _buffer.getChar();
+
+                if (!_local && (_family == Family.UNSPEC || _family == Family.UNIX || transport != Transport.STREAM))
+                    throw new IOException(String.format("Proxy v2 unsupported PROXY mode 0x%x,0x%x", versionAndCommand, transportAndFamily));
+
+                if (_length > getMaxProxyHeader())
+                    throw new IOException(String.format("Proxy v2 Unsupported PROXY mode 0x%x,0x%x,0x%x", versionAndCommand, transportAndFamily, _length));
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Proxy v2 fixed length packet part is now parsed");
+                _headerParsed = true;
+            }
+
+            private void releaseAndClose()
+            {
+                _connector.getByteBufferPool().release(_buffer);
+                close();
+            }
         }
     }
 
-    public static class ProxyEndPoint extends AttributesMap implements EndPoint
+    public static class ProxyEndPoint extends AttributesMap implements EndPoint, EndPoint.Wrapper
     {
-        private final EndPoint _endp;
+        private static final int PP2_TYPE_NOOP = 0x04;
+        private static final int PP2_TYPE_SSL = 0x20;
+        private static final int PP2_TYPE_SSL_PP2_CLIENT_SSL = 0x01;
+        private static final int PP2_SUBTYPE_SSL_VERSION = 0x21;
+
+        private final EndPoint _endPoint;
         private final InetSocketAddress _remote;
         private final InetSocketAddress _local;
+        private Map<Integer, byte[]> _tlvs;
 
-        public ProxyEndPoint(EndPoint endp, InetSocketAddress remote, InetSocketAddress local)
+        public ProxyEndPoint(EndPoint endPoint, InetSocketAddress remote, InetSocketAddress local)
         {
-            _endp = endp;
+            _endPoint = endPoint;
             _remote = remote;
             _local = local;
         }
 
-        @Override
-        public boolean isOptimizedForDirectBuffers()
+        public EndPoint unwrap()
         {
-            return _endp.isOptimizedForDirectBuffers();
+            return _endPoint;
+        }
+        
+        /**
+         * <p>Sets a TLV vector, see section 2.2.7 of the PROXY protocol specification.</p>
+         * 
+         * @param type the TLV type
+         * @param value the TLV value
+         */
+        private void putTLV(int type, byte[] value)
+        {
+            if (_tlvs == null)
+                _tlvs = new HashMap<>();
+            _tlvs.put(type, value);
+        }
+        
+        /**
+         * <p>Gets a TLV vector, see section 2.2.7 of the PROXY protocol specification.</p>
+         *
+         * @param type the TLV type
+         * @return the TLV value or null if not present.
+         */
+        public byte[] getTLV(int type)
+        {
+            return _tlvs != null ? _tlvs.get(type) : null;
+        }
+
+        @Override
+        public void close(Throwable cause)
+        {
+            _endPoint.close(cause);
+        }
+
+        @Override
+        public int fill(ByteBuffer buffer) throws IOException
+        {
+            return _endPoint.fill(buffer);
+        }
+
+        @Override
+        public void fillInterested(Callback callback) throws ReadPendingException
+        {
+            _endPoint.fillInterested(callback);
+        }
+
+        @Override
+        public boolean flush(ByteBuffer... buffer) throws IOException
+        {
+            return _endPoint.flush(buffer);
+        }
+
+        @Override
+        public Connection getConnection()
+        {
+            return _endPoint.getConnection();
+        }
+
+        @Override
+        public void setConnection(Connection connection)
+        {
+            _endPoint.setConnection(connection);
+        }
+
+        @Override
+        public long getCreatedTimeStamp()
+        {
+            return _endPoint.getCreatedTimeStamp();
+        }
+
+        @Override
+        public long getIdleTimeout()
+        {
+            return _endPoint.getIdleTimeout();
+        }
+
+        @Override
+        public void setIdleTimeout(long idleTimeout)
+        {
+            _endPoint.setIdleTimeout(idleTimeout);
         }
 
         @Override
@@ -621,133 +849,80 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         }
 
         @Override
-        public String toString() {
-            return String.format("%s@%x[remote=%s,local=%s,endpoint=%s]",
-                    getClass().getSimpleName(),
-                    hashCode(),
-                    _remote,
-                    _local,
-                    _endp);
-        }
-
-        @Override
-        public boolean isOpen()
-        {
-            return _endp.isOpen();
-        }
-
-        @Override
-        public long getCreatedTimeStamp()
-        {
-            return _endp.getCreatedTimeStamp();
-        }
-
-        @Override
-        public void shutdownOutput()
-        {
-            _endp.shutdownOutput();
-        }
-
-        @Override
-        public boolean isOutputShutdown()
-        {
-            return _endp.isOutputShutdown();
-        }
-
-        @Override
-        public boolean isInputShutdown()
-        {
-            return _endp.isInputShutdown();
-        }
-
-        @Override
-        public void close()
-        {
-            _endp.close();
-        }
-
-        @Override
-        public int fill(ByteBuffer buffer) throws IOException
-        {
-            return _endp.fill(buffer);
-        }
-
-        @Override
-        public boolean flush(ByteBuffer... buffer) throws IOException
-        {
-            return _endp.flush(buffer);
-        }
-
-        @Override
         public Object getTransport()
         {
-            return _endp.getTransport();
-        }
-
-        @Override
-        public long getIdleTimeout()
-        {
-            return _endp.getIdleTimeout();
-        }
-
-        @Override
-        public void setIdleTimeout(long idleTimeout)
-        {
-            _endp.setIdleTimeout(idleTimeout);
-        }
-
-        @Override
-        public void fillInterested(Callback callback) throws ReadPendingException
-        {
-            _endp.fillInterested(callback);
-        }
-
-        @Override
-        public boolean tryFillInterested(Callback callback)
-        {
-            return _endp.tryFillInterested(callback);
+            return _endPoint.getTransport();
         }
 
         @Override
         public boolean isFillInterested()
         {
-            return _endp.isFillInterested();
+            return _endPoint.isFillInterested();
         }
 
         @Override
-        public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+        public boolean isInputShutdown()
         {
-            _endp.write(callback, buffers);
+            return _endPoint.isInputShutdown();
         }
 
         @Override
-        public Connection getConnection()
+        public boolean isOpen()
         {
-            return _endp.getConnection();
+            return _endPoint.isOpen();
         }
 
         @Override
-        public void setConnection(Connection connection)
+        public boolean isOutputShutdown()
         {
-            _endp.setConnection(connection);
+            return _endPoint.isOutputShutdown();
+        }
+
+        @Override
+        public void onClose(Throwable cause)
+        {
+            _endPoint.onClose(cause);
         }
 
         @Override
         public void onOpen()
         {
-            _endp.onOpen();
+            _endPoint.onOpen();
         }
 
         @Override
-        public void onClose()
+        public void shutdownOutput()
         {
-            _endp.onClose();
+            _endPoint.shutdownOutput();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[remote=%s,local=%s,endpoint=%s]",
+                getClass().getSimpleName(),
+                hashCode(),
+                _remote,
+                _local,
+                _endPoint);
+        }
+
+        @Override
+        public boolean tryFillInterested(Callback callback)
+        {
+            return _endPoint.tryFillInterested(callback);
         }
 
         @Override
         public void upgrade(Connection newConnection)
         {
-            _endp.upgrade(newConnection);
+            _endPoint.upgrade(newConnection);
+        }
+
+        @Override
+        public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+        {
+            _endPoint.write(callback, buffers);
         }
     }
 }

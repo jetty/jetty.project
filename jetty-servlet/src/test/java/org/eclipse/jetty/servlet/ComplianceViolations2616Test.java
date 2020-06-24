@@ -1,25 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -27,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -48,6 +44,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+
 public class ComplianceViolations2616Test
 {
     private static Server server;
@@ -65,10 +64,10 @@ public class ComplianceViolations2616Test
         {
             if (request instanceof HttpServletRequest)
             {
-                List<String> violations = (List<String>) request.getAttribute("org.eclipse.jetty.http.compliance.violations");
+                List<String> violations = (List<String>)request.getAttribute("org.eclipse.jetty.http.compliance.violations");
                 if (violations != null)
                 {
-                    HttpServletResponse httpResponse = (HttpServletResponse) response;
+                    HttpServletResponse httpResponse = (HttpServletResponse)response;
                     int i = 0;
                     for (String violation : violations)
                     {
@@ -136,7 +135,7 @@ public class ComplianceViolations2616Test
     }
 
     @Test
-    public void testNoColonHeader_Middle() throws Exception
+    public void testNoColonHeaderMiddle() throws Exception
     {
         StringBuffer req1 = new StringBuffer();
         req1.append("GET /dump/ HTTP/1.1\r\n");
@@ -148,12 +147,12 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200 OK"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));   
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));
         assertThat("Response body", response, containsString("[Name] = []"));
     }
 
     @Test
-    public void testNoColonHeader_End() throws Exception
+    public void testNoColonHeaderEnd() throws Exception
     {
         StringBuffer req1 = new StringBuffer();
         req1.append("GET /dump/ HTTP/1.1\r\n");
@@ -165,7 +164,7 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));        
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: Fields must have a Colon"));
         assertThat("Response body", response, containsString("[Name] = []"));
     }
 
@@ -183,8 +182,7 @@ public class ComplianceViolations2616Test
 
         String response = connector.getResponse(req1.toString());
         assertThat("Response status", response, containsString("HTTP/1.1 200"));
-        assertThat("Response headers", response, containsString("X-Http-Violation-0: No line Folding"));        
+        assertThat("Response headers", response, containsString("X-Http-Violation-0: Line Folding not supported"));
         assertThat("Response body", response, containsString("[Name] = [Some Value]"));
-        
     }
 }

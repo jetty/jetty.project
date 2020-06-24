@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http.tools;
@@ -39,8 +39,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A HTTP Testing helper class.
@@ -70,79 +68,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpTester
 {
-    private final static Logger LOG = Log.getLogger(HttpTester.class);
-
-    private HttpTester()
-    {
-    }
-
-    public static Request newRequest()
-    {
-        Request r = new Request();
-        r.setMethod(HttpMethod.GET.asString());
-        r.setURI("/");
-        r.setVersion(HttpVersion.HTTP_1_1);
-        return r;
-    }
-
-    public static Request parseRequest(String request)
-    {
-        Request r = new Request();
-        HttpParser parser = new HttpParser(r);
-        parser.parseNext(BufferUtil.toBuffer(request));
-        return r;
-    }
-
-    public static Request parseRequest(ByteBuffer request)
-    {
-        Request r = new Request();
-        HttpParser parser = new HttpParser(r);
-        parser.parseNext(request);
-        return r;
-    }
-
-    public static Response parseResponse(String response)
-    {
-        Response r = new Response();
-        HttpParser parser = new HttpParser(r);
-        parser.parseNext(BufferUtil.toBuffer(response));
-        return r;
-    }
-
-    public static Response parseResponse(ByteBuffer response)
-    {
-        Response r = new Response();
-        HttpParser parser = new HttpParser(r);
-        parser.parseNext(response);
-        return r;
-    }
-
-    public static Response parseResponse(InputStream responseStream) throws IOException
-    {
-        Response r=new Response();
-        HttpParser parser =new HttpParser(r);
-
-        // Read and parse a character at a time so we never can read more than we should.
-        byte[] array = new byte[1];
-        ByteBuffer buffer = ByteBuffer.wrap(array);
-        buffer.limit(1);
-
-        while(true)
-        {
-            buffer.position(1);
-            int l = responseStream.read(array);
-            if (l<0)
-                parser.atEOF();
-            else
-                buffer.position(0);
-
-            if (parser.parseNext(buffer))
-                return r;
-            else if (l<0)
-                return null;
-        }
-    }
-
     public abstract static class Input
     {
         protected final ByteBuffer _buffer;
@@ -238,6 +163,77 @@ public class HttpTester
         };
     }
 
+    private HttpTester()
+    {
+    }
+
+    public static Request newRequest()
+    {
+        Request r = new Request();
+        r.setMethod(HttpMethod.GET.asString());
+        r.setURI("/");
+        r.setVersion(HttpVersion.HTTP_1_1);
+        return r;
+    }
+
+    public static Request parseRequest(String request)
+    {
+        Request r = new Request();
+        HttpParser parser = new HttpParser(r);
+        parser.parseNext(BufferUtil.toBuffer(request));
+        return r;
+    }
+
+    public static Request parseRequest(ByteBuffer request)
+    {
+        Request r = new Request();
+        HttpParser parser = new HttpParser(r);
+        parser.parseNext(request);
+        return r;
+    }
+
+    public static Response parseResponse(String response)
+    {
+        Response r = new Response();
+        HttpParser parser = new HttpParser(r);
+        parser.parseNext(BufferUtil.toBuffer(response));
+        return r;
+    }
+
+    public static Response parseResponse(ByteBuffer response)
+    {
+        Response r = new Response();
+        HttpParser parser = new HttpParser(r);
+        parser.parseNext(response);
+        return r;
+    }
+
+    public static Response parseResponse(InputStream responseStream) throws IOException
+    {
+        Response r = new Response();
+        HttpParser parser = new HttpParser(r);
+
+        // Read and parse a character at a time so we never can read more than we should.
+        byte[] array = new byte[1];
+        ByteBuffer buffer = ByteBuffer.wrap(array);
+        buffer.limit(1);
+
+        while (true)
+        {
+            buffer.position(1);
+            int l = responseStream.read(array);
+            if (l < 0)
+                parser.atEOF();
+            else
+                buffer.position(0);
+
+            if (parser.parseNext(buffer))
+                return r;
+            else if (l < 0)
+                return null;
+        }
+    }
+
     public static Response parseResponse(Input in) throws IOException
     {
         Response r;
@@ -293,7 +289,7 @@ public class HttpTester
         }
     }
 
-    public abstract static class Message extends HttpFields implements HttpParser.HttpHandler
+    public abstract static class Message extends HttpFields.Mutable implements HttpParser.HttpHandler
     {
         boolean _earlyEOF;
         boolean _complete = false;
@@ -372,8 +368,8 @@ public class HttpTester
                 return null;
             byte[] bytes = _content.toByteArray();
 
-            String content_type = get(HttpHeader.CONTENT_TYPE);
-            String encoding = MimeTypes.getCharsetFromContentType(content_type);
+            String contentType = get(HttpHeader.CONTENT_TYPE);
+            String encoding = MimeTypes.getCharsetFromContentType(contentType);
             Charset charset = encoding == null ? StandardCharsets.UTF_8 : Charset.forName(encoding);
 
             return new String(bytes, charset);
@@ -450,17 +446,22 @@ public class HttpTester
                 ByteBuffer chunk = null;
                 ByteBuffer content = _content == null ? null : ByteBuffer.wrap(_content.toByteArray());
 
-
                 loop:
                 while (!generator.isEnd())
                 {
                     HttpGenerator.Result result = info instanceof MetaData.Request
-                            ? generator.generateRequest((MetaData.Request)info, header, chunk, content, true)
-                            : generator.generateResponse((MetaData.Response)info, false, header, chunk, content, true);
+                        ? generator.generateRequest((MetaData.Request)info, header, chunk, content, true)
+                        : generator.generateResponse((MetaData.Response)info, false, header, chunk, content, true);
                     switch (result)
                     {
                         case NEED_HEADER:
                             header = BufferUtil.allocate(8192);
+                            continue;
+
+                        case HEADER_OVERFLOW:
+                            if (header.capacity() >= 32 * 1024)
+                                throw new BadMessageException(500, "Header too large");
+                            header = BufferUtil.allocate(32 * 1024);
                             continue;
 
                         case NEED_CHUNK:
@@ -494,6 +495,9 @@ public class HttpTester
 
                         case SHUTDOWN_OUT:
                             break loop;
+
+                        default:
+                            break; // TODO verify if this should be ISE
                     }
                 }
 
@@ -505,13 +509,7 @@ public class HttpTester
             }
         }
 
-        abstract public MetaData getInfo();
-
-        @Override
-        public int getHeaderCacheSize()
-        {
-            return 0;
-        }
+        public abstract MetaData getInfo();
     }
 
     public static class Request extends Message implements HttpParser.RequestHandler
@@ -520,12 +518,11 @@ public class HttpTester
         private String _uri;
 
         @Override
-        public boolean startRequest(String method, String uri, HttpVersion version)
+        public void startRequest(String method, String uri, HttpVersion version)
         {
             _method = method;
             _uri = uri;
             _version = version;
-            return false;
         }
 
         public String getMethod()
@@ -551,7 +548,7 @@ public class HttpTester
         @Override
         public MetaData.Request getInfo()
         {
-            return new MetaData.Request(_method, new HttpURI(_uri), _version, this, _content == null ? 0 : _content.size());
+            return new MetaData.Request(_method, HttpURI.from(_uri), _version, this, _content == null ? 0 : _content.size());
         }
 
         @Override
@@ -572,12 +569,11 @@ public class HttpTester
         private String _reason;
 
         @Override
-        public boolean startResponse(HttpVersion version, int status, String reason)
+        public void startResponse(HttpVersion version, int status, String reason)
         {
             _version = version;
             _status = status;
             _reason = reason;
-            return false;
         }
 
         public int getStatus()

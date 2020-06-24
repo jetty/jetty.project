@@ -1,29 +1,28 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.http2.hpack;
-
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -32,14 +31,15 @@ import org.eclipse.jetty.http2.hpack.HpackException.SessionException;
 public class MetaDataBuilder
 {
     private final int _maxSize;
+    private final HttpFields.Mutable _fields = HttpFields.build();
     private int _size;
     private Integer _status;
     private String _method;
     private HttpScheme _scheme;
     private HostPortHttpField _authority;
     private String _path;
-    private long _contentLength=Long.MIN_VALUE;
-    private HttpFields _fields = new HttpFields(10);
+    private String _protocol;
+    private long _contentLength = Long.MIN_VALUE;
     private HpackException.StreamException _streamException;
     private boolean _request;
     private boolean _response;
@@ -49,10 +49,12 @@ public class MetaDataBuilder
      */
     protected MetaDataBuilder(int maxHeadersSize)
     {
-        _maxSize=maxHeadersSize;
+        _maxSize = maxHeadersSize;
     }
 
-    /** Get the maxSize.
+    /**
+     * Get the maxSize.
+     *
      * @return the maxSize
      */
     public int getMaxSize()
@@ -60,7 +62,9 @@ public class MetaDataBuilder
         return _maxSize;
     }
 
-    /** Get the size.
+    /**
+     * Get the size.
+     *
      * @return the current size in bytes
      */
     public int getSize()
@@ -72,31 +76,33 @@ public class MetaDataBuilder
     {
         HttpHeader header = field.getHeader();
         String name = field.getName();
+        if (name == null || name.length() == 0)
+            throw new HpackException.SessionException("Header size 0");
         String value = field.getValue();
-        int field_size = name.length() + (value == null ? 0 : value.length());
-        _size+=field_size+32;
-        if (_size>_maxSize)
-            throw new HpackException.SessionException("Header Size %d > %d",_size,_maxSize);
+        int fieldSize = name.length() + (value == null ? 0 : value.length());
+        _size += fieldSize + 32;
+        if (_size > _maxSize)
+            throw new HpackException.SessionException("Header size %d > %d", _size, _maxSize);
 
         if (field instanceof StaticTableHttpField)
         {
             StaticTableHttpField staticField = (StaticTableHttpField)field;
-            switch(header)
+            switch (header)
             {
                 case C_STATUS:
-                    if(checkPseudoHeader(header, _status))
-                        _status = (Integer)staticField.getStaticValue();
+                    if (checkPseudoHeader(header, _status))
+                        _status = staticField.getIntValue();
                     _response = true;
                     break;
 
                 case C_METHOD:
-                    if(checkPseudoHeader(header, _method))
+                    if (checkPseudoHeader(header, _method))
                         _method = value;
                     _request = true;
                     break;
 
                 case C_SCHEME:
-                    if(checkPseudoHeader(header, _scheme))
+                    if (checkPseudoHeader(header, _scheme))
                         _scheme = (HttpScheme)staticField.getStaticValue();
                     _request = true;
                     break;
@@ -105,30 +111,30 @@ public class MetaDataBuilder
                     throw new IllegalArgumentException(name);
             }
         }
-        else if (header!=null)
+        else if (header != null)
         {
-            switch(header)
+            switch (header)
             {
                 case C_STATUS:
-                    if(checkPseudoHeader(header, _status))
-                        _status = Integer.valueOf(field.getIntValue());
+                    if (checkPseudoHeader(header, _status))
+                        _status = field.getIntValue();
                     _response = true;
                     break;
 
                 case C_METHOD:
-                    if(checkPseudoHeader(header, _method))
-                       _method = value;
+                    if (checkPseudoHeader(header, _method))
+                        _method = value;
                     _request = true;
                     break;
 
                 case C_SCHEME:
-                    if(checkPseudoHeader(header, _scheme) && value != null)
+                    if (checkPseudoHeader(header, _scheme) && value != null)
                         _scheme = HttpScheme.CACHE.get(value);
                     _request = true;
                     break;
 
                 case C_AUTHORITY:
-                    if(checkPseudoHeader(header, _authority))
+                    if (checkPseudoHeader(header, _authority))
                     {
                         if (field instanceof HostPortHttpField)
                             _authority = (HostPortHttpField)field;
@@ -138,22 +144,10 @@ public class MetaDataBuilder
                     _request = true;
                     break;
 
-                case HOST:
-                    // :authority fields must come first.  If we have one, ignore the host header as far as authority goes.
-                    if (_authority==null)
-                    {
-                        if (field instanceof HostPortHttpField)
-                            _authority = (HostPortHttpField)field;
-                        else if (value != null)
-                            _authority = new AuthorityHttpField(value);
-                    }
-                    _fields.add(field);
-                    break;
-
                 case C_PATH:
-                    if(checkPseudoHeader(header, _path))
+                    if (checkPseudoHeader(header, _path))
                     {
-                        if (value!=null && value.length()>0)
+                        if (value != null && value.length() > 0)
                             _path = value;
                         else
                             streamException("No Path");
@@ -161,27 +155,37 @@ public class MetaDataBuilder
                     _request = true;
                     break;
 
+                case C_PROTOCOL:
+                    if (checkPseudoHeader(header, _protocol))
+                        _protocol = value;
+                    _request = true;
+                    break;
+
+                case HOST:
+                    _fields.add(field);
+                    break;
+
                 case CONTENT_LENGTH:
                     _contentLength = field.getLongValue();
                     _fields.add(field);
                     break;
-                
+
                 case TE:
                     if ("trailers".equalsIgnoreCase(value))
                         _fields.add(field);
                     else
                         streamException("Unsupported TE value '%s'", value);
                     break;
-            
+
                 case CONNECTION:
                     if ("TE".equalsIgnoreCase(value))
                         _fields.add(field);
                     else
                         streamException("Connection specific field '%s'", header);
-                    break;                
+                    break;
 
-                default:               
-                    if (name.charAt(0)==':')
+                default:
+                    if (name.charAt(0) == ':')
                         streamException("Unknown pseudo header '%s'", name);
                     else
                         _fields.add(field);
@@ -190,8 +194,8 @@ public class MetaDataBuilder
         }
         else
         {
-            if (name.charAt(0)==':')
-                streamException("Unknown pseudo header '%s'",name);
+            if (name.charAt(0) == ':')
+                streamException("Unknown pseudo header '%s'", name);
             else
                 _fields.add(field);
         }
@@ -200,7 +204,7 @@ public class MetaDataBuilder
     protected void streamException(String messageFormat, Object... args)
     {
         HpackException.StreamException stream = new HpackException.StreamException(messageFormat, args);
-        if (_streamException==null)
+        if (_streamException == null)
             _streamException = stream;
         else
             _streamException.addSuppressed(stream);
@@ -208,12 +212,12 @@ public class MetaDataBuilder
 
     protected boolean checkPseudoHeader(HttpHeader header, Object value)
     {
-        if (_fields.size()>0)
+        if (_fields.size() > 0)
         {
             streamException("Pseudo header %s after fields", header.asString());
             return false;
         }
-        if (value==null)
+        if (value == null)
             return true;
         streamException("Duplicate pseudo header %s", header.asString());
         return false;
@@ -221,41 +225,54 @@ public class MetaDataBuilder
 
     public MetaData build() throws HpackException.StreamException
     {
-        if (_streamException!=null)
+        if (_streamException != null)
         {
             _streamException.addSuppressed(new Throwable());
             throw _streamException;
         }
-        
+
         if (_request && _response)
             throw new HpackException.StreamException("Request and Response headers");
-            
 
-        HttpFields fields = _fields;
+        HttpFields.Mutable fields = _fields;
         try
         {
             if (_request)
             {
-                if (_method==null)
+                if (_method == null)
                     throw new HpackException.StreamException("No Method");
-                if (_scheme==null)
-                    throw new HpackException.StreamException("No Scheme");
-                if (_path==null)
-                    throw new HpackException.StreamException("No Path");
-                return new MetaData.Request(_method,_scheme,_authority,_path,HttpVersion.HTTP_2,fields,_contentLength);
+                boolean isConnect = HttpMethod.CONNECT.is(_method);
+                if (!isConnect || _protocol != null)
+                {
+                    if (_scheme == null)
+                        throw new HpackException.StreamException("No Scheme");
+                    if (_path == null)
+                        throw new HpackException.StreamException("No Path");
+                }
+                if (isConnect)
+                    return new MetaData.ConnectRequest(_scheme, _authority, _path, fields, _protocol);
+                else
+                    return new MetaData.Request(
+                        _method,
+                        _scheme == null ? HttpScheme.HTTP.asString() : _scheme.asString(),
+                        _authority,
+                        _path,
+                        HttpVersion.HTTP_2,
+                        fields,
+                        _contentLength);
             }
             if (_response)
             {
-                if (_status==null)
+                if (_status == null)
                     throw new HpackException.StreamException("No Status");
                 return new MetaData.Response(HttpVersion.HTTP_2, _status, fields, _contentLength);
             }
-                
-            return new MetaData(HttpVersion.HTTP_2,fields,_contentLength);
+
+            return new MetaData(HttpVersion.HTTP_2, fields, _contentLength);
         }
         finally
         {
-            _fields = new HttpFields(Math.max(10, fields.size() + 5));
+            _fields.clear();
             _request = false;
             _response = false;
             _status = null;
@@ -263,6 +280,7 @@ public class MetaDataBuilder
             _scheme = null;
             _authority = null;
             _path = null;
+            _protocol = null;
             _size = 0;
             _contentLength = Long.MIN_VALUE;
         }
@@ -270,6 +288,7 @@ public class MetaDataBuilder
 
     /**
      * Check that the max size will not be exceeded.
+     *
      * @param length the length
      * @param huffman the huffman name
      * @throws SessionException in case of size errors
@@ -278,8 +297,8 @@ public class MetaDataBuilder
     {
         // Apply a huffman fudge factor
         if (huffman)
-            length=(length*4)/3;
-        if ((_size+length)>_maxSize)
-            throw new HpackException.SessionException("Header too large %d > %d", _size+length, _maxSize);
+            length = (length * 4) / 3;
+        if ((_size + length) > _maxSize)
+            throw new HpackException.SessionException("Header too large %d > %d", _size + length, _maxSize);
     }
 }

@@ -1,25 +1,24 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -30,7 +29,6 @@ import javax.servlet.ServletResponse;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 
-
 public class AsyncContextState implements AsyncContext
 {
     private final HttpChannel _channel;
@@ -38,19 +36,19 @@ public class AsyncContextState implements AsyncContext
 
     public AsyncContextState(HttpChannelState state)
     {
-        _state=state;
-        _channel=_state.getHttpChannel();
+        _state = state;
+        _channel = _state.getHttpChannel();
     }
-    
+
     public HttpChannel getHttpChannel()
     {
         return _channel;
     }
-    
+
     HttpChannelState state()
     {
-        HttpChannelState state=_state;
-        if (state==null)
+        HttpChannelState state = _state;
+        if (state == null)
             throw new IllegalStateException("AsyncContext completed and/or Request lifecycle recycled");
         return state;
     }
@@ -76,10 +74,10 @@ public class AsyncContextState implements AsyncContext
 
     @Override
     public <T extends AsyncListener> T createListener(Class<T> clazz) throws ServletException
-    {    
+    {
         ContextHandler contextHandler = state().getContextHandler();
         if (contextHandler != null)
-            return contextHandler.getServletContext().createListener(clazz);
+            return contextHandler.getServletContext().createInstance(clazz);
         try
         {
             return clazz.getDeclaredConstructor().newInstance();
@@ -93,19 +91,19 @@ public class AsyncContextState implements AsyncContext
     @Override
     public void dispatch()
     {
-        state().dispatch(null,null);
+        state().dispatch(null, null);
     }
 
     @Override
     public void dispatch(String path)
     {
-        state().dispatch(null,path);
+        state().dispatch(null, path);
     }
-    
+
     @Override
     public void dispatch(ServletContext context, String path)
     {
-        state().dispatch(context,path);
+        state().dispatch(context, path);
     }
 
     @Override
@@ -129,8 +127,8 @@ public class AsyncContextState implements AsyncContext
     @Override
     public boolean hasOriginalRequestAndResponse()
     {
-        HttpChannel channel=state().getHttpChannel();
-        return channel.getRequest()==getRequest() && channel.getResponse()==getResponse();
+        HttpChannel channel = state().getHttpChannel();
+        return channel.getRequest() == getRequest() && channel.getResponse() == getResponse();
     }
 
     @Override
@@ -148,14 +146,18 @@ public class AsyncContextState implements AsyncContext
             @Override
             public void run()
             {
-                state().getAsyncContextEvent().getContext().getContextHandler().handle(channel.getRequest(),task);
+                ContextHandler.Context context = state().getAsyncContextEvent().getContext();
+                if (context == null)
+                    task.run();
+                else
+                    context.getContextHandler().handle(channel.getRequest(), task);
             }
         });
     }
 
     public void reset()
     {
-        _state=null;
+        _state = null;
     }
 
     public HttpChannelState getHttpChannelState()
@@ -184,25 +186,25 @@ public class AsyncContextState implements AsyncContext
         @Override
         public void onTimeout(AsyncEvent event) throws IOException
         {
-            _listener.onTimeout(new AsyncEvent(event.getAsyncContext(), _request, _response,event.getThrowable()));
+            _listener.onTimeout(new AsyncEvent(event.getAsyncContext(), _request, _response, event.getThrowable()));
         }
 
         @Override
         public void onStartAsync(AsyncEvent event) throws IOException
         {
-            _listener.onStartAsync(new AsyncEvent(event.getAsyncContext(), _request, _response,event.getThrowable()));
+            _listener.onStartAsync(new AsyncEvent(event.getAsyncContext(), _request, _response, event.getThrowable()));
         }
 
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
-            _listener.onError(new AsyncEvent(event.getAsyncContext(), _request, _response,event.getThrowable()));
+            _listener.onError(new AsyncEvent(event.getAsyncContext(), _request, _response, event.getThrowable()));
         }
 
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
-            _listener.onComplete(new AsyncEvent(event.getAsyncContext(), _request, _response,event.getThrowable()));
+            _listener.onComplete(new AsyncEvent(event.getAsyncContext(), _request, _response, event.getThrowable()));
         }
     }
 }

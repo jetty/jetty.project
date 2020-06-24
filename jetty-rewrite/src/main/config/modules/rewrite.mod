@@ -1,11 +1,11 @@
-DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
 Enables the jetty-rewrite handler.  Specific rewrite
 rules must be added to either to etc/jetty-rewrite.xml or a custom xml/module
 
 [provides]
-rewrite
+rewrite|default
 
 [depend]
 server
@@ -13,8 +13,12 @@ server
 [lib]
 lib/jetty-rewrite-${jetty.version}.jar
 
+[files]
+basehome:modules/rewrite/rewrite-rules.xml|etc/rewrite-rules.xml
+
 [xml]
 etc/jetty-rewrite.xml
+etc/rewrite-rules.xml
 
 [ini-template]
 ## Whether to rewrite the request URI

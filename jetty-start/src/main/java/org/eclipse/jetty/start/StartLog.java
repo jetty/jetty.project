@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.start;
@@ -37,26 +37,23 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
  */
 public class StartLog
 {
-    private final static PrintStream stdout = System.out;
-    private final static PrintStream stderr = System.err;
+    private static final PrintStream stdout = System.out;
+    private static final PrintStream stderr = System.err;
     private static volatile PrintStream out = System.out;
     private static volatile PrintStream err = System.err;
     private static volatile PrintStream logStream = System.err;
-    private final static StartLog INSTANCE = new StartLog();
+    private static final StartLog INSTANCE = new StartLog();
+
+    private static void outLog(String level, String format, Object... args)
+    {
+        out.printf(level + ": " + format + "%n", args);
+    }
 
     public static void debug(String format, Object... args)
     {
         if (INSTANCE.debug)
         {
-            out.printf(format + "%n",args);
-        }
-    }
-    
-    public static void trace(String format, Object... args)
-    {
-        if (INSTANCE.trace)
-        {
-            out.printf("TRACE " + format + "%n",args);
+            outLog("DEBUG ", format, args);
         }
     }
 
@@ -68,34 +65,42 @@ public class StartLog
         }
     }
 
+    public static void trace(String format, Object... args)
+    {
+        if (INSTANCE.trace)
+        {
+            outLog("TRACE ", format, args);
+        }
+    }
+
     public static StartLog getInstance()
     {
         return INSTANCE;
     }
-    
+
     public static void log(String type, String msg)
     {
-        logStream.printf("%-6s: %s%n",type,msg);
+        logStream.printf("%-6s: %s%n", type, msg);
     }
-    
+
     public static void log(String type, String format, Object... args)
     {
-        log(type,String.format(format,args));
+        log(type, String.format(format, args));
     }
 
     public static void info(String format, Object... args)
     {
-        log("INFO",format,args);
-    }
-
-    public static void warn(String format, Object... args)
-    {
-        log("WARN",format,args);
+        log("INFO", format, args);
     }
 
     public static void error(String format, Object... args)
     {
-        log("ERROR",format,args);
+        log("ERROR", format, args);
+    }
+
+    public static void warn(String format, Object... args)
+    {
+        log("WARN", format, args);
     }
 
     public static void warn(Throwable t)
@@ -158,20 +163,20 @@ public class StartLog
                 if (!FS.exists(startLog) && !FS.createNewFile(startLog))
                 {
                     // Output about error is lost in majority of cases.
-                    throw new UsageException(UsageException.ERR_LOGGING,new IOException("Unable to create: " + startLog.toAbsolutePath()));
+                    throw new UsageException(UsageException.ERR_LOGGING, new IOException("Unable to create: " + startLog.toAbsolutePath()));
                 }
 
                 if (!FS.canWrite(startLog))
                 {
                     // Output about error is lost in majority of cases.
-                    throw new UsageException(UsageException.ERR_LOGGING,new IOException("Unable to write to: " + startLog.toAbsolutePath()));
+                    throw new UsageException(UsageException.ERR_LOGGING, new IOException("Unable to write to: " + startLog.toAbsolutePath()));
                 }
 
                 err.println("StartLog to " + logfile);
-                OutputStream fileout = Files.newOutputStream(startLog,StandardOpenOption.CREATE,StandardOpenOption.APPEND);
-                PrintStream logger = new PrintStream(fileout,true);
-                out=logger;
-                err=logger;
+                OutputStream fileout = Files.newOutputStream(startLog, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                PrintStream logger = new PrintStream(fileout, true);
+                out = logger;
+                err = logger;
                 setStream(logger);
                 System.setErr(logger);
                 System.setOut(logger);
@@ -179,7 +184,7 @@ public class StartLog
             }
             catch (IOException e)
             {
-                throw new UsageException(UsageException.ERR_LOGGING,e);
+                throw new UsageException(UsageException.ERR_LOGGING, e);
             }
         }
     }
@@ -188,10 +193,10 @@ public class StartLog
     {
         getInstance().debug = true;
     }
-    
+
     public static void endStartLog()
     {
-        if (stderr!=err && getInstance().debug)
+        if (stderr != err && getInstance().debug)
         {
             err.println("StartLog ended");
             stderr.println("StartLog ended");
@@ -200,12 +205,12 @@ public class StartLog
         System.setErr(stderr);
         System.setOut(stdout);
     }
-    
+
     public static PrintStream getStream()
     {
         return logStream;
     }
-    
+
     public static PrintStream setStream(PrintStream stream)
     {
         PrintStream ret = logStream;

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http;
@@ -24,17 +24,17 @@ import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 
-
 public enum HttpHeader
 {
-    /* ------------------------------------------------------------ */
-    /** General Fields.
+
+    /**
+     * General Fields.
      */
     CONNECTION("Connection"),
     CACHE_CONTROL("Cache-Control"),
     DATE("Date"),
     PRAGMA("Pragma"),
-    PROXY_CONNECTION ("Proxy-Connection"),
+    PROXY_CONNECTION("Proxy-Connection"),
     TRAILER("Trailer"),
     TRANSFER_ENCODING("Transfer-Encoding"),
     UPGRADE("Upgrade"),
@@ -42,8 +42,8 @@ public enum HttpHeader
     WARNING("Warning"),
     NEGOTIATE("Negotiate"),
 
-    /* ------------------------------------------------------------ */
-    /** Entity Fields.
+    /**
+     * Entity Fields.
      */
     ALLOW("Allow"),
     CONTENT_ENCODING("Content-Encoding"),
@@ -56,8 +56,8 @@ public enum HttpHeader
     EXPIRES("Expires"),
     LAST_MODIFIED("Last-Modified"),
 
-    /* ------------------------------------------------------------ */
-    /** Request Fields.
+    /**
+     * Request Fields.
      */
     ACCEPT("Accept"),
     ACCEPT_CHARSET("Accept-Charset"),
@@ -82,12 +82,13 @@ public enum HttpHeader
     TE("TE"),
     USER_AGENT("User-Agent"),
     X_FORWARDED_FOR("X-Forwarded-For"),
+    X_FORWARDED_PORT("X-Forwarded-Port"),
     X_FORWARDED_PROTO("X-Forwarded-Proto"),
     X_FORWARDED_SERVER("X-Forwarded-Server"),
     X_FORWARDED_HOST("X-Forwarded-Host"),
 
-    /* ------------------------------------------------------------ */
-    /** Response Fields.
+    /**
+     * Response Fields.
      */
     ACCEPT_RANGES("Accept-Ranges"),
     AGE("Age"),
@@ -100,8 +101,8 @@ public enum HttpHeader
     VARY("Vary"),
     WWW_AUTHENTICATE("WWW-Authenticate"),
 
-    /* ------------------------------------------------------------ */
-    /** WebSocket Fields.
+    /**
+     * WebSocket Fields.
      */
     ORIGIN("Origin"),
     SEC_WEBSOCKET_KEY("Sec-WebSocket-Key"),
@@ -110,92 +111,93 @@ public enum HttpHeader
     SEC_WEBSOCKET_SUBPROTOCOL("Sec-WebSocket-Protocol"),
     SEC_WEBSOCKET_ACCEPT("Sec-WebSocket-Accept"),
 
-    /* ------------------------------------------------------------ */
-    /** Other Fields.
+    /**
+     * Other Fields.
      */
     COOKIE("Cookie"),
     SET_COOKIE("Set-Cookie"),
     SET_COOKIE2("Set-Cookie2"),
     MIME_VERSION("MIME-Version"),
     IDENTITY("identity"),
-    
+
     X_POWERED_BY("X-Powered-By"),
     HTTP2_SETTINGS("HTTP2-Settings"),
 
     STRICT_TRANSPORT_SECURITY("Strict-Transport-Security"),
-    
-    /* ------------------------------------------------------------ */
-    /** HTTP2 Fields.
+
+    /**
+     * HTTP2 Fields.
      */
     C_METHOD(":method"),
     C_SCHEME(":scheme"),
     C_AUTHORITY(":authority"),
     C_PATH(":path"),
     C_STATUS(":status"),
-    
+    C_PROTOCOL(":protocol"),
+
     UNKNOWN("::UNKNOWN::");
 
+    public static final Trie<HttpHeader> CACHE = new ArrayTrie<>(630);
 
-    /* ------------------------------------------------------------ */
-    public final static Trie<HttpHeader> CACHE= new ArrayTrie<>(630);
     static
     {
         for (HttpHeader header : HttpHeader.values())
-            if (header!=UNKNOWN)
-                if (!CACHE.put(header.toString(),header))
+        {
+            if (header != UNKNOWN)
+                if (!CACHE.put(header.toString(), header))
                     throw new IllegalStateException();
+        }
     }
-    
+
     private final String _string;
+    private final String _lowerCase;
     private final byte[] _bytes;
     private final byte[] _bytesColonSpace;
     private final ByteBuffer _buffer;
 
-    /* ------------------------------------------------------------ */
     HttpHeader(String s)
     {
-        _string=s;
-        _bytes=StringUtil.getBytes(s);
-        _bytesColonSpace=StringUtil.getBytes(s+": ");
-        _buffer=ByteBuffer.wrap(_bytes);
+        _string = s;
+        _lowerCase = StringUtil.asciiToLowerCase(s);
+        _bytes = StringUtil.getBytes(s);
+        _bytesColonSpace = StringUtil.getBytes(s + ": ");
+        _buffer = ByteBuffer.wrap(_bytes);
     }
 
-    /* ------------------------------------------------------------ */
+    public String lowerCaseName()
+    {
+        return _lowerCase;
+    }
+
     public ByteBuffer toBuffer()
     {
         return _buffer.asReadOnlyBuffer();
     }
 
-    /* ------------------------------------------------------------ */
     public byte[] getBytes()
     {
         return _bytes;
     }
 
-    /* ------------------------------------------------------------ */
     public byte[] getBytesColonSpace()
     {
         return _bytesColonSpace;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean is(String s)
     {
-        return _string.equalsIgnoreCase(s);    
+        return _string.equalsIgnoreCase(s);
     }
 
-    /* ------------------------------------------------------------ */
     public String asString()
     {
         return _string;
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
         return _string;
     }
-    
 }
 

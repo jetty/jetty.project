@@ -1,31 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -49,7 +40,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
@@ -58,8 +48,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -72,11 +60,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @SuppressWarnings("Duplicates")
 public class SocketChannelEndPointTest
 {
-    private static final Logger LOG = Log.getLogger(SocketChannelEndPoint.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SocketChannelEndPoint.class);
 
     public interface Scenario
     {
@@ -159,7 +158,7 @@ public class SocketChannelEndPointTest
                 // wait for read timeout
                 client.setSoTimeout(500);
                 long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-                assertThrows(SocketTimeoutException.class, ()-> client.getInputStream().read());
+                assertThrows(SocketTimeoutException.class, () -> client.getInputStream().read());
                 long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start;
                 assertThat("timeout duration", duration, greaterThanOrEqualTo(400L));
 
@@ -171,7 +170,7 @@ public class SocketChannelEndPointTest
                 {
                     int b = client.getInputStream().read();
                     assertThat("expect valid char integer", b, greaterThan(0));
-                    assertEquals(c, (char) b, "expect characters to be same");
+                    assertEquals(c, (char)b, "expect characters to be same");
                 }
                 client.close();
 
@@ -214,7 +213,7 @@ public class SocketChannelEndPointTest
 
                 // wait for read timeout
                 long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-                assertThrows(SocketTimeoutException.class, ()-> client.getInputStream().read());
+                assertThrows(SocketTimeoutException.class, () -> client.getInputStream().read());
                 assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start >= 400);
 
                 // write then shutdown
@@ -262,8 +261,8 @@ public class SocketChannelEndPointTest
             Thread.sleep((11 * specifiedTimeout) / 10);
 
             long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-            assertThrows(SocketTimeoutException.class, ()-> clientInputStream.read());
-            int elapsed = Long.valueOf(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start).intValue();
+            assertThrows(SocketTimeoutException.class, () -> clientInputStream.read());
+            int elapsed = (int)(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start);
             assertThat("Expected timeout", elapsed, greaterThanOrEqualTo(3 * specifiedTimeout / 4));
 
             // write remaining characters
@@ -417,7 +416,7 @@ public class SocketChannelEndPointTest
                             int b = in.read();
                             byteNum++;
                             assertTrue(b > 0);
-                            assertEquals(c, (char) b, "test-" + i + "/" + j);
+                            assertEquals(c, (char)b, "test-" + i + "/" + j);
                         }
 
                         if (i == 0)
@@ -446,7 +445,6 @@ public class SocketChannelEndPointTest
         }
     }
 
-
     @ParameterizedTest
     @MethodSource("scenarios")
     @Tag("Unstable")
@@ -467,10 +465,10 @@ public class SocketChannelEndPointTest
             @Override
             protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
             {
-                SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, selectionKey, getScheduler());
-                _lastEndPoint = endp;
+                SocketChannelEndPoint endPoint = new SocketChannelEndPoint((SocketChannel)channel, selector, selectionKey, getScheduler());
+                _lastEndPoint = endPoint;
                 _lastEndPointLatch.countDown();
-                return endp;
+                return endPoint;
             }
 
             @Override
@@ -582,11 +580,11 @@ public class SocketChannelEndPointTest
 
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey key)
         {
-            SocketChannelEndPoint endp = new SocketChannelEndPoint(channel, selector, key, getScheduler());
-            endp.setIdleTimeout(60000);
-            _lastEndPoint = endp;
+            SocketChannelEndPoint endPoint = new SocketChannelEndPoint((SocketChannel)channel, selector, key, getScheduler());
+            endPoint.setIdleTimeout(60000);
+            _lastEndPoint = endPoint;
             _lastEndPointLatch.countDown();
-            return endp;
+            return endPoint;
         }
 
         @Override
@@ -626,24 +624,22 @@ public class SocketChannelEndPointTest
     public static class SslScenario implements Scenario
     {
         private final NormalScenario _normalScenario;
-        private final SslContextFactory __sslCtxFactory = new SslContextFactory();
-        private final ByteBufferPool __byteBufferPool = new MappedByteBufferPool();
+        private final SslContextFactory _sslCtxFactory = new SslContextFactory.Server();
+        private final ByteBufferPool _byteBufferPool = new MappedByteBufferPool();
 
         public SslScenario(NormalScenario normalScenario) throws Exception
         {
             _normalScenario = normalScenario;
-            File keystore = MavenTestingUtils.getTestResourceFile("keystore");
-            __sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
-            __sslCtxFactory.setKeyStorePassword("storepwd");
-            __sslCtxFactory.setKeyManagerPassword("keypwd");
-            __sslCtxFactory.setEndpointIdentificationAlgorithm("");
-            __sslCtxFactory.start();
+            File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
+            _sslCtxFactory.setKeyStorePath(keystore.getAbsolutePath());
+            _sslCtxFactory.setKeyStorePassword("storepwd");
+            _sslCtxFactory.start();
         }
 
         @Override
         public Socket newClient(ServerSocketChannel connector) throws IOException
         {
-            SSLSocket socket = __sslCtxFactory.newSslSocket();
+            SSLSocket socket = _sslCtxFactory.newSslSocket();
             socket.connect(connector.socket().getLocalSocketAddress());
             return socket;
         }
@@ -651,11 +647,11 @@ public class SocketChannelEndPointTest
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Executor executor, AtomicInteger blockAt, AtomicInteger writeCount)
         {
-            SSLEngine engine = __sslCtxFactory.newSSLEngine();
+            SSLEngine engine = _sslCtxFactory.newSSLEngine();
             engine.setUseClientMode(false);
-            SslConnection sslConnection = new SslConnection(__byteBufferPool, executor, endpoint, engine);
-            sslConnection.setRenegotiationAllowed(__sslCtxFactory.isRenegotiationAllowed());
-            sslConnection.setRenegotiationLimit(__sslCtxFactory.getRenegotiationLimit());
+            SslConnection sslConnection = new SslConnection(_byteBufferPool, executor, endpoint, engine);
+            sslConnection.setRenegotiationAllowed(_sslCtxFactory.isRenegotiationAllowed());
+            sslConnection.setRenegotiationLimit(_sslCtxFactory.getRenegotiationLimit());
             Connection appConnection = _normalScenario.newConnection(channel, sslConnection.getDecryptedEndPoint(), executor, blockAt, writeCount);
             sslConnection.getDecryptedEndPoint().setConnection(appConnection);
             return sslConnection;
@@ -677,7 +673,7 @@ public class SocketChannelEndPointTest
     @SuppressWarnings("Duplicates")
     public static class TestConnection extends AbstractConnection
     {
-        private static final Logger LOG = Log.getLogger(TestConnection.class);
+        private static final Logger LOG = LoggerFactory.getLogger(TestConnection.class);
 
         volatile FutureCallback _blockingRead;
         final AtomicInteger _blockAt;
@@ -747,7 +743,7 @@ public class SocketChannelEndPointTest
                 return;
             }
 
-            EndPoint _endp = getEndPoint();
+            EndPoint endPoint = getEndPoint();
             try
             {
                 _last = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
@@ -760,17 +756,17 @@ public class SocketChannelEndPointTest
                     BufferUtil.compact(_in);
                     if (BufferUtil.isFull(_in))
                         throw new IllegalStateException("FULL " + BufferUtil.toDetailString(_in));
-                    int filled = _endp.fill(_in);
+                    int filled = endPoint.fill(_in);
                     if (filled > 0)
                         progress = true;
 
                     // If the tests wants to block, then block
-                    while (_blockAt.get() > 0 && _endp.isOpen() && _in.remaining() < _blockAt.get())
+                    while (_blockAt.get() > 0 && endPoint.isOpen() && _in.remaining() < _blockAt.get())
                     {
                         FutureCallback future = _blockingRead = new FutureCallback();
                         fillInterested();
                         future.get();
-                        filled = _endp.fill(_in);
+                        filled = endPoint.fill(_in);
                         progress |= filled > 0;
                     }
 
@@ -786,18 +782,18 @@ public class SocketChannelEndPointTest
                         for (int i = 0; i < _writeCount.get(); i++)
                         {
                             FutureCallback blockingWrite = new FutureCallback();
-                            _endp.write(blockingWrite, out.asReadOnlyBuffer());
+                            endPoint.write(blockingWrite, out.asReadOnlyBuffer());
                             blockingWrite.get();
                         }
                         progress = true;
                     }
 
                     // are we done?
-                    if (_endp.isInputShutdown())
-                        _endp.shutdownOutput();
+                    if (endPoint.isInputShutdown())
+                        endPoint.shutdownOutput();
                 }
 
-                if (_endp.isOpen())
+                if (endPoint.isOpen())
                     fillInterested();
             }
             catch (ExecutionException e)
@@ -806,9 +802,9 @@ public class SocketChannelEndPointTest
                 try
                 {
                     FutureCallback blockingWrite = new FutureCallback();
-                    _endp.write(blockingWrite, BufferUtil.toBuffer("EE: " + BufferUtil.toString(_in)));
+                    endPoint.write(blockingWrite, BufferUtil.toBuffer("EE: " + BufferUtil.toString(_in)));
                     blockingWrite.get();
-                    _endp.shutdownOutput();
+                    endPoint.shutdownOutput();
                 }
                 catch (Exception e2)
                 {
@@ -817,14 +813,14 @@ public class SocketChannelEndPointTest
             }
             catch (InterruptedException | EofException e)
             {
-                if(LOG.isDebugEnabled())
-                    LOG.debug(e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Fill interrupted", e);
                 else
                     LOG.info(e.getClass().getName());
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Unable to fill from endpoint", e);
             }
         }
     }

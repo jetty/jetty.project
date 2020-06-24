@@ -1,33 +1,23 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.client.http;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
@@ -47,14 +37,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -73,9 +62,12 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.hpack.HpackException;
+import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -85,7 +77,17 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientTransportOverHTTP2Test extends AbstractTest
 {
@@ -93,11 +95,13 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
     public void testPropertiesAreForwarded() throws Exception
     {
         HTTP2Client http2Client = new HTTP2Client();
-        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), null);
+        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
         Executor executor = new QueuedThreadPool();
         httpClient.setExecutor(executor);
         httpClient.setConnectTimeout(13);
         httpClient.setIdleTimeout(17);
+        httpClient.setUseInputDirectByteBuffers(false);
+        httpClient.setUseOutputDirectByteBuffers(false);
 
         httpClient.start();
 
@@ -107,6 +111,8 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         assertSame(httpClient.getByteBufferPool(), http2Client.getByteBufferPool());
         assertEquals(httpClient.getConnectTimeout(), http2Client.getConnectTimeout());
         assertEquals(httpClient.getIdleTimeout(), http2Client.getIdleTimeout());
+        assertEquals(httpClient.isUseInputDirectByteBuffers(), http2Client.isUseInputDirectByteBuffers());
+        assertEquals(httpClient.isUseOutputDirectByteBuffers(), http2Client.isUseOutputDirectByteBuffers());
 
         httpClient.stop();
 
@@ -133,11 +139,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             }
         });
 
-        assertThrows(ExecutionException.class, ()->{
+        assertThrows(ExecutionException.class, () ->
             client.newRequest("localhost", connector.getLocalPort())
-                    .onRequestCommit(request -> request.abort(new Exception("explicitly_aborted_by_test")))
-                    .send();
-        });
+                .onRequestCommit(request -> request.abort(new Exception("explicitly_aborted_by_test")))
+                .send());
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -150,7 +155,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                 stream.headers(new HeadersFrame(stream.getId(), metaData, null, false), new Callback()
                 {
                     @Override
@@ -172,11 +177,10 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             }
         });
 
-        assertThrows(ExecutionException.class, ()->{
+        assertThrows(ExecutionException.class, () ->
             client.newRequest("localhost", connector.getLocalPort())
-                    .onResponseContent((response, buffer) -> response.abort(new Exception("explicitly_aborted_by_test")))
-                    .send();
-        });
+                .onResponseContent((response, buffer) -> response.abort(new Exception("explicitly_aborted_by_test")))
+                .send());
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -186,7 +190,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 HttpVersion version = HttpVersion.fromString(request.getProtocol());
@@ -195,12 +199,12 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .onRequestBegin(request ->
-                {
-                    if (request.getVersion() != HttpVersion.HTTP_2)
-                        request.abort(new Exception("Not a HTTP/2 request"));
-                })
-                .send();
+            .onRequestBegin(request ->
+            {
+                if (request.getVersion() != HttpVersion.HTTP_2)
+                    request.abort(new Exception("Not an HTTP/2 request"));
+            })
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -228,7 +232,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 }
                 else
                 {
-                    MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                    MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                     stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 }
                 return null;
@@ -274,7 +278,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 lastStream.set(frame.getLastStreamId());
                 latch.countDown();
             }
-        }, null);
+        });
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
         client.setExecutor(clientExecutor);
@@ -282,14 +286,14 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
 
         // Prime the connection to allow client and server prefaces to be exchanged.
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .path("/zero")
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .path("/zero")
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         org.eclipse.jetty.client.api.Request request = client.newRequest("localhost", connector.getLocalPort())
-                .method(HttpMethod.HEAD)
-                .path("/one");
+            .method(HttpMethod.HEAD)
+            .path("/one");
         request.send(result ->
         {
             if (result.isFailed())
@@ -312,7 +316,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 assertEquals(path, request.getRequestURI());
@@ -321,9 +325,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .path("http://localhost:" + connector.getLocalPort() + path + "?" + query)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .path("http://localhost:" + connector.getLocalPort() + path + "?" + query)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -336,7 +340,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 assertEquals(path, request.getRequestURI());
@@ -345,13 +349,13 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         int proxyPort = connector.getLocalPort();
-        client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyPort));
+        client.getProxyConfiguration().getProxies().add(new HttpProxy(new Origin.Address("localhost", proxyPort), false, new Origin.Protocol(List.of("h2c"), false)));
 
         int serverPort = proxyPort + 1; // Any port will do, just not the same as the proxy.
         ContentResponse response = client.newRequest("localhost", serverPort)
-                .path(path + "?" + query)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .path(path + "?" + query)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
     }
@@ -381,12 +385,11 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         client.setIdleTimeout(idleTimeout);
         client.start();
 
-        assertThrows(TimeoutException.class, ()->{
+        assertThrows(TimeoutException.class, () ->
             client.newRequest("localhost", connector.getLocalPort())
-                    // Make sure the connection idle times out, not the stream.
-                    .idleTimeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
-                    .send();
-        });
+                // Make sure the connection idle times out, not the stream.
+                .idleTimeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
+                .send());
 
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
     }
@@ -411,11 +414,12 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             }
         });
 
-        assertThrows(TimeoutException.class, ()->{
+        assertThrows(TimeoutException.class, () ->
+        {
             long idleTimeout = 1000;
             client.newRequest("localhost", connector.getLocalPort())
-                    .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
-                    .send();
+                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+                .send();
         });
 
         assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
@@ -436,7 +440,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                     sessions.add(session);
                     return super.newHttpConnection(destination, session);
                 }
-            }, null);
+            });
             QueuedThreadPool clientExecutor = new QueuedThreadPool();
             clientExecutor.setName("client");
             client.setExecutor(clientExecutor);
@@ -444,11 +448,11 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
 
             CountDownLatch resultLatch = new CountDownLatch(1);
             client.newRequest("localhost", server.getLocalPort())
-                    .send(result ->
-                    {
-                        if (result.getResponse().getStatus() == HttpStatus.OK_200)
-                            resultLatch.countDown();
-                    });
+                .send(result ->
+                {
+                    if (result.getResponse().getStatus() == HttpStatus.OK_200)
+                        resultLatch.countDown();
+                });
 
             ByteBufferPool byteBufferPool = new MappedByteBufferPool();
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
@@ -465,21 +469,35 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                     @Override
                     public void onPreface()
                     {
-                        // Server's preface.
-                        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-                        // Reply to client's SETTINGS.
-                        generator.control(lease, new SettingsFrame(new HashMap<>(), true));
-                        writeFrames();
+                        try
+                        {
+                            // Server's preface.
+                            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
+                            // Reply to client's SETTINGS.
+                            generator.control(lease, new SettingsFrame(new HashMap<>(), true));
+                            writeFrames();
+                        }
+                        catch (HpackException x)
+                        {
+                            x.printStackTrace();
+                        }
                     }
 
                     @Override
                     public void onHeaders(HeadersFrame request)
                     {
-                        // Response.
-                        MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
-                        HeadersFrame response = new HeadersFrame(request.getStreamId(), metaData, null, true);
-                        generator.control(lease, response);
-                        writeFrames();
+                        try
+                        {
+                            // Response.
+                            MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                            HeadersFrame response = new HeadersFrame(request.getStreamId(), metaData, null, true);
+                            generator.control(lease, response);
+                            writeFrames();
+                        }
+                        catch (HpackException x)
+                        {
+                            x.printStackTrace();
+                        }
                     }
 
                     private void writeFrames()
@@ -488,7 +506,9 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                         {
                             // Write the frames.
                             for (ByteBuffer buffer : lease.getByteBuffers())
+                            {
                                 output.write(BufferUtil.toArray(buffer));
+                            }
                             lease.recycle();
                         }
                         catch (Throwable x)
@@ -496,7 +516,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                             x.printStackTrace();
                         }
                     }
-                }, 4096, 8192);
+                }, 4096, 8192, RateControl.NO_RATE_CONTROL);
                 parser.init(UnaryOperator.identity());
 
                 byte[] bytes = new byte[1024];
@@ -543,7 +563,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 int streamId = stream.getId();
-                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.NO_CONTENT_204, new HttpFields());
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.NO_CONTENT_204, HttpFields.EMPTY);
                 HeadersFrame responseFrame = new HeadersFrame(streamId, response, null, false);
                 Callback.Completable callback = new Callback.Completable();
                 stream.headers(responseFrame, callback);
@@ -553,14 +573,13 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
         });
 
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.NO_CONTENT_204, response.getStatus());
         // No logic on the client to discard content for no-content status codes.
         assertArrayEquals(bytes, response.getContent());
     }
-
 
     @Test
     public void testInvalidResponseHPack() throws Exception
@@ -570,9 +589,11 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
+                // Disable checks for invalid headers.
+                ((HTTP2Session)stream.getSession()).getGenerator().setValidateHpackEncoding(false);
                 // Produce an invalid HPACK block by adding a request pseudo-header to the response.
-                HttpFields fields = new HttpFields();
-                fields.put(":method", "get");
+                HttpFields fields = HttpFields.build()
+                    .put(":method", "get");
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, fields, 0);
                 int streamId = stream.getId();
                 HeadersFrame responseFrame = new HeadersFrame(streamId, response, null, false);
@@ -586,26 +607,28 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
 
         CountDownLatch latch = new CountDownLatch(1);
         client.newRequest("localhost", connector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send(result ->
-                {
-                    if (result.isFailed())
-                        latch.countDown();
-                });
+            .timeout(5, TimeUnit.SECONDS)
+            .send(result ->
+            {
+                if (result.isFailed())
+                    latch.countDown();
+            });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Disabled
     @Test
+    @Tag("external")
     public void testExternalServer() throws Exception
     {
-        HTTP2Client http2Client = new HTTP2Client();
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client), sslContextFactory);
+        ClientConnector clientConnector = new ClientConnector();
+        HTTP2Client http2Client = new HTTP2Client(clientConnector);
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        clientConnector.setSslContextFactory(sslContextFactory);
+        HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP2(http2Client));
         Executor executor = new QueuedThreadPool();
-        httpClient.setExecutor(executor);
-
+        clientConnector.setExecutor(executor);
         httpClient.start();
 
 //        ContentResponse response = httpClient.GET("https://http2.akamai.com/");

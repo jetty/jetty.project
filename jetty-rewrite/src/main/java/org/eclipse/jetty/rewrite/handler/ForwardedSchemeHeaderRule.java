@@ -1,46 +1,41 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.rewrite.handler;
 
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 
-
 /**
- * Set the scheme for the request 
- *
- * 
- * 
+ * Set the scheme for the request
  */
-public class ForwardedSchemeHeaderRule extends HeaderRule {
-    private String _scheme="https";
+public class ForwardedSchemeHeaderRule extends HeaderRule
+{
+    private String _scheme = "https";
 
-    /* ------------------------------------------------------------ */
-    public String getScheme() 
+    public String getScheme()
     {
         return _scheme;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param scheme the scheme to set on the request. Defaults to "https"
      */
@@ -48,12 +43,12 @@ public class ForwardedSchemeHeaderRule extends HeaderRule {
     {
         _scheme = scheme;
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
-    protected String apply(String target, String value, HttpServletRequest request, HttpServletResponse response) 
+    protected String apply(String target, String value, HttpServletRequest request, HttpServletResponse response)
     {
-        ((Request) request).setScheme(_scheme);
+        Request baseRequest = Request.getBaseRequest(request);
+        baseRequest.setHttpURI(HttpURI.build(baseRequest.getHttpURI()).scheme(_scheme));
         return target;
-    }    
+    }
 }

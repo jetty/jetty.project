@@ -1,24 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.channels.Selector;
 import java.util.concurrent.CountDownLatch;
@@ -33,14 +31,16 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.SocketAddressResolver;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LivelockTest
 {
@@ -71,7 +71,7 @@ public class LivelockTest
         server.setHandler(handler);
         server.start();
     }
-    
+
     @AfterEach
     public void after() throws Exception
     {
@@ -90,10 +90,10 @@ public class LivelockTest
         // NonBlocking actions are submitted to both the client and server
         // ManagedSelectors that submit themselves in an attempt to cause a live lock
         // as there will always be an action available to run.
-        
+
         int count = 5;
         HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
-        client = new HttpClient(transport, null);
+        client = new HttpClient(transport);
         client.setMaxConnectionsPerDestination(2 * count);
         client.setMaxRequestsQueuedPerDestination(2 * count);
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
@@ -103,7 +103,7 @@ public class LivelockTest
         clientThreads.setName("client");
         client.setExecutor(clientThreads);
         client.start();
-        
+
         AtomicBoolean busy = new AtomicBoolean(true);
 
         if (clientLiveLock)
@@ -120,24 +120,24 @@ public class LivelockTest
 
         int requestRate = 5;
         long pause = 1000 / requestRate;
-        Logger clientLog = Log.getLogger("TESTClient");
+        Logger clientLog = LoggerFactory.getLogger("TESTClient");
         CountDownLatch latch = new CountDownLatch(count);
         for (int i = 0; i < count; ++i)
         {
             client.newRequest("localhost", connector.getLocalPort())
-                    .path("/" + i)
-                    .send(result ->
+                .path("/" + i)
+                .send(result ->
+                {
+                    if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
+                        latch.countDown();
+                    else
                     {
-                        if (result.isSucceeded() && result.getResponse().getStatus() == HttpStatus.OK_200)
-                            latch.countDown();
-                        else
-                        {
-                            if(result.getRequestFailure() != null)
-                                clientLog.warn(result.getRequestFailure());
-                            if(result.getResponseFailure() != null)
-                                clientLog.warn(result.getResponseFailure());
-                        }
-                    });
+                        if (result.getRequestFailure() != null)
+                            clientLog.warn("Request Failure on {}", result, result.getRequestFailure());
+                        if (result.getResponseFailure() != null)
+                            clientLog.warn("Response Failure on {}", result, result.getResponseFailure());
+                    }
+                });
             sleep(pause);
         }
         assertTrue(latch.await(2 * pause * count, TimeUnit.MILLISECONDS));

@@ -1,24 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.start.config;
-
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -34,6 +32,8 @@ import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.UsageException;
+
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 /**
  * Weighted List of ConfigSources.
@@ -57,10 +57,10 @@ public class ConfigSources implements Iterable<ConfigSource>
         if (sources.contains(source))
         {
             // TODO: needs a better/more clear error message
-            throw new UsageException(ERR_BAD_ARG,"Duplicate Configuration Source Reference: " + source);
+            throw new UsageException(ERR_BAD_ARG, "Duplicate Configuration Source Reference: " + source);
         }
         sources.add(source);
-        Collections.sort(sources,new WeightedConfigSourceComparator());
+        Collections.sort(sources, new WeightedConfigSourceComparator());
 
         // look for --include-jetty-dir entries
         for (RawArgs.Entry arg : source.getArgs())
@@ -70,7 +70,7 @@ public class ConfigSources implements Iterable<ConfigSource>
                 String ref = getValue(arg.getLine());
                 String dirName = getProps().expand(ref);
                 Path dir = FS.toPath(dirName).normalize().toAbsolutePath();
-                DirConfigSource dirsource = new DirConfigSource(ref,dir,sourceWeight.incrementAndGet(),true);
+                DirConfigSource dirsource = new DirConfigSource(ref, dir, sourceWeight.incrementAndGet(), true);
                 add(dirsource);
             }
         }
@@ -92,7 +92,7 @@ public class ConfigSources implements Iterable<ConfigSource>
     {
         return getProps().getProp(key);
     }
-    
+
     public Props getProps()
     {
         Props props = new Props();
@@ -112,12 +112,12 @@ public class ConfigSources implements Iterable<ConfigSource>
         int idx = arg.indexOf('=');
         if (idx == (-1))
         {
-            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
+            throw new UsageException(ERR_BAD_ARG, "Argument is missing a required value: %s", arg);
         }
         String value = arg.substring(idx + 1).trim();
         if (value.length() <= 0)
         {
-            throw new UsageException(ERR_BAD_ARG,"Argument is missing a required value: %s",arg);
+            throw new UsageException(ERR_BAD_ARG, "Argument is missing a required value: %s", arg);
         }
         return value;
     }

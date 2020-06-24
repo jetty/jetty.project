@@ -1,25 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.start;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -31,6 +28,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class PathMatchersSearchRootTest
 {
     public static Stream<Arguments> pathPatterns()
@@ -41,7 +41,9 @@ public class PathMatchersSearchRootTest
         {
             // absolute first
             arguments.add(Arguments.of("/opt/app/*.jar", "/opt/app"));
+            //@checkstyle-disable-check : LegacyMethodSeparators
             arguments.add(Arguments.of("/lib/jvm/**/jre/lib/*.jar", "/lib/jvm"));
+            //@checkstyle-enable-check :  LegacyMethodSeparators
             arguments.add(Arguments.of("glob:/var/lib/*.xml", "/var/lib"));
             arguments.add(Arguments.of("glob:/var/lib/*.{xml,java}", "/var/lib"));
             arguments.add(Arguments.of("glob:/opt/corporate/lib-{dev,prod}/*.ini", "/opt/corporate"));
@@ -56,7 +58,7 @@ public class PathMatchersSearchRootTest
         {
             // absolute declaration
             arguments.add(Arguments.of("D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs\\example.jar",
-                    "D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs"));
+                "D:\\code\\jetty\\jetty-start\\src\\test\\resources\\extra-libs"));
             // escaped declaration
             // absolute patterns (complete with required windows slash escaping)
             arguments.add(Arguments.of("C:\\\\corp\\\\lib\\\\*.jar", "C:\\corp\\lib"));
@@ -70,7 +72,7 @@ public class PathMatchersSearchRootTest
         arguments.add(Arguments.of("start.d/", "start.d"));
 
         return Stream.of(
-                arguments.toArray(new Arguments[0])
+            arguments.toArray(new Arguments[0])
         );
     }
 

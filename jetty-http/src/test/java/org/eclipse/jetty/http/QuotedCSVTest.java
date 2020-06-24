@@ -1,34 +1,33 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.hamcrest.Matchers.isEmptyString;
-import static org.hamcrest.Matchers.nullValue;
+import java.util.Collections;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.hamcrest.Matchers;
-
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class QuotedCSVTest
 {
@@ -37,61 +36,61 @@ public class QuotedCSVTest
     {
         QuotedCSV values = new QuotedCSV();
         values.addValue("  value 0.5  ;  pqy = vwz  ;  q =0.5  ,  value 1.0 ,  other ; param ");
-        assertThat(values,Matchers.contains(
-                "value 0.5;pqy=vwz;q=0.5",
-                "value 1.0",
-                "other;param"));
+        assertThat(values, Matchers.contains(
+            "value 0.5;pqy=vwz;q=0.5",
+            "value 1.0",
+            "other;param"));
     }
-    
+
     @Test
     public void testEmpty()
     {
         QuotedCSV values = new QuotedCSV();
         values.addValue(",aaaa,  , bbbb ,,cccc,");
-        assertThat(values,Matchers.contains(
-                "aaaa",
-                "bbbb",
-                "cccc"));
+        assertThat(values, Matchers.contains(
+            "aaaa",
+            "bbbb",
+            "cccc"));
     }
-        
+
     @Test
     public void testQuoted()
     {
         QuotedCSV values = new QuotedCSV();
         values.addValue("A;p=\"v\",B,\"C, D\"");
-        assertThat(values,Matchers.contains(
-                "A;p=\"v\"",
-                "B",
-                "\"C, D\""));
+        assertThat(values, Matchers.contains(
+            "A;p=\"v\"",
+            "B",
+            "\"C, D\""));
     }
-    
+
     @Test
     public void testOpenQuote()
     {
         QuotedCSV values = new QuotedCSV();
         values.addValue("value;p=\"v");
-        assertThat(values,Matchers.contains(
-                "value;p=\"v"));
+        assertThat(values, Matchers.contains(
+            "value;p=\"v"));
     }
-    
+
     @Test
     public void testQuotedNoQuotes()
     {
         QuotedCSV values = new QuotedCSV(false);
         values.addValue("A;p=\"v\",B,\"C, D\"");
-        assertThat(values,Matchers.contains(
-                "A;p=v",
-                "B",
-                "C, D"));
+        assertThat(values, Matchers.contains(
+            "A;p=v",
+            "B",
+            "C, D"));
     }
-    
+
     @Test
     public void testOpenQuoteNoQuotes()
     {
         QuotedCSV values = new QuotedCSV(false);
         values.addValue("value;p=\"v");
-        assertThat(values,Matchers.contains(
-                "value;p=v"));
+        assertThat(values, Matchers.contains(
+            "value;p=v"));
     }
 
     @Test
@@ -99,10 +98,10 @@ public class QuotedCSVTest
     {
         QuotedCSV values = new QuotedCSV(false);
         values.addValue("for=192.0.2.43, for=\"[2001:db8:cafe::17]\", for=unknown");
-        assertThat(values,Matchers.contains(
-                "for=192.0.2.43",
-                "for=[2001:db8:cafe::17]",
-                "for=unknown"));
+        assertThat(values, Matchers.contains(
+            "for=192.0.2.43",
+            "for=[2001:db8:cafe::17]",
+            "for=unknown"));
     }
 
     @Test
@@ -116,13 +115,13 @@ public class QuotedCSVTest
             {
                 if (buffer.toString().contains("DELETE"))
                 {
-                    String s = buffer.toString().replace("DELETE","");
+                    String s = StringUtil.strip(buffer.toString(), "DELETE");
                     buffer.setLength(0);
                     buffer.append(s);
                 }
                 if (buffer.toString().contains("APPEND"))
                 {
-                    String s = buffer.toString().replace("APPEND","Append")+"!";
+                    String s = StringUtil.replace(buffer.toString(), "APPEND", "Append") + "!";
                     buffer.setLength(0);
                     buffer.append(s);
                 }
@@ -131,40 +130,38 @@ public class QuotedCSVTest
             @Override
             protected void parsedParam(StringBuffer buffer, int valueLength, int paramName, int paramValue)
             {
-                String name = paramValue>0?buffer.substring(paramName,paramValue-1):buffer.substring(paramName);
+                String name = paramValue > 0 ? buffer.substring(paramName, paramValue - 1) : buffer.substring(paramName);
                 if ("IGNORE".equals(name))
-                    buffer.setLength(paramName-1);
+                    buffer.setLength(paramName - 1);
             }
-            
         };
-            
+
         values.addValue("normal;param=val, testAPPENDandDELETEvalue ; n=v; IGNORE = this; x=y ");
-        assertThat(values,Matchers.contains(
-                "normal;param=val",
-                "testAppendandvalue!;n=v;x=y"));
+        assertThat(values, Matchers.contains(
+            "normal;param=val",
+            "testAppendandvalue!;n=v;x=y"));
     }
-    
-    
+
     @Test
     public void testUnQuote()
     {
-        assertThat(QuotedCSV.unquote(""),is(""));
-        assertThat(QuotedCSV.unquote("\"\""),is(""));
-        assertThat(QuotedCSV.unquote("foo"),is("foo"));
-        assertThat(QuotedCSV.unquote("\"foo\""),is("foo"));
-        assertThat(QuotedCSV.unquote("f\"o\"o"),is("foo"));
-        assertThat(QuotedCSV.unquote("\"\\\"foo\""),is("\"foo"));
-        assertThat(QuotedCSV.unquote("\\foo"),is("\\foo"));
+        assertThat(QuotedCSV.unquote(""), is(""));
+        assertThat(QuotedCSV.unquote("\"\""), is(""));
+        assertThat(QuotedCSV.unquote("foo"), is("foo"));
+        assertThat(QuotedCSV.unquote("\"foo\""), is("foo"));
+        assertThat(QuotedCSV.unquote("f\"o\"o"), is("foo"));
+        assertThat(QuotedCSV.unquote("\"\\\"foo\""), is("\"foo"));
+        assertThat(QuotedCSV.unquote("\\foo"), is("\\foo"));
     }
 
     @Test
     public void testJoin()
     {
-        assertThat(QuotedCSV.join((String)null),nullValue());
-        assertThat(QuotedCSV.join(Collections.emptyList()),isEmptyString());
-        assertThat(QuotedCSV.join(Collections.singletonList("hi")),is("hi"));
-        assertThat(QuotedCSV.join("hi","ho"),is("hi, ho"));
-        assertThat(QuotedCSV.join("h i","h,o"),is("\"h i\", \"h,o\""));
-        assertThat(QuotedCSV.join("h\"i","h\to"),is("\"h\\\"i\", \"h\\to\""));
+        assertThat(QuotedCSV.join((String)null), nullValue());
+        assertThat(QuotedCSV.join(Collections.emptyList()), is(emptyString()));
+        assertThat(QuotedCSV.join(Collections.singletonList("hi")), is("hi"));
+        assertThat(QuotedCSV.join("hi", "ho"), is("hi, ho"));
+        assertThat(QuotedCSV.join("h i", "h,o"), is("\"h i\", \"h,o\""));
+        assertThat(QuotedCSV.join("h\"i", "h\to"), is("\"h\\\"i\", \"h\\to\""));
     }
 }

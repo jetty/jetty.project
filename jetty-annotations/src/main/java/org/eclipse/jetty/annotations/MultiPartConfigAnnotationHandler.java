@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.annotations;
@@ -30,67 +30,41 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * MultiPartConfigAnnotationHandler
- *
- *
  */
 public class MultiPartConfigAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
-    protected WebAppContext _context;
-
     public MultiPartConfigAnnotationHandler(WebAppContext context)
     {
         //TODO verify that MultipartConfig is not inheritable
-        super(false); 
-        _context = context;
+        super(false, context);
     }
-    /** 
-     * @see org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler#doHandle(java.lang.Class)
-     */
+
     @Override
     public void doHandle(Class clazz)
     {
         if (!Servlet.class.isAssignableFrom(clazz))
             return;
-        
-        MultipartConfig multi = (MultipartConfig) clazz.getAnnotation(MultipartConfig.class);
+
+        MultipartConfig multi = (MultipartConfig)clazz.getAnnotation(MultipartConfig.class);
         if (multi == null)
             return;
-        
+
         MetaData metaData = _context.getMetaData();
-              
+
         //TODO: The MultipartConfigElement needs to be set on the ServletHolder's Registration.
         //How to identify the correct Servlet?  If the Servlet has no WebServlet annotation on it, does it mean that this MultipartConfig
         //annotation applies to all declared instances in web.xml/programmatically?
         //Assuming TRUE for now.
-
-        ServletHolder holder = getServletHolderForClass(clazz);
-        if (holder != null)
+        for (ServletHolder holder : _context.getServletHandler().getServlets(clazz))
         {
-            Descriptor d = metaData.getOriginDescriptor(holder.getName()+".servlet.multipart-config");
+            Descriptor d = metaData.getOriginDescriptor(holder.getName() + ".servlet.multipart-config");
             //if a descriptor has already set the value for multipart config, do not 
             //let the annotation override it
             if (d == null)
             {
-                metaData.setOrigin(holder.getName()+".servlet.multipart-config",multi,clazz);
+                metaData.setOrigin(holder.getName() + ".servlet.multipart-config", multi, clazz);
                 holder.getRegistration().setMultipartConfig(new MultipartConfigElement(multi));
             }
         }
-    }
-    
-    private ServletHolder getServletHolderForClass (Class clazz)
-    {
-        ServletHolder holder = null;
-        ServletHolder[] holders = _context.getServletHandler().getServlets();
-        if (holders != null)
-        {
-            for (ServletHolder h : holders)
-            {
-                if (h.getClassName() != null && h.getClassName().equals(clazz.getName()))
-                {
-                    holder = h;
-                }
-            }
-        }
-        return holder;
     }
 }

@@ -1,31 +1,24 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,37 +28,42 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 public class HandlerTest
 {
-
     @Test
     public void testWrapperSetServer()
     {
-        Server s=new Server();
+        Server s = new Server();
         HandlerWrapper a = new HandlerWrapper();
         HandlerWrapper b = new HandlerWrapper();
         HandlerWrapper c = new HandlerWrapper();
         a.setHandler(b);
         b.setHandler(c);
-        
+
         a.setServer(s);
-        assertThat(b.getServer(),equalTo(s));
-        assertThat(c.getServer(),equalTo(s));
+        assertThat(b.getServer(), equalTo(s));
+        assertThat(c.getServer(), equalTo(s));
     }
 
     @Test
     public void testWrapperServerSet()
     {
-        Server s=new Server();
+        Server s = new Server();
         HandlerWrapper a = new HandlerWrapper();
         HandlerWrapper b = new HandlerWrapper();
         HandlerWrapper c = new HandlerWrapper();
         a.setServer(s);
         b.setHandler(c);
         a.setHandler(b);
-        
-        assertThat(b.getServer(),equalTo(s));
-        assertThat(c.getServer(),equalTo(s));
+
+        assertThat(b.getServer(), equalTo(s));
+        assertThat(c.getServer(), equalTo(s));
     }
 
     @Test
@@ -73,177 +71,176 @@ public class HandlerTest
     {
         HandlerWrapper a = new HandlerWrapper();
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> a.setHandler(a));
-        assertThat(e.getMessage(),containsString("loop"));
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> a.setHandler(a));
+        assertThat(e.getMessage(), containsString("loop"));
     }
-    
+
     @Test
     public void testWrapperSimpleLoop()
     {
         HandlerWrapper a = new HandlerWrapper();
         HandlerWrapper b = new HandlerWrapper();
-        
+
         a.setHandler(b);
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> b.setHandler(a));
-        assertThat(e.getMessage(),containsString("loop"));
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> b.setHandler(a));
+        assertThat(e.getMessage(), containsString("loop"));
     }
-    
+
     @Test
     public void testWrapperDeepLoop()
     {
         HandlerWrapper a = new HandlerWrapper();
         HandlerWrapper b = new HandlerWrapper();
         HandlerWrapper c = new HandlerWrapper();
-        
+
         a.setHandler(b);
         b.setHandler(c);
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> c.setHandler(a));
-        assertThat(e.getMessage(),containsString("loop"));
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> c.setHandler(a));
+        assertThat(e.getMessage(), containsString("loop"));
     }
-    
+
     @Test
     public void testWrapperChainLoop()
     {
         HandlerWrapper a = new HandlerWrapper();
         HandlerWrapper b = new HandlerWrapper();
         HandlerWrapper c = new HandlerWrapper();
-        
+
         a.setHandler(b);
         c.setHandler(a);
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> b.setHandler(c));
-        assertThat(e.getMessage(),containsString("loop"));
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> b.setHandler(c));
+        assertThat(e.getMessage(), containsString("loop"));
     }
 
-
     @Test
-    public void testCollectionSetServer()
+    public void testHandlerListSetServer()
     {
-        Server s=new Server();
-        HandlerCollection a = new HandlerCollection();
-        HandlerCollection b = new HandlerCollection();
-        HandlerCollection b1 = new HandlerCollection();
-        HandlerCollection b2 = new HandlerCollection();
-        HandlerCollection c = new HandlerCollection();
-        HandlerCollection c1 = new HandlerCollection();
-        HandlerCollection c2 = new HandlerCollection();
-        
+        Server s = new Server();
+        HandlerList a = new HandlerList();
+        HandlerList b = new HandlerList();
+        HandlerList b1 = new HandlerList();
+        HandlerList b2 = new HandlerList();
+        HandlerList c = new HandlerList();
+        HandlerList c1 = new HandlerList();
+        HandlerList c2 = new HandlerList();
+
         a.addHandler(b);
         a.addHandler(c);
-        b.setHandlers(new Handler[]{b1,b2});
-        c.setHandlers(new Handler[]{c1,c2});
+        b.setHandlers(new Handler[]{b1, b2});
+        c.setHandlers(new Handler[]{c1, c2});
         a.setServer(s);
-        
-        assertThat(b.getServer(),equalTo(s));
-        assertThat(c.getServer(),equalTo(s));
-        assertThat(b1.getServer(),equalTo(s));
-        assertThat(b2.getServer(),equalTo(s));
-        assertThat(c1.getServer(),equalTo(s));
-        assertThat(c2.getServer(),equalTo(s));
+
+        assertThat(b.getServer(), equalTo(s));
+        assertThat(c.getServer(), equalTo(s));
+        assertThat(b1.getServer(), equalTo(s));
+        assertThat(b2.getServer(), equalTo(s));
+        assertThat(c1.getServer(), equalTo(s));
+        assertThat(c2.getServer(), equalTo(s));
     }
 
     @Test
-    public void testCollectionServerSet()
+    public void testHandlerListServerSet()
     {
-        Server s=new Server();
-        HandlerCollection a = new HandlerCollection();
-        HandlerCollection b = new HandlerCollection();
-        HandlerCollection b1 = new HandlerCollection();
-        HandlerCollection b2 = new HandlerCollection();
-        HandlerCollection c = new HandlerCollection();
-        HandlerCollection c1 = new HandlerCollection();
-        HandlerCollection c2 = new HandlerCollection();
-        
+        Server s = new Server();
+        HandlerList a = new HandlerList();
+        HandlerList b = new HandlerList();
+        HandlerList b1 = new HandlerList();
+        HandlerList b2 = new HandlerList();
+        HandlerList c = new HandlerList();
+        HandlerList c1 = new HandlerList();
+        HandlerList c2 = new HandlerList();
+
         a.setServer(s);
         a.addHandler(b);
         a.addHandler(c);
-        b.setHandlers(new Handler[]{b1,b2});
-        c.setHandlers(new Handler[]{c1,c2});
-        
-        assertThat(b.getServer(),equalTo(s));
-        assertThat(c.getServer(),equalTo(s));
-        assertThat(b1.getServer(),equalTo(s));
-        assertThat(b2.getServer(),equalTo(s));
-        assertThat(c1.getServer(),equalTo(s));
-        assertThat(c2.getServer(),equalTo(s));
-    }
-    
-    @Test
-    public void testCollectionThisLoop()
-    {
-        HandlerCollection a = new HandlerCollection();
+        b.setHandlers(new Handler[]{b1, b2});
+        c.setHandlers(new Handler[]{c1, c2});
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> a.addHandler(a));
-        assertThat(e.getMessage(),containsString("loop"));
+        assertThat(b.getServer(), equalTo(s));
+        assertThat(c.getServer(), equalTo(s));
+        assertThat(b1.getServer(), equalTo(s));
+        assertThat(b2.getServer(), equalTo(s));
+        assertThat(c1.getServer(), equalTo(s));
+        assertThat(c2.getServer(), equalTo(s));
     }
-    
+
     @Test
-    public void testCollectionDeepLoop()
+    public void testHandlerListThisLoop()
     {
-        HandlerCollection a = new HandlerCollection();
-        HandlerCollection b = new HandlerCollection();
-        HandlerCollection b1 = new HandlerCollection();
-        HandlerCollection b2 = new HandlerCollection();
-        HandlerCollection c = new HandlerCollection();
-        HandlerCollection c1 = new HandlerCollection();
-        HandlerCollection c2 = new HandlerCollection();
-        
+        HandlerList a = new HandlerList();
+
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> a.addHandler(a));
+        assertThat(e.getMessage(), containsString("loop"));
+    }
+
+    @Test
+    public void testHandlerListDeepLoop()
+    {
+        HandlerList a = new HandlerList();
+        HandlerList b = new HandlerList();
+        HandlerList b1 = new HandlerList();
+        HandlerList b2 = new HandlerList();
+        HandlerList c = new HandlerList();
+        HandlerList c1 = new HandlerList();
+        HandlerList c2 = new HandlerList();
+
         a.addHandler(b);
         a.addHandler(c);
-        b.setHandlers(new Handler[]{b1,b2});
-        c.setHandlers(new Handler[]{c1,c2});
+        b.setHandlers(new Handler[]{b1, b2});
+        c.setHandlers(new Handler[]{c1, c2});
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> b2.addHandler(a));
-        assertThat(e.getMessage(),containsString("loop"));
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> b2.addHandler(a));
+        assertThat(e.getMessage(), containsString("loop"));
     }
-    
+
     @Test
-    public void testCollectionChainLoop()
+    public void testHandlerListChainLoop()
     {
-        HandlerCollection a = new HandlerCollection();
-        HandlerCollection b = new HandlerCollection();
-        HandlerCollection b1 = new HandlerCollection();
-        HandlerCollection b2 = new HandlerCollection();
-        HandlerCollection c = new HandlerCollection();
-        HandlerCollection c1 = new HandlerCollection();
-        HandlerCollection c2 = new HandlerCollection();
-        
+        HandlerList a = new HandlerList();
+        HandlerList b = new HandlerList();
+        HandlerList b1 = new HandlerList();
+        HandlerList b2 = new HandlerList();
+        HandlerList c = new HandlerList();
+        HandlerList c1 = new HandlerList();
+        HandlerList c2 = new HandlerList();
+
         a.addHandler(c);
-        b.setHandlers(new Handler[]{b1,b2});
-        c.setHandlers(new Handler[]{c1,c2});
+        b.setHandlers(new Handler[]{b1, b2});
+        c.setHandlers(new Handler[]{c1, c2});
         b2.addHandler(a);
 
-        IllegalStateException e = assertThrows(IllegalStateException.class, ()-> a.addHandler(b));
-        assertThat(e.getMessage(),containsString("loop"));
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> a.addHandler(b));
+        assertThat(e.getMessage(), containsString("loop"));
     }
-    
+
     @Test
     public void testInsertWrapperTail()
     {
         HandlerWrapper a = new HandlerWrapper();
         HandlerWrapper b = new HandlerWrapper();
-        
+
         a.insertHandler(b);
-        assertThat(a.getHandler(),equalTo(b));
-        assertThat(b.getHandler(),nullValue());
+        assertThat(a.getHandler(), equalTo(b));
+        assertThat(b.getHandler(), nullValue());
     }
-    
+
     @Test
     public void testInsertWrapper()
     {
         HandlerWrapper a = new HandlerWrapper();
         HandlerWrapper b = new HandlerWrapper();
         HandlerWrapper c = new HandlerWrapper();
-        
+
         a.insertHandler(c);
         a.insertHandler(b);
-        assertThat(a.getHandler(),equalTo(b));
-        assertThat(b.getHandler(),equalTo(c));
-        assertThat(c.getHandler(),nullValue());
+        assertThat(a.getHandler(), equalTo(b));
+        assertThat(b.getHandler(), equalTo(c));
+        assertThat(c.getHandler(), nullValue());
     }
-    
+
     @Test
     public void testInsertWrapperChain()
     {
@@ -251,16 +248,16 @@ public class HandlerTest
         HandlerWrapper b = new HandlerWrapper();
         HandlerWrapper c = new HandlerWrapper();
         HandlerWrapper d = new HandlerWrapper();
-        
+
         a.insertHandler(d);
         b.insertHandler(c);
         a.insertHandler(b);
-        assertThat(a.getHandler(),equalTo(b));
-        assertThat(b.getHandler(),equalTo(c));
-        assertThat(c.getHandler(),equalTo(d));
-        assertThat(d.getHandler(),nullValue());
+        assertThat(a.getHandler(), equalTo(b));
+        assertThat(b.getHandler(), equalTo(c));
+        assertThat(c.getHandler(), equalTo(d));
+        assertThat(d.getHandler(), nullValue());
     }
-    
+
     @Test
     public void testInsertWrapperBadChain()
     {
@@ -268,18 +265,18 @@ public class HandlerTest
         HandlerWrapper b = new HandlerWrapper();
         HandlerWrapper c = new HandlerWrapper();
         HandlerWrapper d = new HandlerWrapper();
-        
+
         a.insertHandler(d);
         b.insertHandler(c);
         c.setHandler(new AbstractHandler()
-        {   
+        {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {                
+            {
             }
         });
 
-        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, ()-> a.insertHandler(b));
-        assertThat(e.getMessage(),containsString("bad tail"));
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> a.insertHandler(b));
+        assertThat(e.getMessage(), containsString("bad tail"));
     }
 }

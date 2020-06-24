@@ -1,25 +1,24 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,45 +30,45 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
- * Secured Redirect Handler
- * <p>
- * Using information present in the {@link HttpConfiguration}, will attempt to redirect to the {@link HttpConfiguration#getSecureScheme()} and
- * {@link HttpConfiguration#getSecurePort()} for any request that {@link HttpServletRequest#isSecure()} == false.
+ * <p>SecuredRedirectHandler redirects from {@code http} to {@code https}.</p>
+ * <p>SecuredRedirectHandler uses the information present in {@link HttpConfiguration}
+ * attempting to redirect to the {@link HttpConfiguration#getSecureScheme()} and
+ * {@link HttpConfiguration#getSecurePort()} for any request that
+ * {@link HttpServletRequest#isSecure()} is false.</p>
  */
-public class SecuredRedirectHandler extends AbstractHandler
+public class SecuredRedirectHandler extends HandlerWrapper
 {
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         HttpChannel channel = baseRequest.getHttpChannel();
-        if (baseRequest.isSecure() || (channel == null))
+        if (baseRequest.isSecure() || channel == null)
         {
-            // nothing to do
+            // Nothing to do here.
+            super.handle(target, baseRequest, request, response);
             return;
         }
+
+        baseRequest.setHandled(true);
 
         HttpConfiguration httpConfig = channel.getHttpConfiguration();
         if (httpConfig == null)
         {
-            // no config, show error
-            response.sendError(HttpStatus.FORBIDDEN_403,"No http configuration available");
+            response.sendError(HttpStatus.FORBIDDEN_403, "Missing HttpConfiguration");
             return;
         }
 
-        if (httpConfig.getSecurePort() > 0)
+        int securePort = httpConfig.getSecurePort();
+        if (securePort > 0)
         {
-            String scheme = httpConfig.getSecureScheme();
-            int port = httpConfig.getSecurePort();
-
-            String url = URIUtil.newURI(scheme,baseRequest.getServerName(),port,baseRequest.getRequestURI(),baseRequest.getQueryString());
+            String secureScheme = httpConfig.getSecureScheme();
+            String url = URIUtil.newURI(secureScheme, baseRequest.getServerName(), securePort, baseRequest.getRequestURI(), baseRequest.getQueryString());
             response.setContentLength(0);
             response.sendRedirect(url);
         }
         else
         {
-            response.sendError(HttpStatus.FORBIDDEN_403,"Not Secure");
+            response.sendError(HttpStatus.FORBIDDEN_403, "HttpConfiguration.securePort not configured");
         }
-        
-        baseRequest.setHandled(true);
     }
 }

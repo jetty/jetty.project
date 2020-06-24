@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.webapp;
@@ -26,34 +26,38 @@ import java.util.stream.Collectors;
 
 public class AbstractConfiguration implements Configuration
 {
-    private final boolean _disabledByDefault;
-    private final List<String> _after=new ArrayList<>();
-    private final List<String> _beforeThis=new ArrayList<>();
-    private final ClassMatcher _system=new ClassMatcher();
-    private final ClassMatcher _server=new ClassMatcher();
+    private final boolean _enabledByDefault;
+    private final List<String> _after = new ArrayList<>();
+    private final List<String> _beforeThis = new ArrayList<>();
+    private final ClassMatcher _system = new ClassMatcher();
+    private final ClassMatcher _server = new ClassMatcher();
 
     protected AbstractConfiguration()
     {
-        this(false);
+        this(true);
     }
 
-    protected AbstractConfiguration(boolean disabledByDefault)
+    protected AbstractConfiguration(boolean enabledByDefault)
     {
-        _disabledByDefault=disabledByDefault;
+        _enabledByDefault = enabledByDefault;
     }
 
     /**
      * Add configuration classes that come before this configuration
+     *
      * @param classes Classname or package name
      */
     protected void addDependencies(String... classes)
     {
-        for (String c:classes)
+        for (String c : classes)
+        {
             _beforeThis.add(c);
+        }
     }
 
     /**
      * Add configuration classes that come before this configuration
+     *
      * @param classes Classes
      */
     protected void addDependencies(Class<? extends Configuration>... classes)
@@ -63,16 +67,20 @@ public class AbstractConfiguration implements Configuration
 
     /**
      * Add configuration classes that come after this configuration
+     *
      * @param classes Classname or package name
      */
     protected void addDependents(String... classes)
     {
-        for (String c:classes)
+        for (String c : classes)
+        {
             _after.add(c);
+        }
     }
 
     /**
      * Add configuration classes that come after this configuration
+     *
      * @param classes Class
      */
     protected void addDependents(Class<?>... classes)
@@ -83,6 +91,7 @@ public class AbstractConfiguration implements Configuration
     /**
      * Protect classes from modification by the web application by adding them
      * to the {@link WebAppConfiguration#getSystemClasses()}
+     *
      * @param classes classname or package pattern
      */
     protected void protect(String... classes)
@@ -93,6 +102,7 @@ public class AbstractConfiguration implements Configuration
     /**
      * Hide classes from the web application by adding them
      * to the {@link WebAppConfiguration#getServerClasses()}
+     *
      * @param classes classname or package pattern
      */
     protected void hide(String... classes)
@@ -103,15 +113,16 @@ public class AbstractConfiguration implements Configuration
     /**
      * Expose classes to the web application by adding them
      * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
+     *
      * @param classes classname or package pattern
      */
     protected void expose(String... classes)
     {
-        for (String c:classes)
+        for (String c : classes)
         {
             if (c.startsWith("-"))
                 throw new IllegalArgumentException();
-            _server.add("-"+c);
+            _server.add("-" + c);
         }
     }
 
@@ -120,20 +131,20 @@ public class AbstractConfiguration implements Configuration
      * to the {@link WebAppConfiguration#getSystemClasses()} and
      * expose them to the web application by adding them
      * as exclusions to the {@link WebAppConfiguration#getServerClasses()}
+     *
      * @param classes classname or package pattern
      */
     protected void protectAndExpose(String... classes)
     {
-        for (String c:classes)
+        for (String c : classes)
         {
             if (c.startsWith("-"))
                 throw new IllegalArgumentException();
 
             _system.add(c);
-            _server.add("-"+c);
+            _server.add("-" + c);
         }
     }
-
 
     @Override
     public Collection<String> getDependents()
@@ -185,9 +196,9 @@ public class AbstractConfiguration implements Configuration
     }
 
     @Override
-    public boolean isDisabledByDefault()
+    public boolean isEnabledByDefault()
     {
-        return _disabledByDefault;
+        return _enabledByDefault;
     }
 
     @Override

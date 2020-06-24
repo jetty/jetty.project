@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.client;
@@ -65,56 +65,64 @@ public class MaxPushedStreamsTest extends AbstractTest
                 // Trick the server into thinking it can push unlimited streams.
                 ((HTTP2Session)stream.getSession()).setMaxLocalStreams(-1);
 
-                BiFunction<List<Stream>, Stream, List<Stream>> add = (l, s) -> { l.add(s); return l; };
-                BinaryOperator<List<Stream>> addAll = (l1, l2) -> { l1.addAll(l2); return l1; };
+                BiFunction<List<Stream>, Stream, List<Stream>> add = (l, s) ->
+                {
+                    l.add(s);
+                    return l;
+                };
+                BinaryOperator<List<Stream>> addAll = (l1, l2) ->
+                {
+                    l1.addAll(l2);
+                    return l1;
+                };
                 CompletableFuture<List<Stream>> result = CompletableFuture.completedFuture(new ArrayList<>());
                 // Push maxPushed resources...
                 IntStream.range(0, maxPushed)
-                        .mapToObj(i -> new PushPromiseFrame(stream.getId(), 0, newRequest("GET", "/push_" + i, new HttpFields())))
-                        .map(pushFrame ->
+                    .mapToObj(i -> new PushPromiseFrame(stream.getId(), 0, newRequest("GET", "/push_" + i, HttpFields.EMPTY)))
+                    .map(pushFrame ->
+                    {
+                        Promise.Completable<Stream> promise = new Promise.Completable<>();
+                        stream.push(pushFrame, promise, new Stream.Listener.Adapter());
+                        return promise;
+                    })
+                    // ... wait for the pushed streams...
+                    .reduce(result, (cfList, cfStream) -> cfList.thenCombine(cfStream, add),
+                        (cfList1, cfList2) -> cfList1.thenCombine(cfList2, addAll))
+                    // ... then push one extra stream, the client must reject it...
+                    .thenApply(streams ->
+                    {
+                        PushPromiseFrame extraPushFrame = new PushPromiseFrame(stream.getId(), 0, newRequest("GET", "/push_extra", HttpFields.EMPTY));
+                        FuturePromise<Stream> extraPromise = new FuturePromise<>();
+                        stream.push(extraPushFrame, extraPromise, new Stream.Listener.Adapter()
                         {
-                            Promise.Completable<Stream> promise = new Promise.Completable<>();
-                            stream.push(pushFrame, promise, new Stream.Listener.Adapter());
-                            return promise;
-                        })
-                        // ... wait for the pushed streams...
-                        .reduce(result, (cfList, cfStream) -> cfList.thenCombine(cfStream, add),
-                                (cfList1, cfList2) -> cfList1.thenCombine(cfList2, addAll))
-                        // ... then push one extra stream, the client must reject it...
-                        .thenApply(streams ->
-                        {
-                            PushPromiseFrame extraPushFrame = new PushPromiseFrame(stream.getId(), 0, newRequest("GET", "/push_extra", new HttpFields()));
-                            FuturePromise<Stream> extraPromise = new FuturePromise<>();
-                            stream.push(extraPushFrame, extraPromise, new Stream.Listener.Adapter()
+                            @Override
+                            public void onReset(Stream stream, ResetFrame frame)
                             {
-                                @Override
-                                public void onReset(Stream stream, ResetFrame frame)
-                                {
-                                    assertEquals(ErrorCode.REFUSED_STREAM_ERROR.code, frame.getError());
-                                    resetLatch.countDown();
-                                }
-                            });
-                            return streams;
-                        })
-                        // ... then send the data for the valid pushed streams...
-                        .thenAccept(streams -> streams.forEach(pushedStream ->
-                        {
-                            DataFrame data = new DataFrame(pushedStream.getId(), BufferUtil.EMPTY_BUFFER, true);
-                            pushedStream.data(data, Callback.NOOP);
-                        }))
-                        // ... then send the response.
-                        .thenRun(() ->
-                        {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
-                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                                assertEquals(ErrorCode.REFUSED_STREAM_ERROR.code, frame.getError());
+                                resetLatch.countDown();
+                            }
                         });
+                        return streams;
+                    })
+                    // ... then send the data for the valid pushed streams...
+                    .thenAccept(streams -> streams.forEach(pushedStream ->
+                    {
+                        DataFrame data = new DataFrame(pushedStream.getId(), BufferUtil.EMPTY_BUFFER, true);
+                        pushedStream.data(data, Callback.NOOP);
+                    }))
+                    // ... then send the response.
+                    .thenRun(() ->
+                    {
+                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                        stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                    });
                 return null;
             }
         });
         client.setMaxConcurrentPushedStreams(maxPushed);
 
         Session session = newClient(new Session.Listener.Adapter());
-        MetaData.Request request = newRequest("GET", new HttpFields());
+        MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
         CountDownLatch responseLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(request, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {

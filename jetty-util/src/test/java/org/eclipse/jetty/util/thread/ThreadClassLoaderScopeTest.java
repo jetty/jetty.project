@@ -1,31 +1,31 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.thread;
-
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.URL;
 import java.net.URLClassLoader;
 
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
 
 public class ThreadClassLoaderScopeTest
 {
@@ -44,16 +44,16 @@ public class ThreadClassLoaderScopeTest
             super(new URL[0]);
         }
     }
-    
+
     @Test
     public void testNormal()
     {
         try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(new ClassLoaderFoo()))
         {
-            assertThat("ClassLoader in scope",Thread.currentThread().getContextClassLoader(),instanceOf(ClassLoaderFoo.class));
-            assertThat("Scoped ClassLoader",scope.getScopedClassLoader(),instanceOf(ClassLoaderFoo.class));
+            assertThat("ClassLoader in scope", Thread.currentThread().getContextClassLoader(), instanceOf(ClassLoaderFoo.class));
+            assertThat("Scoped ClassLoader", scope.getScopedClassLoader(), instanceOf(ClassLoaderFoo.class));
         }
-        assertThat("ClassLoader after scope",Thread.currentThread().getContextClassLoader(),not(instanceOf(ClassLoaderFoo.class)));
+        assertThat("ClassLoader after scope", Thread.currentThread().getContextClassLoader(), not(instanceOf(ClassLoaderFoo.class)));
     }
 
     @Test
@@ -61,12 +61,12 @@ public class ThreadClassLoaderScopeTest
     {
         try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(new ClassLoaderBar()))
         {
-            assertThat("ClassLoader in 'scope'",Thread.currentThread().getContextClassLoader(),instanceOf(ClassLoaderBar.class));
-            assertThat("Scoped ClassLoader",scope.getScopedClassLoader(),instanceOf(ClassLoaderBar.class));
+            assertThat("ClassLoader in 'scope'", Thread.currentThread().getContextClassLoader(), instanceOf(ClassLoaderBar.class));
+            assertThat("Scoped ClassLoader", scope.getScopedClassLoader(), instanceOf(ClassLoaderBar.class));
             try (ThreadClassLoaderScope inner = new ThreadClassLoaderScope(new ClassLoaderFoo()))
             {
-                assertThat("ClassLoader in 'inner'",Thread.currentThread().getContextClassLoader(),instanceOf(ClassLoaderFoo.class));
-                assertThat("Scoped ClassLoader",scope.getScopedClassLoader(),instanceOf(ClassLoaderFoo.class));
+                assertThat("ClassLoader in 'inner'", Thread.currentThread().getContextClassLoader(), instanceOf(ClassLoaderFoo.class));
+                assertThat("Scoped ClassLoader", scope.getScopedClassLoader(), instanceOf(ClassLoaderFoo.class));
                 throw new RuntimeException("Intention exception");
             }
         }
@@ -74,6 +74,6 @@ public class ThreadClassLoaderScopeTest
         {
             /* ignore */
         }
-        assertThat("ClassLoader after 'scope'",Thread.currentThread().getContextClassLoader(),not(instanceOf(ClassLoaderBar.class)));
+        assertThat("ClassLoader after 'scope'", Thread.currentThread().getContextClassLoader(), not(instanceOf(ClassLoaderBar.class)));
     }
 }

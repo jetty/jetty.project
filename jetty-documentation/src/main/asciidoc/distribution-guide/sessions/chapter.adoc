@@ -1,0 +1,46 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[session-management]]
+== Session Management
+
+Sessions are a concept within the Servlet api which allow requests to store and retrieve information across the time a user spends in an application.
+Choosing the correct session manager implementation is an important consideration for every application as each can fit and perform optimally in different situations.
+If you need a simple in-memory session manager that can persist to disk then session management using the local file system can be a good place to start.
+If you need a session manager that can work in a clustered scenario with multiple instances of Jetty, then the JDBC session manager can be an excellent option.
+Jetty also offers more niche session managers that leverage backends such as MongoDB, Inifinispan, or even Google's Cloud Data Store.
+
+include::session-hierarchy.adoc[]
+include::sessions-details.adoc[]
+include::session-configuration-housekeeper.adoc[]
+include::session-configuration-sessioncache.adoc[]
+include::session-configuration-memory.adoc[]
+include::session-configuration-file-system.adoc[]
+include::session-configuration-jdbc.adoc[]
+include::session-configuration-mongodb.adoc[]
+include::session-configuration-infinispan.adoc[]
+include::session-configuration-hazelcast.adoc[]
+include::session-configuration-gcloud.adoc[]
+include::session-configuration-memcachedsessiondatastore.adoc[]
+include::sessions-usecases.adoc[]
+//include::setting-session-characteristics.adoc[]
+//include::using-persistent-sessions.adoc[]
+//include::session-clustering-jdbc.adoc[]
+//include::session-clustering-mongodb.adoc[]
+//include::session-clustering-infinispan.adoc[]
+//include::session-clustering-gcloud-datastore.adoc[]

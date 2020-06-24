@@ -1,25 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.ssl;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,7 +25,6 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-
 import javax.net.ssl.SSLContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -46,6 +42,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 // Only in JDK 11 is possible to use SSLSocket.shutdownOutput().
 @DisabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
 public class SSLReadEOFAfterResponseTest
@@ -53,11 +52,10 @@ public class SSLReadEOFAfterResponseTest
     @Test
     public void testReadEOFAfterResponse() throws Exception
     {
-        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore.p12");
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStoreResource(Resource.newResource(keystore));
         sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
 
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server, sslContextFactory);
@@ -67,10 +65,10 @@ public class SSLReadEOFAfterResponseTest
 
         String content = "the quick brown fox jumped over the lazy dog";
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        server.setHandler(new AbstractHandler.ErrorDispatchHandler()
+        server.setHandler(new AbstractHandler()
         {
             @Override
-            protected void doNonErrorHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 // First: read the whole content.
                 InputStream input = request.getInputStream();
@@ -106,8 +104,8 @@ public class SSLReadEOFAfterResponseTest
                 client.setSoTimeout(5 * idleTimeout);
 
                 OutputStream output = client.getOutputStream();
-                String request = "" +
-                        "POST / HTTP/1.1\r\n" +
+                String request =
+                    "POST / HTTP/1.1\r\n" +
                         "Host: localhost\r\n" +
                         "Content-Length: " + content.length() + "\r\n" +
                         "\r\n";
@@ -130,8 +128,9 @@ public class SSLReadEOFAfterResponseTest
                         break;
                 }
                 for (byte b : bytes)
+                {
                     assertEquals(b, input.read());
-
+                }
 
                 // Shutdown the output so the server reads the TLS close_notify.
                 client.shutdownOutput();

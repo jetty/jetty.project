@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.jmx;
@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import javax.management.Attribute;
 import javax.management.AttributeNotFoundException;
 import javax.management.MBeanAttributeInfo;
@@ -48,12 +47,12 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class MetaData
 {
-    private static final Logger LOG = Log.getLogger(MetaData.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MetaData.class);
     private static final MBeanAttributeInfo[] NO_ATTRIBUTES = new MBeanAttributeInfo[0];
     private static final MBeanConstructorInfo[] NO_CONSTRUCTORS = new MBeanConstructorInfo[0];
     private static final MBeanOperationInfo[] NO_OPERATIONS = new MBeanOperationInfo[0];
@@ -90,6 +89,21 @@ class MetaData
         else
             mbean = new ObjectMBean(bean);
         return mbean;
+    }
+
+    private static Object newInstance(Constructor<?> constructor, Object bean)
+    {
+        try
+        {
+            Object mbean = constructor.getParameterCount() == 0 ? constructor.newInstance() : constructor.newInstance(bean);
+            if (mbean instanceof ModelMBean)
+                ((ModelMBean)mbean).setManagedResource(bean, "objectReference");
+            return mbean;
+        }
+        catch (Throwable x)
+        {
+            return null;
+        }
     }
 
     MBeanInfo getMBeanInfo()
@@ -176,21 +190,6 @@ class MetaData
         return result;
     }
 
-    private static Object newInstance(Constructor<?> constructor, Object bean)
-    {
-        try
-        {
-            Object mbean = constructor.getParameterCount() == 0 ? constructor.newInstance() : constructor.newInstance(bean);
-            if (mbean instanceof ModelMBean)
-                ((ModelMBean)mbean).setManagedResource(bean, "objectReference");
-            return mbean;
-        }
-        catch (Throwable x)
-        {
-            return null;
-        }
-    }
-
     private void parseMethods(Class<?>... classes)
     {
         for (Class<?> klass : classes)
@@ -253,8 +252,8 @@ class MetaData
     private static String signature(Method method)
     {
         String signature = Arrays.stream(method.getParameterTypes())
-                .map(Class::getName)
-                .collect(Collectors.joining(","));
+            .map(Class::getName)
+            .collect(Collectors.joining(","));
         return String.format("%s(%s)", method.getName(), signature);
     }
 
@@ -281,22 +280,30 @@ class MetaData
     {
         // Start with interfaces, overwrite with superClass, then overwrite with local attributes.
         for (MetaData intf : _interfaces)
+        {
             intf.collectMBeanAttributeInfos(attributeInfos);
+        }
         if (_parent != null)
         {
             MBeanAttributeInfo[] parentAttributes = _parent.getMBeanInfo().getAttributes();
             for (MBeanAttributeInfo parentAttribute : parentAttributes)
+            {
                 attributeInfos.put(parentAttribute.getName(), parentAttribute);
+            }
         }
         for (Map.Entry<String, AttributeInfo> entry : _attributes.entrySet())
+        {
             attributeInfos.put(entry.getKey(), entry.getValue()._info);
+        }
     }
 
     private void collectMBeanOperationInfos(Map<String, MBeanOperationInfo> operationInfos)
     {
         // Start with interfaces, overwrite with superClass, then overwrite with local operations.
         for (MetaData intf : _interfaces)
+        {
             intf.collectMBeanOperationInfos(operationInfos);
+        }
         if (_parent != null)
         {
             MBeanOperationInfo[] parentOperations = _parent.getMBeanInfo().getOperations();
@@ -307,7 +314,9 @@ class MetaData
             }
         }
         for (Map.Entry<String, OperationInfo> entry : _operations.entrySet())
+        {
             operationInfos.put(entry.getKey(), entry.getValue()._info);
+        }
     }
 
     private static MBeanException toMBeanException(InvocationTargetException x)
@@ -323,7 +332,7 @@ class MetaData
     public String toString()
     {
         return String.format("%s@%x[%s, attrs=%s, opers=%s]", getClass().getSimpleName(), hashCode(),
-                _klass.getName(), _attributes.keySet(), _operations.keySet());
+            _klass.getName(), _attributes.keySet(), _operations.keySet());
     }
 
     private static class AttributeInfo
@@ -351,13 +360,15 @@ class MetaData
 
             Class<?> returnType = getter.getReturnType();
             _convert = isManagedObject(returnType);
-            String signature = _convert ?
-                    returnType.isArray() ? ObjectName[].class.getName() : ObjectName.class.getName() :
-                    returnType.getName();
+            String signature = _convert
+                ? returnType.isArray()
+                ? ObjectName[].class.getName()
+                : ObjectName.class.getName()
+                : returnType.getName();
 
             String description = attribute.value();
             _info = new MBeanAttributeInfo(name, signature, description, true,
-                            _setter != null, getter.getName().startsWith("is"));
+                _setter != null, getter.getName().startsWith("is"));
         }
 
         Object getAttribute(ObjectMBean mbean) throws ReflectionException, MBeanException
@@ -377,7 +388,9 @@ class MetaData
                 int length = Array.getLength(result);
                 ObjectName[] names = new ObjectName[length];
                 for (int i = 0; i < length; ++i)
+                {
                     names[i] = mbean.findObjectName(Array.get(result, i));
+                }
                 return names;
             }
             catch (InvocationTargetException x)
@@ -415,7 +428,9 @@ class MetaData
                 ObjectName[] names = (ObjectName[])value;
                 Object result = new Object[names.length];
                 for (int i = 0; i < names.length; ++i)
+                {
                     Array.set(result, i, mbean.findBean(names[i]));
+                }
                 _setter.invoke(target, result);
             }
             catch (InvocationTargetException x)
@@ -461,7 +476,7 @@ class MetaData
         public String toString()
         {
             return String.format("%s@%x[%s,proxied=%b,convert=%b,info=%s]", getClass().getSimpleName(), hashCode(),
-                    _name, _proxied, _convert, _info);
+                _name, _proxied, _convert, _info);
         }
     }
 
@@ -483,9 +498,11 @@ class MetaData
 
             Class<?> returnType = method.getReturnType();
             _convert = isManagedObject(returnType);
-            String returnSignature = _convert ?
-                    returnType.isArray() ? ObjectName[].class.getName() : ObjectName.class.getName() :
-                    returnType.getName();
+            String returnSignature = _convert
+                ? returnType.isArray()
+                ? ObjectName[].class.getName()
+                : ObjectName.class.getName()
+                : returnType.getName();
 
             String impactName = operation.impact();
             int impact = MBeanOperationInfo.UNKNOWN;
@@ -520,7 +537,9 @@ class MetaData
                 int length = Array.getLength(result);
                 ObjectName[] names = new ObjectName[length];
                 for (int i = 0; i < length; ++i)
+                {
                     names[i] = mbean.findObjectName(Array.get(result, i));
+                }
                 return names;
             }
             catch (InvocationTargetException x)
@@ -560,7 +579,7 @@ class MetaData
         public String toString()
         {
             return String.format("%s@%x[%s,proxied=%b,convert=%b]", getClass().getSimpleName(), hashCode(),
-                    _name, _proxied, _convert);
+                _name, _proxied, _convert);
         }
     }
 }

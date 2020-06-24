@@ -1,36 +1,32 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
-
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ExecutionException;
-
 import javax.net.ssl.SSLHandshakeException;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -40,19 +36,20 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * This test class runs tests to make sure that hostname verification (http://www.ietf.org/rfc/rfc2818.txt
  * section 3.1) is configurable in SslContextFactory and works as expected.
  */
-@Disabled
 public class HostnameVerificationTest
 {
-    private SslContextFactory clientSslContextFactory = new SslContextFactory();
+    private SslContextFactory.Client clientSslContextFactory = new SslContextFactory.Client();
     private Server server;
     private HttpClient client;
     private NetworkConnector connector;
@@ -64,15 +61,15 @@ public class HostnameVerificationTest
         serverThreads.setName("server");
         server = new Server(serverThreads);
 
-        SslContextFactory serverSslContextFactory = new SslContextFactory();
-        serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        SslContextFactory.Server serverSslContextFactory = new SslContextFactory.Server();
+        serverSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         serverSslContextFactory.setKeyStorePassword("storepwd");
         connector = new ServerConnector(server, serverSslContextFactory);
         server.addConnector(connector);
         server.setHandler(new DefaultHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 response.getWriter().write("foobar");
@@ -80,14 +77,19 @@ public class HostnameVerificationTest
         });
         server.start();
 
-        // keystore contains a hostname which doesn't match localhost
-        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
+        // The keystore contains a hostname which doesn't match localhost
+        clientSslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         clientSslContextFactory.setKeyStorePassword("storepwd");
+
+        ClientConnector clientConnector = new ClientConnector();
+        clientConnector.setSelectors(1);
+        clientConnector.setSslContextFactory(clientSslContextFactory);
 
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new HttpClient(clientSslContextFactory);
-        client.setExecutor(clientThreads);
+        clientConnector.setExecutor(clientThreads);
+
+        client = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
         client.start();
     }
 
@@ -96,29 +98,32 @@ public class HostnameVerificationTest
     {
         client.stop();
         server.stop();
-        server.join();
     }
 
     /**
      * This test is supposed to verify that hostname verification works as described in:
      * http://www.ietf.org/rfc/rfc2818.txt section 3.1. It uses a certificate with a common name different to localhost
-     * and sends a request to localhost. This should fail with a SSLHandshakeException.
-     *
-     * @throws Exception on test failure
+     * and sends a request to localhost. This should fail with an SSLHandshakeException.
      */
     @Test
-    public void simpleGetWithHostnameVerificationEnabledTest() throws Exception
+    public void simpleGetWithHostnameVerificationEnabledTest()
     {
         clientSslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
         String uri = "https://localhost:" + connector.getLocalPort() + "/";
 
-        ExecutionException x = assertThrows(ExecutionException.class, ()->{
-            client.GET(uri);
-        });
+        ExecutionException x = assertThrows(ExecutionException.class, () -> client.GET(uri));
         Throwable cause = x.getCause();
         assertThat(cause, Matchers.instanceOf(SSLHandshakeException.class));
-        Throwable root = cause.getCause().getCause();
-        assertThat(root, Matchers.instanceOf(CertificateException.class));
+
+        // Search for the CertificateException.
+        Throwable certificateException = cause.getCause();
+        while (certificateException != null)
+        {
+            if (certificateException instanceof CertificateException)
+                break;
+            certificateException = certificateException.getCause();
+        }
+        assertThat(certificateException, Matchers.instanceOf(CertificateException.class));
     }
 
     /**
@@ -126,7 +131,6 @@ public class HostnameVerificationTest
      * work fine.
      *
      * @throws Exception on test failure
-     *
      */
     @Test
     public void simpleGetWithHostnameVerificationDisabledTest() throws Exception

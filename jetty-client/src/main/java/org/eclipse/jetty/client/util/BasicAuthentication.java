@@ -1,25 +1,26 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.util;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.AuthenticationStore;
@@ -27,7 +28,6 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.B64Code;
 
 /**
  * Implementation of the HTTP "Basic" authentication defined in RFC 2617.
@@ -91,7 +91,8 @@ public class BasicAuthentication extends AbstractAuthentication
         {
             this.uri = uri;
             this.header = header;
-            this.value = "Basic " + B64Code.encode(user + ":" + password, StandardCharsets.ISO_8859_1);
+            byte[] authBytes = (user + ":" + password).getBytes(StandardCharsets.ISO_8859_1);
+            this.value = "Basic " + Base64.getEncoder().encodeToString(authBytes);
         }
 
         @Override
@@ -104,7 +105,7 @@ public class BasicAuthentication extends AbstractAuthentication
         public void apply(Request request)
         {
             if (!request.getHeaders().contains(header, value))
-                request.header(header, value);
+                request.headers(headers -> headers.add(header, value));
         }
 
         @Override

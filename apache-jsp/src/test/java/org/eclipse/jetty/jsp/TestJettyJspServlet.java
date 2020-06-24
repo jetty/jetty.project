@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.jsp;
@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -54,7 +53,7 @@ public class TestJettyJspServlet
 
     private File _dir;
     private ServletTester _tester;
-    
+
     public static class DfltServlet extends HttpServlet
     {
 
@@ -62,21 +61,17 @@ public class TestJettyJspServlet
         {
             super();
         }
-        
-        /** 
-         * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-         */
+
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
             resp.setContentType("html/text");
             resp.getOutputStream().println("This.Is.The.Default.");
         }
-        
     }
-    
+
     @BeforeEach
-    public void setUp () throws Exception
+    public void setUp() throws Exception
     {
         JspFactory.setDefaultFactory(new JspFactoryImpl());
         _dir = MavenTestingUtils.getTestResourceDir("base");
@@ -88,12 +83,12 @@ public class TestJettyJspServlet
         _tester.getContext().setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
         ServletHolder dfltHolder = new ServletHolder();
         dfltHolder.setName("default");
-        dfltHolder.setHeldClass( DfltServlet.class);
+        dfltHolder.setHeldClass(DfltServlet.class);
         _tester.getContext().addServlet(dfltHolder, "/");
 
         _tester.start();
     }
-    
+
     @AfterEach
     public void tearDown() throws Exception
     {
@@ -105,8 +100,8 @@ public class TestJettyJspServlet
     public void testWithJsp() throws Exception
     {
         //test that an ordinary jsp is served by jsp servlet
-        String request = "" +
-                "GET /context/foo.jsp HTTP/1.1\r\n" +
+        String request =
+            "GET /context/foo.jsp HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";
@@ -115,14 +110,13 @@ public class TestJettyJspServlet
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getContent(), not(containsString("This.Is.The.Default.")));
     }
-    
-    
+
     @Test
     public void testWithDirectory() throws Exception
     {
         //test that a dir is served by the default servlet
-        String request = "" +
-                "GET /context/dir HTTP/1.1\r\n" +
+        String request =
+            "GET /context/dir HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +
                 "Connection: close\r\n" +
                 "\r\n";

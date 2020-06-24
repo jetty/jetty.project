@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet.listener;
@@ -21,14 +21,12 @@ package org.eclipse.jetty.servlet.listener;
 import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ELContextCleaner
@@ -41,8 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ELContextCleaner implements ServletContextListener
 {
-    private static final Logger LOG = Log.getLogger(ELContextCleaner.class);
-
+    private static final Logger LOG = LoggerFactory.getLogger(ELContextCleaner.class);
 
     @Override
     public void contextInitialized(ServletContextEvent sce)
@@ -79,29 +76,24 @@ public class ELContextCleaner implements ServletContextListener
         {
             LOG.debug("Not cleaning cached beans: no such field javax.el.BeanELResolver.properties");
         }
-
     }
 
-
-    protected Field getField (Class<?> beanELResolver)
-    throws SecurityException, NoSuchFieldException
+    protected Field getField(Class<?> beanELResolver)
+        throws SecurityException, NoSuchFieldException
     {
         if (beanELResolver == null)
-            return  null;
+            return null;
 
         return beanELResolver.getDeclaredField("properties");
     }
 
-    protected void purgeEntries (Field properties)
-    throws IllegalArgumentException, IllegalAccessException
+    protected void purgeEntries(Field properties)
+        throws IllegalArgumentException, IllegalAccessException
     {
         if (properties == null)
             return;
 
-        if (!properties.isAccessible())
-            properties.setAccessible(true);
-
-        Map map = (Map) properties.get(null);
+        Map map = (Map)properties.get(null);
         if (map == null)
             return;
 
@@ -110,7 +102,7 @@ public class ELContextCleaner implements ServletContextListener
         {
             Class<?> clazz = itor.next();
             if (LOG.isDebugEnabled())
-                LOG.debug("Clazz: "+clazz+" loaded by "+clazz.getClassLoader());
+                LOG.debug("Clazz: " + clazz + " loaded by " + clazz.getClassLoader());
             if (Thread.currentThread().getContextClassLoader().equals(clazz.getClassLoader()))
             {
                 itor.remove();
@@ -120,7 +112,7 @@ public class ELContextCleaner implements ServletContextListener
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("not removed: "+"contextclassloader="+Thread.currentThread().getContextClassLoader()+"clazz's classloader="+clazz.getClassLoader());
+                    LOG.debug("not removed: " + "contextclassloader=" + Thread.currentThread().getContextClassLoader() + "clazz's classloader=" + clazz.getClassLoader());
             }
         }
     }

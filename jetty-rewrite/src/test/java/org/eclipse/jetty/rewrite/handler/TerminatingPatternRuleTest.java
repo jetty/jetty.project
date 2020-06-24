@@ -1,28 +1,24 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.rewrite.handler;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -33,6 +29,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 
 public class TerminatingPatternRuleTest extends AbstractRuleTestCase
 {
@@ -47,12 +46,12 @@ public class TerminatingPatternRuleTest extends AbstractRuleTestCase
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                    ServletException
+                ServletException
             {
                 response.setStatus(HttpStatus.CREATED_201);
-                request.setAttribute("target",target);
-                request.setAttribute("URI",request.getRequestURI());
-                request.setAttribute("info",request.getPathInfo());
+                request.setAttribute("target", target);
+                request.setAttribute("URI", request.getRequestURI());
+                request.setAttribute("info", request.getPathInfo());
             }
         });
         rewriteHandler.start();
@@ -60,9 +59,7 @@ public class TerminatingPatternRuleTest extends AbstractRuleTestCase
         TerminatingPatternRule rule1 = new TerminatingPatternRule();
         rule1.setPattern("/login.jsp");
         rewriteHandler.addRule(rule1);
-        RedirectRegexRule rule2 = new RedirectRegexRule();
-        rule2.setRegex("^/login.*$");
-        rule2.setReplacement("http://login.company.com/");
+        RedirectRegexRule rule2 = new RedirectRegexRule("^/login.*$", "http://login.company.com/");
         rewriteHandler.addRule(rule2);
 
         start(false);
@@ -70,34 +67,34 @@ public class TerminatingPatternRuleTest extends AbstractRuleTestCase
 
     private void assertIsRedirect(int expectedStatus, String expectedLocation)
     {
-        assertThat("Response Status",_response.getStatus(),is(expectedStatus));
-        assertThat("Response Location Header",_response.getHeader(HttpHeader.LOCATION.asString()),is(expectedLocation));
+        assertThat("Response Status", _response.getStatus(), is(expectedStatus));
+        assertThat("Response Location Header", _response.getHeader(HttpHeader.LOCATION.asString()), is(expectedLocation));
     }
 
     private void assertIsRequest(String expectedRequestPath)
     {
-        assertThat("Response Status",_response.getStatus(),is(HttpStatus.CREATED_201));
-        assertThat("Request Target",_request.getAttribute("target"),is(expectedRequestPath));
+        assertThat("Response Status", _response.getStatus(), is(HttpStatus.CREATED_201));
+        assertThat("Request Target", _request.getAttribute("target"), is(expectedRequestPath));
     }
 
     @Test
     public void testTerminatingEarly() throws IOException, ServletException
     {
-        rewriteHandler.handle("/login.jsp",_request,_request,_response);
+        rewriteHandler.handle("/login.jsp", _request, _request, _response);
         assertIsRequest("/login.jsp");
     }
 
     @Test
     public void testNoTerminationDo() throws IOException, ServletException
     {
-        rewriteHandler.handle("/login.do",_request,_request,_response);
-        assertIsRedirect(HttpStatus.MOVED_TEMPORARILY_302,"http://login.company.com/");
+        rewriteHandler.handle("/login.do", _request, _request, _response);
+        assertIsRedirect(HttpStatus.MOVED_TEMPORARILY_302, "http://login.company.com/");
     }
 
     @Test
     public void testNoTerminationDir() throws IOException, ServletException
     {
-        rewriteHandler.handle("/login/",_request,_request,_response);
-        assertIsRedirect(HttpStatus.MOVED_TEMPORARILY_302,"http://login.company.com/");
+        rewriteHandler.handle("/login/", _request, _request, _response);
+        assertIsRedirect(HttpStatus.MOVED_TEMPORARILY_302, "http://login.company.com/");
     }
 }

@@ -1,61 +1,55 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.annotations;
 
-
-
 /**
  * ClassB
- *
- *
  */
-@Sample(value=50)
+@Sample(value = 50)
 @Multi({"do", "re", "mi"})
 public class ClassB extends ClassA implements InterfaceD
 {
 
     //test override of public scope method
-    @Sample(value=51)
+    @Sample(value = 51)
     @Multi({"fa", "so", "la"})
     public void a()
     {
-       System.err.println("ClassB.public");
+        System.err.println("ClassB.public");
     }
-    
+
     //test override of package scope method
-    @Sample(value=52)
+    @Sample(value = 52)
     void c()
     {
         System.err.println("ClassB.package");
     }
-    
+
     @Override
     public void l()
     {
         System.err.println("Overridden method l has no annotation");
     }
-    
-    
+
     //test no annotation
     public void z()
     {
         System.err.println("ClassB.z");
     }
-
 }

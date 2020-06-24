@@ -1,25 +1,24 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -30,76 +29,65 @@ import org.eclipse.jetty.util.annotation.Name;
  */
 public class ResponsePatternRule extends PatternRule
 {
-    private String _code;
-    private String _reason;
+    private int _code;
+    private String _message;
 
-    /* ------------------------------------------------------------ */
     public ResponsePatternRule()
     {
-        this(null,null,"");
+        this(null, null, null);
     }
 
-    /* ------------------------------------------------------------ */
-    public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") String code, @Name("reason") String reason)
+    public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") String code, @Name("message") String message)
     {
         super(pattern);
         _handling = true;
         _terminating = true;
         setCode(code);
-        setReason(reason);
+        setMessage(message);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Sets the response status code. 
+     * Sets the response status code.
+     *
      * @param code response code
      */
     public void setCode(String code)
     {
-        _code = code;
+        _code = code == null ? 0 : Integer.parseInt(code);
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Sets the reason for the response status code. Reasons will only reflect
+     * Sets the message for the {@link org.eclipse.jetty.server.Response#sendError(int, String)} method.
+     * Reasons will only reflect
      * if the code value is greater or equal to 400.
-     * 
-     * @param reason the reason
+     *
+     * @param message the reason
      */
-    public void setReason(String reason)
+    public void setMessage(String message)
     {
-        _reason = reason;
+        _message = message;
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     * (non-Javadoc)
-     * @see org.eclipse.jetty.server.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
     @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        int code = Integer.parseInt(_code);
-
         // status code 400 and up are error codes
-        if (code >= 400)
+        if (_code > 0)
         {
-            response.sendError(code, _reason);
-        }
-        else
-        {
-            response.setStatus(code);
+            if (_message != null && !_message.isEmpty())
+                response.sendError(_code, _message);
+            else
+                response.setStatus(_code);
         }
         return target;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Returns the code and reason string.
      */
     @Override
     public String toString()
     {
-        return super.toString()+"["+_code+","+_reason+"]";
+        return super.toString() + "[" + _code + "," + _message + "]";
     }
 }

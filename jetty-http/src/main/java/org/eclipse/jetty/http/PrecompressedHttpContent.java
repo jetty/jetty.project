@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http;
@@ -27,7 +27,6 @@ import java.util.Map;
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.resource.Resource;
 
-/* ------------------------------------------------------------ */
 public class PrecompressedHttpContent implements HttpContent
 {
     private final HttpContent _content;
@@ -66,7 +65,7 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public HttpField getETag()
     {
-        return new HttpField(HttpHeader.ETAG,getETagValue());
+        return new HttpField(HttpHeader.ETAG, getETagValue());
     }
 
     @Override
@@ -168,10 +167,10 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public String toString()
     {
-        return String.format("PrecompressedHttpContent@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}",hashCode(),_format._encoding,
-                _content.getResource(),_precompressedContent.getResource(),
-                _content.getResource().lastModified(),_precompressedContent.getResource().lastModified(),
-                getContentType());
+        return String.format("PrecompressedHttpContent@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}", hashCode(), _format._encoding,
+            _content.getResource(), _precompressedContent.getResource(),
+            _content.getResource().lastModified(), _precompressedContent.getResource().lastModified(),
+            getContentType());
     }
 
     @Override

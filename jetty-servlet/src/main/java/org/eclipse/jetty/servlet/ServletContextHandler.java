@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
@@ -28,8 +28,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-
+import java.util.concurrent.TimeUnit;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -67,13 +68,14 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/** 
+/**
  * Servlet Context.
  * <p>
  * This extension to the ContextHandler allows for
@@ -89,19 +91,18 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Servlet Context Handler")
 public class ServletContextHandler extends ContextHandler
 {
-    private static final Logger LOG = Log.getLogger(ServletContextHandler.class);
-    
-    public final static int SESSIONS=1;
-    public final static int SECURITY=2;
-    public final static int GZIP=4;
-    public final static int NO_SESSIONS=0;
-    public final static int NO_SECURITY=0;
+    private static final Logger LOG = LoggerFactory.getLogger(ServletContextHandler.class);
+
+    public static final int SESSIONS = 1;
+    public static final int SECURITY = 2;
+    public static final int NO_SESSIONS = 0;
+    public static final int NO_SECURITY = 0;
 
     public static ServletContextHandler getServletContextHandler(ServletContext servletContext, String purpose)
     {
         ContextHandler contextHandler = ContextHandler.getContextHandler(servletContext);
         if (contextHandler == null)
-            throw new IllegalStateException("No Jetty ContextHandler, " + purpose+ " unavailable");
+            throw new IllegalStateException("No Jetty ContextHandler, " + purpose + " unavailable");
 
         if (!(contextHandler instanceof ServletContextHandler))
             throw new IllegalStateException("No Jetty ServletContextHandler, " + purpose + " unavailable");
@@ -109,79 +110,82 @@ public class ServletContextHandler extends ContextHandler
         return (ServletContextHandler)contextHandler;
     }
 
-    public interface ServletContainerInitializerCaller extends LifeCycle {};
+    public static ServletContextHandler getServletContextHandler(ServletContext context)
+    {
+        ContextHandler handler = getContextHandler(context);
+        if (handler == null)
+            return null;
+        if (handler instanceof ServletContextHandler)
+            return (ServletContextHandler)handler;
+        return null;
+    }
+
+    public interface ServletContainerInitializerCaller extends LifeCycle {}
 
     protected final DecoratedObjectFactory _objFactory;
-    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass=org.eclipse.jetty.security.ConstraintSecurityHandler.class;
+    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
     protected ServletHandler _servletHandler;
-    protected GzipHandler _gzipHandler;
     protected int _options;
     protected JspConfigDescriptor _jspConfig;
 
-    /* ------------------------------------------------------------ */
+    private boolean _startListeners;
+
     public ServletContextHandler()
     {
-        this(null,null,null,null,null);
+        this(null, null, null, null, null);
     }
 
-    /* ------------------------------------------------------------ */
     public ServletContextHandler(int options)
     {
-        this(null,null,options);
+        this(null, null, options);
     }
 
-    /* ------------------------------------------------------------ */
     public ServletContextHandler(HandlerContainer parent, String contextPath)
     {
-        this(parent,contextPath,null,null,null,null);
+        this(parent, contextPath, null, null, null, null);
     }
 
-    /* ------------------------------------------------------------ */
     public ServletContextHandler(HandlerContainer parent, String contextPath, int options)
     {
-        this(parent,contextPath,null,null,null,null,options);
+        this(parent, contextPath, null, null, null, null, options);
     }
 
-    /* ------------------------------------------------------------ */
     public ServletContextHandler(HandlerContainer parent, String contextPath, boolean sessions, boolean security)
     {
-        this(parent,contextPath,(sessions?SESSIONS:0)|(security?SECURITY:0));
+        this(parent, contextPath, (sessions ? SESSIONS : 0) | (security ? SECURITY : 0));
     }
 
-    /* ------------------------------------------------------------ */
     public ServletContextHandler(HandlerContainer parent, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {
-        this(parent,null,sessionHandler,securityHandler,servletHandler,errorHandler);
+        this(parent, null, sessionHandler, securityHandler, servletHandler, errorHandler);
     }
 
-    /* ------------------------------------------------------------ */
     public ServletContextHandler(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler)
     {
-        this(parent,contextPath,sessionHandler,securityHandler,servletHandler,errorHandler,0);
+        this(parent, contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, 0);
     }
-    
-    /* ------------------------------------------------------------ */
-    public ServletContextHandler(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler,int options)
+
+    public ServletContextHandler(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
     {
         super(null, parent, contextPath);
-        _options=options;
+        _options = options;
         _scontext = new Context();
         _sessionHandler = sessionHandler;
         _securityHandler = securityHandler;
         _servletHandler = servletHandler;
-        
+
         _objFactory = new DecoratedObjectFactory();
         _objFactory.addDecorator(new DeprecationWarning());
 
         // Link the handlers
         relinkHandlers();
-        
-        if (errorHandler!=null)
+
+        if (errorHandler != null)
             setErrorHandler(errorHandler);
     }
-    
+
     protected void setParent(HandlerContainer parent)
     {
         if (parent instanceof HandlerWrapper)
@@ -190,118 +194,109 @@ public class ServletContextHandler extends ContextHandler
             ((HandlerCollection)parent).addHandler(this);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Add EventListener
-     * Adds an EventListener to the list. @see org.eclipse.jetty.server.handler.ContextHandler#addEventListener().
-     * Also adds any listeners that are session related to the SessionHandler.
+    /**
+     * Add EventListener
+     *
      * @param listener the listener to add
+     * @return true if the listener was added
+     * @see HttpSessionAttributeListener
+     * @see HttpSessionActivationListener
+     * @see HttpSessionBindingListener
+     * @see HttpSessionListener
+     * @see HttpSessionIdListener
+     * @see ContextHandler#addEventListener(EventListener)
      */
     @Override
-    public void addEventListener(EventListener listener)
+    public boolean addEventListener(EventListener listener)
     {
-        super.addEventListener(listener);
-        if ((listener instanceof HttpSessionActivationListener)
-            || (listener instanceof HttpSessionAttributeListener)
-            || (listener instanceof HttpSessionBindingListener)
-            || (listener instanceof HttpSessionListener)
-            || (listener instanceof HttpSessionIdListener))
+        if (super.addEventListener(listener))
         {
-            if (_sessionHandler!=null)
-                _sessionHandler.addEventListener(listener);
+            if ((listener instanceof HttpSessionActivationListener) ||
+                (listener instanceof HttpSessionAttributeListener) ||
+                (listener instanceof HttpSessionBindingListener) ||
+                (listener instanceof HttpSessionListener) ||
+                (listener instanceof HttpSessionIdListener))
+            {
+                if (_sessionHandler != null)
+                    _sessionHandler.addEventListener(listener);
+            }
+            return true;
         }
+        return false;
     }
-    
+
     @Override
     public void setHandler(Handler handler)
     {
-        if (handler!=null)
+        if (handler != null)
             LOG.warn("ServletContextHandler.setHandler should not be called directly. Use insertHandler or setSessionHandler etc.");
         super.setHandler(handler);
     }
 
     private void doSetHandler(HandlerWrapper wrapper, Handler handler)
     {
-        if (wrapper==this)
+        if (wrapper == this)
             super.setHandler(handler);
         else
             wrapper.setHandler(handler);
     }
-    
-    /* ------------------------------------------------------------ */
+
     private void relinkHandlers()
     {
-        HandlerWrapper handler=this;
-        
+        HandlerWrapper handler = this;
+
         // link session handler
-        if (getSessionHandler()!=null)
+        if (getSessionHandler() != null)
         {
-            
-            while (!(handler.getHandler() instanceof SessionHandler) && 
-                   !(handler.getHandler() instanceof SecurityHandler) && 
-                   !(handler.getHandler() instanceof GzipHandler) && 
-                   !(handler.getHandler() instanceof ServletHandler) && 
-                   handler.getHandler() instanceof HandlerWrapper)
-                handler=(HandlerWrapper)handler.getHandler();
-            
-            if (handler.getHandler()!=_sessionHandler)
-                doSetHandler(handler,_sessionHandler);
-            handler=_sessionHandler;
+            while (!(handler.getHandler() instanceof SessionHandler) &&
+                !(handler.getHandler() instanceof SecurityHandler) &&
+                !(handler.getHandler() instanceof ServletHandler) &&
+                handler.getHandler() instanceof HandlerWrapper)
+            {
+                handler = (HandlerWrapper)handler.getHandler();
+            }
+
+            if (handler.getHandler() != _sessionHandler)
+                doSetHandler(handler, _sessionHandler);
+            handler = _sessionHandler;
         }
-        
+
         // link security handler
-        if (getSecurityHandler()!=null)
+        if (getSecurityHandler() != null)
         {
-            while (!(handler.getHandler() instanceof SecurityHandler) && 
-                   !(handler.getHandler() instanceof GzipHandler) && 
-                   !(handler.getHandler() instanceof ServletHandler) && 
-                   handler.getHandler() instanceof HandlerWrapper)
-                handler=(HandlerWrapper)handler.getHandler();
+            while (!(handler.getHandler() instanceof SecurityHandler) &&
+                !(handler.getHandler() instanceof ServletHandler) &&
+                handler.getHandler() instanceof HandlerWrapper)
+            {
+                handler = (HandlerWrapper)handler.getHandler();
+            }
 
-            if (handler.getHandler()!=_securityHandler)
-                doSetHandler(handler,_securityHandler);
-            handler=_securityHandler;
+            if (handler.getHandler() != _securityHandler)
+                doSetHandler(handler, _securityHandler);
+            handler = _securityHandler;
         }
 
-        // link gzip handler
-        if (getGzipHandler()!=null)
-        {
-            while (!(handler.getHandler() instanceof GzipHandler) && 
-                   !(handler.getHandler() instanceof ServletHandler) && 
-                   handler.getHandler() instanceof HandlerWrapper)
-                handler=(HandlerWrapper)handler.getHandler();
-
-            if (handler.getHandler()!=_gzipHandler)
-                doSetHandler(handler,_gzipHandler);
-            handler=_gzipHandler;
-        }
-
-        
         // link servlet handler
-        if (getServletHandler()!=null)
+        if (getServletHandler() != null)
         {
-            while (!(handler.getHandler() instanceof ServletHandler) && 
-                   handler.getHandler() instanceof HandlerWrapper)
-                handler=(HandlerWrapper)handler.getHandler();
+            while (!(handler.getHandler() instanceof ServletHandler) &&
+                handler.getHandler() instanceof HandlerWrapper)
+            {
+                handler = (HandlerWrapper)handler.getHandler();
+            }
 
-            if (handler.getHandler()!=_servletHandler)
-                doSetHandler(handler,_servletHandler);
-            handler=_servletHandler;
+            if (handler.getHandler() != _servletHandler)
+                doSetHandler(handler, _servletHandler);
         }
-        
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void doStart() throws Exception
     {
         getServletContext().setAttribute(DecoratedObjectFactory.ATTR, _objFactory);
         super.doStart();
     }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.handler.ContextHandler#doStop()
-     */
+
     @Override
     protected void doStop() throws Exception
     {
@@ -310,8 +305,9 @@ public class ServletContextHandler extends ContextHandler
         getServletContext().removeAttribute(DecoratedObjectFactory.ATTR);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Get the defaultSecurityHandlerClass.
+    /**
+     * Get the defaultSecurityHandlerClass.
+     *
      * @return the defaultSecurityHandlerClass
      */
     public Class<? extends SecurityHandler> getDefaultSecurityHandlerClass()
@@ -319,8 +315,9 @@ public class ServletContextHandler extends ContextHandler
         return _defaultSecurityHandlerClass;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Set the defaultSecurityHandlerClass.
+    /**
+     * Set the defaultSecurityHandlerClass.
+     *
      * @param defaultSecurityHandlerClass the defaultSecurityHandlerClass to set
      */
     public void setDefaultSecurityHandlerClass(Class<? extends SecurityHandler> defaultSecurityHandlerClass)
@@ -328,208 +325,194 @@ public class ServletContextHandler extends ContextHandler
         _defaultSecurityHandlerClass = defaultSecurityHandlerClass;
     }
 
-    /* ------------------------------------------------------------ */
     protected SessionHandler newSessionHandler()
     {
         return new SessionHandler();
     }
 
-    /* ------------------------------------------------------------ */
     protected SecurityHandler newSecurityHandler()
     {
         try
         {
-            return _defaultSecurityHandlerClass.getDeclaredConstructor().newInstance();
+            return getDefaultSecurityHandlerClass().getDeclaredConstructor().newInstance();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             throw new IllegalStateException(e);
         }
     }
 
-    /* ------------------------------------------------------------ */
     protected ServletHandler newServletHandler()
     {
         return new ServletHandler();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Finish constructing handlers and link them together.
-     *
-     * @see org.eclipse.jetty.server.handler.ContextHandler#startContext()
      */
     @Override
     protected void startContext() throws Exception
     {
         ServletContainerInitializerCaller sciBean = getBean(ServletContainerInitializerCaller.class);
-        if (sciBean!=null)
+        if (sciBean != null)
             sciBean.start();
 
         if (_servletHandler != null)
         {
             //Ensure listener instances are created, added to ContextHandler
-            if(_servletHandler.getListeners() != null)
+            if (_servletHandler.getListeners() != null)
             {
-                for (ListenerHolder holder:_servletHandler.getListeners())
-                {             
+                for (ListenerHolder holder : _servletHandler.getListeners())
+                {
                     holder.start();
-                    //we need to pass in the context because the ServletHandler has not
-                    //yet got a reference to the ServletContext (happens in super.startContext)
-                    holder.initialize(_scontext);
-                    addEventListener(holder.getListener());
                 }
             }
         }
-        
+
+        _startListeners = true;
         super.startContext();
 
         // OK to Initialize servlet handler now that all relevant object trees have been started
         if (_servletHandler != null)
             _servletHandler.initialize();
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     protected void stopContext() throws Exception
     {
+        _startListeners = false;
         super.stopContext();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns the securityHandler.
      */
-    @ManagedAttribute(value="context security handler", readonly=true)
+    @ManagedAttribute(value = "context security handler", readonly = true)
     public SecurityHandler getSecurityHandler()
     {
-        if (_securityHandler==null && (_options&SECURITY)!=0 && !isStarted())
-            _securityHandler=newSecurityHandler();
+        if (_securityHandler == null && (_options & SECURITY) != 0 && !isStarted())
+            _securityHandler = newSecurityHandler();
 
         return _securityHandler;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns the servletHandler.
      */
-    @ManagedAttribute(value="context servlet handler", readonly=true)
+    @ManagedAttribute(value = "context servlet handler", readonly = true)
     public ServletHandler getServletHandler()
     {
-        if (_servletHandler==null && !isStarted())
-            _servletHandler=newServletHandler();
+        if (_servletHandler == null && !isStarted())
+            _servletHandler = newServletHandler();
         return _servletHandler;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns the sessionHandler.
      */
-    @ManagedAttribute(value="context session handler", readonly=true)
+    @ManagedAttribute(value = "context session handler", readonly = true)
     public SessionHandler getSessionHandler()
     {
-        if (_sessionHandler==null && (_options&SESSIONS)!=0 && !isStarted())
-            _sessionHandler=newSessionHandler();
+        if (_sessionHandler == null && (_options & SESSIONS) != 0 && !isStarted())
+            _sessionHandler = newSessionHandler();
         return _sessionHandler;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * @return Returns the gzipHandler.
-     */
-    @ManagedAttribute(value="context gzip handler", readonly=true)
-    public GzipHandler getGzipHandler()
-    {
-        if (_gzipHandler==null && (_options&GZIP)!=0 && !isStarted())
-            _gzipHandler=new GzipHandler();
-        return _gzipHandler;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /** Convenience method to add a servlet.
+     * Convenience method to add a servlet.
+     *
      * @param className the servlet class name
      * @param pathSpec the path spec to map servlet to
      * @return the ServletHolder for the added servlet
      */
-    public ServletHolder addServlet(String className,String pathSpec)
+    public ServletHolder addServlet(String className, String pathSpec)
     {
         return getServletHandler().addServletWithMapping(className, pathSpec);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Convenience method to add a servlet.
+    /**
+     * Convenience method to add a servlet.
+     *
      * @param servlet the servlet class
      * @param pathSpec the path spec to map servlet to
      * @return the ServletHolder for the added servlet
      */
-    public ServletHolder addServlet(Class<? extends Servlet> servlet,String pathSpec)
+    public ServletHolder addServlet(Class<? extends Servlet> servlet, String pathSpec)
     {
         return getServletHandler().addServletWithMapping(servlet, pathSpec);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Convenience method to add a servlet.
+    /**
+     * Convenience method to add a servlet.
+     *
      * @param servlet the servlet holder
      * @param pathSpec the path spec
      */
-    public void addServlet(ServletHolder servlet,String pathSpec)
+    public void addServlet(ServletHolder servlet, String pathSpec)
     {
         getServletHandler().addServletWithMapping(servlet, pathSpec);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Convenience method to add a filter
+    /**
+     * Convenience method to add a filter
+     *
      * @param holder the filter holder
      * @param pathSpec the path spec
      * @param dispatches the dispatcher types for this filter
      */
-    public void addFilter(FilterHolder holder,String pathSpec,EnumSet<DispatcherType> dispatches)
+    public void addFilter(FilterHolder holder, String pathSpec, EnumSet<DispatcherType> dispatches)
     {
-        getServletHandler().addFilterWithMapping(holder,pathSpec,dispatches);
+        getServletHandler().addFilterWithMapping(holder, pathSpec, dispatches);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Convenience method to add a filter
+    /**
+     * Convenience method to add a filter
+     *
      * @param filterClass the filter class
      * @param pathSpec the path spec
      * @param dispatches the dispatcher types for this filter
      * @return the FilterHolder that was created
      */
-    public FilterHolder addFilter(Class<? extends Filter> filterClass,String pathSpec,EnumSet<DispatcherType> dispatches)
+    public FilterHolder addFilter(Class<? extends Filter> filterClass, String pathSpec, EnumSet<DispatcherType> dispatches)
     {
-        return getServletHandler().addFilterWithMapping(filterClass,pathSpec,dispatches);
+        return getServletHandler().addFilterWithMapping(filterClass, pathSpec, dispatches);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Convenience method to add a filter
-     * @param filterClass the filter class name 
+    /**
+     * Convenience method to add a filter
+     *
+     * @param filterClass the filter class name
      * @param pathSpec the path spec
      * @param dispatches the dispatcher types for this filter
      * @return the FilterHolder that was created
      */
-    public FilterHolder addFilter(String filterClass,String pathSpec,EnumSet<DispatcherType> dispatches)
+    public FilterHolder addFilter(String filterClass, String pathSpec, EnumSet<DispatcherType> dispatches)
     {
-        return getServletHandler().addFilterWithMapping(filterClass,pathSpec,dispatches);
+        return getServletHandler().addFilterWithMapping(filterClass, pathSpec, dispatches);
     }
 
     /**
      * notification that a ServletRegistration has been created so we can track the annotations
+     *
      * @param holder new holder created through the api.
      * @return the ServletRegistration.Dynamic
      */
-    protected ServletRegistration.Dynamic dynamicHolderAdded(ServletHolder holder) {
+    protected ServletRegistration.Dynamic dynamicHolderAdded(ServletHolder holder)
+    {
         return holder.getRegistration();
     }
 
     /**
      * delegate for ServletContext.declareRole method
+     *
      * @param roleNames role names to add
      */
-    protected void addRoles(String... roleNames) {
+    protected void addRoles(String... roleNames)
+    {
         //Get a reference to the SecurityHandler, which must be ConstraintAware
         if (_securityHandler != null && _securityHandler instanceof ConstraintAware)
         {
-            HashSet<String> union = new HashSet<String>();
+            HashSet<String> union = new HashSet<>();
             Set<String> existing = ((ConstraintAware)_securityHandler).getRoles();
             if (existing != null)
                 union.addAll(existing);
@@ -540,6 +523,7 @@ public class ServletContextHandler extends ContextHandler
 
     /**
      * Delegate for ServletRegistration.Dynamic.setServletSecurity method
+     *
      * @param registration ServletRegistration.Dynamic instance that setServletSecurity was called on
      * @param servletSecurityElement new security info
      * @return the set of exact URL mappings currently associated with the registration that are also present in the web.xml
@@ -551,11 +535,13 @@ public class ServletContextHandler extends ContextHandler
         Collection<String> pathSpecs = registration.getMappings();
         if (pathSpecs != null)
         {
-            for (String pathSpec:pathSpecs)
+            for (String pathSpec : pathSpecs)
             {
                 List<ConstraintMapping> mappings = ConstraintSecurityHandler.createConstraintsWithMappingsForPath(registration.getName(), pathSpec, servletSecurityElement);
-                for (ConstraintMapping m:mappings)
+                for (ConstraintMapping m : mappings)
+                {
                     ((ConstraintAware)getSecurityHandler()).addConstraintMapping(m);
+                }
             }
         }
         return Collections.emptySet();
@@ -567,7 +553,7 @@ public class ServletContextHandler extends ContextHandler
         try
         {
             //toggle state of the dynamic API so that the listener cannot use it
-            if(isProgrammaticListener(l))
+            if (isProgrammaticListener(l))
                 this.getServletContext().setEnabled(false);
 
             super.callContextInitialized(l, e);
@@ -579,126 +565,83 @@ public class ServletContextHandler extends ContextHandler
         }
     }
 
-
     @Override
     public void callContextDestroyed(ServletContextListener l, ServletContextEvent e)
     {
         super.callContextDestroyed(l, e);
     }
 
-    private boolean replaceHandler(Handler handler,Handler replace)
+    private void replaceHandler(HandlerWrapper handler, HandlerWrapper replacement)
     {
-        HandlerWrapper wrapper=this;
-        while(true)
+        if (isStarted())
+            throw new IllegalStateException("STARTED");
+
+        Handler next = null;
+        if (handler != null)
         {
-            if (wrapper.getHandler()==handler)
+            next = handler.getHandler();
+            handler.setHandler(null);
+
+            HandlerWrapper wrapper = this;
+            while (wrapper != null)
             {
-                doSetHandler(wrapper,replace);
-                return true;
+                if (wrapper.getHandler() == handler)
+                {
+                    doSetHandler(wrapper, replacement);
+                    break;
+                }
+
+                wrapper = (wrapper.getHandler() instanceof HandlerWrapper) ? (HandlerWrapper)wrapper.getHandler() : null;
             }
-            
-            if (!(wrapper.getHandler() instanceof HandlerWrapper))
-                return false;
-            wrapper = (HandlerWrapper)wrapper.getHandler();
         }
+
+        if (next != null && replacement.getHandler() == null)
+            replacement.setHandler(next);
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param sessionHandler The sessionHandler to set.
      */
     public void setSessionHandler(SessionHandler sessionHandler)
     {
-        if (isStarted())
-            throw new IllegalStateException("STARTED");
-
-        Handler next=null;
-        if (_sessionHandler!=null)
-        {
-            next=_sessionHandler.getHandler();
-            _sessionHandler.setHandler(null);
-            replaceHandler(_sessionHandler,sessionHandler);
-        }
-
+        replaceHandler(_sessionHandler, sessionHandler);
         _sessionHandler = sessionHandler;
-        if (next!=null && _sessionHandler.getHandler()==null)
-            _sessionHandler.setHandler(next);
         relinkHandlers();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param securityHandler The {@link SecurityHandler} to set on this context.
      */
     public void setSecurityHandler(SecurityHandler securityHandler)
     {
-        if (isStarted())
-            throw new IllegalStateException("STARTED");
-
-        Handler next=null;
-        if (_securityHandler!=null)
-        {
-            next=_securityHandler.getHandler();
-            _securityHandler.setHandler(null);
-            replaceHandler(_securityHandler,securityHandler);
-        }
-        
+        replaceHandler(_securityHandler, securityHandler);
         _securityHandler = securityHandler;
-        if (next!=null && _securityHandler.getHandler()==null)
-            _securityHandler.setHandler(next);
         relinkHandlers();
     }
 
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param gzipHandler The {@link GzipHandler} to set on this context.
-     */
-    public void setGzipHandler(GzipHandler gzipHandler)
-    {
-        if (isStarted())
-            throw new IllegalStateException("STARTED");
-
-        Handler next=null;
-        if (_gzipHandler!=null)
-        {
-            next=_gzipHandler.getHandler();
-            _gzipHandler.setHandler(null);
-            replaceHandler(_gzipHandler,gzipHandler);
-        }
-        
-        _gzipHandler = gzipHandler;
-        if (next!=null && _gzipHandler.getHandler()==null)
-            _gzipHandler.setHandler(next);
-        relinkHandlers();
-    }
-    
-    /* ------------------------------------------------------------ */
     /**
      * @param servletHandler The servletHandler to set.
      */
     public void setServletHandler(ServletHandler servletHandler)
     {
-        if (isStarted())
-            throw new IllegalStateException("STARTED");
-
-        Handler next=null;
-        if (_servletHandler!=null)
-        {
-            next=_servletHandler.getHandler();
-            _servletHandler.setHandler(null);
-            replaceHandler(_servletHandler,servletHandler);
-        }
+        replaceHandler(_servletHandler, servletHandler);
         _servletHandler = servletHandler;
-        if (next!=null && _servletHandler.getHandler()==null)
-            _servletHandler.setHandler(next);
         relinkHandlers();
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     /**
-     * Insert a HandlerWrapper before the first Session,Security or ServletHandler
+     * @param gzipHandler the GzipHandler for this ServletContextHandler
+     * @deprecated use {@link #insertHandler(HandlerWrapper)} instead
+     */
+    @Deprecated
+    public void setGzipHandler(GzipHandler gzipHandler)
+    {
+        insertHandler(gzipHandler);
+        LOG.warn("ServletContextHandler.setGzipHandler(GzipHandler) is deprecated, use insertHandler(HandlerWrapper) instead.");
+    }
+
+    /**
+     * Insert a HandlerWrapper before the first Session, Security or ServletHandler
      * but after any other HandlerWrappers.
      */
     @Override
@@ -708,41 +651,40 @@ public class ServletContextHandler extends ContextHandler
             setSessionHandler((SessionHandler)handler);
         else if (handler instanceof SecurityHandler)
             setSecurityHandler((SecurityHandler)handler);
-        else if (handler instanceof GzipHandler)
-            setGzipHandler((GzipHandler)handler);
         else if (handler instanceof ServletHandler)
             setServletHandler((ServletHandler)handler);
         else
         {
             HandlerWrapper tail = handler;
-            while(tail.getHandler() instanceof HandlerWrapper)
-                tail=(HandlerWrapper)tail.getHandler();
-            if (tail.getHandler()!=null)
+            while (tail.getHandler() instanceof HandlerWrapper)
+            {
+                tail = (HandlerWrapper)tail.getHandler();
+            }
+            if (tail.getHandler() != null)
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
-            
+
             // Skip any injected handlers
-            HandlerWrapper h=this;
+            HandlerWrapper h = this;
             while (h.getHandler() instanceof HandlerWrapper)
             {
                 HandlerWrapper wrapper = (HandlerWrapper)h.getHandler();
                 if (wrapper instanceof SessionHandler ||
-                        wrapper instanceof SecurityHandler ||
-                        wrapper instanceof ServletHandler)
+                    wrapper instanceof SecurityHandler ||
+                    wrapper instanceof ServletHandler)
                     break;
-                h=wrapper;
+                h = wrapper;
             }
-            
-            Handler next=h.getHandler();
-            doSetHandler(h,handler);
-            doSetHandler(tail,next);
+
+            Handler next = h.getHandler();
+            doSetHandler(h, handler);
+            doSetHandler(tail, next);
         }
         relinkHandlers();
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * The DecoratedObjectFactory for use by IoC containers (weld / spring / etc)
-     * 
+     *
      * @return The DecoratedObjectFactory
      */
     public DecoratedObjectFactory getObjectFactory()
@@ -750,106 +692,59 @@ public class ServletContextHandler extends ContextHandler
         return _objFactory;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return The decorator list used to resource inject new Filters, Servlets and EventListeners
-     * @deprecated use the {@link DecoratedObjectFactory} from getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") or {@link #getObjectFactory()} instead
-     */
-    @Deprecated
-    public List<Decorator> getDecorators()
-    {
-        List<Decorator> ret = new ArrayList<ServletContextHandler.Decorator>();
-        for (org.eclipse.jetty.util.Decorator decorator : _objFactory)
-        {
-            ret.add(new LegacyDecorator(decorator));
-        }
-        return Collections.unmodifiableList(ret);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param decorators The list of {@link Decorator}s
-     * @deprecated use the {@link DecoratedObjectFactory} from getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") or {@link #getObjectFactory()} instead
-     */
-    @Deprecated
-    public void setDecorators(List<Decorator> decorators)
-    {
-        _objFactory.setDecorators(decorators);
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param decorator The decorator to add
-     * @deprecated use the {@link DecoratedObjectFactory} from getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") or {@link #getObjectFactory()} instead
-     */
-    @Deprecated
-    public void addDecorator(Decorator decorator)
-    {
-        _objFactory.addDecorator(decorator);
-    }
-    
-    /* ------------------------------------------------------------ */
     void destroyServlet(Servlet servlet)
     {
         _objFactory.destroy(servlet);
     }
 
-    /* ------------------------------------------------------------ */
     void destroyFilter(Filter filter)
     {
         _objFactory.destroy(filter);
     }
 
-    /* ------------------------------------------------------------ */
+    void destroyListener(EventListener listener)
+    {
+        _objFactory.destroy(listener);
+    }
+
     public static class JspPropertyGroup implements JspPropertyGroupDescriptor
     {
-        private List<String> _urlPatterns = new ArrayList<String>();
+        private List<String> _urlPatterns = new ArrayList<>();
         private String _elIgnored;
         private String _pageEncoding;
         private String _scriptingInvalid;
         private String _isXml;
-        private List<String> _includePreludes = new ArrayList<String>();
-        private List<String> _includeCodas = new ArrayList<String>();
+        private List<String> _includePreludes = new ArrayList<>();
+        private List<String> _includeCodas = new ArrayList<>();
         private String _deferredSyntaxAllowedAsLiteral;
         private String _trimDirectiveWhitespaces;
         private String _defaultContentType;
         private String _buffer;
         private String _errorOnUndeclaredNamespace;
 
-
-
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getUrlPatterns()
-         */
         @Override
         public Collection<String> getUrlPatterns()
         {
-            return new ArrayList<String>(_urlPatterns); // spec says must be a copy
+            return new ArrayList<>(_urlPatterns); // spec says must be a copy
         }
 
-        public void addUrlPattern (String s)
+        public void addUrlPattern(String s)
         {
             if (!_urlPatterns.contains(s))
                 _urlPatterns.add(s);
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getElIgnored()
-         */
         @Override
         public String getElIgnored()
         {
             return _elIgnored;
         }
 
-        public void setElIgnored (String s)
+        public void setElIgnored(String s)
         {
             _elIgnored = s;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getPageEncoding()
-         */
         @Override
         public String getPageEncoding()
         {
@@ -896,31 +791,22 @@ public class ServletContextHandler extends ContextHandler
             _errorOnUndeclaredNamespace = errorOnUndeclaredNamespace;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getScriptingInvalid()
-         */
         @Override
         public String getScriptingInvalid()
         {
             return _scriptingInvalid;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getIsXml()
-         */
         @Override
         public String getIsXml()
         {
             return _isXml;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getIncludePreludes()
-         */
         @Override
         public Collection<String> getIncludePreludes()
         {
-            return new ArrayList<String>(_includePreludes); //must be a copy
+            return new ArrayList<>(_includePreludes); //must be a copy
         }
 
         public void addIncludePrelude(String prelude)
@@ -929,60 +815,42 @@ public class ServletContextHandler extends ContextHandler
                 _includePreludes.add(prelude);
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getIncludeCodas()
-         */
         @Override
         public Collection<String> getIncludeCodas()
         {
-            return new ArrayList<String>(_includeCodas); //must be a copy
+            return new ArrayList<>(_includeCodas); //must be a copy
         }
 
-        public void addIncludeCoda (String coda)
+        public void addIncludeCoda(String coda)
         {
             if (!_includeCodas.contains(coda))
                 _includeCodas.add(coda);
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getDeferredSyntaxAllowedAsLiteral()
-         */
         @Override
         public String getDeferredSyntaxAllowedAsLiteral()
         {
             return _deferredSyntaxAllowedAsLiteral;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getTrimDirectiveWhitespaces()
-         */
         @Override
         public String getTrimDirectiveWhitespaces()
         {
             return _trimDirectiveWhitespaces;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getDefaultContentType()
-         */
         @Override
         public String getDefaultContentType()
         {
             return _defaultContentType;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getBuffer()
-         */
         @Override
         public String getBuffer()
         {
             return _buffer;
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspPropertyGroupDescriptor#getErrorOnUndeclaredNamespace()
-         */
         @Override
         public String getErrorOnUndeclaredNamespace()
         {
@@ -990,40 +858,40 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
-        public String toString ()
+        public String toString()
         {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             sb.append("JspPropertyGroupDescriptor:");
-            sb.append(" el-ignored="+_elIgnored);
-            sb.append(" is-xml="+_isXml);
-            sb.append(" page-encoding="+_pageEncoding);
-            sb.append(" scripting-invalid="+_scriptingInvalid);
-            sb.append(" deferred-syntax-allowed-as-literal="+_deferredSyntaxAllowedAsLiteral);
-            sb.append(" trim-directive-whitespaces"+_trimDirectiveWhitespaces);
-            sb.append(" default-content-type="+_defaultContentType);
-            sb.append(" buffer="+_buffer);
-            sb.append(" error-on-undeclared-namespace="+_errorOnUndeclaredNamespace);
-            for (String prelude:_includePreludes)
-                sb.append(" include-prelude="+prelude);
-            for (String coda:_includeCodas)
-                sb.append(" include-coda="+coda);
+            sb.append(" el-ignored=").append(_elIgnored);
+            sb.append(" is-xml=").append(_isXml);
+            sb.append(" page-encoding=").append(_pageEncoding);
+            sb.append(" scripting-invalid=").append(_scriptingInvalid);
+            sb.append(" deferred-syntax-allowed-as-literal=").append(_deferredSyntaxAllowedAsLiteral);
+            sb.append(" trim-directive-whitespaces").append(_trimDirectiveWhitespaces);
+            sb.append(" default-content-type=").append(_defaultContentType);
+            sb.append(" buffer=").append(_buffer);
+            sb.append(" error-on-undeclared-namespace=").append(_errorOnUndeclaredNamespace);
+            for (String prelude : _includePreludes)
+            {
+                sb.append(" include-prelude=").append(prelude);
+            }
+            for (String coda : _includeCodas)
+            {
+                sb.append(" include-coda=").append(coda);
+            }
             return sb.toString();
         }
     }
 
-    /* ------------------------------------------------------------ */
     public static class TagLib implements TaglibDescriptor
     {
         private String _uri;
         private String _location;
 
-        /**
-         * @see javax.servlet.descriptor.TaglibDescriptor#getTaglibURI()
-         */
         @Override
         public String getTaglibURI()
         {
-           return _uri;
+            return _uri;
         }
 
         public void setTaglibURI(String uri)
@@ -1031,9 +899,6 @@ public class ServletContextHandler extends ContextHandler
             _uri = uri;
         }
 
-        /**
-         * @see javax.servlet.descriptor.TaglibDescriptor#getTaglibLocation()
-         */
         @Override
         public String getTaglibLocation()
         {
@@ -1048,40 +913,34 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public String toString()
         {
-            return ("TagLibDescriptor: taglib-uri="+_uri+" location="+_location);
+            return ("TagLibDescriptor: taglib-uri=" + _uri + " location=" + _location);
         }
     }
 
-
-    /* ------------------------------------------------------------ */
     public static class JspConfig implements JspConfigDescriptor
     {
-        private List<TaglibDescriptor> _taglibs = new ArrayList<TaglibDescriptor>();
-        private List<JspPropertyGroupDescriptor> _jspPropertyGroups = new ArrayList<JspPropertyGroupDescriptor>();
+        private List<TaglibDescriptor> _taglibs = new ArrayList<>();
+        private List<JspPropertyGroupDescriptor> _jspPropertyGroups = new ArrayList<>();
 
-        public JspConfig() {}
+        public JspConfig()
+        {
+        }
 
-        /**
-         * @see javax.servlet.descriptor.JspConfigDescriptor#getTaglibs()
-         */
         @Override
         public Collection<TaglibDescriptor> getTaglibs()
         {
-            return new ArrayList<TaglibDescriptor>(_taglibs);
+            return new ArrayList<>(_taglibs);
         }
 
-        public void addTaglibDescriptor (TaglibDescriptor d)
+        public void addTaglibDescriptor(TaglibDescriptor d)
         {
             _taglibs.add(d);
         }
 
-        /**
-         * @see javax.servlet.descriptor.JspConfigDescriptor#getJspPropertyGroups()
-         */
         @Override
         public Collection<JspPropertyGroupDescriptor> getJspPropertyGroups()
         {
-           return new ArrayList<JspPropertyGroupDescriptor>(_jspPropertyGroups);
+            return new ArrayList<>(_jspPropertyGroups);
         }
 
         public void addJspPropertyGroup(JspPropertyGroupDescriptor g)
@@ -1092,51 +951,56 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public String toString()
         {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             sb.append("JspConfigDescriptor: \n");
-            for (TaglibDescriptor taglib:_taglibs)
-                sb.append(taglib+"\n");
-            for (JspPropertyGroupDescriptor jpg:_jspPropertyGroups)
-                sb.append(jpg+"\n");
+            for (TaglibDescriptor taglib : _taglibs)
+            {
+                sb.append(taglib).append("\n");
+            }
+            for (JspPropertyGroupDescriptor jpg : _jspPropertyGroups)
+            {
+                sb.append(jpg).append("\n");
+            }
             return sb.toString();
         }
     }
 
-
-    /* ------------------------------------------------------------ */
     public class Context extends ContextHandler.Context
     {
-        /* ------------------------------------------------------------ */
-        /*
-         * @see javax.servlet.ServletContext#getNamedDispatcher(java.lang.String)
-         */
         @Override
         public RequestDispatcher getNamedDispatcher(String name)
         {
-            ContextHandler context=org.eclipse.jetty.servlet.ServletContextHandler.this;
-            if (_servletHandler==null)
+            ContextHandler context = org.eclipse.jetty.servlet.ServletContextHandler.this;
+            if (_servletHandler == null)
                 return null;
             ServletHolder holder = _servletHandler.getServlet(name);
-            if (holder==null || !holder.isEnabled())
+            if (holder == null || !holder.isEnabled())
                 return null;
             return new Dispatcher(context, name);
         }
 
-        /* ------------------------------------------------------------ */
+        private void checkDynamic(String name)
+        {
+            if (isStarted())
+                throw new IllegalStateException();
+            
+            if (ServletContextHandler.this.getServletHandler().isInitialized())
+                throw new IllegalStateException();
+
+            if (StringUtil.isBlank(name))
+                throw new IllegalArgumentException("Missing name");
+
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+        }
+
         /**
          * @since servlet-api-3.0
          */
         @Override
         public FilterRegistration.Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
         {
-            if (isStarted())
-                throw new IllegalStateException();
-            
-            if (filterName == null || "".equals(filterName.trim()))
-                throw new IllegalStateException("Missing filter name");
-
-            if (!_enabled)
-                throw new UnsupportedOperationException();
+            checkDynamic(filterName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             FilterHolder holder = handler.getFilter(filterName);
@@ -1149,7 +1013,7 @@ public class ServletContextHandler extends ContextHandler
                 handler.addFilter(holder);
                 return holder.getRegistration();
             }
-            if (holder.getClassName()==null && holder.getHeldClass()==null)
+            if (holder.getClassName() == null && holder.getHeldClass() == null)
             {
                 //preliminary filter registration completion
                 holder.setHeldClass(filterClass);
@@ -1159,21 +1023,13 @@ public class ServletContextHandler extends ContextHandler
                 return null; //existing filter
         }
 
-        /* ------------------------------------------------------------ */
         /**
          * @since servlet-api-3.0
          */
         @Override
         public FilterRegistration.Dynamic addFilter(String filterName, String className)
         {
-            if (isStarted())
-                throw new IllegalStateException();
-            
-            if (filterName == null || "".equals(filterName.trim()))
-                throw new IllegalStateException("Missing filter name");
-
-            if (!_enabled)
-                throw new UnsupportedOperationException();
+            checkDynamic(filterName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             FilterHolder holder = handler.getFilter(filterName);
@@ -1186,7 +1042,7 @@ public class ServletContextHandler extends ContextHandler
                 handler.addFilter(holder);
                 return holder.getRegistration();
             }
-            if (holder.getClassName()==null && holder.getHeldClass()==null)
+            if (holder.getClassName() == null && holder.getHeldClass() == null)
             {
                 //preliminary filter registration completion
                 holder.setClassName(className);
@@ -1196,22 +1052,13 @@ public class ServletContextHandler extends ContextHandler
                 return null; //existing filter
         }
 
-
-        /* ------------------------------------------------------------ */
         /**
          * @since servlet-api-3.0
          */
         @Override
         public FilterRegistration.Dynamic addFilter(String filterName, Filter filter)
         {
-            if (isStarted())
-                throw new IllegalStateException();
-
-            if (filterName == null || "".equals(filterName.trim()))
-                throw new IllegalStateException("Missing filter name");
-            
-            if (!_enabled)
-                throw new UnsupportedOperationException();
+            checkDynamic(filterName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             FilterHolder holder = handler.getFilter(filterName);
@@ -1225,7 +1072,7 @@ public class ServletContextHandler extends ContextHandler
                 return holder.getRegistration();
             }
 
-            if (holder.getClassName()==null && holder.getHeldClass()==null)
+            if (holder.getClassName() == null && holder.getHeldClass() == null)
             {
                 //preliminary filter registration completion
                 holder.setFilter(filter);
@@ -1235,21 +1082,13 @@ public class ServletContextHandler extends ContextHandler
                 return null; //existing filter
         }
 
-        /* ------------------------------------------------------------ */
         /**
          * @since servlet-api-3.0
          */
         @Override
         public ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
         {
-            if (!isStarting())
-                throw new IllegalStateException();
-
-            if (servletName == null || "".equals(servletName.trim()))
-                throw new IllegalStateException("Missing servlet name");
-            
-            if (!_enabled)
-                throw new UnsupportedOperationException();
+            checkDynamic(servletName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             ServletHolder holder = handler.getServlet(servletName);
@@ -1264,7 +1103,7 @@ public class ServletContextHandler extends ContextHandler
             }
 
             //complete a partial registration
-            if (holder.getClassName()==null && holder.getHeldClass()==null)
+            if (holder.getClassName() == null && holder.getHeldClass() == null)
             {
                 holder.setHeldClass(servletClass);
                 return holder.getRegistration();
@@ -1273,22 +1112,13 @@ public class ServletContextHandler extends ContextHandler
                 return null; //existing completed registration for servlet name
         }
 
-        /* ------------------------------------------------------------ */
         /**
          * @since servlet-api-3.0
          */
         @Override
         public ServletRegistration.Dynamic addServlet(String servletName, String className)
         {
-            if (!isStarting())
-                throw new IllegalStateException();
-
-            if (servletName == null || "".equals(servletName.trim()))
-                throw new IllegalStateException("Missing servlet name");
-            
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-
+            checkDynamic(servletName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             ServletHolder holder = handler.getServlet(servletName);
@@ -1303,7 +1133,7 @@ public class ServletContextHandler extends ContextHandler
             }
 
             //complete a partial registration
-            if (holder.getClassName()==null && holder.getHeldClass()==null)
+            if (holder.getClassName() == null && holder.getHeldClass() == null)
             {
                 holder.setClassName(className);
                 return holder.getRegistration();
@@ -1312,21 +1142,13 @@ public class ServletContextHandler extends ContextHandler
                 return null; //existing completed registration for servlet name
         }
 
-        /* ------------------------------------------------------------ */
         /**
          * @since servlet-api-3.0
          */
         @Override
         public ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
         {
-            if (!isStarting())
-                throw new IllegalStateException();
-            
-            if (servletName == null || "".equals(servletName.trim()))
-                throw new IllegalStateException("Missing servlet name");
-            
-            if (!_enabled)
-                throw new UnsupportedOperationException();
+            checkDynamic(servletName);
 
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             ServletHolder holder = handler.getServlet(servletName);
@@ -1340,7 +1162,7 @@ public class ServletContextHandler extends ContextHandler
             }
 
             //complete a partial registration
-            if (holder.getClassName()==null && holder.getHeldClass()==null)
+            if (holder.getClassName() == null && holder.getHeldClass() == null)
             {
                 holder.setServlet(servlet);
                 return holder.getRegistration();
@@ -1348,57 +1170,95 @@ public class ServletContextHandler extends ContextHandler
             else
                 return null; //existing completed registration for servlet name
         }
+        
+        @Override
+        public ServletRegistration.Dynamic addJspFile(String servletName, String jspFile)
+        {
+            checkDynamic(servletName);
+            
+            final ServletHandler handler = ServletContextHandler.this.getServletHandler();
+            ServletHolder holder = handler.getServlet(servletName);
+            if (holder == null)
+            {
+                //new servlet
+                holder = handler.newServletHolder(Source.JAVAX_API);
+                holder.setName(servletName);
+                holder.setForcedPath(jspFile);
+                handler.addServlet(holder);
+                return dynamicHolderAdded(holder);
+            }
+            
+            //complete a partial registration
+            if (holder.getClassName() == null && holder.getHeldClass() == null && holder.getForcedPath() == null)
+            {
+                holder.setForcedPath(jspFile);
+                return holder.getRegistration();
+            }
+            else
+                return null; //existing completed registration for servlet name
+        }
 
-        /* ------------------------------------------------------------ */
+        @Override
+        public String getInitParameter(String name)
+        {
+            //since servlet spec 4.0
+            Objects.requireNonNull(name);
+            return super.getInitParameter(name);
+        }
+
         @Override
         public boolean setInitParameter(String name, String value)
         {
+            //since servlet spec 4.0
+            Objects.requireNonNull(name);
+
             if (!isStarting())
                 throw new IllegalStateException();
 
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
-            return super.setInitParameter(name,value);
+            return super.setInitParameter(name, value);
         }
 
-        /* ------------------------------------------------------------ */
         @Override
-        public <T extends Filter> T createFilter(Class<T> c) throws ServletException
+        public <T> T createInstance(Class<T> clazz) throws ServletException
+        {
+            return _objFactory.decorate(super.createInstance(clazz));
+        }
+
+        public <T> T createInstance(BaseHolder<T> holder) throws ServletException
         {
             try
             {
-                T f = createInstance(c);
-                f = _objFactory.decorate(f);
-                return f;
+                //set a thread local
+                DecoratedObjectFactory.associateInfo(holder);
+                return createInstance(holder.getHeldClass());
             }
-            catch (Exception e)
+            finally
             {
-                throw new ServletException(e);
+                //unset the thread local
+                DecoratedObjectFactory.disassociateInfo();
             }
         }
 
-        /* ------------------------------------------------------------ */
-        @Override
-        public <T extends Servlet> T createServlet(Class<T> c) throws ServletException
+        public <T extends Filter> void destroyFilter(T f)
         {
-            try
-            {
-                T s = createInstance(c);
-                s = _objFactory.decorate(s);
-                return s;
-            }
-            catch (Exception e)
-            {
-                throw new ServletException(e);
-            }
+            _objFactory.destroy(f);
         }
-        
+
+        public <T extends Servlet> void destroyServlet(T s)
+        {
+            _objFactory.destroy(s);
+        }
 
         @Override
         public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
         {
-            if (_sessionHandler!=null)
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            
+            if (_sessionHandler != null)
                 return _sessionHandler.getDefaultSessionTrackingModes();
             return null;
         }
@@ -1406,7 +1266,10 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
         {
-            if (_sessionHandler!=null)
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            
+            if (_sessionHandler != null)
                 return _sessionHandler.getEffectiveSessionTrackingModes();
             return null;
         }
@@ -1417,8 +1280,8 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
-            final FilterHolder holder=ServletContextHandler.this.getServletHandler().getFilter(filterName);
-            return (holder==null)?null:holder.getRegistration();
+            final FilterHolder holder = ServletContextHandler.this.getServletHandler().getFilter(filterName);
+            return (holder == null) ? null : holder.getRegistration();
         }
 
         @Override
@@ -1427,13 +1290,15 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
-            HashMap<String, FilterRegistration> registrations = new HashMap<String, FilterRegistration>();
-            ServletHandler handler=ServletContextHandler.this.getServletHandler();
-            FilterHolder[] holders=handler.getFilters();
-            if (holders!=null)
+            HashMap<String, FilterRegistration> registrations = new HashMap<>();
+            ServletHandler handler = ServletContextHandler.this.getServletHandler();
+            FilterHolder[] holders = handler.getFilters();
+            if (holders != null)
             {
                 for (FilterHolder holder : holders)
-                    registrations.put(holder.getName(),holder.getRegistration());
+                {
+                    registrations.put(holder.getName(), holder.getRegistration());
+                }
             }
             return registrations;
         }
@@ -1444,8 +1309,8 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
-            final ServletHolder holder=ServletContextHandler.this.getServletHandler().getServlet(servletName);
-            return (holder==null)?null:holder.getRegistration();
+            final ServletHolder holder = ServletContextHandler.this.getServletHandler().getServlet(servletName);
+            return (holder == null) ? null : holder.getRegistration();
         }
 
         @Override
@@ -1454,13 +1319,15 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
-            HashMap<String, ServletRegistration> registrations = new HashMap<String, ServletRegistration>();
-            ServletHandler handler=ServletContextHandler.this.getServletHandler();
-            ServletHolder[] holders=handler.getServlets();
-            if (holders!=null)
+            HashMap<String, ServletRegistration> registrations = new HashMap<>();
+            ServletHandler handler = ServletContextHandler.this.getServletHandler();
+            ServletHolder[] holders = handler.getServlets();
+            if (holders != null)
             {
                 for (ServletHolder holder : holders)
-                    registrations.put(holder.getName(),holder.getRegistration());
+                {
+                    registrations.put(holder.getName(), holder.getRegistration());
+                }
             }
             return registrations;
         }
@@ -1471,7 +1338,7 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
-            if (_sessionHandler!=null)
+            if (_sessionHandler != null)
                 return _sessionHandler.getSessionCookieConfig();
             return null;
         }
@@ -1484,9 +1351,80 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
-
-            if (_sessionHandler!=null)
+            if (_sessionHandler != null)
                 _sessionHandler.setSessionTrackingModes(sessionTrackingModes);
+        }
+
+        @Override
+        public int getSessionTimeout()
+        {
+            if (!isStarting())
+                throw new IllegalStateException();
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+
+            int timeout = -1;
+            if (_sessionHandler != null)
+            {
+                timeout = _sessionHandler.getMaxInactiveInterval();
+            }
+
+            return (int)TimeUnit.SECONDS.toMinutes(timeout);
+        }
+
+        @Override
+        public void setSessionTimeout(int sessionTimeout)
+        {
+            if (!isStarting())
+                throw new IllegalStateException();
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+
+            if (_sessionHandler != null)
+            {
+                long tmp = TimeUnit.MINUTES.toSeconds(sessionTimeout);
+                if (tmp > Integer.MAX_VALUE)
+                    tmp = Integer.MAX_VALUE;
+                if (tmp < Integer.MIN_VALUE)
+                    tmp = Integer.MIN_VALUE;
+                _sessionHandler.setMaxInactiveInterval((int)tmp);
+            }
+        }
+        
+        @Override
+        public <T extends Servlet> T createServlet(Class<T> clazz) throws ServletException
+        {
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            return super.createServlet(clazz);
+        }
+
+        @Override
+        public <T extends Filter> T createFilter(Class<T> clazz) throws ServletException
+        {
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            return super.createFilter(clazz);
+        }
+        
+        @Override
+        public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException
+        {
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+            try
+            {
+                checkListener(clazz);
+            }
+            catch (IllegalArgumentException e)
+            {
+                //Bizarrely, according to the spec, it is NOT an error to create an instance of
+                //a ServletContextListener from inside a ServletContextListener, but it IS an error
+                //to call addListener with one!
+                if (!ServletContextListener.class.isAssignableFrom(clazz))
+                    throw e;
+            }
+            return super.createListener(clazz);
         }
 
         @Override
@@ -1507,13 +1445,23 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
-
             checkListener(t.getClass());
-            
+
             ListenerHolder holder = getServletHandler().newListenerHolder(Source.JAVAX_API);
             holder.setListener(t);
-            getServletHandler().addListener(holder);
             addProgrammaticListener(t);
+            getServletHandler().addListener(holder);
+            if (_startListeners)
+            {
+                try
+                {
+                    holder.start();   
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            }
         }
 
         @Override
@@ -1527,22 +1475,6 @@ public class ServletContextHandler extends ContextHandler
         }
 
         @Override
-        public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException
-        {
-            try
-            {
-                T l = createInstance(clazz);
-                l = _objFactory.decorate(l);
-                return l;
-            }            
-            catch (Exception e)
-            {
-                throw new ServletException(e);
-            }
-        }
-
-
-        @Override
         public JspConfigDescriptor getJspConfigDescriptor()
         {
             return _jspConfig;
@@ -1554,7 +1486,6 @@ public class ServletContextHandler extends ContextHandler
             _jspConfig = d;
         }
 
-
         @Override
         public void declareRoles(String... roleNames)
         {
@@ -1563,48 +1494,36 @@ public class ServletContextHandler extends ContextHandler
             if (!_enabled)
                 throw new UnsupportedOperationException();
             addRoles(roleNames);
-
-
-        }
-
-    }
-
-
-
-    /* ------------------------------------------------------------ */
-    /** 
-     * Legacy Interface to decorate loaded classes.
-     * <p>
-     * Left for backwards compatibility with Weld / CDI
-     * @deprecated use new {@link org.eclipse.jetty.util.Decorator} 
-     */
-    @Deprecated
-    public interface Decorator extends org.eclipse.jetty.util.Decorator
-    {
-    }
-    
-    /**
-     * Implementation of the legacy interface to decorate loaded classes.
-     */
-    private static class LegacyDecorator implements Decorator
-    {
-        private org.eclipse.jetty.util.Decorator decorator;
-        
-        public LegacyDecorator(org.eclipse.jetty.util.Decorator decorator)
-        {
-            this.decorator = decorator;
         }
 
         @Override
-        public <T> T decorate(T o)
+        public String getRequestCharacterEncoding()
         {
-            return decorator.decorate(o);
+            return getDefaultRequestCharacterEncoding();
         }
 
         @Override
-        public void destroy(Object o)
+        public void setRequestCharacterEncoding(String encoding)
         {
-            decorator.destroy(o);
+            if (!isStarting())
+                throw new IllegalStateException();
+            
+            setDefaultRequestCharacterEncoding(encoding);
+        }
+
+        @Override
+        public String getResponseCharacterEncoding()
+        {
+            return getDefaultResponseCharacterEncoding();
+        }
+
+        @Override
+        public void setResponseCharacterEncoding(String encoding)
+        {
+            if (!isStarting())
+                throw new IllegalStateException();
+            
+            setDefaultResponseCharacterEncoding(encoding);
         }
     }
 }

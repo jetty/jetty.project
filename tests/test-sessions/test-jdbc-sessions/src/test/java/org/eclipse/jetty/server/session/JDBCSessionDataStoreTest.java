@@ -1,49 +1,46 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.server.session;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * JDBCSessionDataStoreTest
- *
- *
  */
+@Testcontainers(disabledWithoutDocker = true)
 public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
-    
+
     @BeforeEach
     public void setUp() throws Exception
     {
         JdbcTestHelper.prepareTables();
     }
-    
-    
+
     @AfterEach
-    public void tearDown() throws Exception 
+    public void tearDown() throws Exception
     {
         JdbcTestHelper.shutdown(null);
     }
-
-
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
@@ -51,32 +48,27 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
         return JdbcTestHelper.newSessionDataStoreFactory();
     }
 
-
     @Override
     public void persistSession(SessionData data)
-    throws Exception
+        throws Exception
     {
-        JdbcTestHelper.insertSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), 
-                                     data.getCreated(), data.getAccessed(), data.getLastAccessed(), 
-                                     data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), 
-                                     data.getLastSaved(), data.getAllAttributes());
-
+        JdbcTestHelper.insertSession(data);
     }
-
-
 
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
-        JdbcTestHelper.insertSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), 
-                                     data.getCreated(), data.getAccessed(), data.getLastAccessed(), 
-                                     data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), 
-                                     data.getLastSaved(), null);
-        
+        JdbcTestHelper.insertUnreadableSession(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(),
+            data.getCreated(), data.getAccessed(), data.getLastAccessed(),
+            data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(),
+            data.getLastSaved());
     }
-
     
-    
+    @Test
+    public void testCleanOrphans() throws Exception
+    {
+        super.testCleanOrphans();
+    }
 
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
@@ -84,12 +76,18 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
         return JdbcTestHelper.existsInSessionTable(data.getId(), false);
     }
 
-
-
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {
-        return JdbcTestHelper.checkSessionPersisted(data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
+        try
+        {
+            return JdbcTestHelper.checkSessionPersisted(data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
-    
 }

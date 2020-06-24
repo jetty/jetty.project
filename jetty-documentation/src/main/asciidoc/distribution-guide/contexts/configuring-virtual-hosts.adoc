@@ -1,0 +1,216 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[configuring-virtual-hosts]]
+=== Configuring Virtual Hosts
+
+A virtual host is an alternative name, registered in DNS, for an IP address such that multiple domain names will resolve to the same IP of a shared server instance.
+If the content to be served to the aliases names is link:#different-virtual-hosts-different-contexts[different], then a virtual host needs to be configured for each deployed link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html[context] to indicate which names a context will respond to.
+
+Virtual hosts are set on a link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html[context] by calling the link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html#setVirtualHosts-java.lang.String:A-[`setVirtualHosts`] or link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html#addVirtualHosts-java.lang.String:A-[`addVirtualHost`] method which can be done in several ways:
+
+* Using a link:#deployable-descriptor-file[context XML] file in the webapps directory (see the example in link:{GITBROWSEURL}/tests/test-webapps/test-jetty-webapp/src/main/config/demo-base/webapps/test.xml[test.xml] in the Jetty distribution).
+* Creating a link:#deployment-architecture[custom deployer] with a binding to configure virtual hosts for all contexts found in the same `webapps` directory.
+* Calling the link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html#setVirtualHosts-java.lang.String:A-[API] directly on an link:#advanced-embedding[embedded] usage.
+* Using a `WEB-INF/jetty-web.xml` file (now deprecated).
+
+[[configuring-a-virtual-host]]
+==== Virtual Host Names
+
+Jetty supports the following styles of virtual host name:
+
+www.hostname.com::
+  A fully qualified host name. It is important to list all variants as a site may receive traffic from both www.hostname.com and just hostname.com
+*.hostname.com::
+  A wildcard qualified host which will match only one level of arbitrary names.
+  *.foo.com will match www.foo.com and m.foo.com, but not www.other.foo.com
+10.0.0.2::
+  An IP address may be given as a virtual host name to indicate that a context should handle requests received on that server port that do not have a host name specified (HTTP/0.9 or HTTP/1.0).
+@ConnectorName::
+  A connector name, which is not strictly a virtual host, but instead will only match requests that are received on connectors that have a matching name set with  link:{JDURL}/org/eclipse/jetty/server/AbstractConnector.html#setName(java.lang.String)[Connector.setName(String)].
+www.√integral.com::
+  Non-ASCII and  http://en.wikipedia.org/wiki/Internationalized_domain_name[IDN] domain names can be set as virtual hosts using http://en.wikipedia.org/wiki/Punycode[Puny Code] equivalents that may be obtained from a http://network-tools.com/idn-convert.asp[Punycode/IDN converters].
+  For example if the non-ASCII domain name `www.√integral.com` is given to a browser, then it will make a request that uses the domain name `www.xn--integral-7g7d.com`, which is the name that should be added as the virtual host name.
+
+==== Example Virtual Host Configuration
+
+Virtual hosts can be used with any context that is a subclass of link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler].
+Lets look at an example where we configure a web application - represented by the link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[WebAppContext] class - with virtual hosts.
+You supply a list of IP addresses and names at which the web application is reachable, such as the following:
+
+* `333.444.555.666`
+* `127.0.0.1`
+* `www.blah.com`
+* `www.blah.net`
+* `www.blah.org`
+
+Suppose you have a webapp called `blah.war`, that you want all of the above names and addresses to be served at path "`/blah`".
+Here's how you would configure the virtual hosts with a link:#deployable-descriptor-file[context XML] file:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/blah</Set>
+  <Set name="war"><Property name="jetty.webapps"/>blah.war</Set>
+  <Set name="virtualHosts">
+    <Array type="java.lang.String">
+      <Item>333.444.555.666</Item>
+      <Item>127.0.0.1</Item>
+      <Item>www.blah.com</Item>
+      <Item>www.blah.net</Item>
+      <Item>www.blah.org</Item>
+    </Array>
+  </Set>
+</Configure>
+----
+
+[[different-virtual-hosts-different-contexts]]
+==== Using Different Sets of Virtual Hosts to Select Different Contexts
+
+You can configure different contexts to respond on different virtual hosts by supplying a specific list of virtual hosts for each one.
+
+For example, suppose your imaginary machine has these DNS names:
+
+* `www.blah.com`
+* `www.blah.net`
+* `www.blah.org`
+* `www.other.com`
+* `www.other.net`
+* `www.other.org`
+
+Suppose also you have 2 webapps, one called `blah.war` that you would like served from the `*.blah.*` names, and one called `other.war` that you want served only from the `*.other.*` names.
+
+Using the method of preparing link:#deployable-descriptor-file[contextXML] files, one for each webapp yields the following:
+
+For `blah` webapp:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/blah</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/blah.war</Set>
+  <Set name="virtualHosts">
+    <Array type="java.lang.String">
+      <Item>www.blah.com</Item>
+      <Item>www.blah.net</Item>
+      <Item>www.blah.org</Item>
+    </Array>
+  </Set>
+</Configure>
+----
+
+These URLs now resolve to the blah context (ie `blah.war`):
+
+* `http://www.blah.com/blah`
+* `http://www.blah.net/blah`
+* `http://www.blah.org/blah`
+
+For `other` webapp:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/other</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/other.war</Set>
+  <Set name="virtualHosts">
+    <Array type="java.lang.String">
+      <Item>www.other.com</Item>
+      <Item>www.other.net</Item>
+      <Item>www.other.org</Item>
+    </Array>
+  </Set>
+</Configure>
+----
+
+These URLs now resolve to the other context (i.e. `other.war`):
+
+* `http://www.other.com/other`
+* `http://www.other.net/other`
+* `http://www.other.org/other`
+
+[[different-virtual-hosts-different-context-same-path]]
+==== Using Different Sets of Virtual Hosts to Select Different Contexts at the Same Context Path
+
+In the previous section we setup 2 different contexts to be served from different virtual hosts at _different_ context paths.
+However, there is no requirement that the context paths must be distinct: you may use the same context path for multiple contexts, and use virtual hosts to determine which one is served for a given request.
+
+Consider an example where we have the same set of DNS names as before, and the same webapps `blah.war` and `other.war`. We still want `blah.war` to be served in response to hostnames of `*.blah.*`, and we still want `other.war` to be served in response to `*.other.*` names.
+However, we would like__all__ of our clients to use the `"/"` context path, no matter which context is being targeted.
+
+In other words, we want all of the following URLs to map to `blah.war`:
+
+* `http://www.blah.com/`
+* `http://www.blah.net/`
+* `http://www.blah.org/`
+
+Similarly, we want the following URLs to map to `other.war`:
+
+* `http://www.other.com/`
+* `http://www.other.net/`
+* `http://www.other.org/`
+
+To achieve this, we simply use the same context path of `/` for each of our webapps, while still applying our different set of virtual host names.
+
+For foo webapp:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/foo.war</Set>
+  <Set name="virtualHosts">
+    <Array type="java.lang.String">
+      <Item>www.blah.com</Item>
+      <Item>www.blah.net</Item>
+      <Item>www.blah.org</Item>
+    </Array>
+  </Set>
+</Configure>
+----
+
+For bar webapp:
+
+[source, xml, subs="{sub-order}"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="contextPath">/</Set>
+  <Set name="war"><Property name="jetty.webapps"/>/bar.war</Set>
+  <Set name="virtualHosts">
+    <Array type="java.lang.String">
+      <Item>www.other.com</Item>
+      <Item>www.other.net</Item>
+      <Item>www.other.org</Item>
+    </Array>
+  </Set>
+</Configure>
+----

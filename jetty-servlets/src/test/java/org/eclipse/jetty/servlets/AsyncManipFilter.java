@@ -1,25 +1,24 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -30,8 +29,8 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Filter that merely manipulates the AsyncContext.
@@ -41,7 +40,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class AsyncManipFilter implements Filter, AsyncListener
 {
-    private static final Logger LOG = Log.getLogger(AsyncManipFilter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncManipFilter.class);
     private static final String MANIP_KEY = AsyncManipFilter.class.getName();
 
     @Override
@@ -61,13 +60,13 @@ public class AsyncManipFilter implements Filter, AsyncListener
             ctx.addListener(this);
             ctx.setTimeout(1000);
             LOG.debug("AsyncContext: {}", ctx);
-            request.setAttribute(MANIP_KEY,ctx);
+            request.setAttribute(MANIP_KEY, ctx);
             return;
         }
         else
         {
             LOG.debug("Second pass through: {}", chain);
-            chain.doFilter(request,response);
+            chain.doFilter(request, response);
         }
     }
 
@@ -79,25 +78,25 @@ public class AsyncManipFilter implements Filter, AsyncListener
     @Override
     public void onComplete(AsyncEvent event) throws IOException
     {
-        LOG.debug("onComplete() {}",event);
+        LOG.debug("onComplete() {}", event);
     }
 
     @Override
     public void onTimeout(AsyncEvent event) throws IOException
     {
-        LOG.debug("onTimeout() {}",event.getAsyncContext());
+        LOG.debug("onTimeout() {}", event.getAsyncContext());
         event.getAsyncContext().dispatch();
     }
 
     @Override
     public void onError(AsyncEvent event) throws IOException
     {
-        LOG.debug("onError()",event.getThrowable());
+        LOG.debug("onError()", event.getThrowable());
     }
 
     @Override
     public void onStartAsync(AsyncEvent event) throws IOException
     {
-        LOG.debug("onTimeout() {}",event);
+        LOG.debug("onTimeout() {}", event);
     }
 }

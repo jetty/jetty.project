@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package com.acme.osgi;
@@ -22,13 +22,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Dictionary;
 import java.util.Hashtable;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.BundleActivator;
@@ -37,8 +35,6 @@ import org.osgi.framework.ServiceRegistration;
 
 /**
  * Bootstrap a webapp
- * 
- * 
  */
 public class Activator implements BundleActivator
 {
@@ -49,9 +45,6 @@ public class Activator implements BundleActivator
     public static class TestServlet extends HttpServlet
     {
 
-        /** 
-         * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-         */
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
@@ -59,17 +52,13 @@ public class Activator implements BundleActivator
             String mimetype = req.getServletContext().getMimeType("file.gz");
             resp.setContentType("text/html");
             PrintWriter writer = resp.getWriter();
-            writer.write("<html><body><p>MIMETYPE="+mimetype+"</p></body</html>");
+            writer.write("<html><body><p>MIMETYPE=" + mimetype + "</p></body</html>");
             writer.flush();
         }
-        
     }
 
-    
-    
     /**
-     * 
-     * @param context
+     *
      */
     @Override
     public void start(BundleContext context) throws Exception
@@ -78,31 +67,30 @@ public class Activator implements BundleActivator
         WebAppContext webapp = new WebAppContext();
         webapp.addServlet(new ServletHolder(new TestServlet()), "/mime");
         Dictionary props = new Hashtable();
-        props.put("war","webappA");
-        props.put("contextPath","/acme");
+        props.put("Jetty-WarResourcePath", "webappA");
+        props.put("Web-ContextPath", "/acme");
         props.put("managedServerName", "defaultJettyServer");
-        _srA = context.registerService(WebAppContext.class.getName(),webapp,props);
-        
+        _srA = context.registerService(WebAppContext.class.getName(), webapp, props);
+
         //Create a second webappB as a Service and target it at a custom Server
         //deployed by another bundle
-        WebAppContext webappB = new WebAppContext();
+        final WebAppContext webappB = new WebAppContext();
         Dictionary propsB = new Hashtable();
-        propsB.put("war", "webappB");
-        propsB.put("contextPath", "/acme");
+        propsB.put("Jetty-WarResourcePath", "webappB");
+        propsB.put("Web-ContextPath", "/acme");
         propsB.put("managedServerName", "fooServer");
         _srB = context.registerService(WebAppContext.class.getName(), webappB, propsB);
     }
 
     /**
      * Stop the activator.
-     * 
-     * @see
-     * org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
+     *
+     * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
      */
     @Override
     public void stop(BundleContext context) throws Exception
     {
-        _srA.unregister(); 
+        _srA.unregister();
         _srB.unregister();
     }
 }

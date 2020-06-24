@@ -1,32 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.osgi.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -42,6 +35,10 @@ import org.ops4j.pax.exam.junit.PaxExam;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+
 /**
  * TestJettyOSGiBootWebAppAsService
  *
@@ -56,8 +53,6 @@ import org.osgi.framework.ServiceReference;
 @RunWith(PaxExam.class)
 public class TestJettyOSGiBootWebAppAsService
 {
-    private static final String LOG_LEVEL = "WARN";
-
     @Inject
     BundleContext bundleContext = null;
 
@@ -65,22 +60,25 @@ public class TestJettyOSGiBootWebAppAsService
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>();
+
+        options.addAll(TestOSGiUtil.configurePaxExamLogging());
+        
+        options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-webapp-as-service.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
-        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
-                                               "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
-                                               "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
+        options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res", "com.sun.org.apache.xml.internal.utils",
+            "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
+            "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
 
         options.addAll(TestOSGiUtil.coreJettyDependencies());
-        options.add(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL));
-        options.add(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL));
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 
         options.addAll(TestOSGiUtil.jspDependencies());
         options.addAll(testDependencies());
-        return options.toArray(new Option[options.size()]);
+        return options.toArray(new Option[0]);
     }
-
 
     public static List<Option> testDependencies()
     {
@@ -92,27 +90,24 @@ public class TestJettyOSGiBootWebAppAsService
 
         //a bundle that registers a new named Server instance
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-server").versionAsInProject().start());
-       
+
         return res;
     }
-
-
-    public void assertAllBundlesActiveOrResolved()
-    {
-        TestOSGiUtil.debugBundles(bundleContext);
-        TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
-    }
-
-
 
     @Test
     public void testBundle() throws Exception
     {
-        
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
-            assertAllBundlesActiveOrResolved();
-        
-        
+            TestOSGiUtil.diagnoseBundles(bundleContext);
+
+        ServiceReference<?>[] refs = bundleContext.getServiceReferences(WebAppContext.class.getName(), null);
+        assertNotNull(refs);
+        assertEquals(2, refs.length);
+        WebAppContext wac = (WebAppContext)bundleContext.getService(refs[0]);
+        assertEquals("/acme", wac.getContextPath());
+        wac = (WebAppContext)bundleContext.getService(refs[1]);
+        assertEquals("/acme", wac.getContextPath());
+
         // now test getting a static file
         HttpClient client = new HttpClient();
         try
@@ -122,34 +117,29 @@ public class TestJettyOSGiBootWebAppAsService
             assertNotNull(port);
 
             ContentResponse response = client.GET("http://127.0.0.1:" + port + "/acme/index.html");
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             String content = response.getContentAsString();
-            assertTrue(content.indexOf("<h1>Test OSGi WebAppA</h1>") != -1);
+            TestOSGiUtil.assertContains("Response contents", content,
+                "<h1>Test OSGi WebAppA</h1>");
 
             response = client.GET("http://127.0.0.1:" + port + "/acme/mime");
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
-            assertTrue(content.indexOf("MIMETYPE=application/gzip") != -1);
+            TestOSGiUtil.assertContains("Response contents", content,
+                "MIMETYPE=application/gzip");
 
             port = System.getProperty("bundle.server.port");
             assertNotNull(port);
 
             response = client.GET("http://127.0.0.1:" + port + "/acme/index.html");
-            assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
             content = response.getContentAsString();
-            assertTrue(content.indexOf("<h1>Test OSGi WebAppB</h1>") != -1);
+            TestOSGiUtil.assertContains("Response contents", content,
+                "<h1>Test OSGi WebAppB</h1>");
         }
         finally
         {
             client.stop();
         }
-
-        ServiceReference<?>[] refs = bundleContext.getServiceReferences(WebAppContext.class.getName(), null);
-        assertNotNull(refs);
-        assertEquals(2, refs.length);
-        WebAppContext wac = (WebAppContext) bundleContext.getService(refs[0]);
-        assertEquals("/acme", wac.getContextPath());
-        wac = (WebAppContext) bundleContext.getService(refs[1]);
-        assertEquals("/acme", wac.getContextPath());
     }
 }

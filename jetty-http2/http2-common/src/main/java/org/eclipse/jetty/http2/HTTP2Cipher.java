@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2;
@@ -27,20 +27,18 @@ public class HTTP2Cipher
 {
     public static final Comparator<String> COMPARATOR = new CipherComparator();
 
-    private final static Trie<Boolean> __blackProtocols = new ArrayTrie<>(6*5);
-    private final static Trie<Boolean> __blackCiphers = new ArrayTrie<>(275*40);
+    private static final Trie<Boolean> __blackProtocols = new ArrayTrie<>(6 * 5);
+    private static final Trie<Boolean> __blackCiphers = new ArrayTrie<>(275 * 40);
 
     static
     {
-        for (String p : new String[]
+        String[] protocols = {"TLSv1.2", "TLSv1.1", "TLSv1", "SSL", "SSLv2", "SSLv3"};
+        for (String p : protocols)
         {
-                "TLSv1.2","TLSv1.1", "TLSv1", "SSL", "SSLv2", "SSLv3"
-        })
-        {
-            __blackProtocols.put(p,Boolean.TRUE);
+            __blackProtocols.put(p, Boolean.TRUE);
         }
 
-        for (String c : new String[]
+        String[] ciphers =
         {
             "TLS_NULL_WITH_NULL_NULL",
             "TLS_RSA_WITH_NULL_MD5",
@@ -318,9 +316,10 @@ public class HTTP2Cipher
             "TLS_PSK_WITH_AES_256_CCM",
             "TLS_PSK_WITH_AES_128_CCM_8",
             "TLS_PSK_WITH_AES_256_CCM_8"
-        })
+        };
+        for (String c : ciphers)
         {
-            __blackCiphers.put(c,Boolean.TRUE);
+            __blackCiphers.put(c, Boolean.TRUE);
         }
     }
 
@@ -344,9 +343,9 @@ public class HTTP2Cipher
         @Override
         public int compare(String c1, String c2)
         {
-            boolean b1=isBlackListCipher(c1);
-            boolean b2=isBlackListCipher(c2);
-            if (b1==b2)
+            boolean b1 = isBlackListCipher(c1);
+            boolean b2 = isBlackListCipher(c2);
+            if (b1 == b2)
                 return 0;
             if (b1)
                 return 1;

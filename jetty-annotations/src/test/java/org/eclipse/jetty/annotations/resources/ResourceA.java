@@ -1,25 +1,24 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.annotations.resources;
 
 import java.io.IOException;
-
 import javax.annotation.Resource;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -28,8 +27,6 @@ import javax.servlet.ServletResponse;
 
 /**
  * ResourceA
- *
- *
  */
 public class ResourceA implements javax.servlet.Servlet
 {
@@ -37,25 +34,24 @@ public class ResourceA implements javax.servlet.Servlet
     private Integer h;
     private Integer k;
 
-
-    @Resource(name="myf", mappedName="resB") //test giving both a name and mapped name from the environment
+    @Resource(name = "myf", mappedName = "resB") //test giving both a name and mapped name from the environment
     private Integer f;//test a non inherited field that needs injection
 
-    @Resource(mappedName="resA") //test the default naming scheme but using a mapped name from the environment
+    @Resource(mappedName = "resA") //test the default naming scheme but using a mapped name from the environment
     private Integer g;
 
-    @Resource(name="resA") //test using the given name as the name from the environment
+    @Resource(name = "resA") //test using the given name as the name from the environment
     private Integer j;
 
-    @Resource(mappedName="resB") //test using the default name on an inherited field
+    @Resource(mappedName = "resB") //test using the default name on an inherited field
     protected Integer n; //TODO - if it's inherited, is it supposed to use the classname of the class it is inherited by?
 
-
-    @Resource(name="mye", mappedName="resA", type=Integer.class)
+    @Resource(name = "mye", mappedName = "resA", type = Integer.class)
     public void setE(Integer e)
     {
-        this.e=e;
+        this.e = e;
     }
+
     public Integer getE()
     {
         return this.e;
@@ -76,42 +72,48 @@ public class ResourceA implements javax.servlet.Servlet
         return this.j;
     }
 
-    @Resource(mappedName="resA")
+    @Resource(mappedName = "resA")
     public void setH(Integer h)
     {
-        this.h=h;
+        this.h = h;
     }
 
-    @Resource(name="resA")
+    @Resource(name = "resA")
     public void setK(Integer k)
     {
-        this.k=k;
+        this.k = k;
     }
+
     public void x()
     {
         System.err.println("ResourceA.x");
     }
+
     @Override
     public void destroy()
     {
     }
+
     @Override
     public ServletConfig getServletConfig()
     {
         return null;
     }
+
     @Override
     public String getServletInfo()
     {
         return null;
     }
+
     @Override
     public void init(ServletConfig arg0) throws ServletException
     {
     }
+
     @Override
     public void service(ServletRequest arg0, ServletResponse arg1)
-            throws ServletException, IOException
+        throws ServletException, IOException
     {
     }
 }

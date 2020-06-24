@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
 
   <!-- ===================================================================== -->
-  <!-- Configure a factory for in-memory Session objects                     -->
+  <!-- Configure a factory for DefaultSessionCache                           -->
   <!-- ===================================================================== -->
   <Call name="addBean">
    <Arg>
@@ -14,6 +14,8 @@
      <Set name="saveOnInactiveEvict"><Property name="jetty.session.saveOnInactiveEvict" default="false" /></Set>
      <Set name="saveOnCreate"><Property name="jetty.session.saveOnCreate" default="false" /></Set>
      <Set name="removeUnloadableSessions"><Property name="jetty.session.removeUnloadableSessions" default="false"/></Set>
+     <Set name="flushOnResponseCommit"><Property name="jetty.session.flushOnResponseCommit" default="false"/></Set>
+     <Set name="invalidateOnShutdown"><Property name="jetty.session.invalidateOnShutdown" default="false"/></Set>
     </New>
    </Arg>
   </Call>

@@ -1,38 +1,34 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.server;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.util.Date;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SocketCustomizationListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -42,20 +38,19 @@ public class HTTP2CServer extends Server
     {
         HttpConfiguration config = new HttpConfiguration();
         // HTTP + HTTP/2 connector
-        
+
         HttpConnectionFactory http1 = new HttpConnectionFactory(config);
         HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(config);
-        ServerConnector connector = new ServerConnector(this,http1,http2c);
+        ServerConnector connector = new ServerConnector(this, http1, http2c);
         connector.setPort(port);
         addConnector(connector);
 
         ((QueuedThreadPool)getThreadPool()).setName("server");
 
         setHandler(new SimpleHandler());
-        
     }
 
-    public static void main(String... args ) throws Exception
+    public static void main(String... args) throws Exception
     {
         HTTP2CServer server = new HTTP2CServer(8080);
         server.start();
@@ -67,15 +62,15 @@ public class HTTP2CServer extends Server
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             baseRequest.setHandled(true);
-            String code=request.getParameter("code");
-            if (code!=null)
+            String code = request.getParameter("code");
+            if (code != null)
                 response.setStatus(Integer.parseInt(code));
 
-            response.setHeader("Custom","Value");
+            response.setHeader("Custom", "Value");
             response.setContentType("text/plain");
-            String content = "Hello from Jetty using "+request.getProtocol() +"\n";
-            content+="uri="+request.getRequestURI()+"\n";
-            content+="date="+new Date()+"\n";
+            String content = "Hello from Jetty using " + request.getProtocol() + "\n";
+            content += "uri=" + request.getRequestURI() + "\n";
+            content += "date=" + new Date() + "\n";
             response.setContentLength(content.length());
             response.getOutputStream().print(content);
         }

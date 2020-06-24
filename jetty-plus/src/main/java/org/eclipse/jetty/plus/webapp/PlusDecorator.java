@@ -1,55 +1,47 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.plus.webapp;
 
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.plus.annotation.RunAsCollection;
 import org.eclipse.jetty.util.Decorator;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * PlusDecorator
- *
- *
  */
 public class PlusDecorator implements Decorator
 {
-    private static final Logger LOG = Log.getLogger(PlusDecorator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PlusDecorator.class);
 
     protected WebAppContext _context;
 
-    public PlusDecorator (WebAppContext context)
+    public PlusDecorator(WebAppContext context)
     {
         _context = context;
     }
 
     @Override
-    public Object decorate (Object o)
+    public Object decorate(Object o)
     {
-
-        RunAsCollection runAses = (RunAsCollection)_context.getAttribute(RunAsCollection.RUNAS_COLLECTION);
-        if (runAses != null)
-            runAses.setRunAs(o);
-
         InjectionCollection injections = (InjectionCollection)_context.getAttribute(InjectionCollection.INJECTION_COLLECTION);
         if (injections != null)
             injections.inject(o);
@@ -70,7 +62,7 @@ public class PlusDecorator implements Decorator
     }
 
     @Override
-    public void destroy (Object o)
+    public void destroy(Object o)
     {
         LifeCycleCallbackCollection callbacks = (LifeCycleCallbackCollection)_context.getAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION);
         if (callbacks != null)
@@ -81,7 +73,7 @@ public class PlusDecorator implements Decorator
             }
             catch (Exception e)
             {
-                LOG.warn("Destroying instance of "+o.getClass(), e);
+                LOG.warn("Destroying instance of " + o.getClass(), e);
             }
         }
     }

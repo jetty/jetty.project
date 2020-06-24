@@ -1,28 +1,28 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
@@ -36,13 +36,11 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     private String _replacement;
     private String _query;
 
-    /* ------------------------------------------------------------ */
     public RewritePatternRule()
     {
-        this(null,null);
+        this(null, null);
     }
-    
-    /* ------------------------------------------------------------ */
+
     public RewritePatternRule(@Name("pattern") String pattern, @Name("replacement") String replacement)
     {
         super(pattern);
@@ -50,9 +48,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
         _terminating = false;
         setReplacement(replacement);
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Whenever a match is found, it replaces with this value.
      *
@@ -60,10 +56,10 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
      */
     public void setReplacement(String replacement)
     {
-        if (replacement==null)
+        if (replacement == null)
         {
-            _replacement=null;
-            _query=null;
+            _replacement = null;
+            _query = null;
         }
         else
         {
@@ -73,7 +69,6 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
         }
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
@@ -81,7 +76,6 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
         return target;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * This method will add _query to the requests's queryString and also combine it with existing queryStrings in
      * the request. However it won't take care for duplicate. E.g. if request.getQueryString contains a parameter
@@ -97,29 +91,17 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     @Override
     public void applyURI(Request request, String oldURI, String newURI) throws IOException
     {
-        if (_query == null)
-        {
-            request.setURIPathQuery(newURI);
-        }
-        else
-        {
-            String queryString = request.getQueryString();
-            if (queryString != null)
-                queryString = queryString + "&" + _query;
-            else
-                queryString = _query;
-            request.setURIPathQuery(newURI);
-            request.setQueryString(queryString);
-        }
+        HttpURI baseURI = request.getHttpURI();
+        String query = URIUtil.addQueries(baseURI.getQuery(), _query);
+        request.setHttpURI(HttpURI.build(baseURI, newURI, baseURI.getParam(), query));
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Returns the replacement string.
      */
     @Override
     public String toString()
     {
-        return super.toString()+"["+_replacement+"]";
+        return super.toString() + "[" + _replacement + "]";
     }
 }

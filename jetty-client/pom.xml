@@ -9,10 +9,12 @@
   <artifactId>jetty-client</artifactId>
   <name>Jetty :: Asynchronous HTTP Client</name>
   <url>http://www.eclipse.org/jetty</url>
+
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
     <jetty.test.policy.loc>target/test-policy</jetty.test.policy.loc>
   </properties>
+
   <build>
     <plugins>
       <plugin>
@@ -20,11 +22,8 @@
         <configuration>
           <argLine>
             @{argLine} ${jetty.surefire.argLine}
-            --add-reads org.eclipse.jetty.client=javax.servlet.api
             --add-modules java.security.jgss
-            --add-modules javax.servlet.api
             --add-modules org.eclipse.jetty.jmx
-            --add-modules org.slf4j
           </argLine>
         </configuration>
       </plugin>
@@ -114,14 +113,19 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-alpn-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
       <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
 
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -142,14 +146,20 @@
       <version>1.1.1</version>
       <scope>test</scope>
     </dependency>
+    <!-- transitive dependency defined as a range and we don't want that -->
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <groupId>net.minidev</groupId>
+      <artifactId>json-smart</artifactId>
+      <version>2.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

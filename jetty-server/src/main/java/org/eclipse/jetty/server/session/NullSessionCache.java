@@ -1,35 +1,40 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.session;
 
+import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * NullSessionCache
  *
- * Does not actually cache any Session objects. Useful for testing. 
- * Also useful if you do not want to share Session objects with the same id between 
- * simultaneous requests: note that this means that context forwarding can't share 
+ * Does not actually cache any Session objects. Useful for testing.
+ * Also useful if you do not want to share Session objects with the same id between
+ * simultaneous requests: note that this means that context forwarding can't share
  * the same id either.
  */
 public class NullSessionCache extends AbstractSessionCache
 {
+    private static final Logger LOG = LoggerFactory.getLogger(NullSessionCache.class);
 
     /**
      * @param handler The SessionHandler related to this SessionCache
@@ -40,35 +45,23 @@ public class NullSessionCache extends AbstractSessionCache
         super.setEvictionPolicy(EVICT_ON_SESSION_EXIT);
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.SessionCache#shutdown()
-     */
     @Override
     public void shutdown()
     {
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public Session newSession(SessionData data)
     {
         return new Session(getSessionHandler(), data);
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#newSession(javax.servlet.http.HttpServletRequest, org.eclipse.jetty.server.session.SessionData)
-     */
     @Override
     public Session newSession(HttpServletRequest request, SessionData data)
     {
         return new Session(getSessionHandler(), request, data);
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doGet(java.lang.String)
-     */
     @Override
     public Session doGet(String id)
     {
@@ -76,9 +69,6 @@ public class NullSessionCache extends AbstractSessionCache
         return null;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doPutIfAbsent(java.lang.String, org.eclipse.jetty.server.session.Session)
-     */
     @Override
     public Session doPutIfAbsent(String id, Session session)
     {
@@ -86,9 +76,6 @@ public class NullSessionCache extends AbstractSessionCache
         return null;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doReplace(java.lang.String, org.eclipse.jetty.server.session.Session, org.eclipse.jetty.server.session.Session)
-     */
     @Override
     public boolean doReplace(String id, Session oldValue, Session newValue)
     {
@@ -96,21 +83,21 @@ public class NullSessionCache extends AbstractSessionCache
         return true;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#doDelete(java.lang.String)
-     */
     @Override
     public Session doDelete(String id)
     {
         return null;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionCache#setEvictionPolicy(int)
-     */
     @Override
     public void setEvictionPolicy(int evictionTimeout)
     {
-        LOG.warn("Ignoring eviction setting:"+evictionTimeout);
+        LOG.warn("Ignoring eviction setting: {}", evictionTimeout);
+    }
+
+    @Override
+    protected Session doComputeIfAbsent(String id, Function<String, Session> mappingFunction)
+    {
+        return mappingFunction.apply(id);
     }
 }

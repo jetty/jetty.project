@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.thread;
@@ -21,9 +21,11 @@ package org.eclipse.jetty.util.thread;
 import java.io.IOException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 
@@ -41,45 +43,63 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     private final boolean daemon;
     private final ClassLoader classloader;
     private final ThreadGroup threadGroup;
+    private final int threads;
+    private final AtomicInteger count = new AtomicInteger();
     private volatile ScheduledThreadPoolExecutor scheduler;
     private volatile Thread thread;
 
     public ScheduledExecutorScheduler()
     {
         this(null, false);
-    }  
+    }
 
     public ScheduledExecutorScheduler(String name, boolean daemon)
     {
-        this (name,daemon, Thread.currentThread().getContextClassLoader());
-    }
-    
-    public ScheduledExecutorScheduler(String name, boolean daemon, ClassLoader threadFactoryClassLoader)
-    {
-        this(name, daemon, threadFactoryClassLoader, null);
+        this(name, daemon, null);
     }
 
-    public ScheduledExecutorScheduler(String name, boolean daemon, ClassLoader threadFactoryClassLoader, ThreadGroup threadGroup)
+    public ScheduledExecutorScheduler(@Name("name") String name, @Name("daemon") boolean daemon, @Name("threads") int threads)
     {
-        this.name = name == null ? "Scheduler-" + hashCode() : name;
+        this(name, daemon, null, null, threads);
+    }
+
+    public ScheduledExecutorScheduler(String name, boolean daemon, ClassLoader classLoader)
+    {
+        this(name, daemon, classLoader, null);
+    }
+
+    public ScheduledExecutorScheduler(String name, boolean daemon, ClassLoader classLoader, ThreadGroup threadGroup)
+    {
+        this(name, daemon, classLoader, threadGroup, -1);
+    }
+
+    /**
+     * @param name The name of the scheduler threads or null for automatic name
+     * @param daemon True if scheduler threads should be daemon
+     * @param classLoader The classloader to run the threads with or null to use the current thread context classloader
+     * @param threadGroup The threadgroup to use or null for no thread group
+     * @param threads The number of threads to pass to the the core {@link ScheduledThreadPoolExecutor} or -1 for a
+     * heuristic determined number of threads.
+     */
+    public ScheduledExecutorScheduler(@Name("name") String name, @Name("daemon") boolean daemon, @Name("classLoader") ClassLoader classLoader, @Name("threadGroup") ThreadGroup threadGroup, @Name("threads") int threads)
+    {
+        this.name = StringUtil.isBlank(name) ? "Scheduler-" + hashCode() : name;
         this.daemon = daemon;
-        this.classloader = threadFactoryClassLoader == null ? Thread.currentThread().getContextClassLoader() : threadFactoryClassLoader;
+        this.classloader = classLoader == null ? Thread.currentThread().getContextClassLoader() : classLoader;
         this.threadGroup = threadGroup;
+        this.threads = threads;
     }
 
     @Override
     protected void doStart() throws Exception
     {
-        scheduler = new ScheduledThreadPoolExecutor(1, new ThreadFactory()
+        int size = threads > 0 ? threads : 1;
+        scheduler = new ScheduledThreadPoolExecutor(size, r ->
         {
-            @Override
-            public Thread newThread(Runnable r)
-            {
-                Thread thread = ScheduledExecutorScheduler.this.thread = new Thread(threadGroup, r, name);
-                thread.setDaemon(daemon);
-                thread.setContextClassLoader(classloader);
-                return thread;
-            }
+            Thread thread = ScheduledExecutorScheduler.this.thread = new Thread(threadGroup, r, name + "-" + count.incrementAndGet());
+            thread.setDaemon(daemon);
+            thread.setContextClassLoader(classloader);
+            return thread;
         });
         scheduler.setRemoveOnCancelPolicy(true);
         super.doStart();
@@ -97,8 +117,8 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     public Task schedule(Runnable task, long delay, TimeUnit unit)
     {
         ScheduledThreadPoolExecutor s = scheduler;
-        if (s==null)
-            return ()->false;
+        if (s == null)
+            return () -> false;
         ScheduledFuture<?> result = s.schedule(task, delay, unit);
         return new ScheduledFutureTask(result);
     }
@@ -116,7 +136,7 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
         if (thread == null)
             Dumpable.dumpObject(out, this);
         else
-            Dumpable.dumpObjects(out,indent,this, (Object[])thread.getStackTrace());
+            Dumpable.dumpObjects(out, indent, this, (Object[])thread.getStackTrace());
     }
 
     private static class ScheduledFutureTask implements Task

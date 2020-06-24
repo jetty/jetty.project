@@ -24,7 +24,7 @@
             </goals>
             <configuration>
               <excludes>**/MANIFEST.MF</excludes>
-              <excludeGroupIds>javax.annotations,org.objectweb.asm,javax.servlet,org.slf4j,org.eclipse.jetty.orbit,org.mortbay.jetty.npn</excludeGroupIds>
+              <excludeGroupIds>jakarta.annotation,org.objectweb.asm,javax.servlet,org.slf4j,org.eclipse.jetty.orbit,org.mortbay.jetty.npn</excludeGroupIds>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
@@ -63,8 +63,7 @@
             </goals>
             <configuration>
               <archive>
-                <manifest>
-                </manifest>
+                <manifest></manifest>
                 <manifestEntries>
                   <mode>development</mode>
                   <url>http://eclipse.org/jetty</url>
@@ -108,13 +107,13 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>websocket-servlet</artifactId>
+      <artifactId>websocket-util-server</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-server</artifactId>
+      <artifactId>websocket-javax-server</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
@@ -144,13 +143,13 @@
     </dependency>
     <!-- dependencies that jetty-all needs (some optional) -->
     <dependency>
-      <groupId>javax.websocket</groupId>
-      <artifactId>javax.websocket-api</artifactId>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-javax-websocket-api</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-servlet-api</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.thread;
@@ -24,8 +24,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A budget of required thread usage, used to warn or error for insufficient configured threads.</p>
@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class ThreadPoolBudget
 {
-    static final Logger LOG = Log.getLogger(ThreadPoolBudget.class);
+    static final Logger LOG = LoggerFactory.getLogger(ThreadPoolBudget.class);
 
     public interface Lease extends Closeable
     {
@@ -49,7 +49,7 @@ public class ThreadPoolBudget
         private final Object leasee;
         private final int threads;
 
-        private Leased(Object leasee,int threads)
+        private Leased(Object leasee, int threads)
         {
             this.leasee = leasee;
             this.threads = threads;
@@ -90,23 +90,13 @@ public class ThreadPoolBudget
 
     /**
      * Construct a budget for a SizedThreadPool.
+     *
      * @param pool The pool to budget thread allocation for.
      */
     public ThreadPoolBudget(ThreadPool.SizedThreadPool pool)
     {
         this.pool = pool;
         this.warnAt = -1;
-    }
-
-    /**
-     * @param pool The pool to budget thread allocation for.
-     * @param warnAt The level of free threads at which a warning is generated.
-     */
-    @Deprecated
-    public ThreadPoolBudget(ThreadPool.SizedThreadPool pool, int warnAt)
-    {
-        this.pool = pool;
-        this.warnAt = warnAt;
     }
 
     public ThreadPool.SizedThreadPool getSizedThreadPool()
@@ -122,14 +112,14 @@ public class ThreadPoolBudget
 
     public Lease leaseTo(Object leasee, int threads)
     {
-        Leased lease = new Leased(leasee,threads);
+        Leased lease = new Leased(leasee, threads);
         leases.add(lease);
         try
         {
             check(pool.getMaxThreads());
             return lease;
         }
-        catch(IllegalStateException e)
+        catch (IllegalStateException e)
         {
             lease.close();
             throw e;
@@ -157,7 +147,7 @@ public class ThreadPoolBudget
 
         if (left < warnAt)
         {
-            if (warned.compareAndSet(false,true))
+            if (warned.compareAndSet(false, true))
             {
                 printInfoOnLeases();
                 LOG.info("Low configured threads: (max={} - required={})={} < warnAt={} for {}", maxThreads, required, left, warnAt, pool);
@@ -169,7 +159,7 @@ public class ThreadPoolBudget
 
     private void printInfoOnLeases()
     {
-        leases.forEach(lease-> LOG.info("{} requires {} threads from {}",lease.leasee,lease.getThreads(),pool));
+        leases.forEach(lease -> LOG.info("{} requires {} threads from {}", lease.leasee, lease.getThreads(), pool));
     }
 
     public static Lease leaseFrom(Executor executor, Object leasee, int threads)
@@ -177,8 +167,8 @@ public class ThreadPoolBudget
         if (executor instanceof ThreadPool.SizedThreadPool)
         {
             ThreadPoolBudget budget = ((ThreadPool.SizedThreadPool)executor).getThreadPoolBudget();
-            if (budget!=null)
-                return budget.leaseTo(leasee,threads);
+            if (budget != null)
+                return budget.leaseTo(leasee, threads);
         }
         return NOOP_LEASE;
     }

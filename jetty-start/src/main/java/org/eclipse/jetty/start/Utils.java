@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.start;
@@ -29,7 +29,7 @@ public final class Utils
             return "";
         }
 
-        return join(arr,0,arr.length,delim);
+        return join(arr, 0, arr.length, delim);
     }
 
     public static String join(Object[] arr, int start, int end, String delim)
@@ -72,9 +72,8 @@ public final class Utils
 
     /**
      * Is String null, empty, or consisting of only whitespace.
-     * 
-     * @param value
-     *            the value to test
+     *
+     * @param value the value to test
      * @return true if null, empty, or consisting of only whitespace
      */
     public static boolean isBlank(String value)
@@ -97,9 +96,8 @@ public final class Utils
 
     /**
      * Is String valid and has something other than whitespace
-     * 
-     * @param value
-     *            the value to test
+     *
+     * @param value the value to test
      * @return true if String has something other than whitespace
      */
     public static boolean isNotBlank(String value)

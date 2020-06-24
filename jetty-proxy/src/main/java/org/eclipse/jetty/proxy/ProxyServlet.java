@@ -1,47 +1,41 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.proxy;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.Iterator;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.AsyncContentProvider;
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
-import org.eclipse.jetty.client.util.InputStreamContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
 
 /**
  * <p>Servlet 3.0 asynchronous proxy servlet.</p>
@@ -56,9 +50,9 @@ public class ProxyServlet extends AbstractProxyServlet
     private static final String CONTINUE_ACTION_ATTRIBUTE = ProxyServlet.class.getName() + ".continueAction";
 
     @Override
-    protected void service(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        final int requestId = getRequestId(request);
+        int requestId = getRequestId(request);
 
         String rewrittenTarget = rewriteTarget(request);
 
@@ -77,15 +71,15 @@ public class ProxyServlet extends AbstractProxyServlet
             return;
         }
 
-        final Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
-                .method(request.getMethod())
-                .version(HttpVersion.fromString(request.getProtocol()));
+        Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
+            .method(request.getMethod())
+            .version(HttpVersion.fromString(request.getProtocol()));
 
         copyRequestHeaders(request, proxyRequest);
 
         addProxyHeaders(request, proxyRequest);
 
-        final AsyncContext asyncContext = request.startAsync();
+        AsyncContext asyncContext = request.startAsync();
         // We do not timeout the continuation, but the proxy request
         asyncContext.setTimeout(0);
         proxyRequest.timeout(getTimeout(), TimeUnit.MILLISECONDS);
@@ -94,15 +88,17 @@ public class ProxyServlet extends AbstractProxyServlet
         {
             if (expects100Continue(request))
             {
-                DeferredContentProvider deferred = new DeferredContentProvider();
-                proxyRequest.content(deferred);
+                // Must delay the call to request.getInputStream()
+                // that sends the 100 Continue to the client.
+                AsyncRequestContent delegate = new AsyncRequestContent();
+                proxyRequest.body(delegate);
                 proxyRequest.attribute(CLIENT_REQUEST_ATTRIBUTE, request);
                 proxyRequest.attribute(CONTINUE_ACTION_ATTRIBUTE, (Runnable)() ->
                 {
                     try
                     {
-                        ContentProvider provider = proxyRequestContent(request, response, proxyRequest);
-                        new DelegatingContentProvider(request, proxyRequest, response, provider, deferred).iterate();
+                        Request.Content content = proxyRequestContent(request, response, proxyRequest);
+                        new DelegatingRequestContent(request, proxyRequest, response, content, delegate);
                     }
                     catch (Throwable failure)
                     {
@@ -112,16 +108,25 @@ public class ProxyServlet extends AbstractProxyServlet
             }
             else
             {
-                proxyRequest.content(proxyRequestContent(request, response, proxyRequest));
+                proxyRequest.body(proxyRequestContent(request, response, proxyRequest));
             }
         }
 
         sendProxyRequest(request, response, proxyRequest);
     }
 
-    protected ContentProvider proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
+    /**
+     * Wraps the client-to-proxy request content in a {@code Request.Content} for the proxy-to-server request.
+     *
+     * @param request the client-to-proxy request
+     * @param response the proxy-to-client response
+     * @param proxyRequest the proxy-to-server request
+     * @return a proxy-to-server request content
+     * @throws IOException if the proxy-to-server request content cannot be created
+     */
+    protected Request.Content proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
     {
-        return new ProxyInputStreamContentProvider(request, response, proxyRequest, request.getInputStream());
+        return new ProxyInputStreamRequestContent(request, response, proxyRequest, request.getInputStream());
     }
 
     @Override
@@ -201,7 +206,7 @@ public class ProxyServlet extends AbstractProxyServlet
         }
 
         @Override
-        public void onContent(final Response proxyResponse, ByteBuffer content, final Callback callback)
+        public void onContent(Response proxyResponse, ByteBuffer content, Callback callback)
         {
             byte[] buffer;
             int offset;
@@ -241,13 +246,13 @@ public class ProxyServlet extends AbstractProxyServlet
         }
     }
 
-    protected class ProxyInputStreamContentProvider extends InputStreamContentProvider
+    protected class ProxyInputStreamRequestContent extends InputStreamRequestContent
     {
         private final HttpServletResponse response;
         private final Request proxyRequest;
         private final HttpServletRequest request;
 
-        protected ProxyInputStreamContentProvider(HttpServletRequest request, HttpServletResponse response, Request proxyRequest, InputStream input)
+        protected ProxyInputStreamRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest, InputStream input)
         {
             super(input);
             this.request = request;
@@ -266,11 +271,6 @@ public class ProxyServlet extends AbstractProxyServlet
         {
             if (_log.isDebugEnabled())
                 _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), length);
-            return onRequestContent(request, proxyRequest, buffer, offset, length);
-        }
-
-        protected ByteBuffer onRequestContent(HttpServletRequest request, Request proxyRequest, byte[] buffer, int offset, int length)
-        {
             return super.onRead(buffer, offset, length);
         }
 
@@ -281,80 +281,57 @@ public class ProxyServlet extends AbstractProxyServlet
         }
     }
 
-    private class DelegatingContentProvider extends IteratingCallback implements AsyncContentProvider.Listener
+    private class DelegatingRequestContent implements Request.Content.Consumer
     {
         private final HttpServletRequest clientRequest;
         private final Request proxyRequest;
         private final HttpServletResponse proxyResponse;
-        private final Iterator<ByteBuffer> iterator;
-        private final DeferredContentProvider deferred;
+        private final AsyncRequestContent delegate;
+        private final Request.Content.Subscription subscription;
 
-        private DelegatingContentProvider(HttpServletRequest clientRequest, Request proxyRequest, HttpServletResponse proxyResponse, ContentProvider provider, DeferredContentProvider deferred)
+        private DelegatingRequestContent(HttpServletRequest clientRequest, Request proxyRequest, HttpServletResponse proxyResponse, Request.Content content, AsyncRequestContent delegate)
         {
             this.clientRequest = clientRequest;
             this.proxyRequest = proxyRequest;
             this.proxyResponse = proxyResponse;
-            this.iterator = provider.iterator();
-            this.deferred = deferred;
-            if (provider instanceof AsyncContentProvider)
-                ((AsyncContentProvider)provider).setListener(this);
+            this.delegate = delegate;
+            this.subscription = content.subscribe(this, true);
+            this.subscription.demand();
         }
 
         @Override
-        protected Action process() throws Exception
+        public void onContent(ByteBuffer buffer, boolean last, Callback callback)
         {
-            if (!iterator.hasNext())
-                return Action.SUCCEEDED;
-
-            ByteBuffer buffer = iterator.next();
-            if (buffer == null)
-                return Action.IDLE;
-
-            deferred.offer(buffer, this);
-            return Action.SCHEDULED;
-        }
-
-        @Override
-        public void succeeded()
-        {
-            if (iterator instanceof Callback)
-                ((Callback)iterator).succeeded();
-            super.succeeded();
-        }
-
-        @Override
-        protected void onCompleteSuccess()
-        {
-            try
+            Callback wrapped = Callback.from(() -> succeeded(callback, last), failure -> failed(callback, failure));
+            if (buffer.hasRemaining())
             {
-                if (iterator instanceof Closeable)
-                    ((Closeable)iterator).close();
-                deferred.close();
+                delegate.offer(buffer, wrapped);
             }
-            catch (Throwable x)
+            else
             {
-                _log.ignore(x);
+                wrapped.succeeded();
             }
+            if (last)
+                delegate.close();
+        }
+
+        private void succeeded(Callback callback, boolean last)
+        {
+            callback.succeeded();
+            if (!last)
+                subscription.demand();
+        }
+
+        private void failed(Callback callback, Throwable failure)
+        {
+            callback.failed(failure);
+            onFailure(failure);
         }
 
         @Override
-        protected void onCompleteFailure(Throwable failure)
+        public void onFailure(Throwable failure)
         {
-            if (iterator instanceof Callback)
-                ((Callback)iterator).failed(failure);
             onClientRequestFailure(clientRequest, proxyRequest, proxyResponse, failure);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-
-        @Override
-        public void onContent()
-        {
-            iterate();
         }
     }
 }

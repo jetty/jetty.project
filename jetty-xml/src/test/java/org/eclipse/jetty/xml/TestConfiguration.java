@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.xml;
@@ -30,19 +30,19 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.junit.jupiter.api.Disabled;
 
 @Disabled
-public class TestConfiguration extends HashMap<String,Object>
+public class TestConfiguration extends HashMap<String, Object>
 {
-    public static int VALUE=77;
+    public static int VALUE = 77;
 
-    public final Object ID = new Object();
-    
+    public final Object id = new Object();
+
     public final String name;
     public TestConfiguration nested;
-    public String testString="default";
+    public String testString = "default";
     public Object testObject;
     public int testInt;
     public URL url;
-    public static boolean called=false;
+    public static boolean called = false;
     public Object[] oa;
     public int[] ia;
     public int testField1;
@@ -54,32 +54,41 @@ public class TestConfiguration extends HashMap<String,Object>
     private Set set;
     private ConstructorArgTestClass constructorArgTestClass;
     public Map map;
-    
+    public Double number;
 
-    
     public TestConfiguration()
     {
         this("");
     }
-    
+
     public TestConfiguration(@Name("name") String n)
     {
-        name=n;
+        name = n;
     }
-    
+
+    public void setNumber(Object value)
+    {
+        testObject = value;
+    }
+
+    public void setNumber(double value)
+    {
+        number = value;
+    }
+
     public void setTest(Object value)
     {
-        testObject=value;
+        testObject = value;
     }
 
     public void setTest(int value)
     {
-        testInt=value;
+        testInt = value;
     }
 
     public void setPropertyTest(int value)
     {
-        propValue=value;
+        propValue = value;
     }
 
     public TestConfiguration getNested()
@@ -104,19 +113,19 @@ public class TestConfiguration extends HashMap<String,Object>
 
     public void call()
     {
-        put("Called","Yes");
+        put("Called", "Yes");
     }
 
     public TestConfiguration call(Boolean b)
     {
-        nested.put("Arg",b);
+        nested.put("Arg", b);
         return nested;
     }
 
-    public void call(URL u,boolean b)
+    public void call(URL u, boolean b)
     {
-        put("URL",b?"1":"0");
-        url=u;
+        put("URL", b ? "1" : "0");
+        url = u;
     }
 
     public String getString()
@@ -126,17 +135,17 @@ public class TestConfiguration extends HashMap<String,Object>
 
     public static void callStatic()
     {
-        called=true;
+        called = true;
     }
 
     public void call(Object[] oa)
     {
-        this.oa=oa;
+        this.oa = oa;
     }
 
     public void call(int[] ia)
     {
-        this.ia=ia;
+        this.ia = ia;
     }
 
     @SuppressWarnings("rawtypes")
@@ -188,5 +197,4 @@ public class TestConfiguration extends HashMap<String,Object>
     {
         this.map = map;
     }
-    
 }

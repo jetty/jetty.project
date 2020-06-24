@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -45,15 +45,27 @@ public interface ConnectionPool extends Closeable
     boolean isClosed();
 
     /**
-     * <p>Returns an idle connection, if available, or schedules the opening
-     * of a new connection and returns {@code null}.</p>
+     * <p>Returns an idle connection, if available;
+     * if an idle connection is not available, and the given {@code create} parameter is {@code true},
+     * then schedules the opening of a new connection, if possible within the configuration of this
+     * connection pool (for example, if it does not exceed the max connection count);
+     * otherwise returns {@code null}.</p>
      *
-     * @return an available connection, or null
+     * @param create whether to schedule the opening of a connection if no idle connections are available
+     * @return an idle connection or {@code null} if no idle connections are available
      */
-    Connection acquire();
+    Connection acquire(boolean create);
 
     /**
-     * <p>Returns the given connection, previously obtained via {@link #acquire()},
+     * <p>Accepts the given connection to be managed by this ConnectionPool.</p>
+     *
+     * @param connection the connection to accept
+     * @return whether the connection has been accepted
+     */
+    boolean accept(Connection connection);
+
+    /**
+     * <p>Returns the given connection, previously obtained via {@link #acquire(boolean)},
      * back to this ConnectionPool.</p>
      *
      * @param connection the connection to release
@@ -70,11 +82,6 @@ public interface ConnectionPool extends Closeable
      */
     boolean remove(Connection connection);
 
-    /**
-     * Closes this ConnectionPool.
-     *
-     * @see #isClosed()
-     */
     @Override
     void close();
 

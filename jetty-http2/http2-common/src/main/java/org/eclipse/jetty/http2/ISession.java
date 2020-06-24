@@ -1,24 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -30,7 +31,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 
 /**
- * <p>The SPI interface for implementing a HTTP/2 session.</p>
+ * <p>The SPI interface for implementing an HTTP/2 session.</p>
  * <p>This class extends {@link Session} by adding the methods required to
  * implement the HTTP/2 session functionalities.</p>
  */
@@ -49,10 +50,10 @@ public interface ISession extends Session
     /**
      * <p>Enqueues the given frames to be written to the connection.</p>
      *
-     * @param stream   the stream the frames belong to
+     * @param stream the stream the frames belong to
      * @param callback the callback that gets notified when the frames have been sent
-     * @param frame    the first frame to enqueue
-     * @param frames   additional frames to enqueue
+     * @param frame the first frame to enqueue
+     * @param frames additional frames to enqueue
      */
     public void frames(IStream stream, Callback callback, Frame frame, Frame... frames);
 
@@ -61,9 +62,9 @@ public interface ISession extends Session
      * <p>Differently from {@link #frames(IStream, Callback, Frame, Frame...)}, this method
      * generates atomically the stream id for the pushed stream.</p>
      *
-     * @param stream   the stream associated to the pushed stream
-     * @param promise  the promise that gets notified of the pushed stream creation
-     * @param frame    the PUSH_PROMISE frame to enqueue
+     * @param stream the stream associated to the pushed stream
+     * @param promise the promise that gets notified of the pushed stream creation
+     * @param frame the PUSH_PROMISE frame to enqueue
      * @param listener the listener that gets notified of pushed stream events
      */
     public void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame, Stream.Listener listener);
@@ -71,9 +72,9 @@ public interface ISession extends Session
     /**
      * <p>Enqueues the given DATA frame to be written to the connection.</p>
      *
-     * @param stream   the stream the data frame belongs to
+     * @param stream the stream the data frame belongs to
      * @param callback the callback that gets notified when the frame has been sent
-     * @param frame    the DATA frame to send
+     * @param frame the DATA frame to send
      */
     public void data(IStream stream, Callback callback, DataFrame frame);
 
@@ -97,7 +98,7 @@ public interface ISession extends Session
      * <p>Callback method invoked when a WINDOW_UPDATE frame has been received.</p>
      *
      * @param stream the stream the window update belongs to, or null if the window update belongs to the session
-     * @param frame  the WINDOW_UPDATE frame received
+     * @param frame the WINDOW_UPDATE frame received
      */
     public void onWindowUpdate(IStream stream, WindowUpdateFrame frame);
 
@@ -117,9 +118,9 @@ public interface ISession extends Session
     /**
      * <p>Callback invoked when the idle timeout expires.</p>
      *
+     * @return {@code true} if the session has expired
      * @see #onShutdown()
      * @see #close(int, String, Callback)
-     * @return {@code true} if the session has expired
      */
     public boolean onIdleTimeout();
 
@@ -151,4 +152,14 @@ public interface ISession extends Session
      * @param callback the callback to notify when the frame has been processed
      */
     public void onData(DataFrame frame, Callback callback);
+
+    /**
+     * <p>Gracefully closes the session, returning a {@code CompletableFuture} that
+     * is completed when all the streams currently being processed are completed.</p>
+     * <p>Implementation is idempotent, i.e. calling this method a second time
+     * or concurrently results in a no-operation.</p>
+     *
+     * @return a {@code CompletableFuture} that is completed when all the streams are completed
+     */
+    public CompletableFuture<Void> shutdown();
 }

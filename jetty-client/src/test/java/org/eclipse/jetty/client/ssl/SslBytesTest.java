@@ -1,24 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.ssl;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -35,13 +33,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class SslBytesTest
 {
-    protected final Logger logger = Log.getLogger(getClass());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     public static class TLSRecord
     {
@@ -147,10 +146,7 @@ public abstract class SslBytesTest
             }
             catch (IOException x)
             {
-                logger.info(x.getClass() + ": " + x.getMessage());
-
-                if(logger.isDebugEnabled())
-                    logger.debug(x);
+                logger.warn("Unable to accept from {}", serverSocket, x);
             }
         }
 
@@ -238,6 +234,7 @@ public abstract class SslBytesTest
 
         public void flushToServer(TLSRecord record, long sleep) throws Exception
         {
+            logger.debug("P --> S {}", record);
             if (record == null)
             {
                 server.shutdownOutput();
@@ -276,6 +273,7 @@ public abstract class SslBytesTest
 
         public void flushToClient(TLSRecord record) throws Exception
         {
+            logger.debug("C <-- P {}", record);
             if (record == null)
             {
                 client.shutdownOutput();

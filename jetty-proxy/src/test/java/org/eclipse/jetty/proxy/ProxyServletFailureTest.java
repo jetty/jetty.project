@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.proxy;
@@ -23,12 +23,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -36,14 +36,14 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.tools.HttpTester;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -51,7 +51,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -74,8 +73,8 @@ public class ProxyServletFailureTest
     public static Stream<Arguments> impls()
     {
         return Stream.of(
-                ProxyServlet.class,
-                AsyncProxyServlet.class
+            ProxyServlet.class,
+            AsyncProxyServlet.class
         ).map(Arguments::of);
     }
 
@@ -169,12 +168,12 @@ public class ProxyServletFailureTest
         try (Socket socket = new Socket("localhost", proxyConnector.getLocalPort()))
         {
             String serverHostPort = "localhost:" + serverConnector.getLocalPort();
-            String request = "" +
-                    "GET http://" + serverHostPort + " HTTP/1.1\r\n" +
+            String request =
+                "GET http://" + serverHostPort + " HTTP/1.1\r\n" +
                     "Host: " + serverHostPort + "\r\n";
             // Don't sent the \r\n that would signal the end of the headers.
             OutputStream output = socket.getOutputStream();
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Wait for idle timeout to fire.
@@ -198,19 +197,19 @@ public class ProxyServletFailureTest
         try (Socket socket = new Socket("localhost", proxyConnector.getLocalPort()))
         {
             String serverHostPort = "localhost:" + serverConnector.getLocalPort();
-            String request = "" +
-                    "GET http://" + serverHostPort + " HTTP/1.1\r\n" +
+            String request =
+                "GET http://" + serverHostPort + " HTTP/1.1\r\n" +
                     "Host: " + serverHostPort + "\r\n" +
                     "Content-Length: 1\r\n" +
                     "\r\n";
             OutputStream output = socket.getOutputStream();
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Do not send the promised content, wait to idle timeout.
 
             socket.setSoTimeout(2 * idleTimeout);
-    
+
             HttpTester.Response response = HttpTester.parseResponse(socket.getInputStream());
             assertThat("response status", response.getStatus(), greaterThanOrEqualTo(500));
             String connectionHeader = response.get(HttpHeader.CONNECTION);
@@ -233,20 +232,20 @@ public class ProxyServletFailureTest
         try (Socket socket = new Socket("localhost", proxyConnector.getLocalPort()))
         {
             String serverHostPort = "localhost:" + serverConnector.getLocalPort();
-            String request = "" +
-                    "GET http://" + serverHostPort + " HTTP/1.1\r\n" +
+            String request =
+                "GET http://" + serverHostPort + " HTTP/1.1\r\n" +
                     "Host: " + serverHostPort + "\r\n" +
                     "Content-Length: 2\r\n" +
                     "\r\n" +
                     "Z";
             OutputStream output = socket.getOutputStream();
-            output.write(request.getBytes("UTF-8"));
+            output.write(request.getBytes(StandardCharsets.UTF_8));
             output.flush();
 
             // Do not send all the promised content, wait to idle timeout.
 
             socket.setSoTimeout(2 * idleTimeout);
-            
+
             HttpTester.Response response = HttpTester.parseResponse(socket.getInputStream());
             assertThat("response status", response.getStatus(), greaterThanOrEqualTo(500));
             String connectionHeader = response.get(HttpHeader.CONNECTION);
@@ -262,7 +261,7 @@ public class ProxyServletFailureTest
     {
         final byte[] content = new byte[]{'C', '0', 'F', 'F', 'E', 'E'};
         int expected;
-        ProxyServlet proxyServlet = null;
+        ProxyServlet proxyServlet;
 
         if (proxyServletClass.isAssignableFrom(AsyncProxyServlet.class))
         {
@@ -271,9 +270,9 @@ public class ProxyServletFailureTest
             proxyServlet = new AsyncProxyServlet()
             {
                 @Override
-                protected ContentProvider proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
+                protected Request.Content proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
                 {
-                    DeferredContentProvider provider = new DeferredContentProvider()
+                    AsyncRequestContent requestContent = new AsyncRequestContent()
                     {
                         @Override
                         public boolean offer(ByteBuffer buffer, Callback callback)
@@ -283,8 +282,8 @@ public class ProxyServletFailureTest
                             return super.offer(buffer.slice(), callback);
                         }
                     };
-                    request.getInputStream().setReadListener(newReadListener(request, response, proxyRequest, provider));
-                    return provider;
+                    request.getInputStream().setReadListener(newReadListener(request, response, proxyRequest, requestContent));
+                    return requestContent;
                 }
             };
         }
@@ -294,9 +293,9 @@ public class ProxyServletFailureTest
             proxyServlet = new ProxyServlet()
             {
                 @Override
-                protected ContentProvider proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest)
+                protected Request.Content proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest)
                 {
-                    return new BytesContentProvider(content)
+                    return new BytesRequestContent(content)
                     {
                         @Override
                         public long getLength()
@@ -313,12 +312,12 @@ public class ProxyServletFailureTest
         prepareServer(new EchoHttpServlet());
         long idleTimeout = 1000;
         serverConnector.setIdleTimeout(idleTimeout);
-        
-        try(StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
+
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
         {
             ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                    .content(new BytesContentProvider(content))
-                    .send();
+                .body(new BytesRequestContent(content))
+                .send();
 
             assertThat(response.toString(), response.getStatus(), is(expected));
         }
@@ -347,8 +346,8 @@ public class ProxyServletFailureTest
             }
         });
 
-        assertThrows(TimeoutException.class, ()->
-                client.newRequest("localhost", serverConnector.getLocalPort())
+        assertThrows(TimeoutException.class, () ->
+            client.newRequest("localhost", serverConnector.getLocalPort())
                 .timeout(timeout, TimeUnit.MILLISECONDS)
                 .send());
     }
@@ -379,10 +378,10 @@ public class ProxyServletFailureTest
         });
 
         Response response = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(3 * timeout, TimeUnit.MILLISECONDS)
-                .send();
+            .timeout(3 * timeout, TimeUnit.MILLISECONDS)
+            .send();
         assertEquals(504, response.getStatus());
-        assertFalse(response.getHeaders().containsKey(PROXIED_HEADER));
+        assertFalse(response.getHeaders().contains(PROXIED_HEADER));
     }
 
     @ParameterizedTest
@@ -397,8 +396,8 @@ public class ProxyServletFailureTest
         server.stop();
 
         ContentResponse response = client.newRequest("localhost", serverPort)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(502, response.getStatus());
     }
@@ -420,8 +419,8 @@ public class ProxyServletFailureTest
             });
 
             ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
 
             assertEquals(500, response.getStatus());
         }

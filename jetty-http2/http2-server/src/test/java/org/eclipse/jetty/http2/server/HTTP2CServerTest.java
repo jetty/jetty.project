@@ -1,28 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.server;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -65,6 +59,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class HTTP2CServerTest extends AbstractServerTest
 {
     @BeforeEach
@@ -82,7 +82,7 @@ public class HTTP2CServerTest extends AbstractServerTest
     }
 
     @Test
-    public void testHTTP_1_0_Simple() throws Exception
+    public void testHTTP10Simple() throws Exception
     {
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
@@ -97,7 +97,7 @@ public class HTTP2CServerTest extends AbstractServerTest
     }
 
     @Test
-    public void testHTTP_1_1_Simple() throws Exception
+    public void testHTTP11Simple() throws Exception
     {
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
@@ -115,17 +115,17 @@ public class HTTP2CServerTest extends AbstractServerTest
     }
 
     @Test
-    public void testHTTP_1_1_Upgrade() throws Exception
+    public void testHTTP11Upgrade() throws Exception
     {
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
             OutputStream output = client.getOutputStream();
-            output.write(("" +
-                    "GET /one HTTP/1.1\r\n" +
+            output.write((
+                "GET /one HTTP/1.1\r\n" +
                     "Host: localhost\r\n" +
                     "Connection: something, else, upgrade, HTTP2-Settings\r\n" +
                     "Upgrade: h2c\r\n" +
-                    "HTTP2-Settings: \r\n" +
+                    "HTTP2-Settings: AAEAAEAAAAIAAAABAAMAAABkAAQBAAAAAAUAAEAA\r\n" +
                     "\r\n").getBytes(StandardCharsets.ISO_8859_1));
             output.flush();
 
@@ -188,17 +188,19 @@ public class HTTP2CServerTest extends AbstractServerTest
             assertThat(content, containsString("Hello from Jetty using HTTP/1.1"));
             assertThat(content, containsString("uri=/one"));
 
-            // Send a HTTP/2 request.
+            // Send an HTTP/2 request.
             headersRef.set(null);
             dataRef.set(null);
             latchRef.set(new CountDownLatch(2));
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
             generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-            MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:" + connector.getLocalPort()), "/two", HttpVersion.HTTP_2, new HttpFields());
+            MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), "/two", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
             generator.control(lease, new HeadersFrame(3, metaData, null, true));
             for (ByteBuffer buffer : lease.getByteBuffers())
+            {
                 output.write(BufferUtil.toArray(buffer));
+            }
             output.flush();
 
             parseResponse(client, parser);
@@ -221,7 +223,7 @@ public class HTTP2CServerTest extends AbstractServerTest
     }
 
     @Test
-    public void testHTTP_2_0_Direct() throws Exception
+    public void testHTTP20Direct() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(3);
 
@@ -231,7 +233,7 @@ public class HTTP2CServerTest extends AbstractServerTest
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:" + connector.getLocalPort()), "/test", HttpVersion.HTTP_2, new HttpFields());
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:" + connector.getLocalPort()), "/test", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
@@ -288,7 +290,7 @@ public class HTTP2CServerTest extends AbstractServerTest
     }
 
     @Test
-    public void testHTTP_2_0_DirectWithoutH2C() throws Exception
+    public void testHTTP20DirectWithoutH2C() throws Exception
     {
         AtomicLong fills = new AtomicLong();
         // Remove "h2c", leaving only "http/1.1".
@@ -317,7 +319,7 @@ public class HTTP2CServerTest extends AbstractServerTest
         connector.setDefaultProtocol(connectionFactory.getProtocol());
         connector.start();
 
-        // Now send a HTTP/2 direct request, which
+        // Now send an HTTP/2 direct request, which
         // will have the PRI * HTTP/2.0 preface.
 
         byteBufferPool = new MappedByteBufferPool();
@@ -330,9 +332,11 @@ public class HTTP2CServerTest extends AbstractServerTest
         {
             OutputStream output = client.getOutputStream();
             for (ByteBuffer buffer : lease.getByteBuffers())
+            {
                 output.write(BufferUtil.toArray(buffer));
+            }
 
-            // We sent a HTTP/2 preface, but the server has no "h2c" connection
+            // We sent an HTTP/2 preface, but the server has no "h2c" connection
             // factory so it does not know how to handle this request.
 
             InputStream input = client.getInputStream();

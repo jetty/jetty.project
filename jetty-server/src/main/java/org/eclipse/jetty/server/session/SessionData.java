@@ -1,21 +1,20 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.server.session;
 
@@ -28,8 +27,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ClassVisibilityChecker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SessionData
@@ -41,8 +41,8 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SessionData implements Serializable
 {
-    private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
-   
+    private static final Logger LOG = LoggerFactory.getLogger(SessionData.class);
+
     private static final long serialVersionUID = 1L;
 
     protected String _id;
@@ -55,75 +55,100 @@ public class SessionData implements Serializable
     protected long _accessed;         // the time of the last access
     protected long _lastAccessed;     // the time of the last access excluding this one
     protected long _maxInactiveMs;
-    protected Map<String,Object> _attributes;
+    protected Map<String, Object> _attributes;
     protected boolean _dirty;
     protected long _lastSaved; //time in msec since last save
-    
-    
+    protected boolean _metaDataDirty; //non-attribute data has changed
+
     /**
-     * Serialize the attribute map of the session. 
-     * 
+     * Serialize the attribute map of the session.
+     *
      * This special handling allows us to record which classloader should be used to load the value of the
      * attribute: either the container classloader (which could be the application loader ie null, or jetty's
      * startjar loader) or the webapp's classloader.
-     * 
+     *
      * @param data the SessionData for which to serialize the attributes
      * @param out the stream to which to serialize
-     * @throws IOException
      */
-    public static void serializeAttributes (SessionData data, java.io.ObjectOutputStream out)
-    throws IOException
+    public static void serializeAttributes(SessionData data, java.io.ObjectOutputStream out)
+        throws IOException
     {
         int entries = data._attributes.size();
         out.writeObject(entries);
-        for (Entry<String,Object> entry: data._attributes.entrySet())
+        for (Entry<String, Object> entry : data._attributes.entrySet())
         {
-            out.writeUTF(entry.getKey());     
-            ClassLoader loader = entry.getValue().getClass().getClassLoader();
-            boolean isServerLoader = false;
+            out.writeUTF(entry.getKey());
 
-            if (loader == Thread.currentThread().getContextClassLoader()) //is it the webapp classloader?
-                isServerLoader = false;
-            else if (loader == Thread.currentThread().getContextClassLoader().getParent() || loader == SessionData.class.getClassLoader() || loader == null) // is it the container loader?
-                isServerLoader = true;
+            Class<?> clazz = entry.getValue().getClass();
+            ClassLoader loader = clazz.getClassLoader();
+            ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
+            boolean isContextLoader;
+
+            if (loader == contextLoader) //is it the context classloader?
+                isContextLoader = true;
+            else if (contextLoader == null) //not context classloader
+                isContextLoader = false;
+            else if (contextLoader instanceof ClassVisibilityChecker)
+            {
+                //Clazz not loaded by context classloader, but ask if loadable by context classloader,
+                //because preferable to use context classloader if possible (eg for deep structures).
+                ClassVisibilityChecker checker = (ClassVisibilityChecker)(contextLoader);
+                isContextLoader = (checker.isSystemClass(clazz) && !(checker.isServerClass(clazz)));
+            }
             else
-                throw new IOException ("Unknown loader"); // we don't know what loader to use
-            
-            out.writeBoolean(isServerLoader);
+            {
+                //Class wasn't loaded by context classloader, but try loading from context loader,
+                //because preferable to use context classloader if possible (eg for deep structures).
+                try
+                {
+                    Class<?> result = contextLoader.loadClass(clazz.getName());
+                    isContextLoader = (result == clazz); //only if TTCL loaded this instance of the class
+                }
+                catch (Throwable e)
+                {
+                    isContextLoader = false; //TCCL can't see the class
+                }
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Attribute {} class={} isServerLoader={}", entry.getKey(), clazz.getName(), (!isContextLoader));
+            out.writeBoolean(!isContextLoader);
             out.writeObject(entry.getValue());
         }
     }
-    
+
     /**
      * De-serialize the attribute map of a session.
-     * 
+     *
      * When the session was serialized, we will have recorded which classloader should be used to
      * recover the attribute value. The classloader could be the container classloader, or the
      * webapp classloader.
-     * 
+     *
      * @param data the SessionData for which to deserialize the attribute map
      * @param in the serialized stream
-     * @throws IOException
-     * @throws ClassNotFoundException 
      */
-    public static void deserializeAttributes (SessionData data, java.io.ObjectInputStream in)
-    throws IOException, ClassNotFoundException
+    public static void deserializeAttributes(SessionData data, java.io.ObjectInputStream in)
+        throws IOException, ClassNotFoundException
     {
         Object o = in.readObject();
         if (o instanceof Integer)
         {
             //new serialization was used
             if (!(ClassLoadingObjectInputStream.class.isAssignableFrom(in.getClass())))
-                throw new IOException ("Not ClassLoadingObjectInputStream");
+                throw new IOException("Not ClassLoadingObjectInputStream");
 
             data._attributes = new ConcurrentHashMap<>();
             int entries = ((Integer)o).intValue();
-            for (int i=0; i < entries; i++)
+            ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
+            ClassLoader serverLoader = SessionData.class.getClassLoader();
+            for (int i = 0; i < entries; i++)
             {
                 String name = in.readUTF(); //attribute name
                 boolean isServerClassLoader = in.readBoolean(); //use server or webapp classloader to load
-
-                Object value = ((ClassLoadingObjectInputStream)in).readObject(isServerClassLoader?SessionData.class.getClassLoader():Thread.currentThread().getContextClassLoader());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Deserialize {} isServerLoader={} serverLoader={} tccl={}", name, isServerClassLoader, serverLoader, contextLoader);
+                
+                Object value = ((ClassLoadingObjectInputStream)in).readObject(isServerClassLoader ? serverLoader : contextLoader);
                 data._attributes.put(name, value);
             }
         }
@@ -132,18 +157,12 @@ public class SessionData implements Serializable
             LOG.info("Legacy serialization detected for {}", data.getId());
             //legacy serialization was used, we have just deserialized the 
             //entire attribute map
-            data._attributes = new ConcurrentHashMap<String, Object>();
-            data.putAllAttributes((Map<String,Object>)o);
+            data._attributes = new ConcurrentHashMap<>();
+            data.putAllAttributes((Map<String, Object>)o);
         }
     }
-    
-    
-    public SessionData (String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
-    {
-       this(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs, new ConcurrentHashMap<String, Object>());
-    }
 
-    public SessionData (String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs, Map<String,Object> attributes)
+    public SessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
     {
         _id = id;
         setContextPath(cpath);
@@ -153,25 +172,31 @@ public class SessionData implements Serializable
         _lastAccessed = lastAccessed;
         _maxInactiveMs = maxInactiveMs;
         calcAndSetExpiry();
-        _attributes = attributes;
+        _attributes = new ConcurrentHashMap<>();
     }
-    
+
+    public SessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs, Map<String, Object> attributes)
+    {
+        this(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
+        putAllAttributes(attributes);
+    }
+
     /**
      * Copy the info from the given sessiondata
-     * 
+     *
      * @param data the sessiondata to be copied
      */
-    public void copy (SessionData data)
+    public void copy(SessionData data)
     {
         if (data == null)
             return; //don't copy if no data
 
         if (data.getId() == null || !(getId().equals(data.getId())))
-            throw new IllegalStateException ("Can only copy data for same session id");
+            throw new IllegalStateException("Can only copy data for same session id");
 
         if (data == this)
             return; //don't copy ourself
-        
+
         setLastNode(data.getLastNode());
         setContextPath(data.getContextPath());
         setVhost(data.getVhost());
@@ -194,12 +219,10 @@ public class SessionData implements Serializable
         return _lastSaved;
     }
 
-
     public void setLastSaved(long lastSaved)
     {
         _lastSaved = lastSaved;
     }
-
 
     /**
      * @return true if a session needs to be written out
@@ -213,12 +236,33 @@ public class SessionData implements Serializable
     {
         _dirty = dirty;
     }
-    
+
+    public void setDirty(String name)
+    {
+        setDirty(true);
+    }
+
+    /**
+     * @return the metaDataDirty
+     */
+    public boolean isMetaDataDirty()
+    {
+        return _metaDataDirty;
+    }
+
+    /**
+     * @param metaDataDirty true means non-attribute data has changed
+     */
+    public void setMetaDataDirty(boolean metaDataDirty)
+    {
+        _metaDataDirty = metaDataDirty;
+    }
+
     /**
      * @param name the name of the attribute
      * @return the value of the attribute named
      */
-    public Object getAttribute (String name)
+    public Object getAttribute(String name)
     {
         return _attributes.get(name);
     }
@@ -230,43 +274,47 @@ public class SessionData implements Serializable
     {
         return _attributes.keySet();
     }
-    
-    public Object setAttribute (String name, Object value)
+
+    public Object setAttribute(String name, Object value)
     {
-        Object old = (value==null?_attributes.remove(name):_attributes.put(name,value));
+        Object old = (value == null ? _attributes.remove(name) : _attributes.put(name, value));
         if (value == null && old == null)
             return old; //if same as remove attribute but attribute was already removed, no change
-        
-        setDirty (name);
-       return old;
+
+        setDirty(name);
+        return old;
     }
-    
-    public void setDirty (String name)
+
+    /**
+     * Clear all dirty flags.
+     */
+    public void clean()
     {
-        setDirty (true);
+        setDirty(false);
+        setMetaDataDirty(false);
     }
-    
-    public void putAllAttributes (Map<String,Object> attributes)
+
+    public void putAllAttributes(Map<String, Object> attributes)
     {
         _attributes.putAll(attributes);
     }
-    
+
     /**
      * Remove all attributes
      */
-    public void clearAllAttributes ()
+    public void clearAllAttributes()
     {
         _attributes.clear();
     }
-    
+
     /**
      * @return an unmodifiable map of the attributes
      */
-    public Map<String,Object> getAllAttributes()
+    public Map<String, Object> getAllAttributes()
     {
         return Collections.unmodifiableMap(_attributes);
     }
-    
+
     /**
      * @return the id of the session
      */
@@ -331,25 +379,27 @@ public class SessionData implements Serializable
     {
         _expiry = expiry;
     }
-    
-    public long calcExpiry ()
+
+    public long calcExpiry()
     {
         return calcExpiry(System.currentTimeMillis());
     }
-    
-    public long calcExpiry (long time)
+
+    public long calcExpiry(long time)
     {
         return (getMaxInactiveMs() <= 0 ? 0 : (time + getMaxInactiveMs()));
     }
-    
-    public void calcAndSetExpiry (long time)
+
+    public void calcAndSetExpiry(long time)
     {
         setExpiry(calcExpiry(time));
+        setMetaDataDirty(true);
     }
-    
-    public void calcAndSetExpiry ()
+
+    public void calcAndSetExpiry()
     {
         setExpiry(calcExpiry());
+        setMetaDataDirty(true);
     }
 
     public long getCreated()
@@ -412,7 +462,7 @@ public class SessionData implements Serializable
     }
 
     private void writeObject(java.io.ObjectOutputStream out) throws IOException
-    {  
+    {
         out.writeUTF(_id); //session id
         out.writeUTF(_contextPath); //context path
         out.writeUTF(_vhost); //first vhost
@@ -421,27 +471,27 @@ public class SessionData implements Serializable
         out.writeLong(_created); //time created
         out.writeLong(_cookieSet);//time cookie was set
         out.writeUTF(_lastNode); //name of last node managing
-        out.writeLong(_expiry); 
+        out.writeLong(_expiry);
         out.writeLong(_maxInactiveMs);
         serializeAttributes(this, out);
     }
-    
+
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
     {
         _id = in.readUTF();
         _contextPath = in.readUTF();
-        _vhost = in.readUTF(); 
+        _vhost = in.readUTF();
         _accessed = in.readLong();//accessTime
         _lastAccessed = in.readLong(); //lastAccessTime
         _created = in.readLong(); //time created
         _cookieSet = in.readLong();//time cookie was set
         _lastNode = in.readUTF(); //last managing node
-        _expiry = in.readLong(); 
+        _expiry = in.readLong();
         _maxInactiveMs = in.readLong();
         deserializeAttributes(this, in);
     }
-    
-    public boolean isExpiredAt (long time)
+
+    public boolean isExpiredAt(long time)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Testing expiry on session {}: expires at {} now {} maxIdle {}", _id, getExpiry(), time, getMaxInactiveMs());
@@ -449,22 +499,21 @@ public class SessionData implements Serializable
             return false; //never expires
         return (getExpiry() <= time);
     }
-    
 
     @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        builder.append("id="+_id);
-        builder.append(", contextpath="+_contextPath);
-        builder.append(", vhost="+_vhost);
-        builder.append(", accessed="+_accessed);
-        builder.append(", lastaccessed="+_lastAccessed);
-        builder.append(", created="+_created);
-        builder.append(", cookieset="+_cookieSet);
-        builder.append(", lastnode="+_lastNode);
-        builder.append(", expiry="+_expiry);
-        builder.append(", maxinactive="+_maxInactiveMs);
+        builder.append("id=" + _id);
+        builder.append(", contextpath=" + _contextPath);
+        builder.append(", vhost=" + _vhost);
+        builder.append(", accessed=" + _accessed);
+        builder.append(", lastaccessed=" + _lastAccessed);
+        builder.append(", created=" + _created);
+        builder.append(", cookieset=" + _cookieSet);
+        builder.append(", lastnode=" + _lastNode);
+        builder.append(", expiry=" + _expiry);
+        builder.append(", maxinactive=" + _maxInactiveMs);
         return builder.toString();
     }
 }

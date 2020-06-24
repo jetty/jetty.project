@@ -1,33 +1,27 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.client.http;
-
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -50,8 +44,11 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PushedResourcesTest extends AbstractTest
 {
@@ -65,15 +62,15 @@ public class PushedResourcesTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                HttpURI pushURI = new HttpURI("http://localhost:" + connector.getLocalPort() + pushPath);
-                MetaData.Request pushRequest = new MetaData.Request(HttpMethod.GET.asString(), pushURI, HttpVersion.HTTP_2, new HttpFields());
-                stream.push(new PushPromiseFrame(stream.getId(), 0, pushRequest), new Promise.Adapter<Stream>()
+                HttpURI pushURI = HttpURI.from("http://localhost:" + connector.getLocalPort() + pushPath);
+                MetaData.Request pushRequest = new MetaData.Request(HttpMethod.GET.asString(), pushURI, HttpVersion.HTTP_2, HttpFields.EMPTY);
+                stream.push(new PushPromiseFrame(stream.getId(), pushRequest), new Promise.Adapter<>()
                 {
                     @Override
                     public void succeeded(Stream pushStream)
                     {
                         // Just send the normal response and wait for the reset.
-                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, new HttpFields());
+                        MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                     }
                 }, new Stream.Listener.Adapter()
@@ -90,9 +87,9 @@ public class PushedResourcesTest extends AbstractTest
 
         HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
         ContentResponse response = request
-                .pushListener((mainRequest, pushedRequest) -> null)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+            .pushListener((mainRequest, pushedRequest) -> null)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -114,7 +111,7 @@ public class PushedResourcesTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 if (target.equals(path1))
@@ -128,11 +125,11 @@ public class PushedResourcesTest extends AbstractTest
                 else
                 {
                     baseRequest.newPushBuilder()
-                            .path(path1)
-                            .push();
+                        .path(path1)
+                        .push();
                     baseRequest.newPushBuilder()
-                            .path(path2)
-                            .push();
+                        .path(path2)
+                        .push();
                     response.getOutputStream().write(bytes);
                 }
             }
@@ -142,26 +139,26 @@ public class PushedResourcesTest extends AbstractTest
         CountDownLatch latch2 = new CountDownLatch(1);
         HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
         ContentResponse response = request
-                .pushListener((mainRequest, pushedRequest) -> new BufferingResponseListener()
+            .pushListener((mainRequest, pushedRequest) -> new BufferingResponseListener()
+            {
+                @Override
+                public void onComplete(Result result)
                 {
-                    @Override
-                    public void onComplete(Result result)
+                    assertTrue(result.isSucceeded());
+                    if (pushedRequest.getPath().equals(path1))
                     {
-                        assertTrue(result.isSucceeded());
-                        if (pushedRequest.getPath().equals(path1))
-                        {
-                            assertArrayEquals(pushBytes1, getContent());
-                            latch1.countDown();
-                        }
-                        else if (pushedRequest.getPath().equals(path2))
-                        {
-                            assertArrayEquals(pushBytes2, getContent());
-                            latch2.countDown();
-                        }
+                        assertArrayEquals(pushBytes1, getContent());
+                        latch1.countDown();
                     }
-                })
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                    else if (pushedRequest.getPath().equals(path2))
+                    {
+                        assertArrayEquals(pushBytes2, getContent());
+                        latch2.countDown();
+                    }
+                }
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertArrayEquals(bytes, response.getContent());
@@ -181,7 +178,7 @@ public class PushedResourcesTest extends AbstractTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 if (target.equals(oldPath))
@@ -196,20 +193,20 @@ public class PushedResourcesTest extends AbstractTest
         CountDownLatch latch = new CountDownLatch(1);
         HttpRequest request = (HttpRequest)client.newRequest("localhost", connector.getLocalPort());
         ContentResponse response = request
-                .pushListener((mainRequest, pushedRequest) -> new BufferingResponseListener()
+            .pushListener((mainRequest, pushedRequest) -> new BufferingResponseListener()
+            {
+                @Override
+                public void onComplete(Result result)
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        assertTrue(result.isSucceeded());
-                        assertEquals(oldPath, pushedRequest.getPath());
-                        assertEquals(newPath, result.getRequest().getPath());
-                        assertArrayEquals(pushBytes, getContent());
-                        latch.countDown();
-                    }
-                })
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
+                    assertTrue(result.isSucceeded());
+                    assertEquals(oldPath, pushedRequest.getPath());
+                    assertEquals(newPath, result.getRequest().getPath());
+                    assertArrayEquals(pushBytes, getContent());
+                    latch.countDown();
+                }
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
 
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));

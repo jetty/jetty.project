@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.start.util;
@@ -39,14 +39,14 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 public class RebuildTestResources
 {
     public static final String JETTY_VERSION = "9.3";
-    
+
     public static void main(String[] args)
     {
         File realDistHome = MavenTestingUtils.getProjectDir("../jetty-distribution/target/distribution");
         File outputDir = MavenTestingUtils.getTestResourceDir("dist-home");
         try
         {
-            new RebuildTestResources(realDistHome,outputDir).rebuild();
+            new RebuildTestResources(realDistHome, outputDir).rebuild();
         }
         catch (Throwable t)
         {
@@ -64,7 +64,7 @@ public class RebuildTestResources
         @Override
         public void copy(Path from, Path to) throws IOException
         {
-            Files.copy(from,to,StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
@@ -73,7 +73,7 @@ public class RebuildTestResources
         @Override
         public void copy(Path from, Path to) throws IOException
         {
-            if(Files.exists(to)) 
+            if (Files.exists(to))
             {
                 // skip if it exists
                 return;
@@ -131,9 +131,9 @@ public class RebuildTestResources
         FS.ensureDirExists(libsDir.toFile());
 
         PathMatcher matcher = getPathMatcher("glob:**.jar");
-        Renamer renamer = new RegexRenamer("-9\\.[0-9.]*(v[0-9-]*)?(-SNAPSHOT)?(RC[0-9])?(M[0-9])?","-" + JETTY_VERSION);
+        Renamer renamer = new RegexRenamer("-9\\.[0-9.]*(v[0-9-]*)?(-SNAPSHOT)?(RC[0-9])?(M[0-9])?", "-" + JETTY_VERSION);
         FileCopier copier = new TouchFileCopier();
-        copyDir(srcDir.resolve("lib"),libsDir,matcher,renamer,copier);
+        copyDir(srcDir.resolve("lib"), libsDir, matcher, renamer, copier);
     }
 
     private void copyModules() throws IOException
@@ -145,7 +145,7 @@ public class RebuildTestResources
         PathMatcher matcher = getPathMatcher("glob:**.mod");
         Renamer renamer = new NoRenamer();
         FileCopier copier = new NormalFileCopier();
-        copyDir(srcDir.resolve("modules"),modulesDir,matcher,renamer,copier);
+        copyDir(srcDir.resolve("modules"), modulesDir, matcher, renamer, copier);
     }
 
     private void copyXmls() throws IOException
@@ -157,7 +157,7 @@ public class RebuildTestResources
         PathMatcher matcher = getPathMatcher("glob:**.xml");
         Renamer renamer = new NoRenamer();
         FileCopier copier = new TouchFileCopier();
-        copyDir(srcDir.resolve("etc"),xmlDir,matcher,renamer,copier);
+        copyDir(srcDir.resolve("etc"), xmlDir, matcher, renamer, copier);
     }
 
     private void rebuild() throws IOException
@@ -183,13 +183,13 @@ public class RebuildTestResources
             Path dest = to.resolve(name);
             if (Files.isDirectory(path))
             {
-                copyDir(path,dest,fileMatcher,renamer,copier);
+                copyDir(path, dest, fileMatcher, renamer, copier);
             }
             else
             {
                 if (fileMatcher.matches(path))
                 {
-                    copier.copy(path,dest);
+                    copier.copy(path, dest);
                 }
             }
         }

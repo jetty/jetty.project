@@ -1,25 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.fcgi.generator;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -31,15 +28,17 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class ClientGeneratorTest
 {
     @Test
     public void testGenerateRequestHeaders() throws Exception
     {
-        HttpFields fields = new HttpFields();
+        HttpFields.Mutable fields = HttpFields.build();
 
         // Short name, short value
         final String shortShortName = "REQUEST_METHOD";
@@ -76,7 +75,9 @@ public class ClientGeneratorTest
         final int[] primes = new int[]{2, 3, 5, 7, 11};
         int value = 1;
         for (int prime : primes)
+        {
             value *= prime;
+        }
 
         final AtomicInteger params = new AtomicInteger(1);
         ServerParser parser = new ServerParser(new ServerParser.Listener.Adapter()
@@ -108,10 +109,11 @@ public class ClientGeneratorTest
             }
 
             @Override
-            public void onHeaders(int request)
+            public boolean onHeaders(int request)
             {
                 assertEquals(id, request);
                 params.set(params.get() * primes[4]);
+                return false;
             }
         });
 
@@ -129,7 +131,9 @@ public class ClientGeneratorTest
         {
             buffer.flip();
             while (buffer.hasRemaining())
+            {
                 parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+            }
             assertFalse(buffer.hasRemaining());
         }
 
@@ -187,7 +191,9 @@ public class ClientGeneratorTest
         {
             buffer.flip();
             while (buffer.hasRemaining())
+            {
                 parser.parse(ByteBuffer.wrap(new byte[]{buffer.get()}));
+            }
             assertFalse(buffer.hasRemaining());
         }
     }

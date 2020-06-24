@@ -1,24 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -29,12 +30,13 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Socks4Proxy extends ProxyConfiguration.Proxy
 {
@@ -45,7 +47,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
 
     public Socks4Proxy(Origin.Address address, boolean secure)
     {
-        super(address, secure);
+        super(address, secure, null, null);
     }
 
     @Override
@@ -64,7 +66,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
         }
 
         @Override
-        public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+        public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
         {
             HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
             Executor executor = destination.getHttpClient().getExecutor();
@@ -76,7 +78,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
     private static class Socks4ProxyConnection extends AbstractConnection implements Callback
     {
         private static final Pattern IPv4_PATTERN = Pattern.compile("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})");
-        private static final Logger LOG = Log.getLogger(Socks4ProxyConnection.class);
+        private static final Logger LOG = LoggerFactory.getLogger(Socks4ProxyConnection.class);
 
         private final Socks4Parser parser = new Socks4Parser();
         private final ClientConnectionFactory connectionFactory;
@@ -112,7 +114,9 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
                 ByteBuffer buffer = ByteBuffer.allocate(9);
                 buffer.put((byte)4).put((byte)1).putShort(port);
                 for (int i = 1; i <= 4; ++i)
+                {
                     buffer.put((byte)Integer.parseInt(matcher.group(i)));
+                }
                 buffer.put((byte)0);
                 buffer.flip();
                 getEndPoint().write(this, buffer);
@@ -193,10 +197,12 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
             try
             {
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-                HttpClient client = destination.getHttpClient();
+                // Don't want to do DNS resolution here.
+                InetSocketAddress address = InetSocketAddress.createUnresolved(destination.getHost(), destination.getPort());
+                context.put(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
                 ClientConnectionFactory connectionFactory = this.connectionFactory;
                 if (destination.isSecure())
-                    connectionFactory = client.newSslClientConnectionFactory(connectionFactory);
+                    connectionFactory = destination.newSslClientConnectionFactory(null, connectionFactory);
                 org.eclipse.jetty.io.Connection newConnection = connectionFactory.newConnection(getEndPoint(), context);
                 getEndPoint().upgrade(newConnection);
                 if (LOG.isDebugEnabled())

@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.proxy;
@@ -24,11 +24,12 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletConfig;
@@ -41,20 +42,22 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.ContentDecoder;
 import org.eclipse.jetty.client.GZIPContentDecoder;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Destroyable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Servlet 3.1 asynchronous proxy servlet with capability
@@ -71,6 +74,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
     private static final String CLIENT_TRANSFORMER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".clientTransformer";
     private static final String SERVER_TRANSFORMER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".serverTransformer";
     private static final String CONTINUE_ACTION_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".continueAction";
+    private static final String WRITE_LISTENER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".writeListener";
 
     @Override
     protected void service(HttpServletRequest clientRequest, HttpServletResponse proxyResponse) throws ServletException, IOException
@@ -90,8 +94,8 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
 
         final Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
-                .method(clientRequest.getMethod())
-                .version(HttpVersion.fromString(clientRequest.getProtocol()));
+            .method(clientRequest.getMethod())
+            .version(HttpVersion.fromString(clientRequest.getProtocol()));
 
         copyRequestHeaders(clientRequest, proxyRequest);
 
@@ -107,18 +111,20 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         // to allow optimization of the Content-Length header.
         if (hasContent(clientRequest))
         {
-            DeferredContentProvider provider = newProxyContentProvider(clientRequest, proxyResponse, proxyRequest);
-            proxyRequest.content(provider);
+            AsyncRequestContent content = newProxyRequestContent(clientRequest, proxyResponse, proxyRequest);
+            proxyRequest.body(content);
 
             if (expects100Continue(clientRequest))
             {
+                // Must delay the call to request.getInputStream()
+                // that sends the 100 Continue to the client.
                 proxyRequest.attribute(CLIENT_REQUEST_ATTRIBUTE, clientRequest);
                 proxyRequest.attribute(CONTINUE_ACTION_ATTRIBUTE, (Runnable)() ->
                 {
                     try
                     {
                         ServletInputStream input = clientRequest.getInputStream();
-                        input.setReadListener(newProxyReadListener(clientRequest, proxyResponse, proxyRequest, provider));
+                        input.setReadListener(newProxyReadListener(clientRequest, proxyResponse, proxyRequest, content));
                     }
                     catch (Throwable failure)
                     {
@@ -130,7 +136,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             else
             {
                 ServletInputStream input = clientRequest.getInputStream();
-                input.setReadListener(newProxyReadListener(clientRequest, proxyResponse, proxyRequest, provider));
+                input.setReadListener(newProxyReadListener(clientRequest, proxyResponse, proxyRequest, content));
             }
         }
         else
@@ -139,14 +145,14 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
     }
 
-    protected DeferredContentProvider newProxyContentProvider(final HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest) throws IOException
+    protected AsyncRequestContent newProxyRequestContent(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
     {
-        return new ProxyDeferredContentProvider(clientRequest);
+        return new ProxyAsyncRequestContent(clientRequest);
     }
 
-    protected ReadListener newProxyReadListener(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest, DeferredContentProvider provider)
+    protected ReadListener newProxyReadListener(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest, AsyncRequestContent content)
     {
-        return new ProxyReader(clientRequest, proxyResponse, proxyRequest, provider);
+        return new ProxyReader(clientRequest, proxyResponse, proxyRequest, content);
     }
 
     protected ProxyWriter newProxyWriteListener(HttpServletRequest clientRequest, Response proxyResponse)
@@ -259,23 +265,23 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         private final HttpServletRequest clientRequest;
         private final HttpServletResponse proxyResponse;
         private final Request proxyRequest;
-        private final DeferredContentProvider provider;
+        private final AsyncRequestContent content;
         private final int contentLength;
         private final boolean expects100Continue;
         private int length;
 
-        protected ProxyReader(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest, DeferredContentProvider provider)
+        protected ProxyReader(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest, AsyncRequestContent content)
         {
             this.clientRequest = clientRequest;
             this.proxyResponse = proxyResponse;
             this.proxyRequest = proxyRequest;
-            this.provider = provider;
+            this.content = content;
             this.contentLength = clientRequest.getContentLength();
             this.expects100Continue = expects100Continue(clientRequest);
         }
 
         @Override
-        public void onDataAvailable() throws IOException
+        public void onDataAvailable()
         {
             iterate();
         }
@@ -283,7 +289,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         public void onAllDataRead() throws IOException
         {
-            if (!provider.isClosed())
+            if (!content.isClosed())
             {
                 process(BufferUtil.EMPTY_BUFFER, new Callback()
                 {
@@ -370,17 +376,16 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             if (size > 0)
             {
                 CountingCallback counter = new CountingCallback(callback, size);
-                for (int i = 0; i < size; ++i)
+                for (ByteBuffer buffer : buffers)
                 {
-                    ByteBuffer buffer = buffers.get(i);
                     newContentBytes += buffer.remaining();
-                    provider.offer(buffer, counter);
+                    this.content.offer(buffer, counter);
                 }
                 buffers.clear();
             }
 
             if (finished)
-                provider.close();
+                this.content.close();
 
             if (_log.isDebugEnabled())
                 _log.debug("{} upstream content transformation {} -> {} bytes", getRequestId(clientRequest), contentBytes, newContentBytes);
@@ -391,7 +396,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 clientRequest.setAttribute(PROXY_REQUEST_CONTENT_COMMITTED_ATTRIBUTE, true);
                 if (!expects100Continue)
                 {
-                    proxyRequest.header(HttpHeader.CONTENT_LENGTH, null);
+                    proxyRequest.headers(headers -> headers.remove(HttpHeader.CONTENT_LENGTH));
                     sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
                 }
             }
@@ -409,8 +414,6 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
     protected class ProxyResponseListener extends Response.Listener.Adapter implements Callback
     {
-        private final String WRITE_LISTENER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".writeListener";
-
         private final Callback complete = new CountingCallback(this, 2);
         private final List<ByteBuffer> buffers = new ArrayList<>();
         private final HttpServletRequest clientRequest;
@@ -436,7 +439,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         public void onHeaders(Response serverResponse)
         {
-            contentLength = serverResponse.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH.asString());
+            contentLength = serverResponse.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
             onServerResponseHeaders(clientRequest, proxyResponse, serverResponse);
         }
 
@@ -452,7 +455,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 hasContent = true;
 
                 ProxyWriter proxyWriter = (ProxyWriter)clientRequest.getAttribute(WRITE_LISTENER_ATTRIBUTE);
-                boolean committed = proxyWriter != null;
+                final boolean committed = proxyWriter != null;
                 if (proxyWriter == null)
                 {
                     proxyWriter = newProxyWriteListener(clientRequest, serverResponse);
@@ -476,9 +479,8 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 if (size > 0)
                 {
                     Callback counter = size == 1 ? callback : new CountingCallback(callback, size);
-                    for (int i = 0; i < size; ++i)
+                    for (ByteBuffer buffer : buffers)
                     {
-                        ByteBuffer buffer = buffers.get(i);
                         newContentBytes += buffer.remaining();
                         proxyWriter.offer(buffer, counter);
                     }
@@ -540,9 +542,8 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                         if (size > 0)
                         {
                             Callback callback = size == 1 ? complete : new CountingCallback(complete, size);
-                            for (int i = 0; i < size; ++i)
+                            for (ByteBuffer buffer : buffers)
                             {
-                                ByteBuffer buffer = buffers.get(i);
                                 newContentBytes += buffer.remaining();
                                 proxyWriter.offer(buffer, callback);
                             }
@@ -596,10 +597,10 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
     protected class ProxyWriter implements WriteListener
     {
-        private final Queue<DeferredContentProvider.Chunk> chunks = new ArrayDeque<>();
+        private final Queue<Chunk> chunks = new ArrayDeque<>();
         private final HttpServletRequest clientRequest;
         private final Response serverResponse;
-        private DeferredContentProvider.Chunk chunk;
+        private Chunk chunk;
         private boolean writePending;
 
         protected ProxyWriter(HttpServletRequest clientRequest, Response serverResponse)
@@ -612,7 +613,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         {
             if (_log.isDebugEnabled())
                 _log.debug("{} proxying content to downstream: {} bytes {}", getRequestId(clientRequest), content.remaining(), callback);
-            return chunks.offer(new DeferredContentProvider.Chunk(content, callback));
+            return chunks.offer(new Chunk(content, callback));
         }
 
         @Override
@@ -631,7 +632,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             }
 
             int length = 0;
-            DeferredContentProvider.Chunk chunk = null;
+            Chunk chunk = null;
             while (output.isReady())
             {
                 if (chunk != null)
@@ -675,7 +676,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         public void onError(Throwable failure)
         {
-            DeferredContentProvider.Chunk chunk = this.chunk;
+            Chunk chunk = this.chunk;
             if (chunk != null)
                 chunk.callback.failed(failure);
             else
@@ -686,7 +687,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
     /**
      * <p>Allows applications to transform upstream and downstream content.</p>
      * <p>Typical use cases of transformations are URL rewriting of HTML anchors
-     * (where the value of the <code>href</code> attribute of &lt;a&gt; elements
+     * (where the value of the {@code href} attribute of &lt;a&gt; elements
      * is modified by the proxy), field renaming of JSON documents, etc.</p>
      * <p>Applications should override {@link #newClientRequestContentTransformer(HttpServletRequest, Request)}
      * and/or {@link #newServerResponseContentTransformer(HttpServletRequest, HttpServletResponse, Response)}
@@ -759,19 +760,26 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
     public static class GZIPContentTransformer implements ContentTransformer
     {
-        private static final Logger logger = Log.getLogger(GZIPContentTransformer.class);
+        private static final Logger logger = LoggerFactory.getLogger(GZIPContentTransformer.class);
 
         private final List<ByteBuffer> buffers = new ArrayList<>(2);
-        private final ContentDecoder decoder = new GZIPContentDecoder();
         private final ContentTransformer transformer;
+        private final ContentDecoder decoder;
         private final ByteArrayOutputStream out;
         private final GZIPOutputStream gzipOut;
 
         public GZIPContentTransformer(ContentTransformer transformer)
         {
+            this(null, transformer);
+        }
+
+        public GZIPContentTransformer(HttpClient httpClient, ContentTransformer transformer)
+        {
             try
             {
                 this.transformer = transformer;
+                ByteBufferPool byteBufferPool = httpClient == null ? null : httpClient.getByteBufferPool();
+                this.decoder = new GZIPContentDecoder(byteBufferPool, GZIPContentDecoder.DEFAULT_BUFFER_SIZE);
                 this.out = new ByteArrayOutputStream();
                 this.gzipOut = new GZIPOutputStream(out);
             }
@@ -787,6 +795,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             if (logger.isDebugEnabled())
                 logger.debug("Ungzipping {} bytes, finished={}", input.remaining(), finished);
 
+            List<ByteBuffer> decodeds = Collections.emptyList();
             if (!input.hasRemaining())
             {
                 if (finished)
@@ -794,14 +803,19 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             }
             else
             {
-                while (input.hasRemaining())
+                decodeds = new ArrayList<>();
+                while (true)
                 {
                     ByteBuffer decoded = decoder.decode(input);
-                    boolean complete = finished && !input.hasRemaining();
+                    decodeds.add(decoded);
+                    boolean decodeComplete = !input.hasRemaining() && !decoded.hasRemaining();
+                    boolean complete = finished && decodeComplete;
                     if (logger.isDebugEnabled())
                         logger.debug("Ungzipped {} bytes, complete={}", decoded.remaining(), complete);
                     if (decoded.hasRemaining() || complete)
                         transformer.transform(decoded, complete, buffers);
+                    if (decodeComplete)
+                        break;
                 }
             }
 
@@ -811,12 +825,16 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 buffers.clear();
                 output.add(result);
             }
+
+            decodeds.forEach(decoder::release);
         }
 
         private ByteBuffer gzip(List<ByteBuffer> buffers, boolean finished) throws IOException
         {
             for (ByteBuffer buffer : buffers)
+            {
                 write(gzipOut, buffer);
+            }
             if (finished)
                 gzipOut.close();
             byte[] gzipBytes = out.toByteArray();
@@ -825,11 +843,11 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
     }
 
-    private class ProxyDeferredContentProvider extends DeferredContentProvider
+    private class ProxyAsyncRequestContent extends AsyncRequestContent
     {
         private final HttpServletRequest clientRequest;
 
-        public ProxyDeferredContentProvider(HttpServletRequest clientRequest)
+        private ProxyAsyncRequestContent(HttpServletRequest clientRequest)
         {
             this.clientRequest = clientRequest;
         }
@@ -840,6 +858,18 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             if (_log.isDebugEnabled())
                 _log.debug("{} proxying content to upstream: {} bytes", getRequestId(clientRequest), buffer.remaining());
             return super.offer(buffer, callback);
+        }
+    }
+
+    private static class Chunk
+    {
+        private final ByteBuffer buffer;
+        private final Callback callback;
+
+        private Chunk(ByteBuffer buffer, Callback callback)
+        {
+            this.buffer = Objects.requireNonNull(buffer);
+            this.callback = Objects.requireNonNull(callback);
         }
     }
 }

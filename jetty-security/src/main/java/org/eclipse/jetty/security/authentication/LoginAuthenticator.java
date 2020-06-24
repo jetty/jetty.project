@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.security.authentication;
@@ -30,12 +30,12 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.session.Session;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class LoginAuthenticator implements Authenticator
 {
-    private static final Logger LOG = Log.getLogger(LoginAuthenticator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LoginAuthenticator.class);
 
     protected LoginService _loginService;
     protected IdentityService _identityService;
@@ -51,6 +51,17 @@ public abstract class LoginAuthenticator implements Authenticator
         //empty implementation as the default
     }
 
+    /**
+     * If the UserIdentity is not null after this method calls {@link LoginService#login(String, Object, ServletRequest)}, it
+     * is assumed that the user is fully authenticated and we need to change the session id to prevent
+     * session fixation vulnerability. If the UserIdentity is not necessarily fully
+     * authenticated, then subclasses must override this method and
+     * determine when the UserIdentity IS fully authenticated and renew the session id.
+     *
+     * @param username the username of the client to be authenticated
+     * @param password the user's credential
+     * @param servletRequest the inbound request that needs authentication
+     */
     public UserIdentity login(String username, Object password, ServletRequest servletRequest)
     {
         UserIdentity user = _loginService.login(username, password, servletRequest);
@@ -61,6 +72,16 @@ public abstract class LoginAuthenticator implements Authenticator
             return user;
         }
         return null;
+    }
+
+    public void logout(ServletRequest request)
+    {
+        HttpServletRequest httpRequest = (HttpServletRequest)request;
+        HttpSession session = httpRequest.getSession(false);
+        if (session == null)
+            return;
+
+        session.removeAttribute(Session.SESSION_CREATED_SECURE);
     }
 
     @Override
@@ -88,7 +109,7 @@ public abstract class LoginAuthenticator implements Authenticator
      * <li>The session ID has been given to unauthenticated responses
      * </ul>
      *
-     * @param request  the request
+     * @param request the request
      * @param response the response
      * @return The new session.
      */
@@ -111,7 +132,7 @@ public abstract class LoginAuthenticator implements Authenticator
                         s.renewId(request);
                         s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
                         if (s.isIdChanged() && (response instanceof Response))
-                            ((Response)response).addCookie(s.getSessionHandler().getSessionCookie(s, request.getContextPath(), request.isSecure()));
+                            ((Response)response).replaceCookie(s.getSessionHandler().getSessionCookie(s, request.getContextPath(), request.isSecure()));
                         if (LOG.isDebugEnabled())
                             LOG.debug("renew {}->{}", oldId, s.getId());
                     }

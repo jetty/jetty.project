@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.fcgi.server;
@@ -35,14 +35,15 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpChannelOverFCGI extends HttpChannel
 {
-    private static final Logger LOG = Log.getLogger(HttpChannelOverFCGI.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverFCGI.class);
 
-    private final HttpFields fields = new HttpFields();
+    private final HttpFields.Mutable fields = HttpFields.build();
     private final Dispatcher dispatcher;
     private String method;
     private String path;
@@ -87,10 +88,10 @@ public class HttpChannelOverFCGI extends HttpChannel
     public void onRequest()
     {
         String uri = path;
-        if (query != null && query.length() > 0)
+        if (!StringUtil.isEmpty(query))
             uri += "?" + query;
         // TODO https?
-        onRequest(new MetaData.Request(method, HttpScheme.HTTP.asString(), hostPort, uri, HttpVersion.fromString(version), fields,Long.MIN_VALUE));
+        onRequest(new MetaData.Request(method, HttpScheme.HTTP.asString(), hostPort, uri, HttpVersion.fromString(version), fields, Long.MIN_VALUE));
     }
 
     private HttpField convertHeader(HttpField field)
@@ -122,6 +123,14 @@ public class HttpChannelOverFCGI extends HttpChannel
     protected void dispatch()
     {
         dispatcher.dispatch();
+    }
+
+    public boolean onIdleTimeout(Throwable timeout)
+    {
+        boolean handle = getRequest().getHttpInput().onIdleTimeout(timeout);
+        if (handle)
+            execute(this);
+        return !handle;
     }
 
     private static class Dispatcher implements Runnable

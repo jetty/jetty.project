@@ -1,32 +1,31 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.component;
 
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.logging.StacklessLogging;
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.concurrent.TimeUnit;
-
-import org.eclipse.jetty.util.log.StacklessLogging;
-import org.junit.jupiter.api.Test;
-
 
 public class LifeCycleListenerTest
 {
@@ -37,8 +36,7 @@ public class LifeCycleListenerTest
     {
         TestLifeCycle lifecycle = new TestLifeCycle();
         TestListener listener = new TestListener();
-        lifecycle.addLifeCycleListener(listener);
-
+        lifecycle.addEventListener(listener);
 
         lifecycle.setCause(cause);
 
@@ -47,10 +45,10 @@ public class LifeCycleListenerTest
             lifecycle.start();
             assertTrue(false);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
-            assertEquals(cause,e);
-            assertEquals(cause,listener.getCause());
+            assertEquals(cause, e);
+            assertEquals(cause, listener.getCause());
         }
         lifecycle.setCause(null);
 
@@ -74,8 +72,7 @@ public class LifeCycleListenerTest
     {
         TestLifeCycle lifecycle = new TestLifeCycle();
         TestListener listener = new TestListener();
-        lifecycle.addLifeCycleListener(listener);
-
+        lifecycle.addEventListener(listener);
 
         // need to set the state to something other than stopped or stopping or
         // else
@@ -89,10 +86,10 @@ public class LifeCycleListenerTest
             lifecycle.stop();
             assertTrue(false);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
-            assertEquals(cause,e);
-            assertEquals(cause,listener.getCause());
+            assertEquals(cause, e);
+            assertEquals(cause, listener.getCause());
         }
 
         lifecycle.setCause(null);
@@ -113,22 +110,21 @@ public class LifeCycleListenerTest
         assertTrue(lifecycle.isStopped(), "The lifecycle state is not stooped");
     }
 
-
     @Test
-    public void testRemoveLifecycleListener ()
-    throws Exception
+    public void testRemoveLifecycleListener()
+        throws Exception
     {
         TestLifeCycle lifecycle = new TestLifeCycle();
         TestListener listener = new TestListener();
-        lifecycle.addLifeCycleListener(listener);
+        lifecycle.addEventListener(listener);
 
         lifecycle.start();
         assertTrue(listener.starting, "The starting event didn't occur");
-        lifecycle.removeLifeCycleListener(listener);
+        lifecycle.removeEventListener(listener);
         lifecycle.stop();
         assertFalse(listener.stopping, "The stopping event occurred");
     }
-    
+
     private static class TestLifeCycle extends AbstractLifeCycle
     {
         Exception cause;
@@ -140,7 +136,7 @@ public class LifeCycleListenerTest
         @Override
         protected void doStart() throws Exception
         {
-            if (cause!=null)
+            if (cause != null)
                 throw cause;
             super.doStart();
         }
@@ -148,14 +144,14 @@ public class LifeCycleListenerTest
         @Override
         protected void doStop() throws Exception
         {
-            if (cause!=null)
+            if (cause != null)
                 throw cause;
             super.doStop();
         }
 
         public void setCause(Exception e)
         {
-            cause=e;
+            cause = e;
         }
     }
 
@@ -232,5 +228,4 @@ public class LifeCycleListenerTest
             }
         }
     }
-
 }

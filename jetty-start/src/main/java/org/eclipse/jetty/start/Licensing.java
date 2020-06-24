@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.start;
@@ -48,7 +48,7 @@ public class Licensing
             return;
         }
 
-        licenseMap.put(module.getName(),module.getLicense());
+        licenseMap.put(module.getName(), module.getLicense());
     }
 
     public boolean hasLicenses()
@@ -59,7 +59,7 @@ public class Licensing
     public boolean acknowledgeLicenses() throws IOException
     {
         StartLog.debug("Requesting License Acknowledgement");
-        
+
         if (!hasLicenses())
         {
             return true;
@@ -73,10 +73,10 @@ public class Licensing
 
         for (String key : licenseMap.keySet())
         {
-            System.err.printf("%n Module: %s%n",key);
+            System.err.printf("%n Module: %s%n", key);
             for (String line : licenseMap.get(key))
             {
-                System.err.printf("  + %s%n",line);
+                System.err.printf("  + %s%n", line);
             }
         }
 
@@ -85,7 +85,7 @@ public class Licensing
         String propBasedAckValue = System.getProperty(PROP_ACK_LICENSES);
         if (propBasedAckValue != null)
         {
-            StartLog.log("TESTING MODE","Programmatic ACK - %s=%s",PROP_ACK_LICENSES,propBasedAckValue);
+            StartLog.log("TESTING MODE", "Programmatic ACK - %s=%s", PROP_ACK_LICENSES, propBasedAckValue);
             licenseAck = Boolean.parseBoolean(propBasedAckValue);
         }
         else

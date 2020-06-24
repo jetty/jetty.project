@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.io;
@@ -24,12 +24,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements ByteBufferPool
 {
-    private static final Logger LOG = Log.getLogger(LeakTrackingByteBufferPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LeakTrackingByteBufferPool.class);
 
     private final LeakDetector<ByteBuffer> leakDetector = new LeakDetector<ByteBuffer>()
     {
@@ -47,7 +47,7 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
         }
     };
 
-    private final static boolean NOISY = Boolean.getBoolean(LeakTrackingByteBufferPool.class.getName() + ".NOISY");
+    private static final boolean NOISY = Boolean.getBoolean(LeakTrackingByteBufferPool.class.getName() + ".NOISY");
     private final ByteBufferPool delegate;
     private final AtomicLong leakedReleases = new AtomicLong(0);
     private final AtomicLong leakedAcquires = new AtomicLong(0);
@@ -69,7 +69,7 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
         {
             leakedAcquires.incrementAndGet();
             LOG.info(String.format("ByteBuffer acquire %s leaked.acquired=%s", leakDetector.id(buffer), leaked ? "normal" : "LEAK"),
-                    new Throwable("LeakStack.Acquire"));
+                new Throwable("LeakStack.Acquire"));
         }
         return buffer;
     }
@@ -84,7 +84,7 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
         {
             leakedReleases.incrementAndGet();
             LOG.info(String.format("ByteBuffer release %s leaked.released=%s", leakDetector.id(buffer), leaked ? "normal" : "LEAK"), new Throwable(
-                    "LeakStack.Release"));
+                "LeakStack.Release"));
         }
         delegate.release(buffer);
     }

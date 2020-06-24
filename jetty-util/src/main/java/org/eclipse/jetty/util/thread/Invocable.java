@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.thread;
@@ -28,12 +28,11 @@ import java.util.concurrent.Callable;
  * <li>non-blocking, the invocation will certainly <strong>not</strong> block</li>
  * <li>either, the invocation <em>may</em> block</li>
  * </ul>
- * 
+ *
  * <p>
- * Static methods and are provided that allow the current thread to be tagged 
+ * Static methods and are provided that allow the current thread to be tagged
  * with a {@link ThreadLocal} to indicate if it has a blocking invocation type.
  * </p>
- * 
  */
 public interface Invocable
 {
@@ -46,6 +45,7 @@ public interface Invocable
 
     /**
      * Test if the current thread has been tagged as non blocking
+     *
      * @return True if the task the current thread is running has
      * indicated that it will not block.
      */
@@ -57,11 +57,12 @@ public interface Invocable
     /**
      * Invoke a task with the calling thread, tagged to indicate
      * that it will not block.
+     *
      * @param task The task to invoke.
      */
     public static void invokeNonBlocking(Runnable task)
     {
-        Boolean was_non_blocking = __nonBlocking.get();
+        Boolean wasNonBlocking = __nonBlocking.get();
         try
         {
             __nonBlocking.set(Boolean.TRUE);
@@ -69,12 +70,27 @@ public interface Invocable
         }
         finally
         {
-            __nonBlocking.set(was_non_blocking);
+            __nonBlocking.set(wasNonBlocking);
         }
+    }
+
+    static InvocationType combine(InvocationType it1, InvocationType it2)
+    {
+        if (it1 != null && it2 != null)
+        {
+            if (it1 == it2)
+                return it1;
+            if (it1 == InvocationType.EITHER)
+                return it2;
+            if (it2 == InvocationType.EITHER)
+                return it1;
+        }
+        return InvocationType.BLOCKING;
     }
 
     /**
      * Get the invocation type of an Object.
+     *
      * @param o The object to check the invocation type of.
      * @return If the object is an Invocable, it is coerced and the {@link #getInvocationType()}
      * used, otherwise {@link InvocationType#BLOCKING} is returned.

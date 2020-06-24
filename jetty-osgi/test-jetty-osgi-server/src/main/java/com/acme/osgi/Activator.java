@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package com.acme.osgi;
@@ -26,56 +26,47 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.webapp.Configurations;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 
 /**
  * Bootstrap a Server
- * 
- * 
  */
 public class Activator implements BundleActivator
 {
 
     private ServiceRegistration _sr;
-    
+
     /**
-     * 
-     * @param context
+     *
      */
     @Override
     public void start(BundleContext context) throws Exception
-    {    
+    {
         //For test purposes, use a random port
         Server server = new Server(0);
-        server.getConnectors()[0].addLifeCycleListener(new AbstractLifeCycleListener()
+        server.getConnectors()[0].addEventListener(new AbstractLifeCycleListener()
         {
 
-            /** 
-             * @see org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener#lifeCycleStarted(org.eclipse.jetty.util.component.LifeCycle)
-             */
             @Override
             public void lifeCycleStarted(LifeCycle event)
             {
                 System.setProperty("bundle.server.port", String.valueOf(((ServerConnector)event).getLocalPort()));
                 super.lifeCycleStarted(event);
             }
-
-     
-            
         });
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         server.setHandler(contexts);
-        //server.setDumpAfterStart(true);
+        // server.setDumpAfterStart(true);
 
         String[] list = new String[]{
-                "org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration",
-                "org.eclipse.jetty.webapp.WebXmlConfiguration",
-                "org.eclipse.jetty.webapp.MetaInfConfiguration",
-                "org.eclipse.jetty.webapp.FragmentConfiguration",
-                "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"};
+            "org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration",
+            "org.eclipse.jetty.webapp.WebXmlConfiguration",
+            "org.eclipse.jetty.webapp.MetaInfConfiguration",
+            "org.eclipse.jetty.webapp.FragmentConfiguration",
+            "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"
+        };
         server.setAttribute("org.eclipse.jetty.webapp.configuration", list);
 
         Dictionary serverProps = new Hashtable();
@@ -88,9 +79,8 @@ public class Activator implements BundleActivator
 
     /**
      * Stop the activator.
-     * 
-     * @see
-     * org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
+     *
+     * @see org.osgi.framework.BundleActivator#stop(org.osgi.framework.BundleContext)
      */
     @Override
     public void stop(BundleContext context) throws Exception

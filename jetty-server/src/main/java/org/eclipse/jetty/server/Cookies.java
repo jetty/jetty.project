@@ -1,45 +1,44 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server;
+
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.http.Cookie;
 
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.CookieCutter;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-
-/* ------------------------------------------------------------ */
-/** Cookie parser
+/**
+ * Cookie parser
  * <p>Optimized stateful cookie parser.  Cookies fields are added with the
  * {@link #addCookieField(String)} method and parsed on the next subsequent
  * call to {@link #getCookies()}.
- * If the added fields are identical to those last added (as strings), then the 
+ * If the added fields are identical to those last added (as strings), then the
  * cookies are not re parsed.
- *
  */
 public class Cookies extends CookieCutter
 {
-    protected static final Logger LOG = Log.getLogger(Cookies.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(Cookies.class);
     protected final List<String> _rawFields = new ArrayList<>();
     protected final List<Cookie> _cookieList = new ArrayList<>();
     private int _addedFields;
@@ -48,13 +47,13 @@ public class Cookies extends CookieCutter
     private boolean _set = false;
 
     public Cookies()
-    {  
-        this(CookieCompliance.RFC6265);
-    }
-    
-    public Cookies(CookieCompliance compliance)
     {
-        super(compliance);
+        this(CookieCompliance.RFC6265, null);
+    }
+
+    public Cookies(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
+    {
+        super(compliance, complianceListener);
     }
 
     public void addCookieField(String rawField)
@@ -62,10 +61,10 @@ public class Cookies extends CookieCutter
         if (_set)
             throw new IllegalStateException();
 
-        if (rawField==null)
+        if (rawField == null)
             return;
-        rawField=rawField.trim();
-        if (rawField.length()==0)
+        rawField = rawField.trim();
+        if (rawField.length() == 0)
             return;
 
         if (_rawFields.size() > _addedFields)
@@ -77,7 +76,9 @@ public class Cookies extends CookieCutter
             }
 
             while (_rawFields.size() > _addedFields)
+            {
                 _rawFields.remove(_addedFields);
+            }
         }
         _rawFields.add(_addedFields++, rawField);
         _parsed = false;
@@ -103,13 +104,13 @@ public class Cookies extends CookieCutter
         _parsed = true;
         return _cookies;
     }
-    
+
     public void setCookies(Cookie[] cookies)
     {
         _cookies = cookies;
         _set = true;
     }
-    
+
     public void reset()
     {
         if (_set)
@@ -118,27 +119,26 @@ public class Cookies extends CookieCutter
         _addedFields = 0;
     }
 
-
     @Override
     protected void addCookie(String name, String value, String domain, String path, int version, String comment)
     {
         try
         {
-            Cookie cookie = new Cookie(name,value);
-            if (domain!=null)
+            Cookie cookie = new Cookie(name, value);
+            if (domain != null)
                 cookie.setDomain(domain);
-            if (path!=null)
+            if (path != null)
                 cookie.setPath(path);
-            if (version>0)
+            if (version > 0)
                 cookie.setVersion(version);
-            if (comment!=null)
+            if (comment != null)
                 cookie.setComment(comment);
             _cookieList.add(cookie);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
-            LOG.debug(e);
+            LOG.debug("Unable to add Cookie name={}, value={}, domain={}, path={}, version={}, comment={}",
+                name, value, domain, path, version, comment, e);
         }
     }
-
 }

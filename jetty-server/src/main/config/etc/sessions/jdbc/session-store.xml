@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -54,6 +54,12 @@
 			<Set name="mapColumn">
 				<Property name="jetty.session.jdbc.schema.mapColumn" default="map" />
 			</Set>
+            <Set name="schemaName">
+                <Property name="jetty.session.jdbc.schema.schemaName" />
+            </Set>
+            <Set name="catalogName">
+                <Property name="jetty.session.jdbc.schema.catalogName" />
+            </Set>
 			<Set name="tableName">
 				<Property name="jetty.session.jdbc.schema.table" default="JettySessions" />
 			</Set>

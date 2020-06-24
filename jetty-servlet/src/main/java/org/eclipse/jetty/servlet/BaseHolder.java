@@ -1,131 +1,122 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.servlet;
 
 import java.io.IOException;
-
 import javax.servlet.ServletContext;
 import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * AbstractHolder
- * 
- * Base class for all servlet-related classes that may be lazily instantiated  (eg servlet, filter, 
- * listener), and/or require metadata to be held regarding their origin 
+ *
+ * Base class for all servlet-related classes that may be lazily instantiated  (eg servlet, filter,
+ * listener), and/or require metadata to be held regarding their origin
  * (web.xml, annotation, programmatic api etc).
+ *
  * @param <T> the type of holder
  */
 public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpable
 {
-    private static final Logger LOG = Log.getLogger(BaseHolder.class);
-    
-    
-    final protected Source _source;
-    protected transient Class<? extends T> _class;
-    protected String _className;
-    protected boolean _extInstance;
-    protected ServletHandler _servletHandler;
-    
-    /* ---------------------------------------------------------------- */
+    private static final Logger LOG = LoggerFactory.getLogger(BaseHolder.class);
+
+    private final Source _source;
+    private Class<? extends T> _class;
+    private String _className;
+    private T _instance;
+    private ServletHandler _servletHandler;
+
     protected BaseHolder(Source source)
     {
-        _source=source;
+        _source = source;
     }
 
-    /* ------------------------------------------------------------ */
     public Source getSource()
     {
         return _source;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Do any setup necessary after starting
+     *
      * @throws Exception if unable to initialize
      */
     public void initialize()
-    throws Exception
+        throws Exception
     {
         if (!isStarted())
-            throw new IllegalStateException("Not started: "+this);
+            throw new IllegalStateException("Not started: " + this);
     }
 
-    /* ------------------------------------------------------------ */
     @SuppressWarnings("unchecked")
     @Override
     public void doStart()
         throws Exception
     {
         //if no class already loaded and no classname, make permanently unavailable
-        if (_class==null && (_className==null || _className.equals("")))
-            throw new UnavailableException("No class in holder "+toString());
-        
+        if (_class == null && (_className == null || _className.equals("")))
+            throw new UnavailableException("No class in holder " + toString());
+
         //try to load class
-        if (_class==null)
+        if (_class == null)
         {
             try
             {
-                _class=Loader.loadClass(_className);
-                if(LOG.isDebugEnabled())
-                    LOG.debug("Holding {} from {}",_class,_class.getClassLoader());
+                _class = Loader.loadClass(_className);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Holding {} from {}", _class, _class.getClassLoader());
             }
             catch (Exception e)
             {
-                LOG.warn(e);
-                throw new UnavailableException("Class loading error for holder "+toString());
+                LOG.warn("Unable to load class {}", _className, e);
+                throw new UnavailableException("Class loading error for holder " + toString());
             }
         }
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public void doStop()
         throws Exception
     {
-        if (!_extInstance)
-            _class=null;
+        if (_instance == null)
+            _class = null;
     }
 
-
-    /* ------------------------------------------------------------ */
-    @ManagedAttribute(value="Class Name", readonly=true)
+    @ManagedAttribute(value = "Class Name", readonly = true)
     public String getClassName()
     {
         return _className;
     }
 
-    /* ------------------------------------------------------------ */
     public Class<? extends T> getHeldClass()
     {
         return _class;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return Returns the servletHandler.
      */
@@ -133,9 +124,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     {
         return _servletHandler;
     }
-    
 
-    /* ------------------------------------------------------------ */
     /**
      * @param servletHandler The {@link ServletHandler} that will handle requests dispatched to this servlet.
      */
@@ -143,60 +132,100 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     {
         _servletHandler = servletHandler;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param className The className to set.
      */
     public void setClassName(String className)
     {
         _className = className;
-        _class=null;
+        _class = null;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @param held The class to hold
      */
     public void setHeldClass(Class<? extends T> held)
     {
-        _class=held;
-        if (held!=null)
+        _class = held;
+        if (held != null)
         {
-            _className=held.getName();
+            _className = held.getName();
         }
     }
-    
 
-    /* ------------------------------------------------------------ */
     protected void illegalStateIfContextStarted()
     {
-        if (_servletHandler!=null)
+        if (_servletHandler != null)
         {
-            ServletContext context=_servletHandler.getServletContext();
+            ServletContext context = _servletHandler.getServletContext();
             if ((context instanceof ContextHandler.Context) && ((ContextHandler.Context)context).getContextHandler().isStarted())
                 throw new IllegalStateException("Started");
         }
     }
-    
-    /* ------------------------------------------------------------ */
+
+    protected synchronized void setInstance(T instance)
+    {
+        _instance = instance;
+        if (instance == null)
+            setHeldClass(null);
+        else
+            setHeldClass((Class<T>)instance.getClass());
+    }
+
+    protected synchronized T getInstance()
+    {
+        return _instance;
+    }
+
+    protected synchronized T createInstance() throws Exception
+    {
+        ServletContext ctx = getServletContext();
+        if (ctx == null)
+            return getHeldClass().getDeclaredConstructor().newInstance();
+
+        if (ServletContextHandler.Context.class.isAssignableFrom(ctx.getClass()))
+            return ((ServletContextHandler.Context)ctx).createInstance(this);
+
+        return null;
+    }
+
+    public ServletContext getServletContext()
+    {
+        ServletContext scontext = null;
+
+        //try the ServletHandler first
+        if (getServletHandler() != null)
+            scontext = getServletHandler().getServletContext();
+
+        if (scontext != null)
+            return scontext;
+
+        //try the ContextHandler next
+        Context ctx = ContextHandler.getCurrentContext();
+        if (ctx != null)
+        {
+            ContextHandler contextHandler = ctx.getContextHandler();
+            if (contextHandler != null)
+                return contextHandler.getServletContext();
+        }
+        return null;
+    }
+
     /**
      * @return True if this holder was created for a specific instance.
      */
-    public boolean isInstance()
+    public synchronized boolean isInstance()
     {
-        return _extInstance;
+        return _instance != null;
     }
-    
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObject(out, this);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public String dump()
     {

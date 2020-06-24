@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.thread;
@@ -21,16 +21,16 @@ package org.eclipse.jetty.util.thread;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An Executor using preallocated/reserved Threads from a wrapped Executor.
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("A pool for reserved threads")
 public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExecutor
 {
-    private static final Logger LOG = Log.getLogger(ReservedThreadExecutor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReservedThreadExecutor.class);
     private static final Runnable STOP = new Runnable()
     {
         @Override
@@ -73,16 +73,16 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     /**
      * @param executor The executor to use to obtain threads
      * @param capacity The number of threads to preallocate. If less than 0 then capacity
-     *                 is calculated based on a heuristic from the number of available processors and
-     *                 thread pool size.
+     * is calculated based on a heuristic from the number of available processors and
+     * thread pool size.
      */
-    public ReservedThreadExecutor(Executor executor,int capacity)
+    public ReservedThreadExecutor(Executor executor, int capacity)
     {
         _executor = executor;
-        _capacity = reservedThreads(executor,capacity);
+        _capacity = reservedThreads(executor, capacity);
         _stack = new ConcurrentLinkedDeque<>();
-
-        LOG.debug("{}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}", this);
     }
 
     /**
@@ -93,9 +93,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
      * @return the number of reserved threads that would be used by a ReservedThreadExecutor
      * constructed with these arguments.
      */
-    private static int reservedThreads(Executor executor,int capacity)
+    private static int reservedThreads(Executor executor, int capacity)
     {
-        if (capacity>=0)
+        if (capacity >= 0)
             return capacity;
         int cpus = ProcessorUtils.availableProcessors();
         if (executor instanceof ThreadPool.SizedThreadPool)
@@ -132,13 +132,14 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     @ManagedAttribute(value = "idletimeout in MS", readonly = true)
     public long getIdleTimeoutMs()
     {
-        if(_idleTimeUnit==null)
+        if (_idleTimeUnit == null)
             return 0;
         return _idleTimeUnit.toMillis(_idleTime);
     }
 
     /**
      * Set the idle timeout for shrinking the reserved thread pool
+     *
      * @param idleTime Time to wait before shrinking, or 0 for no timeout.
      * @param idleTimeUnit Time units for idle timeout
      */
@@ -153,24 +154,39 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     @Override
     public void doStart() throws Exception
     {
-        _lease = ThreadPoolBudget.leaseFrom(getExecutor(),this,_capacity);
+        _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _capacity);
+        _size.set(0);
         super.doStart();
     }
 
     @Override
     public void doStop() throws Exception
     {
-        if (_lease!=null)
+        if (_lease != null)
             _lease.close();
-        while(true)
+
+        super.doStop();
+
+        while (true)
         {
+            int size = _size.get();
+            // If no reserved threads left try setting size to -1 to
+            // atomically prevent other threads adding themselves to stack.
+            if (size == 0 && _size.compareAndSet(size, -1))
+                break;
+
             ReservedThread thread = _stack.pollFirst();
             if (thread == null)
-                break;
+            {
+                // Reserved thread must have incremented size but not yet added itself to queue.
+                // We will spin until it is added.
+                Thread.onSpinWait();
+                continue;
+            }
+
             _size.decrementAndGet();
             thread.stop();
         }
-        super.doStop();
     }
 
     @Override
@@ -187,22 +203,24 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     public boolean tryExecute(Runnable task)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} tryExecute {}",this ,task);
+            LOG.debug("{} tryExecute {}", this, task);
 
-        if (task==null)
+        if (task == null)
             return false;
 
         ReservedThread thread = _stack.pollFirst();
-        if (thread==null && task!=STOP)
+        if (thread == null)
         {
-            startReservedThread();
+            if (task != STOP)
+                startReservedThread();
             return false;
         }
 
         int size = _size.decrementAndGet();
-        thread.offer(task);
+        if (!thread.offer(task))
+            return false;
 
-        if (size==0 && task!=STOP)
+        if (size == 0 && task != STOP)
             startReservedThread();
 
         return true;
@@ -228,9 +246,9 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 }
             }
         }
-        catch(RejectedExecutionException e)
+        catch (RejectedExecutionException e)
         {
-            LOG.ignore(e);
+            LOG.trace("IGNORED", e);
         }
     }
 
@@ -238,29 +256,34 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
     public String toString()
     {
         return String.format("%s@%x{s=%d/%d,p=%d}",
-                getClass().getSimpleName(),
-                hashCode(),
-                _size.get(),
-                _capacity,
-                _pending.get());
+            getClass().getSimpleName(),
+            hashCode(),
+            _size.get(),
+            _capacity,
+            _pending.get());
     }
 
     private class ReservedThread implements Runnable
     {
-        private final Locker _locker = new Locker();
-        private final Condition _wakeup = _locker.newCondition();
+        private final SynchronousQueue<Runnable> _task = new SynchronousQueue<>();
         private boolean _starting = true;
-        private Runnable _task = null;
 
-        public void offer(Runnable task)
+        public boolean offer(Runnable task)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} offer {}", this, task);
 
-            try (Locker.Lock lock = _locker.lock())
+            try
             {
-                _task = task;
-                _wakeup.signal();
+                _task.put(task);
+                return true;
+            }
+            catch (Throwable e)
+            {
+                LOG.trace("IGNORED", e);
+                _size.getAndIncrement();
+                _stack.offerFirst(this);
+                return false;
             }
         }
 
@@ -274,48 +297,29 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             if (LOG.isDebugEnabled())
                 LOG.debug("{} waiting", this);
 
-            Runnable task = null;
-            while (task==null)
+            while (true)
             {
-                boolean idle = false;
-
-                try (Locker.Lock lock = _locker.lock())
+                try
                 {
-                    if (_task == null)
-                    {
-                        try
-                        {
-                            if (_idleTime == 0)
-                                _wakeup.await();
-                            else
-                                idle = !_wakeup.await(_idleTime, _idleTimeUnit);
-                        }
-                        catch (InterruptedException e)
-                        {
-                            LOG.ignore(e);
-                        }
-                    }
-                    task = _task;
-                    _task = null;
-                }
-
-                if (idle)
-                {
-                    // Because threads are held in a stack, excess threads will be
-                    // idle.  However, we cannot remove threads from the bottom of
-                    // the stack, so we submit a poison pill job to stop the thread
-                    // on top of the stack (which unfortunately will be the most
-                    // recently used)
+                    Runnable task = _idleTime <= 0 ? _task.take() : _task.poll(_idleTime, _idleTimeUnit);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} IDLE", this);
-                    tryExecute(STOP);
+                        LOG.debug("{} task={}", this, task);
+                    if (task != null)
+                        return task;
+
+                    if (_stack.remove(this))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} IDLE", this);
+                        _size.decrementAndGet();
+                        return STOP;
+                    }
+                }
+                catch (InterruptedException e)
+                {
+                    LOG.trace("IGNORED", e);
                 }
             }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} task={}", this, task);
-
-            return task;
         }
 
         @Override
@@ -325,20 +329,25 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
             {
                 // test and increment size BEFORE decrementing pending,
                 // so that we don't have a race starting new pending.
-                while(true)
+                int size = _size.get();
+
+                // Are we stopped?
+                if (size < 0)
+                    return;
+
+                // Are we surplus to capacity?
+                if (size >= _capacity)
                 {
-                    int size = _size.get();
-                    if (size>=_capacity)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("{} size {} > capacity", this, size, _capacity);
-                        if (_starting)
-                            _pending.decrementAndGet();
-                        return;
-                    }
-                    if (_size.compareAndSet(size,size+1))
-                        break;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} size {} > capacity", this, size, _capacity);
+                    if (_starting)
+                        _pending.decrementAndGet();
+                    return;
                 }
+
+                // If we cannot update size then recalculate
+                if (!_size.compareAndSet(size, size + 1))
+                    continue;
 
                 if (_starting)
                 {
@@ -352,10 +361,11 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 // that only effects the decision to keep other threads reserved.
                 _stack.offerFirst(this);
 
-                // Wait for a task
+                // Once added to the stack, we must always wait for a job on the _task Queue
+                // and never return early, else we may leave a thread blocked offering a _task.
                 Runnable task = reservedWait();
 
-                if (task==STOP)
+                if (task == STOP)
                     // return on STOP poison pill
                     break;
 
@@ -366,7 +376,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 }
                 catch (Throwable e)
                 {
-                    LOG.warn(e);
+                    LOG.warn("Unable to run task", e);
                 }
             }
 
@@ -377,7 +387,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
         @Override
         public String toString()
         {
-            return String.format("%s@%x",ReservedThreadExecutor.this,hashCode());
+            return String.format("%s@%x", ReservedThreadExecutor.this, hashCode());
         }
     }
 }

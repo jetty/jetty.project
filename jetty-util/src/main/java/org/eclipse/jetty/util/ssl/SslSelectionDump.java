@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.ssl;
@@ -50,14 +50,14 @@ class SslSelectionDump implements Dumpable
         public void dump(Appendable out, String indent) throws IOException
         {
             Object[] array = toArray();
-            Dumpable.dumpObjects(out, indent, caption + " size="+array.length, array);
+            Dumpable.dumpObjects(out, indent, caption + " size=" + array.length, array);
         }
     }
-    
+
     final String type;
     final SslSelectionDump.CaptionedList enabled = new SslSelectionDump.CaptionedList("Enabled");
     final SslSelectionDump.CaptionedList disabled = new SslSelectionDump.CaptionedList("Disabled");
-    
+
     public SslSelectionDump(String type,
                             String[] supportedByJVM,
                             String[] enabledByJVM,
@@ -68,97 +68,97 @@ class SslSelectionDump implements Dumpable
 
         List<String> jvmEnabled = Arrays.asList(enabledByJVM);
         List<Pattern> excludedPatterns = Arrays.stream(excludedByConfig)
-                .map((entry) -> Pattern.compile(entry))
-                .collect(Collectors.toList());
+            .map((entry) -> Pattern.compile(entry))
+            .collect(Collectors.toList());
         List<Pattern> includedPatterns = Arrays.stream(includedByConfig)
-                .map((entry) -> Pattern.compile(entry))
-                .collect(Collectors.toList());
-        
+            .map((entry) -> Pattern.compile(entry))
+            .collect(Collectors.toList());
+
         Arrays.stream(supportedByJVM)
-                .sorted(Comparator.naturalOrder())
-                .forEach((entry) ->
+            .sorted(Comparator.naturalOrder())
+            .forEach((entry) ->
+            {
+                boolean isPresent = true;
+
+                StringBuilder s = new StringBuilder();
+                s.append(entry);
+
+                for (Pattern pattern : excludedPatterns)
                 {
-                    boolean isPresent = true;
-                    
-                    StringBuilder s = new StringBuilder();
-                    s.append(entry);
-
-                    for (Pattern pattern : excludedPatterns)
-                    {
-                        Matcher m = pattern.matcher(entry);
-                        if (m.matches())
-                        {
-                            if (isPresent)
-                            {
-                                s.append(" -");
-                                isPresent = false;
-                            }
-                            else
-                            {
-                                s.append(",");
-                            }
-                            s.append(" ConfigExcluded:'").append(pattern.pattern()).append('\'');
-                        }
-                    }
-
-                    boolean isIncluded = false;
-
-                    if (!includedPatterns.isEmpty())
-                    {
-                        for (Pattern pattern : includedPatterns)
-                        {
-                            Matcher m = pattern.matcher(entry);
-                            if (m.matches())
-                            {
-                                isIncluded = true;
-                                break;
-                            }
-                        }
-                        
-                        if (!isIncluded)
-                        {
-                            if (isPresent)
-                            {
-                                s.append(" -");
-                                isPresent = false;
-                            }
-                            else
-                            {
-                                s.append(",");
-                            }
-
-                            s.append(" ConfigIncluded:NotSelected");
-                        }
-                    }
-
-                    if (!isIncluded && !jvmEnabled.contains(entry))
+                    Matcher m = pattern.matcher(entry);
+                    if (m.matches())
                     {
                         if (isPresent)
                         {
                             s.append(" -");
                             isPresent = false;
                         }
+                        else
+                        {
+                            s.append(",");
+                        }
+                        s.append(" ConfigExcluded:'").append(pattern.pattern()).append('\'');
+                    }
+                }
 
-                        s.append(" JVM:disabled");
+                boolean isIncluded = false;
+
+                if (!includedPatterns.isEmpty())
+                {
+                    for (Pattern pattern : includedPatterns)
+                    {
+                        Matcher m = pattern.matcher(entry);
+                        if (m.matches())
+                        {
+                            isIncluded = true;
+                            break;
+                        }
                     }
 
+                    if (!isIncluded)
+                    {
+                        if (isPresent)
+                        {
+                            s.append(" -");
+                            isPresent = false;
+                        }
+                        else
+                        {
+                            s.append(",");
+                        }
+
+                        s.append(" ConfigIncluded:NotSelected");
+                    }
+                }
+
+                if (!isIncluded && !jvmEnabled.contains(entry))
+                {
                     if (isPresent)
                     {
-                        enabled.add(s.toString());
+                        s.append(" -");
+                        isPresent = false;
                     }
-                    else
-                    {
-                        disabled.add(s.toString());
-                    }
-                });
+
+                    s.append(" JVM:disabled");
+                }
+
+                if (isPresent)
+                {
+                    enabled.add(s.toString());
+                }
+                else
+                {
+                    disabled.add(s.toString());
+                }
+            });
     }
-    
+
     @Override
     public String dump()
     {
         return Dumpable.dump(this);
     }
-    
+
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {

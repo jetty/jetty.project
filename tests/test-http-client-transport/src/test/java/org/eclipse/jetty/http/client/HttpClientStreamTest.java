@@ -1,33 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http.client;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -43,8 +32,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -53,31 +40,43 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.AsyncContext;
+import javax.servlet.ReadListener;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
-import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
-import org.eclipse.jetty.client.util.InputStreamContentProvider;
+import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.client.util.InputStreamRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.client.util.OutputStreamContentProvider;
+import org.eclipse.jetty.client.util.OutputStreamRequestContent;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 {
@@ -100,7 +99,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         {
             byte[] kb = new byte[1024];
             for (int i = 0; i < 10 * 1024; ++i)
+            {
                 output.write(kb);
+            }
         }
 
         scenario.start(new AbstractHandler()
@@ -124,13 +125,13 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
 
-        final AtomicLong requestTime = new AtomicLong();
+        AtomicLong requestTime = new AtomicLong();
         ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .file(upload)
-                .onRequestSuccess(request -> requestTime.set(System.nanoTime()))
-                .timeout(30, TimeUnit.SECONDS)
-                .send();
+            .scheme(scenario.getScheme())
+            .file(upload)
+            .onRequestSuccess(request -> requestTime.set(System.nanoTime()))
+            .timeout(30, TimeUnit.SECONDS)
+            .send();
         long responseTime = System.nanoTime();
 
         assertEquals(200, response.getStatus());
@@ -146,7 +147,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     public void testDownload(Transport transport) throws Exception
     {
         init(transport);
-        final byte[] data = new byte[128 * 1024];
+        byte[] data = new byte[128 * 1024];
         byte value = 1;
         Arrays.fill(data, value);
         scenario.start(new AbstractHandler()
@@ -161,8 +162,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -191,7 +192,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     public void testDownloadOfUTF8Content(Transport transport) throws Exception
     {
         init(transport);
-        final byte[] data = new byte[]{(byte)0xC3, (byte)0xA8}; // UTF-8 representation of &egrave;
+        byte[] data = new byte[]{(byte)0xC3, (byte)0xA8}; // UTF-8 representation of &egrave;
         scenario.start(new AbstractHandler()
         {
             @Override
@@ -204,8 +205,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -233,7 +234,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     public void testDownloadWithFailure(Transport transport) throws Exception
     {
         init(transport);
-        final byte[] data = new byte[64 * 1024];
+        byte[] data = new byte[64 * 1024];
         byte value = 1;
         Arrays.fill(data, value);
         scenario.start(new AbstractHandler()
@@ -253,8 +254,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -264,7 +265,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         AtomicInteger length = new AtomicInteger();
 
-        assertThrows(IOException.class, ()-> {
+        assertThrows(IOException.class, () ->
+        {
             while (input.read() == value)
             {
                 if (length.incrementAndGet() % 100 == 0)
@@ -300,9 +302,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         stream.close();
 
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .content(new BytesContentProvider(new byte[]{0, 1, 2, 3}))
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .body(new BytesRequestContent(new byte[]{0, 1, 2, 3}))
+            .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(200, response.getStatus());
 
@@ -344,8 +346,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         };
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .send(listener);
 
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
@@ -403,8 +405,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         };
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
@@ -457,8 +459,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         };
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
@@ -484,8 +486,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         InputStreamResponseListener listener = new InputStreamResponseListener();
         // Connect to the wrong port
         scenario.client.newRequest(uri)
-                .scheme(scenario.getScheme())
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .send(listener);
         Result result = listener.await(5, TimeUnit.SECONDS);
         assertNotNull(result);
     }
@@ -495,21 +497,21 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     public void testInputStreamContentProviderThrowingWhileReading(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new AbstractHandler.ErrorDispatchHandler()
+        scenario.start(new AbstractHandler()
         {
             @Override
-            public void doNonErrorHandle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
         });
 
-        final byte[] data = new byte[]{0, 1, 2, 3};
-        ExecutionException e = assertThrows(ExecutionException.class, ()->
-                scenario.client.newRequest(scenario.newURI())
+        byte[] data = new byte[]{0, 1, 2, 3};
+        ExecutionException e = assertThrows(ExecutionException.class, () ->
+            scenario.client.newRequest(scenario.newURI())
                 .scheme(scenario.getScheme())
-                .content(new InputStreamContentProvider(new InputStream()
+                .body(new InputStreamRequestContent(new InputStream()
                 {
                     private int index = 0;
 
@@ -522,7 +524,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 }, data.length / 2))
                 .timeout(5, TimeUnit.SECONDS)
                 .send());
-        assertThat(e.getCause(), instanceOf(NoSuchElementException.class));
+        assertThat(e.getCause(), instanceOf(ArrayIndexOutOfBoundsException.class));
     }
 
     @ParameterizedTest
@@ -530,10 +532,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     public void testDownloadWithCloseBeforeContent(Transport transport) throws Exception
     {
         init(transport);
-        final byte[] data = new byte[128 * 1024];
+        byte[] data = new byte[128 * 1024];
         byte value = 3;
         Arrays.fill(data, value);
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         scenario.start(new AbstractHandler()
         {
             @Override
@@ -557,8 +559,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -577,9 +579,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     public void testDownloadWithCloseMiddleOfContent(Transport transport) throws Exception
     {
         init(transport);
-        final byte[] data1 = new byte[1024];
-        final byte[] data2 = new byte[1024];
-        final CountDownLatch latch = new CountDownLatch(1);
+        byte[] data1 = new byte[1024];
+        byte[] data2 = new byte[1024];
+        CountDownLatch latch = new CountDownLatch(1);
         scenario.start(new AbstractHandler()
         {
             @Override
@@ -604,8 +606,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -614,7 +616,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         assertNotNull(input);
 
         for (byte datum1 : data1)
+        {
             assertEquals(datum1, input.read());
+        }
 
         input.close();
 
@@ -628,7 +632,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     public void testDownloadWithCloseEndOfContent(Transport transport) throws Exception
     {
         init(transport);
-        final byte[] data = new byte[1024];
+        byte[] data = new byte[1024];
         scenario.start(new AbstractHandler()
         {
             @Override
@@ -642,8 +646,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .send(listener);
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
@@ -652,7 +656,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         assertNotNull(input);
 
         for (byte datum : data)
+        {
             assertEquals(datum, input.read());
+        }
 
         // Read EOF
         assertEquals(-1, input.read());
@@ -679,17 +685,17 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        try (DeferredContentProvider content = new DeferredContentProvider())
+        CountDownLatch latch = new CountDownLatch(1);
+        try (AsyncRequestContent content = new AsyncRequestContent())
         {
             scenario.client.newRequest(scenario.newURI())
-                    .scheme(scenario.getScheme())
-                    .content(content)
-                    .send(result ->
-                    {
-                        if (result.isSucceeded() && result.getResponse().getStatus() == 200)
-                            latch.countDown();
-                    });
+                .scheme(scenario.getScheme())
+                .body(content)
+                .send(result ->
+                {
+                    if (result.isSucceeded() && result.getResponse().getStatus() == 200)
+                        latch.countDown();
+                });
 
             // Make sure we provide the content *after* the request has been "sent".
             Thread.sleep(1000);
@@ -699,7 +705,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 byte[] buffer = new byte[200];
                 int read;
                 while ((read = input.read(buffer)) >= 0)
+                {
                     content.offer(ByteBuffer.wrap(buffer, 0, read));
+                }
             }
         }
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -720,9 +728,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicInteger succeeds = new AtomicInteger();
-        try (DeferredContentProvider content = new DeferredContentProvider())
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicInteger succeeds = new AtomicInteger();
+        try (AsyncRequestContent content = new AsyncRequestContent())
         {
             // Make the content immediately available.
             content.offer(ByteBuffer.allocate(1024), new Callback()
@@ -735,13 +743,13 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             });
 
             scenario.client.newRequest(scenario.newURI())
-                    .scheme(scenario.getScheme())
-                    .content(content)
-                    .send(result ->
-                    {
-                        if (result.isSucceeded() && result.getResponse().getStatus() == 200)
-                            latch.countDown();
-                    });
+                .scheme(scenario.getScheme())
+                .body(content)
+                .send(result ->
+                {
+                    if (result.isSucceeded() && result.getResponse().getStatus() == 200)
+                        latch.countDown();
+                });
         }
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertEquals(1, succeeds.get());
@@ -762,14 +770,14 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        final byte[] data = new byte[512];
-        final DeferredContentProvider content = new DeferredContentProvider()
+        CountDownLatch latch = new CountDownLatch(1);
+        byte[] data = new byte[512];
+        AsyncRequestContent content = new AsyncRequestContent()
         {
             @Override
-            public void setListener(Listener listener)
+            public void demand()
             {
-                super.setListener(listener);
+                super.demand();
                 // Simulate a concurrent call
                 offer(ByteBuffer.wrap(data));
                 close();
@@ -777,103 +785,19 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         };
 
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .content(content)
-                .send(new BufferingResponseListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isSucceeded() &&
-                                result.getResponse().getStatus() == 200 &&
-                                Arrays.equals(data, getContent()))
-                            latch.countDown();
-                    }
-                });
-
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testUploadWithDeferredContentProviderRacingWithIterator(Transport transport) throws Exception
-    {
-        init(transport);
-        scenario.start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            .scheme(scenario.getScheme())
+            .body(content)
+            .send(new BufferingResponseListener()
             {
-                baseRequest.setHandled(true);
-                IO.copy(request.getInputStream(), response.getOutputStream());
-            }
-        });
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        final byte[] data = new byte[512];
-        final AtomicReference<DeferredContentProvider> contentRef = new AtomicReference<>();
-        final DeferredContentProvider content = new DeferredContentProvider()
-        {
-            @Override
-            public Iterator<ByteBuffer> iterator()
-            {
-                return new Iterator<ByteBuffer>()
+                @Override
+                public void onComplete(Result result)
                 {
-                    // Data for the deferred content iterator:
-                    // [0] => deferred
-                    // [1] => deferred
-                    // [2] => data
-                    private final byte[][] iteratorData = new byte[3][];
-                    private final AtomicInteger index = new AtomicInteger();
-
-                    {
-                        iteratorData[0] = null;
-                        iteratorData[1] = null;
-                        iteratorData[2] = data;
-                    }
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return index.get() < iteratorData.length;
-                    }
-
-                    @Override
-                    public ByteBuffer next()
-                    {
-                        byte[] chunk = iteratorData[index.getAndIncrement()];
-                        ByteBuffer result = chunk == null ? null : ByteBuffer.wrap(chunk);
-                        if (index.get() < iteratorData.length)
-                        {
-                            contentRef.get().offer(result == null ? BufferUtil.EMPTY_BUFFER : result);
-                            contentRef.get().close();
-                        }
-                        return result;
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                    }
-                };
-            }
-        };
-        contentRef.set(content);
-
-        scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .content(content)
-                .send(new BufferingResponseListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isSucceeded() &&
-                                result.getResponse().getStatus() == 200 &&
-                                Arrays.equals(data, getContent()))
-                            latch.countDown();
-                    }
-                });
+                    if (result.isSucceeded() &&
+                        result.getResponse().getStatus() == 200 &&
+                        Arrays.equals(data, getContent()))
+                        latch.countDown();
+                }
+            });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -893,23 +817,23 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
 
-        final byte[] data = new byte[512];
-        final CountDownLatch latch = new CountDownLatch(1);
-        OutputStreamContentProvider content = new OutputStreamContentProvider();
+        byte[] data = new byte[512];
+        CountDownLatch latch = new CountDownLatch(1);
+        OutputStreamRequestContent content = new OutputStreamRequestContent();
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .content(content)
-                .send(new BufferingResponseListener()
+            .scheme(scenario.getScheme())
+            .body(content)
+            .send(new BufferingResponseListener()
+            {
+                @Override
+                public void onComplete(Result result)
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isSucceeded() &&
-                                result.getResponse().getStatus() == 200 &&
-                                Arrays.equals(data, getContent()))
-                            latch.countDown();
-                    }
-                });
+                    if (result.isSucceeded() &&
+                        result.getResponse().getStatus() == 200 &&
+                        Arrays.equals(data, getContent()))
+                        latch.countDown();
+                }
+            });
 
         // Make sure we provide the content *after* the request has been "sent".
         Thread.sleep(1000);
@@ -937,38 +861,31 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
 
-        final byte[] data = new byte[16 * 1024 * 1024];
+        byte[] data = new byte[16 * 1024 * 1024];
         new Random().nextBytes(data);
-        final CountDownLatch latch = new CountDownLatch(1);
-        OutputStreamContentProvider content = new OutputStreamContentProvider();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutputStreamRequestContent content = new OutputStreamRequestContent();
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .content(content)
-                .send(new BufferingResponseListener(data.length)
+            .scheme(scenario.getScheme())
+            .body(content)
+            .send(new BufferingResponseListener(data.length)
+            {
+                @Override
+                public void onComplete(Result result)
                 {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        assertTrue(result.isSucceeded());
-                        assertEquals(200, result.getResponse().getStatus());
-                        assertArrayEquals(data, getContent());
-                        latch.countDown();
-                    }
-                });
+                    assertTrue(result.isSucceeded());
+                    assertEquals(200, result.getResponse().getStatus());
+                    assertArrayEquals(data, getContent());
+                    latch.countDown();
+                }
+            });
 
         // Make sure we provide the content *after* the request has been "sent".
         Thread.sleep(1000);
 
-        try (InputStream input = new ByteArrayInputStream(data); OutputStream output = content.getOutputStream())
+        try (OutputStream output = content.getOutputStream())
         {
-            byte[] buffer = new byte[1024];
-            while (true)
-            {
-                int read = input.read(buffer);
-                if (read < 0)
-                    break;
-                output.write(buffer, 0, read);
-            }
+            IO.copy(new ByteArrayInputStream(data), output);
         }
 
         assertTrue(latch.await(30, TimeUnit.SECONDS));
@@ -979,31 +896,34 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     public void testUploadWithOutputStreamFailureToConnect(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new EmptyServerHandler());
 
-        final byte[] data = new byte[512];
-        final CountDownLatch latch = new CountDownLatch(1);
-        OutputStreamContentProvider content = new OutputStreamContentProvider();
+        long connectTimeout = 1000;
+        scenario.start(new EmptyServerHandler(), httpClient -> httpClient.setConnectTimeout(connectTimeout));
+
+        byte[] data = new byte[512];
+        CountDownLatch latch = new CountDownLatch(1);
+        OutputStreamRequestContent content = new OutputStreamRequestContent();
         String uri = "http://0.0.0.1";
-        if(scenario.getNetworkConnectorLocalPort().isPresent())
+        if (scenario.getNetworkConnectorLocalPort().isPresent())
             uri += ":" + scenario.getNetworkConnectorLocalPort().get();
         scenario.client.newRequest(uri)
-                .scheme(scenario.getScheme())
-                .content(content)
-                .send(result ->
-                {
-                    if (result.isFailed())
-                        latch.countDown();
-                });
+            .scheme(scenario.getScheme())
+            .body(content)
+            .send(result ->
+            {
+                if (result.isFailed())
+                    latch.countDown();
+            });
 
-        assertThrows(IOException.class, ()-> {
+        assertThrows(IOException.class, () ->
+        {
             try (OutputStream output = content.getOutputStream())
             {
                 output.write(data);
             }
         });
 
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(latch.await(2 * connectTimeout, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
@@ -1013,8 +933,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         init(transport);
         scenario.start(new EmptyServerHandler());
 
-        final CountDownLatch failLatch = new CountDownLatch(2);
-        final Callback callback = new Callback()
+        CountDownLatch failLatch = new CountDownLatch(2);
+        Callback callback = new Callback()
         {
             @Override
             public void failed(Throwable x)
@@ -1023,27 +943,27 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         };
 
-        final CountDownLatch completeLatch = new CountDownLatch(1);
-        final DeferredContentProvider content = new DeferredContentProvider();
+        CountDownLatch completeLatch = new CountDownLatch(1);
+        AsyncRequestContent content = new AsyncRequestContent();
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .content(content)
-                .onRequestBegin(request ->
-                {
-                    content.offer(ByteBuffer.wrap(new byte[256]), callback);
-                    content.offer(ByteBuffer.wrap(new byte[256]), callback);
-                    request.abort(new Exception("explicitly_thrown_by_test"));
-                })
-                .send(result ->
-                {
-                    if (result.isFailed())
-                        completeLatch.countDown();
-                });
+            .scheme(scenario.getScheme())
+            .body(content)
+            .onRequestBegin(request ->
+            {
+                content.offer(ByteBuffer.wrap(new byte[256]), callback);
+                content.offer(ByteBuffer.wrap(new byte[256]), callback);
+                request.abort(new Exception("explicitly_thrown_by_test"));
+            })
+            .send(result ->
+            {
+                if (result.isFailed())
+                    completeLatch.countDown();
+            });
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(failLatch.await(5, TimeUnit.SECONDS));
 
         // Make sure that adding more content results in the callback to be failed.
-        final CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         content.offer(ByteBuffer.wrap(new byte[128]), new Callback()
         {
             @Override
@@ -1060,9 +980,11 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     public void testUploadWithConnectFailureClosesStream(Transport transport) throws Exception
     {
         init(transport);
-        scenario.start(new EmptyServerHandler());
 
-        final CountDownLatch closeLatch = new CountDownLatch(1);
+        long connectTimeout = 1000;
+        scenario.start(new EmptyServerHandler(), httpClient -> httpClient.setConnectTimeout(connectTimeout));
+
+        CountDownLatch closeLatch = new CountDownLatch(1);
         InputStream stream = new ByteArrayInputStream("test".getBytes(StandardCharsets.UTF_8))
         {
             @Override
@@ -1072,22 +994,22 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 closeLatch.countDown();
             }
         };
-        InputStreamContentProvider content = new InputStreamContentProvider(stream);
+        InputStreamRequestContent content = new InputStreamRequestContent(stream);
 
-        final CountDownLatch completeLatch = new CountDownLatch(1);
+        CountDownLatch completeLatch = new CountDownLatch(1);
         String uri = "http://0.0.0.1";
-        if(scenario.getNetworkConnectorLocalPort().isPresent())
+        if (scenario.getNetworkConnectorLocalPort().isPresent())
             uri += ":" + scenario.getNetworkConnectorLocalPort().get();
         scenario.client.newRequest(uri)
-                .scheme(scenario.getScheme())
-                .content(content)
-                .send(result ->
-                {
-                    assertTrue(result.isFailed());
-                    completeLatch.countDown();
-                });
+            .scheme(scenario.getScheme())
+            .body(content)
+            .send(result ->
+            {
+                assertTrue(result.isFailed());
+                completeLatch.countDown();
+            });
 
-        assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(completeLatch.await(2 * connectTimeout, TimeUnit.SECONDS));
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -1096,7 +1018,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     public void testUploadWithConcurrentServerCloseClosesStream(Transport transport) throws Exception
     {
         init(transport);
-        final CountDownLatch serverLatch = new CountDownLatch(1);
+        CountDownLatch serverLatch = new CountDownLatch(1);
         scenario.start(new AbstractHandler()
         {
             @Override
@@ -1109,8 +1031,8 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
 
-        final AtomicBoolean commit = new AtomicBoolean();
-        final CountDownLatch closeLatch = new CountDownLatch(1);
+        AtomicBoolean commit = new AtomicBoolean();
+        CountDownLatch closeLatch = new CountDownLatch(1);
         InputStream stream = new InputStream()
         {
             @Override
@@ -1149,18 +1071,18 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 closeLatch.countDown();
             }
         };
-        InputStreamContentProvider provider = new InputStreamContentProvider(stream, 1);
+        InputStreamRequestContent content = new InputStreamRequestContent(stream, 1);
 
-        final CountDownLatch completeLatch = new CountDownLatch(1);
+        CountDownLatch completeLatch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .content(provider)
-                .onRequestCommit(request -> commit.set(true))
-                .send(result ->
-                {
-                    assertTrue(result.isFailed());
-                    completeLatch.countDown();
-                });
+            .scheme(scenario.getScheme())
+            .body(content)
+            .onRequestCommit(request -> commit.set(true))
+            .send(result ->
+            {
+                assertTrue(result.isFailed());
+                completeLatch.countDown();
+            });
 
         assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
@@ -1186,9 +1108,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .timeout(5, TimeUnit.SECONDS)
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .timeout(5, TimeUnit.SECONDS)
+            .send(listener);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -1239,15 +1161,88 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         scenario.client.newRequest(scenario.newURI())
-                .scheme(scenario.getScheme())
-                .path("/303")
-                .followRedirects(true)
-                .send(listener);
+            .scheme(scenario.getScheme())
+            .path("/303")
+            .followRedirects(true)
+            .send(listener);
 
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         Result result = listener.await(5, TimeUnit.SECONDS);
         assertTrue(result.isSucceeded());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testClientDefersContentServerIdleTimeout(Transport transport) throws Exception
+    {
+        init(transport);
+        CountDownLatch dataLatch = new CountDownLatch(1);
+        CountDownLatch errorLatch = new CountDownLatch(1);
+        scenario.start(new HttpServlet()
+        {
+            @Override
+            protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+                request.getInputStream().setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable()
+                    {
+                        dataLatch.countDown();
+                    }
+
+                    @Override
+                    public void onAllDataRead()
+                    {
+                        dataLatch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        errorLatch.countDown();
+                        response.setStatus(HttpStatus.REQUEST_TIMEOUT_408);
+                        asyncContext.complete();
+                    }
+                });
+            }
+        });
+        long idleTimeout = 1000;
+        scenario.setServerIdleTimeout(idleTimeout);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        byte[] bytes = "[{\"key\":\"value\"}]".getBytes(StandardCharsets.UTF_8);
+        OutputStreamRequestContent content = new OutputStreamRequestContent("application/json;charset=UTF-8")
+        {
+            @Override
+            public long getLength()
+            {
+                return bytes.length;
+            }
+        };
+        scenario.client.newRequest(scenario.newURI())
+            .method(HttpMethod.POST)
+            .path(scenario.servletPath)
+            .body(content)
+            .onResponseSuccess(response ->
+            {
+                assertEquals(HttpStatus.REQUEST_TIMEOUT_408, response.getStatus());
+                latch.countDown();
+            })
+            .send(null);
+
+        // Wait for the server to idle timeout.
+        Thread.sleep(2 * idleTimeout);
+
+        assertTrue(errorLatch.await(5, TimeUnit.SECONDS));
+
+        // Do not send the content to the server.
+
+        assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }

@@ -1,25 +1,26 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.server.session;
 
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -30,8 +31,8 @@ public class TestServer
     public static int DEFAULT_MAX_INACTIVE = 30;
     public static int DEFAULT_SCAVENGE_SEC = 10;
     public static int DEFAULT_EVICTIONPOLICY = SessionCache.NEVER_EVICT;
-    
-    protected static int __workers=0;
+
+    protected static int __workers = 0;
 
     protected final Server _server;
     protected final int _maxInactivePeriod;
@@ -43,24 +44,23 @@ public class TestServer
     protected SessionCacheFactory _cacheFactory;
     protected SessionDataStoreFactory _storeFactory;
 
-    public static String extractSessionId (String sessionCookie)
+    public static String extractSessionId(String sessionCookie)
     {
         if (sessionCookie == null)
             return null;
         sessionCookie = sessionCookie.trim();
         int i = sessionCookie.indexOf(';');
         if (i >= 0)
-            sessionCookie = sessionCookie.substring(0,i);
+            sessionCookie = sessionCookie.substring(0, i);
         if (sessionCookie.startsWith("JSESSIONID"))
             sessionCookie = sessionCookie.substring("JSESSIONID=".length());
         i = sessionCookie.indexOf('.');
-        if (i >=0)
-            sessionCookie = sessionCookie.substring(0,i);
+        if (i >= 0)
+            sessionCookie = sessionCookie.substring(0, i);
         return sessionCookie;
     }
 
-    
-    public TestServer(int port, int maxInactivePeriod, int scavengePeriod,  SessionCacheFactory cacheFactory, SessionDataStoreFactory storeFactory) throws Exception
+    public TestServer(int port, int maxInactivePeriod, int scavengePeriod, SessionCacheFactory cacheFactory, SessionDataStoreFactory storeFactory) throws Exception
     {
         _server = new Server(port);
         _maxInactivePeriod = maxInactivePeriod;
@@ -70,7 +70,7 @@ public class TestServer
         _contexts = new ContextHandlerCollection();
         _sessionIdManager = newSessionIdManager();
         _server.setSessionIdManager(_sessionIdManager);
-        ((DefaultSessionIdManager) _sessionIdManager).setServer(_server);
+        ((DefaultSessionIdManager)_sessionIdManager).setServer(_server);
         _housekeeper = new HouseKeeper();
         _housekeeper.setIntervalSec(_scavengePeriod);
         ((DefaultSessionIdManager)_sessionIdManager).setSessionHouseKeeper(_housekeeper);
@@ -79,12 +79,12 @@ public class TestServer
     public SessionIdManager newSessionIdManager()
     {
         DefaultSessionIdManager idManager = new DefaultSessionIdManager(getServer());
-        idManager.setWorkerName("w"+(__workers++));
+        idManager.setWorkerName("w" + (__workers++));
         return idManager;
     }
 
     public SessionHandler newSessionHandler()
-    throws Exception
+        throws Exception
     {
         SessionHandler h = new SessionHandler();
         SessionCache c = _cacheFactory.getSessionCache(h);
@@ -93,7 +93,11 @@ public class TestServer
         h.setSessionCache(c);
         return h;
     }
-    
+
+    public ServerConnector getServerConnector()
+    {
+        return _server.getBean(ServerConnector.class);
+    }
 
     public void start() throws Exception
     {
@@ -101,12 +105,12 @@ public class TestServer
         _server.setHandler(_contexts);
         _server.start();
     }
-    
+
     public HouseKeeper getHouseKeeper()
     {
         return _housekeeper;
     }
-    
+
     public int getPort()
     {
         return ((NetworkConnector)getServer().getConnectors()[0]).getLocalPort();
@@ -133,12 +137,12 @@ public class TestServer
         WebAppContext context = new WebAppContext(_contexts, warPath, contextPath);
         SessionHandler sessionHandler = newSessionHandler();
         sessionHandler.setSessionIdManager(_sessionIdManager);
-        sessionHandler.setMaxInactiveInterval(_maxInactivePeriod);   
+        sessionHandler.setMaxInactiveInterval(_maxInactivePeriod);
         context.setSessionHandler(sessionHandler);
 
         return context;
     }
-    
+
     public Server getServer()
     {
         return _server;

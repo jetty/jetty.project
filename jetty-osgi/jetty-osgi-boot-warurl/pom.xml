@@ -27,15 +27,15 @@
   <build>
     <plugins>
       <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <extensions>true</extensions>
-          <configuration>
-              <instructions>
-                  <Bundle-Name>RFC66 War URL</Bundle-Name>
-                  <Bundle-Activator>org.eclipse.jetty.osgi.boot.warurl.WarUrlActivator</Bundle-Activator>
-              </instructions>
-          </configuration>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-Name>RFC66 War URL</Bundle-Name>
+            <Bundle-Activator>org.eclipse.jetty.osgi.boot.warurl.WarUrlActivator</Bundle-Activator>
+          </instructions>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

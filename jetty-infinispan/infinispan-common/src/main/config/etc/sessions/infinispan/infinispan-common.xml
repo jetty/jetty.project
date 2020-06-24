@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  
+  <Call name="addBean">
+   <Arg>
+    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory">
+       <Set name="cache"><Ref refid="cache"/></Set>
+       <Set name="infinispanIdleTimeoutSec" property="jetty.session.infinispan.idleTimeout.seconds"/>
+       <Set name="gracePeriodSec" property="jetty.session.gracePeriod.seconds"/>
+       <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
+    </New>
+   </Arg>
+  </Call>
+  
+  <!-- get QueryManager using the QueryManagerFactory -->
+  <Ref refid="queryMgrFactory">
+    <Call id="queryManager" name="getQueryManager">
+      <Arg>
+        <Ref refid="cache"/>
+      </Arg>
+    </Call>
+  </Ref>
+  
+  <!-- set QueryManager in SessionDataStoreFactory -->
+  <Ref refid="sessionDataStoreFactory">
+    <Call name="setQueryManager">
+      <Arg>
+        <Ref refid="queryManager"/>
+      </Arg>
+    </Call>
+  </Ref>
+  
+  
+  
+</Configure>

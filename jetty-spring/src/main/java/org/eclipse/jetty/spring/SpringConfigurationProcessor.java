@@ -1,36 +1,34 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.spring;
 
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.ServiceLoader;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.xml.ConfigurationProcessor;
 import org.eclipse.jetty.xml.ConfigurationProcessorFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.eclipse.jetty.xml.XmlParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.PropertyValues;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -62,25 +60,32 @@ import org.springframework.core.io.UrlResource;
  */
 public class SpringConfigurationProcessor implements ConfigurationProcessor
 {
-    private static final Logger LOG = Log.getLogger(SpringConfigurationProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SpringConfigurationProcessor.class);
 
     private XmlConfiguration _configuration;
     private DefaultListableBeanFactory _beanFactory;
     private String _main;
 
     @Override
-    public void init(URL url, XmlParser.Node config, XmlConfiguration configuration)
+    public void init(org.eclipse.jetty.util.resource.Resource jettyResource, XmlParser.Node config, XmlConfiguration configuration)
     {
         try
         {
             _configuration = configuration;
 
-            Resource resource = url != null
-                    ? new UrlResource(url)
-                    : new ByteArrayResource(("" +
+            Resource springResource;
+
+            if (jettyResource != null)
+            {
+                springResource = new UrlResource(jettyResource.getURI());
+            }
+            else
+            {
+                springResource = new ByteArrayResource((
                     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                    "<!DOCTYPE beans PUBLIC \"-//SPRING//DTD BEAN//EN\" \"http://www.springframework.org/dtd/spring-beans.dtd\">" +
-                    config).getBytes(StandardCharsets.UTF_8));
+                        "<!DOCTYPE beans PUBLIC \"-//SPRING//DTD BEAN//EN\" \"http://www.springframework.org/dtd/spring-beans.dtd\">" +
+                        config).getBytes(StandardCharsets.UTF_8));
+            }
 
             _beanFactory = new DefaultListableBeanFactory()
             {
@@ -92,7 +97,7 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
                 }
             };
 
-            new XmlBeanDefinitionReader(_beanFactory).loadBeanDefinitions(resource);
+            new XmlBeanDefinitionReader(_beanFactory).loadBeanDefinitions(springResource);
         }
         catch (Exception e)
         {
@@ -158,6 +163,8 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
 
         // Extract id's for next time.
         for (String id : _beanFactory.getSingletonNames())
+        {
             idMap.put(id, _beanFactory.getBean(id));
+        }
     }
 }

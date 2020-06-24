@@ -1,0 +1,74 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[serving-webapp-from-particular-port]]
+=== Serving a WebApp from a Particular Port/Connector
+
+Sometimes it is required to serve different web applications from different ports/connectors.
+The simplest way to do this is to create multiple `Server` instances.
+However, if contexts need to share resources (eg data sources, authentication), or if the mapping of ports to web applications is not cleanly divided, then the named connector mechanism can be used.
+
+[[creating-server-instances]]
+==== Creating Multiple Server Instances
+
+Creating multiple server instances is a straight forward process that includes embedding Jetty code by creating multiples instances of the Server class and configuring them as needed.
+This is also easy to achieve if you are configuring Jetty servers via XML.
+The `id` field in the Configure element of `jetty.xml` files is used to identify the instance that the configuration applies to, so to run two instances of the Server, you can copy the `jetty.xml`, jetty-http.xml and other jetty configuration files used and change the "Server" id to a new name.
+This can be done in the same style and layout as the existing `jetty.xml` files or the multiple XML files may be combined to a single file.
+
+When creating new configurations for alternative server:
+
+* Change all `id="Server"` to the new server name:
+
+[source, xml, subs="{sub-order}"]
+----
+<Configure id="OtherServer" class="org.eclipse.jetty.server.Server">
+----
+
+* For all connectors for the new server change the `refid` in the server argument:
+
+[source, xml, subs="{sub-order}"]
+----
+<Arg name="server"><Ref refid="OtherServer" /></Arg>
+----
+
+* Make sure that any references to properties like `jetty.http.port` are either renamed or replaced with absolute values.
+* Make sure that any deployers `AppProviders` refer to a different "webapps" directory so that a different set of applications are deployed.
+
+[[jetty-otherserver.xml]]
+===== Example Other Server XML
+
+The following example creates another server instance and configures it with a connector and deployer:
+
+[source, xml, subs="{sub-order}"]
+----
+include::{SRCDIR}/examples/embedded/src/main/resources/jetty-otherserver.xml[]
+----
+
+To run the other server, add the extra configuration file(s) to the command line:
+
+[source, screen, subs="{sub-order}"]
+----
+java -jar start.jar jetty-otherserver.xml
+----
+
+[[alternative]]
+==== Named Connectors
+
+It is also possible to use an extension to the virtual host mechanism with named to connectors to make some web applications only accessible by specific connectors.
+If a connector has a name "MyConnector" set using the `setName` method, then this can be referenced with the special virtual host name "@MyConnector".

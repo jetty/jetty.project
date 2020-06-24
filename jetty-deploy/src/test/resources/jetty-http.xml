@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <!-- ============================================================= -->
 <!-- Configure the Jetty Server instance with an ID "Server"       -->
-<!-- by adding a HTTP connector.                                   -->
+<!-- by adding an HTTP connector.                                   -->
 <!-- This configuration must be used in conjunction with jetty.xml -->
 <!-- ============================================================= -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <!-- =========================================================== -->
-  <!-- Add a HTTP Connector.                                       -->
+  <!-- Add an HTTP Connector.                                       -->
   <!-- Configure an o.e.j.server.ServerConnector with a single     -->
   <!-- HttpConnectionFactory instance using the common httpConfig  -->
   <!-- instance defined in jetty.xml                               -->

@@ -1,30 +1,31 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.rewrite.handler;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class MsieSslRuleTest extends AbstractRuleTestCase
 {
@@ -39,57 +40,11 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     }
 
     @Test
-    public void testWin2kWithIE5() throws Exception
-    {
-        HttpFields fields = _request.getHttpFields();
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.0)");
-
-        String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
-
-        assertEquals(_request.getRequestURI(), result);
-        assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
-
-
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)");
-        result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
-        assertEquals(_request.getRequestURI(), result);
-        assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
-
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT 5.0)");
-        result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
-        assertEquals(_request.getRequestURI(), result);
-        assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
-    }
-
-    @Test
-    public void testWin2kWithIE6() throws Exception
-    {
-        HttpFields fields = _request.getHttpFields();
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)");
-
-        String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
-
-        assertEquals(_request.getRequestURI(), result);
-        assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
-    }
-
-    @Test
-    public void testWin2kWithIE7() throws Exception
-    {
-        HttpFields fields = _request.getHttpFields();
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.0)");
-
-        String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
-
-        assertEquals(null, result);
-        assertEquals(null, _response.getHeader(HttpHeader.CONNECTION.asString()));
-    }
-
-    @Test
     public void testWin2kSP1WithIE5() throws Exception
     {
-        HttpFields fields = _request.getHttpFields();
+        HttpFields.Mutable fields = HttpFields.build(_request.getHttpFields());
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.01)");
+        _request.setHttpFields(fields);
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -97,11 +52,13 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
         assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
 
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.01)");
+        _request.setHttpFields(fields);
         result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
         assertEquals(_request.getRequestURI(), result);
         assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
 
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT 5.01)");
+        _request.setHttpFields(fields);
         result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
         assertEquals(_request.getRequestURI(), result);
         assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
@@ -110,8 +67,8 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWin2kSP1WithIE6() throws Exception
     {
-        HttpFields fields = _request.getHttpFields();
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.01)");
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
+            .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.01)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -122,66 +79,71 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWin2kSP1WithIE7() throws Exception
     {
-        HttpFields fields = _request.getHttpFields();
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.01)");
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
+            .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.01)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
-        assertEquals(null, result);
-        assertEquals(null, _response.getHeader(HttpHeader.CONNECTION.asString()));
+        assertNull(result);
+        assertNull(_response.getHeader(HttpHeader.CONNECTION.asString()));
     }
 
     @Test
-    public void testWinXpWithIE5() throws Exception
+    public void testWin2kWithIE5() throws Exception
     {
-        HttpFields fields = _request.getHttpFields();
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.1)");
+        HttpFields.Mutable fields = HttpFields.build(_request.getHttpFields());
+        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.0)");
+        _request.setHttpFields(fields);
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
         assertEquals(_request.getRequestURI(), result);
         assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
 
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.1)");
+        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.0)");
+        _request.setHttpFields(fields);
         result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
         assertEquals(_request.getRequestURI(), result);
         assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
 
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT 5.1)");
+        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT 5.0)");
+        _request.setHttpFields(fields);
         result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
         assertEquals(_request.getRequestURI(), result);
         assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
     }
 
     @Test
-    public void testWinXpWithIE6() throws Exception
+    public void testWin2kWithIE6() throws Exception
     {
-        HttpFields fields = _request.getHttpFields();
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)");
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
+            .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)")
+            .asImmutable());
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
-        assertEquals(null, result);
-        assertEquals(null, _response.getHeader(HttpHeader.CONNECTION.asString()));
+        assertEquals(_request.getRequestURI(), result);
+        assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
     }
 
     @Test
-    public void testWinXpWithIE7() throws Exception
+    public void testWin2kWithIE7() throws Exception
     {
-        HttpFields fields = _request.getHttpFields();
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)");
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
+            .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.0)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
-        assertEquals(null, result);
-        assertEquals(null, _response.getHeader(HttpHeader.CONNECTION.asString()));
+        assertNull(result);
+        assertNull(_response.getHeader(HttpHeader.CONNECTION.asString()));
     }
 
     @Test
     public void testWinVistaWithIE5() throws Exception
     {
-        HttpFields fields = _request.getHttpFields();
+        HttpFields.Mutable fields = HttpFields.build(_request.getHttpFields());
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 6.0)");
+        _request.setHttpFields(fields);
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -189,11 +151,13 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
         assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
 
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 6.0)");
+        _request.setHttpFields(fields);
         result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
         assertEquals(_request.getRequestURI(), result);
         assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
 
         fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT 6.0)");
+        _request.setHttpFields(fields);
         result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
         assertEquals(_request.getRequestURI(), result);
         assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
@@ -202,25 +166,74 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
     @Test
     public void testWinVistaWithIE6() throws Exception
     {
-        HttpFields fields = _request.getHttpFields();
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 6.0)");
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
+            .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 6.0)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
-        assertEquals(null, result);
-        assertEquals(null, _response.getHeader(HttpHeader.CONNECTION.asString()));
+        assertNull(result);
+        assertNull(_response.getHeader(HttpHeader.CONNECTION.asString()));
     }
 
     @Test
     public void testWinVistaWithIE7() throws Exception
     {
-        HttpFields fields = _request.getHttpFields();
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)");
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
+            .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
-        assertEquals(null, result);
-        assertEquals(null, _response.getHeader(HttpHeader.CONNECTION.asString()));
+        assertNull(result);
+        assertNull(_response.getHeader(HttpHeader.CONNECTION.asString()));
+    }
+
+    @Test
+    public void testWinXpWithIE5() throws Exception
+    {
+        HttpFields.Mutable fields = HttpFields.build(_request.getHttpFields());
+        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.1)");
+        _request.setHttpFields(fields);
+
+        String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
+
+        assertEquals(_request.getRequestURI(), result);
+        assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
+
+        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.01; Windows NT 5.1)");
+        _request.setHttpFields(fields);
+        result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
+        assertEquals(_request.getRequestURI(), result);
+        assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
+
+        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.5; Windows NT 5.1)");
+        _request.setHttpFields(fields);
+        result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
+        assertEquals(_request.getRequestURI(), result);
+        assertEquals(HttpHeaderValue.CLOSE.asString(), _response.getHeader(HttpHeader.CONNECTION.asString()));
+    }
+
+    @Test
+    public void testWinXpWithIE6() throws Exception
+    {
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
+            .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)"));
+
+        String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
+
+        assertNull(result);
+        assertNull(_response.getHeader(HttpHeader.CONNECTION.asString()));
+    }
+
+    @Test
+    public void testWinXpWithIE7() throws Exception
+    {
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
+            .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)"));
+
+        String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
+
+        assertNull(result);
+        assertNull(_response.getHeader(HttpHeader.CONNECTION.asString()));
     }
 
     @Test
@@ -230,12 +243,12 @@ public class MsieSslRuleTest extends AbstractRuleTestCase
         super.stop();
         super.start(false);
 
-        HttpFields fields = _request.getHttpFields();
-        fields.add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.0)");
+        _request.setHttpFields(HttpFields.build(_request.getHttpFields())
+            .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT 5.0)"));
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
-        assertEquals(null, result);
-        assertEquals(null, _response.getHeader(HttpHeader.CONNECTION.asString()));
+        assertNull(result);
+        assertNull(_response.getHeader(HttpHeader.CONNECTION.asString()));
     }
 }

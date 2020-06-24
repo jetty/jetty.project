@@ -1,0 +1,46 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[jetty-sessions-architecture]]
+=== Session Architecture
+
+==== Session Architecture Hierarchy
+
+Each Jetty instance has a singular `SessionIdManager` to handle all session requests, regardless of clustering technology.
+For each context on the server there is one (1) `SessionCache` which contains all of the Session objects for the given context.
+The benefit of the `SessionCache` is to ensure that simultaneous requests accessing the same Session Id in the same context always operate on the same Session object.
+The SessionCache implementation supplied with the Jetty distribution does just that: keeps Session objects in memory so that they can be shared between simultaneous requests.
+However, it is possible to provide your own implementation that never shares Session objects should you require it.
+
+Where the `SessionCache` handles Session information, Session data is stored in a `SessionDataStore` that is specific to the clustering technology being implemented.
+There is only one (1) `SessionDataStore` per `SessionCache`.
+
+Visually the session architecture can be represented like this:
+
+image::SessionsHierarchy.png[]
+
+==== Configuring Sessions in the Jetty Distribution
+
+Configuring session management involves selecting a link:#startup-modules[module] for the desired type of link:#session-configuration-sessioncache[session caching] behavior, and a module for the type of session persistence.
+
+Jetty provides two different session caches: the `DefaultSessionCache` which holds sessions in memory, and the `NullSessionCache` which does not.
+There is more information on both of these types of session caching and the circumstances which would lead you to select one or the other in the link:#sessions-details[Session Components] section, and more information on the configuration options of each in link:#session-configuration-sessioncache[the L1 Session Cache] section.
+
+For session persistence, Jetty provides a number of different implementations from which to choose including link:#configuring-sessions-memory[non-persistence], link:#configuring-sessions-file-system[local file storage], clustered technologies such as link:#configuring-sessions-jdbc[JDBC], link:#configuring-sessions-mongo[MongoDB], link:#configuring-sessions-infinispan[Inifinispan], link:#configuring-sessions-gcloud[Google Cloud Datastore], and link:#configuring-sessions-hazelcast[Hazelcast].
+
+Depending on your persistence technology, to enhance performance, you may want to use an L2 cache for session data, in which case Jetty provides the link:#session-configuration-memcachedsessiondatastore[memcached L2 session data cache].

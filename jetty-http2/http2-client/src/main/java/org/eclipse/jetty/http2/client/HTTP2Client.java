@@ -1,30 +1,30 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.client;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
@@ -68,7 +68,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * HttpFields requestFields = new HttpFields();
  * requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
  * // Prepare the HTTP request object.
- * MetaData.Request request = new MetaData.Request("PUT", new HttpURI("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
+ * MetaData.Request request = new MetaData.Request("PUT", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
  * // Create the HTTP/2 HEADERS frame representing the HTTP request.
  * HeadersFrame headersFrame = new HeadersFrame(request, null, false);
  *
@@ -115,6 +115,9 @@ public class HTTP2Client extends ContainerLifeCycle
     private int maxConcurrentPushedStreams = 32;
     private int maxSettingsKeys = SettingsFrame.DEFAULT_MAX_KEYS;
     private FlowControlStrategy.Factory flowControlStrategyFactory = () -> new BufferingFlowControlStrategy(0.5F);
+    private long streamIdleTimeout;
+    private boolean useInputDirectByteBuffers = true;
+    private boolean useOutputDirectByteBuffers = true;
 
     public HTTP2Client()
     {
@@ -192,6 +195,17 @@ public class HTTP2Client extends ContainerLifeCycle
     public void setIdleTimeout(long idleTimeout)
     {
         connector.setIdleTimeout(Duration.ofMillis(idleTimeout));
+    }
+
+    @ManagedAttribute("The stream idle timeout in milliseconds")
+    public long getStreamIdleTimeout()
+    {
+        return streamIdleTimeout;
+    }
+
+    public void setStreamIdleTimeout(long streamIdleTimeout)
+    {
+        this.streamIdleTimeout = streamIdleTimeout;
     }
 
     @ManagedAttribute("The connect timeout in milliseconds")
@@ -303,18 +317,52 @@ public class HTTP2Client extends ContainerLifeCycle
         this.maxSettingsKeys = maxSettingsKeys;
     }
 
-    public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
+    @ManagedAttribute("Whether to use direct ByteBuffers for reading")
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return useInputDirectByteBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    @ManagedAttribute("Whether to use direct ByteBuffers for writing")
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return useOutputDirectByteBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
+    public CompletableFuture<Session> connect(SocketAddress address, Session.Listener listener)
+    {
+        return connect(null, address, listener);
+    }
+
+    public void connect(SocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
         // Prior-knowledge clear-text HTTP/2 (h2c).
         connect(null, address, listener, promise);
     }
 
-    public void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
+    public CompletableFuture<Session> connect(SslContextFactory sslContextFactory, SocketAddress address, Session.Listener listener)
+    {
+        Promise.Completable<Session> result = new Promise.Completable<>();
+        connect(sslContextFactory, address, listener, result);
+        return result;
+    }
+
+    public void connect(SslContextFactory sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
         connect(sslContextFactory, address, listener, promise, null);
     }
 
-    public void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    public void connect(SslContextFactory sslContextFactory, SocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         ClientConnectionFactory factory = newClientConnectionFactory(sslContextFactory);
         connect(address, factory, listener, promise, context);
@@ -323,7 +371,7 @@ public class HTTP2Client extends ContainerLifeCycle
     public void connect(SocketAddress address, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         context = contextFrom(factory, listener, promise, context);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise));
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
         connector.connect(address, context);
     }
 
@@ -336,7 +384,7 @@ public class HTTP2Client extends ContainerLifeCycle
     public void accept(SocketChannel channel, ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise)
     {
         Map<String, Object> context = contextFrom(factory, listener, promise, null);
-        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, new Promise.Wrapper<>(promise));
+        context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, promise::failed));
         connector.accept(channel, context);
     }
 

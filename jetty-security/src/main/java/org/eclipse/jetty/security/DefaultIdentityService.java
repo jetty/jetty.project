@@ -1,31 +1,28 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.security;
 
 import java.security.Principal;
-
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.server.UserIdentity;
 
-
-/* ------------------------------------------------------------ */
 /**
  * Default Identity Service implementation.
  * This service handles only role reference maps passed in an
@@ -34,16 +31,14 @@ import org.eclipse.jetty.server.UserIdentity;
  * that uses the role references in the
  * {@link org.eclipse.jetty.server.UserIdentity#isUserInRole(String, org.eclipse.jetty.server.UserIdentity.Scope)}
  * implementation. All other operations are effectively noops.
- *
  */
 public class DefaultIdentityService implements IdentityService
 {
-    /* ------------------------------------------------------------ */
+
     public DefaultIdentityService()
     {
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * If there are roles refs present in the scope, then wrap the UserIdentity
      * with one that uses the role references in the {@link UserIdentity#isUserInRole(String, org.eclipse.jetty.server.UserIdentity.Scope)}
@@ -54,44 +49,37 @@ public class DefaultIdentityService implements IdentityService
         return null;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void disassociate(Object previous)
     {
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public Object setRunAs(UserIdentity user, RunAsToken token)
     {
         return token;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public void unsetRunAs(Object lastToken)
     {
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public RunAsToken newRunAsToken(String runAsName)
     {
         return new RoleRunAsToken(runAsName);
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public UserIdentity getSystemUserIdentity()
     {
         return null;
     }
 
-    /* ------------------------------------------------------------ */
     @Override
     public UserIdentity newUserIdentity(final Subject subject, final Principal userPrincipal, final String[] roles)
     {
-        return new DefaultUserIdentity(subject,userPrincipal,roles);
+        return new DefaultUserIdentity(subject, userPrincipal, roles);
     }
-
 }

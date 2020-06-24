@@ -1,26 +1,29 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.security;
 
 import java.io.Serializable;
 import java.util.Set;
+import javax.servlet.ServletRequest;
 
+import org.eclipse.jetty.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.UserIdentity.Scope;
@@ -36,15 +39,12 @@ public abstract class AbstractUserAuthentication implements User, Serializable
     private static final long serialVersionUID = -6290411814232723403L;
     protected String _method;
     protected transient UserIdentity _userIdentity;
-    
-    
-    
+
     public AbstractUserAuthentication(String method, UserIdentity userIdentity)
     {
         _method = method;
         _userIdentity = userIdentity;
     }
-    
 
     @Override
     public String getAuthMethod()
@@ -62,10 +62,10 @@ public abstract class AbstractUserAuthentication implements User, Serializable
     public boolean isUserInRole(Scope scope, String role)
     {
         String roleToTest = null;
-        if (scope!=null && scope.getRoleRefMap()!=null)
-            roleToTest=scope.getRoleRefMap().get(role);
-        if (roleToTest==null)
-            roleToTest=role;
+        if (scope != null && scope.getRoleRefMap() != null)
+            roleToTest = scope.getRoleRefMap().get(role);
+        if (roleToTest == null)
+            roleToTest = role;
         //Servlet Spec 3.1 pg 125 if testing special role **
         if ("**".equals(roleToTest.trim()))
         {
@@ -77,22 +77,40 @@ public abstract class AbstractUserAuthentication implements User, Serializable
             else
                 return _userIdentity.isUserInRole(role, scope);
         }
-      
+
         return _userIdentity.isUserInRole(role, scope);
     }
 
     public boolean declaredRolesContains(String roleName)
     {
-        SecurityHandler security=SecurityHandler.getCurrentSecurityHandler();
-        if (security==null)
+        SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
+        if (security == null)
             return false;
-        
+
         if (security instanceof ConstraintAware)
         {
             Set<String> declaredRoles = ((ConstraintAware)security).getRoles();
             return (declaredRoles != null) && declaredRoles.contains(roleName);
         }
-        
+
         return false;
+    }
+
+    @Override
+    public Authentication logout(ServletRequest request)
+    {
+        SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
+        if (security != null)
+        {
+            security.logout(this);
+            Authenticator authenticator = security.getAuthenticator();
+            if (authenticator instanceof LoginAuthenticator)
+            {
+                ((LoginAuthenticator)authenticator).logout(request);
+                return new LoggedOutAuthentication((LoginAuthenticator)authenticator);
+            }
+        }
+
+        return Authentication.UNAUTHENTICATED;
     }
 }

@@ -1,29 +1,36 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
-
 
 package org.eclipse.jetty.util;
 
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -33,78 +40,215 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Scanner
- * 
+ *
  * Utility for scanning a directory for added, removed and changed
  * files and reporting these events via registered Listeners.
- *
  */
 public class Scanner extends AbstractLifeCycle
 {
-    private static final Logger LOG = Log.getLogger(Scanner.class);
-    private static int __scannerId=0;
+    /**
+     * When walking a directory, a depth of 1 ensures that
+     * the directory's descendants are visited, not just the
+     * directory itself (as a file).
+     * 
+     * @see Visitor#preVisitDirectory
+     */
+    public static final int DEFAULT_SCAN_DEPTH = 1;
+    public static final int MAX_SCAN_DEPTH = Integer.MAX_VALUE;
+
+    private static final Logger LOG = LoggerFactory.getLogger(Scanner.class);
+    private static int __scannerId = 0;
     private int _scanInterval;
     private int _scanCount = 0;
-    private final List<Listener> _listeners = new ArrayList<Listener>();
-    private final Map<String,TimeNSize> _prevScan = new HashMap<String,TimeNSize> ();
-    private final Map<String,TimeNSize> _currentScan = new HashMap<String,TimeNSize> ();
+    private final List<Listener> _listeners = new ArrayList<>();
+    private final Map<String, TimeNSize> _prevScan = new HashMap<>();
+    private final Map<String, TimeNSize> _currentScan = new HashMap<>();
     private FilenameFilter _filter;
-    private final List<File> _scanDirs = new ArrayList<File>();
+    private final Map<Path, IncludeExcludeSet<PathMatcher, Path>> _scannables = new HashMap<>();
     private volatile boolean _running = false;
     private boolean _reportExisting = true;
     private boolean _reportDirs = true;
     private Timer _timer;
     private TimerTask _task;
-    private int _scanDepth=0;
-    
-    public enum Notification { ADDED, CHANGED, REMOVED };
-    private final Map<String,Notification> _notifications = new HashMap<String,Notification>();
+    private int _scanDepth = DEFAULT_SCAN_DEPTH;
 
+    public enum Notification
+    {
+        ADDED, CHANGED, REMOVED
+    }
+
+    private final Map<String, Notification> _notifications = new HashMap<>();
+    
+    /**
+     * PathMatcherSet
+     *
+     * A set of PathMatchers for testing Paths against path matching patterns via
+     * @see IncludeExcludeSet
+     */
+    static class PathMatcherSet extends HashSet<PathMatcher> implements Predicate<Path>
+    {
+        @Override
+        public boolean test(Path p)
+        {
+            for (PathMatcher pm : this)
+            {
+                if (pm.matches(p))
+                    return true;
+            }
+            return false;
+        }
+    }
+
+    /**
+     * TimeNSize
+     * 
+     * Metadata about a file: Last modified time and file size.
+     */
     static class TimeNSize
     {
         final long _lastModified;
         final long _size;
-        
+
         public TimeNSize(long lastModified, long size)
         {
             _lastModified = lastModified;
             _size = size;
         }
-        
+
         @Override
         public int hashCode()
         {
-            return (int)_lastModified^(int)_size;
+            return (int)_lastModified ^ (int)_size;
         }
-        
+
         @Override
         public boolean equals(Object o)
         {
             if (o instanceof TimeNSize)
             {
                 TimeNSize tns = (TimeNSize)o;
-                return tns._lastModified==_lastModified && tns._size==_size;
+                return tns._lastModified == _lastModified && tns._size == _size;
             }
             return false;
         }
-        
+
         @Override
         public String toString()
         {
-            return "[lm="+_lastModified+",s="+_size+"]";
+            return "[lm=" + _lastModified + ",s=" + _size + "]";
+        }
+    }
+
+    /**
+     * Visitor
+     *
+     * A FileVisitor for walking a subtree of paths. The Scanner uses
+     * this to examine the dirs and files it has been asked to scan.
+     */
+    class Visitor implements FileVisitor<Path>
+    {
+        Map<String, TimeNSize> scanInfoMap;
+        IncludeExcludeSet<PathMatcher,Path> rootIncludesExcludes;
+        Path root;
+        
+        public Visitor(Path root, IncludeExcludeSet<PathMatcher,Path> rootIncludesExcludes, Map<String, TimeNSize> scanInfoMap)
+        {
+            this.root = root;
+            this.rootIncludesExcludes = rootIncludesExcludes;
+            this.scanInfoMap = scanInfoMap;
+        }
+        
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
+        {
+            if (!Files.exists(dir))
+                return FileVisitResult.SKIP_SUBTREE;
+            
+            File f = dir.toFile();
+            
+            //if we want to report directories and we haven't already seen it
+            if (_reportDirs && !scanInfoMap.containsKey(f.getCanonicalPath()))
+            {
+                boolean accepted = false;
+                if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
+                { 
+                    //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
+                    Boolean result = rootIncludesExcludes.test(dir);
+                    if (Boolean.TRUE == result)
+                        accepted = true;
+                }
+                else
+                {
+                    if (_filter == null || _filter.accept(f.getParentFile(), f.getName()))
+                        accepted = true;
+                }
+
+                if (accepted)
+                {
+                    scanInfoMap.put(f.getCanonicalPath(), new TimeNSize(f.lastModified(), f.isDirectory() ? 0 : f.length()));
+                    if (LOG.isDebugEnabled()) LOG.debug("scan accepted dir {} mod={}", f, f.lastModified());
+                }
+            }
+
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
+        {
+            if (!Files.exists(file))
+                return FileVisitResult.CONTINUE;
+
+            File f = file.toFile();
+            boolean accepted = false;
+
+            if (f.isFile() || (f.isDirectory() && _reportDirs && !scanInfoMap.containsKey(f.getCanonicalPath())))
+            {
+                if (rootIncludesExcludes != null && !rootIncludesExcludes.isEmpty())
+                {
+                    //accepted if not explicitly excluded and either is explicitly included or there are no explicit inclusions
+                    Boolean result = rootIncludesExcludes.test(file);
+                    if (Boolean.TRUE == result)
+                        accepted = true;
+                }
+                else if (_filter == null || _filter.accept(f.getParentFile(), f.getName()))
+                    accepted = true;
+            }
+
+            if (accepted)
+            {
+                scanInfoMap.put(f.getCanonicalPath(), new TimeNSize(f.lastModified(), f.isDirectory() ? 0 : f.length()));
+                if (LOG.isDebugEnabled()) LOG.debug("scan accepted {} mod={}", f, f.lastModified());
+            }
+            
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException
+        {
+            LOG.warn("FileVisit failed: " + file, exc);
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException
+        {
+            return FileVisitResult.CONTINUE;
         }
     }
     
     /**
      * Listener
-     * 
+     *
      * Marker for notifications re file changes.
      */
     public interface Listener
@@ -115,18 +259,19 @@ public class Scanner extends AbstractLifeCycle
     {
         public void scan();
     }
-    
+
     public interface DiscreteListener extends Listener
     {
-        public void fileChanged (String filename) throws Exception;
-        public void fileAdded (String filename) throws Exception;
-        public void fileRemoved (String filename) throws Exception;
+        public void fileChanged(String filename) throws Exception;
+
+        public void fileAdded(String filename) throws Exception;
+
+        public void fileRemoved(String filename) throws Exception;
     }
-    
-    
+
     public interface BulkListener extends Listener
     {
-        public void filesChanged (List<String> filenames) throws Exception;
+        public void filesChanged(List<String> filenames) throws Exception;
     }
 
     /**
@@ -135,18 +280,20 @@ public class Scanner extends AbstractLifeCycle
     public interface ScanCycleListener extends Listener
     {
         public void scanStarted(int cycle) throws Exception;
+
         public void scanEnded(int cycle) throws Exception;
     }
 
     /**
-     * 
+     *
      */
-    public Scanner ()
-    {       
+    public Scanner()
+    {
     }
 
     /**
      * Get the scan interval
+     *
      * @return interval between scans in seconds
      */
     public synchronized int getScanInterval()
@@ -156,6 +303,7 @@ public class Scanner extends AbstractLifeCycle
 
     /**
      * Set the scan interval
+     *
      * @param scanInterval pause between scans in seconds, or 0 for no scan after the initial scan.
      */
     public synchronized void setScanInterval(int scanInterval)
@@ -164,44 +312,117 @@ public class Scanner extends AbstractLifeCycle
         schedule();
     }
 
-    public void setScanDirs (List<File> dirs)
+    public void setScanDirs(List<File> dirs)
     {
-        _scanDirs.clear(); 
-        _scanDirs.addAll(dirs);
+        _scannables.clear();
+        if (dirs == null)
+            return;
+
+        for (File f:dirs)
+        {
+            addScanDir(f);
+        }
+    }
+
+    @Deprecated
+    public synchronized void addScanDir(File dir)
+    {
+        if (dir == null)
+            return;
+        try
+        {
+            if (dir.isDirectory())
+                addDirectory(dir.toPath());
+            else
+                addFile(dir.toPath());
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to add: " + dir, e);
+        }
     }
     
-    public synchronized void addScanDir( File dir )
+    /**
+     * Add a file to be scanned. The file must not be null, and must exist.
+     * 
+     * @param p the Path of the file to scan.
+     * @throws IOException 
+     */
+    public synchronized void addFile(Path p) throws IOException
     {
-        _scanDirs.add( dir );
+        if (p == null)
+            throw new IllegalStateException("Null path");
+        
+        File f = p.toFile();
+        if (!f.exists() || f.isDirectory())
+            throw new IllegalStateException("Not file or doesn't exist: " + f.getCanonicalPath());
+        _scannables.put(p, null);
+    }
+
+    /**
+     * Add a directory to be scanned. The directory must not be null and must exist.
+     * 
+     * @param p the directory to scan.
+     * @return an IncludeExcludeSet to which the caller can add PathMatcher patterns to match
+     * @throws IOException
+     */
+    public synchronized IncludeExcludeSet<PathMatcher, Path> addDirectory(Path p)
+        throws IOException
+    {
+        if (p == null)
+            throw new IllegalStateException("Null path");
+        
+        File f = p.toFile();
+        if (!f.exists() || !f.isDirectory())
+            throw new IllegalStateException("Not directory or doesn't exist: " + f.getCanonicalPath());
+        
+        IncludeExcludeSet<PathMatcher, Path> includesExcludes = _scannables.get(p);
+        if (includesExcludes == null)
+        {
+            includesExcludes = new IncludeExcludeSet<>(PathMatcherSet.class);
+            _scannables.put(p.toRealPath(), includesExcludes);
+        }
+        
+        return includesExcludes;
+    }
+
+    @Deprecated
+    public List<File> getScanDirs()
+    {
+        ArrayList<File> files = new ArrayList<>();
+        for (Path p : _scannables.keySet())
+            files.add(p.toFile());
+        return Collections.unmodifiableList(files);
     }
     
-    public List<File> getScanDirs ()
+    public Set<Path> getScannables()
     {
-        return Collections.unmodifiableList(_scanDirs);
+        return _scannables.keySet();
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * @param recursive True if scanning is recursive
-     * @see  #setScanDepth(int)
+     * @see #setScanDepth(int)
      */
-    public void setRecursive (boolean recursive)
+    @Deprecated
+    public void setRecursive(boolean recursive)
     {
-        _scanDepth=recursive?-1:0;
+        _scanDepth = recursive ? Integer.MAX_VALUE : 1;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
-     * @return True if scanning is fully recursive (scandepth==-1)
+     * @return True if scanning is recursive
      * @see #getScanDepth()
      */
-    public boolean getRecursive ()
+    @Deprecated
+    public boolean getRecursive()
     {
-        return _scanDepth==-1;
+        return _scanDepth > 1;
     }
-    
-    /* ------------------------------------------------------------ */
-    /** Get the scanDepth.
+
+    /**
+     * Get the scanDepth.
+     *
      * @return the scanDepth
      */
     public int getScanDepth()
@@ -209,8 +430,9 @@ public class Scanner extends AbstractLifeCycle
         return _scanDepth;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Set the scanDepth.
+    /**
+     * Set the scanDepth.
+     *
      * @param scanDepth the scanDepth to set
      */
     public void setScanDepth(int scanDepth)
@@ -221,79 +443,81 @@ public class Scanner extends AbstractLifeCycle
     /**
      * Apply a filter to files found in the scan directory.
      * Only files matching the filter will be reported as added/changed/removed.
+     *
      * @param filter the filename filter to use
      */
-    public void setFilenameFilter (FilenameFilter filter)
+    @Deprecated
+    public void setFilenameFilter(FilenameFilter filter)
     {
         _filter = filter;
     }
 
     /**
      * Get any filter applied to files in the scan dir.
+     *
      * @return the filename filter
      */
-    public FilenameFilter getFilenameFilter ()
+    @Deprecated
+    public FilenameFilter getFilenameFilter()
     {
         return _filter;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Whether or not an initial scan will report all files as being
      * added.
-     * @param reportExisting if true, all files found on initial scan will be 
+     *
+     * @param reportExisting if true, all files found on initial scan will be
      * reported as being added, otherwise not
      */
-    public void setReportExistingFilesOnStartup (boolean reportExisting)
+    public void setReportExistingFilesOnStartup(boolean reportExisting)
     {
         _reportExisting = reportExisting;
     }
 
-    /* ------------------------------------------------------------ */
     public boolean getReportExistingFilesOnStartup()
     {
         return _reportExisting;
     }
-    
-    /* ------------------------------------------------------------ */
-    /** Set if found directories should be reported.
+
+    /**
+     * Set if found directories should be reported.
+     *
      * @param dirs true to report directory changes as well
      */
     public void setReportDirs(boolean dirs)
     {
-        _reportDirs=dirs;
+        _reportDirs = dirs;
     }
-    
-    /* ------------------------------------------------------------ */
+
     public boolean getReportDirs()
     {
         return _reportDirs;
     }
-    
-    /* ------------------------------------------------------------ */
+
     /**
      * Add an added/removed/changed listener
+     *
      * @param listener the listener to add
      */
-    public synchronized void addListener (Listener listener)
+    public synchronized void addListener(Listener listener)
     {
         if (listener == null)
             return;
-        _listeners.add(listener);   
+        _listeners.add(listener);
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Remove a registered listener
+     *
      * @param listener the Listener to be removed
      */
-    public synchronized void removeListener (Listener listener)
+    public synchronized void removeListener(Listener listener)
     {
         if (listener == null)
             return;
-        _listeners.remove(listener);    
+        _listeners.remove(listener);
     }
-
 
     /**
      * Start the scanning action.
@@ -305,6 +529,9 @@ public class Scanner extends AbstractLifeCycle
             return;
 
         _running = true;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Scanner start: rprtExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}", 
+                _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
 
         if (_reportExisting)
         {
@@ -321,36 +548,40 @@ public class Scanner extends AbstractLifeCycle
         schedule();
     }
 
-    public TimerTask newTimerTask ()
+    public TimerTask newTimerTask()
     {
         return new TimerTask()
         {
             @Override
-            public void run() { scan(); }
+            public void run()
+            {
+                scan();
+            }
         };
     }
 
-    public Timer newTimer ()
+    public Timer newTimer()
     {
-        return new Timer("Scanner-"+__scannerId++, true);
+        return new Timer("Scanner-" + __scannerId++, true);
     }
-    
-    public void schedule ()
-    {  
+
+    public void schedule()
+    {
         if (_running)
         {
-            if (_timer!=null)
+            if (_timer != null)
                 _timer.cancel();
-            if (_task!=null)
+            if (_task != null)
                 _task.cancel();
             if (getScanInterval() > 0)
             {
                 _timer = newTimer();
                 _task = newTimerTask();
-                _timer.schedule(_task, 1010L*getScanInterval(),1010L*getScanInterval());
+                _timer.schedule(_task, 1010L * getScanInterval(), 1010L * getScanInterval());
             }
         }
     }
+
     /**
      * Stop the scanning.
      */
@@ -359,14 +590,31 @@ public class Scanner extends AbstractLifeCycle
     {
         if (_running)
         {
-            _running = false; 
-            if (_timer!=null)
+            _running = false;
+            if (_timer != null)
                 _timer.cancel();
-            if (_task!=null)
+            if (_task != null)
                 _task.cancel();
-            _task=null;
-            _timer=null;
+            _task = null;
+            _timer = null;
         }
+    }
+    
+    /**
+     * Clear the list of scannables. The scanner must first
+     * be in the stopped state.
+     */
+    public void reset()
+    {
+        if (!isStopped())
+            throw new IllegalStateException("Not stopped");
+        
+        //clear the scannables
+        _scannables.clear();
+        
+        //clear the previous scans
+        _currentScan.clear();
+        _prevScan.clear();
     }
 
     /**
@@ -375,17 +623,18 @@ public class Scanner extends AbstractLifeCycle
      */
     public boolean exists(String path)
     {
-        for (File dir : _scanDirs)
-            if (new File(dir,path).exists())
+        for (Path p : _scannables.keySet())
+        {
+            if (p.resolve(path).toFile().exists())
                 return true;
+        }
         return false;
     }
-    
-    
+
     /**
      * Perform a pass of the scanner and report changes
      */
-    public synchronized void scan ()
+    public synchronized void scan()
     {
         reportScanStart(++_scanCount);
         scanFiles();
@@ -393,7 +642,7 @@ public class Scanner extends AbstractLifeCycle
         _prevScan.clear();
         _prevScan.putAll(_currentScan);
         reportScanEnd(_scanCount);
-        
+
         for (Listener l : _listeners)
         {
             try
@@ -401,115 +650,93 @@ public class Scanner extends AbstractLifeCycle
                 if (l instanceof ScanListener)
                     ((ScanListener)l).scan();
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
-                LOG.warn(e);
-            }
-            catch (Error e)
-            {
-                LOG.warn(e);
+                LOG.warn("Unable to scan", e);
             }
         }
     }
 
     /**
-     * Recursively scan all files in the designated directories.
+     * Scan all of the given paths.
      */
-    public synchronized void scanFiles ()
+    public synchronized void scanFiles()
     {
-        if (_scanDirs==null)
-            return;
-        
         _currentScan.clear();
-        Iterator<File> itor = _scanDirs.iterator();
-        while (itor.hasNext())
+        for (Path p : _scannables.keySet())
         {
-            File dir = itor.next();
-            
-            if ((dir != null) && (dir.exists()))
-                try
-                {
-                    scanFile(dir.getCanonicalFile(), _currentScan,0);
-                }
-                catch (IOException e)
-                {
-                    LOG.warn("Error scanning files.", e);
-                }
+            try
+            {
+                Files.walkFileTree(p, EnumSet.allOf(FileVisitOption.class),_scanDepth, new Visitor(p, _scannables.get(p), _currentScan));
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Error scanning files.", e);
+            }
         }
     }
-
 
     /**
      * Report the adds/changes/removes to the registered listeners
-     * 
+     *
      * @param currentScan the info from the most recent pass
      * @param oldScan info from the previous pass
      */
-    public synchronized void reportDifferences (Map<String,TimeNSize> currentScan, Map<String,TimeNSize> oldScan) 
+    private synchronized void reportDifferences(Map<String, TimeNSize> currentScan, Map<String, TimeNSize> oldScan)
     {
         // scan the differences and add what was found to the map of notifications:
+        Set<String> oldScanKeys = new HashSet<>(oldScan.keySet());
 
-        Set<String> oldScanKeys = new HashSet<String>(oldScan.keySet());
-        
         // Look for new and changed files
-        for (Map.Entry<String, TimeNSize> entry: currentScan.entrySet())
+        for (Map.Entry<String, TimeNSize> entry : currentScan.entrySet())
         {
-            String file = entry.getKey(); 
+            String file = entry.getKey();
             if (!oldScanKeys.contains(file))
             {
-                Notification old=_notifications.put(file,Notification.ADDED);
-                if (old!=null)
-                { 
-                    switch(old)
+                Notification old = _notifications.put(file, Notification.ADDED);
+                if (old != null)
+                {
+                    switch (old)
                     {
-                        case REMOVED: 
+                        case REMOVED:
                         case CHANGED:
-                            _notifications.put(file,Notification.CHANGED);
+                            _notifications.put(file, Notification.CHANGED);
+                            break;
+                        default:
+                            break;
                     }
                 }
             }
             else if (!oldScan.get(file).equals(currentScan.get(file)))
             {
-                Notification old=_notifications.put(file,Notification.CHANGED);
-                if (old!=null)
-                {
-                    switch(old)
-                    {
-                        case ADDED:
-                            _notifications.put(file,Notification.ADDED);
-                    }
-                }
+                Notification old = _notifications.put(file, Notification.CHANGED);
+                if (old == Notification.ADDED)
+                    _notifications.put(file, Notification.ADDED);
             }
         }
-        
+
         // Look for deleted files
         for (String file : oldScan.keySet())
         {
             if (!currentScan.containsKey(file))
             {
-                Notification old=_notifications.put(file,Notification.REMOVED);
-                if (old!=null)
-                {
-                    switch(old)
-                    {
-                        case ADDED:
-                            _notifications.remove(file);
-                    }
-                }
+                Notification old = _notifications.put(file, Notification.REMOVED);
+                if (old == Notification.ADDED)
+                    _notifications.remove(file);
             }
         }
-        
+
         if (LOG.isDebugEnabled())
-            LOG.debug("scanned "+_scanDirs+": "+_notifications);
-                
+            LOG.debug("scanned " + _scannables.keySet() + ": " + _notifications);
+
         // Process notifications
         // Only process notifications that are for stable files (ie same in old and current scan).
-        List<String> bulkChanges = new ArrayList<String>();
-        for (Iterator<Entry<String,Notification>> iter = _notifications.entrySet().iterator();iter.hasNext();)
+        List<String> bulkChanges = new ArrayList<>();
+        for (Iterator<Entry<String, Notification>> iter = _notifications.entrySet().iterator(); iter.hasNext(); )
         {
-            Entry<String,Notification> entry=iter.next();
-            String file=entry.getKey();
-            
+
+            Entry<String, Notification> entry = iter.next();
+            String file = entry.getKey();
             // Is the file stable?
             if (oldScan.containsKey(file))
             {
@@ -518,12 +745,12 @@ public class Scanner extends AbstractLifeCycle
             }
             else if (currentScan.containsKey(file))
                 continue;
-                            
+
             // File is stable so notify
-            Notification notification=entry.getValue();
+            Notification notification = entry.getValue();
             iter.remove();
             bulkChanges.add(file);
-            switch(notification)
+            switch (notification)
             {
                 case ADDED:
                     reportAddition(file);
@@ -534,170 +761,105 @@ public class Scanner extends AbstractLifeCycle
                 case REMOVED:
                     reportRemoval(file);
                     break;
+                default:
+                    break;
             }
         }
         if (!bulkChanges.isEmpty())
             reportBulkChanges(bulkChanges);
     }
 
-
-    /**
-     * Get last modified time on a single file or recurse if
-     * the file is a directory. 
-     * @param f file or directory
-     * @param scanInfoMap map of filenames to last modified times
-     */
-    private void scanFile (File f, Map<String,TimeNSize> scanInfoMap, int depth)
+    private void warn(Object listener, String filename, Throwable th)
     {
-        try
-        {
-            if (!f.exists())
-                return;
-
-            if (f.isFile() || depth>0&& _reportDirs && f.isDirectory())
-            {
-                if ((_filter == null) || ((_filter != null) && _filter.accept(f.getParentFile(), f.getName())))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("scan accepted {}",f);
-                    String name = f.getCanonicalPath();
-                    scanInfoMap.put(name, new TimeNSize(f.lastModified(),f.isDirectory()?0:f.length()));
-                }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("scan rejected {}",f);
-                }
-            }
-            
-            // If it is a directory, scan if it is a known directory or the depth is OK.
-            if (f.isDirectory() && (depth<_scanDepth || _scanDepth==-1 || _scanDirs.contains(f)))
-            {
-                File[] files = f.listFiles();
-                if (files != null)
-                {
-                    for (int i=0;i<files.length;i++)
-                        scanFile(files[i], scanInfoMap,depth+1);
-                }
-                else
-                    LOG.warn("Error listing files in directory {}", f);
-            }
-        }
-        catch (IOException e)
-        {
-            LOG.warn("Error scanning watched files", e);
-        }
-    }
-
-    private void warn(Object listener,String filename,Throwable th)
-    {
-        LOG.warn(listener+" failed on '"+filename, th);
+        LOG.warn(listener + " failed on '" + filename, th);
     }
 
     /**
      * Report a file addition to the registered FileAddedListeners
+     *
      * @param filename the filename
      */
-    private void reportAddition (String filename)
+    private void reportAddition(String filename)
     {
-        Iterator<Listener> itor = _listeners.iterator();
-        while (itor.hasNext())
+        for (Listener l : _listeners)
         {
-            Listener l = itor.next();
             try
             {
                 if (l instanceof DiscreteListener)
                     ((DiscreteListener)l).fileAdded(filename);
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
-                warn(l,filename,e);
-            }
-            catch (Error e)
-            {
-                warn(l,filename,e);
+                warn(l, filename, e);
             }
         }
     }
 
-
     /**
      * Report a file removal to the FileRemovedListeners
+     *
      * @param filename the filename
      */
-    private void reportRemoval (String filename)
+    private void reportRemoval(String filename)
     {
-        Iterator<Listener> itor = _listeners.iterator();
-        while (itor.hasNext())
+        for (Object l : _listeners)
         {
-            Object l = itor.next();
             try
             {
                 if (l instanceof DiscreteListener)
                     ((DiscreteListener)l).fileRemoved(filename);
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
-                warn(l,filename,e);
-            }
-            catch (Error e)
-            {
-                warn(l,filename,e);
+                warn(l, filename, e);
             }
         }
     }
 
-
     /**
      * Report a file change to the FileChangedListeners
+     *
      * @param filename the filename
      */
-    private void reportChange (String filename)
+    private void reportChange(String filename)
     {
-        Iterator<Listener> itor = _listeners.iterator();
-        while (itor.hasNext())
+        for (Listener l : _listeners)
         {
-            Listener l = itor.next();
             try
             {
                 if (l instanceof DiscreteListener)
                     ((DiscreteListener)l).fileChanged(filename);
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
-                warn(l,filename,e);
-            }
-            catch (Error e)
-            {
-                warn(l,filename,e);
+                warn(l, filename, e);
             }
         }
     }
-    
-    private void reportBulkChanges (List<String> filenames)
+
+    /**
+     * Report the list of filenames for which changes were detected.
+     * 
+     * @param filenames names of all files added/changed/removed
+     */
+    private void reportBulkChanges(List<String> filenames)
     {
-        Iterator<Listener> itor = _listeners.iterator();
-        while (itor.hasNext())
+        for (Listener l : _listeners)
         {
-            Listener l = itor.next();
             try
             {
                 if (l instanceof BulkListener)
                     ((BulkListener)l).filesChanged(filenames);
             }
-            catch (Exception e)
+            catch (Throwable e)
             {
-                warn(l,filenames.toString(),e);
-            }
-            catch (Error e)
-            {
-                warn(l,filenames.toString(),e);
+                warn(l, filenames.toString(), e);
             }
         }
     }
-    
+
     /**
-     * signal any scan cycle listeners that a scan has started
+     * Call ScanCycleListeners with start of scan
      */
     private void reportScanStart(int cycle)
     {
@@ -718,7 +880,7 @@ public class Scanner extends AbstractLifeCycle
     }
 
     /**
-     * sign
+     * Call ScanCycleListeners with end of scan.
      */
     private void reportScanEnd(int cycle)
     {
@@ -737,5 +899,4 @@ public class Scanner extends AbstractLifeCycle
             }
         }
     }
-
 }

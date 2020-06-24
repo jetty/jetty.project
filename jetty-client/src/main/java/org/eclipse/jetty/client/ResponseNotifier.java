@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client;
@@ -21,6 +21,8 @@ package org.eclipse.jetty.client;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.LongConsumer;
+import java.util.function.ObjLongConsumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -30,12 +32,12 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ResponseNotifier
 {
-    private static final Logger LOG = Log.getLogger(ResponseNotifier.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResponseNotifier.class);
 
     public void notifyBegin(List<Response.ResponseListener> listeners, Response response)
     {
@@ -103,34 +105,54 @@ public class ResponseNotifier
         }
     }
 
-    public void notifyContent(List<Response.ResponseListener> listeners, Response response, ByteBuffer buffer, Callback callback)
+    public void notifyBeforeContent(Response response, ObjLongConsumer<Object> demand, List<Response.DemandedContentListener> contentListeners)
     {
-        List<Response.AsyncContentListener> contentListeners = listeners.stream()
-                .filter(Response.AsyncContentListener.class::isInstance)
-                .map(Response.AsyncContentListener.class::cast)
-                .collect(Collectors.toList());
-        notifyContent(response, buffer, callback, contentListeners);
-    }
-
-    public void notifyContent(Response response, ByteBuffer buffer, Callback callback, List<Response.AsyncContentListener> contentListeners)
-    {
-        if (contentListeners.isEmpty())
+        for (Response.DemandedContentListener listener : contentListeners)
         {
-            callback.succeeded();
-        }
-        else
-        {
-            CountingCallback counter = new CountingCallback(callback, contentListeners.size());
-            for (Response.AsyncContentListener listener : contentListeners)
-                notifyContent(listener, response, buffer.slice(), counter);
+            notifyBeforeContent(listener, response, d -> demand.accept(listener, d));
         }
     }
 
-    private void notifyContent(Response.AsyncContentListener listener, Response response, ByteBuffer buffer, Callback callback)
+    private void notifyBeforeContent(Response.DemandedContentListener listener, Response response, LongConsumer demand)
     {
         try
         {
-            listener.onContent(response, buffer, callback);
+            listener.onBeforeContent(response, demand);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Exception while notifying listener " + listener, x);
+        }
+    }
+
+    public void notifyContent(Response response, ObjLongConsumer<Object> demand, ByteBuffer buffer, Callback callback, List<Response.DemandedContentListener> contentListeners)
+    {
+        int count = contentListeners.size();
+        if (count == 0)
+        {
+            callback.succeeded();
+            demand.accept(null, 1);
+        }
+        else if (count == 1)
+        {
+            Response.DemandedContentListener listener = contentListeners.get(0);
+            notifyContent(listener, response, d -> demand.accept(listener, d), buffer.slice(), callback);
+        }
+        else
+        {
+            callback = new CountingCallback(callback, count);
+            for (Response.DemandedContentListener listener : contentListeners)
+            {
+                notifyContent(listener, response, d -> demand.accept(listener, d), buffer.slice(), callback);
+            }
+        }
+    }
+
+    private void notifyContent(Response.DemandedContentListener listener, Response response, LongConsumer demand, ByteBuffer buffer, Callback callback)
+    {
+        try
+        {
+            listener.onContent(response, demand, buffer, callback);
         }
         catch (Throwable x)
         {
@@ -234,7 +256,15 @@ public class ResponseNotifier
         {
             byte[] content = ((ContentResponse)response).getContent();
             if (content != null && content.length > 0)
-                notifyContent(listeners, response, ByteBuffer.wrap(content), Callback.NOOP);
+            {
+                List<Response.DemandedContentListener> contentListeners = listeners.stream()
+                    .filter(Response.DemandedContentListener.class::isInstance)
+                    .map(Response.DemandedContentListener.class::cast)
+                    .collect(Collectors.toList());
+                ObjLongConsumer<Object> demand = (context, value) -> {};
+                notifyBeforeContent(response, demand, contentListeners);
+                notifyContent(response, demand, ByteBuffer.wrap(content), Callback.NOOP, contentListeners);
+            }
         }
     }
 

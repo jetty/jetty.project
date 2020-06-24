@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Mort Bay Consulting//DTD Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
-  <Get class="org.eclipse.jetty.util.log.Log" name="rootLogger">
-    <Call name="warn"><Arg>test-jndi webapp is deployed. DO NOT USE IN PRODUCTION!</Arg></Call>
+  <Get name="servletContext">
+    <Call name="log"><Arg>The test-jndi webapp is deployed. DO NOT USE IN PRODUCTION!</Arg><Arg></Arg></Call>
   </Get>
 </Configure>

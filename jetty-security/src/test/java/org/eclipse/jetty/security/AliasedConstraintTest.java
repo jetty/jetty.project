@@ -1,27 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.security;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,7 +26,6 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -47,6 +41,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Some requests for static data that is served by ResourceHandler, but some is secured.
@@ -65,25 +64,23 @@ public class AliasedConstraintTest
     {
         server = new Server();
         connector = new LocalConnector(server);
-        server.setConnectors(new Connector[] { connector });
+        server.setConnectors(new Connector[]{connector});
 
         ContextHandler context = new ContextHandler();
         SessionHandler session = new SessionHandler();
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
 
-        loginService.putUser("user0",new Password("password"),new String[] {});
-        loginService.putUser("user",new Password("password"),new String[] { "user" });
-        loginService.putUser("user2",new Password("password"),new String[] { "user" });
-        loginService.putUser("admin",new Password("password"),new String[] { "user", "administrator" });
-        loginService.putUser("user3",new Password("password"),new String[] { "foo" });
+        loginService.putUser("user0", new Password("password"), new String[]{});
+        loginService.putUser("user", new Password("password"), new String[]{"user"});
+        loginService.putUser("user2", new Password("password"), new String[]{"user"});
+        loginService.putUser("admin", new Password("password"), new String[]{"user", "administrator"});
+        loginService.putUser("user3", new Password("password"), new String[]{"foo"});
 
         context.setContextPath("/ctx");
         context.setResourceBase(MavenTestingUtils.getTestResourceDir("docroot").getAbsolutePath());
-        
-        HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[]{context,new DefaultHandler()});
-        server.setHandler(handlers);
+
+        server.setHandler(new HandlerList(context, new DefaultHandler()));
         context.setHandler(session);
         // context.addAliasCheck(new AllowSymLinkAliasChecker());
 
@@ -108,7 +105,7 @@ public class AliasedConstraintTest
         knownRoles.add("user");
         knownRoles.add("administrator");
 
-        security.setConstraintMappings(constraints,knownRoles);
+        security.setConstraintMappings(constraints, knownRoles);
         server.start();
     }
 
@@ -124,13 +121,13 @@ public class AliasedConstraintTest
 
         final String OPENCONTENT = "this is open content";
 
-        data.add(new Object[] { "/ctx/all/index.txt", HttpStatus.OK_200, OPENCONTENT });
-        data.add(new Object[] { "/ctx/ALL/index.txt", HttpStatus.NOT_FOUND_404, null });
-        data.add(new Object[] { "/ctx/ALL/Fred/../index.txt", HttpStatus.NOT_FOUND_404, null });
-        data.add(new Object[] { "/ctx/../bar/../ctx/all/index.txt", HttpStatus.OK_200, OPENCONTENT });
-        data.add(new Object[] { "/ctx/forbid/index.txt", HttpStatus.FORBIDDEN_403, null });
-        data.add(new Object[] { "/ctx/all/../forbid/index.txt", HttpStatus.FORBIDDEN_403, null });
-        data.add(new Object[] { "/ctx/FoRbId/index.txt", HttpStatus.NOT_FOUND_404, null });
+        data.add(new Object[]{"/ctx/all/index.txt", HttpStatus.OK_200, OPENCONTENT});
+        data.add(new Object[]{"/ctx/ALL/index.txt", HttpStatus.NOT_FOUND_404, null});
+        data.add(new Object[]{"/ctx/ALL/Fred/../index.txt", HttpStatus.NOT_FOUND_404, null});
+        data.add(new Object[]{"/ctx/../bar/../ctx/all/index.txt", HttpStatus.OK_200, OPENCONTENT});
+        data.add(new Object[]{"/ctx/forbid/index.txt", HttpStatus.FORBIDDEN_403, null});
+        data.add(new Object[]{"/ctx/all/../forbid/index.txt", HttpStatus.FORBIDDEN_403, null});
+        data.add(new Object[]{"/ctx/FoRbId/index.txt", HttpStatus.NOT_FOUND_404, null});
 
         return data.stream().map(Arguments::of);
     }
@@ -150,13 +147,13 @@ public class AliasedConstraintTest
         switch (expectedStatusCode)
         {
             case 200:
-                assertThat(response,startsWith("HTTP/1.1 200 OK"));
+                assertThat(response, startsWith("HTTP/1.1 200 OK"));
                 break;
             case 403:
-                assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
+                assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
                 break;
             case 404:
-                assertThat(response,startsWith("HTTP/1.1 404 Not Found"));
+                assertThat(response, startsWith("HTTP/1.1 404 Not Found"));
                 break;
             default:
                 fail("Write a handler for response status code: " + expectedStatusCode);
@@ -165,7 +162,7 @@ public class AliasedConstraintTest
 
         if (expectedContent != null)
         {
-            assertThat(response,containsString("this is open content"));
+            assertThat(response, containsString("this is open content"));
         }
     }
 }

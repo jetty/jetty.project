@@ -1,50 +1,47 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.plus.webapp;
 
 import java.util.Random;
-
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 
+import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
 import org.eclipse.jetty.plus.jndi.Transaction;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
 import org.eclipse.jetty.webapp.FragmentConfiguration;
 import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
 import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Configuration
- *
- *
  */
 public class PlusConfiguration extends AbstractConfiguration
 {
-    private static final Logger LOG = Log.getLogger(PlusConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PlusConfiguration.class);
 
     private Integer _key;
 
@@ -52,11 +49,11 @@ public class PlusConfiguration extends AbstractConfiguration
     {
         addDependencies(EnvConfiguration.class, WebXmlConfiguration.class, MetaInfConfiguration.class, FragmentConfiguration.class);
         addDependents(JettyWebXmlConfiguration.class);
-    }    
-    
+    }
+
     @Override
-    public void preConfigure (WebAppContext context)
-    throws Exception
+    public void preConfigure(WebAppContext context)
+        throws Exception
     {
         context.getObjectFactory().addDecorator(new PlusDecorator(context));
     }
@@ -68,8 +65,8 @@ public class PlusConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public void configure (WebAppContext context)
-    throws Exception
+    public void configure(WebAppContext context)
+        throws Exception
     {
         bindUserTransaction(context);
 
@@ -84,21 +81,21 @@ public class PlusConfiguration extends AbstractConfiguration
     }
 
     @Override
-    public void deconfigure (WebAppContext context)
-    throws Exception
+    public void deconfigure(WebAppContext context)
+        throws Exception
     {
         unlockCompEnv(context);
         _key = null;
-        context.setAttribute(InjectionCollection.INJECTION_COLLECTION,null);
-        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION,null);
+        context.setAttribute(InjectionCollection.INJECTION_COLLECTION, null);
+        context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, null);
     }
 
-    public void bindUserTransaction (WebAppContext context)
-    throws Exception
+    public void bindUserTransaction(WebAppContext context)
+        throws Exception
     {
         try
         {
-           Transaction.bindToENC();
+            Transaction.bindToENC();
         }
         catch (NameNotFoundException e)
         {
@@ -106,33 +103,31 @@ public class PlusConfiguration extends AbstractConfiguration
         }
     }
 
-
-
-    protected void lockCompEnv (WebAppContext wac)
-    throws Exception
+    protected void lockCompEnv(WebAppContext wac)
+        throws Exception
     {
-        ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(wac.getClassLoader());
         try
         {
-            Random random = new Random ();
-            _key = new Integer(random.nextInt());
+            Random random = new Random();
+            _key = random.nextInt();
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
-            compCtx.addToEnvironment("org.eclipse.jetty.jndi.lock", _key);
+            compCtx.addToEnvironment(NamingContext.LOCK_PROPERTY, _key);
         }
         finally
         {
-            Thread.currentThread().setContextClassLoader(old_loader);
+            Thread.currentThread().setContextClassLoader(oldLoader);
         }
     }
 
-    protected void unlockCompEnv (WebAppContext wac)
-    throws Exception
+    protected void unlockCompEnv(WebAppContext wac)
+        throws Exception
     {
-        if (_key!=null)
+        if (_key != null)
         {
-            ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
+            ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(wac.getClassLoader());
 
             try
@@ -143,7 +138,7 @@ public class PlusConfiguration extends AbstractConfiguration
             }
             finally
             {
-                Thread.currentThread().setContextClassLoader(old_loader);
+                Thread.currentThread().setContextClassLoader(oldLoader);
             }
         }
     }

@@ -1,26 +1,26 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.osgi.boot;
 
 /**
  * OSGiServerConstants
- * 
+ *
  * Name of the properties that configure a jetty Server OSGi service.
  */
 public class OSGiServerConstants
@@ -62,7 +62,7 @@ public class OSGiServerConstants
      * PID of the jetty servers's ManagedFactory
      */
     public static final String MANAGED_JETTY_SERVER_FACTORY_PID = "org.eclipse.jetty.osgi.boot.managedserverfactory";
-    
+
     /**
      * The associated value of that configuration parameter is the name under which this
      * instance of the jetty server is tracked.
@@ -75,12 +75,12 @@ public class OSGiServerConstants
      * Usually the first one to be created.
      */
     public static final String MANAGED_JETTY_SERVER_DEFAULT_NAME = "defaultJettyServer";
-    
+
     /**
      * List of URLs to the jetty.xml files that configure th server.
      */
     public static final String MANAGED_JETTY_XML_CONFIG_URLS = "jetty.etc.config.urls";
-    
+
     /**
      * List of URLs to the folders where the legacy J2EE shared libraries are stored aka lib/ext, lib/jsp etc.
      */

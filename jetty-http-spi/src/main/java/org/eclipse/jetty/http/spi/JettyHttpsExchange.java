@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http.spi;
@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
-
 import javax.net.ssl.SSLSession;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -33,8 +32,8 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpPrincipal;
 import com.sun.net.httpserver.HttpsExchange;
 
-/* ------------------------------------------------------------ */
 /**
+ *
  */
 public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
 {
@@ -43,7 +42,7 @@ public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
     public JettyHttpsExchange(HttpContext jaxWsContext, HttpServletRequest req, HttpServletResponse resp)
     {
         super();
-        _delegate = new JettyHttpExchangeDelegate(jaxWsContext,req,resp);
+        _delegate = new JettyHttpExchangeDelegate(jaxWsContext, req, resp);
     }
 
     @Override
@@ -109,7 +108,7 @@ public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
     @Override
     public void sendResponseHeaders(int rCode, long responseLength) throws IOException
     {
-        _delegate.sendResponseHeaders(rCode,responseLength);
+        _delegate.sendResponseHeaders(rCode, responseLength);
     }
 
     @Override
@@ -145,13 +144,13 @@ public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
     @Override
     public void setAttribute(String name, Object value)
     {
-        _delegate.setAttribute(name,value);
+        _delegate.setAttribute(name, value);
     }
 
     @Override
     public void setStreams(InputStream i, OutputStream o)
     {
-        _delegate.setStreams(i,o);
+        _delegate.setStreams(i, o);
     }
 
     @Override
@@ -172,14 +171,9 @@ public class JettyHttpsExchange extends HttpsExchange implements JettyExchange
         return _delegate.toString();
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see com.sun.net.httpserver.HttpsExchange#getSSLSession()
-     */
     @Override
     public SSLSession getSSLSession()
     {
         return null;
     }
-
 }

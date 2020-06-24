@@ -1,26 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.http2.client;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -45,8 +41,11 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StreamCloseTest extends AbstractTest
 {
@@ -66,7 +65,7 @@ public class StreamCloseTest extends AbstractTest
         });
 
         Session session = newClient(new Session.Listener.Adapter());
-        HeadersFrame frame = new HeadersFrame(newRequest("GET", new HttpFields()), null, true);
+        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, null);
         Stream stream = promise.get(5, TimeUnit.SECONDS);
@@ -83,7 +82,7 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(final Stream stream, HeadersFrame frame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                 HeadersFrame response = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(response, new Callback()
                 {
@@ -100,7 +99,7 @@ public class StreamCloseTest extends AbstractTest
         });
 
         Session session = newClient(new Session.Listener.Adapter());
-        HeadersFrame frame = new HeadersFrame(newRequest("GET", new HttpFields()), null, true);
+        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, new Stream.Listener.Adapter()
         {
@@ -125,7 +124,7 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY);
                 HeadersFrame response = new HeadersFrame(stream.getId(), metaData, null, false);
                 Callback.Completable completable = new Callback.Completable();
                 stream.headers(response, completable);
@@ -154,7 +153,7 @@ public class StreamCloseTest extends AbstractTest
 
         final CountDownLatch completeLatch = new CountDownLatch(1);
         Session session = newClient(new Session.Listener.Adapter());
-        HeadersFrame frame = new HeadersFrame(newRequest("GET", new HttpFields()), null, false);
+        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, false);
         FuturePromise<Stream> promise = new FuturePromise<>();
         session.newStream(frame, promise, new Stream.Listener.Adapter()
         {
@@ -197,7 +196,7 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), 0, newRequest("GET", new HttpFields()));
+                PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), newRequest("GET", HttpFields.EMPTY));
                 stream.push(pushFrame, new Promise.Adapter<Stream>()
                 {
                     @Override
@@ -217,14 +216,14 @@ public class StreamCloseTest extends AbstractTest
                         });
                     }
                 }, new Stream.Listener.Adapter());
-                HeadersFrame response = new HeadersFrame(stream.getId(), new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields()), null, true);
+                HeadersFrame response = new HeadersFrame(stream.getId(), new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY), null, true);
                 stream.headers(response, Callback.NOOP);
                 return null;
             }
         });
 
         Session session = newClient(new Session.Listener.Adapter());
-        HeadersFrame frame = new HeadersFrame(newRequest("GET", new HttpFields()), null, true);
+        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         final CountDownLatch clientLatch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
@@ -258,7 +257,7 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(final Stream stream, HeadersFrame frame)
             {
-                PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), 0, newRequest("GET", new HttpFields()));
+                PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), 0, newRequest("GET", HttpFields.EMPTY));
                 stream.push(pushFrame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
                 {
                     @Override
@@ -266,7 +265,7 @@ public class StreamCloseTest extends AbstractTest
                     {
                         assertTrue(pushedStream.isReset());
                         assertTrue(pushedStream.isClosed());
-                        HeadersFrame response = new HeadersFrame(stream.getId(), new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields()), null, true);
+                        HeadersFrame response = new HeadersFrame(stream.getId(), new MetaData.Response(HttpVersion.HTTP_2, 200, HttpFields.EMPTY), null, true);
                         stream.headers(response, Callback.NOOP);
                         serverLatch.countDown();
                     }
@@ -276,7 +275,7 @@ public class StreamCloseTest extends AbstractTest
         });
 
         Session session = newClient(new Session.Listener.Adapter());
-        HeadersFrame frame = new HeadersFrame(newRequest("GET", new HttpFields()), null, true);
+        HeadersFrame frame = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         final CountDownLatch clientLatch = new CountDownLatch(2);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
         {
@@ -340,11 +339,11 @@ public class StreamCloseTest extends AbstractTest
         Session session = newClient(new Session.Listener.Adapter());
 
         // First stream will be idle on server.
-        HeadersFrame request1 = new HeadersFrame(newRequest("HEAD", new HttpFields()), null, true);
+        HeadersFrame request1 = new HeadersFrame(newRequest("HEAD", HttpFields.EMPTY), null, true);
         session.newStream(request1, new Promise.Adapter<>(), new Stream.Listener.Adapter());
 
         // Second stream will fail on server.
-        HeadersFrame request2 = new HeadersFrame(newRequest("GET", new HttpFields()), null, true);
+        HeadersFrame request2 = new HeadersFrame(newRequest("GET", HttpFields.EMPTY), null, true);
         session.newStream(request2, new Promise.Adapter<>(), new Stream.Listener.Adapter());
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
@@ -355,6 +354,8 @@ public class StreamCloseTest extends AbstractTest
 
         assertEquals(0, serverSession.getStreams().size());
         for (Stream stream : streams)
+        {
             assertTrue(stream.isClosed());
+        }
     }
 }

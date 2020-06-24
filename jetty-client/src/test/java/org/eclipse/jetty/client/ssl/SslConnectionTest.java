@@ -1,28 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.client.ssl;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.io.File;
 import java.nio.ByteBuffer;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLHandshakeException;
 
@@ -36,16 +33,17 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SslConnectionTest
 {
     @Test
     public void testSslConnectionClosedBeforeFill() throws Exception
     {
-        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.jks");
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        File keyStore = MavenTestingUtils.getTestResourceFile("keystore.p12");
+        SslContextFactory sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.start();
@@ -83,6 +81,6 @@ public class SslConnectionTest
         // We want SSLHandshakeException to be thrown instead, because it is
         // handled better (it is an IOException) by the Connection code that
         // reads from the EndPoint.
-        assertThrows(SSLHandshakeException.class, ()->sslEndPoint.fill(BufferUtil.EMPTY_BUFFER));
+        assertThrows(SSLHandshakeException.class, () -> sslEndPoint.fill(BufferUtil.EMPTY_BUFFER));
     }
 }

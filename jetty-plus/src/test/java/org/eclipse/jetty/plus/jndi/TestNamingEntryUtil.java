@@ -1,22 +1,31 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.plus.jndi;
+
+import java.util.List;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.Name;
+import javax.naming.NameNotFoundException;
+import javax.naming.NamingException;
+
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -27,22 +36,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.util.List;
-
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.Name;
-import javax.naming.NameNotFoundException;
-import javax.naming.NamingException;
-
-import org.junit.jupiter.api.Test;
-
 public class TestNamingEntryUtil
 {
     public class MyNamingEntry extends NamingEntry
     {
         public MyNamingEntry(Object scope, String name, Object value)
-        throws NamingException
+            throws NamingException
         {
             super(scope, name);
             save(value);
@@ -54,15 +53,15 @@ public class TestNamingEntryUtil
         @Override
         public String toString()
         {
-            return this.getClass().getName()+"@"+Long.toHexString(super.hashCode());
+            return this.getClass().getName() + "@" + Long.toHexString(super.hashCode());
         }
     }
 
     @Test
-    public void testGetNameForScope () throws Exception
+    public void testGetNameForScope() throws Exception
     {
         ScopeA scope = new ScopeA();
-        Name name  = NamingEntryUtil.getNameForScope(scope);
+        Name name = NamingEntryUtil.getNameForScope(scope);
         assertNotNull(name);
         assertEquals(scope.toString(), name.toString());
     }
@@ -101,7 +100,7 @@ public class TestNamingEntryUtil
     {
         Name name = NamingEntryUtil.makeNamingEntryName(null, "fee/fi/fo/fum");
         assertNotNull(name);
-        assertEquals(NamingEntry.__contextName+"/fee/fi/fo/fum", name.toString());
+        assertEquals(NamingEntry.__contextName + "/fee/fi/fo/fum", name.toString());
     }
 
     @Test
@@ -122,7 +121,7 @@ public class TestNamingEntryUtil
     public void testLookupNamingEntries() throws Exception
     {
         ScopeA scope = new ScopeA();
-        List<?> list = NamingEntryUtil.lookupNamingEntries(scope, MyNamingEntry.class);
+        List<? extends MyNamingEntry> list = NamingEntryUtil.lookupNamingEntries(scope, MyNamingEntry.class);
         assertThat(list, is(empty()));
 
         MyNamingEntry mne1 = new MyNamingEntry(scope, "a/b", 1);

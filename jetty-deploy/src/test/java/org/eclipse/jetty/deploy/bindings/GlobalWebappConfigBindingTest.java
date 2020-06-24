@@ -1,29 +1,22 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.deploy.bindings;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.isIn;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.File;
 import java.util.List;
@@ -40,6 +33,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests {@link ScanningAppProvider} as it starts up for the first time.
@@ -58,9 +58,8 @@ public class GlobalWebappConfigBindingTest
         jetty.addConfiguration("jetty-http.xml");
 
         // Setup initial context
-        jetty.copyWebapp("foo.xml","foo.xml");
-        jetty.copyWebapp("foo-webapp-1.war","foo.war");
-
+        jetty.copyWebapp("foo.xml", "foo.xml");
+        jetty.copyWebapp("foo-webapp-1.war", "foo.war");
     }
 
     @AfterEach
@@ -74,10 +73,10 @@ public class GlobalWebappConfigBindingTest
     public void testServerAndSystemClassesOverride() throws Exception
     {
         File srcXml = MavenTestingUtils.getTestResourceFile("context-binding-test-1.xml");
-        File destXml = new File(jetty.getJettyHome(),"context-binding-test-1.xml");
-        IO.copy(srcXml,destXml);
+        File destXml = new File(jetty.getJettyHome(), "context-binding-test-1.xml");
+        IO.copy(srcXml, destXml);
 
-        PathAssert.assertFileExists("Context Binding XML",destXml);
+        PathAssert.assertFileExists("Context Binding XML", destXml);
 
         jetty.addConfiguration("binding-test-contexts-1.xml");
         jetty.load();
@@ -89,10 +88,10 @@ public class GlobalWebappConfigBindingTest
         WebAppContext context = contexts.get(0);
 
         assertNotNull(context, "Context should not be null");
-        String currentClasses[] = context.getServerClasses();
+        String[] currentClasses = context.getServerClasses();
 
         String addedClass = "org.eclipse.foo."; // What was added by the binding
-        assertThat("Current Server Classes",addedClass,isIn(currentClasses));
+        assertThat("Current Server Classes", addedClass, is(in(currentClasses)));
 
         //  boolean jndiPackage = false;
 

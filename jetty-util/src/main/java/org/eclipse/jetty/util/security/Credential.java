@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2019 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 package org.eclipse.jetty.util.security;
@@ -21,11 +21,14 @@ package org.eclipse.jetty.util.security;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.List;
 import java.util.ServiceLoader;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Credentials. The Credential class represents an abstract mechanism for checking authentication credentials. A credential instance either represents a secret,
@@ -35,21 +38,22 @@ import org.eclipse.jetty.util.log.Logger;
  * only a credential that can be checked against the password.
  * <p>
  * This class includes an implementation for unix Crypt an MD5 digest.
- * 
+ *
  * @see Password
  */
 public abstract class Credential implements Serializable
 {
     private static final long serialVersionUID = -7760551052768181572L;
-    private static final Logger LOG = Log.getLogger(Credential.class);
-    private static final ServiceLoader<CredentialProvider> CREDENTIAL_PROVIDER_LOADER = ServiceLoader.load(CredentialProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Credential.class);
+    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = TypeUtil.serviceProviderStream(ServiceLoader.load(CredentialProvider.class))
+        .flatMap(p -> Stream.of(p.get()))
+        .collect(Collectors.toList());
 
     /**
      * Check a credential
-     * 
-     * @param credentials
-     *            The credential to check against. This may either be another Credential object, a Password object or a String which is interpreted by this
-     *            credential.
+     *
+     * @param credentials The credential to check against. This may either be another Credential object, a Password object or a String which is interpreted by this
+     * credential.
      * @return True if the credentials indicated that the shared secret is known to both this Credential and the passed credential.
      */
     public abstract boolean check(Object credentials);
@@ -58,9 +62,8 @@ public abstract class Credential implements Serializable
      * Get a credential from a String. If the credential String starts with a known Credential type (eg "CRYPT:" or "MD5:" ) then a Credential of that type is
      * returned. Otherwise, it tries to find a credential provider whose prefix matches with the start of the credential String. Else the credential is assumed
      * to be a Password.
-     * 
-     * @param credential
-     *            String representation of the credential
+     *
+     * @param credential String representation of the credential
      * @return A Credential or Password instance.
      */
     public static Credential getCredential(String credential)
@@ -70,7 +73,7 @@ public abstract class Credential implements Serializable
         if (credential.startsWith(MD5.__TYPE))
             return new MD5(credential);
 
-        for (CredentialProvider cp : CREDENTIAL_PROVIDER_LOADER)
+        for (CredentialProvider cp : CREDENTIAL_PROVIDERS)
         {
             if (credential.startsWith(cp.getPrefix()))
             {
@@ -105,7 +108,9 @@ public abstract class Credential implements Serializable
         int l1 = known.length();
         int l2 = unknown.length();
         for (int i = 0; i < l2; ++i)
-            result &= ((l1==0)?unknown.charAt(l2-i-1):known.charAt(i%l1)) == unknown.charAt(i);
+        {
+            result &= ((l1 == 0) ? unknown.charAt(l2 - i - 1) : known.charAt(i % l1)) == unknown.charAt(i);
+        }
         return result && l1 == l2;
     }
 
@@ -127,7 +132,9 @@ public abstract class Credential implements Serializable
         int l1 = known.length;
         int l2 = unknown.length;
         for (int i = 0; i < l2; ++i)
-            result &= ((l1==0)?unknown[l2-i-1]:known[i%l1]) == unknown[i];
+        {
+            result &= ((l1 == 0) ? unknown[l2 - i - 1] : known[i % l1]) == unknown[i];
+        }
         return result && l1 == l2;
     }
 
@@ -143,7 +150,7 @@ public abstract class Credential implements Serializable
 
         Crypt(String cooked)
         {
-            _cooked = cooked.startsWith(Crypt.__TYPE)?cooked.substring(__TYPE.length()):cooked;
+            _cooked = cooked.startsWith(Crypt.__TYPE) ? cooked.substring(__TYPE.length()) : cooked;
         }
 
         @Override
@@ -153,7 +160,7 @@ public abstract class Credential implements Serializable
                 credentials = new String((char[])credentials);
             if (!(credentials instanceof String) && !(credentials instanceof Password))
                 LOG.warn("Can't check " + credentials.getClass() + " against CRYPT");
-            return stringEquals(_cooked, UnixCrypt.crypt(credentials.toString(),_cooked));
+            return stringEquals(_cooked, UnixCrypt.crypt(credentials.toString(), _cooked));
         }
 
         @Override
@@ -232,7 +239,7 @@ public abstract class Credential implements Serializable
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Failed message digest", e);
                 return false;
             }
         }
@@ -260,7 +267,7 @@ public abstract class Credential implements Serializable
                         }
                         catch (Exception e)
                         {
-                            LOG.warn(e);
+                            LOG.warn("Unable to access MD5 message digest", e);
                             return null;
                         }
                     }
@@ -274,7 +281,7 @@ public abstract class Credential implements Serializable
             }
             catch (Exception e)
             {
-                LOG.warn(e);
+                LOG.warn("Message Digest failure", e);
                 return null;
             }
         }
