@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.io.EndPoint;
@@ -66,14 +65,18 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
 
     private static class ProxyAttributes extends Attributes.Wrapper
     {
-        private final InetSocketAddress remoteAddress;
-        private final InetSocketAddress localAddress;
+        private final String _remoteAddress;
+        private final String _localAddress;
+        private final int _remotePort;
+        private final int _localPort;
 
         private ProxyAttributes(InetSocketAddress remoteAddress, InetSocketAddress localAddress, Attributes attributes)
         {
             super(attributes);
-            this.remoteAddress = remoteAddress;
-            this.localAddress = localAddress;
+            _remoteAddress = remoteAddress.getAddress().getHostAddress();
+            _localAddress = localAddress.getAddress().getHostAddress();
+            _remotePort = remoteAddress.getPort();
+            _localPort = localAddress.getPort();
         }
 
         @Override
@@ -82,13 +85,13 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
             switch (name)
             {
                 case REMOTE_ADDRESS_ATTRIBUTE_NAME:
-                    return remoteAddress.getAddress().getHostAddress();
+                    return _remoteAddress;
                 case REMOTE_PORT_ATTRIBUTE_NAME:
-                    return remoteAddress.getPort();
+                    return _remotePort;
                 case LOCAL_ADDRESS_ATTRIBUTE_NAME:
-                    return localAddress.getAddress().getHostAddress();
+                    return _localAddress;
                 case LOCAL_PORT_ATTRIBUTE_NAME:
-                    return localAddress.getPort();
+                    return _localPort;
                 default:
                     return super.getAttribute(name);
             }
@@ -98,9 +101,14 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
         public Set<String> getAttributeNameSet()
         {
             Set<String> names = new HashSet<>(_attributes.getAttributeNameSet());
-            names.add(REMOTE_ADDRESS_ATTRIBUTE_NAME);
+            names.remove(REMOTE_ADDRESS_ATTRIBUTE_NAME);
+            names.remove(LOCAL_ADDRESS_ATTRIBUTE_NAME);
+
+            if (_remoteAddress != null)
+                names.add(REMOTE_ADDRESS_ATTRIBUTE_NAME);
+            if (_localAddress != null)
+                names.add(LOCAL_ADDRESS_ATTRIBUTE_NAME);
             names.add(REMOTE_PORT_ATTRIBUTE_NAME);
-            names.add(LOCAL_ADDRESS_ATTRIBUTE_NAME);
             names.add(LOCAL_PORT_ATTRIBUTE_NAME);
             return names;
         }
