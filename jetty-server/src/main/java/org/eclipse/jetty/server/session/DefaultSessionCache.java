@@ -20,7 +20,6 @@ package org.eclipse.jetty.server.session;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -134,7 +133,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Shutdown sessions, invalidating = {}", isInvalidateOnShutdown());
-        
+
         // loop over all the sessions in memory (a few times if necessary to catch sessions that have been
         // added while we're running
         int loop = 100;

@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -967,7 +966,7 @@ public class ResponseTest
 
         assertEquals("name=value; Path=/path; Domain=domain; Secure; HttpOnly", set);
     }
-    
+
     @Test
     public void testAddCookieInInclude() throws Exception
     {
@@ -984,7 +983,7 @@ public class ResponseTest
 
         assertNull(response.getHttpFields().get("Set-Cookie"));
     }
-    
+
     @Test
     public void testAddCookieSameSiteDefault() throws Exception
     {
@@ -1001,12 +1000,12 @@ public class ResponseTest
         response.addCookie(cookie);
         String set = response.getHttpFields().get("Set-Cookie");
         assertEquals("name=value; Path=/path; Domain=domain; Secure; HttpOnly; SameSite=Strict", set);
-        
+
         response.getHttpFields().remove("Set-Cookie");
-        
+
         //test bad default samesite value
         context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "FooBar");
-        
+
         assertThrows(IllegalStateException.class,
             () -> response.addCookie(cookie));
     }
@@ -1081,7 +1080,7 @@ public class ResponseTest
 
         response.setContentType("some/type");
         response.setContentLength(3);
-        response.setHeader(HttpHeader.EXPIRES,"never");
+        response.setHeader(HttpHeader.EXPIRES, "never");
 
         response.setHeader("SomeHeader", "SomeValue");
 
@@ -1149,7 +1148,7 @@ public class ResponseTest
         List<String> actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat("HttpCookie order", actual, hasItems(expected));
     }
-    
+
     @Test
     public void testReplaceHttpCookieSameSite()
     {
@@ -1191,7 +1190,7 @@ public class ResponseTest
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems(new String[]{"Foo=replaced; Path=/path; Domain=Bah"}));
     }
-    
+
     @Test
     public void testReplaceParsedHttpCookieSiteDefault()
     {
@@ -1199,7 +1198,7 @@ public class ResponseTest
         TestServletContextHandler context = new TestServletContextHandler();
         context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
         _channel.getRequest().setContext(context.getServletContext());
-        
+
         response.addHeader(HttpHeader.SET_COOKIE.asString(), "Foo=123456");
         response.replaceCookie(new HttpCookie("Foo", "value"));
         String set = response.getHttpFields().get("Set-Cookie");
@@ -1233,7 +1232,7 @@ public class ResponseTest
             super(handler, new SessionData(id, "", "0.0.0.0", 0, 0, 0, 300));
         }
     }
-    
+
     private static class TestServletContextHandler extends ContextHandler
     {
         private class Context extends ContextHandler.Context
@@ -1255,7 +1254,7 @@ public class ResponseTest
             @Override
             public void setAttribute(String name, Object object)
             {
-                _attributes.put(name,object);
+                _attributes.put(name, object);
             }
 
             @Override
