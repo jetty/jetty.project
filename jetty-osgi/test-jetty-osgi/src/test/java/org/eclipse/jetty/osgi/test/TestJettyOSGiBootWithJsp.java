@@ -20,7 +20,6 @@ package org.eclipse.jetty.osgi.test;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -54,7 +53,7 @@ public class TestJettyOSGiBootWithJsp
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>();
-        
+
         options.addAll(TestOSGiUtil.configurePaxExamLogging());
 
         options.add(CoreOptions.junitBundles());
