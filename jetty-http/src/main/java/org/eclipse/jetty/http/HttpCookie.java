@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -37,11 +36,11 @@ public class HttpCookie
     private static final String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
 
     /**
-     *If this string is found within the comment parsed with {@link #isHttpOnlyInComment(String)} the check will return true
+     * If this string is found within the comment parsed with {@link #isHttpOnlyInComment(String)} the check will return true
      **/
     public static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
     /**
-     *These strings are used by {@link #getSameSiteFromComment(String)} to check for a SameSite specifier in the comment
+     * These strings are used by {@link #getSameSiteFromComment(String)} to check for a SameSite specifier in the comment
      **/
     private static final String SAME_SITE_COMMENT = "__SAME_SITE_";
     public static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
@@ -474,10 +473,10 @@ public class HttpCookie
                 LOG.debug("No default value for SameSite");
             return null;
         }
-        
+
         if (o instanceof SameSite)
             return (SameSite)o;
-        
+
         try
         {
             SameSite samesite = Enum.valueOf(SameSite.class, o.toString().trim().toUpperCase(Locale.ENGLISH));
