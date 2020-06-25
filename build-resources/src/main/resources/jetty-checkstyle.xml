@@ -135,7 +135,7 @@
     <!-- ensure we don't have legacy comments that confuse javadoc tooling -->
     <module name="Regexp">
       <property name="id" value="LegacyMethodSeparators"/>
-      <property name="format" value="/\*\s*[=*-]*\s*\*/"/>
+      <property name="format" value="/\*\s*[=*-]+\s*\*/" />
       <property name="illegalPattern" value="true"/>
       <property name="ignoreComments" value="false"/>
       <property name="message" value="Legacy Method Separators"/>
