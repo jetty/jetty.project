@@ -149,7 +149,7 @@ public class Parser
             return false;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Parsed {} frame header from {}", headerParser, buffer);
+            LOG.debug("Parsed {} frame header from {}@{}", headerParser, buffer, Integer.toHexString(buffer.hashCode()));
 
         if (headerParser.getLength() > getMaxFrameLength())
             return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR, "invalid_frame_length");
@@ -199,7 +199,7 @@ public class Parser
                 return false;
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("Parsed {} frame body from {}", FrameType.from(type), buffer);
+            LOG.debug("Parsed {} frame body from {}@{}", FrameType.from(type), buffer, Integer.toHexString(buffer.hashCode()));
         reset();
         return true;
     }
