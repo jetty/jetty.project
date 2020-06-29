@@ -154,7 +154,7 @@ public class FilterMapping implements Dumpable
     boolean appliesTo(int type)
     {
         if (_dispatches == 0)
-            return type == REQUEST || type == ASYNC && _holder.isAsyncSupported();
+            return type == REQUEST || type == ASYNC && (_holder != null && _holder.isAsyncSupported());
         return (_dispatches & type) != 0;
     }
 

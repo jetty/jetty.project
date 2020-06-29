@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -448,6 +449,16 @@ public class ServletHandlerTest
         mappings = handler.getFilterMappings();
         assertEquals(4, mappings.length);
         assertTrue(fm5 == mappings[mappings.length - 1]);
+    }
+
+    @Test
+    public void testFilterMappingNoFilter() throws Exception
+    {
+        FilterMapping mapping = new FilterMapping();
+        mapping.setPathSpec("/*");
+        mapping.setFilterName("foo");
+        //default dispatch is REQUEST, and there is no holder to check for async supported
+        assertFalse(mapping.appliesTo(DispatcherType.ASYNC));
     }
 
     @Test
