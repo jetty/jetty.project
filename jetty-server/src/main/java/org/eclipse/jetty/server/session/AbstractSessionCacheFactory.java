@@ -31,6 +31,19 @@ public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
     boolean _saveOnCreate;
     boolean _removeUnloadableSessions;
     boolean _flushOnResponseCommit;
+    boolean _invalidateOnShutdown;
+    
+    public abstract SessionCache newSessionCache(SessionHandler handler);
+
+    public boolean isInvalidateOnShutdown()
+    {
+        return _invalidateOnShutdown;
+    }
+
+    public void setInvalidateOnShutdown(boolean invalidateOnShutdown)
+    {
+        _invalidateOnShutdown = invalidateOnShutdown;
+    }
 
     /**
      * @return the flushOnResponseCommit
@@ -110,5 +123,18 @@ public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
     public void setSaveOnInactiveEvict(boolean saveOnInactiveEvict)
     {
         _saveOnInactiveEvict = saveOnInactiveEvict;
+    }
+
+    @Override
+    public SessionCache getSessionCache(SessionHandler handler)
+    {
+        SessionCache cache = newSessionCache(handler);
+        cache.setEvictionPolicy(getEvictionPolicy());
+        cache.setSaveOnInactiveEviction(isSaveOnInactiveEvict());
+        cache.setSaveOnCreate(isSaveOnCreate());
+        cache.setRemoveUnloadableSessions(isRemoveUnloadableSessions());
+        cache.setFlushOnResponseCommit(isFlushOnResponseCommit());
+        cache.setInvalidateOnShutdown(isInvalidateOnShutdown());
+        return cache;
     }
 }

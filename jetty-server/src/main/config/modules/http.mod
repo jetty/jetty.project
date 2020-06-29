@@ -34,7 +34,7 @@ etc/jetty-http.xml
 # jetty.http.selectors=-1
 
 ## ServerSocketChannel backlog (0 picks platform default)
-# jetty.http.acceptorQueueSize=0
+# jetty.http.acceptQueueSize=0
 
 ## Thread priority delta to give to acceptor threads
 # jetty.http.acceptorPriorityDelta=0

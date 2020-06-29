@@ -305,9 +305,10 @@ public interface Stream
          * @param stream the stream
          * @param error the error code
          * @param reason the error reason, or null
+         * @param failure the failure
          * @param callback the callback to complete when the failure has been handled
          */
-        public default void onFailure(Stream stream, int error, String reason, Callback callback)
+        public default void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
         {
             callback.succeeded();
         }

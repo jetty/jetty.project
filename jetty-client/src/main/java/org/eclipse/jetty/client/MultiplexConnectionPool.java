@@ -40,7 +40,6 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiplexConnectionPool.class);
 
-    private final HttpDestination destination;
     private final Deque<Holder> idleConnections;
     private final Map<Connection, Holder> activeConnections;
     private int maxMultiplex;
@@ -48,23 +47,34 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     public MultiplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
         super(destination, maxConnections, requester);
-        this.destination = destination;
         this.idleConnections = new ArrayDeque<>(maxConnections);
         this.activeConnections = new LinkedHashMap<>(maxConnections);
         this.maxMultiplex = maxMultiplex;
     }
 
     @Override
-    public Connection acquire()
+    public Connection acquire(boolean create)
     {
         Connection connection = activate();
         if (connection == null)
         {
-            int maxPending = 1 + destination.getQueuedRequestCount() / getMaxMultiplex();
+            int queuedRequests = getHttpDestination().getQueuedRequestCount();
+            int maxMultiplex = getMaxMultiplex();
+            int maxPending = ceilDiv(queuedRequests, maxMultiplex);
             tryCreate(maxPending);
             connection = activate();
         }
         return connection;
+    }
+
+    /**
+     * @param a the dividend
+     * @param b the divisor
+     * @return the ceiling of the algebraic quotient
+     */
+    private static int ceilDiv(int a, int b)
+    {
+        return (a + b - 1) / b;
     }
 
     @Override

@@ -34,21 +34,31 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class FooContextListener implements ServletContextListener
 {
+    static int ___initialized;
+    static int __destroyed;
+
     @Override
     public void contextInitialized(ServletContextEvent sce)
     {
+        ++___initialized;
+
         ServletRegistration defaultRego = sce.getServletContext().getServletRegistration("default");
         Collection<String> mappings = defaultRego.getMappings();
         assertThat("/", is(in(mappings)));
 
-        Set<String> otherMappings = sce.getServletContext().getServletRegistration("foo").addMapping("/");
-        assertTrue(otherMappings.isEmpty());
-        Collection<String> fooMappings = sce.getServletContext().getServletRegistration("foo").getMappings();
-        assertThat("/", is(in(fooMappings)));
+        ServletRegistration rego = sce.getServletContext().getServletRegistration("foo");
+        if (rego != null)
+        {
+            Set<String> otherMappings = rego.addMapping("/");
+            assertTrue(otherMappings.isEmpty());
+            Collection<String> fooMappings = rego.getMappings();
+            assertThat("/", is(in(fooMappings)));
+        }
     }
 
     @Override
     public void contextDestroyed(ServletContextEvent sce)
     {
+        ++__destroyed;
     }
 }

@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.io.EndPoint;

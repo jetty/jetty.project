@@ -30,6 +30,10 @@
         <configuration>
           <mainClass>org.eclipse.jetty.http2.server.H2SpecServer</mainClass>
           <skip>${skipTests}</skip>
+          <excludeSpecs>
+            <!-- see: https://github.com/summerwind/h2spec/issues/115 -->
+            <excludeSpec>6.9.2 - Changes SETTINGS_INITIAL_WINDOW_SIZE after sending HEADERS frame</excludeSpec>
+          </excludeSpecs>
         </configuration>
         <executions>
           <execution>

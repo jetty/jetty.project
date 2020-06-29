@@ -29,7 +29,6 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
-import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -116,17 +115,6 @@ public class HTTP2ClientSession extends HTTP2Session
                     onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_headers_frame");
             }
         }
-    }
-
-    @Override
-    protected void onResetForUnknownStream(ResetFrame frame)
-    {
-        int streamId = frame.getStreamId();
-        boolean closed = isClientStream(streamId) ? isLocalStreamClosed(streamId) : isRemoteStreamClosed(streamId);
-        if (closed)
-            notifyReset(this, frame);
-        else
-            onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_rst_stream_frame");
     }
 
     @Override

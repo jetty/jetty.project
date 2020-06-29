@@ -57,4 +57,4 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 # jetty.unixsocket.selectors=-1
 
 ## ServerSocketChannel backlog (0 picks platform default)
-# jetty.unixsocket.acceptorQueueSize=0
+# jetty.unixsocket.acceptQueueSize=0

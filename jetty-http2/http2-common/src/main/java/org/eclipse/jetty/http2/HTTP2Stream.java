@@ -151,7 +151,6 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     {
         if (writing.compareAndSet(null, callback))
             return true;
-        close();
         callback.failed(new WritePendingException());
         return false;
     }
@@ -190,7 +189,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     public boolean isRemotelyClosed()
     {
         CloseState state = closeState.get();
-        return state == CloseState.REMOTELY_CLOSED || state == CloseState.CLOSING;
+        return state == CloseState.REMOTELY_CLOSED || state == CloseState.CLOSING || state == CloseState.CLOSED;
     }
 
     public boolean isLocallyClosed()
@@ -345,7 +344,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         if (dataLength != Long.MIN_VALUE)
         {
             dataLength -= frame.remaining();
-            if (frame.isEndStream() && dataLength != 0)
+            if (dataLength < 0 || (frame.isEndStream() && dataLength != 0))
             {
                 reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR.code), Callback.NOOP);
                 callback.failed(new IOException("invalid_data_length"));
@@ -462,6 +461,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private void onFailure(FailureFrame frame, Callback callback)
     {
+        // Don't close or remove the stream, as the listener may
+        // want to use it, for example to send a RST_STREAM frame.
         notifyFailure(this, frame, callback);
     }
 
@@ -749,7 +750,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         {
             try
             {
-                listener.onFailure(stream, frame.getError(), frame.getReason(), callback);
+                listener.onFailure(stream, frame.getError(), frame.getReason(), frame.getFailure(), callback);
             }
             catch (Throwable x)
             {
@@ -793,10 +794,11 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,demand=%d,reset=%b/%b,%s,age=%d,attachment=%s}",
+        return String.format("%s@%x#%d@%x{sendWindow=%s,recvWindow=%s,demand=%d,reset=%b/%b,%s,age=%d,attachment=%s}",
             getClass().getSimpleName(),
             hashCode(),
             getId(),
+            session.hashCode(),
             sendWindow,
             recvWindow,
             demand(),

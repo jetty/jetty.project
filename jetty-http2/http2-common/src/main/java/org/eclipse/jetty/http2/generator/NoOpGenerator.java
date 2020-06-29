@@ -21,9 +21,9 @@ package org.eclipse.jetty.http2.generator;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.io.ByteBufferPool;
 
-public class DisconnectGenerator extends FrameGenerator
+public class NoOpGenerator extends FrameGenerator
 {
-    public DisconnectGenerator()
+    public NoOpGenerator()
     {
         super(null);
     }

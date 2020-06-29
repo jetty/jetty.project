@@ -105,6 +105,8 @@ public abstract class HttpConnection implements IConnection
             }
             else
             {
+                // Association may fail, for example if the application
+                // aborted the request, so we must release the channel.
                 channel.release();
                 result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
             }
@@ -119,6 +121,8 @@ public abstract class HttpConnection implements IConnection
         }
         else
         {
+            // This connection has been timed out by another thread
+            // that will take care of removing it from the pool.
             return new SendFailure(new TimeoutException(), true);
         }
     }
@@ -187,19 +191,18 @@ public abstract class HttpConnection implements IConnection
         }
 
         // Cookies
+        StringBuilder cookies = convertCookies(request.getCookies(), null);
         CookieStore cookieStore = getHttpClient().getCookieStore();
         if (cookieStore != null && cookieStore.getClass() != HttpCookieStore.Empty.class)
         {
-            StringBuilder cookies = null;
             URI uri = request.getURI();
             if (uri != null)
-                cookies = convertCookies(HttpCookieStore.matchPath(uri, cookieStore.get(uri)), null);
-            cookies = convertCookies(request.getCookies(), cookies);
-            if (cookies != null)
-            {
-                HttpField cookieField = new HttpField(HttpHeader.COOKIE, cookies.toString());
-                request.addHeader(cookieField);
-            }
+                cookies = convertCookies(HttpCookieStore.matchPath(uri, cookieStore.get(uri)), cookies);
+        }
+        if (cookies != null)
+        {
+            HttpField cookieField = new HttpField(HttpHeader.COOKIE, cookies.toString());
+            request.addHeader(cookieField);
         }
 
         // Authentication

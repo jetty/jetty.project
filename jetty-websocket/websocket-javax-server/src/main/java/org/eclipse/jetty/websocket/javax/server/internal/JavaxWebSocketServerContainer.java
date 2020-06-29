@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.javax.server.internal;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -36,10 +37,12 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.javax.server.config.ContainerDefaultConfigurator;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.util.InvalidSignatureException;
+import org.eclipse.jetty.websocket.util.ReflectUtils;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,28 +163,63 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         return frameHandlerFactory;
     }
 
+    private void validateEndpointConfig(ServerEndpointConfig config) throws DeploymentException
+    {
+        if (config == null)
+        {
+            throw new DeploymentException("Unable to deploy null ServerEndpointConfig");
+        }
+
+        ServerEndpointConfig.Configurator configurator = config.getConfigurator();
+        if (configurator == null)
+        {
+            throw new DeploymentException("Unable to deploy with null ServerEndpointConfig.Configurator");
+        }
+
+        Class<?> endpointClass = config.getEndpointClass();
+        if (endpointClass == null)
+        {
+            throw new DeploymentException("Unable to deploy null endpoint class from ServerEndpointConfig: " + config.getClass().getName());
+        }
+
+        if (!Modifier.isPublic(endpointClass.getModifiers()))
+        {
+            throw new DeploymentException("Class is not public: " + endpointClass.getName());
+        }
+
+        if (configurator.getClass() == ContainerDefaultConfigurator.class)
+        {
+            if (!ReflectUtils.isDefaultConstructable(endpointClass))
+            {
+                throw new DeploymentException("Cannot access default constructor for the class: " + endpointClass.getName());
+            }
+        }
+    }
+
+    @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
         if (endpointClass == null)
         {
-            throw new DeploymentException("EndpointClass is null");
+            throw new DeploymentException("Unable to deploy null endpoint class");
         }
 
         if (isStarted() || isStarting())
         {
-            try
+            ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
+            if (anno == null)
             {
-                ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
-                if (anno == null)
-                    throw new DeploymentException(String.format("Class must be @%s annotated: %s", ServerEndpoint.class.getName(), endpointClass.getName()));
+                throw new DeploymentException(String.format("Class must be @%s annotated: %s", ServerEndpoint.class.getName(), endpointClass.getName()));
+            }
 
-                ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
-                addEndpointMapping(config);
-            }
-            catch (WebSocketException e)
+            if (LOG.isDebugEnabled())
             {
-                throw new DeploymentException("Unable to deploy: " + endpointClass.getName(), e);
+                LOG.debug("addEndpoint({})", endpointClass);
             }
+
+            ServerEndpointConfig config = new AnnotatedServerEndpointConfig(this, endpointClass, anno);
+            validateEndpointConfig(config);
+            addEndpointMapping(config);
         }
         else
         {
@@ -199,23 +237,17 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
 
         if (isStarted() || isStarting())
         {
+            // If we have annotations merge the annotated ServerEndpointConfig with the provided one.
             Class<?> endpointClass = providedConfig.getEndpointClass();
-            try
-            {
-                // If we have annotations merge the annotated ServerEndpointConfig with the provided one.
-                ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
-                ServerEndpointConfig config = (anno == null) ? providedConfig
-                    : new AnnotatedServerEndpointConfig(this, endpointClass, anno, providedConfig);
+            ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
+            ServerEndpointConfig config = (anno == null) ? providedConfig
+                : new AnnotatedServerEndpointConfig(this, endpointClass, anno, providedConfig);
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), endpointClass);
+            if (LOG.isDebugEnabled())
+                LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), endpointClass);
 
-                addEndpointMapping(config);
-            }
-            catch (WebSocketException e)
-            {
-                throw new DeploymentException("Unable to deploy: " + endpointClass.getName(), e);
-            }
+            validateEndpointConfig(config);
+            addEndpointMapping(config);
         }
         else
         {
@@ -225,14 +257,23 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         }
     }
 
-    private void addEndpointMapping(ServerEndpointConfig config) throws WebSocketException
+    private void addEndpointMapping(ServerEndpointConfig config) throws DeploymentException
     {
-        frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
-
-        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, getExtensionRegistry());
-
-        PathSpec pathSpec = new UriTemplatePathSpec(config.getPath());
-        webSocketMapping.addMapping(pathSpec, creator, frameHandlerFactory, defaultCustomizer);
+        try
+        {
+            frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
+            JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, getExtensionRegistry());
+            PathSpec pathSpec = new UriTemplatePathSpec(config.getPath());
+            webSocketMapping.addMapping(pathSpec, creator, frameHandlerFactory, defaultCustomizer);
+        }
+        catch (InvalidSignatureException e)
+        {
+            throw new DeploymentException(e.getMessage(), e);
+        }
+        catch (Throwable t)
+        {
+            throw new DeploymentException("Unable to deploy: " + config.getEndpointClass().getName(), t);
+        }
     }
 
     @Override

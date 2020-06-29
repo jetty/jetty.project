@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -37,22 +36,26 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractConnectionPool.class);
 
-    private final AtomicBoolean closed = new AtomicBoolean();
-
     /**
      * The connectionCount encodes both the total connections plus the pending connection counts, so both can be atomically changed.
      * The bottom 32 bits represent the total connections and the top 32 bits represent the pending connections.
      */
     private final AtomicBiInteger connections = new AtomicBiInteger();
-    private final Destination destination;
+    private final AtomicBoolean closed = new AtomicBoolean();
+    private final HttpDestination destination;
     private final int maxConnections;
     private final Callback requester;
 
-    protected AbstractConnectionPool(Destination destination, int maxConnections, Callback requester)
+    protected AbstractConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
     {
         this.destination = destination;
         this.maxConnections = maxConnections;
         this.requester = requester;
+    }
+
+    protected HttpDestination getHttpDestination()
+    {
+        return destination;
     }
 
     @ManagedAttribute(value = "The max number of connections", readonly = true)
@@ -86,17 +89,28 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     }
 
     @Override
-    public Connection acquire()
+    public Connection acquire(boolean create)
     {
         Connection connection = activate();
         if (connection == null)
         {
-            tryCreate(-1);
+            if (create)
+                tryCreate(destination.getQueuedRequestCount());
             connection = activate();
         }
         return connection;
     }
 
+    /**
+     * <p>Schedules the opening of a new connection.</p>
+     * <p>Whether a new connection is scheduled for opening is determined by the {@code maxPending} parameter:
+     * if {@code maxPending} is greater than the current number of connections scheduled for opening,
+     * then this method returns without scheduling the opening of a new connection;
+     * if {@code maxPending} is negative, a new connection is always scheduled for opening.</p>
+     *
+     * @param maxPending the max desired number of connections scheduled for opening,
+     * or a negative number to always trigger the opening of a new connection
+     */
     protected void tryCreate(int maxPending)
     {
         while (true)

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.http2.client.http;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
@@ -208,10 +206,10 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
 
         @Override
-        public void onFailure(Stream stream, int error, String reason, Callback callback)
+        public void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((IStream)stream).getAttachment();
-            channel.onFailure(new IOException(String.format("Failure %s/%s", ErrorCode.toString(error, null), reason)), callback);
+            channel.onFailure(failure, callback);
         }
 
         @Override

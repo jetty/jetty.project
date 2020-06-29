@@ -79,7 +79,7 @@ public class TestQuickStart
         fooHolder.setName("foo");
         quickstart.getServletHandler().addServlet(fooHolder);
         ListenerHolder lholder = new ListenerHolder();
-        lholder.setListener(new FooContextListener());
+        lholder.setClassName("org.eclipse.jetty.quickstart.FooContextListener");
         quickstart.getServletHandler().addListener(lholder);
         server.setHandler(quickstart);
         server.setDryRun(true);
@@ -176,5 +176,31 @@ public class TestQuickStart
         
         assertEquals("ascii", webapp.getDefaultRequestCharacterEncoding());
         assertEquals("utf-16", webapp.getDefaultResponseCharacterEncoding());
+    }
+    
+    @Test
+    public void testListenersNotCalledInPreConfigure() throws Exception
+    {
+        File quickstartXml = new File(webInf, "quickstart-web.xml");
+        assertFalse(quickstartXml.exists());
+        
+        Server server = new Server();
+        
+        WebAppContext quickstart = new WebAppContext();
+        quickstart.addConfiguration(new QuickStartConfiguration());
+        quickstart.setAttribute(QuickStartConfiguration.MODE, QuickStartConfiguration.Mode.GENERATE);
+        quickstart.setAttribute(QuickStartConfiguration.ORIGIN_ATTRIBUTE, "origin");
+
+        //add a listener directly to the ContextHandler so it is there when we start -
+        //if you add them to the ServletHandler (like StandardDescriptorProcessor does)
+        //then they are not added to the ContextHandler in a pre-generate.
+        quickstart.addEventListener(new FooContextListener());
+        quickstart.setResourceBase(testDir.getAbsolutePath());
+        server.setHandler(quickstart);
+        server.setDryRun(true);
+
+        server.start();
+        assertTrue(quickstartXml.exists());
+        assertEquals(0, FooContextListener.___initialized);
     }
 }
