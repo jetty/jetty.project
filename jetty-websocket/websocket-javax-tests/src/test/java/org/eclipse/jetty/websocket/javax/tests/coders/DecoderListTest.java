@@ -18,36 +18,50 @@
 
 package org.eclipse.jetty.websocket.javax.tests.coders;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.websocket.Decoder;
-import javax.websocket.OnMessage;
+import javax.websocket.DeploymentException;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.MessageHandler;
 import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
+import javax.websocket.server.ServerContainer;
+import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.common.decoders.AbstractDecoder;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.javax.tests.EventSocket;
 import org.eclipse.jetty.websocket.javax.tests.WSURI;
+import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DecoderListTest
 {
     private Server server;
+    private ServletContextHandler contextHandler;
     private URI serverUri;
     private JavaxWebSocketClientContainer client;
 
@@ -58,13 +72,9 @@ public class DecoderListTest
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler contextHandler = new ServletContextHandler();
+        contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
-        JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            container.addEndpoint(DecoderListEndpoint.class));
-        server.start();
-        serverUri = WSURI.toWebsocket(server.getURI());
 
         client = new JavaxWebSocketClientContainer();
         client.start();
@@ -75,6 +85,19 @@ public class DecoderListTest
     {
         server.stop();
         client.stop();
+    }
+
+    public interface CheckedConsumer<T>
+    {
+        void accept(T t) throws DeploymentException;
+    }
+
+    public void start(CheckedConsumer<ServerContainer> containerConsumer) throws Exception
+    {
+        JavaxWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
+            containerConsumer.accept(container));
+        server.start();
+        serverUri = WSURI.toWebsocket(server.getURI());
     }
 
     public static Stream<Arguments> getTextArguments()
@@ -102,6 +125,14 @@ public class DecoderListTest
     @MethodSource("getTextArguments")
     public void testTextDecoderList(String request, String expected) throws Exception
     {
+        start(container ->
+        {
+            ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(TextDecoderListEndpoint.class, "/")
+                .decoders(List.of(EqualsTextDecoder.class, PlusTextDecoder.class, MinusTextDecoder.class))
+                .build();
+            container.addEndpoint(endpointConfig);
+        });
+
         EventSocket clientEndpoint = new EventSocket();
         Session session = client.connectToServer(clientEndpoint, serverUri);
         session.getBasicRemote().sendText(request);
@@ -113,6 +144,14 @@ public class DecoderListTest
     @MethodSource("getBinaryArguments")
     public void testBinaryDecoderList(String request, String expected) throws Exception
     {
+        start(container ->
+        {
+            ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(BinaryDecoderListEndpoint.class, "/")
+                .decoders(List.of(EqualsBinaryDecoder.class, PlusBinaryDecoder.class, MinusBinaryDecoder.class))
+                .build();
+            container.addEndpoint(endpointConfig);
+        });
+
         EventSocket clientEndpoint = new EventSocket();
         Session session = client.connectToServer(clientEndpoint, serverUri);
         session.getBasicRemote().sendBinary(BufferUtil.toBuffer(request));
@@ -120,20 +159,94 @@ public class DecoderListTest
         assertThat(BufferUtil.toString(response), is(expected));
     }
 
-    @ServerEndpoint(value = "/", decoders = {EqualsTextDecoder.class, PlusTextDecoder.class, MinusTextDecoder.class,
-                                             EqualsBinaryDecoder.class, PlusBinaryDecoder.class, MinusBinaryDecoder.class})
-    public static class DecoderListEndpoint
+    @Test
+    public void testDecoderOrder() throws Exception
     {
-        @OnMessage
-        public String echo(String message)
+        start(container ->
         {
-            return message;
+            ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(TextDecoderListEndpoint.class, "/")
+                .decoders(List.of(AppendingPlusDecoder.class, AppendingMinusDecoder.class))
+                .build();
+            container.addEndpoint(endpointConfig);
+        });
+
+        // The AppendingPlusDecoder should be the one used as it was first in the list.
+        EventSocket clientEndpoint = new EventSocket();
+        Session session = client.connectToServer(clientEndpoint, serverUri);
+        session.getBasicRemote().sendText("");
+        String response = clientEndpoint.textMessages.poll(3, TimeUnit.SECONDS);
+        assertThat(response, is("+"));
+    }
+
+    @Test
+    public void testStreamDecoders()
+    {
+        // Stream decoders will not be able to form a decoder list as they don't implement willDecode().
+        Throwable error = assertThrows(Throwable.class, () ->
+            start(container ->
+            {
+                ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(TextDecoderListEndpoint.class, "/")
+                    .decoders(List.of(TextStreamDecoder1.class, TextStreamDecoder2.class))
+                    .build();
+                container.addEndpoint(endpointConfig);
+            })
+        );
+
+        assertThat(error, instanceOf(RuntimeException.class));
+        Throwable cause = error.getCause();
+        assertThat(cause, instanceOf(DeploymentException.class));
+        Throwable invalidWebSocketException = cause.getCause();
+        assertThat(invalidWebSocketException, instanceOf(InvalidWebSocketException.class));
+        assertThat(invalidWebSocketException.getMessage(), containsString("Multiple decoders for objectTypeclass java.lang.String"));
+    }
+
+    public static class TextDecoderListEndpoint extends Endpoint
+    {
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
+        {
+            session.addMessageHandler(new PartialTextHandler(session));
+        }
+    }
+
+    public static class BinaryDecoderListEndpoint extends Endpoint
+    {
+        @Override
+        public void onOpen(Session session, EndpointConfig config)
+        {
+            session.addMessageHandler(new PartialBinaryHandler(session));
+        }
+    }
+
+    private static class PartialTextHandler implements MessageHandler.Whole<String>
+    {
+        private final Session _session;
+
+        public PartialTextHandler(Session session)
+        {
+            _session = session;
         }
 
-        @OnMessage
-        public ByteBuffer echo(ByteBufferWrapper message)
+        @Override
+        public void onMessage(String message)
         {
-            return message.getByteBuffer();
+            _session.getAsyncRemote().sendText(message);
+        }
+    }
+
+    private static class PartialBinaryHandler implements MessageHandler.Whole<ByteBufferWrapper>
+    {
+        private final Session _session;
+
+        public PartialBinaryHandler(Session session)
+        {
+            _session = session;
+        }
+
+        @Override
+        public void onMessage(ByteBufferWrapper message)
+        {
+            _session.getAsyncRemote().sendBinary(message.getByteBuffer());
         }
     }
 
@@ -200,6 +313,40 @@ public class DecoderListTest
         }
     }
 
+    public static class AppendingPlusDecoder extends AppendingStringDecoder
+    {
+        public AppendingPlusDecoder()
+        {
+            super("+");
+        }
+    }
+
+    public static class AppendingMinusDecoder extends AppendingStringDecoder
+    {
+        public AppendingMinusDecoder()
+        {
+            super("-");
+        }
+    }
+
+    public static class TextStreamDecoder1 extends AbstractDecoder implements Decoder.TextStream<String>
+    {
+        @Override
+        public String decode(Reader reader) throws IOException
+        {
+            return "Decoder1: " + IO.toString(reader);
+        }
+    }
+
+    public static class TextStreamDecoder2 extends AbstractDecoder implements Decoder.TextStream<String>
+    {
+        @Override
+        public String decode(Reader reader) throws IOException
+        {
+            return "Decoder2: " + IO.toString(reader);
+        }
+    }
+
     public static class ByteBufferWrapperDecoder extends AbstractDecoder implements Decoder.Binary<ByteBufferWrapper>
     {
         private final String prefix;
@@ -242,6 +389,28 @@ public class DecoderListTest
         public boolean willDecode(String s)
         {
             return s.startsWith(prefix);
+        }
+    }
+
+    public static class AppendingStringDecoder extends AbstractDecoder implements Decoder.Text<String>
+    {
+        private final String s;
+
+        public AppendingStringDecoder(String prefix)
+        {
+            this.s = prefix;
+        }
+
+        @Override
+        public String decode(String message)
+        {
+            return message + s;
+        }
+
+        @Override
+        public boolean willDecode(String message)
+        {
+            return true;
         }
     }
 }

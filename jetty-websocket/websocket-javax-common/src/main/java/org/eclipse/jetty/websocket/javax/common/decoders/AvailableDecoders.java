@@ -21,8 +21,8 @@ package org.eclipse.jetty.websocket.javax.common.decoders;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -36,12 +36,14 @@ import org.eclipse.jetty.websocket.util.ReflectUtils;
 
 public class AvailableDecoders implements Iterable<RegisteredDecoder>
 {
-    private final List<RegisteredDecoder> registeredDecoders = new LinkedList<>();
+    private final List<RegisteredDecoder> registeredDecoders = new ArrayList<>();
     private final EndpointConfig config;
 
     public AvailableDecoders(EndpointConfig config)
     {
+        // Register the Config Based Decoders.
         this.config = Objects.requireNonNull(config);
+        registerAll(config.getDecoders());
 
         // TEXT based [via Class reference]
         registerPrimitive(BooleanDecoder.class, Decoder.Text.class, Boolean.class);
@@ -71,9 +73,6 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
         // STREAMING based
         registerPrimitive(ReaderDecoder.class, Decoder.TextStream.class, Reader.class);
         registerPrimitive(InputStreamDecoder.class, Decoder.BinaryStream.class, InputStream.class);
-
-        // Config Based
-        registerAll(config.getDecoders());
     }
 
     private void registerPrimitive(Class<? extends Decoder> decoderClass, Class<? extends Decoder> interfaceType, Class<?> type)
@@ -157,8 +156,7 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
                 return;
         }
 
-        // TODO: explain ordering of Decoders and why this is added at position 0.
-        registeredDecoders.add(0, new RegisteredDecoder(decoder, interfaceClass, objectType, config));
+        registeredDecoders.add(new RegisteredDecoder(decoder, interfaceClass, objectType, config));
     }
 
     public RegisteredDecoder getFirstRegisteredDecoder(Class<?> type)
