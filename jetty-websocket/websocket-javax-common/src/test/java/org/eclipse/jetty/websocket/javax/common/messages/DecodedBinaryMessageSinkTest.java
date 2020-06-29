@@ -132,7 +132,6 @@ public class DecodedBinaryMessageSinkTest extends AbstractMessageSinkTest
     @SuppressWarnings("Duplicates")
     public static class GmtDecoder implements Decoder.Binary<Calendar>
     {
-
         @Override
         public Calendar decode(ByteBuffer buffer) throws DecodeException
         {

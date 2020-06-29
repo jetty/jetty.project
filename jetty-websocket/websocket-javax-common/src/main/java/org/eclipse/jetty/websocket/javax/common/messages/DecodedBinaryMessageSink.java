@@ -32,9 +32,13 @@ import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactor
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.util.messages.ByteBufferMessageSink;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DecodedBinaryMessageSink<T> extends AbstractDecodedMessageSink.Basic<Decoder.Binary<T>>
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DecodedBinaryMessageSink.class);
+
     public DecodedBinaryMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
     {
         super(session, methodHandle, decoders);
@@ -43,10 +47,10 @@ public class DecodedBinaryMessageSink<T> extends AbstractDecodedMessageSink.Basi
     @Override
     MessageSink getMessageSink() throws Exception
     {
-        MethodHandle methodHandle = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(DecodedBinaryMessageSink.class,
-            "onWholeMessage", MethodType.methodType(void.class, ByteBuffer.class))
+        MethodHandle methodHandle = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
+            .findVirtual(DecodedBinaryMessageSink.class, "onWholeMessage", MethodType.methodType(void.class, ByteBuffer.class))
             .bindTo(this);
-        return new ByteBufferMessageSink(_coreSession, methodHandle);
+        return new ByteBufferMessageSink(getCoreSession(), methodHandle);
     }
 
     @SuppressWarnings("Duplicates")
@@ -59,7 +63,7 @@ public class DecodedBinaryMessageSink<T> extends AbstractDecodedMessageSink.Basi
                 try
                 {
                     T obj = decoder.decode(wholeMessage);
-                    _methodHandle.invoke(obj);
+                    getMethodHandle().invoke(obj);
                     return;
                 }
                 catch (DecodeException e)
@@ -73,6 +77,6 @@ public class DecodedBinaryMessageSink<T> extends AbstractDecodedMessageSink.Basi
             }
         }
 
-        _logger.warn("Message lost, willDecode() has returned false for all decoders in the decoder list.");
+        LOG.warn("Message lost, willDecode() has returned false for all decoders in the decoder list.");
     }
 }

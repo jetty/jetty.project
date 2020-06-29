@@ -46,7 +46,7 @@ public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink.
         MethodHandle methodHandle = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(DecodedTextStreamMessageSink.class,
             "onStreamStart", MethodType.methodType(void.class, Reader.class))
             .bindTo(this);
-        return new ReaderMessageSink(_coreSession, methodHandle);
+        return new ReaderMessageSink(getCoreSession(), methodHandle);
     }
 
     @SuppressWarnings("Duplicates")
@@ -55,7 +55,7 @@ public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink.
         try
         {
             T obj = _decoder.decode(reader);
-            _methodHandle.invoke(obj);
+            getMethodHandle().invoke(obj);
         }
         catch (DecodeException e)
         {

@@ -33,14 +33,14 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractDecodedMessageSink implements MessageSink
 {
-    protected final Logger _logger;
-    protected final CoreSession _coreSession;
-    protected final MethodHandle _methodHandle;
-    protected final MessageSink _messageSink;
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractDecodedMessageSink.class);
+
+    private final CoreSession _coreSession;
+    private final MethodHandle _methodHandle;
+    private final MessageSink _messageSink;
 
     public AbstractDecodedMessageSink(CoreSession coreSession, MethodHandle methodHandle)
     {
-        _logger = LoggerFactory.getLogger(getClass());
         _coreSession = coreSession;
         _methodHandle = methodHandle;
 
@@ -55,6 +55,16 @@ public abstract class AbstractDecodedMessageSink implements MessageSink
         }
     }
 
+    public CoreSession getCoreSession()
+    {
+        return _coreSession;
+    }
+
+    public MethodHandle getMethodHandle()
+    {
+        return _methodHandle;
+    }
+
     /**
      * @return a message sink which will first decode the message then pass it to {@link #_methodHandle}.
      * @throws Exception for any error in creating the message sink.
@@ -64,8 +74,8 @@ public abstract class AbstractDecodedMessageSink implements MessageSink
     @Override
     public void accept(Frame frame, Callback callback)
     {
-        if (_logger.isDebugEnabled())
-            _logger.debug("accepting frame {} for {}", frame, _messageSink);
+        if (LOG.isDebugEnabled())
+            LOG.debug("accepting frame {} for {}", frame, _messageSink);
         _messageSink.accept(frame, callback);
     }
 

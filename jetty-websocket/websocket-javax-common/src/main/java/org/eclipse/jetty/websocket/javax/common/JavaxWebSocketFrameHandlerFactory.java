@@ -25,6 +25,7 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
+import javax.websocket.PongMessage;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
@@ -57,7 +59,6 @@ import org.eclipse.jetty.websocket.util.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.util.messages.PartialStringMessageSink;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.eclipse.jetty.websocket.javax.common.JavaxWebSocketCallingArgs.getArgsFor;
 
 public abstract class JavaxWebSocketFrameHandlerFactory
 {
@@ -75,6 +76,34 @@ public abstract class JavaxWebSocketFrameHandlerFactory
             throw new RuntimeException(e);
         }
     }
+
+    static InvokerUtils.Arg[] getArgsFor(Class<?> objectType)
+    {
+        return new InvokerUtils.Arg[]{new InvokerUtils.Arg(Session.class), new InvokerUtils.Arg(objectType).required()};
+    }
+
+    static final InvokerUtils.Arg[] textPartialCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(String.class).required(),
+        new InvokerUtils.Arg(boolean.class).required()
+    };
+
+    static final InvokerUtils.Arg[] binaryPartialBufferCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(ByteBuffer.class).required(),
+        new InvokerUtils.Arg(boolean.class).required()
+    };
+
+    static final InvokerUtils.Arg[] binaryPartialArrayCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(byte[].class).required(),
+        new InvokerUtils.Arg(boolean.class).required()
+    };
+
+    static final InvokerUtils.Arg[] pongCallingArgs = new InvokerUtils.Arg[]{
+        new InvokerUtils.Arg(Session.class),
+        new InvokerUtils.Arg(PongMessage.class).required()
+    };
 
     protected final JavaxWebSocketContainer container;
     protected final InvokerUtils.ParamIdentifier paramIdentifier;
@@ -327,7 +356,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                                    Function<InvokerUtils.Arg[], MethodHandle> getMethodHandle)
     {
         // Partial Text Message.
-        MethodHandle methodHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.textPartialCallingArgs);
+        MethodHandle methodHandle = getMethodHandle.apply(textPartialCallingArgs);
         if (methodHandle != null)
         {
             msgMetadata.setSinkClass(PartialStringMessageSink.class);
@@ -337,7 +366,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         }
 
         // Partial ByteBuffer Binary Message.
-        methodHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.binaryPartialBufferCallingArgs);
+        methodHandle = getMethodHandle.apply(binaryPartialBufferCallingArgs);
         if (methodHandle != null)
         {
             msgMetadata.setSinkClass(PartialByteBufferMessageSink.class);
@@ -347,7 +376,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         }
 
         // Partial byte[] Binary Message.
-        methodHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.binaryPartialArrayCallingArgs);
+        methodHandle = getMethodHandle.apply(binaryPartialArrayCallingArgs);
         if (methodHandle != null)
         {
             msgMetadata.setSinkClass(PartialByteArrayMessageSink.class);
@@ -357,7 +386,7 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         }
 
         // Pong Message.
-        MethodHandle pongHandle = getMethodHandle.apply(JavaxWebSocketCallingArgs.pongCallingArgs);
+        MethodHandle pongHandle = getMethodHandle.apply(pongCallingArgs);
         if (pongHandle != null)
         {
             metadata.setPongHandle(pongHandle, onMsg);

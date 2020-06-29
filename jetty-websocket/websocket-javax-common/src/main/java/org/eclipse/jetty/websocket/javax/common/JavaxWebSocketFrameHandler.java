@@ -570,7 +570,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
                         this.binarySink = null;
                         break;
                     default:
-                        throw new IllegalStateException();
+                        throw new IllegalStateException("Invalid MessageHandler type " + OpCode.name(key));
                 }
             }
         }

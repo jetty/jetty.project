@@ -31,9 +31,13 @@ import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactor
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
 import org.eclipse.jetty.websocket.util.messages.StringMessageSink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DecodedTextMessageSink<T> extends AbstractDecodedMessageSink.Basic<Decoder.Text<T>>
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DecodedTextMessageSink.class);
+
     public DecodedTextMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
     {
         super(session, methodHandle, decoders);
@@ -45,7 +49,7 @@ public class DecodedTextMessageSink<T> extends AbstractDecodedMessageSink.Basic<
         MethodHandle methodHandle = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
             .findVirtual(getClass(), "onMessage", MethodType.methodType(void.class, String.class))
             .bindTo(this);
-        return new StringMessageSink(_coreSession, methodHandle);
+        return new StringMessageSink(getCoreSession(), methodHandle);
     }
 
     @SuppressWarnings("Duplicates")
@@ -58,7 +62,7 @@ public class DecodedTextMessageSink<T> extends AbstractDecodedMessageSink.Basic<
                 try
                 {
                     T obj = decoder.decode(wholeMessage);
-                    _methodHandle.invoke(obj);
+                    getMethodHandle().invoke(obj);
                     return;
                 }
                 catch (DecodeException e)
@@ -72,6 +76,6 @@ public class DecodedTextMessageSink<T> extends AbstractDecodedMessageSink.Basic<
             }
         }
 
-        _logger.warn("Message lost, willDecode() has returned false for all decoders in the decoder list.");
+        LOG.warn("Message lost, willDecode() has returned false for all decoders in the decoder list.");
     }
 }

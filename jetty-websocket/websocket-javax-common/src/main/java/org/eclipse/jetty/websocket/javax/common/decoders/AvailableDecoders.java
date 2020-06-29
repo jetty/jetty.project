@@ -157,6 +157,7 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
                 return;
         }
 
+        // TODO: explain ordering of Decoders and why this is added at position 0.
         registeredDecoders.add(0, new RegisteredDecoder(decoder, interfaceClass, objectType, config));
     }
 
@@ -178,7 +179,8 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
     public List<RegisteredDecoder> getRegisteredDecoders(Class<? extends Decoder> interfaceType, Class<?> returnType)
     {
         return registeredDecoders.stream()
-            .filter(registered -> registered.interfaceType.equals(interfaceType) && registered.isType(returnType))
+            .filter(registered -> registered.interfaceType.equals(interfaceType))
+            .filter(registered -> registered.isType(returnType))
             .collect(Collectors.toList());
     }
 

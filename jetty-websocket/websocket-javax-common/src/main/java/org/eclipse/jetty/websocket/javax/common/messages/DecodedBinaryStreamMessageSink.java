@@ -46,7 +46,7 @@ public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSin
         MethodHandle methodHandle = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(DecodedBinaryStreamMessageSink.class,
             "onStreamStart", MethodType.methodType(void.class, InputStream.class))
             .bindTo(this);
-        return new InputStreamMessageSink(_coreSession, methodHandle);
+        return new InputStreamMessageSink(getCoreSession(), methodHandle);
     }
 
     @SuppressWarnings("Duplicates")
@@ -55,7 +55,7 @@ public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSin
         try
         {
             T obj = _decoder.decode(stream);
-            _methodHandle.invoke(obj);
+            getMethodHandle().invoke(obj);
         }
         catch (DecodeException e)
         {
