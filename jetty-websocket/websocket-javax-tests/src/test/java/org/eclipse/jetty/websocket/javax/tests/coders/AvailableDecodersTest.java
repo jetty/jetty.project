@@ -20,21 +20,21 @@ package org.eclipse.jetty.websocket.javax.tests.coders;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.TimeZone;
+import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.toolchain.test.Hex;
-import org.eclipse.jetty.websocket.javax.client.internal.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.decoders.IntegerDecoder;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,21 +46,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AvailableDecodersTest
 {
-    private static EndpointConfig testConfig;
+    private AvailableDecoders availableDecoders;
 
-    @BeforeAll
-    public static void initConfig()
+    @SafeVarargs
+    public final void init(Class<? extends Decoder>... decoder)
     {
-        testConfig = new BasicClientEndpointConfig();
+        EndpointConfig testConfig = ClientEndpointConfig.Builder.create()
+            .decoders(Arrays.asList(decoder))
+            .build();
+        this.availableDecoders = new AvailableDecoders(testConfig);
     }
-
-    private final AvailableDecoders decoders = new AvailableDecoders(testConfig);
 
     public <T extends Decoder> T getInstanceFor(Class<?> type)
     {
         try
         {
-            RegisteredDecoder registeredDecoder = decoders.getFirstRegisteredDecoder(type);
+            RegisteredDecoder registeredDecoder = availableDecoders.getFirstRegisteredDecoder(type);
             return registeredDecoder.getInstance();
         }
         catch (NoSuchElementException e)
@@ -89,6 +90,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodeBoolean() throws DecodeException
     {
+        init();
         Boolean expected = Boolean.TRUE;
         assertTextDecoder(Boolean.class, "true", expected);
     }
@@ -96,6 +98,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodeboolean() throws DecodeException
     {
+        init();
         boolean expected = false;
         assertTextDecoder(Boolean.TYPE, "false", expected);
     }
@@ -103,6 +106,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodeByte() throws DecodeException
     {
+        init();
         Byte expected = (byte)0x21;
         assertTextDecoder(Byte.class, "33", expected);
     }
@@ -110,6 +114,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodebyte() throws DecodeException
     {
+        init();
         byte expected = 0x21;
         assertTextDecoder(Byte.TYPE, "33", expected);
     }
@@ -117,6 +122,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodeCharacter() throws DecodeException
     {
+        init();
         Character expected = '!';
         assertTextDecoder(Character.class, "!", expected);
     }
@@ -124,6 +130,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodechar() throws DecodeException
     {
+        init();
         char expected = '!';
         assertTextDecoder(Character.TYPE, "!", expected);
     }
@@ -131,6 +138,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodeDouble() throws DecodeException
     {
+        init();
         Double expected = 123.45D;
         assertTextDecoder(Double.class, "123.45", expected);
     }
@@ -138,6 +146,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodedouble() throws DecodeException
     {
+        init();
         double expected = 123.45D;
         assertTextDecoder(Double.TYPE, "123.45", expected);
     }
@@ -145,6 +154,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodeFloat() throws DecodeException
     {
+        init();
         Float expected = 123.4567F;
         assertTextDecoder(Float.class, "123.4567", expected);
     }
@@ -152,6 +162,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodefloat() throws DecodeException
     {
+        init();
         float expected = 123.4567F;
         assertTextDecoder(Float.TYPE, "123.4567", expected);
     }
@@ -159,6 +170,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodeInteger() throws DecodeException
     {
+        init();
         Integer expected = 1234;
         assertTextDecoder(Integer.class, "1234", expected);
     }
@@ -166,6 +178,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodeint() throws DecodeException
     {
+        init();
         int expected = 1234;
         assertTextDecoder(Integer.TYPE, "1234", expected);
     }
@@ -173,6 +186,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodeLong() throws DecodeException
     {
+        init();
         Long expected = 123_456_789L;
         assertTextDecoder(Long.class, "123456789", expected);
     }
@@ -180,6 +194,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodelong() throws DecodeException
     {
+        init();
         long expected = 123_456_789L;
         assertTextDecoder(Long.TYPE, "123456789", expected);
     }
@@ -187,6 +202,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodeString() throws DecodeException
     {
+        init();
         String expected = "Hello World";
         assertTextDecoder(String.class, "Hello World", expected);
     }
@@ -194,6 +210,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodeByteBuffer() throws DecodeException
     {
+        init();
         ByteBuffer val = Hex.asByteBuffer("112233445566778899");
         ByteBuffer expected = Hex.asByteBuffer("112233445566778899");
         assertBinaryDecoder(ByteBuffer.class, val, expected);
@@ -202,6 +219,7 @@ public class AvailableDecodersTest
     @Test
     public void testCoreDecodeByteArray() throws DecodeException
     {
+        init();
         ByteBuffer val = Hex.asByteBuffer("112233445566778899");
         byte[] expected = Hex.asByteArray("112233445566778899");
         assertBinaryDecoder(byte[].class, val, expected);
@@ -210,8 +228,7 @@ public class AvailableDecodersTest
     @Test
     public void testCustomDecoderInteger() throws DecodeException
     {
-        decoders.register(IntegerDecoder.class);
-
+        init(IntegerDecoder.class);
         String val = "11223344";
         int expected = 11223344;
         assertTextDecoder(Integer.class, val, expected);
@@ -220,8 +237,7 @@ public class AvailableDecodersTest
     @Test
     public void testCustomDecoderTime() throws DecodeException
     {
-        decoders.register(TimeDecoder.class);
-
+        init(TimeDecoder.class);
         String val = "12:34:56 GMT";
 
         Date epoch = Date.from(Instant.EPOCH);
@@ -239,8 +255,7 @@ public class AvailableDecodersTest
     @Test
     public void testCustomDecoderDate() throws DecodeException
     {
-        decoders.register(DateDecoder.class);
-
+        init(DateDecoder.class);
         String val = "2016.08.22";
 
         Date epoch = Date.from(Instant.EPOCH);
@@ -258,8 +273,7 @@ public class AvailableDecodersTest
     @Test
     public void testCustomDecoderDateTime() throws DecodeException
     {
-        decoders.register(DateTimeDecoder.class);
-
+        init(DateTimeDecoder.class);
         String val = "2016.08.22 AD at 12:34:56 GMT";
 
         Date epoch = Date.from(Instant.EPOCH);
@@ -281,9 +295,8 @@ public class AvailableDecodersTest
     @Test
     public void testCustomDecoderValidDualText() throws DecodeException
     {
-        decoders.register(ValidDualDecoder.class);
-
-        RegisteredDecoder registered = decoders.getFirstRegisteredDecoder(Integer.class);
+        init(ValidDualDecoder.class);
+        RegisteredDecoder registered = availableDecoders.getFirstRegisteredDecoder(Integer.class);
         assertThat("Registered Decoder for Integer", registered.decoder.getName(), is(ValidDualDecoder.class.getName()));
 
         String val = "[1,234,567]";
@@ -295,9 +308,8 @@ public class AvailableDecodersTest
     @Test
     public void testCustomDecoderValidDualBinary() throws DecodeException
     {
-        decoders.register(ValidDualDecoder.class);
-
-        RegisteredDecoder registered = decoders.getFirstRegisteredDecoder(Long.class);
+        init(ValidDualDecoder.class);
+        RegisteredDecoder registered = availableDecoders.getFirstRegisteredDecoder(Long.class);
         assertThat("Registered Decoder for Long", registered.decoder.getName(), is(ValidDualDecoder.class.getName()));
 
         ByteBuffer val = ByteBuffer.allocate(16);
@@ -314,7 +326,7 @@ public class AvailableDecodersTest
     public void testCustomDecoderRegisterDuplicate()
     {
         // has duplicated support for the same target Type
-        Exception e = assertThrows(InvalidWebSocketException.class, () -> decoders.register(BadDualDecoder.class));
+        Exception e = assertThrows(InvalidWebSocketException.class, () -> init(BadDualDecoder.class));
         assertThat(e.getMessage(), containsString("Multiple decoders with different interface types"));
     }
 
@@ -323,8 +335,7 @@ public class AvailableDecodersTest
     {
         // This duplicate of decoders is of the same interface type so will form a decoder list.
         // Register DateDecoder (decodes java.util.Date)
-        decoders.register(DateDecoder.class);
         // Register TimeDecoder (which also wants to decode java.util.Date)
-        decoders.register(TimeDecoder.class);
+        init(DateDecoder.class, TimeDecoder.class);
     }
 }

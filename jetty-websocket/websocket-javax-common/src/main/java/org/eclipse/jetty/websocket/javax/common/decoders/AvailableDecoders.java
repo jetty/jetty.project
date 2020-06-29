@@ -80,7 +80,7 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
         registeredDecoders.add(new RegisteredDecoder(decoderClass, interfaceType, type, config, true));
     }
 
-    public void register(Class<? extends Decoder> decoder)
+    private void register(Class<? extends Decoder> decoder)
     {
         if (!ReflectUtils.isDefaultConstructable(decoder))
         {
@@ -120,7 +120,7 @@ public class AvailableDecoders implements Iterable<RegisteredDecoder>
         }
     }
 
-    public void registerAll(List<Class<? extends Decoder>> decoders)
+    private void registerAll(List<Class<? extends Decoder>> decoders)
     {
         if (decoders == null)
             return;
