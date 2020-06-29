@@ -44,12 +44,12 @@ public class DecodedTextMessageSink<T> extends AbstractDecodedMessageSink.Basic<
     }
 
     @Override
-    MessageSink getMessageSink() throws NoSuchMethodException, IllegalAccessException
+    MessageSink newMessageSink(CoreSession coreSession) throws NoSuchMethodException, IllegalAccessException
     {
         MethodHandle methodHandle = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
             .findVirtual(getClass(), "onMessage", MethodType.methodType(void.class, String.class))
             .bindTo(this);
-        return new StringMessageSink(getCoreSession(), methodHandle);
+        return new StringMessageSink(coreSession, methodHandle);
     }
 
     @SuppressWarnings("Duplicates")
@@ -62,16 +62,12 @@ public class DecodedTextMessageSink<T> extends AbstractDecodedMessageSink.Basic<
                 try
                 {
                     T obj = decoder.decode(wholeMessage);
-                    getMethodHandle().invoke(obj);
+                    invoke(obj);
                     return;
                 }
                 catch (DecodeException e)
                 {
                     throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Unable to decode", e);
-                }
-                catch (Throwable t)
-                {
-                    throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Endpoint notification error", t);
                 }
             }
         }

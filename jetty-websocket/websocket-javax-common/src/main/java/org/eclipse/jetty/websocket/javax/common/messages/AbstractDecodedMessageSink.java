@@ -21,11 +21,13 @@ package org.eclipse.jetty.websocket.javax.common.messages;
 import java.lang.invoke.MethodHandle;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.websocket.CloseReason;
 import javax.websocket.Decoder;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
 import org.slf4j.Logger;
@@ -35,18 +37,16 @@ public abstract class AbstractDecodedMessageSink implements MessageSink
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractDecodedMessageSink.class);
 
-    private final CoreSession _coreSession;
     private final MethodHandle _methodHandle;
     private final MessageSink _messageSink;
 
     public AbstractDecodedMessageSink(CoreSession coreSession, MethodHandle methodHandle)
     {
-        _coreSession = coreSession;
         _methodHandle = methodHandle;
 
         try
         {
-            _messageSink = getMessageSink();
+            _messageSink = newMessageSink(coreSession);
         }
         catch (Exception e)
         {
@@ -55,21 +55,27 @@ public abstract class AbstractDecodedMessageSink implements MessageSink
         }
     }
 
-    public CoreSession getCoreSession()
+    /**
+     * Invoke the MessageSink with the decoded message.
+     * @param args the decoded message.
+     */
+    public void invoke(Object... args)
     {
-        return _coreSession;
-    }
-
-    public MethodHandle getMethodHandle()
-    {
-        return _methodHandle;
+        try
+        {
+            _methodHandle.invoke(args);
+        }
+        catch (Throwable t)
+        {
+            throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Endpoint notification error", t);
+        }
     }
 
     /**
      * @return a message sink which will first decode the message then pass it to {@link #_methodHandle}.
      * @throws Exception for any error in creating the message sink.
      */
-    abstract MessageSink getMessageSink() throws Exception;
+    abstract MessageSink newMessageSink(CoreSession coreSession) throws Exception;
 
     @Override
     public void accept(Frame frame, Callback callback)

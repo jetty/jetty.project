@@ -45,12 +45,12 @@ public class DecodedBinaryMessageSink<T> extends AbstractDecodedMessageSink.Basi
     }
 
     @Override
-    MessageSink getMessageSink() throws Exception
+    MessageSink newMessageSink(CoreSession coreSession) throws Exception
     {
         MethodHandle methodHandle = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
             .findVirtual(DecodedBinaryMessageSink.class, "onWholeMessage", MethodType.methodType(void.class, ByteBuffer.class))
             .bindTo(this);
-        return new ByteBufferMessageSink(getCoreSession(), methodHandle);
+        return new ByteBufferMessageSink(coreSession, methodHandle);
     }
 
     @SuppressWarnings("Duplicates")
@@ -63,16 +63,12 @@ public class DecodedBinaryMessageSink<T> extends AbstractDecodedMessageSink.Basi
                 try
                 {
                     T obj = decoder.decode(wholeMessage);
-                    getMethodHandle().invoke(obj);
+                    invoke(obj);
                     return;
                 }
                 catch (DecodeException e)
                 {
                     throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Unable to decode", e);
-                }
-                catch (Throwable t)
-                {
-                    throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Endpoint notification error", t);
                 }
             }
         }

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
@@ -41,12 +42,12 @@ public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSin
     }
 
     @Override
-    MessageSink getMessageSink() throws Exception
+    MessageSink newMessageSink(CoreSession coreSession) throws Exception
     {
-        MethodHandle methodHandle = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(DecodedBinaryStreamMessageSink.class,
-            "onStreamStart", MethodType.methodType(void.class, InputStream.class))
+        MethodHandle methodHandle = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
+            .findVirtual(DecodedBinaryStreamMessageSink.class, "onStreamStart", MethodType.methodType(void.class, InputStream.class))
             .bindTo(this);
-        return new InputStreamMessageSink(getCoreSession(), methodHandle);
+        return new InputStreamMessageSink(coreSession, methodHandle);
     }
 
     @SuppressWarnings("Duplicates")
@@ -55,15 +56,11 @@ public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSin
         try
         {
             T obj = _decoder.decode(stream);
-            getMethodHandle().invoke(obj);
+            invoke(obj);
         }
-        catch (DecodeException e)
+        catch (DecodeException | IOException e)
         {
             throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Unable to decode", e);
-        }
-        catch (Throwable t)
-        {
-            throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Endpoint notification error", t);
         }
     }
 }
