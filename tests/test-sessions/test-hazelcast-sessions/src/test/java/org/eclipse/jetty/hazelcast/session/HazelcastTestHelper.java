@@ -66,7 +66,7 @@ public class HazelcastTestHelper
         Config config = new Config();
         config.setInstanceName(_hazelcastInstanceName);
         config.setNetworkConfig(new NetworkConfig().setJoin(new JoinConfig().setMulticastConfig(new MulticastConfig().setEnabled(false))));
-        config.addMapConfig(new MapConfig().setName(_name));
+        config.addMapConfig(new MapConfig().setName(_name)).setClassLoader(null);
         config.getSerializationConfig().addSerializerConfig(_serializerConfig);
         _instance = Hazelcast.getOrCreateHazelcastInstance(config);
     }

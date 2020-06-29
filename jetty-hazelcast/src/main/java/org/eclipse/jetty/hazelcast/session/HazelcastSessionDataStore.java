@@ -25,10 +25,14 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import com.hazelcast.core.IMap;
-import com.hazelcast.query.EntryObject;
+import com.hazelcast.config.IndexConfig;
+import com.hazelcast.config.IndexType;
+import com.hazelcast.map.IMap;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.PredicateBuilder;
+import com.hazelcast.query.PredicateBuilder.EntryObject;
+import com.hazelcast.query.Predicates;
+
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
@@ -128,7 +132,7 @@ public class HazelcastSessionDataStore extends AbstractSessionDataStore
     {
         super.initialize(context);
         if (isUseQueries())
-            sessionDataMap.addIndex("expiry", true);
+            sessionDataMap.addIndex(new IndexConfig(IndexType.SORTED, "expiry"));
     }
 
     @Override
@@ -159,7 +163,7 @@ public class HazelcastSessionDataStore extends AbstractSessionDataStore
         {
             try
             {
-                EntryObject eo = new PredicateBuilder().getEntryObject();
+                EntryObject eo = Predicates.newPredicateBuilder().getEntryObject();
                 @SuppressWarnings("unchecked")
                 Predicate<String, SessionData> predicate = eo.get("expiry").greaterThan(0)
                     .and(eo.get("expiry").lessEqual(timeLimit));
@@ -194,8 +198,8 @@ public class HazelcastSessionDataStore extends AbstractSessionDataStore
             try
             {
                 Set<String> ids = new HashSet<>();
-                EntryObject eo = new PredicateBuilder().getEntryObject();
-                Predicate<?, ?> predicate = eo.get("expiry").greaterThan(0)
+                EntryObject eo = Predicates.newPredicateBuilder().getEntryObject();
+                Predicate<String, SessionData> predicate = eo.get("expiry").greaterThan(0)
                     .and(eo.get("expiry").lessEqual(time))
                     .and(eo.get("contextPath").equal(_context.getCanonicalContextPath()));
                 Collection<SessionData> results = sessionDataMap.values(predicate);
