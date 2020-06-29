@@ -21,7 +21,6 @@ package org.eclipse.jetty.http;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.util.QuotedStringTokenizer;
@@ -33,22 +32,22 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpCookie
 {
     private static final Logger LOG = Log.getLogger(HttpCookie.class);
-    
+
     private static final String __COOKIE_DELIM = "\",;\\ \t";
     private static final String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
 
     /**
-     *If this string is found within the comment parsed with {@link #isHttpOnlyInComment(String)} the check will return true
+     * If this string is found within the comment parsed with {@link #isHttpOnlyInComment(String)} the check will return true
      **/
     public static final String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
     /**
-     *These strings are used by {@link #getSameSiteFromComment(String)} to check for a SameSite specifier in the comment
+     * These strings are used by {@link #getSameSiteFromComment(String)} to check for a SameSite specifier in the comment
      **/
     private static final String SAME_SITE_COMMENT = "__SAME_SITE_";
     public static final String SAME_SITE_NONE_COMMENT = SAME_SITE_COMMENT + "NONE__";
     public static final String SAME_SITE_LAX_COMMENT = SAME_SITE_COMMENT + "LAX__";
     public static final String SAME_SITE_STRICT_COMMENT = SAME_SITE_COMMENT + "STRICT__";
-    
+
     /**
      * Name of context attribute with default SameSite cookie value
      */
@@ -82,7 +81,7 @@ public class HttpCookie
     private final boolean _httpOnly;
     private final long _expiration;
     private final SameSite _sameSite;
-    
+
     public HttpCookie(String name, String value)
     {
         this(name, value, -1);
@@ -463,7 +462,7 @@ public class HttpCookie
     /**
      * Get the default value for SameSite cookie attribute, if one
      * has been set for the given context.
-     * 
+     *
      * @param context the context to check for default SameSite value
      * @return the default SameSite value or null if one does not exist
      * @throws IllegalStateException if the default value is not a permitted value
@@ -479,10 +478,10 @@ public class HttpCookie
                 LOG.debug("No default value for SameSite");
             return null;
         }
-        
+
         if (o instanceof SameSite)
             return (SameSite)o;
-        
+
         try
         {
             SameSite samesite = Enum.valueOf(SameSite.class, o.toString().trim().toUpperCase(Locale.ENGLISH));
