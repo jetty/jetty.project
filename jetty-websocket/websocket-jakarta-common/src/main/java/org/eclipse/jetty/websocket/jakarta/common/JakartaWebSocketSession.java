@@ -59,12 +59,11 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
     private final JakartaWebSocketContainer container;
     private final CoreSession coreSession;
     private final JakartaWebSocketFrameHandler frameHandler;
-    private final EndpointConfig config;
     private final AvailableDecoders availableDecoders;
     private final AvailableEncoders availableEncoders;
     private final Map<String, String> pathParameters;
     private final String sessionId;
-    private Map<String, Object> userProperties;
+    private final Map<String, Object> userProperties;
 
     private List<Extension> negotiatedExtensions;
     private JakartaWebSocketAsyncRemote asyncRemote;
@@ -75,17 +74,17 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
                                    JakartaWebSocketFrameHandler frameHandler,
                                    EndpointConfig endpointConfig)
     {
+        Objects.requireNonNull(endpointConfig);
         this.container = container;
         this.coreSession = coreSession;
         this.frameHandler = frameHandler;
         this.sessionId = UUID.randomUUID().toString();
-        this.config = Objects.requireNonNull(endpointConfig);
-        this.availableDecoders = new AvailableDecoders(this.config);
-        this.availableEncoders = new AvailableEncoders(this.config);
+        this.availableDecoders = new AvailableDecoders(endpointConfig);
+        this.availableEncoders = new AvailableEncoders(endpointConfig);
 
-        if (this.config instanceof PathParamProvider)
+        if (endpointConfig instanceof PathParamProvider)
         {
-            PathParamProvider pathParamProvider = (PathParamProvider)this.config;
+            PathParamProvider pathParamProvider = (PathParamProvider)endpointConfig;
             this.pathParameters = new HashMap<>(pathParamProvider.getPathParams());
         }
         else
@@ -93,7 +92,7 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
             this.pathParameters = Collections.emptyMap();
         }
 
-        this.userProperties = this.config.getUserProperties();
+        this.userProperties = endpointConfig.getUserProperties();
     }
 
     public CoreSession getCoreSession()
@@ -116,7 +115,7 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
             LOG.debug("Add MessageHandler.Partial: {}", handler);
         }
 
-        frameHandler.addMessageHandler(this, clazz, handler);
+        frameHandler.addMessageHandler(clazz, handler);
     }
 
     /**
@@ -134,7 +133,7 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
             LOG.debug("Add MessageHandler.Whole: {}", handler);
         }
 
-        frameHandler.addMessageHandler(this, clazz, handler);
+        frameHandler.addMessageHandler(clazz, handler);
     }
 
     /**

@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.websocket.jakarta.common.messages;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.util.List;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DecodeException;
@@ -28,48 +30,36 @@ import jakarta.websocket.Decoder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
 import org.eclipse.jetty.websocket.util.messages.ReaderMessageSink;
 
-public class DecodedTextStreamMessageSink<T> extends DecodedMessageSink<Decoder.TextStream<T>>
+public class DecodedTextStreamMessageSink<T> extends AbstractDecodedMessageSink.Stream<Decoder.TextStream<T>>
 {
-    public DecodedTextStreamMessageSink(CoreSession session,
-                                        Decoder.TextStream<T> decoder,
-                                        MethodHandle methodHandle)
-        throws NoSuchMethodException, IllegalAccessException
+    public DecodedTextStreamMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
     {
-        super(session, decoder, methodHandle);
+        super(session, methodHandle, decoders);
     }
 
     @Override
-    protected MethodHandle newRawMethodHandle() throws NoSuchMethodException, IllegalAccessException
+    MessageSink newMessageSink(CoreSession coreSession) throws Exception
     {
-        return JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(DecodedTextStreamMessageSink.class,
-            "onStreamStart", MethodType.methodType(void.class, Reader.class))
+        MethodHandle methodHandle = JakartaWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
+            .findVirtual(DecodedTextStreamMessageSink.class, "onStreamStart", MethodType.methodType(void.class, Reader.class))
             .bindTo(this);
+        return new ReaderMessageSink(coreSession, methodHandle);
     }
 
-    @Override
-    protected MessageSink newRawMessageSink(CoreSession session, MethodHandle rawMethodHandle)
-    {
-        return new ReaderMessageSink(session, rawMethodHandle);
-    }
-
-    @SuppressWarnings("Duplicates")
     public void onStreamStart(Reader reader)
     {
         try
         {
-            T obj = getDecoder().decode(reader);
-            methodHandle.invoke(obj);
+            T obj = _decoder.decode(reader);
+            invoke(obj);
         }
-        catch (DecodeException e)
+        catch (DecodeException | IOException e)
         {
             throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Unable to decode", e);
-        }
-        catch (Throwable t)
-        {
-            throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Endpoint notification error", t);
         }
     }
 }

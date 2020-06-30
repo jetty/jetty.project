@@ -85,14 +85,14 @@ public class DuplicateCookieTest
             client.stop();
         }
     }
-    
+
     @Test
     public void testMultipleSessionCookiesOnlyOneValid() throws Exception
     {
         String contextPath = "";
         String servletMapping = "/server";
         HttpClient client = null;
-        
+
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
@@ -114,7 +114,7 @@ public class DuplicateCookieTest
             createInvalidSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "2233");
-            
+
             client = new HttpClient();
             client.start();
 
@@ -132,7 +132,7 @@ public class DuplicateCookieTest
             client.stop();
         }
     }
-    
+
     @Test
     public void testMultipleSessionCookiesMultipleExists() throws Exception
     {
@@ -163,7 +163,7 @@ public class DuplicateCookieTest
             createUnExpiredSession(contextHandler.getSessionHandler().getSessionCache(),
                 contextHandler.getSessionHandler().getSessionCache().getSessionDataStore(),
                 "9111");
-            
+
             client = new HttpClient();
             client.start();
 
@@ -190,14 +190,14 @@ public class DuplicateCookieTest
         cache.add(id, s);
         return s;
     }
-    
+
     public Session createInvalidSession(SessionCache cache, SessionDataStore store, String id) throws Exception
     {
         Session session = createUnExpiredSession(cache, store, id);
         session._state = Session.State.INVALID;
         return session;
     }
-    
+
     public static class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;

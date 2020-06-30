@@ -41,15 +41,11 @@ public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketC
     public JakartaWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig)
     {
         if (jakarta.websocket.Endpoint.class.isAssignableFrom(endpointClass))
-        {
             return createEndpointMetadata((Class<? extends Endpoint>)endpointClass, endpointConfig);
-        }
 
         ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
         if (anno == null)
-        {
             return super.getMetadata(endpointClass, endpointConfig);
-        }
 
         UriTemplatePathSpec templatePathSpec = new UriTemplatePathSpec(anno.value());
         JakartaWebSocketFrameHandlerMetadata metadata = new JakartaWebSocketFrameHandlerMetadata(endpointConfig);

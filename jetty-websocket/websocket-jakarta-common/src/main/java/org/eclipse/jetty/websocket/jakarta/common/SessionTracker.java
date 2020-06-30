@@ -33,7 +33,7 @@ public class SessionTracker extends AbstractLifeCycle implements JakartaWebSocke
 {
     private static final Logger LOG = LoggerFactory.getLogger(SessionTracker.class);
 
-    private CopyOnWriteArraySet<JakartaWebSocketSession> sessions = new CopyOnWriteArraySet<>();
+    private final CopyOnWriteArraySet<JakartaWebSocketSession> sessions = new CopyOnWriteArraySet<>();
 
     public Set<Session> getSessions()
     {

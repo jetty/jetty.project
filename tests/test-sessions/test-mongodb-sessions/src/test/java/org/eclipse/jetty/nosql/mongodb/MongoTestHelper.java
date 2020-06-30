@@ -64,10 +64,10 @@ public class MongoTestHelper
         {
             long start = System.currentTimeMillis();
             mongo.start();
-            String containerIpAddress =  mongo.getContainerIpAddress();
+            String containerIpAddress = mongo.getContainerIpAddress();
             int mongoPort = mongo.getMappedPort(27017);
             LOG.info("Mongo container started for {}:{} - {}ms", containerIpAddress, mongoPort,
-                     System.currentTimeMillis() - start);
+                System.currentTimeMillis() - start);
             System.setProperty("embedmongoHost", containerIpAddress);
             System.setProperty("embedmongoPort", Integer.toString(mongoPort));
         }

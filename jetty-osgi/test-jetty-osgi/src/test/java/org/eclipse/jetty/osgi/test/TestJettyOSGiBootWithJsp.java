@@ -53,7 +53,7 @@ public class TestJettyOSGiBootWithJsp
     public static Option[] configure()
     {
         ArrayList<Option> options = new ArrayList<>();
-        
+
         options.addAll(TestOSGiUtil.configurePaxExamLogging());
 
         options.add(CoreOptions.junitBundles());

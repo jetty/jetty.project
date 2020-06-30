@@ -48,14 +48,10 @@ public class JakartaWebSocketClientFrameHandlerFactory extends JakartaWebSocketF
     public JakartaWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig)
     {
         if (jakarta.websocket.Endpoint.class.isAssignableFrom(endpointClass))
-        {
             return createEndpointMetadata((Class<? extends Endpoint>)endpointClass, endpointConfig);
-        }
 
         if (endpointClass.getAnnotation(ClientEndpoint.class) == null)
-        {
             return null;
-        }
 
         JakartaWebSocketFrameHandlerMetadata metadata = new JakartaWebSocketFrameHandlerMetadata(endpointConfig);
         return discoverJakartaFrameHandlerMetadata(endpointClass, metadata);

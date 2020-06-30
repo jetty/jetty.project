@@ -447,7 +447,7 @@ public class ContextHandlerTest
         assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
         assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo/bar'"));
     }
-    
+
     @Test
     public void testContextInitializationDestruction() throws Exception
     {
@@ -858,12 +858,12 @@ public class ContextHandlerTest
             writer.println("ctx='" + request.getContextPath() + "'");
         }
     }
-    
+
     private static class TestServletContextListener implements ServletContextListener
     {
         public int initialized = 0;
         public int destroyed = 0;
-        
+
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {
