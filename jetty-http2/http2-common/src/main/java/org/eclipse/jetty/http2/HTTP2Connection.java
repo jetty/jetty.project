@@ -95,8 +95,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     protected void setInputBuffer(ByteBuffer buffer)
     {
-        if (buffer != null)
-            producer.setInputBuffer(buffer);
+        producer.setInputBuffer(buffer);
     }
 
     @Override

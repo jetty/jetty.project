@@ -192,9 +192,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         if (BufferUtil.hasContent(_requestBuffer))
         {
-            ByteBuffer buffer = _requestBuffer;
-            _requestBuffer = null;
-            return buffer;
+            ByteBuffer unconsumed = ByteBuffer.allocateDirect(_requestBuffer.remaining());
+            unconsumed.put(_requestBuffer);
+            releaseRequestBuffer();
+            return unconsumed;
         }
         return null;
     }
@@ -202,8 +203,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void onUpgradeTo(ByteBuffer buffer)
     {
-        if (BufferUtil.hasContent(buffer))
-            BufferUtil.append(getRequestBuffer(), buffer);
+        BufferUtil.append(getRequestBuffer(), buffer);
     }
 
     @Override

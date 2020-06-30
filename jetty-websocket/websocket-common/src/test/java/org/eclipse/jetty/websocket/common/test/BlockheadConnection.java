@@ -173,9 +173,9 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
     }
 
     @Override
-    public void onUpgradeTo(ByteBuffer prefilled)
+    public void onUpgradeTo(ByteBuffer buffer)
     {
-        setInitialBuffer(prefilled);
+        setInitialBuffer(buffer);
     }
 
     @Override
@@ -259,20 +259,15 @@ public class BlockheadConnection extends AbstractConnection implements Connectio
      * be processed by the websocket parser before starting
      * to read bytes from the connection
      *
-     * @param prefilled the bytes of prefilled content encountered during upgrade
+     * @param initialBuffer the bytes of unconsumed content encountered during upgrade
      */
-    protected void setInitialBuffer(ByteBuffer prefilled)
+    protected void setInitialBuffer(ByteBuffer initialBuffer)
     {
-        if (log.isDebugEnabled())
+        if (BufferUtil.hasContent(initialBuffer))
         {
-            log.debug("set Initial Buffer - {}", BufferUtil.toDetailString(prefilled));
-        }
-
-        if ((prefilled != null) && (prefilled.hasRemaining()))
-        {
-            networkBuffer = bufferPool.acquire(prefilled.remaining(), true);
+            networkBuffer = bufferPool.acquire(initialBuffer.remaining(), true);
             BufferUtil.clearToFill(networkBuffer);
-            BufferUtil.put(prefilled, networkBuffer);
+            BufferUtil.put(initialBuffer, networkBuffer);
             BufferUtil.flipToFlush(networkBuffer, 0);
         }
     }

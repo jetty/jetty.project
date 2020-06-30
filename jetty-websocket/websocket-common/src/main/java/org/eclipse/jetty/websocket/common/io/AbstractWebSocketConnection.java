@@ -145,7 +145,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private final LongAdder bytesIn = new LongAdder();
     private WebSocketSession session;
     private List<ExtensionConfig> extensions = new ArrayList<>();
-    private ByteBuffer prefillBuffer;
+    private ByteBuffer initialBuffer;
     private Stats stats = new Stats();
     private CloseInfo fatalCloseInfo;
 
@@ -255,13 +255,12 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         if (connectionState.opened())
         {
-            if (BufferUtil.hasContent(prefillBuffer))
+            if (BufferUtil.hasContent(initialBuffer))
             {
                 if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("Parsing Upgrade prefill buffer ({} remaining)", prefillBuffer.remaining());
-                }
-                parser.parse(prefillBuffer);
+                    LOG.debug("Parsing upgrade initial buffer ({} remaining)", initialBuffer.remaining());
+                parser.parse(initialBuffer);
+                initialBuffer = null;
             }
             fillInterested();
             return true;
@@ -545,15 +544,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * be processed by the websocket parser before starting
      * to read bytes from the connection
      *
-     * @param prefilled the bytes of prefilled content encountered during upgrade
+     * @param initialBuffer the bytes of unconsumed content encountered during upgrade
      */
-    protected void setInitialBuffer(ByteBuffer prefilled)
+    protected void setInitialBuffer(ByteBuffer initialBuffer)
     {
         if (LOG.isDebugEnabled())
-        {
-            LOG.debug("set Initial Buffer - {}", BufferUtil.toDetailString(prefilled));
-        }
-        prefillBuffer = prefilled;
+            LOG.debug("Set initial buffer - {}", BufferUtil.toDetailString(initialBuffer));
+        this.initialBuffer = initialBuffer;
     }
 
     /**
@@ -646,14 +643,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * to read bytes from the connection
      */
     @Override
-    public void onUpgradeTo(ByteBuffer prefilled)
+    public void onUpgradeTo(ByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
-        {
-            LOG.debug("onUpgradeTo({})", BufferUtil.toDetailString(prefilled));
-        }
-
-        setInitialBuffer(prefilled);
+            LOG.debug("onUpgradeTo({})", BufferUtil.toDetailString(buffer));
+        setInitialBuffer(buffer);
     }
 
     @Override

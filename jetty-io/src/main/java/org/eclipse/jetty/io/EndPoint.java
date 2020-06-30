@@ -266,13 +266,15 @@ public interface EndPoint extends Closeable
     boolean isOptimizedForDirectBuffers();
 
     /**
-     * Upgrade connections.
-     * Close the old connection, update the endpoint and open the new connection.
-     * If the oldConnection is an instance of {@link Connection.UpgradeFrom} then
-     * a prefilled buffer is requested and passed to the newConnection if it is an instance
-     * of {@link Connection.UpgradeTo}
+     * <p>Upgrades this EndPoint from the current connection to the given new connection.</p>
+     * <p>Closes the current connection, links this EndPoint to the new connection and
+     * then opens the new connection.</p>
+     * <p>If the current connection is an instance of {@link Connection.UpgradeFrom} then
+     * a buffer of unconsumed bytes is requested; if there are unconsumed bytes, and if
+     * the new connection is an instance of {@link Connection.UpgradeTo}, the unconsumed
+     * buffer is passed to the new connection.</p>
      *
-     * @param newConnection The connection to upgrade to
+     * @param newConnection the connection to upgrade to
      */
     void upgrade(Connection newConnection);
 }
