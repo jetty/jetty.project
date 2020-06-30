@@ -167,6 +167,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
             {
                 ByteBuffer unconsumed = ByteBuffer.allocateDirect(_buffer.remaining());
                 unconsumed.put(_buffer);
+                unconsumed.flip();
                 _connector.getByteBufferPool().release(_buffer);
                 return unconsumed;
             }

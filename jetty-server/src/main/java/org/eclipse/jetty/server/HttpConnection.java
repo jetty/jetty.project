@@ -194,6 +194,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             ByteBuffer unconsumed = ByteBuffer.allocateDirect(_requestBuffer.remaining());
             unconsumed.put(_requestBuffer);
+            unconsumed.flip();
             releaseRequestBuffer();
             return unconsumed;
         }

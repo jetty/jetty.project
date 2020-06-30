@@ -238,6 +238,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 {
                     ByteBuffer unconsumed = ByteBuffer.allocateDirect(_buffer.remaining());
                     unconsumed.put(_buffer);
+                    unconsumed.flip();
                     _connector.getByteBufferPool().release(_buffer);
                     return unconsumed;
                 }
@@ -549,6 +550,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 {
                     ByteBuffer unconsumed = ByteBuffer.allocateDirect(_buffer.remaining());
                     unconsumed.put(_buffer);
+                    unconsumed.flip();
                     _connector.getByteBufferPool().release(_buffer);
                     return unconsumed;
                 }
