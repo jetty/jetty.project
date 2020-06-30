@@ -53,7 +53,6 @@ public class DecodedBinaryMessageSink<T> extends AbstractDecodedMessageSink.Basi
         return new ByteBufferMessageSink(coreSession, methodHandle);
     }
 
-    @SuppressWarnings("Duplicates")
     public void onWholeMessage(ByteBuffer wholeMessage)
     {
         for (Decoder.Binary<T> decoder : _decoders)

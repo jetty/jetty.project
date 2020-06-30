@@ -57,13 +57,13 @@ public abstract class AbstractDecodedMessageSink implements MessageSink
 
     /**
      * Invoke the MessageSink with the decoded message.
-     * @param args the decoded message.
+     * @param message the decoded message.
      */
-    public void invoke(Object... args)
+    void invoke(Object message)
     {
         try
         {
-            _methodHandle.invoke(args);
+            _methodHandle.invoke(message);
         }
         catch (Throwable t)
         {

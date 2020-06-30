@@ -52,7 +52,6 @@ public class DecodedTextMessageSink<T> extends AbstractDecodedMessageSink.Basic<
         return new StringMessageSink(coreSession, methodHandle);
     }
 
-    @SuppressWarnings("Duplicates")
     public void onMessage(String wholeMessage)
     {
         for (Decoder.Text<T> decoder : _decoders)

@@ -216,6 +216,12 @@ public class DecoderListTest
         {
             session.addMessageHandler(new PartialBinaryHandler(session));
         }
+
+        @Override
+        public void onError(Session session, Throwable t)
+        {
+            t.printStackTrace();
+        }
     }
 
     private static class PartialTextHandler implements MessageHandler.Whole<String>

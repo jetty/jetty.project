@@ -50,7 +50,6 @@ public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSin
         return new InputStreamMessageSink(coreSession, methodHandle);
     }
 
-    @SuppressWarnings("Duplicates")
     public void onStreamStart(InputStream stream)
     {
         try
