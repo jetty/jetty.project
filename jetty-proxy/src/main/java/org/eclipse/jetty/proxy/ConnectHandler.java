@@ -619,6 +619,13 @@ public class ConnectHandler extends HandlerWrapper
         public void onOpen()
         {
             super.onOpen();
+
+            if (buffer == null)
+            {
+                fillInterested();
+                return;
+            }
+
             int remaining = buffer.remaining();
             write(getConnection().getEndPoint(), buffer, new Callback()
             {
