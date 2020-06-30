@@ -49,14 +49,10 @@ public class JavaxWebSocketClientFrameHandlerFactory extends JavaxWebSocketFrame
     public JavaxWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig)
     {
         if (javax.websocket.Endpoint.class.isAssignableFrom(endpointClass))
-        {
             return createEndpointMetadata((Class<? extends Endpoint>)endpointClass, endpointConfig);
-        }
 
         if (endpointClass.getAnnotation(ClientEndpoint.class) == null)
-        {
             return null;
-        }
 
         JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata(endpointConfig);
         return discoverJavaxFrameHandlerMetadata(endpointClass, metadata);
