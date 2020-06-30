@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server.session;
 
 import java.util.function.Function;
-
 import javax.servlet.http.HttpServletRequest;
 
 /**

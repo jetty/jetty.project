@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.IOException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -96,7 +95,7 @@ public class SessionInvalidationTest
             server.stop();
         }
     }
-    
+
     public static class TestServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
@@ -118,7 +117,7 @@ public class SessionInvalidationTest
 
                 //invalidate existing session
                 session.invalidate();
-                
+
                 assertThrows(IllegalStateException.class, () -> session.invalidate());
                 assertThrows(IllegalStateException.class, () -> session.getLastAccessedTime());
                 assertThrows(IllegalStateException.class, () -> session.getCreationTime());
@@ -131,7 +130,6 @@ public class SessionInvalidationTest
                 assertThrows(IllegalStateException.class, () -> session.removeValue("foo"));
                 assertThrows(IllegalStateException.class, () -> session.setAttribute("a", "b"));
                 assertDoesNotThrow(() -> session.getId());
-
             }
         }
     }
