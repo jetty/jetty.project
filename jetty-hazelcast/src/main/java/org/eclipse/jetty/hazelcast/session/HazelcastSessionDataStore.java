@@ -156,28 +156,14 @@ public class HazelcastSessionDataStore extends AbstractSessionDataStore
                 LOG.debug("Hazelcast useQueries=false, cannot clean orphaned sessions");
             return;
         }
-        
-        final AtomicReference<Exception> exception = new AtomicReference<>();
-        _context.run(() ->
-        {
-            try
-            {
-                EntryObject eo = Predicates.newPredicateBuilder().getEntryObject();
-                @SuppressWarnings("unchecked")
-                Predicate<String, SessionData> predicate = eo.get("expiry").greaterThan(0)
-                    .and(eo.get("expiry").lessEqual(timeLimit));
-                sessionDataMap.removeAll(predicate);
-            }
-            catch (Exception e)
-            {
-                exception.set(e);
-            }
-        });
-        
-        if (exception.get() != null)
-            LOG.warn("Error querying for orphaned sessions {}", exception.get());
+
+        EntryObject eo = Predicates.newPredicateBuilder().getEntryObject();
+        @SuppressWarnings("unchecked")
+        Predicate<String, SessionData> predicate = eo.get("expiry").greaterThan(0)
+        .and(eo.get("expiry").lessEqual(timeLimit));
+        sessionDataMap.removeAll(predicate);
     }
-    
+
     @Override
     public Set<String> doGetExpired(long time)
     {
