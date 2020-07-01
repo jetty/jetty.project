@@ -21,6 +21,7 @@ package org.eclipse.jetty.servlet;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.servlet.DispatcherType;
 
@@ -246,7 +247,7 @@ public class FilterMapping implements Dumpable
      */
     public void setFilterName(String filterName)
     {
-        _filterName = filterName;
+        _filterName = Objects.requireNonNull(filterName); 
     }
 
     /**
@@ -254,7 +255,7 @@ public class FilterMapping implements Dumpable
      */
     void setFilterHolder(FilterHolder holder)
     {
-        _holder = holder;
+        _holder = Objects.requireNonNull(holder);
         setFilterName(holder.getName());
     }
 

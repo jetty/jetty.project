@@ -316,6 +316,7 @@ public class ServletHandlerTest
 
         //add another ordinary mapping
         FilterHolder of1 = new FilterHolder(new Source(Source.Origin.DESCRIPTOR, "foo.xml"));
+        of1.setName("foo");
         FilterMapping ofm1 = new FilterMapping();
         ofm1.setFilterHolder(of1);
         ofm1.setPathSpec("/*");
