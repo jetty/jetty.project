@@ -87,7 +87,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         RetainableByteBuffer currentBuffer = networkBuffer;
         if (currentBuffer == null)
             throw new IllegalStateException();
-
         if (currentBuffer.hasRemaining())
             throw new IllegalStateException();
 
@@ -107,9 +106,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private void releaseNetworkBuffer()
     {
         if (networkBuffer == null)
-            throw new IllegalStateException();
-        if (networkBuffer.hasRemaining())
-            throw new IllegalStateException();
+            return;
         networkBuffer.release();
         if (LOG.isDebugEnabled())
             LOG.debug("Released {}", networkBuffer);
@@ -138,17 +135,20 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             while (true)
             {
                 // Always parse even empty buffers to advance the parser.
-                boolean stopProcessing = parse();
-
-                if (stopProcessing)
+                boolean async = parse();
+                if (async)
+                {
+                    // Return immediately, as this thread may be in a race
+                    // with e.g. another thread demanding more content.
                     return;
+                }
 
                 // Connection may be closed or upgraded in a parser callback.
                 boolean upgraded = connection != endPoint.getConnection();
                 if (connection.isClosed() || upgraded)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} {}", connection, upgraded ? "upgraded" : "closed");
+                        LOG.debug("{} {}", upgraded ? "Upgraded" : "Closed", connection);
                     releaseNetworkBuffer();
                     return;
                 }
@@ -182,11 +182,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
-            if (networkBuffer != null)
-            {
-                networkBuffer.clear();
-                releaseNetworkBuffer();
-            }
+            releaseNetworkBuffer();
             failAndClose(x);
         }
     }
@@ -203,16 +199,20 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             boolean handle = parser.parseNext(networkBuffer.getBuffer());
             if (handle)
             {
+                boolean failed = isFailed();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Parsed true, returning");
-                return true;
+                    LOG.debug("Parse result=true, failed={}", failed);
+                return !failed;
             }
+
             boolean complete = this.complete;
             this.complete = false;
             if (LOG.isDebugEnabled())
-                LOG.debug("Parsed {}, remaining {} {}", handle, networkBuffer.remaining(), parser);
+                LOG.debug("Parse result=false, complete={}, remaining {} {}", complete, networkBuffer.remaining(), parser);
+
             if (networkBuffer.isEmpty())
                 return false;
+
             if (complete)
             {
                 if (LOG.isDebugEnabled())
@@ -298,6 +298,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
+        RetainableByteBuffer networkBuffer = this.networkBuffer;
         networkBuffer.retain();
         return !responseContent(exchange, buffer, Callback.from(networkBuffer::release, this::failAndClose));
     }
@@ -330,15 +331,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (status != HttpStatus.CONTINUE_100)
             complete = true;
 
-        boolean proceed = responseSuccess(exchange);
-        if (!proceed)
-            return true;
-
-        if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
-            return true;
-
-        return HttpMethod.CONNECT.is(exchange.getRequest().getMethod()) &&
-            status == HttpStatus.OK_200;
+        return !responseSuccess(exchange);
     }
 
     @Override
@@ -369,13 +362,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         super.reset();
         parser.reset();
-    }
-
-    @Override
-    protected void dispose()
-    {
-        super.dispose();
-        parser.close();
     }
 
     private void failAndClose(Throwable failure)

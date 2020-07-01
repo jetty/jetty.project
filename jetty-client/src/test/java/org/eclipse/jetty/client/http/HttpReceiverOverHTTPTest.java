@@ -19,18 +19,15 @@
 package org.eclipse.jetty.client.http;
 
 import java.io.EOFException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
@@ -42,9 +39,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -52,7 +47,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -78,15 +72,8 @@ public class HttpReceiverOverHTTPTest
 
     public void init(HttpCompliance compliance) throws Exception
     {
-        init(compliance, null);
-    }
-
-    public void init(HttpCompliance compliance, ByteBufferPool pool) throws Exception
-    {
         client = new HttpClient();
         client.setHttpCompliance(compliance);
-        if (pool != null)
-            client.setByteBufferPool(pool);
         client.start();
         destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", 8080));
         destination.start();
@@ -274,76 +261,5 @@ public class HttpReceiverOverHTTPTest
         Response response = listener.get(5, TimeUnit.SECONDS);
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-    }
-
-    @ParameterizedTest
-    @MethodSource("complianceModes")
-    void testReceiveReentrance(HttpCompliance compliance) throws Exception
-    {
-        boolean debugEnabled = Log.getLogger(HttpReceiver.class).isDebugEnabled();
-        Log.getLogger(HttpReceiver.class).setDebugEnabled(true);
-        try
-        {
-            AtomicReference<Throwable> failureRef = new AtomicReference<>();
-
-            init(compliance, new ByteBufferPool()
-            {
-                @Override
-                public ByteBuffer acquire(int size, boolean direct)
-                {
-                    String response =
-                        "HTTP/1.1 200 OK\r\n" +
-                            "\r\n";
-                    return ByteBuffer.wrap(response.getBytes(StandardCharsets.ISO_8859_1));
-                }
-
-                @Override
-                public void release(ByteBuffer buffer)
-                {
-                }
-            });
-            HttpChannelOverHTTP httpChannelOverHTTP = new HttpChannelOverHTTP(connection);
-            HttpReceiverOverHTTP httpReceiverOverHTTP = new HttpReceiverOverHTTP(httpChannelOverHTTP)
-            {
-                @Override
-                protected boolean responseFailure(Throwable failure)
-                {
-                    failureRef.set(failure);
-                    return super.responseFailure(failure);
-                }
-
-                @Override
-                public boolean headerComplete()
-                {
-                    // We are testing this particular order:
-                    //  1) thread 1 arrives here first from a call to receive() then gets preempted
-                    //  2) thread 2 arrives here second from a call to receive() then returns all the way back
-                    //  3) thread 1 resumes and return all the way back
-
-                    Thread t2 = new Thread(this::receive);
-                    t2.start();
-
-                    try
-                    {
-                        t2.join();
-                    }
-                    catch (InterruptedException e)
-                    {
-                        throw new RuntimeException(e);
-                    }
-                    return true;
-                }
-            };
-
-            // start thread 1 receive() call from here
-            httpReceiverOverHTTP.receive();
-
-            // make sure no exception was reported
-            assertThat(failureRef.get(), nullValue());
-        }
-        finally
-        {
-            Log.getLogger(HttpReceiver.class).setDebugEnabled(debugEnabled);
-        }
     }
 }
