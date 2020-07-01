@@ -20,13 +20,34 @@ package org.eclipse.jetty.websocket.javax.common.messages;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.util.List;
 import java.util.function.Consumer;
+import javax.websocket.ClientEndpointConfig;
+import javax.websocket.Decoder;
 
 import org.eclipse.jetty.websocket.javax.common.AbstractSessionTest;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 
 public abstract class AbstractMessageSinkTest extends AbstractSessionTest
 {
+    public List<RegisteredDecoder> toRegisteredDecoderList(Class<? extends Decoder> clazz, Class<?> objectType)
+    {
+        Class<? extends Decoder> interfaceType;
+        if (Decoder.Text.class.isAssignableFrom(clazz))
+            interfaceType = Decoder.Text.class;
+        else if (Decoder.Binary.class.isAssignableFrom(clazz))
+            interfaceType = Decoder.Binary.class;
+        else if (Decoder.TextStream.class.isAssignableFrom(clazz))
+            interfaceType = Decoder.TextStream.class;
+        else if (Decoder.BinaryStream.class.isAssignableFrom(clazz))
+            interfaceType = Decoder.BinaryStream.class;
+        else
+            throw new IllegalStateException();
+
+        return List.of(new RegisteredDecoder(clazz, interfaceType, objectType, ClientEndpointConfig.Builder.create().build()));
+    }
+
     public <T> MethodHandle getAcceptHandle(Consumer<T> copy, Class<T> type)
     {
         try

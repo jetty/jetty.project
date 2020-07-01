@@ -25,7 +25,7 @@ import javax.websocket.PongMessage;
 
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
 import org.eclipse.jetty.websocket.javax.common.RegisteredMessageHandler;
-import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.javax.tests.MessageType;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
@@ -60,7 +60,7 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JavaxWebSock
         {
             Class<?> onMessageType = registeredMessageHandler.getHandlerType();
 
-            AvailableDecoders.RegisteredDecoder registeredDecoder = session.getDecoders().getRegisteredDecoderFor(onMessageType);
+            RegisteredDecoder registeredDecoder = session.getDecoders().getFirstRegisteredDecoder(onMessageType);
             if (registeredDecoder == null)
             {
                 continue;
@@ -130,7 +130,7 @@ public class IsMessageHandlerTypeRegistered extends TypeSafeMatcher<JavaxWebSock
 
             mismatchDescription.appendText("<" + onMessageType.getName() + ">");
 
-            AvailableDecoders.RegisteredDecoder registeredDecoder = session.getDecoders().getRegisteredDecoderFor(onMessageType);
+            RegisteredDecoder registeredDecoder = session.getDecoders().getFirstRegisteredDecoder(onMessageType);
             if (registeredDecoder == null)
             {
                 mismatchDescription.appendText("(!NO-DECODER!)");
