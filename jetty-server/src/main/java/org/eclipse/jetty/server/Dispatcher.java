@@ -298,7 +298,7 @@ public class Dispatcher implements RequestDispatcher
         {
             HashSet<String> set = new HashSet<>();
             super.getAttributeNameSet().stream()
-                .filter(name -> !name.startsWith(__INCLUDE_PREFIX)) // TODO: why does this filter the __INCLUDE_PREFIX as well?
+                .filter(name -> !name.startsWith(__INCLUDE_PREFIX))
                 .filter(name -> !name.startsWith(__FORWARD_PREFIX))
                 .forEach(set::add);
 
