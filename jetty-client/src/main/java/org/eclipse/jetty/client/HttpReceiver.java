@@ -554,6 +554,7 @@ public abstract class HttpReceiver
      */
     protected void dispose()
     {
+        assert responseState.get() != ResponseState.TRANSIENT;
         cleanup();
     }
 

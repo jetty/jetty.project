@@ -135,8 +135,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             while (true)
             {
                 // Always parse even empty buffers to advance the parser.
-                boolean async = parse();
-                if (async)
+                if (parse())
                 {
                     // Return immediately, as this thread may be in a race
                     // with e.g. another thread demanding more content.
@@ -156,6 +155,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 if (networkBuffer.getReferences() > 1)
                     reacquireNetworkBuffer();
 
+                // The networkBuffer may have been reacquired.
                 int read = endPoint.fill(networkBuffer.getBuffer());
                 if (LOG.isDebugEnabled())
                     LOG.debug("Read {} bytes in {} from {}", read, networkBuffer, endPoint);
@@ -197,18 +197,20 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         while (true)
         {
             boolean handle = parser.parseNext(networkBuffer.getBuffer());
+            boolean failed = isFailed();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Parse result={}, failed={}", handle, failed);
+            // When failed, it's safe to close the parser because there
+            // will be no races with other threads demanding more content.
+            if (failed)
+                parser.close();
             if (handle)
-            {
-                boolean failed = isFailed();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Parse result=true, failed={}", failed);
                 return !failed;
-            }
 
             boolean complete = this.complete;
             this.complete = false;
             if (LOG.isDebugEnabled())
-                LOG.debug("Parse result=false, complete={}, remaining {} {}", complete, networkBuffer.remaining(), parser);
+                LOG.debug("Parse complete={}, remaining {} {}", complete, networkBuffer.remaining(), parser);
 
             if (networkBuffer.isEmpty())
                 return false;
@@ -300,7 +302,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
         RetainableByteBuffer networkBuffer = this.networkBuffer;
         networkBuffer.retain();
-        return !responseContent(exchange, buffer, Callback.from(networkBuffer::release, this::failAndClose));
+        return !responseContent(exchange, buffer, Callback.from(networkBuffer::release, failure ->
+        {
+            networkBuffer.release();
+            failAndClose(failure);
+        }));
     }
 
     @Override
