@@ -93,6 +93,7 @@ public abstract class AbstractHttpClientServerTest
         {
             assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), Matchers.is(0L));
             assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), Matchers.is(0L));
+            assertThat("Server BufferPool - leaked removes", serverBufferPool.getLeakedRemoves(), Matchers.is(0L));
             assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), Matchers.is(0L));
         }
 
@@ -101,6 +102,7 @@ public abstract class AbstractHttpClientServerTest
             LeakTrackingByteBufferPool pool = (LeakTrackingByteBufferPool)clientBufferPool;
             assertThat("Client BufferPool - leaked acquires", pool.getLeakedAcquires(), Matchers.is(0L));
             assertThat("Client BufferPool - leaked releases", pool.getLeakedReleases(), Matchers.is(0L));
+            assertThat("Client BufferPool - leaked removes", pool.getLeakedRemoves(), Matchers.is(0L));
             assertThat("Client BufferPool - unreleased", pool.getLeakedResources(), Matchers.is(0L));
         }
 
