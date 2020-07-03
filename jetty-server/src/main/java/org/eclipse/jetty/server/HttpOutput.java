@@ -37,6 +37,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.WriteListener;
 
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -300,7 +301,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _state = State.CLOSED;
                 closedCallback = _closedCallback;
                 _closedCallback = null;
-                releaseBuffer();
+                releaseBuffer(failure);
                 wake = updateApiState(failure);
             }
             else if (_state == State.CLOSE)
@@ -482,12 +483,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     /**
      * Called to indicate that the request cycle has been completed.
      */
-    public void completed()
+    public void completed(Throwable failure)
     {
         synchronized (_channelState)
         {
             _state = State.CLOSED;
-            releaseBuffer();
+            releaseBuffer(failure);
         }
     }
 
@@ -626,11 +627,15 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _aggregate;
     }
 
-    private void releaseBuffer()
+    private void releaseBuffer(Throwable failure)
     {
         if (_aggregate != null)
         {
-            _channel.getConnector().getByteBufferPool().release(_aggregate);
+            ByteBufferPool bufferPool = _channel.getConnector().getByteBufferPool();
+            if (failure == null)
+                bufferPool.release(_aggregate);
+            else
+                bufferPool.remove(_aggregate);
             _aggregate = null;
         }
     }
@@ -1401,7 +1406,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _commitSize = config.getOutputAggregationSize();
             if (_commitSize > _bufferSize)
                 _commitSize = _bufferSize;
-            releaseBuffer();
+            releaseBuffer(null);
             _written = 0;
             _writeListener = null;
             _onError = null;

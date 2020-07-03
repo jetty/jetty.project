@@ -943,7 +943,7 @@ public class HttpChannelState
         }
     }
 
-    protected void completed()
+    protected void completed(Throwable failure)
     {
         final List<AsyncListener> aListeners;
         final AsyncContextEvent event;
@@ -976,7 +976,7 @@ public class HttpChannelState
         }
 
         // release any aggregate buffer from a closing flush
-        _channel.getResponse().getHttpOutput().completed();
+        _channel.getResponse().getHttpOutput().completed(failure);
 
         if (event != null)
         {
