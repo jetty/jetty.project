@@ -1582,11 +1582,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 ContentResponse response = listener.get(5, TimeUnit.SECONDS);
                 assertEquals(200, response.getStatus());
 
-                // Because the tunnel was successful, this connection will be
-                // upgraded to an SslConnection, so it will not be fill interested.
-                // This test doesn't upgrade, so it needs to restore the fill interest.
-                ((AbstractConnection)connection).fillInterested();
-
                 // Test that I can send another request on the same connection.
                 request = client.newRequest(host, port);
                 listener = new FutureResponseListener(request);

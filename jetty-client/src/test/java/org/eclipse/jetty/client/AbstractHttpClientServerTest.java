@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.nio.file.Path;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
@@ -45,13 +46,13 @@ public abstract class AbstractHttpClientServerTest
     protected HttpClient client;
     protected ServerConnector connector;
 
-    public void start(final Scenario scenario, Handler handler) throws Exception
+    public void start(Scenario scenario, Handler handler) throws Exception
     {
         startServer(scenario, handler);
         startClient(scenario);
     }
 
-    protected void startServer(final Scenario scenario, Handler handler) throws Exception
+    protected void startServer(Scenario scenario, Handler handler) throws Exception
     {
         if (server == null)
         {
@@ -66,23 +67,27 @@ public abstract class AbstractHttpClientServerTest
         server.start();
     }
 
-    protected void startClient(final Scenario scenario) throws Exception
+    protected void startClient(Scenario scenario) throws Exception
     {
         startClient(scenario, null);
     }
 
-    protected void startClient(final Scenario scenario, Consumer<HttpClient> config) throws Exception
+    protected void startClient(Scenario scenario, Consumer<HttpClient> config) throws Exception
+    {
+        startClient(scenario, HttpClientTransportOverHTTP::new, config);
+    }
+
+    protected void startClient(Scenario scenario, Function<ClientConnector, HttpClientTransportOverHTTP> transport, Consumer<HttpClient> config) throws Exception
     {
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSelectors(1);
         clientConnector.setSslContextFactory(scenario.newClientSslContextFactory());
-        HttpClientTransport transport = new HttpClientTransportOverHTTP(clientConnector);
         QueuedThreadPool executor = new QueuedThreadPool();
         executor.setName("client");
         clientConnector.setExecutor(executor);
         Scheduler scheduler = new ScheduledExecutorScheduler("client-scheduler", false);
         clientConnector.setScheduler(scheduler);
-        client = newHttpClient(transport);
+        client = newHttpClient(transport.apply(clientConnector));
         client.setSocketAddressResolver(new SocketAddressResolver.Sync());
         if (config != null)
             config.accept(client);
