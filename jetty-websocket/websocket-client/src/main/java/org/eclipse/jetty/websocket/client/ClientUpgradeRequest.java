@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpField;
@@ -68,6 +69,7 @@ public class ClientUpgradeRequest extends UpgradeRequestAdapter
 
     private final String key;
     private Object localEndpoint;
+    private long timeout;
 
     public ClientUpgradeRequest()
     {
@@ -177,6 +179,27 @@ public class ClientUpgradeRequest extends UpgradeRequestAdapter
 
             super.setParameterMap(pmap);
         }
+    }
+
+    /**
+     * @param timeout the total timeout for the request/response conversation of the WebSocket handshake;
+     * use zero or a negative value to disable the timeout
+     * @param unit the timeout unit
+     * @return this request object
+     */
+    public ClientUpgradeRequest timeout(long timeout, TimeUnit unit)
+    {
+        this.timeout = unit.toMillis(timeout);
+        return this;
+    }
+
+    /**
+     * @return the total timeout for this request, in milliseconds;
+     * zero or negative if the timeout is disabled
+     */
+    public long getTimeout()
+    {
+        return timeout;
     }
 
     public void setLocalEndpoint(Object websocket)
