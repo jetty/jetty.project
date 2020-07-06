@@ -58,6 +58,18 @@ public interface ByteBufferPool
     public void release(ByteBuffer buffer);
 
     /**
+     * <p>Removes a {@link ByteBuffer} that was previously obtained with {@link #acquire(int, boolean)}.</p>
+     * <p>The buffer will not be available for further reuse.</p>
+     *
+     * @param buffer the buffer to remove
+     * @see #acquire(int, boolean)
+     * @see #release(ByteBuffer)
+     */
+    default void remove(ByteBuffer buffer)
+    {
+    }
+
+    /**
      * <p>Creates a new ByteBuffer of the given capacity and the given directness.</p>
      *
      * @param capacity the ByteBuffer capacity

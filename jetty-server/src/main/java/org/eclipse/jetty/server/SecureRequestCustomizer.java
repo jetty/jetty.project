@@ -319,47 +319,51 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         private final Request _request;
         private final SSLSession _session;
 
+        private X509Certificate[] _certs;
+        private String _cipherSuite;
+        private Integer _keySize;
+        private String _sessionId;
+        private String _sessionAttribute;
+
         public SslAttributes(Request request, SSLSession sslSession, Attributes attributes)
         {
             super(attributes);
             this._request = request;
             this._session = sslSession;
+
+            try
+            {
+                _certs = getSslSessionData().getCerts();
+                _cipherSuite = _session.getCipherSuite();
+                _keySize = getSslSessionData().getKeySize();
+                _sessionId = getSslSessionData().getIdStr();
+                _sessionAttribute = getSslSessionAttribute();
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Unable to get secure details ", e);
+            }
         }
 
         @Override
         public Object getAttribute(String name)
         {
-            Object value = _attributes.getAttribute(name);
-            if (value != null)
-                return value;
-            try
+            switch (name)
             {
-                switch (name)
-                {
-                    case JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE:
-                        return getSslSessionData().getCerts();
-
-                    case JAKARTA_SERVLET_REQUEST_CIPHER_SUITE:
-                        return _session.getCipherSuite();
-
-                    case JAKARTA_SERVLET_REQUEST_KEY_SIZE:
-                        return getSslSessionData().getKeySize();
-
-                    case JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID:
-                        return getSslSessionData().getIdStr();
-
-                    default:
-                        String sessionAttribute = getSslSessionAttribute();
-                        if (!StringUtil.isEmpty(sessionAttribute) && sessionAttribute.equals(name))
-                            return _session;
-                }
+                case JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE:
+                    return _certs;
+                case JAKARTA_SERVLET_REQUEST_CIPHER_SUITE:
+                    return _cipherSuite;
+                case JAKARTA_SERVLET_REQUEST_KEY_SIZE:
+                    return _keySize;
+                case JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID:
+                    return _sessionId;
+                default:
+                    if (!StringUtil.isEmpty(_sessionAttribute) && _sessionAttribute.equals(name))
+                        return _session;
             }
-            catch (Exception e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to get secure details ", e);
-            }
-            return null;
+
+            return _attributes.getAttribute(name);
         }
 
         /**
@@ -391,13 +395,22 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         public Set<String> getAttributeNameSet()
         {
             Set<String> names = new HashSet<>(_attributes.getAttributeNameSet());
-            names.add(JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
-            names.add(JAKARTA_SERVLET_REQUEST_CIPHER_SUITE);
-            names.add(JAKARTA_SERVLET_REQUEST_KEY_SIZE);
-            names.add(JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID);
-            String sessionAttribute = getSslSessionAttribute();
-            if (!StringUtil.isEmpty(sessionAttribute))
-                names.add(sessionAttribute);
+            names.remove(JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
+            names.remove(JAKARTA_SERVLET_REQUEST_CIPHER_SUITE);
+            names.remove(JAKARTA_SERVLET_REQUEST_KEY_SIZE);
+            names.remove(JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID);
+
+            if (_certs != null)
+                names.add(JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
+            if (_cipherSuite != null)
+                names.add(JAKARTA_SERVLET_REQUEST_CIPHER_SUITE);
+            if (_keySize != null)
+                names.add(JAKARTA_SERVLET_REQUEST_KEY_SIZE);
+            if (_sessionId != null)
+                names.add(JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID);
+            if (!StringUtil.isEmpty(_sessionAttribute))
+                names.add(_sessionAttribute);
+
             return names;
         }
     }

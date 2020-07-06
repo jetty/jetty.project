@@ -330,7 +330,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
     public void onStreamFailure(Throwable failure)
     {
-        transportCallback.failed(failure);
+        transportCallback.abort(failure);
     }
 
     public boolean onStreamTimeout(Throwable failure)
@@ -408,17 +408,6 @@ public class HttpTransportOverHTTP2 implements HttpTransport
      *   being reset, or the connection being closed</li>
      *   <li>an asynchronous idle timeout</li>
      * </ul>
-     * <p>The last 2 cases may happen <em>during</em> a send, when the frames
-     * are being generated in the flusher.
-     * In such cases, this class must avoid that the nested callback is notified
-     * while the frame generation is in progress, because the nested callback
-     * may modify other states (such as clearing the {@code HttpOutput._buffer})
-     * that are accessed during frame generation.</p>
-     * <p>The solution implemented in this class works by splitting the send
-     * operation in 3 parts: {@code pre-send}, {@code send} and {@code post-send}.
-     * Asynchronous state changes happening during {@code send} are stored
-     * and only executed in {@code post-send}, therefore never interfering
-     * with frame generation.</p>
      *
      * @see State
      */
@@ -442,14 +431,14 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         {
             Throwable failure = sending(callback, commit);
             if (failure == null)
-            {
                 sendFrame.accept(this);
-                pending();
-            }
             else
-            {
                 callback.failed(failure);
-            }
+        }
+
+        private void abort(Throwable failure)
+        {
+            failed(failure);
         }
 
         private Throwable sending(Callback callback, boolean commit)
@@ -477,58 +466,6 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             }
         }
 
-        private void pending()
-        {
-            Callback callback;
-            boolean commit;
-            Throwable failure;
-            synchronized (this)
-            {
-                switch (_state)
-                {
-                    case SENDING:
-                    {
-                        // The send has not completed the callback yet,
-                        // wait for succeeded() or failed() to be called.
-                        _state = State.PENDING;
-                        return;
-                    }
-                    case SUCCEEDING:
-                    {
-                        // The send already completed successfully, but the
-                        // call to succeeded() was delayed, so call it now.
-                        callback = _callback;
-                        commit = _commit;
-                        failure = null;
-                        reset(null);
-                        break;
-                    }
-                    case FAILING:
-                    {
-                        // The send already completed with a failure, but
-                        // the call to failed() was delayed, so call it now.
-                        callback = _callback;
-                        commit = _commit;
-                        failure = _failure;
-                        reset(failure);
-                        break;
-                    }
-                    default:
-                    {
-                        callback = _callback;
-                        commit = _commit;
-                        failure = new IllegalStateException("Invalid transport state: " + _state);
-                        reset(failure);
-                        break;
-                    }
-                }
-            }
-            if (failure == null)
-                succeed(callback, commit);
-            else
-                fail(callback, commit, failure);
-        }
-
         @Override
         public void succeeded()
         {
@@ -536,30 +473,21 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             boolean commit;
             synchronized (this)
             {
-                switch (_state)
+                if (_state != State.SENDING)
                 {
-                    case SENDING:
-                    {
-                        _state = State.SUCCEEDING;
-                        // Succeeding the callback will be done in postSend().
-                        return;
-                    }
-                    case PENDING:
-                    {
-                        callback = _callback;
-                        commit = _commit;
-                        reset(null);
-                        break;
-                    }
-                    default:
-                    {
-                        // This thread lost the race to succeed the current
-                        // send, as other threads likely already failed it.
-                        return;
-                    }
+                    // This thread lost the race to succeed the current
+                    // send, as other threads likely already failed it.
+                    return;
                 }
+                callback = _callback;
+                commit = _commit;
+                reset(null);
             }
-            succeed(callback, commit);
+            if (LOG.isDebugEnabled())
+                LOG.debug("HTTP2 Response #{}/{} {} success",
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    commit ? "commit" : "flush");
+            callback.succeeded();
         }
 
         @Override
@@ -569,104 +497,37 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             boolean commit;
             synchronized (this)
             {
-                switch (_state)
+                if (_state != State.SENDING)
                 {
-                    case SENDING:
-                    {
-                        _state = State.FAILING;
-                        _failure = failure;
-                        // Failing the callback will be done in postSend().
-                        return;
-                    }
-                    case IDLE:
-                    case PENDING:
-                    {
-                        callback = _callback;
-                        commit = _commit;
-                        reset(failure);
-                        break;
-                    }
-                    default:
-                    {
-                        // This thread lost the race to fail the current send,
-                        // as other threads already succeeded or failed it.
-                        return;
-                    }
+                    reset(failure);
+                    return;
                 }
+                callback = _callback;
+                commit = _commit;
+                reset(failure);
             }
-            fail(callback, commit, failure);
-        }
-
-        private boolean idleTimeout(Throwable failure)
-        {
-            Callback callback;
-            boolean timeout;
-            synchronized (this)
-            {
-                switch (_state)
-                {
-                    case PENDING:
-                    {
-                        // The send was started but idle timed out, fail it.
-                        callback = _callback;
-                        timeout = true;
-                        reset(failure);
-                        break;
-                    }
-                    case IDLE:
-                        // The application may be suspended, ignore the idle timeout.
-                    case SENDING:
-                        // A send has been started at the same time of an idle timeout;
-                        // Ignore the idle timeout and let the write continue normally.
-                    case SUCCEEDING:
-                    case FAILING:
-                        // An idle timeout during these transient states is ignored.
-                    case FAILED:
-                        // Already failed, ignore the idle timeout.
-                    {
-                        callback = null;
-                        timeout = false;
-                        break;
-                    }
-                    default:
-                    {
-                        // Should not happen, but just in case.
-                        callback = _callback;
-                        if (callback == null)
-                            callback = Callback.NOOP;
-                        timeout = true;
-                        failure = new IllegalStateException("Invalid transport state: " + _state, failure);
-                        reset(failure);
-                        break;
-                    }
-                }
-            }
-            idleTimeout(callback, timeout, failure);
-            return timeout;
-        }
-
-        private void succeed(Callback callback, boolean commit)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("HTTP2 Response #{}/{} {} success",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                    commit ? "commit" : "flush");
-            callback.succeeded();
-        }
-
-        private void fail(Callback callback, boolean commit, Throwable failure)
-        {
             if (LOG.isDebugEnabled())
                 LOG.debug("HTTP2 Response #{}/{} {} failure",
                     stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                     commit ? "commit" : "flush",
                     failure);
-            if (callback != null)
-                callback.failed(failure);
+            callback.failed(failure);
         }
 
-        private void idleTimeout(Callback callback, boolean timeout, Throwable failure)
+        private boolean idleTimeout(Throwable failure)
         {
+            Callback callback = null;
+            synchronized (this)
+            {
+                // Ignore idle timeouts if not writing,
+                // as the application may be suspended.
+                if (_state == State.SENDING)
+                {
+                    callback = _callback;
+                    reset(failure);
+                }
+            }
+            boolean timeout = callback != null;
             if (LOG.isDebugEnabled())
                 LOG.debug("HTTP2 Response #{}/{} idle timeout {}",
                     stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
@@ -674,6 +535,18 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     failure);
             if (timeout)
                 callback.failed(failure);
+            return timeout;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            Callback callback;
+            synchronized (this)
+            {
+                callback = _callback;
+            }
+            return callback != null ? callback.getInvocationType() : Callback.super.getInvocationType();
         }
     }
 
@@ -686,67 +559,12 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     {
         /**
          * <p>No send initiated or in progress.</p>
-         * <p>Next states could be:</p>
-         * <ul>
-         *   <li>{@link #SENDING}, when {@link TransportCallback#send(Callback, boolean, Consumer)}
-         *   is called by the transport to initiate a send</li>
-         *   <li>{@link #FAILED}, when {@link TransportCallback#failed(Throwable)}
-         *   is called by an asynchronous failure</li>
-         * </ul>
          */
         IDLE,
         /**
-         * <p>A send is initiated; the nested callback in {@link TransportCallback}
-         * cannot be notified while in this state.</p>
-         * <p>Next states could be:</p>
-         * <ul>
-         *   <li>{@link #SUCCEEDING}, when {@link TransportCallback#succeeded()}
-         *   is called synchronously because the send succeeded</li>
-         *   <li>{@link #FAILING}, when {@link TransportCallback#failed(Throwable)}
-         *   is called synchronously because the send failed</li>
-         *   <li>{@link #PENDING}, when {@link TransportCallback#pending()}
-         *   is called before the send completes</li>
-         * </ul>
+         * <p>A send is initiated and possibly in progress.</p>
          */
         SENDING,
-        /**
-         * <p>A send was initiated and is now pending, waiting for the {@link TransportCallback}
-         * to be notified of success or failure.</p>
-         * <p>Next states could be:</p>
-         * <ul>
-         *   <li>{@link #IDLE}, when {@link TransportCallback#succeeded()}
-         *   is called because the send succeeded</li>
-         *   <li>{@link #FAILED}, when {@link TransportCallback#failed(Throwable)}
-         *   is called because either the send failed, or an asynchronous failure happened</li>
-         * </ul>
-         */
-        PENDING,
-        /**
-         * <p>A send was initiated and succeeded, but {@link TransportCallback#pending()}
-         * has not been called yet.</p>
-         * <p>This state indicates that the success actions (such as notifying the
-         * {@link TransportCallback} nested callback) must be performed when
-         * {@link TransportCallback#pending()} is called.</p>
-         * <p>Next states could be:</p>
-         * <ul>
-         *   <li>{@link #IDLE}, when {@link TransportCallback#pending()}
-         *   is called</li>
-         * </ul>
-         */
-        SUCCEEDING,
-        /**
-         * <p>A send was initiated and failed, but {@link TransportCallback#pending()}
-         * has not been called yet.</p>
-         * <p>This state indicates that the failure actions (such as notifying the
-         * {@link TransportCallback} nested callback) must be performed when
-         * {@link TransportCallback#pending()} is called.</p>
-         * <p>Next states could be:</p>
-         * <ul>
-         *   <li>{@link #FAILED}, when {@link TransportCallback#pending()}
-         *   is called</li>
-         * </ul>
-         */
-        FAILING,
         /**
          * <p>The terminal state indicating failure of the send.</p>
          */
