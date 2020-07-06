@@ -28,6 +28,8 @@ import java.util.function.Function;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * <p>A ByteBuffer pool where ByteBuffers are held in queues that are held in a Map.</p>
@@ -38,6 +40,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject
 public class MappedByteBufferPool extends AbstractByteBufferPool
 {
+    private static final Logger LOG = Log.getLogger(MappedByteBufferPool.class);
+
     private final ConcurrentMap<Integer, Bucket> _directBuffers = new ConcurrentHashMap<>();
     private final ConcurrentMap<Integer, Bucket> _heapBuffers = new ConcurrentHashMap<>();
     private final Function<Integer, Bucket> _newBucket;
@@ -127,7 +131,12 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
 
         int capacity = buffer.capacity();
         // Validate that this buffer is from this pool.
-        assert ((capacity % getCapacityFactor()) == 0);
+        if ((capacity % getCapacityFactor()) != 0)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ByteBuffer {} does not belong to this pool, discarding it", BufferUtil.toDetailString(buffer));
+            return;
+        }
 
         int b = bucketFor(capacity);
         boolean direct = buffer.isDirect();
