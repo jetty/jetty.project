@@ -50,7 +50,6 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Promise;
@@ -613,19 +612,27 @@ public class ConnectHandler extends HandlerWrapper
         @Override
         public void onUpgradeTo(ByteBuffer buffer)
         {
-            this.buffer = buffer == null ? BufferUtil.EMPTY_BUFFER : buffer;
+            this.buffer = buffer;
         }
 
         @Override
         public void onOpen()
         {
             super.onOpen();
-            final int remaining = buffer.remaining();
+
+            if (buffer == null)
+            {
+                fillInterested();
+                return;
+            }
+
+            int remaining = buffer.remaining();
             write(getConnection().getEndPoint(), buffer, new Callback()
             {
                 @Override
                 public void succeeded()
                 {
+                    buffer = null;
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} wrote initial {} bytes to server", DownstreamConnection.this, remaining);
                     fillInterested();
@@ -634,6 +641,7 @@ public class ConnectHandler extends HandlerWrapper
                 @Override
                 public void failed(Throwable x)
                 {
+                    buffer = null;
                     if (LOG.isDebugEnabled())
                         LOG.debug(this + " failed to write initial " + remaining + " bytes to server", x);
                     close();

@@ -234,16 +234,23 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             @Override
             public ByteBuffer onUpgradeFrom()
             {
-                return _buffer;
+                if (_buffer.hasRemaining())
+                {
+                    ByteBuffer unconsumed = ByteBuffer.allocateDirect(_buffer.remaining());
+                    unconsumed.put(_buffer);
+                    unconsumed.flip();
+                    _connector.getByteBufferPool().release(_buffer);
+                    return unconsumed;
+                }
+                return null;
             }
 
             @Override
-            public void onUpgradeTo(ByteBuffer prefilled)
+            public void onUpgradeTo(ByteBuffer buffer)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Proxy v1 copying prefilled buffer {}", BufferUtil.toDetailString(prefilled));
-                if (BufferUtil.hasContent(prefilled))
-                    BufferUtil.append(_buffer, prefilled);
+                    LOG.debug("Proxy v1 copying unconsumed buffer {}", BufferUtil.toDetailString(buffer));
+                BufferUtil.append(_buffer, buffer);
             }
 
             /**
@@ -442,12 +449,11 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             }
 
             @Override
-            public void onUpgradeTo(ByteBuffer prefilled)
+            public void onUpgradeTo(ByteBuffer buffer)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Proxy v2 copying prefilled buffer {}", BufferUtil.toDetailString(prefilled));
-                if (BufferUtil.hasContent(prefilled))
-                    BufferUtil.append(_buffer, prefilled);
+                    LOG.debug("Proxy v2 copying unconsumed buffer {}", BufferUtil.toDetailString(buffer));
+                BufferUtil.append(_buffer, buffer);
             }
 
             @Override
@@ -540,7 +546,15 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
             @Override
             public ByteBuffer onUpgradeFrom()
             {
-                return _buffer;
+                if (_buffer.hasRemaining())
+                {
+                    ByteBuffer unconsumed = ByteBuffer.allocateDirect(_buffer.remaining());
+                    unconsumed.put(_buffer);
+                    unconsumed.flip();
+                    _connector.getByteBufferPool().release(_buffer);
+                    return unconsumed;
+                }
+                return null;
             }
 
             private void parseBodyAndUpgrade() throws IOException
