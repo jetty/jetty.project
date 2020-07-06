@@ -244,9 +244,8 @@ public class Dispatcher implements RequestDispatcher
     {
         private final String _requestURI;
         private final String _contextPath;
-        private final String _servletPath;
+        private final String _pathInContext;
         private final ServletPathMapping _servletPathMapping;
-        private final String _pathInfo;
         private final String _query;
 
         public ForwardAttributes(Attributes attributes, String requestURI, String contextPath, String pathInContext, ServletPathMapping mapping, String query)
@@ -254,8 +253,7 @@ public class Dispatcher implements RequestDispatcher
             super(attributes);
             _requestURI = requestURI;
             _contextPath = contextPath;
-            _pathInfo = mapping == null ? pathInContext : mapping.getPathInfo();
-            _servletPath = mapping == null ? null : mapping.getServletPath();
+            _pathInContext = pathInContext;
             _servletPathMapping = mapping;
             _query = query;
         }
@@ -268,11 +266,11 @@ public class Dispatcher implements RequestDispatcher
                 switch (key)
                 {
                     case FORWARD_PATH_INFO:
-                        return _pathInfo;
+                        return _servletPathMapping == null ? _pathInContext : _servletPathMapping.getPathInfo();
                     case FORWARD_REQUEST_URI:
                         return _requestURI;
                     case FORWARD_SERVLET_PATH:
-                        return _servletPath;
+                        return _servletPathMapping == null ? null : _servletPathMapping.getServletPath();
                     case FORWARD_CONTEXT_PATH:
                         return _contextPath;
                     case FORWARD_QUERY_STRING:
@@ -284,7 +282,7 @@ public class Dispatcher implements RequestDispatcher
                 }
             }
 
-            // TODO: should this be __FORWARD_PREFIX?
+            // If we are forwarded then we hide include attributes
             if (key.startsWith(__INCLUDE_PREFIX))
                 return null;
 
@@ -295,25 +293,21 @@ public class Dispatcher implements RequestDispatcher
         public Set<String> getAttributeNameSet()
         {
             HashSet<String> set = new HashSet<>();
-            super.getAttributeNameSet().stream()
-                .filter(name -> !name.startsWith(__INCLUDE_PREFIX))
-                .filter(name -> !name.startsWith(__FORWARD_PREFIX))
-                .forEach(set::add);
+            for (String name : _attributes.getAttributeNameSet())
+            {
+                if (!name.startsWith(__INCLUDE_PREFIX) &&
+                    !name.startsWith(__FORWARD_PREFIX))
+                    set.add(name);
+            }
 
             if (_named == null)
             {
-                if (_pathInfo != null)
-                    set.add(FORWARD_PATH_INFO);
-                if (_requestURI != null)
-                    set.add(FORWARD_REQUEST_URI);
-                if (_servletPath != null)
-                    set.add(FORWARD_SERVLET_PATH);
-                if (_contextPath != null)
-                    set.add(FORWARD_CONTEXT_PATH);
-                if (_servletPathMapping != null)
-                    set.add(FORWARD_MAPPING);
-                if (_query != null)
-                    set.add(FORWARD_QUERY_STRING);
+                set.add(FORWARD_PATH_INFO);
+                set.add(FORWARD_REQUEST_URI);
+                set.add(FORWARD_SERVLET_PATH);
+                set.add(FORWARD_CONTEXT_PATH);
+                set.add(FORWARD_MAPPING);
+                set.add(FORWARD_QUERY_STRING);
             }
 
             return set;
@@ -358,26 +352,21 @@ public class Dispatcher implements RequestDispatcher
      */
     class IncludeAttributes extends Attributes.Wrapper
     {
+        private final Request _baseRequest;
         private final ContextHandler.Context _sourceContext;
         private final ServletPathMapping _sourceMapping;
-        private final ServletPathMapping _mapping;
         private final String _requestURI;
-        private final String _contextPath;
-        private final String _servletPath;
-        private final String _pathInfo;
+        private final String _pathInContext;
         private final String _query;
 
         public IncludeAttributes(Attributes attributes, Request baseRequest, ContextHandler.Context sourceContext, ServletPathMapping sourceMapping, String requestURI, String pathInContext, String query)
         {
             super(attributes);
-            ContextHandler.Context context = baseRequest.getContext();
-            _mapping = baseRequest.getServletPathMapping();
+            _baseRequest = baseRequest;
             _sourceMapping = sourceMapping;
             _requestURI = requestURI;
             _sourceContext = sourceContext;
-            _pathInfo = _mapping == null ? pathInContext : _mapping.getPathInfo();
-            _servletPath = _mapping == null ? null : _mapping.getServletPath();
-            _contextPath = context == null ? null : context.getContextHandler().getContextPathEncoded();
+            _pathInContext = pathInContext;
             _query = query;
         }
 
@@ -399,17 +388,26 @@ public class Dispatcher implements RequestDispatcher
                 switch (key)
                 {
                     case INCLUDE_PATH_INFO:
-                        return _pathInfo;
+                    {
+                        ServletPathMapping mapping = _baseRequest.getServletPathMapping();
+                        return mapping == null ? _pathInContext : mapping.getPathInfo();
+                    }
                     case INCLUDE_SERVLET_PATH:
-                        return _servletPath;
+                    {
+                        ServletPathMapping mapping = _baseRequest.getServletPathMapping();
+                        return mapping == null ? null : mapping.getServletPath();
+                    }
                     case INCLUDE_CONTEXT_PATH:
-                        return _contextPath;
+                    {
+                        ContextHandler.Context context = _baseRequest.getContext();
+                        return context == null ? null : context.getContextHandler().getContextPathEncoded();
+                    }
                     case INCLUDE_QUERY_STRING:
                         return _query;
                     case INCLUDE_REQUEST_URI:
                         return _requestURI;
                     case INCLUDE_MAPPING:
-                        return _mapping;
+                        return _baseRequest.getServletPathMapping();
                     default:
                         break;
                 }
@@ -422,24 +420,20 @@ public class Dispatcher implements RequestDispatcher
         public Set<String> getAttributeNameSet()
         {
             HashSet<String> set = new HashSet<>();
-            super.getAttributeNameSet().stream()
-                .filter(name -> !name.startsWith(__INCLUDE_PREFIX))
-                .forEach(set::add);
+            for (String name : _attributes.getAttributeNameSet())
+            {
+                if (!name.startsWith(__INCLUDE_PREFIX))
+                    set.add(name);
+            }
 
             if (_named == null)
             {
-                if (_pathInfo != null)
-                    set.add(INCLUDE_PATH_INFO);
-                if (_requestURI != null)
-                    set.add(INCLUDE_REQUEST_URI);
-                if (_servletPath != null)
-                    set.add(INCLUDE_SERVLET_PATH);
-                if (_contextPath != null)
-                    set.add(INCLUDE_CONTEXT_PATH);
-                if (_mapping != null)
-                    set.add(INCLUDE_MAPPING);
-                if (_query != null)
-                    set.add(INCLUDE_QUERY_STRING);
+                set.add(INCLUDE_PATH_INFO);
+                set.add(INCLUDE_REQUEST_URI);
+                set.add(INCLUDE_SERVLET_PATH);
+                set.add(INCLUDE_CONTEXT_PATH);
+                set.add(INCLUDE_MAPPING);
+                set.add(INCLUDE_QUERY_STRING);
             }
 
             return set;
