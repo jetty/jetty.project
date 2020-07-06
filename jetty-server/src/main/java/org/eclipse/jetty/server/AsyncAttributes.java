@@ -26,12 +26,10 @@ import org.eclipse.jetty.util.Attributes;
 
 class AsyncAttributes extends Attributes.Wrapper
 {
-    public static final String __ASYNC_PREFIX = "javax.servlet.async.";
-
     private final String _requestURI;
     private final String _contextPath;
     private final String _pathInContext;
-    private final ServletPathMapping _mapping;
+    private ServletPathMapping _mapping;
     private final String _queryString;
 
     public AsyncAttributes(Attributes attributes, String requestUri, String contextPath, String pathInContext, ServletPathMapping mapping, String queryString)
@@ -69,11 +67,7 @@ class AsyncAttributes extends Attributes.Wrapper
     @Override
     public Set<String> getAttributeNameSet()
     {
-        Set<String> set = new HashSet<>();
-        super.getAttributeNameSet().stream()
-            .filter(name -> !name.startsWith(__ASYNC_PREFIX))
-            .forEach(set::add);
-
+        Set<String> set = new HashSet<>(super.getAttributeNameSet());
         set.add(AsyncContext.ASYNC_REQUEST_URI);
         set.add(AsyncContext.ASYNC_CONTEXT_PATH);
         set.add(AsyncContext.ASYNC_SERVLET_PATH);
