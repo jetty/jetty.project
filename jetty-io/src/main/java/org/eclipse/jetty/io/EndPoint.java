@@ -64,7 +64,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * {
  *   public void onSucceeded()
  *   {
- *     executor.execute(() ->
+ *     executor.execute(() -&gt;
  *     {
  *       // Fill bytes in a different thread.
  *       int filled = endPoint.fill(byteBuffer);

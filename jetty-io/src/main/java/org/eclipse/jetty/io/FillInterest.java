@@ -92,6 +92,8 @@ public abstract class FillInterest
 
     /**
      * Call to signal that a read is now possible.
+     *
+     * @return whether the callback was notified that a read is now possible
      */
     public boolean fillable()
     {
