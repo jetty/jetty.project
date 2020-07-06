@@ -459,26 +459,20 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * be processed by the websocket parser before starting
      * to read bytes from the connection
      *
-     * @param prefilled the bytes of prefilled content encountered during upgrade
+     * @param initialBuffer the bytes of extra content encountered during upgrade
      */
-    protected void setInitialBuffer(ByteBuffer prefilled)
+    protected void setInitialBuffer(ByteBuffer initialBuffer)
     {
         if (LOG.isDebugEnabled())
+            LOG.debug("Set initial buffer - {}", BufferUtil.toDetailString(initialBuffer));
+        synchronized (this)
         {
-            LOG.debug("set Initial Buffer - {}", BufferUtil.toDetailString(prefilled));
+            networkBuffer = newNetworkBuffer(initialBuffer.remaining());
         }
-
-        if ((prefilled != null) && (prefilled.hasRemaining()))
-        {
-            synchronized (this)
-            {
-                networkBuffer = newNetworkBuffer(prefilled.remaining());
-            }
-            ByteBuffer buffer = networkBuffer.getBuffer();
-            BufferUtil.clearToFill(buffer);
-            BufferUtil.put(prefilled, buffer);
-            BufferUtil.flipToFlush(buffer, 0);
-        }
+        ByteBuffer buffer = networkBuffer.getBuffer();
+        BufferUtil.clearToFill(buffer);
+        BufferUtil.put(initialBuffer, buffer);
+        BufferUtil.flipToFlush(buffer, 0);
     }
 
     /**
@@ -533,16 +527,15 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      * Extra bytes from the initial HTTP upgrade that need to
      * be processed by the websocket parser before starting
      * to read bytes from the connection
+     *
+     * @param buffer a non-null buffer of extra bytes
      */
     @Override
-    public void onUpgradeTo(ByteBuffer prefilled)
+    public void onUpgradeTo(ByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
-        {
-            LOG.debug("onUpgradeTo({})", BufferUtil.toDetailString(prefilled));
-        }
-
-        setInitialBuffer(prefilled);
+            LOG.debug("onUpgradeTo({})", BufferUtil.toDetailString(buffer));
+        setInitialBuffer(buffer);
     }
 
     public FrameFlusher getFrameFlusher()
