@@ -100,7 +100,7 @@ public class ClientTimeoutTest
         client.setMaxIdleTimeout(timeout);
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
 
-        ExecutionException executionException = assertThrows(ExecutionException.class, () -> connect.get(timeout + 200, TimeUnit.MILLISECONDS));
+        ExecutionException executionException = assertThrows(ExecutionException.class, () -> connect.get(timeout * 2, TimeUnit.MILLISECONDS));
         assertThat(executionException.getCause(), instanceOf(UpgradeException.class));
         UpgradeException upgradeException = (UpgradeException)executionException.getCause();
         assertThat(upgradeException.getCause(), instanceOf(TimeoutException.class));
@@ -112,10 +112,10 @@ public class ClientTimeoutTest
         EventSocket clientSocket = new EventSocket();
         long timeout = 1000;
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        upgradeRequest.timeout(timeout, TimeUnit.MILLISECONDS);
+        upgradeRequest.setTimeout(timeout, TimeUnit.MILLISECONDS);
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()), upgradeRequest);
 
-        ExecutionException executionException = assertThrows(ExecutionException.class, () -> connect.get(timeout + 200, TimeUnit.MILLISECONDS));
+        ExecutionException executionException = assertThrows(ExecutionException.class, () -> connect.get(timeout * 2, TimeUnit.MILLISECONDS));
         assertThat(executionException.getCause(), instanceOf(UpgradeException.class));
         UpgradeException upgradeException = (UpgradeException)executionException.getCause();
         assertThat(upgradeException.getCause(), instanceOf(TimeoutException.class));
