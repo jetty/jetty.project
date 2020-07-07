@@ -43,6 +43,11 @@ public class DumpableCollection implements Dumpable
     {
         return new DumpableCollection(name, items == null ? Collections.emptyList() : Arrays.asList(items));
     }
+    
+    public boolean contains(Object o)
+    {
+        return _collection.contains(o);
+    }
 
     @Override
     public String dump()

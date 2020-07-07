@@ -196,7 +196,8 @@ public interface Dumpable
         for (Iterator<Object> i = container.getBeans().iterator(); i.hasNext(); )
         {
             Object bean = i.next();
-            if (extras.contains(bean))
+
+            if (isContainedIn(bean, extras))
                 continue; //will be explictly formatted by caller
 
             String nextIndent = indent + ((i.hasNext() || !extras.isEmpty()) ? "|  " : "   ");
@@ -240,6 +241,26 @@ public interface Dumpable
         }
     }
     
+    static boolean isContainedIn(Object object, List<Object> objects)
+    {
+        if (object == null)
+            return false;
+        if (objects == null)
+            return false;
+        
+        if (objects.contains(object))
+            return true;
+        
+        for (Object o : objects)
+        {
+            if (o instanceof DumpableCollection && ((DumpableCollection)o).contains(object))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     @Deprecated
     static void dumpIterable(Appendable out, String indent, Iterable<?> iterable, boolean last) throws IOException
     {
@@ -251,7 +272,7 @@ public interface Dumpable
         for (Iterator i = iterable.iterator(); i.hasNext(); )
         {
             Object item = i.next();
-            if (extras.contains(item))
+            if (isContainedIn(item, extras))
                 continue; //the item will be formatted explicitly by caller
             
             String nextIndent = indent + ((i.hasNext() || !extras.isEmpty()) ? "|  " : "   ");
@@ -274,7 +295,7 @@ public interface Dumpable
         for (Iterator<? extends Map.Entry<?, ?>> i = map.entrySet().iterator(); i.hasNext(); )
         {
             Map.Entry entry = i.next();
-            if (extras.contains(entry))
+            if (isContainedIn(entry, extras))
                 continue; //will be explicitly formatted by caller
             String nextIndent = indent + ((i.hasNext() || !extras.isEmpty()) ? "|  " : "   ");
             out.append(indent).append("+@ ").append(String.valueOf(entry.getKey())).append(" = ");
