@@ -693,14 +693,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         if (closed.compareAndSet(CloseState.NOT_CLOSED, CloseState.LOCALLY_CLOSED))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Closing {}/{}", error, reason);
+                LOG.debug("Closing {}/{} {}", error, reason, this);
             closeFrame = newGoAwayFrame(CloseState.LOCALLY_CLOSED, error, reason);
             control(null, callback, closeFrame);
             return true;
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Ignoring close {}/{}, already closed", error, reason);
+            LOG.debug("Ignoring close {}/{}, already closed {}", error, reason, this);
         callback.succeeded();
         return false;
     }
@@ -1151,7 +1151,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         return lastRemoteStreamId.get();
     }
 
-    private void updateLastRemoteStreamId(int streamId)
+    protected void updateLastRemoteStreamId(int streamId)
     {
         Atomics.updateMax(lastRemoteStreamId, streamId);
     }

@@ -941,7 +941,7 @@ public class AnnotationParser
      * @param name the class file name
      * @return whether the class file name is valid
      */
-    private boolean isValidClassFileName(String name)
+    public boolean isValidClassFileName(String name)
     {
         //no name cannot be valid
         if (name == null || name.length() == 0)
@@ -983,7 +983,7 @@ public class AnnotationParser
      * @param path the class file path
      * @return whether the class file path is valid
      */
-    private boolean isValidClassFilePath(String path)
+    public boolean isValidClassFilePath(String path)
     {
         //no path is not valid
         if (path == null || path.length() == 0)
