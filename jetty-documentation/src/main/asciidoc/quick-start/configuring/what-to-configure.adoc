@@ -31,7 +31,7 @@ In the standard Jetty distribution, the core server configuration is in `etc/jet
 
 ThreadPool::
   The Server instance provides a ThreadPool instance that is the default Executor service other Jetty server components use. 
-  The prime configuration of the thread pool is the maximum and minimum size and is set in `start.ini` or `start.d/server.ini`.
+  The prime configuration of the thread pool is the maximum and minimum size and is set in `start.ini` or `start.d/threadpool.ini`.
 Handlers::
   A Jetty server can have only a single Handler instance to handle incoming HTTP requests. 
   However a handler may be a container or wrapper of other handlers forming a tree of handlers that typically
