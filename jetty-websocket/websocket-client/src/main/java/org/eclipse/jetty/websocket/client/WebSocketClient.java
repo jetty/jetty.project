@@ -342,7 +342,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketCont
         }
 
         String scheme = toUri.getScheme().toLowerCase(Locale.ENGLISH);
-        if (("ws".equals(scheme) == false) && ("wss".equals(scheme) == false))
+        if ((!"ws".equals(scheme)) && (!"wss".equals(scheme)))
         {
             throw new IllegalArgumentException("WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");
         }
