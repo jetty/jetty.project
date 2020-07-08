@@ -23,11 +23,11 @@ import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
@@ -39,19 +39,19 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
  */
 public final class ClientUpgradeRequest implements UpgradeRequest
 {
-    private URI requestURI;
-    private List<String> subProtocols = new ArrayList<>(1);
-    private List<ExtensionConfig> extensions = new ArrayList<>(1);
-    private List<HttpCookie> cookies = new ArrayList<>(1);
-    private Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-    private Map<String, List<String>> parameters = new HashMap<>(1);
-    private String httpVersion;
-    private String method;
-    private String host;
+    private final List<String> subProtocols = new ArrayList<>(1);
+    private final List<ExtensionConfig> extensions = new ArrayList<>(1);
+    private final List<HttpCookie> cookies = new ArrayList<>(1);
+    private final Map<String, List<String>> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    private final URI requestURI;
+    private final String host;
+    private long timeout;
 
     public ClientUpgradeRequest()
     {
         /* anonymous, no requestURI, upgrade request */
+        this.requestURI = null;
+        this.host = null;
     }
 
     public ClientUpgradeRequest(URI uri)
@@ -161,13 +161,13 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     @Override
     public String getHttpVersion()
     {
-        return httpVersion;
+        throw new UnsupportedOperationException("HttpVersion not available on ClientUpgradeRequest");
     }
 
     @Override
     public String getMethod()
     {
-        return method;
+        throw new UnsupportedOperationException("Method not available on ClientUpgradeRequest");
     }
 
     @Override
@@ -176,15 +176,10 @@ public final class ClientUpgradeRequest implements UpgradeRequest
         return getHeader(HttpHeader.ORIGIN.name());
     }
 
-    /**
-     * Returns a map of the query parameters of the request.
-     *
-     * @return a unmodifiable map of query parameters of the request.
-     */
     @Override
     public Map<String, List<String>> getParameterMap()
     {
-        return Collections.unmodifiableMap(parameters);
+        return Collections.emptyMap();
     }
 
     @Override
@@ -295,6 +290,25 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     public void setSession(Object session)
     {
         throw new UnsupportedOperationException("HttpSession not available on Client request");
+    }
+
+    /**
+     * @param timeout the total timeout for the request/response conversation of the WebSocket handshake;
+     * use zero or a negative value to disable the timeout
+     * @param unit the timeout unit
+     */
+    public void setTimeout(long timeout, TimeUnit unit)
+    {
+        this.timeout = unit.toMillis(timeout);
+    }
+
+    /**
+     * @return the total timeout for this request, in milliseconds;
+     * zero or negative if the timeout is disabled
+     */
+    public long getTimeout()
+    {
+        return timeout;
     }
 
     /**
