@@ -29,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -132,7 +131,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         }
 
         JettyClientUpgradeRequest upgradeRequest = new JettyClientUpgradeRequest(coreClient, request, toUri, frameHandlerFactory, websocket);
-        upgradeRequest.timeout(request.getTimeout(), TimeUnit.MILLISECONDS);
         upgradeRequest.setConfiguration(configurationCustomizer);
         if (upgradeListener != null)
         {
