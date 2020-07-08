@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 
 import aQute.bnd.osgi.Constants;
-
 import org.eclipse.jetty.annotations.ClassInheritanceHandler;
 import org.eclipse.jetty.osgi.annotations.AnnotationParser;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
