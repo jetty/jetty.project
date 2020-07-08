@@ -78,7 +78,7 @@ public class AttributeContainerMap extends ContainerLifeCycle implements Attribu
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObject(out, this);
-        Dumpable.dumpMapEntries(out, indent, _map, Collections.emptyList());
+        Dumpable.dumpMapEntries(out, indent, _map, true);
     }
 
     @Override

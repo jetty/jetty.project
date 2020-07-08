@@ -134,6 +134,14 @@ public class ServletHandler extends ScopedHandler
     }
 
     @Override
+    public boolean isDumpable(Object o)
+    {
+        if (o instanceof Holder || o instanceof BaseHolder || o instanceof FilterMapping || o instanceof ServletMapping)
+            return false;
+        return true;
+    }
+
+    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpObjects(out, indent,

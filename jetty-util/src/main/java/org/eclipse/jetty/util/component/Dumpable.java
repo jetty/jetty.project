@@ -22,9 +22,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -147,8 +145,9 @@ public interface Dumpable
     static void dumpObjects(Appendable out, String indent, Object object, Object... extraChildren) throws IOException
     {
         dumpObject(out, object);
-        List<Object> list = extraChildren == null ? Collections.emptyList() : Arrays.asList(extraChildren);
-
+        
+        int extras = extraChildren == null ? 0 : extraChildren.length;
+        
         if (object instanceof Stream)
             object = ((Stream)object).toArray();
         if (object instanceof Array)
@@ -156,25 +155,25 @@ public interface Dumpable
 
         if (object instanceof Container)
         {
-            dumpContainer(out, indent, (Container)object, list);
+            dumpContainer(out, indent, (Container)object, extras == 0);
         }
         if (object instanceof Iterable)
         {
-            dumpIterable(out, indent, (Iterable<?>)object, list);
+            dumpIterable(out, indent, (Iterable<?>)object, extras == 0);
         }
         else if (object instanceof Map)
         {
-            dumpMapEntries(out, indent, (Map<?, ?>)object, list);
+            dumpMapEntries(out, indent, (Map<?, ?>)object, extras == 0);
         }
 
-        if (list.size() == 0)
+        if (extras == 0)
             return;
 
         int i = 0;
         for (Object item : extraChildren)
         {
             i++;
-            String nextIndent = indent + (i < list.size() ? "|  " : "   ");
+            String nextIndent = indent + (i < extras ? "|  " : "   ");
             out.append(indent).append("+> ");
             if (item instanceof Dumpable)
                 ((Dumpable)item).dump(out, nextIndent);
@@ -183,13 +182,7 @@ public interface Dumpable
         }
     }
     
-    @Deprecated
     static void dumpContainer(Appendable out, String indent, Container object, boolean last) throws IOException
-    {
-        dumpContainer(out, indent, object, (last ? Collections.emptyList() : Collections.singletonList(new Object())));
-    }
-    
-    static void dumpContainer(Appendable out, String indent, Container object, List<Object> extras) throws IOException
     {
         Container container = object;
         ContainerLifeCycle containerLifeCycle = container instanceof ContainerLifeCycle ? (ContainerLifeCycle)container : null;
@@ -197,10 +190,10 @@ public interface Dumpable
         {
             Object bean = i.next();
 
-            if (isContainedIn(bean, extras))
-                continue; //will be explictly formatted by caller
+            if (container instanceof DumpableContainer && !((DumpableContainer)container).isDumpable(bean))
+                continue; //won't be dumped as a child bean
 
-            String nextIndent = indent + ((i.hasNext() || !extras.isEmpty()) ? "|  " : "   ");
+            String nextIndent = indent + ((i.hasNext() || !last) ? "|  " : "   ");
             if (bean instanceof LifeCycle)
             {
                 if (container.isManaged(bean))
@@ -241,41 +234,12 @@ public interface Dumpable
         }
     }
     
-    static boolean isContainedIn(Object object, List<Object> objects)
-    {
-        if (object == null)
-            return false;
-        if (objects == null)
-            return false;
-        
-        if (objects.contains(object))
-            return true;
-        
-        for (Object o : objects)
-        {
-            if (o instanceof DumpableCollection && ((DumpableCollection)o).contains(object))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    @Deprecated
     static void dumpIterable(Appendable out, String indent, Iterable<?> iterable, boolean last) throws IOException
-    {
-        dumpIterable(out, indent, iterable, last ? Collections.emptyList() : Collections.singletonList(new Object()));
-    }
-    
-    static void dumpIterable(Appendable out, String indent, Iterable<?> iterable, List<Object> extras) throws IOException
     {
         for (Iterator i = iterable.iterator(); i.hasNext(); )
         {
             Object item = i.next();
-            if (isContainedIn(item, extras))
-                continue; //the item will be formatted explicitly by caller
-            
-            String nextIndent = indent + ((i.hasNext() || !extras.isEmpty()) ? "|  " : "   ");
+            String nextIndent = indent + ((i.hasNext() || !last) ? "|  " : "   ");
             out.append(indent).append("+: ");
             if (item instanceof Dumpable)
                 ((Dumpable)item).dump(out, nextIndent);
@@ -283,21 +247,13 @@ public interface Dumpable
                 dumpObjects(out, nextIndent, item);
         }
     }
-    
-    @Deprecated
+
     static void dumpMapEntries(Appendable out, String indent, Map<?, ?> map, boolean last) throws IOException
-    {
-        dumpMapEntries(out, indent, map, last ? Collections.emptyList() : Collections.singletonList(new Object()));
-    }
-    
-    static void dumpMapEntries(Appendable out, String indent, Map<?, ?> map, List<Object> extras) throws IOException
     {
         for (Iterator<? extends Map.Entry<?, ?>> i = map.entrySet().iterator(); i.hasNext(); )
         {
             Map.Entry entry = i.next();
-            if (isContainedIn(entry, extras))
-                continue; //will be explicitly formatted by caller
-            String nextIndent = indent + ((i.hasNext() || !extras.isEmpty()) ? "|  " : "   ");
+            String nextIndent = indent + ((i.hasNext() || !last) ? "|  " : "   ");
             out.append(indent).append("+@ ").append(String.valueOf(entry.getKey())).append(" = ");
             Object item = entry.getValue();
             if (item instanceof Dumpable)
