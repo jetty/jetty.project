@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class HazelcastTestHelper
 {
-    static final String _hazelcastInstanceName = "SESSION_TEST_" + Long.toString(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
+    static final String _hazelcastInstanceName = "SESSION_TEST_" + TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
 
     static final String _name = Long.toString(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
 

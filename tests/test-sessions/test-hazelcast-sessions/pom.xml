@@ -54,6 +54,7 @@
           <forkedProcessExitTimeoutInSeconds>45</forkedProcessExitTimeoutInSeconds>
           <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
           <systemPropertyVariables>
+            <hazelcast.version>${hazelcast.version}</hazelcast.version>
             <java.util.logging.config.file>${project.build.testOutputDirectory}/logging.properties</java.util.logging.config.file>
           </systemPropertyVariables>
         </configuration>
@@ -95,6 +96,16 @@
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
