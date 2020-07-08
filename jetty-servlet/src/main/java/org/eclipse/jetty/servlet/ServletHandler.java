@@ -62,6 +62,7 @@ import org.eclipse.jetty.server.ServletResponseHttpWrapper;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ScopedHandler;
+import org.eclipse.jetty.servlet.listener.ServletMetricsListener;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiException;
@@ -118,6 +119,7 @@ public class ServletHandler extends ScopedHandler
     private PathMappings<ServletHolder> _servletPathMap;
 
     private ListenerHolder[] _listeners = new ListenerHolder[0];
+    private ServletMetricsListener _metricsListener;
     private boolean _initialized = false;
 
     @SuppressWarnings("unchecked")
@@ -208,6 +210,11 @@ public class ServletHandler extends ScopedHandler
     public void setEnsureDefaultServlet(boolean ensureDefaultServlet)
     {
         _ensureDefaultServlet = ensureDefaultServlet;
+    }
+
+    public void setMetricsListener(ServletMetricsListener metricsListener)
+    {
+        this._metricsListener = metricsListener;
     }
 
     @Override
@@ -308,7 +315,7 @@ public class ServletHandler extends ScopedHandler
         _servlets = shs;
         ServletMapping[] sms = (ServletMapping[])LazyList.toArray(servletMappings, ServletMapping.class);
         _servletMappings = sms;
-        
+
         if (_contextHandler != null)
             _contextHandler.contextDestroyed();
 
@@ -745,8 +752,14 @@ public class ServletHandler extends ScopedHandler
             {
                 if (!h.isStarted())
                 {
+                    long durationNanoStart = System.nanoTime();
                     h.start();
                     h.initialize();
+                    if (_metricsListener != null)
+                    {
+                        long durationNano = System.nanoTime() - durationNanoStart;
+                        _metricsListener.onServletContextInitTiming(_contextHandler, h, durationNano);
+                    }
                 }
             }
             catch (Throwable e)
@@ -755,17 +768,17 @@ public class ServletHandler extends ScopedHandler
                 mx.add(e);
             }
         };
-        
+
         //Start the listeners so we can call them
         Arrays.stream(_listeners).forEach(c);
-        
+
         //call listeners contextInitialized
         if (_contextHandler != null)
             _contextHandler.contextInitialized();
-        
+
         //Only set initialized true AFTER the listeners have been called
         _initialized = true;
-            
+
         //Start the filters then the servlets
         Stream.concat(
             Arrays.stream(_filters),
@@ -774,7 +787,7 @@ public class ServletHandler extends ScopedHandler
 
         mx.ifExceptionThrow();
     }
-    
+
     /**
      * @return true if initialized has been called, false otherwise
      */
@@ -1599,6 +1612,11 @@ public class ServletHandler extends ScopedHandler
                     LOG.debug("call filter {}", _filterHolder);
                 Filter filter = _filterHolder.getFilter();
 
+                if (_metricsListener != null)
+                {
+                    _metricsListener.onFilterEnter(_contextHandler, _filterHolder, baseRequest);
+                }
+
                 //if the request already does not support async, then the setting for the filter
                 //is irrelevant. However if the request supports async but this filter does not
                 //temporarily turn it off for the execution of the filter
@@ -1617,6 +1635,10 @@ public class ServletHandler extends ScopedHandler
                 else
                     filter.doFilter(request, response, _next);
 
+                if (_metricsListener != null)
+                {
+                    _metricsListener.onFilterExit(_contextHandler, _filterHolder, baseRequest);
+                }
                 return;
             }
 
@@ -1628,7 +1650,15 @@ public class ServletHandler extends ScopedHandler
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("call servlet " + _servletHolder);
+                if (_metricsListener != null)
+                {
+                    _metricsListener.onServletServiceEnter(_contextHandler, _servletHolder, baseRequest);
+                }
                 _servletHolder.handle(baseRequest, request, response);
+                if (_metricsListener != null)
+                {
+                    _metricsListener.onServletServiceExit(_contextHandler, _servletHolder, baseRequest);
+                }
             }
         }
 

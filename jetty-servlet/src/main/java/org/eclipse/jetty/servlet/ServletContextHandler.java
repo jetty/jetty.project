@@ -63,6 +63,7 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.servlet.listener.ServletMetricsListener;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.StringUtil;
@@ -107,6 +108,7 @@ public class ServletContextHandler extends ContextHandler
     protected int _options;
     protected JspConfigDescriptor _jspConfig;
 
+    private ServletMetricsListener _metricsListener;
     private boolean _startListeners;
 
     public ServletContextHandler()
@@ -268,11 +270,43 @@ public class ServletContextHandler extends ContextHandler
         }
     }
 
+    public void setMetricsListener(ServletMetricsListener metricsListener)
+    {
+        _metricsListener = metricsListener;
+    }
+
+    public ServletMetricsListener getMetricsListener()
+    {
+        if (_metricsListener == null)
+        {
+            ServletMetricsListener metricsListener = getBean(ServletMetricsListener.class);
+            if ((metricsListener == null) && (getServer() != null))
+            {
+                metricsListener = getServer().getBean(ServletMetricsListener.class);
+            }
+
+            _metricsListener = metricsListener;
+        }
+
+        return _metricsListener;
+    }
+
     @Override
     protected void doStart() throws Exception
     {
+        ServletMetricsListener metricsListener = getMetricsListener();
+        if (metricsListener != null)
+        {
+            getServletHandler().setMetricsListener(metricsListener);
+        }
+        long durationNanoStart = System.nanoTime();
         getServletContext().setAttribute(DecoratedObjectFactory.ATTR, _objFactory);
         super.doStart();
+        if (metricsListener != null)
+        {
+            long durationNano = System.nanoTime() - durationNanoStart;
+            metricsListener.onServletContextInitTiming(this, durationNano);
+        }
     }
 
     /**
@@ -325,7 +359,9 @@ public class ServletContextHandler extends ContextHandler
 
     protected ServletHandler newServletHandler()
     {
-        return new ServletHandler();
+        ServletHandler servletHandler = new ServletHandler();
+        servletHandler.setMetricsListener(getMetricsListener());
+        return servletHandler;
     }
 
     /**
@@ -1074,7 +1110,7 @@ public class ServletContextHandler extends ContextHandler
         {
             if (isStarted())
                 throw new IllegalStateException();
-            
+
             if (ServletContextHandler.this.getServletHandler().isInitialized())
                 throw new IllegalStateException();
 
@@ -1415,7 +1451,7 @@ public class ServletContextHandler extends ContextHandler
             {
                 try
                 {
-                    holder.start();   
+                    holder.start();
                 }
                 catch (Exception e)
                 {

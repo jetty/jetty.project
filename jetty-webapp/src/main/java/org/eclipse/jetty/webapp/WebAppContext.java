@@ -182,6 +182,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private String _extraClasspath;
     private Throwable _unavailableException;
 
+    private WebAppMetricsListener _metricsListener;
+
     private Map<String, String> _resourceAliases;
     private boolean _ownClassLoader = false;
     private boolean _configurationDiscovered = false;
@@ -481,31 +483,58 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
         }
 
+        WebAppMetricsListener metricsListener = getWebAppMetricsListener();
+
         // Prepare for configuration
         for (Configuration configuration : _configurations)
         {
             LOG.debug("preConfigure {} with {}", this, configuration);
+
+            long durationNanoStart = System.nanoTime();
             configuration.preConfigure(this);
+            if (metricsListener != null)
+            {
+                long durationNano = System.nanoTime() - durationNanoStart;
+                metricsListener.onWebAppConfigureTiming(this, configuration, WebAppMetricsListener.ConfigurationStep.PRE, durationNano);
+            }
         }
     }
 
     public void configure() throws Exception
     {
+        WebAppMetricsListener metricsListener = getWebAppMetricsListener();
+
         // Configure webapp
         for (Configuration configuration : _configurations)
         {
             LOG.debug("configure {} with {}", this, configuration);
+
+            long durationNanoStart = System.nanoTime();
             configuration.configure(this);
+            if (metricsListener != null)
+            {
+                long durationNano = System.nanoTime() - durationNanoStart;
+                metricsListener.onWebAppConfigureTiming(this, configuration, WebAppMetricsListener.ConfigurationStep.MAIN, durationNano);
+            }
         }
     }
 
     public void postConfigure() throws Exception
     {
+        WebAppMetricsListener metricsListener = getWebAppMetricsListener();
+
         // Clean up after configuration
         for (Configuration configuration : _configurations)
         {
             LOG.debug("postConfigure {} with {}", this, configuration);
+
+            long durationNanoStart = System.nanoTime();
             configuration.postConfigure(this);
+            if (metricsListener != null)
+            {
+                long durationNano = System.nanoTime() - durationNanoStart;
+                metricsListener.onWebAppConfigureTiming(this, configuration, WebAppMetricsListener.ConfigurationStep.POST, durationNano);
+            }
         }
     }
 
@@ -517,12 +546,20 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         try
         {
+            long durationNanoStart = System.nanoTime();
             _metadata.setAllowDuplicateFragmentNames(isAllowDuplicateFragmentNames());
             Boolean validate = (Boolean)getAttribute(MetaData.VALIDATE_XML);
             _metadata.setValidateXml((validate != null && validate));
             preConfigure();
             super.doStart();
             postConfigure();
+
+            WebAppMetricsListener metricsListener = getWebAppMetricsListener();
+            if (metricsListener != null)
+            {
+                long durationNano = System.nanoTime() - durationNanoStart;
+                metricsListener.onWebAppStartTiming(this, durationNano);
+            }
 
             if (isLogUrlOnStart())
                 dumpUrl();
@@ -636,6 +673,23 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public List<String> getOverrideDescriptors()
     {
         return Collections.unmodifiableList(_overrideDescriptors);
+    }
+
+    public void setWebAppMetricsListener(WebAppMetricsListener listener)
+    {
+        _metricsListener = listener;
+    }
+
+    public WebAppMetricsListener getWebAppMetricsListener()
+    {
+        if (_metricsListener == null)
+        {
+            WebAppMetricsListener metricsListener = getBean(WebAppMetricsListener.class);
+            if (metricsListener == null)
+                metricsListener = getServer().getBean(WebAppMetricsListener.class);
+            _metricsListener = metricsListener;
+        }
+        return _metricsListener;
     }
 
     /**
