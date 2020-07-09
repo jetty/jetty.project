@@ -271,4 +271,19 @@ public interface Dumpable
             Dumpable.dumpObjects(out, indent, object);
         };
     }
+
+    /**
+     * DumpableContainer
+     *
+     * A Dumpable that is a container of beans can implement this
+     * interface to allow it to refine which of its beans can be
+     * dumped.
+     */
+    public interface DumpableContainer extends Dumpable
+    {
+        default boolean isDumpable(Object o)
+        {
+            return true;
+        }
+    }
 }

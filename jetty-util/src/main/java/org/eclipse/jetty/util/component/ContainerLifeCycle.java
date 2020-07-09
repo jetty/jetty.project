@@ -75,7 +75,7 @@ import org.eclipse.jetty.util.log.Logger;
  * </pre>
  */
 @ManagedObject("Implementation of Container and LifeCycle")
-public class ContainerLifeCycle extends AbstractLifeCycle implements Container, Destroyable, DumpableContainer
+public class ContainerLifeCycle extends AbstractLifeCycle implements Container, Destroyable, Dumpable.DumpableContainer
 {
     private static final Logger LOG = Log.getLogger(ContainerLifeCycle.class);
     private final List<Bean> _beans = new CopyOnWriteArrayList<>();
