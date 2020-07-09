@@ -1,4 +1,4 @@
-jetty-11.0.0-SNAPSHOT
+jetty-11.0.0.beta0
 
 jetty-11.0.0-alpha0
 
