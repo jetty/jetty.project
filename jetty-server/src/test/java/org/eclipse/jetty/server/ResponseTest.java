@@ -932,6 +932,7 @@ public class ResponseTest
             }
         }
     }
+
     @Test
     public void testInvalidSendRedirect() throws Exception
     {
