@@ -1,51 +1,8 @@
 jetty-11.0.0-SNAPSHOT
 
-jetty-11.0.0.beta1 - 09 July 2020
- + 1100 null
- + 2540 null
- + 3428 null
- + 4776 null
- + 4826 null
- + 4855 null
- + 4877 null
- + 4890 null
- + 4903 null
- + 4904 null
- + 4907 null
- + 4911 null
- + 4920 null
- + 4921 null
- + 4922 null
- + 4923 null
- + 4927 null
- + 4929 null
- + 4932 null
- + 4933 null
- + 4936 null
- + 4937 null
- + 4938 null
- + 4939 null
- + 4946 null
- + 4950 null
- + 4965 null
- + 4967 null
- + 4969 null
- + 4971 null
- + 4976 null
- + 4981 null
- + 4985 null
- + 4989 null
- + 4991 null
- + 5000 null
- + 5001 null
- + 5005 null
- + 5008 null
- + 5010 null
- + 5018 null
+jetty-11.0.0-alpha0 - 30 May 2020
 
-jetty-11.0.0-alpha0
-
-jetty-10.0.0.beta1
+jetty-10.0.0.beta0 - 27 May 2020
 
 jetty-9.4.30.v20200611 - 11 June 2020
  + 4776 Incorrect path matching for WebSocket using PathMappings
