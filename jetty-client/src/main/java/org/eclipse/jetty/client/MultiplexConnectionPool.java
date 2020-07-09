@@ -56,7 +56,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     public Connection acquire(boolean create)
     {
         Connection connection = activate();
-        if (connection == null)
+        if (connection == null && create)
         {
             int queuedRequests = getHttpDestination().getQueuedRequestCount();
             int maxMultiplex = getMaxMultiplex();
