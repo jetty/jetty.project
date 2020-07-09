@@ -1,6 +1,6 @@
 jetty-10.0.0-SNAPSHOT
 
-jetty-10.0.0.beta1
+jetty-10.0.0.beta0 - 27 May 2020
 
 jetty-9.4.30.v20200611 - 11 June 2020
  + 4776 Incorrect path matching for WebSocket using PathMappings
