@@ -859,6 +859,80 @@ public class ResponseTest
     }
 
     @Test
+    public void testSendRedirectRelative()
+        throws Exception
+    {
+        String[][] tests = {
+            // No cookie
+            {
+                "http://myhost:8888/other/location;jsessionid=12345?name=value",
+                "http://myhost:8888/other/location;jsessionid=12345?name=value"
+            },
+            {"/other/location;jsessionid=12345?name=value", "/other/location;jsessionid=12345?name=value"},
+            {"./location;jsessionid=12345?name=value", "/path/location;jsessionid=12345?name=value"},
+
+            // From cookie
+            {"/other/location", "/other/location"},
+            {"/other/l%20cation", "/other/l%20cation"},
+            {"location", "/path/location"},
+            {"./location", "/path/location"},
+            {"../location", "/location"},
+            {"/other/l%20cation", "/other/l%20cation"},
+            {"l%20cation", "/path/l%20cation"},
+            {"./l%20cation", "/path/l%20cation"},
+            {"../l%20cation", "/l%20cation"},
+            {"../locati%C3%abn", "/locati%C3%abn"},
+            {"../other%2fplace", "/other%2fplace"},
+            {"http://somehost.com/other/location", "http://somehost.com/other/location"},
+            };
+
+        int[] ports = new int[]{8080, 80};
+        String[] hosts = new String[]{null, "myhost", "192.168.0.1", "0::1"};
+        for (int port : ports)
+        {
+            for (String host : hosts)
+            {
+                for (int i = 0; i < tests.length; i++)
+                {
+                    // System.err.printf("%s %d %s%n",host,port,tests[i][0]);
+
+                    Response response = getResponse();
+                    Request request = response.getHttpChannel().getRequest();
+                    request.getHttpChannel().getHttpConfiguration().setRelativeRedirectionAllowed(true);
+
+                    request.setScheme("http");
+                    if (host != null)
+                        request.setAuthority(host, port);
+                    request.setURIPathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
+                    request.setContextPath("/path");
+                    request.setRequestedSessionId("12345");
+                    request.setRequestedSessionIdFromCookie(i > 2);
+                    SessionHandler handler = new SessionHandler();
+
+                    NullSessionDataStore ds = new NullSessionDataStore();
+                    DefaultSessionCache ss = new DefaultSessionCache(handler);
+                    handler.setSessionCache(ss);
+                    ss.setSessionDataStore(ds);
+                    DefaultSessionIdManager idMgr = new DefaultSessionIdManager(_server);
+                    idMgr.setWorkerName(null);
+                    handler.setSessionIdManager(idMgr);
+                    request.setSessionHandler(handler);
+                    request.setSession(new TestSession(handler, "12345"));
+                    handler.setCheckingRemoteSessionIdEncoding(false);
+
+                    response.sendRedirect(tests[i][0]);
+
+                    String location = response.getHeader("Location");
+
+                    String expected = tests[i][1]
+                        .replace("@HOST@", host == null ? request.getLocalAddr() : (host.contains(":") ? ("[" + host + "]") : host))
+                        .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
+                    assertEquals(expected, location, "test-" + i + " " + host + ":" + port);
+                }
+            }
+        }
+    }
+    @Test
     public void testInvalidSendRedirect() throws Exception
     {
         // Request is /path/info, so we need 3 ".." for an invalid redirect.
