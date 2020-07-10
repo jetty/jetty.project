@@ -3,6 +3,10 @@ DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-m
 [description]
 Enables the SSL keystore to be reloaded after any changes are detected on the file system.
 
+[tags]
+connector
+ssl
+
 [depend]
 ssl
 
