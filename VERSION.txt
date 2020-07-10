@@ -1,3 +1,5 @@
+jetty-10.0.0-SNAPSHOT
+
 jetty-10.0.0.beta1 - 10 July 2020
  + 1100 JSR356 Encoder#init is not called when created on demand
  + 2540 Flaky test: org.eclipse.jetty.client.ConnectionPoolTest
