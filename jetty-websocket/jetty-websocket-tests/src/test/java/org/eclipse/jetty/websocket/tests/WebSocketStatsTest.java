@@ -144,7 +144,7 @@ public class WebSocketStatsTest
             }
         }
 
-        assertTrue(socket.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
         assertTrue(wsConnectionClosed.await(5, TimeUnit.SECONDS));
 
         assertThat(statistics.getConnectionsMax(), is(1L));

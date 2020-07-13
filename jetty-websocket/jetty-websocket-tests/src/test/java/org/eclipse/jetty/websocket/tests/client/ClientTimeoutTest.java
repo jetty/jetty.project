@@ -36,6 +36,7 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
+import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.eclipse.jetty.websocket.tests.EventSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,7 +70,7 @@ public class ClientTimeoutTest
                 try
                 {
                     createEndpoint.await(5, TimeUnit.SECONDS);
-                    return new EventSocket.EchoSocket();
+                    return new EchoSocket();
                 }
                 catch (InterruptedException e)
                 {
