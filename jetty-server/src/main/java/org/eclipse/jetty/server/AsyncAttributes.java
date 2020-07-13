@@ -31,7 +31,6 @@ class AsyncAttributes extends Attributes.Wrapper
     private final ServletPathMapping _mapping;
     private final String _queryString;
 
-
     private final String _servletPath;
     private final String _pathInfo;
 
