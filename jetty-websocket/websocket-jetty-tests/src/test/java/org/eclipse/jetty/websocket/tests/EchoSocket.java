@@ -36,9 +36,9 @@ public class EchoSocket extends EventSocket
     }
 
     @Override
-    public void onMessage(byte[] buf, int offset, int len)
+    public void onMessage(byte[] buf, int offset, int len) throws IOException
     {
         super.onMessage(buf, offset, len);
-        session.getRemote().sendBytes(ByteBuffer.wrap(buf, offset, len), WriteCallback.NOOP);
+        session.getRemote().sendBytes(ByteBuffer.wrap(buf, offset, len));
     }
 }

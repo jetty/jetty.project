@@ -71,7 +71,7 @@ public class EventSocket
     }
 
     @OnWebSocketMessage
-    public void onMessage(byte[] buf, int offset, int len)
+    public void onMessage(byte[] buf, int offset, int len) throws IOException
     {
         ByteBuffer message = ByteBuffer.wrap(buf, offset, len);
         if (LOG.isDebugEnabled())
