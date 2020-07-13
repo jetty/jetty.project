@@ -60,34 +60,35 @@ public class KeystoreReloadTest
     private static final int scanInterval = 1;
     public WorkDir testdir;
     private Server server;
-
-    public String useKeystore(String keystore) throws Exception
-    {
-        Path keystoreDir = testdir.getEmptyPathDir();
-        Path keystorePath = keystoreDir.resolve("keystore");
-        if (Files.exists(keystorePath))
-            Files.delete(keystorePath);
-
-        if (keystore == null)
-            return null;
-
-        Files.copy(MavenTestingUtils.getTestResourceFile(keystore).toPath(), keystorePath);
-        keystorePath.toFile().deleteOnExit();
-
-        if (!Files.exists(keystorePath))
-            throw new IllegalStateException("keystore file was not created");
-
-        return keystorePath.toAbsolutePath().toString();
-    }
+    private Path keystoreDir;
 
     @BeforeEach
+    public void before()
+    {
+        keystoreDir = testdir.getEmptyPathDir();
+    }
+
+    @FunctionalInterface
+    public interface Configuration
+    {
+        void configure(SslContextFactory sslContextFactory) throws Exception;
+    }
+
     public void start() throws Exception
     {
-        String keystorePath = useKeystore("oldKeystore");
+        start(sslContextFactory ->
+        {
+            String keystorePath = useKeystore("oldKeystore").toString();
+            sslContextFactory.setKeyStorePath(keystorePath);
+            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setKeyManagerPassword("keypwd");
+        });
+    }
+
+    public void start(Configuration configuration) throws Exception
+    {
         SslContextFactory sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystorePath);
-        sslContextFactory.setKeyStorePassword("storepwd");
-        sslContextFactory.setKeyManagerPassword("keypwd");
+        configuration.configure(sslContextFactory);
 
         server = new Server();
         SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString());
@@ -95,7 +96,6 @@ public class KeystoreReloadTest
         httpsConfig.addCustomizer(new SecureRequestCustomizer());
         HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(httpsConfig);
         ServerConnector connector = new ServerConnector(server, sslConnectionFactory, httpConnectionFactory);
-        connector.setPort(8443);
         server.addConnector(connector);
 
         // Configure Keystore Reload.
@@ -115,10 +115,10 @@ public class KeystoreReloadTest
     @Test
     public void testKeystoreHotReload() throws Exception
     {
-        URL serverUrl = server.getURI().toURL();
+        start();
 
         // Check the original certificate expiry.
-        X509Certificate cert1 = getCertificateFromUrl(serverUrl);
+        X509Certificate cert1 = getCertificateFromServer();
         assertThat(getExpiryYear(cert1), is(2015));
 
         // Switch to use newKeystore which has a later expiry date.
@@ -126,17 +126,17 @@ public class KeystoreReloadTest
         Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
 
         // The scanner should have detected the updated keystore, expiry should be renewed.
-        X509Certificate cert2 = getCertificateFromUrl(serverUrl);
+        X509Certificate cert2 = getCertificateFromServer();
         assertThat(getExpiryYear(cert2), is(2020));
     }
 
     @Test
     public void testReloadWithBadKeystore() throws Exception
     {
-        URL serverUrl = server.getURI().toURL();
+        start();
 
         // Check the original certificate expiry.
-        X509Certificate cert1 = getCertificateFromUrl(serverUrl);
+        X509Certificate cert1 = getCertificateFromServer();
         assertThat(getExpiryYear(cert1), is(2015));
 
         // Switch to use badKeystore which has the incorrect passwords.
@@ -147,16 +147,16 @@ public class KeystoreReloadTest
         }
 
         // The good keystore is removed, now the bad keystore now causes an exception.
-        assertThrows(Throwable.class, () -> getCertificateFromUrl(serverUrl));
+        assertThrows(Throwable.class, () -> getCertificateFromServer());
     }
 
     @Test
     public void testKeystoreRemoval() throws Exception
     {
-        URL serverUrl = server.getURI().toURL();
+        start();
 
         // Check the original certificate expiry.
-        X509Certificate cert1 = getCertificateFromUrl(serverUrl);
+        X509Certificate cert1 = getCertificateFromServer();
         assertThat(getExpiryYear(cert1), is(2015));
 
         // Delete the keystore.
@@ -167,13 +167,82 @@ public class KeystoreReloadTest
         }
 
         // The good keystore is removed, having no keystore causes an exception.
-        assertThrows(Throwable.class, () -> getCertificateFromUrl(serverUrl));
+        assertThrows(Throwable.class, () -> getCertificateFromServer());
 
         // Switch to use keystore2 which has a later expiry date.
         useKeystore("newKeystore");
         Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
-        X509Certificate cert2 = getCertificateFromUrl(serverUrl);
+        X509Certificate cert2 = getCertificateFromServer();
         assertThat(getExpiryYear(cert2), is(2020));
+    }
+
+    @Test
+    public void testReloadChangingSymbolicLink() throws Exception
+    {
+        Path keystorePath = keystoreDir.resolve("symlinkKeystore");
+        start(sslContextFactory ->
+        {
+            Files.createSymbolicLink(keystorePath, useKeystore("oldKeystore"));
+            sslContextFactory.setKeyStorePath(keystorePath.toString());
+            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setKeyManagerPassword("keypwd");
+        });
+
+        // Check the original certificate expiry.
+        X509Certificate cert1 = getCertificateFromServer();
+        assertThat(getExpiryYear(cert1), is(2015));
+
+        // Change the symlink to point to the newKeystore file location which has a later expiry date.
+        Files.delete(keystorePath);
+        Files.createSymbolicLink(keystorePath, useKeystore("newKeystore"));
+        Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
+
+        // The scanner should have detected the updated keystore, expiry should be renewed.
+        X509Certificate cert2 = getCertificateFromServer();
+        assertThat(getExpiryYear(cert2), is(2020));
+    }
+
+    @Test
+    public void testReloadChangingTargetOfSymbolicLink() throws Exception
+    {
+        start(sslContextFactory ->
+        {
+            Path keystorePath = keystoreDir.resolve("symlinkKeystore");
+            Files.createSymbolicLink(keystorePath, useKeystore("oldKeystore"));
+            sslContextFactory.setKeyStorePath(keystorePath.toString());
+            sslContextFactory.setKeyStorePassword("storepwd");
+            sslContextFactory.setKeyManagerPassword("keypwd");
+        });
+
+        // Check the original certificate expiry.
+        X509Certificate cert1 = getCertificateFromServer();
+        assertThat(getExpiryYear(cert1), is(2015));
+
+        // Change the target file of the symlink to the newKeystore which has a later expiry date.
+        useKeystore("newKeystore");
+        Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
+
+        // The scanner should have detected the updated keystore, expiry should be renewed.
+        X509Certificate cert2 = getCertificateFromServer();
+        assertThat(getExpiryYear(cert2), is(2020));
+    }
+
+    public Path useKeystore(String keystore) throws Exception
+    {
+        Path keystorePath = keystoreDir.resolve("keystore");
+        if (Files.exists(keystorePath))
+            Files.delete(keystorePath);
+
+        if (keystore == null)
+            return null;
+
+        Files.copy(MavenTestingUtils.getTestResourceFile(keystore).toPath(), keystorePath);
+        keystorePath.toFile().deleteOnExit();
+
+        if (!Files.exists(keystorePath))
+            throw new IllegalStateException("keystore file was not created");
+
+        return keystorePath.toAbsolutePath();
     }
 
     public static int getExpiryYear(X509Certificate cert)
@@ -183,8 +252,9 @@ public class KeystoreReloadTest
         return instance.get(Calendar.YEAR);
     }
 
-    public static X509Certificate getCertificateFromUrl(URL serverUrl) throws Exception
+    public X509Certificate getCertificateFromServer() throws Exception
     {
+        URL serverUrl = server.getURI().toURL();
         SSLContext ctx = SSLContext.getInstance("TLS");
         ctx.init(new KeyManager[0], new TrustManager[] {new DefaultTrustManager()}, new SecureRandom());
         SSLContext.setDefault(ctx);
