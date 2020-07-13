@@ -768,11 +768,6 @@
       <artifactId>jetty-nosql</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-ssl-reload</artifactId>
-      <version>${project.version}</version>
-    </dependency>
   </dependencies>
 
   <profiles>
