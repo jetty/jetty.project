@@ -41,43 +41,51 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@ExtendWith(WorkDirExtension.class)
 public class KeystoreReloadTest
 {
     private static final int scanInterval = 1;
+    public WorkDir testdir;
     private Server server;
 
-    public static void useKeystore(String keystore) throws Exception
+    public String useKeystore(String keystore) throws Exception
     {
-        Path keystoreDir = MavenTestingUtils.getTestResourcePath("keystoreDir");
+        Path keystoreDir = testdir.getEmptyPathDir();
         Path keystorePath = keystoreDir.resolve("keystore");
         if (Files.exists(keystorePath))
             Files.delete(keystorePath);
 
         if (keystore == null)
-            return;
+            return null;
 
         Files.copy(MavenTestingUtils.getTestResourceFile(keystore).toPath(), keystorePath);
         keystorePath.toFile().deleteOnExit();
+
+        if (!Files.exists(keystorePath))
+            throw new IllegalStateException("keystore file was not created");
+
+        return keystorePath.toAbsolutePath().toString();
     }
 
     @BeforeEach
     public void start() throws Exception
     {
-        useKeystore("oldKeystore");
-
-        String keystore = MavenTestingUtils.getTestResourceFile("keystoreDir/keystore").getAbsolutePath();
+        String keystorePath = useKeystore("oldKeystore");
         SslContextFactory sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(keystore);
+        sslContextFactory.setKeyStorePath(keystorePath);
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
 
