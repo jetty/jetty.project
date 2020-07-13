@@ -29,7 +29,6 @@ import java.util.Calendar;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
@@ -146,8 +145,8 @@ public class KeystoreReloadTest
             Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
         }
 
-        // The good keystore is removed, now the bad keystore now causes an SSL Handshake exception.
-        assertThrows(SSLHandshakeException.class, () -> getCertificateFromUrl(serverUrl));
+        // The good keystore is removed, now the bad keystore now causes an exception.
+        assertThrows(Throwable.class, () -> getCertificateFromUrl(serverUrl));
     }
 
     @Test
@@ -166,8 +165,8 @@ public class KeystoreReloadTest
             Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
         }
 
-        // The good keystore is removed, having no keystore causes an SSL Handshake exception.
-        assertThrows(SSLHandshakeException.class, () -> getCertificateFromUrl(serverUrl));
+        // The good keystore is removed, having no keystore causes an exception.
+        assertThrows(Throwable.class, () -> getCertificateFromUrl(serverUrl));
 
         // Switch to use keystore2 which has a later expiry date.
         useKeystore("newKeystore");
