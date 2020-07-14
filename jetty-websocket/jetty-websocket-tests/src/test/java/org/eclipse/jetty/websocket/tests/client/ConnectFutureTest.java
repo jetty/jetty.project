@@ -20,7 +20,9 @@ package org.eclipse.jetty.websocket.tests.client;
 
 import java.util.EnumSet;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -34,6 +36,7 @@ import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.util.WSURI;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -44,7 +47,7 @@ import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
 import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
-import org.eclipse.jetty.websocket.tests.EventSocket;
+import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -109,7 +112,7 @@ public class ConnectFutureTest
                 {
                     enteredCreator.countDown();
                     exitCreator.await();
-                    return new EventSocket.EchoSocket();
+                    return new EchoSocket();
                 }
                 catch (InterruptedException e)
                 {
@@ -136,7 +139,7 @@ public class ConnectFutureTest
     @Test
     public void testAbortSessionOnCreated() throws Exception
     {
-        start(c -> c.addMapping("/", EventSocket.EchoSocket.class));
+        start(c -> c.addMapping("/", EchoSocket.class));
 
         CountDownLatch enteredListener = new CountDownLatch(1);
         CountDownLatch exitListener = new CountDownLatch(1);
@@ -172,7 +175,7 @@ public class ConnectFutureTest
     @Test
     public void testAbortInHandshakeResponse() throws Exception
     {
-        start(c -> c.addMapping("/", EventSocket.EchoSocket.class));
+        start(c -> c.addMapping("/", EchoSocket.class));
 
         CountDownLatch enteredListener = new CountDownLatch(1);
         CountDownLatch exitListener = new CountDownLatch(1);
@@ -209,7 +212,7 @@ public class ConnectFutureTest
     @Test
     public void testAbortOnOpened() throws Exception
     {
-        start(c -> c.addMapping("/", EventSocket.EchoSocket.class));
+        start(c -> c.addMapping("/", EchoSocket.class));
 
         CountDownLatch exitOnOpen = new CountDownLatch(1);
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint()
@@ -244,7 +247,7 @@ public class ConnectFutureTest
     @Test
     public void testAbortAfterCompletion() throws Exception
     {
-        start(c -> c.addMapping("/", EventSocket.EchoSocket.class));
+        start(c -> c.addMapping("/", EchoSocket.class));
 
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
@@ -278,7 +281,7 @@ public class ConnectFutureTest
                 try
                 {
                     exitCreator.await();
-                    return new EventSocket.EchoSocket();
+                    return new EchoSocket();
                 }
                 catch (InterruptedException e)
                 {
@@ -297,6 +300,48 @@ public class ConnectFutureTest
         session.close();
         assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientSocket.closeCode, is(StatusCode.NORMAL));
+    }
+
+    @Test
+    public void testAbortWithException() throws Exception
+    {
+        start(c -> c.addMapping("/", EchoSocket.class));
+        CountDownLatch exitOnOpen = new CountDownLatch(1);
+        CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint()
+        {
+            @Override
+            public void onWebSocketConnect(Session session)
+            {
+                try
+                {
+                    super.onWebSocketConnect(session);
+                    exitOnOpen.await();
+                }
+                catch (InterruptedException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            }
+        };
+
+        // Complete the CompletableFuture with an exception the during the call to onOpened.
+        Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
+        assertTrue(clientSocket.openLatch.await(5, TimeUnit.SECONDS));
+        CompletableFuture<Session> completableFuture = (CompletableFuture<Session>)connect;
+        assertTrue(completableFuture.completeExceptionally(new WebSocketException("custom exception")));
+        exitOnOpen.countDown();
+
+        // Exception from the future is correct.
+        ExecutionException futureError = assertThrows(ExecutionException.class, () -> connect.get(5, TimeUnit.SECONDS));
+        Throwable cause = futureError.getCause();
+        assertThat(cause, instanceOf(WebSocketException.class));
+        assertThat(cause.getMessage(), is("custom exception"));
+
+        // Exception from the endpoint is correct.
+        assertTrue(clientSocket.errorLatch.await(5, TimeUnit.SECONDS));
+        Throwable endpointError = clientSocket.error.get();
+        assertThat(endpointError, instanceOf(WebSocketException.class));
+        assertThat(endpointError.getMessage(), is("custom exception"));
     }
 
     public abstract static class AbstractUpgradeListener implements UpgradeListener
