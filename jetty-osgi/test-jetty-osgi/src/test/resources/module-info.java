@@ -16,27 +16,6 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-
-@WebSocket
-public class EchoSocket extends EventSocket
+module com.bubble
 {
-    @Override
-    public void onMessage(String message) throws IOException
-    {
-        super.onMessage(message);
-        session.getRemote().sendString(message);
-    }
-
-    @Override
-    public void onMessage(byte[] buf, int offset, int len) throws IOException
-    {
-        super.onMessage(buf, offset, len);
-        session.getRemote().sendBytes(ByteBuffer.wrap(buf, offset, len));
-    }
 }

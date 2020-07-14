@@ -89,14 +89,14 @@ public class WriteAfterStopTest
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         upgradeRequest.addExtensions("permessage-deflate");
         Session session = client.connect(clientSocket, uri, upgradeRequest).get(5, TimeUnit.SECONDS);
-        clientSocket.getSession().getRemote().sendStringByFuture("init deflater");
-        assertThat(serverSocket.receivedMessages.poll(5, TimeUnit.SECONDS), is("init deflater"));
+        clientSocket.session.getRemote().sendStringByFuture("init deflater");
+        assertThat(serverSocket.textMessages.poll(5, TimeUnit.SECONDS), is("init deflater"));
         session.close(StatusCode.NORMAL, null);
 
         // make sure both sides are closed
         clientSocket.session.close();
-        assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
-        assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
 
         // check we closed normally
         assertThat(clientSocket.closeCode, is(StatusCode.NORMAL));

@@ -145,9 +145,9 @@ public interface Dumpable
     static void dumpObjects(Appendable out, String indent, Object object, Object... extraChildren) throws IOException
     {
         dumpObject(out, object);
-
+        
         int extras = extraChildren == null ? 0 : extraChildren.length;
-
+        
         if (object instanceof Stream)
             object = ((Stream)object).toArray();
         if (object instanceof Array)
@@ -181,7 +181,7 @@ public interface Dumpable
                 dumpObjects(out, nextIndent, item);
         }
     }
-
+    
     static void dumpContainer(Appendable out, String indent, Container object, boolean last) throws IOException
     {
         Container container = object;
@@ -189,6 +189,10 @@ public interface Dumpable
         for (Iterator<Object> i = container.getBeans().iterator(); i.hasNext(); )
         {
             Object bean = i.next();
+
+            if (container instanceof DumpableContainer && !((DumpableContainer)container).isDumpable(bean))
+                continue; //won't be dumped as a child bean
+
             String nextIndent = indent + ((i.hasNext() || !last) ? "|  " : "   ");
             if (bean instanceof LifeCycle)
             {
@@ -229,7 +233,7 @@ public interface Dumpable
             }
         }
     }
-
+    
     static void dumpIterable(Appendable out, String indent, Iterable<?> iterable, boolean last) throws IOException
     {
         for (Iterator i = iterable.iterator(); i.hasNext(); )
@@ -266,5 +270,20 @@ public interface Dumpable
             out.append(name).append(": ");
             Dumpable.dumpObjects(out, indent, object);
         };
+    }
+
+    /**
+     * DumpableContainer
+     *
+     * A Dumpable that is a container of beans can implement this
+     * interface to allow it to refine which of its beans can be
+     * dumped.
+     */
+    public interface DumpableContainer extends Dumpable
+    {
+        default boolean isDumpable(Object o)
+        {
+            return true;
+        }
     }
 }

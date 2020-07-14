@@ -134,6 +134,12 @@ public class ServletHandler extends ScopedHandler
     }
 
     @Override
+    public boolean isDumpable(Object o)
+    {
+        return !(o instanceof Holder || o instanceof BaseHolder || o instanceof FilterMapping || o instanceof ServletMapping);
+    }
+
+    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpObjects(out, indent,
@@ -220,6 +226,13 @@ public class ServletHandler extends ScopedHandler
         if (!(l instanceof Holder))
             super.start(l);
     }
+    
+    @Override
+    protected void stop(LifeCycle l) throws Exception
+    {
+        if (!(l instanceof Holder))
+            super.stop(l);
+    }
 
     @Override
     protected synchronized void doStop()
@@ -262,8 +275,10 @@ public class ServletHandler extends ScopedHandler
 
         //Retain only filters and mappings that were added using jetty api (ie Source.EMBEDDED)
         FilterHolder[] fhs = (FilterHolder[])LazyList.toArray(filterHolders, FilterHolder.class);
+        updateBeans(_filters, fhs);
         _filters = fhs;
         FilterMapping[] fms = (FilterMapping[])LazyList.toArray(filterMappings, FilterMapping.class);
+        updateBeans(_filterMappings, fms);
         _filterMappings = fms;
 
         _matchAfterIndex = (_filterMappings == null || _filterMappings.length == 0 ? -1 : _filterMappings.length - 1);
@@ -305,8 +320,10 @@ public class ServletHandler extends ScopedHandler
 
         //Retain only Servlets and mappings added via jetty apis (ie Source.EMBEDDED)
         ServletHolder[] shs = (ServletHolder[])LazyList.toArray(servletHolders, ServletHolder.class);
+        updateBeans(_servlets, shs);
         _servlets = shs;
         ServletMapping[] sms = (ServletMapping[])LazyList.toArray(servletMappings, ServletMapping.class);
+        updateBeans(_servletMappings, sms);
         _servletMappings = sms;
         
         if (_contextHandler != null)
@@ -331,6 +348,7 @@ public class ServletHandler extends ScopedHandler
             }
         }
         ListenerHolder[] listeners = (ListenerHolder[])LazyList.toArray(listenerHolders, ListenerHolder.class);
+        updateBeans(_listeners, listeners);
         _listeners = listeners;
 
         //will be regenerated on next start
@@ -814,7 +832,7 @@ public class ServletHandler extends ScopedHandler
             {
                 holder.setServletHandler(this);
             }
-
+        updateBeans(_listeners,listeners);
         _listeners = listeners;
     }
 
@@ -1516,6 +1534,7 @@ public class ServletHandler extends ScopedHandler
      */
     public void setFilterMappings(FilterMapping[] filterMappings)
     {
+        updateBeans(_filterMappings,filterMappings);
         _filterMappings = filterMappings;
         if (isStarted())
             updateMappings();
@@ -1529,7 +1548,7 @@ public class ServletHandler extends ScopedHandler
             {
                 holder.setServletHandler(this);
             }
-
+        updateBeans(_filters,holders);
         _filters = holders;
         updateNameMappings();
         invalidateChainsCache();
@@ -1540,6 +1559,7 @@ public class ServletHandler extends ScopedHandler
      */
     public void setServletMappings(ServletMapping[] servletMappings)
     {
+        updateBeans(_servletMappings,servletMappings);
         _servletMappings = servletMappings;
         if (isStarted())
             updateMappings();
@@ -1558,7 +1578,7 @@ public class ServletHandler extends ScopedHandler
             {
                 holder.setServletHandler(this);
             }
-
+        updateBeans(_servlets,holders);
         _servlets = holders;
         updateNameMappings();
         invalidateChainsCache();

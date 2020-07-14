@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
@@ -26,6 +27,7 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
@@ -35,24 +37,20 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 @WebSocket
 public class EventSocket
 {
-    private static Logger LOG = Log.getLogger(EventSocket.class);
+    private static final Logger LOG = Log.getLogger(EventSocket.class);
 
     public Session session;
     private String behavior;
-    public volatile Throwable failure = null;
-    public volatile int closeCode = -1;
-    public volatile String closeReason = null;
 
-    public BlockingQueue<String> receivedMessages = new BlockingArrayQueue<>();
+    public BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
+    public BlockingQueue<ByteBuffer> binaryMessages = new BlockingArrayQueue<>();
+    public volatile int closeCode = StatusCode.UNDEFINED;
+    public volatile String closeReason;
+    public volatile Throwable error = null;
 
-    public CountDownLatch open = new CountDownLatch(1);
-    public CountDownLatch error = new CountDownLatch(1);
-    public CountDownLatch closed = new CountDownLatch(1);
-
-    public Session getSession()
-    {
-        return session;
-    }
+    public CountDownLatch openLatch = new CountDownLatch(1);
+    public CountDownLatch errorLatch = new CountDownLatch(1);
+    public CountDownLatch closeLatch = new CountDownLatch(1);
 
     @OnWebSocketConnect
     public void onOpen(Session session)
@@ -61,7 +59,7 @@ public class EventSocket
         behavior = session.getPolicy().getBehavior().name();
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onOpen(): {}", toString(), session);
-        open.countDown();
+        openLatch.countDown();
     }
 
     @OnWebSocketMessage
@@ -69,7 +67,16 @@ public class EventSocket
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onMessage(): {}", toString(), message);
-        receivedMessages.offer(message);
+        textMessages.offer(message);
+    }
+
+    @OnWebSocketMessage
+    public void onMessage(byte[] buf, int offset, int len) throws IOException
+    {
+        ByteBuffer message = ByteBuffer.wrap(buf, offset, len);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{}  onMessage(): {}", toString(), message);
+        binaryMessages.offer(message);
     }
 
     @OnWebSocketClose
@@ -79,7 +86,7 @@ public class EventSocket
             LOG.debug("{}  onClose(): {}:{}", toString(), statusCode, reason);
         closeCode = statusCode;
         closeReason = reason;
-        closed.countDown();
+        closeLatch.countDown();
     }
 
     @OnWebSocketError
@@ -87,24 +94,13 @@ public class EventSocket
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{}  onError(): {}", toString(), cause);
-        failure = cause;
-        error.countDown();
+        error = cause;
+        errorLatch.countDown();
     }
 
     @Override
     public String toString()
     {
         return String.format("[%s@%s]", behavior, Integer.toHexString(hashCode()));
-    }
-
-    @WebSocket
-    public static class EchoSocket extends EventSocket
-    {
-        @Override
-        public void onMessage(String message) throws IOException
-        {
-            super.onMessage(message);
-            session.getRemote().sendStringByFuture(message);
-        }
     }
 }
