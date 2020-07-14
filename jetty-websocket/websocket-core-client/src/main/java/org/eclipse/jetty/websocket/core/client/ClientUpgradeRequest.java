@@ -38,7 +38,6 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
@@ -154,22 +153,26 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
     public void setSubProtocols(String... protocols)
     {
-        HttpFields.Mutable headers = getHeaders();
-        headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
-        for (String protocol : protocols)
+        headers(headers ->
         {
-            headers.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
-        }
+            headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
+            for (String protocol : protocols)
+            {
+                headers.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
+            }
+        });
     }
 
     public void setSubProtocols(List<String> protocols)
     {
-        HttpFields.Mutable headers = getHeaders();
-        headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
-        for (String protocol : protocols)
+        headers(headers ->
         {
-            headers.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
-        }
+            headers.remove(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL);
+            for (String protocol : protocols)
+            {
+                headers.add(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
+            }
+        });
     }
 
     @Override
@@ -282,7 +285,7 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
             .collect(Collectors.joining(","));
 
         if (!StringUtil.isEmpty(extensionString))
-            getHeaders().add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensionString);
+            headers(headers -> headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensionString));
 
         // Notify the listener which may change the headers directly.
         notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));

@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
@@ -49,18 +48,14 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
         if (request != null)
         {
             // Copy request details into actual request
-            HttpFields.Mutable fields = getHeaders();
-            request.getHeaders().forEach(fields::put);
+            headers(fields -> request.getHeaders().forEach(fields::put));
 
             // Copy manually created Cookies into place
             List<HttpCookie> cookies = request.getCookies();
             if (cookies != null)
             {
                 // TODO: remove existing Cookie header (if set)?
-                for (HttpCookie cookie : cookies)
-                {
-                    fields.add(HttpHeader.COOKIE, cookie.toString());
-                }
+                headers(fields -> cookies.forEach(cookie -> fields.add(HttpHeader.COOKIE, cookie.toString())));
             }
 
             // Copy sub-protocols
