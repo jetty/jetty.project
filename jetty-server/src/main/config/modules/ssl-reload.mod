@@ -10,12 +10,9 @@ ssl
 [depend]
 ssl
 
-[lib]
-lib/jetty-ssl-reload-${jetty.version}.jar
-
 [xml]
-etc/jetty-ssl-reload.xml
+etc/jetty-ssl-context-reload.xml
 
 [ini-template]
 # Monitored directory scan period (seconds)
-# jetty.ssl.reload.scanInterval=1
+# jetty.sslContext.reload.scanInterval=1

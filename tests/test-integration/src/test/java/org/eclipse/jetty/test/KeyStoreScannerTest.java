@@ -43,8 +43,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.log.StacklessLogging;
+import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.ssl.SslKeyStoreScanner;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +55,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(WorkDirExtension.class)
-public class KeystoreReloadTest
+public class KeyStoreScannerTest
 {
     private static final int scanInterval = 1;
     public WorkDir testdir;
@@ -99,7 +99,7 @@ public class KeystoreReloadTest
         server.addConnector(connector);
 
         // Configure Keystore Reload.
-        SslKeyStoreScanner keystoreScanner = new SslKeyStoreScanner(sslContextFactory);
+        KeyStoreScanner keystoreScanner = new KeyStoreScanner(sslContextFactory);
         keystoreScanner.setScanInterval(scanInterval);
         server.addBean(keystoreScanner);
 
@@ -140,7 +140,7 @@ public class KeystoreReloadTest
         assertThat(getExpiryYear(cert1), is(2015));
 
         // Switch to use badKeystore which has the incorrect passwords.
-        try (StacklessLogging ignored = new StacklessLogging(SslKeyStoreScanner.class))
+        try (StacklessLogging ignored = new StacklessLogging(KeyStoreScanner.class))
         {
             useKeystore("badKeystore");
             Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
@@ -160,7 +160,7 @@ public class KeystoreReloadTest
         assertThat(getExpiryYear(cert1), is(2015));
 
         // Delete the keystore.
-        try (StacklessLogging ignored = new StacklessLogging(SslKeyStoreScanner.class))
+        try (StacklessLogging ignored = new StacklessLogging(KeyStoreScanner.class))
         {
             useKeystore(null);
             Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
