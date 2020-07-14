@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.websocket.client.impl;
 
-import java.net.HttpCookie;
 import java.net.URI;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -50,22 +48,13 @@ public class JettyClientUpgradeRequest extends org.eclipse.jetty.websocket.core.
             headers(fields -> request.getHeaders().forEach(fields::put));
 
             // Copy manually created Cookies into place
-            List<HttpCookie> cookies = request.getCookies();
-            if (cookies != null)
-            {
-                // TODO: remove existing Cookie header (if set)?
-                headers(fields -> cookies.forEach(cookie -> fields.add(HttpHeader.COOKIE, cookie.toString())));
-            }
+            headers(fields -> request.getCookies().forEach(cookie -> fields.add(HttpHeader.COOKIE, cookie.toString())));
 
-            // Copy sub-protocols
             setSubProtocols(request.getSubProtocols());
-
-            // Copy extensions
             setExtensions(request.getExtensions().stream()
                 .map(c -> new ExtensionConfig(c.getName(), c.getParameters()))
                 .collect(Collectors.toList()));
 
-            // Copy timeout from upgradeRequest object
             timeout(request.getTimeout(), TimeUnit.MILLISECONDS);
         }
 
