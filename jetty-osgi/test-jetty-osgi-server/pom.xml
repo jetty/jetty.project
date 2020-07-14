@@ -67,8 +67,8 @@
             compilation time. -->
             <_nouses>true</_nouses>
             <Import-Package>
-                jakarta.servlet;version="[5.0,6.0)",
-                jakarta.servlet.resources;version="[5.0,6.0)",
+                jakarta.servlet;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
+                jakarta.servlet.resources;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
                 org.osgi.framework,
                 org.osgi.service.cm;version="1.2.0",
                 org.osgi.service.packageadmin,
@@ -81,7 +81,7 @@
                 org.xml.sax,
                 org.xml.sax.helpers, *
             </Import-Package>
-            <DynamicImport-Package>org.eclipse.jetty.*;version="[11,12.0)"</DynamicImport-Package>
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;==;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
           </instructions>
         </configuration>
       </plugin>
