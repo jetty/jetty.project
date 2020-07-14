@@ -23,6 +23,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.server.Server;
@@ -56,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ConnectFutureAbortTest
+public class ConnectFutureTest
 {
     private Server server;
     private WebSocketClient client;
@@ -98,8 +99,8 @@ public class ConnectFutureAbortTest
     @Test
     public void testAbortDuringCreator() throws Exception
     {
-        final CountDownLatch enteredCreator = new CountDownLatch(1);
-        final CountDownLatch exitCreator = new CountDownLatch(1);
+        CountDownLatch enteredCreator = new CountDownLatch(1);
+        CountDownLatch exitCreator = new CountDownLatch(1);
         start(c ->
         {
             c.addMapping("/", (req, res) ->
@@ -125,10 +126,11 @@ public class ConnectFutureAbortTest
         assertTrue(connect.cancel(true));
         assertThrows(CancellationException.class, () -> connect.get(5, TimeUnit.SECONDS));
         exitCreator.countDown();
-        assertFalse(clientSocket.openLatch.await(2, TimeUnit.SECONDS));
+        assertFalse(clientSocket.openLatch.await(1, TimeUnit.SECONDS));
 
-        // Strange that onError() is called but onOpen() is never called. (This would not be the case in Jetty-10).
-        assertThat(clientSocket.error.get(), instanceOf(UpgradeException.class));
+        Throwable error = clientSocket.error.get();
+        assertThat(error, instanceOf(UpgradeException.class));
+        assertThat(error.getCause(), instanceOf(CancellationException.class));
     }
 
     @Test
@@ -136,8 +138,8 @@ public class ConnectFutureAbortTest
     {
         start(c -> c.addMapping("/", EventSocket.EchoSocket.class));
 
-        final CountDownLatch enteredListener = new CountDownLatch(1);
-        final CountDownLatch exitListener = new CountDownLatch(1);
+        CountDownLatch enteredListener = new CountDownLatch(1);
+        CountDownLatch exitListener = new CountDownLatch(1);
         client.addSessionListener(new WebSocketSessionListener()
         {
             @Override
@@ -163,9 +165,7 @@ public class ConnectFutureAbortTest
         assertTrue(connect.cancel(true));
         assertThrows(CancellationException.class, () -> connect.get(5, TimeUnit.SECONDS));
         exitListener.countDown();
-        assertFalse(clientSocket.openLatch.await(2, TimeUnit.SECONDS));
-
-        // Strange that onError() is called but onOpen() is never called. (This would not be the case in Jetty-10).
+        assertFalse(clientSocket.openLatch.await(1, TimeUnit.SECONDS));
         assertThat(clientSocket.error.get(), instanceOf(CancellationException.class));
     }
 
@@ -174,8 +174,8 @@ public class ConnectFutureAbortTest
     {
         start(c -> c.addMapping("/", EventSocket.EchoSocket.class));
 
-        final CountDownLatch enteredListener = new CountDownLatch(1);
-        final CountDownLatch exitListener = new CountDownLatch(1);
+        CountDownLatch enteredListener = new CountDownLatch(1);
+        CountDownLatch exitListener = new CountDownLatch(1);
         UpgradeListener upgradeListener = new AbstractUpgradeListener()
         {
             @Override
@@ -202,9 +202,7 @@ public class ConnectFutureAbortTest
         assertTrue(connect.cancel(true));
         assertThrows(CancellationException.class, () -> connect.get(5, TimeUnit.SECONDS));
         exitListener.countDown();
-        assertFalse(clientSocket.openLatch.await(2, TimeUnit.SECONDS));
-
-        // Strange that onError() is called but onOpen() is never called. (This would not be the case in Jetty-10).
+        assertFalse(clientSocket.openLatch.await(1, TimeUnit.SECONDS));
         assertThat(clientSocket.error.get(), instanceOf(CancellationException.class));
     }
 
@@ -213,7 +211,7 @@ public class ConnectFutureAbortTest
     {
         start(c -> c.addMapping("/", EventSocket.EchoSocket.class));
 
-        final CountDownLatch exitOnOpen = new CountDownLatch(1);
+        CountDownLatch exitOnOpen = new CountDownLatch(1);
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint()
         {
             @Override
@@ -260,8 +258,40 @@ public class ConnectFutureAbortTest
         // After it has been completed we should not get any errors from cancelling it.
         assertFalse(connect.cancel(true));
         assertThat(connect.get(5, TimeUnit.SECONDS), instanceOf(Session.class));
-        assertFalse(clientSocket.closeLatch.await(2, TimeUnit.SECONDS));
+        assertFalse(clientSocket.closeLatch.await(1, TimeUnit.SECONDS));
         assertNull(clientSocket.error.get());
+
+        // Close the session properly.
+        session.close();
+        assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(clientSocket.closeCode, is(StatusCode.NORMAL));
+    }
+
+    @Test
+    public void testFutureTimeout() throws Exception
+    {
+        CountDownLatch exitCreator = new CountDownLatch(1);
+        start(c ->
+        {
+            c.addMapping("/", (req, res) ->
+            {
+                try
+                {
+                    exitCreator.await();
+                    return new EventSocket.EchoSocket();
+                }
+                catch (InterruptedException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+        });
+
+        CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
+        Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
+        assertThrows(TimeoutException.class, () -> connect.get(1, TimeUnit.SECONDS));
+        exitCreator.countDown();
+        Session session = connect.get(5, TimeUnit.SECONDS);
 
         // Close the session properly.
         session.close();
