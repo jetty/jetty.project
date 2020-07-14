@@ -18,9 +18,15 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import javax.servlet.DispatcherType;
+import javax.servlet.http.HttpSessionEvent;
+import javax.servlet.http.HttpSessionListener;
 
+import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.util.component.Container;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -655,5 +661,73 @@ public class ServletHandlerTest
         assertTrue(f == mappings[4].getFilterHolder());  //ordinary
         assertTrue(fh3 == mappings[5].getFilterHolder()); //isMatchAfter = true;
         assertTrue(pf == mappings[6].getFilterHolder()); //isMatchAfter = true;
+    }
+    
+    @Test
+    public void testFiltersServletsListenersAsBeans() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        
+        ServletHandler handler = context.getServletHandler();
+        
+        //test that filters, servlets and listeners are added as beans
+        //and thus reported in a Container.Listener
+        List<Object> addResults = new ArrayList<>();
+        List<Object> removeResults = new ArrayList<>();
+        handler.addEventListener(new Container.Listener()
+        {
+            @Override
+            public void beanAdded(Container parent, Object child)
+            {
+                addResults.add(child);
+            }
+
+            @Override
+            public void beanRemoved(Container parent, Object child)
+            {
+                removeResults.add(child);
+            }
+        
+        });
+
+        handler.addFilter(fh1);
+        handler.addServlet(sh1);
+        ListenerHolder lh1 = new ListenerHolder(new Source(Source.Origin.DESCRIPTOR, "foo.xml"));
+        lh1.setInstance(new HttpSessionListener()
+        {  
+            @Override
+            public void sessionDestroyed(HttpSessionEvent se)
+            {
+            }
+            
+            @Override
+            public void sessionCreated(HttpSessionEvent se)
+            {   
+            }
+        });
+        handler.addListener(lh1);
+        
+        assertTrue(addResults.contains(fh1));
+        assertTrue(addResults.contains(sh1));
+        assertTrue(addResults.contains(lh1));
+        
+        //test that servlets, filters and listeners are dumped, but
+        //not as beans
+        String dump = handler.dump();
+        dump = dump.substring(0, dump.indexOf("key:"));
+
+        assertFalse(dump.contains("+-")); //not dumped as beans
+        assertFalse(dump.contains("+=")); //not dumped as managed beans
+        assertFalse(dump.contains("+~")); //not dumped as unmanaged beans
+        assertFalse(dump.contains("+?")); //not dumped as auto beans
+
+        handler.setFilters(null);
+        handler.setServlets(null);
+        handler.setListeners(null);
+
+        //check they're removed as beans
+        assertTrue(removeResults.contains(fh1));
+        assertTrue(removeResults.contains(sh1));
+        assertTrue(removeResults.contains(lh1));
     }
 }
