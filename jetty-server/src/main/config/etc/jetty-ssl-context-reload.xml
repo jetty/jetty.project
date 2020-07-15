@@ -3,7 +3,7 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="addBean">
     <Arg>
-      <New id="sslKeyStoreScanner" class="org.eclipse.jetty.util.ssl.KeyStoreScanner">
+      <New id="keyStoreScanner" class="org.eclipse.jetty.util.ssl.KeyStoreScanner">
         <Arg><Ref refid="sslContextFactory"/></Arg>
         <Set name="scanInterval"><Property name="jetty.sslContext.reload.scanInterval" default="1"/></Set>
       </New>

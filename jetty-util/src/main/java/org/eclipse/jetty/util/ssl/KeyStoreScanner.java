@@ -21,6 +21,7 @@ package org.eclipse.jetty.util.ssl;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -29,6 +30,12 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * <p>The {@link KeyStoreScanner} is used to monitor the KeyStore file used by the {@link SslContextFactory}.
+ * It will reload the {@link SslContextFactory} if it detects that the KeyStore file has been modified.</p>
+ * <p>If the TrustStore file needs to be changed, then this should be done before touching the KeyStore file,
+ * the {@link SslContextFactory#reload(Consumer)} will only occur after the KeyStore file has been modified.</p>
+ */
 public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.DiscreteListener
 {
     private static final Logger LOG = Log.getLogger(KeyStoreScanner.class);
