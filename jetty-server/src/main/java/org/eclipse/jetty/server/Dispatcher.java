@@ -26,6 +26,7 @@ import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -439,7 +440,7 @@ public class Dispatcher implements RequestDispatcher
             String pathInfo = (String)getAttribute(INCLUDE_PATH_INFO);
             String servletPath = (String)getAttribute(INCLUDE_SERVLET_PATH);
             String contextPath = (String)getAttribute(INCLUDE_CONTEXT_PATH);
-            String includeMapping = (String)getAttribute(INCLUDE_MAPPING);
+            HttpServletMapping includeMapping = (HttpServletMapping)getAttribute(INCLUDE_MAPPING);
 
             if (_named == null)
             {
