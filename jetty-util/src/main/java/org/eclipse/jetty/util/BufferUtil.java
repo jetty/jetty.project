@@ -553,12 +553,10 @@ public class BufferUtil
         }
         else
         {
-            byte[] bytes = null;
+            byte[] bytes = new byte[Math.min(buffer.remaining(), TEMP_BUFFER_SIZE)];
             while (buffer.hasRemaining())
             {
                 int byteCountToWrite = Math.min(buffer.remaining(), TEMP_BUFFER_SIZE);
-                if (bytes == null)
-                    bytes = new byte[byteCountToWrite];
                 buffer.get(bytes, 0, byteCountToWrite);
                 out.write(bytes, 0, byteCountToWrite);
             }
