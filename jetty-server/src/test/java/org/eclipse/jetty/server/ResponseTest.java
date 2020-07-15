@@ -898,7 +898,7 @@ public class ResponseTest
 
                     Response response = getResponse();
                     Request request = response.getHttpChannel().getRequest();
-                    request.getHttpChannel().getHttpConfiguration().setRelativeRedirectionAllowed(true);
+                    request.getHttpChannel().getHttpConfiguration().setRelativeRedirectAllowed(true);
 
                     request.setScheme("http");
                     if (host != null)

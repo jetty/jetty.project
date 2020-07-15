@@ -72,8 +72,8 @@ patch-module: servlet.api=lib/jetty-schemas-3.1.jar
 ## multipart/form-data compliance mode of: LEGACY(slow), RFC7578(fast)
 # jetty.httpConfig.multiPartFormDataCompliance=LEGACY
 
-## Relative Redirection Locations allowed
-# jetty.httpConfig.relativeRedirectionAllowed=false
+## Relative Redirect Locations allowed
+# jetty.httpConfig.relativeRedirectAllowed=false
 
 ### Server configuration
 ## Whether ctrl+c on the console gracefully stops the Jetty server
