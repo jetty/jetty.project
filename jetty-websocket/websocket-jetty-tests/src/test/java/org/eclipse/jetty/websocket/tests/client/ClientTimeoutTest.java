@@ -38,7 +38,6 @@ import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.eclipse.jetty.websocket.tests.EventSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -109,14 +108,13 @@ public class ClientTimeoutTest
         assertThat(coreUpgradeException.getCause(), instanceOf(TimeoutException.class));
     }
 
-    @Disabled("need the client timeout to be ported from 9.4 to 10")
     @Test
     public void testClientUpgradeRequestTimeout() throws Exception
     {
         EventSocket clientSocket = new EventSocket();
         long timeout = 1000;
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
-        // TODO: upgradeRequest.setTimeout(timeout, TimeUnit.MILLISECONDS);
+        upgradeRequest.setTimeout(timeout, TimeUnit.MILLISECONDS);
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()), upgradeRequest);
 
         ExecutionException executionException = assertThrows(ExecutionException.class, () -> connect.get(timeout * 2, TimeUnit.MILLISECONDS));

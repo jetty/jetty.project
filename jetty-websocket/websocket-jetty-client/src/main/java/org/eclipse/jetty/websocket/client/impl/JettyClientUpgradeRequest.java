@@ -18,29 +18,26 @@
 
 package org.eclipse.jetty.websocket.client.impl;
 
-import java.net.HttpCookie;
 import java.net.URI;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
-public class JettyClientUpgradeRequest extends ClientUpgradeRequest
+public class JettyClientUpgradeRequest extends org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest
 {
     private final DelegatedJettyClientUpgradeRequest handshakeRequest;
     private final JettyWebSocketFrameHandler frameHandler;
 
-    public JettyClientUpgradeRequest(WebSocketCoreClient coreClient, UpgradeRequest request, URI requestURI, JettyWebSocketFrameHandlerFactory frameHandlerFactory,
+    public JettyClientUpgradeRequest(WebSocketCoreClient coreClient, ClientUpgradeRequest request, URI requestURI, JettyWebSocketFrameHandlerFactory frameHandlerFactory,
                                      Object websocketPojo)
     {
         super(coreClient, requestURI);
@@ -51,28 +48,14 @@ public class JettyClientUpgradeRequest extends ClientUpgradeRequest
             headers(fields -> request.getHeaders().forEach(fields::put));
 
             // Copy manually created Cookies into place
-            List<HttpCookie> cookies = request.getCookies();
-            if (cookies != null)
-            {
-                // TODO: remove existing Cookie header (if set)?
-                headers(fields -> cookies.forEach(cookie -> fields.add(HttpHeader.COOKIE, cookie.toString())));
-            }
+            headers(fields -> request.getCookies().forEach(cookie -> fields.add(HttpHeader.COOKIE, cookie.toString())));
 
-            // Copy sub-protocols
             setSubProtocols(request.getSubProtocols());
-
-            // Copy extensions
             setExtensions(request.getExtensions().stream()
                 .map(c -> new ExtensionConfig(c.getName(), c.getParameters()))
                 .collect(Collectors.toList()));
 
-            // Copy method from upgradeRequest object
-            if (request.getMethod() != null)
-                method(request.getMethod());
-
-            // Copy version from upgradeRequest object
-            if (request.getHttpVersion() != null)
-                version(HttpVersion.fromString(request.getHttpVersion()));
+            timeout(request.getTimeout(), TimeUnit.MILLISECONDS);
         }
 
         handshakeRequest = new DelegatedJettyClientUpgradeRequest(this);
