@@ -28,16 +28,19 @@ class AsyncAttributes extends Attributes.Wrapper
 {
     private final String _requestURI;
     private final String _contextPath;
-    private final String _pathInContext;
-    private ServletPathMapping _mapping;
+    private final ServletPathMapping _mapping;
     private final String _queryString;
+
+    private final String _servletPath;
+    private final String _pathInfo;
 
     public AsyncAttributes(Attributes attributes, String requestUri, String contextPath, String pathInContext, ServletPathMapping mapping, String queryString)
     {
         super(attributes);
         _requestURI = requestUri;
         _contextPath = contextPath;
-        _pathInContext = pathInContext;
+        _servletPath = mapping == null ? null : mapping.getServletPath();
+        _pathInfo = mapping == null ? pathInContext : mapping.getPathInfo();
         _mapping = mapping;
         _queryString = queryString;
     }
@@ -52,9 +55,9 @@ class AsyncAttributes extends Attributes.Wrapper
             case AsyncContext.ASYNC_CONTEXT_PATH:
                 return _contextPath;
             case AsyncContext.ASYNC_SERVLET_PATH:
-                return _mapping == null ? null : _mapping.getServletPath();
+                return _servletPath;
             case AsyncContext.ASYNC_PATH_INFO:
-                return _mapping == null ? _pathInContext : _mapping.getPathInfo();
+                return _pathInfo;
             case AsyncContext.ASYNC_QUERY_STRING:
                 return _queryString;
             case AsyncContext.ASYNC_MAPPING:
@@ -68,12 +71,18 @@ class AsyncAttributes extends Attributes.Wrapper
     public Set<String> getAttributeNameSet()
     {
         Set<String> set = new HashSet<>(super.getAttributeNameSet());
-        set.add(AsyncContext.ASYNC_REQUEST_URI);
-        set.add(AsyncContext.ASYNC_CONTEXT_PATH);
-        set.add(AsyncContext.ASYNC_SERVLET_PATH);
-        set.add(AsyncContext.ASYNC_PATH_INFO);
-        set.add(AsyncContext.ASYNC_QUERY_STRING);
-        set.add(AsyncContext.ASYNC_MAPPING);
+        if (_requestURI != null)
+            set.add(AsyncContext.ASYNC_REQUEST_URI);
+        if (_contextPath != null)
+            set.add(AsyncContext.ASYNC_CONTEXT_PATH);
+        if (_servletPath != null)
+            set.add(AsyncContext.ASYNC_SERVLET_PATH);
+        if (_pathInfo != null)
+            set.add(AsyncContext.ASYNC_PATH_INFO);
+        if (_queryString != null)
+            set.add(AsyncContext.ASYNC_QUERY_STRING);
+        if (_mapping != null)
+            set.add(AsyncContext.ASYNC_MAPPING);
         return set;
     }
 
