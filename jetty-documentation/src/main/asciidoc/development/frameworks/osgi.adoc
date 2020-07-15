@@ -47,6 +47,10 @@ Here's the absolute minimal set of Jetty jars:
 |jetty-xml |org.eclipse.jetty.xml
 |jetty-osgi-servlet-api |org.eclipse.jetty.osgi-servlet-api
 |===================================================
+____
+[NOTE]
+If you need the manifest header "osgi.contract; osgi.contract=JavaServlet", then you can try using the org.apache.felix.http.servlet-api bundle instead of the org.eclipse.jetty.osgi-servlet-api. 
+____
 
 You *must also install the Apache Aries SPI Fly bundles* as  many parts of Jetty - for example ALPN, websocket, annotations - use the `ServiceLoader` mechanism, which requires an OSGi Service Loader Mediator like SPI Fly:
 
