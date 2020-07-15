@@ -687,7 +687,6 @@ public class ServletHandlerTest
             {
                 removeResults.add(child);
             }
-        
         });
 
         handler.addFilter(fh1);
@@ -714,12 +713,12 @@ public class ServletHandlerTest
         //test that servlets, filters and listeners are dumped, but
         //not as beans
         String dump = handler.dump();
-        dump = dump.substring(0, dump.indexOf("key:"));
 
-        assertFalse(dump.contains("+-")); //not dumped as beans
-        assertFalse(dump.contains("+=")); //not dumped as managed beans
-        assertFalse(dump.contains("+~")); //not dumped as unmanaged beans
-        assertFalse(dump.contains("+?")); //not dumped as auto beans
+        assertTrue(dump.contains("+> listeners"));
+        assertTrue(dump.contains("+> filters"));
+        assertTrue(dump.contains("+> servlets"));
+        assertTrue(dump.contains("+> filterMappings"));
+        assertTrue(dump.contains("+> servletMappings"));
 
         handler.setFilters(null);
         handler.setServlets(null);
