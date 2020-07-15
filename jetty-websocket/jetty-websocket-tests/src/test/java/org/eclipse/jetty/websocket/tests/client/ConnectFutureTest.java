@@ -303,7 +303,49 @@ public class ConnectFutureTest
     }
 
     @Test
-    public void testAbortWithException() throws Exception
+    public void testAbortWithExceptionBeforeUpgrade() throws Exception
+    {
+        CountDownLatch exitCreator = new CountDownLatch(1);
+        start(c ->
+        {
+            c.addMapping("/", (req, res) ->
+            {
+                try
+                {
+                    exitCreator.await();
+                    return new EchoSocket();
+                }
+                catch (InterruptedException e)
+                {
+                    throw new IllegalStateException(e);
+                }
+            });
+        });
+
+        // Complete the CompletableFuture with an exception the during the call to onOpened.
+        CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
+        Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
+        CompletableFuture<Session> completableFuture = (CompletableFuture<Session>)connect;
+        assertTrue(completableFuture.completeExceptionally(new WebSocketException("custom exception")));
+        exitCreator.countDown();
+
+        // Exception from the future is correct.
+        ExecutionException futureError = assertThrows(ExecutionException.class, () -> connect.get(5, TimeUnit.SECONDS));
+        Throwable cause = futureError.getCause();
+        assertThat(cause, instanceOf(WebSocketException.class));
+        assertThat(cause.getMessage(), is("custom exception"));
+
+        // Exception from the endpoint is correct.
+        assertTrue(clientSocket.errorLatch.await(5, TimeUnit.SECONDS));
+        Throwable endpointError = clientSocket.error.get();
+        assertThat(endpointError, instanceOf(UpgradeException.class));
+        Throwable endpointErrorCause = endpointError.getCause();
+        assertThat(endpointError, instanceOf(WebSocketException.class));
+        assertThat(endpointErrorCause.getMessage(), is("custom exception"));
+    }
+
+    @Test
+    public void testAbortWithExceptionAfterUpgrade() throws Exception
     {
         start(c -> c.addMapping("/", EchoSocket.class));
         CountDownLatch exitOnOpen = new CountDownLatch(1);

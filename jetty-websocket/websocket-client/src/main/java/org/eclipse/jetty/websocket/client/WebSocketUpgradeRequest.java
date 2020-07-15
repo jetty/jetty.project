@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
@@ -425,7 +424,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         this.fut = new CompletableFuture<>();
         this.fut.whenComplete((session, throwable) ->
         {
-            if (throwable instanceof CancellationException)
+            if (throwable != null)
                 abort(throwable);
         });
 
