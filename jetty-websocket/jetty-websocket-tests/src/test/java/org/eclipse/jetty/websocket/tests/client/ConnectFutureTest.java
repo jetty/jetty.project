@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.server.Server;
@@ -65,13 +66,7 @@ public class ConnectFutureTest
     private Server server;
     private WebSocketClient client;
 
-    @FunctionalInterface
-    public interface Configuration
-    {
-        void configure(NativeWebSocketConfiguration configuration);
-    }
-
-    public void start(Configuration configuration) throws Exception
+    public void start(Consumer<NativeWebSocketConfiguration> configuration) throws Exception
     {
         server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -82,7 +77,7 @@ public class ConnectFutureTest
         server.setHandler(contextHandler);
 
         NativeWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            configuration.configure(container));
+            configuration.accept(container));
         contextHandler.addFilter(WebSocketUpgradeFilter.class, "/", EnumSet.of(DispatcherType.REQUEST));
         server.start();
 
