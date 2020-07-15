@@ -75,6 +75,7 @@ public class HttpConfiguration implements Dumpable
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private boolean _notifyRemoteAsyncErrors = true;
+    private boolean _relativeRedirectAllowed;
 
     /**
      * <p>An interface that allows a request object to be customized
@@ -143,6 +144,7 @@ public class HttpConfiguration implements Dumpable
         _requestCookieCompliance = config._requestCookieCompliance;
         _responseCookieCompliance = config._responseCookieCompliance;
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
+        _relativeRedirectAllowed = config._relativeRedirectAllowed;
     }
 
     /**
@@ -621,6 +623,23 @@ public class HttpConfiguration implements Dumpable
         return _notifyRemoteAsyncErrors;
     }
 
+    /**
+     * @param allowed True if relative redirection locations are allowed
+     */
+    public void setRelativeRedirectAllowed(boolean allowed)
+    {
+        _relativeRedirectAllowed = allowed;
+    }
+
+    /**
+     * @return True if relative redirection locations are allowed
+     */
+    @ManagedAttribute("Whether relative redirection locations are allowed")
+    public boolean isRelativeRedirectAllowed()
+    {
+        return _relativeRedirectAllowed;
+    }
+
     @Override
     public String dump()
     {
@@ -651,7 +670,8 @@ public class HttpConfiguration implements Dumpable
             "minResponseDataRate=" + _minResponseDataRate,
             "requestCookieCompliance=" + _requestCookieCompliance,
             "responseCookieCompliance=" + _responseCookieCompliance,
-            "notifyRemoteAsyncErrors=" + _notifyRemoteAsyncErrors
+            "notifyRemoteAsyncErrors=" + _notifyRemoteAsyncErrors,
+            "relativeRedirectAllowed=" + _relativeRedirectAllowed
         );
     }
 

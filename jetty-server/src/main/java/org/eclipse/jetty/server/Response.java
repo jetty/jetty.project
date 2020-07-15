@@ -504,7 +504,9 @@ public class Response implements HttpServletResponse
 
         if (!URIUtil.hasScheme(location))
         {
-            StringBuilder buf = _channel.getRequest().getRootURL();
+            StringBuilder buf = _channel.getHttpConfiguration().isRelativeRedirectAllowed()
+                ? new StringBuilder()
+                : _channel.getRequest().getRootURL();
             if (location.startsWith("/"))
             {
                 // absolute in context
