@@ -401,8 +401,11 @@ public class ResourceService
 
         if (welcome != null)
         {
+            String servletPath = included ? (String)request.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH)
+                    : request.getServletPath();
+
             if (_pathInfoOnly)
-                welcome = URIUtil.addPaths(request.getServletPath(), welcome);
+                welcome = URIUtil.addPaths(servletPath, welcome);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("welcome={}", welcome);
