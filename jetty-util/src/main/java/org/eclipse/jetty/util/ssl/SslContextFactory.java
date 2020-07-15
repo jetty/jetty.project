@@ -1131,6 +1131,9 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
         synchronized (this)
         {
+            if (_factory == null)
+                throw new IllegalStateException("SslContextFactory reload failed");
+
             return _factory._context;
         }
     }
@@ -1532,6 +1535,9 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
         synchronized (this)
         {
+            if (_factory == null)
+                throw new IllegalStateException("SslContextFactory reload failed");
+
             return _factory._keyStore;
         }
     }
@@ -1553,6 +1559,9 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
         synchronized (this)
         {
+            if (_factory == null)
+                throw new IllegalStateException("SslContextFactory reload failed");
+
             return _factory._trustStore;
         }
     }
