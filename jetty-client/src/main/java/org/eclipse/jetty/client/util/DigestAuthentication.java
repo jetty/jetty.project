@@ -22,10 +22,10 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.TypeUtil;
  */
 public class DigestAuthentication extends AbstractAuthentication
 {
+    private static final SecureRandom random = new SecureRandom();
     private final String user;
     private final String password;
 
@@ -216,7 +217,6 @@ public class DigestAuthentication extends AbstractAuthentication
 
         private String newClientNonce()
         {
-            Random random = new Random();
             byte[] bytes = new byte[8];
             random.nextBytes(bytes);
             return toHexString(bytes);
