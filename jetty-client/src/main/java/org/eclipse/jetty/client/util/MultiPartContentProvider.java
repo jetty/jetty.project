@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -69,6 +70,7 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
     private static final Logger LOG = Log.getLogger(MultiPartContentProvider.class);
     private static final byte[] COLON_SPACE_BYTES = new byte[]{':', ' '};
     private static final byte[] CR_LF_BYTES = new byte[]{'\r', '\n'};
+    private static final Random random = new SecureRandom();
 
     private final List<Part> parts = new ArrayList<>();
     private final ByteBuffer firstBoundary;
@@ -99,7 +101,6 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
 
     private static String makeBoundary()
     {
-        Random random = new Random();
         StringBuilder builder = new StringBuilder("JettyHttpClientBoundary");
         int length = builder.length();
         while (builder.length() < length + 16)

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.plus.webapp;
 
+import java.security.SecureRandom;
 import java.util.Random;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -39,6 +40,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class PlusConfiguration extends AbstractConfiguration
 {
     private static final Logger LOG = Log.getLogger(PlusConfiguration.class);
+    private static final Random __random = new SecureRandom();
 
     private Integer _key;
 
@@ -99,8 +101,7 @@ public class PlusConfiguration extends AbstractConfiguration
     {
         try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(wac.getClassLoader()))
         {
-            Random random = new Random();
-            _key = random.nextInt();
+            _key = __random.nextInt();
             Context context = new InitialContext();
             Context compCtx = (Context)context.lookup("java:comp");
             compCtx.addToEnvironment(NamingContext.LOCK_PROPERTY, _key);
