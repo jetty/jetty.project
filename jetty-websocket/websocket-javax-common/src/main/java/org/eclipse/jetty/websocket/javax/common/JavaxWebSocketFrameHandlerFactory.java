@@ -250,20 +250,20 @@ public abstract class JavaxWebSocketFrameHandlerFactory
         }
     }
 
-    protected JavaxWebSocketFrameHandlerMetadata createEndpointMetadata(Class<? extends Endpoint> endpointClass, EndpointConfig endpointConfig)
+    protected JavaxWebSocketFrameHandlerMetadata createEndpointMetadata(EndpointConfig endpointConfig)
     {
         JavaxWebSocketFrameHandlerMetadata metadata = new JavaxWebSocketFrameHandlerMetadata(endpointConfig);
-        MethodHandles.Lookup lookup = getApplicationMethodHandleLookup(endpointClass);
+        MethodHandles.Lookup lookup = getServerMethodHandleLookup();
 
-        Method openMethod = ReflectUtils.findMethod(endpointClass, "onOpen", Session.class, EndpointConfig.class);
+        Method openMethod = ReflectUtils.findMethod(Endpoint.class, "onOpen", Session.class, EndpointConfig.class);
         MethodHandle open = toMethodHandle(lookup, openMethod);
         metadata.setOpenHandler(open, openMethod);
 
-        Method closeMethod = ReflectUtils.findMethod(endpointClass, "onClose", Session.class, CloseReason.class);
+        Method closeMethod = ReflectUtils.findMethod(Endpoint.class, "onClose", Session.class, CloseReason.class);
         MethodHandle close = toMethodHandle(lookup, closeMethod);
         metadata.setCloseHandler(close, closeMethod);
 
-        Method errorMethod = ReflectUtils.findMethod(endpointClass, "onError", Session.class, Throwable.class);
+        Method errorMethod = ReflectUtils.findMethod(Endpoint.class, "onError", Session.class, Throwable.class);
         MethodHandle error = toMethodHandle(lookup, errorMethod);
         metadata.setErrorHandler(error, errorMethod);
 

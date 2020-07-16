@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.javax.server.internal;
 
-import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 import javax.websocket.server.ServerEndpoint;
 
@@ -42,7 +41,7 @@ public class JavaxWebSocketServerFrameHandlerFactory extends JavaxWebSocketClien
     public JavaxWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig)
     {
         if (javax.websocket.Endpoint.class.isAssignableFrom(endpointClass))
-            return createEndpointMetadata((Class<? extends Endpoint>)endpointClass, endpointConfig);
+            return createEndpointMetadata(endpointConfig);
 
         ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
         if (anno == null)

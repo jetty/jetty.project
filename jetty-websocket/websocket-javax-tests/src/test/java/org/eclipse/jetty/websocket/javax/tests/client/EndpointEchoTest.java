@@ -115,7 +115,6 @@ public class EndpointEchoTest
     @Test
     public void testEchoAnonymousInstance() throws Exception
     {
-
         CountDownLatch openLatch = new CountDownLatch(1);
         CountDownLatch closeLatch = new CountDownLatch(1);
         BlockingQueue<String> textMessages = new BlockingArrayQueue<>();

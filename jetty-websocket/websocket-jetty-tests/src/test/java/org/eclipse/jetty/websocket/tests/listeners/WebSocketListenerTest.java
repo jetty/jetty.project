@@ -140,7 +140,8 @@ public class WebSocketListenerTest
         CountDownLatch openLatch = new CountDownLatch(1);
         CountDownLatch closeLatch = new CountDownLatch(1);
         BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
-        WebSocketListener clientEndpoint = new WebSocketListener() {
+        WebSocketListener clientEndpoint = new WebSocketListener()
+        {
             @Override
             public void onWebSocketConnect(Session session)
             {
