@@ -591,6 +591,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return _contextPathEncoded;
     }
 
+    /**
+     * Get the context path in a form suitable to be returned from {@link HttpServletRequest#getContextPath()}
+     * @return Returns the encoded contextPath, or empty string for root context
+     */
+    public String getRequestContextPath()
+    {
+        String contextPath = getContextPathEncoded();
+        return "/".equals(contextPath) ? "" : contextPath;
+    }
+
     /*
      * @see javax.servlet.ServletContext#getInitParameter(java.lang.String)
      */
@@ -1267,10 +1277,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             __context.set(_scontext);
             if (!DispatcherType.INCLUDE.equals(dispatch) && target.startsWith("/"))
             {
-                if (_contextPath.length() == 1)
-                    baseRequest.setContextPath("");
-                else
-                    baseRequest.setContextPath(getContextPathEncoded());
+                baseRequest.setContextPath(getRequestContextPath());
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(pathInfo);
             }
