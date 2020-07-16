@@ -413,13 +413,12 @@ public class WebSocketNegotiationTest extends WebSocketTester
         upgradeRequest.setSubProtocols("test");
         upgradeRequest.addExtensions("permessage-deflate;server_no_context_takeover");
 
-        CompletableFuture<String> extensionHeader = new CompletableFuture<>();
         upgradeRequest.addListener(new UpgradeListener()
         {
             @Override
             public void onHandshakeRequest(HttpRequest request)
             {
-                request.getHeaders().put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, "permessage-deflate");
+                request.headers(headers -> headers.put(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, "permessage-deflate"));
             }
         });
 

@@ -106,6 +106,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                 {
                     if (isClosed())
                     {
+                        updateLastRemoteStreamId(streamId);
                         reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
                     }
                     else

@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
@@ -59,18 +58,19 @@ public class MongoTestHelper
 
     static MongoClient mongoClient;
 
+    static String mongoHost;
+    static int mongoPort;
+
     public static void startMongo()
     {
         try
         {
             long start = System.currentTimeMillis();
             mongo.start();
-            String containerIpAddress =  mongo.getContainerIpAddress();
-            int mongoPort = mongo.getMappedPort(27017);
-            LOG.info("Mongo container started for {}:{} - {}ms", containerIpAddress, mongoPort,
+            mongoHost =  mongo.getHost();
+            mongoPort = mongo.getMappedPort(27017);
+            LOG.info("Mongo container started for {}:{} - {}ms", mongoHost, mongoPort,
                      System.currentTimeMillis() - start);
-            System.setProperty("embedmongoHost", containerIpAddress);
-            System.setProperty("embedmongoPort", Integer.toString(mongoPort));
         }
         catch (Exception e)
         {
@@ -95,7 +95,7 @@ public class MongoTestHelper
         }
         if (mongoClient == null || restart)
         {
-            mongoClient = new MongoClient(System.getProperty("embedmongoHost"), Integer.getInteger("embedmongoPort"));
+            mongoClient = new MongoClient(mongoHost, mongoPort);
         }
         return mongoClient;
     }
@@ -118,8 +118,8 @@ public class MongoTestHelper
     public static MongoSessionDataStoreFactory newSessionDataStoreFactory()
     {
         MongoSessionDataStoreFactory storeFactory = new MongoSessionDataStoreFactory();
-        storeFactory.setHost(System.getProperty("embedmongoHost"));
-        storeFactory.setPort(Integer.getInteger("embedmongoPort"));
+        storeFactory.setHost(mongoHost);
+        storeFactory.setPort(mongoPort);
         storeFactory.setCollectionName(COLLECTION_NAME);
         storeFactory.setDbName(DB_NAME);
         return storeFactory;

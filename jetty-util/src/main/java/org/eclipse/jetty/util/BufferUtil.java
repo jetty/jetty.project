@@ -600,7 +600,7 @@ public class BufferUtil
         }
         else
         {
-            byte[] bytes = new byte[TEMP_BUFFER_SIZE];
+            byte[] bytes = new byte[Math.min(buffer.remaining(), TEMP_BUFFER_SIZE)];
             while (buffer.hasRemaining())
             {
                 int byteCountToWrite = Math.min(buffer.remaining(), TEMP_BUFFER_SIZE);

@@ -372,7 +372,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public HttpFields.Mutable getHeaders()
+    public HttpFields getHeaders()
     {
         return headers;
     }

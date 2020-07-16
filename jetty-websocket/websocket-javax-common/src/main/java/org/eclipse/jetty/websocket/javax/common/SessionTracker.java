@@ -33,7 +33,7 @@ public class SessionTracker extends AbstractLifeCycle implements JavaxWebSocketS
 {
     private static final Logger LOG = LoggerFactory.getLogger(SessionTracker.class);
 
-    private CopyOnWriteArraySet<JavaxWebSocketSession> sessions = new CopyOnWriteArraySet<>();
+    private final CopyOnWriteArraySet<JavaxWebSocketSession> sessions = new CopyOnWriteArraySet<>();
 
     public Set<Session> getSessions()
     {

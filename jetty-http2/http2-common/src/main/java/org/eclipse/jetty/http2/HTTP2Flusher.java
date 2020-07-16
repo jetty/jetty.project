@@ -436,7 +436,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             // It's an application frame; is the stream gone already?
             if (stream == null)
                 return true;
-            return stream.isReset();
+            return stream.isResetOrFailed();
         }
 
         private boolean isProtocolFrame(Frame frame)

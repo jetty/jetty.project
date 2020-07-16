@@ -19,7 +19,6 @@
 package org.eclipse.jetty.plus.annotation;
 
 import java.lang.reflect.Method;
-
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.plus.webapp.PlusDecorator;
@@ -41,12 +40,12 @@ public class LifeCycleCallbackCollectionTest
     {
         public static int postConstructCount = 0;
         public static int preDestroyCount = 0;
-        
+
         public void postconstruct()
         {
             ++postConstructCount;
         }
-        
+
         public void predestroy()
         {
             ++preDestroyCount;
@@ -55,7 +54,6 @@ public class LifeCycleCallbackCollectionTest
 
     /**
      * An unsupported lifecycle callback type
-     *
      */
     public class TestLifeCycleCallback extends LifeCycleCallback
     {
@@ -79,7 +77,6 @@ public class LifeCycleCallbackCollectionTest
     /**
      * A class that we can use to simulate having PostConstruct and
      * PreDestroy annotations on.
-     * 
      */
     public class SomeTestClass
     {
@@ -177,7 +174,7 @@ public class LifeCycleCallbackCollectionTest
             //expected
         }
     }
-    
+
     @Test
     public void testServletPostConstructPreDestroy() throws Exception
     {
@@ -186,7 +183,7 @@ public class LifeCycleCallbackCollectionTest
         context.setResourceBase(MavenTestingUtils.getTargetTestingDir("predestroy-test").toURI().toURL().toString());
         context.setContextPath("/");
         server.setHandler(context);
-        
+
         //add a non-async servlet
         ServletHolder notAsync = new ServletHolder();
         notAsync.setHeldClass(TestServlet.class);
@@ -194,7 +191,7 @@ public class LifeCycleCallbackCollectionTest
         notAsync.setAsyncSupported(false);
         notAsync.setInitOrder(1);
         context.getServletHandler().addServletWithMapping(notAsync, "/notasync/*");
-        
+
         //add an async servlet
         ServletHolder async = new ServletHolder();
         async.setHeldClass(TestServlet.class);
@@ -202,7 +199,7 @@ public class LifeCycleCallbackCollectionTest
         async.setAsyncSupported(true);
         async.setInitOrder(1);
         context.getServletHandler().addServletWithMapping(async, "/async/*");
-        
+
         //add a run-as servlet
         ServletHolder runas = new ServletHolder();
         runas.setHeldClass(TestServlet.class);
@@ -210,7 +207,7 @@ public class LifeCycleCallbackCollectionTest
         runas.setRunAsRole("admin");
         runas.setInitOrder(1);
         context.getServletHandler().addServletWithMapping(runas, "/runas/*");
-        
+
         //add both run-as and non async servlet
         ServletHolder both = new ServletHolder();
         both.setHeldClass(TestServlet.class);
@@ -219,7 +216,7 @@ public class LifeCycleCallbackCollectionTest
         both.setAsyncSupported(false);
         both.setInitOrder(1);
         context.getServletHandler().addServletWithMapping(both, "/both/*");
-        
+
         //Make fake lifecycle callbacks for all servlets
         LifeCycleCallbackCollection collection = new LifeCycleCallbackCollection();
         context.setAttribute(LifeCycleCallbackCollection.LIFECYCLE_CALLBACK_COLLECTION, collection);
@@ -227,28 +224,28 @@ public class LifeCycleCallbackCollectionTest
         collection.add(pcNotAsync);
         PreDestroyCallback pdNotAsync = new PreDestroyCallback(TestServlet.class, "predestroy");
         collection.add(pdNotAsync);
-        
+
         PostConstructCallback pcAsync = new PostConstructCallback(TestServlet.class, "postconstruct");
         collection.add(pcAsync);
         PreDestroyCallback pdAsync = new PreDestroyCallback(TestServlet.class, "predestroy");
         collection.add(pdAsync);
-        
+
         PostConstructCallback pcRunAs = new PostConstructCallback(TestServlet.class, "postconstruct");
         collection.add(pcRunAs);
         PreDestroyCallback pdRunAs = new PreDestroyCallback(TestServlet.class, "predestroy");
         collection.add(pdRunAs);
-        
+
         PostConstructCallback pcBoth = new PostConstructCallback(TestServlet.class, "postconstruct");
         collection.add(pcBoth);
         PreDestroyCallback pdBoth = new PreDestroyCallback(TestServlet.class, "predestroy");
         collection.add(pdBoth);
-        
+
         server.start();
-        
+
         assertEquals(4, TestServlet.postConstructCount);
-        
+
         server.stop();
-        
+
         assertEquals(4, TestServlet.preDestroyCount);
     }
 

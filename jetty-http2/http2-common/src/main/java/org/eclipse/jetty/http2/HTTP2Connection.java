@@ -101,8 +101,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     {
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 onUpgradeTo {} {}", this, BufferUtil.toDetailString(buffer));
-        if (buffer != null)
-            producer.setInputBuffer(buffer);
+        producer.setInputBuffer(buffer);
     }
 
     public boolean isUseInputDirectByteBuffers()

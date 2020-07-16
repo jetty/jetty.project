@@ -23,7 +23,7 @@ import javax.websocket.MessageHandler;
 import javax.websocket.PongMessage;
 
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketSession;
-import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.javax.tests.MessageType;
 import org.eclipse.jetty.websocket.util.ReflectUtils;
 import org.hamcrest.Description;
@@ -78,7 +78,7 @@ public class IsMessageHandlerType extends TypeSafeMatcher<MessageHandler>
             return false;
         }
 
-        AvailableDecoders.RegisteredDecoder registeredDecoder = session.getDecoders().getRegisteredDecoderFor(onMessageClass);
+        RegisteredDecoder registeredDecoder = session.getDecoders().getFirstRegisteredDecoder(onMessageClass);
         if (registeredDecoder == null)
         {
             return false;

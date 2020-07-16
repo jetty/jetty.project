@@ -73,7 +73,6 @@
       <groupId>org.ops4j.pax.tinybundles</groupId>
       <artifactId>tinybundles</artifactId>
       <version>3.0.0</version>
-      <scope>test</scope>
       <exclusions>
         <exclusion>
           <groupId>biz.aQute.bnd</groupId>

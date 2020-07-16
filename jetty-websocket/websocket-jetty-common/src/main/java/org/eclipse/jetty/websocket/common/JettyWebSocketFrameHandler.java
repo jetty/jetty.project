@@ -204,6 +204,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 default:
                     throw new IllegalStateException();
             }
+
+            // If we have received a close frame, set state to closed to disallow further suspends and resumes.
+            if (frame.getOpCode() == OpCode.CLOSE)
+                state = SuspendState.CLOSED;
         }
 
         // Send to raw frame handling on user side (eg: WebSocketFrameListener)
@@ -296,7 +300,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         synchronized (this)
         {
-            // We are now closed and cannot suspend or resume
+            // We are now closed and cannot suspend or resume.
             state = SuspendState.CLOSED;
         }
 
