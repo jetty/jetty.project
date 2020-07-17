@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.client.masks;
 
-import java.security.SecureRandom;
 import java.util.Random;
 
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -29,7 +28,7 @@ public class RandomMasker implements Masker
 
     public RandomMasker()
     {
-        this(new SecureRandom());
+        this(null);
     }
 
     public RandomMasker(Random random)
@@ -40,8 +39,27 @@ public class RandomMasker implements Masker
     @Override
     public void setMask(WebSocketFrame frame)
     {
-        byte[] mask = new byte[4];
-        random.nextBytes(mask);
+        byte[] mask;
+        if (random != null)
+        {
+            mask = new byte[4];
+            random.nextBytes(mask);
+        }
+        else
+        {
+            // This is a weak random, but sufficient for a mask.
+            // Using a SecureRandom would result in lock contention
+            // Using a Random is as more predictable than this algorithm
+            // Using a onetime random is essentially a system time.
+            int pseudoRandom = (int)(System.identityHashCode(frame.hashCode()) ^ System.nanoTime());
+            mask = new byte[]
+            {
+                (byte)pseudoRandom,
+                (byte)(pseudoRandom >> 8),
+                (byte)(pseudoRandom >> 16),
+                (byte)(pseudoRandom >> 24),
+            };
+        }
         frame.setMask(mask);
     }
 }

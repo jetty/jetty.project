@@ -26,6 +26,7 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -46,11 +47,11 @@ import org.eclipse.jetty.util.TypeUtil;
  */
 public class DigestAuthentication extends AbstractAuthentication
 {
-    private static final SecureRandom random = new SecureRandom();
+    private final Random random;
     private final String user;
     private final String password;
 
-    /**
+    /** Construct a DigestAuthentication with a {@link SecureRandom} nonce.
      * @param uri the URI to match for the authentication
      * @param realm the realm to match for the authentication
      * @param user the user that wants to authenticate
@@ -58,7 +59,20 @@ public class DigestAuthentication extends AbstractAuthentication
      */
     public DigestAuthentication(URI uri, String realm, String user, String password)
     {
+        this(uri, realm, user, password, new SecureRandom());
+    }
+
+    /**
+     * @param uri the URI to match for the authentication
+     * @param realm the realm to match for the authentication
+     * @param user the user that wants to authenticate
+     * @param password the password of the user
+     * @param random the Random generator to use for nonces, or null for a weak algorithm.
+     */
+    public DigestAuthentication(URI uri, String realm, String user, String password, Random random)
+    {
         super(uri, realm);
+        this.random = random;
         this.user = user;
         this.password = password;
     }
@@ -217,9 +231,15 @@ public class DigestAuthentication extends AbstractAuthentication
 
         private String newClientNonce()
         {
-            byte[] bytes = new byte[8];
-            random.nextBytes(bytes);
-            return toHexString(bytes);
+            if (random != null)
+            {
+                byte[] bytes = new byte[8];
+                random.nextBytes(bytes);
+                return toHexString(bytes);
+            }
+
+            long pseudoRandom = System.nanoTime() ^ System.identityHashCode(new Object());
+            return Long.toHexString(pseudoRandom);
         }
 
         private String toHexString(byte[] bytes)
