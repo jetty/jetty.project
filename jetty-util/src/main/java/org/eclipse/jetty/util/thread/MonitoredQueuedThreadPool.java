@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.util.concurrent.BlockingQueue;
+
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -43,7 +45,12 @@ public class MonitoredQueuedThreadPool extends QueuedThreadPool
 
     public MonitoredQueuedThreadPool(int maxThreads)
     {
-        super(maxThreads, maxThreads, 24 * 3600 * 1000, new BlockingArrayQueue<>(maxThreads, 256));
+        this(maxThreads, maxThreads, 24 * 3600 * 1000, new BlockingArrayQueue<>(maxThreads, 256));
+    }
+
+    public MonitoredQueuedThreadPool(int maxThreads, int minThreads, int idleTimeOut, BlockingQueue<Runnable> queue)
+    {
+        super(maxThreads, minThreads, idleTimeOut, queue);
         addBean(queueStats);
         addBean(queueLatencyStats);
         addBean(taskLatencyStats);

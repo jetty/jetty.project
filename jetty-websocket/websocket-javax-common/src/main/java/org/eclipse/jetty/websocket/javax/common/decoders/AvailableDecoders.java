@@ -20,82 +20,30 @@ package org.eclipse.jetty.websocket.javax.common.decoders;
 
 import java.io.InputStream;
 import java.io.Reader;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.websocket.javax.common.InitException;
 import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.util.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.util.ReflectUtils;
 
-public class AvailableDecoders implements Iterable<AvailableDecoders.RegisteredDecoder>
+public class AvailableDecoders implements Iterable<RegisteredDecoder>
 {
-    public static class RegisteredDecoder
-    {
-        // The user supplied Decoder class
-        public final Class<? extends Decoder> decoder;
-        // The javax.websocket.Decoder.* type (eg: Decoder.Binary, Decoder.BinaryStream, Decoder.Text, Decoder.TextStream)
-        public final Class<? extends Decoder> interfaceType;
-        public final Class<?> objectType;
-        public final boolean primitive;
-        public Decoder instance;
-
-        public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Class<?> objectType)
-        {
-            this(decoder, interfaceType, objectType, false);
-        }
-
-        public RegisteredDecoder(Class<? extends Decoder> decoder, Class<? extends Decoder> interfaceType, Class<?> objectType, boolean primitive)
-        {
-            this.decoder = decoder;
-            this.interfaceType = interfaceType;
-            this.objectType = objectType;
-            this.primitive = primitive;
-        }
-
-        public boolean implementsInterface(Class<? extends Decoder> type)
-        {
-            return interfaceType.isAssignableFrom(type);
-        }
-
-        public boolean isType(Class<?> type)
-        {
-            return objectType.isAssignableFrom(type);
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuilder str = new StringBuilder();
-            str.append(RegisteredDecoder.class.getSimpleName());
-            str.append('[').append(decoder.getName());
-            str.append(',').append(interfaceType.getName());
-            str.append(',').append(objectType.getName());
-            if (primitive)
-            {
-                str.append(",PRIMITIVE");
-            }
-            str.append(']');
-            return str.toString();
-        }
-    }
-
+    private final List<RegisteredDecoder> registeredDecoders = new ArrayList<>();
     private final EndpointConfig config;
-    private LinkedList<RegisteredDecoder> registeredDecoders;
 
     public AvailableDecoders(EndpointConfig config)
     {
-        Objects.requireNonNull(config);
-        this.config = config;
-        registeredDecoders = new LinkedList<>();
+        // Register the Config Based Decoders.
+        this.config = Objects.requireNonNull(config);
+        registerAll(config.getDecoders());
 
         // TEXT based [via Class reference]
         registerPrimitive(BooleanDecoder.class, Decoder.Text.class, Boolean.class);
@@ -125,17 +73,14 @@ public class AvailableDecoders implements Iterable<AvailableDecoders.RegisteredD
         // STREAMING based
         registerPrimitive(ReaderDecoder.class, Decoder.TextStream.class, Reader.class);
         registerPrimitive(InputStreamDecoder.class, Decoder.BinaryStream.class, InputStream.class);
-
-        // Config Based
-        registerAll(config.getDecoders());
     }
 
     private void registerPrimitive(Class<? extends Decoder> decoderClass, Class<? extends Decoder> interfaceType, Class<?> type)
     {
-        registeredDecoders.add(new RegisteredDecoder(decoderClass, interfaceType, type, true));
+        registeredDecoders.add(new RegisteredDecoder(decoderClass, interfaceType, type, config, true));
     }
 
-    public void register(Class<? extends Decoder> decoder)
+    private void register(Class<? extends Decoder> decoder)
     {
         if (!ReflectUtils.isDefaultConstructable(decoder))
         {
@@ -175,23 +120,10 @@ public class AvailableDecoders implements Iterable<AvailableDecoders.RegisteredD
         }
     }
 
-    // TODO: consider removing (if not used)
-    public void registerAll(Class<? extends Decoder>[] decoders)
+    private void registerAll(List<Class<? extends Decoder>> decoders)
     {
         if (decoders == null)
             return;
-
-        for (Class<? extends Decoder> decoder : decoders)
-        {
-            register(decoder);
-        }
-    }
-
-    public void registerAll(List<Class<? extends Decoder>> decoders)
-    {
-        if (decoders == null)
-            return;
-
         decoders.forEach(this::register);
     }
 
@@ -200,52 +132,34 @@ public class AvailableDecoders implements Iterable<AvailableDecoders.RegisteredD
         Class<?> objectType = ReflectUtils.findGenericClassFor(decoder, interfaceClass);
         if (objectType == null)
         {
-            StringBuilder err = new StringBuilder();
-            err.append("Unknown Decoder Object type declared for interface ");
-            err.append(interfaceClass.getName());
-            err.append(" on class ");
-            err.append(decoder);
-            throw new InvalidWebSocketException(err.toString());
+            String err = "Unknown Decoder Object type declared for interface " +
+                interfaceClass.getName() + " on class " + decoder;
+            throw new InvalidWebSocketException(err);
         }
 
-        try
+        // Validate the decoder to be added against the existing registered decoders.
+        for (RegisteredDecoder registered : registeredDecoders)
         {
-            RegisteredDecoder conflicts = registeredDecoders.stream()
-                .filter(registered -> registered.isType(objectType))
-                .filter(registered -> !registered.primitive)
-                .findFirst()
-                .get();
-
-            if (conflicts.decoder.equals(decoder) && conflicts.implementsInterface(interfaceClass))
+            if (!registered.primitive && objectType.equals(registered.objectType))
             {
-                // Same decoder as what is there already, don't bother adding it again.
-                return;
+                // Streaming decoders can only have one decoder per object type.
+                if (interfaceClass.equals(Decoder.TextStream.class) || interfaceClass.equals(Decoder.BinaryStream.class))
+                    throw new InvalidWebSocketException("Multiple decoders for objectType" + objectType);
+
+                // If we have the same objectType, then the interfaceTypes must be the same to form a decoder list.
+                if (!registered.interfaceType.equals(interfaceClass))
+                    throw new InvalidWebSocketException("Multiple decoders with different interface types for objectType " + objectType);
             }
 
-            StringBuilder err = new StringBuilder();
-            err.append("Duplicate Decoder Object type ");
-            err.append(objectType.getName());
-            err.append(" in ");
-            err.append(decoder.getName());
-            err.append(", previously declared in ");
-            err.append(conflicts.decoder.getName());
-            throw new InvalidWebSocketException(err.toString());
+            // If this decoder is already registered for this interface type we can skip adding a duplicate.
+            if (registered.decoder.equals(decoder) && registered.interfaceType.equals(interfaceClass))
+                return;
         }
-        catch (NoSuchElementException e)
-        {
-            registeredDecoders.addFirst(new RegisteredDecoder(decoder, interfaceClass, objectType));
-        }
+
+        registeredDecoders.add(new RegisteredDecoder(decoder, interfaceClass, objectType, config));
     }
 
-    // TODO: consider removing (if not used)
-    public List<RegisteredDecoder> supporting(Class<? extends Decoder> interfaceType)
-    {
-        return registeredDecoders.stream()
-            .filter(registered -> registered.implementsInterface(interfaceType))
-            .collect(Collectors.toList());
-    }
-
-    public RegisteredDecoder getRegisteredDecoderFor(Class<?> type)
+    public RegisteredDecoder getFirstRegisteredDecoder(Class<?> type)
     {
         return registeredDecoders.stream()
             .filter(registered -> registered.isType(type))
@@ -253,54 +167,49 @@ public class AvailableDecoders implements Iterable<AvailableDecoders.RegisteredD
             .orElse(null);
     }
 
-    // TODO: consider removing (if not used)
-    public Class<? extends Decoder> getDecoderFor(Class<?> type)
+    public List<RegisteredDecoder> getRegisteredDecoders(Class<?> returnType)
     {
-        try
-        {
-            return getRegisteredDecoderFor(type).decoder;
-        }
-        catch (NoSuchElementException e)
-        {
-            throw new InvalidWebSocketException("No Decoder found for type " + type);
-        }
+        return registeredDecoders.stream()
+            .filter(registered -> registered.isType(returnType))
+            .collect(Collectors.toList());
     }
 
-    public <T extends Decoder> T getInstanceOf(RegisteredDecoder registeredDecoder)
+    public List<RegisteredDecoder> getRegisteredDecoders(Class<? extends Decoder> interfaceType, Class<?> returnType)
     {
-        if (registeredDecoder.instance != null)
-        {
-            return (T)registeredDecoder.instance;
-        }
-
-        try
-        {
-            registeredDecoder.instance = registeredDecoder.decoder.getConstructor().newInstance();
-            registeredDecoder.instance.init(this.config);
-            return (T)registeredDecoder.instance;
-        }
-        catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e)
-        {
-            throw new InitException("Unable to init Decoder for type:" + registeredDecoder.decoder.getName(), e);
-        }
+        return registeredDecoders.stream()
+            .filter(registered -> registered.interfaceType.equals(interfaceType))
+            .filter(registered -> registered.isType(returnType))
+            .collect(Collectors.toList());
     }
 
-    public <T extends Decoder> T getInstanceFor(Class<?> type)
+    public List<RegisteredDecoder> getTextDecoders(Class<?> returnType)
     {
-        try
-        {
-            RegisteredDecoder registeredDecoder = getRegisteredDecoderFor(type);
-            return getInstanceOf(registeredDecoder);
-        }
-        catch (NoSuchElementException e)
-        {
-            throw new InvalidWebSocketException("No Decoder found for type " + type);
-        }
+        return getRegisteredDecoders(Decoder.Text.class, returnType);
+    }
+
+    public List<RegisteredDecoder> getBinaryDecoders(Class<?> returnType)
+    {
+        return getRegisteredDecoders(Decoder.Binary.class, returnType);
+    }
+
+    public List<RegisteredDecoder> getTextStreamDecoders(Class<?> returnType)
+    {
+        return getRegisteredDecoders(Decoder.TextStream.class, returnType);
+    }
+
+    public List<RegisteredDecoder> getBinaryStreamDecoders(Class<?> returnType)
+    {
+        return getRegisteredDecoders(Decoder.BinaryStream.class, returnType);
     }
 
     @Override
     public Iterator<RegisteredDecoder> iterator()
     {
         return registeredDecoders.iterator();
+    }
+
+    public Stream<RegisteredDecoder> stream()
+    {
+        return registeredDecoders.stream();
     }
 }

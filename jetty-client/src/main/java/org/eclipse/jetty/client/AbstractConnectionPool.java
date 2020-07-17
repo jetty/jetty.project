@@ -92,10 +92,9 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     public Connection acquire(boolean create)
     {
         Connection connection = activate();
-        if (connection == null)
+        if (connection == null && create)
         {
-            if (create)
-                tryCreate(destination.getQueuedRequestCount());
+            tryCreate(destination.getQueuedRequestCount());
             connection = activate();
         }
         return connection;

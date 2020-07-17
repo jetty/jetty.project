@@ -606,7 +606,7 @@ public class ConnectHandler extends HandlerWrapper
 
     public class DownstreamConnection extends ProxyConnection implements Connection.UpgradeTo
     {
-        private ByteBuffer buffer = BufferUtil.EMPTY_BUFFER;
+        private ByteBuffer buffer;
 
         public DownstreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
         {
@@ -616,20 +616,27 @@ public class ConnectHandler extends HandlerWrapper
         @Override
         public void onUpgradeTo(ByteBuffer buffer)
         {
-            if (buffer != null)
-                this.buffer = buffer;
+            this.buffer = buffer;
         }
 
         @Override
         public void onOpen()
         {
             super.onOpen();
-            final int remaining = buffer.remaining();
+
+            if (buffer == null)
+            {
+                fillInterested();
+                return;
+            }
+
+            int remaining = buffer.remaining();
             write(getConnection().getEndPoint(), buffer, new Callback()
             {
                 @Override
                 public void succeeded()
                 {
+                    buffer = null;
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} wrote initial {} bytes to server", DownstreamConnection.this, remaining);
                     fillInterested();
@@ -638,6 +645,7 @@ public class ConnectHandler extends HandlerWrapper
                 @Override
                 public void failed(Throwable x)
                 {
+                    buffer = null;
                     if (LOG.isDebugEnabled())
                         LOG.debug(this + " failed to write initial " + remaining + " bytes to server", x);
                     close();

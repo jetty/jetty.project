@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import org.eclipse.jetty.io.ByteBufferPool.Bucket;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -148,6 +149,17 @@ public class ArrayByteBufferPoolTest
             assertSame(buffer1, buffer2);
             assertNotSame(buffer1, buffer3);
         }
+    }
+
+    @Test
+    public void testReleaseNonPooledBuffer()
+    {
+        ArrayByteBufferPool bufferPool = new ArrayByteBufferPool();
+
+        // Release a few small non-pool buffers
+        bufferPool.release(ByteBuffer.wrap(StringUtil.getUtf8Bytes("Hello")));
+
+        assertEquals(0, bufferPool.getHeapByteBufferCount());
     }
 
     @Test

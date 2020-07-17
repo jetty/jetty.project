@@ -26,6 +26,7 @@ import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -244,7 +245,8 @@ public class Dispatcher implements RequestDispatcher
     {
         private final String _requestURI;
         private final String _contextPath;
-        private final String _pathInContext;
+        private final String _servletPath;
+        private final String _pathInfo;
         private final ServletPathMapping _servletPathMapping;
         private final String _query;
 
@@ -253,9 +255,11 @@ public class Dispatcher implements RequestDispatcher
             super(attributes);
             _requestURI = requestURI;
             _contextPath = contextPath;
-            _pathInContext = pathInContext;
             _servletPathMapping = mapping;
             _query = query;
+
+            _pathInfo = _servletPathMapping == null ? pathInContext : _servletPathMapping.getPathInfo();
+            _servletPath = _servletPathMapping == null ? null : _servletPathMapping.getServletPath();
         }
 
         @Override
@@ -266,11 +270,11 @@ public class Dispatcher implements RequestDispatcher
                 switch (key)
                 {
                     case FORWARD_PATH_INFO:
-                        return _servletPathMapping == null ? _pathInContext : _servletPathMapping.getPathInfo();
+                        return _pathInfo;
                     case FORWARD_REQUEST_URI:
                         return _requestURI;
                     case FORWARD_SERVLET_PATH:
-                        return _servletPathMapping == null ? null : _servletPathMapping.getServletPath();
+                        return _servletPath;
                     case FORWARD_CONTEXT_PATH:
                         return _contextPath;
                     case FORWARD_QUERY_STRING:
@@ -302,12 +306,18 @@ public class Dispatcher implements RequestDispatcher
 
             if (_named == null)
             {
-                set.add(FORWARD_PATH_INFO);
-                set.add(FORWARD_REQUEST_URI);
-                set.add(FORWARD_SERVLET_PATH);
-                set.add(FORWARD_CONTEXT_PATH);
-                set.add(FORWARD_MAPPING);
-                set.add(FORWARD_QUERY_STRING);
+                if (_pathInfo != null)
+                    set.add(FORWARD_PATH_INFO);
+                if (_requestURI != null)
+                    set.add(FORWARD_REQUEST_URI);
+                if (_servletPath != null)
+                    set.add(FORWARD_SERVLET_PATH);
+                if (_contextPath != null)
+                    set.add(FORWARD_CONTEXT_PATH);
+                if (_servletPathMapping != null)
+                    set.add(FORWARD_MAPPING);
+                if (_query != null)
+                    set.add(FORWARD_QUERY_STRING);
             }
 
             return set;
@@ -426,14 +436,26 @@ public class Dispatcher implements RequestDispatcher
                     set.add(name);
             }
 
+            // We can't assign these in the constructor because the ServletPathMapping hasn't been set by the ServletHandler.
+            String pathInfo = (String)getAttribute(INCLUDE_PATH_INFO);
+            String servletPath = (String)getAttribute(INCLUDE_SERVLET_PATH);
+            String contextPath = (String)getAttribute(INCLUDE_CONTEXT_PATH);
+            HttpServletMapping includeMapping = (HttpServletMapping)getAttribute(INCLUDE_MAPPING);
+
             if (_named == null)
             {
-                set.add(INCLUDE_PATH_INFO);
-                set.add(INCLUDE_REQUEST_URI);
-                set.add(INCLUDE_SERVLET_PATH);
-                set.add(INCLUDE_CONTEXT_PATH);
-                set.add(INCLUDE_MAPPING);
-                set.add(INCLUDE_QUERY_STRING);
+                if (pathInfo != null)
+                    set.add(INCLUDE_PATH_INFO);
+                if (_requestURI != null)
+                    set.add(INCLUDE_REQUEST_URI);
+                if (servletPath != null)
+                    set.add(INCLUDE_SERVLET_PATH);
+                if (contextPath != null)
+                    set.add(INCLUDE_CONTEXT_PATH);
+                if (includeMapping != null)
+                    set.add(INCLUDE_MAPPING);
+                if (_query != null)
+                    set.add(INCLUDE_QUERY_STRING);
             }
 
             return set;

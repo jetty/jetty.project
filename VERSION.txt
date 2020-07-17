@@ -1,5 +1,7 @@
 jetty-10.0.0-SNAPSHOT
 
+jetty-10.0.0.beta0 - 27 May 2020
+
 jetty-9.4.30.v20200611 - 11 June 2020
  + 4776 Incorrect path matching for WebSocket using PathMappings
  + 4826 Upgrade to Apache Jasper 8.5.54
@@ -66,7 +68,7 @@ jetty-10.0.0.alpha1 - 26 November 2019
  + 2709 current default for headerCacheSize is not large enough for many
    requests
  + 2815 hpack fields are opaque octets
- + 3040 Allow RFC6265 Cookies to include optional SameSite attribute.
+ + 3040 Allow RFC6265 Cookies to include optional SameSite attribute
  + 3083 The ini-template for jetty.console-capture.dir does not match the
    default value
  + 3106 Websocket connection stats and request stats
@@ -499,10 +501,10 @@ jetty-9.4.25.v20191220 - 20 December 2019
    SslContextFactory usage
  + 4392 Suppress logging of QuietException in HttpChannelState.asyncError()
  + 4402 NPE in JettyRunWarExplodedMojo
- + 4411 Jetty server spins on incomplete request due to delayed dispatch
-   until content
- + 4415 GzipHandler invalid input zip size on large
-   (over 2,147,483,647 bytes) request body content
+ + 4411 Jetty server spins on incomplete request due to delayed dispatch until
+   content
+ + 4415 GzipHandler invalid input zip size on large (over 2,147,483,647 bytes)
+   request body content
  + 4421 HttpClient support for PROXY protocol
  + 4427 Retried HttpClient Requests can result in duplicates cookies
 

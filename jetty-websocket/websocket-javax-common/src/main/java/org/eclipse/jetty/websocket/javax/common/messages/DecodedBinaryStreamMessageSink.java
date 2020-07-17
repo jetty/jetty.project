@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.websocket.javax.common.messages;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.util.List;
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
@@ -28,48 +30,36 @@ import javax.websocket.Decoder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.websocket.javax.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.util.messages.InputStreamMessageSink;
 import org.eclipse.jetty.websocket.util.messages.MessageSink;
 
-public class DecodedBinaryStreamMessageSink<T> extends DecodedMessageSink<Decoder.BinaryStream<T>>
+public class DecodedBinaryStreamMessageSink<T> extends AbstractDecodedMessageSink.Stream<Decoder.BinaryStream<T>>
 {
-    public DecodedBinaryStreamMessageSink(CoreSession session,
-                                          Decoder.BinaryStream<T> decoder,
-                                          MethodHandle methodHandle)
-        throws NoSuchMethodException, IllegalAccessException
+    public DecodedBinaryStreamMessageSink(CoreSession session, MethodHandle methodHandle, List<RegisteredDecoder> decoders)
     {
-        super(session, decoder, methodHandle);
+        super(session, methodHandle, decoders);
     }
 
     @Override
-    protected MethodHandle newRawMethodHandle() throws NoSuchMethodException, IllegalAccessException
+    MessageSink newMessageSink(CoreSession coreSession) throws Exception
     {
-        return JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup().findVirtual(DecodedBinaryStreamMessageSink.class,
-            "onStreamStart", MethodType.methodType(void.class, InputStream.class))
+        MethodHandle methodHandle = JavaxWebSocketFrameHandlerFactory.getServerMethodHandleLookup()
+            .findVirtual(DecodedBinaryStreamMessageSink.class, "onStreamStart", MethodType.methodType(void.class, InputStream.class))
             .bindTo(this);
+        return new InputStreamMessageSink(coreSession, methodHandle);
     }
 
-    @Override
-    protected MessageSink newRawMessageSink(CoreSession session, MethodHandle rawMethodHandle)
-    {
-        return new InputStreamMessageSink(session, rawMethodHandle);
-    }
-
-    @SuppressWarnings("Duplicates")
     public void onStreamStart(InputStream stream)
     {
         try
         {
-            T obj = getDecoder().decode(stream);
-            methodHandle.invoke(obj);
+            T obj = _decoder.decode(stream);
+            invoke(obj);
         }
-        catch (DecodeException e)
+        catch (DecodeException | IOException e)
         {
             throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Unable to decode", e);
-        }
-        catch (Throwable t)
-        {
-            throw new CloseException(CloseReason.CloseCodes.CANNOT_ACCEPT.getCode(), "Endpoint notification error", t);
         }
     }
 }

@@ -80,7 +80,7 @@ import org.slf4j.LoggerFactory;
  * </pre>
  */
 @ManagedObject("Implementation of Container and LifeCycle")
-public class ContainerLifeCycle extends AbstractLifeCycle implements Container, Destroyable, Dumpable
+public class ContainerLifeCycle extends AbstractLifeCycle implements Container, Destroyable, Dumpable.DumpableContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContainerLifeCycle.class);
     private final List<Bean> _beans = new CopyOnWriteArrayList<>();

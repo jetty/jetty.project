@@ -68,6 +68,9 @@ etc/jetty.xml
 ## Cookie compliance mode for generating response Set-Cookie: RFC2965, RFC6265
 # jetty.httpConfig.responseCookieCompliance=RFC6265
 
+## Relative Redirect Locations allowed
+# jetty.httpConfig.relativeRedirectAllowed=false
+
 ### Server configuration
 ## Whether ctrl+c on the console gracefully stops the Jetty server
 # jetty.server.stopAtShutdown=true

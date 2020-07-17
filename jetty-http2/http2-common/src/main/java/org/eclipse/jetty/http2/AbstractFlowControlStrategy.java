@@ -199,18 +199,22 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
 
     protected void onSessionUnstalled(ISession session)
     {
-        sessionStallTime.addAndGet(System.nanoTime() - sessionStall.getAndSet(0));
+        long stallTime = System.nanoTime() - sessionStall.getAndSet(0);
+        sessionStallTime.addAndGet(stallTime);
         if (LOG.isDebugEnabled())
-            LOG.debug("Session unstalled {}", session);
+            LOG.debug("Session unstalled after {} ms {}", TimeUnit.NANOSECONDS.toMillis(stallTime), session);
     }
 
     protected void onStreamUnstalled(IStream stream)
     {
         Long time = streamsStalls.remove(stream);
         if (time != null)
-            streamsStallTime.addAndGet(System.nanoTime() - time);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Stream unstalled {}", stream);
+        {
+            long stallTime = System.nanoTime() - time;
+            streamsStallTime.addAndGet(stallTime);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Stream unstalled after {} ms {}", TimeUnit.NANOSECONDS.toMillis(stallTime), stream);
+        }
     }
 
     @ManagedAttribute(value = "The time, in milliseconds, that the session flow control has stalled", readonly = true)

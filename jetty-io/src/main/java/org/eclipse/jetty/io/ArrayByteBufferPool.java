@@ -23,8 +23,11 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntFunction;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A ByteBuffer pool where ByteBuffers are held in queues that are held in array elements.</p>
@@ -35,6 +38,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject
 public class ArrayByteBufferPool extends AbstractByteBufferPool
 {
+    private static final Logger LOG = LoggerFactory.getLogger(MappedByteBufferPool.class);
+
     private final int _minCapacity;
     private final ByteBufferPool.Bucket[] _direct;
     private final ByteBufferPool.Bucket[] _indirect;
@@ -119,8 +124,18 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
     {
         if (buffer == null)
             return;
+
+        int capacity = buffer.capacity();
+        // Validate that this buffer is from this pool.
+        if ((capacity % getCapacityFactor()) != 0)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("ByteBuffer {} does not belong to this pool, discarding it", BufferUtil.toDetailString(buffer));
+            return;
+        }
+
         boolean direct = buffer.isDirect();
-        ByteBufferPool.Bucket bucket = bucketFor(buffer.capacity(), direct, this::newBucket);
+        ByteBufferPool.Bucket bucket = bucketFor(capacity, direct, this::newBucket);
         if (bucket != null)
         {
             bucket.release(buffer);

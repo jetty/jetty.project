@@ -414,7 +414,7 @@ public class ResponseTest
 
     @Test
     public void testResponseCharacterEncoding() throws Exception
-    {   
+    {
         _server.stop();
         ContextHandler handler = new CharEncodingContextHandler();
         _server.setHandler(handler);
@@ -429,7 +429,7 @@ public class ResponseTest
 
         _channel.getRequest().setContext(null, "/");
         response.recycle();
-        
+
         //test that explicit overrides default
         response = getResponse();
         _channel.getRequest().setContext(handler.getServletContext(), "/");
@@ -438,10 +438,10 @@ public class ResponseTest
         //getWriter should not change explicit character encoding
         response.getWriter();
         assertThat("ascii", Matchers.equalTo(response.getCharacterEncoding()));
-        
+
         _channel.getRequest().setContext(null, "/");
         response.recycle();
-        
+
         //test that assumed overrides default
         response = getResponse();
         _channel.getRequest().setContext(handler.getServletContext(), "/");
@@ -450,10 +450,10 @@ public class ResponseTest
         response.getWriter();
         //getWriter should not have modified character encoding
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
-        
+
         _channel.getRequest().setContext(null, "/");
         response.recycle();
-        
+
         //test that inferred overrides default
         response = getResponse();
         _channel.getRequest().setContext(handler.getServletContext(), "/");
@@ -462,10 +462,10 @@ public class ResponseTest
         //getWriter should not have modified character encoding
         response.getWriter();
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
-        
+
         _channel.getRequest().setContext(null, "/");
         response.recycle();
-        
+
         //test that without a default or any content type, use iso-8859-1
         response = getResponse();
         assertThat("iso-8859-1", Matchers.equalTo(response.getCharacterEncoding()));
@@ -473,7 +473,7 @@ public class ResponseTest
         response.getWriter();
         assertThat("iso-8859-1", Matchers.equalTo(response.getCharacterEncoding()));
     }
-    
+
     @Test
     public void testLocaleAndContentTypeEncoding() throws Exception
     {
@@ -488,7 +488,7 @@ public class ResponseTest
 
         Response response = getResponse();
         response.getHttpChannel().getRequest().setContext(handler.getServletContext(), "/");
-        
+
         response.setContentType("text/html");
         assertEquals("iso-8859-1", response.getCharacterEncoding());
 
@@ -562,14 +562,14 @@ public class ResponseTest
         response.setCharacterEncoding("ISO-8859-1");
         assertEquals("text/xml;charset=utf-8", response.getContentType());
     }
-    
+
     @Test
     public void testContentEncodingViaContentTypeChange() throws Exception
     {
         Response response = getResponse();
         response.setContentType("text/html;charset=Shift_Jis");
         assertEquals("Shift_Jis", response.getCharacterEncoding());
-        
+
         response.setContentType("text/xml");
         assertEquals("Shift_Jis", response.getCharacterEncoding());
     }
@@ -1004,6 +1004,83 @@ public class ResponseTest
     }
 
     @Test
+    public void testSendRedirectRelative()
+        throws Exception
+    {
+        String[][] tests = {
+            // No cookie
+            {
+                "http://myhost:8888/other/location;jsessionid=12345?name=value",
+                "http://myhost:8888/other/location;jsessionid=12345?name=value"
+            },
+            {"/other/location;jsessionid=12345?name=value", "/other/location;jsessionid=12345?name=value"},
+            {"./location;jsessionid=12345?name=value", "/path/location;jsessionid=12345?name=value"},
+
+            // From cookie
+            {"/other/location", "/other/location"},
+            {"/other/l%20cation", "/other/l%20cation"},
+            {"location", "/path/location"},
+            {"./location", "/path/location"},
+            {"../location", "/location"},
+            {"/other/l%20cation", "/other/l%20cation"},
+            {"l%20cation", "/path/l%20cation"},
+            {"./l%20cation", "/path/l%20cation"},
+            {"../l%20cation", "/l%20cation"},
+            {"../locati%C3%abn", "/locati%C3%abn"},
+            {"../other%2fplace", "/other%2fplace"},
+            {"http://somehost.com/other/location", "http://somehost.com/other/location"},
+        };
+
+        int[] ports = new int[]{8080, 80};
+        String[] hosts = new String[]{null, "myhost", "192.168.0.1", "0::1"};
+        for (int port : ports)
+        {
+            for (String host : hosts)
+            {
+                for (int i = 0; i < tests.length; i++)
+                {
+                    // System.err.printf("%s %d %s%n",host,port,tests[i][0]);
+
+                    Response response = getResponse();
+                    Request request = response.getHttpChannel().getRequest();
+                    request.getHttpChannel().getHttpConfiguration().setRelativeRedirectAllowed(true);
+
+                    HttpURI.Mutable uri = HttpURI.build(request.getHttpURI());
+                    uri.scheme("http");
+                    if (host != null)
+                        uri.authority(host, port);
+                    uri.pathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
+                    request.setHttpURI(uri);
+                    request.setContext(null, "/path");
+                    request.setRequestedSessionId("12345");
+                    request.setRequestedSessionIdFromCookie(i > 2);
+                    SessionHandler handler = new SessionHandler();
+
+                    NullSessionDataStore ds = new NullSessionDataStore();
+                    DefaultSessionCache ss = new DefaultSessionCache(handler);
+                    handler.setSessionCache(ss);
+                    ss.setSessionDataStore(ds);
+                    DefaultSessionIdManager idMgr = new DefaultSessionIdManager(_server);
+                    idMgr.setWorkerName(null);
+                    handler.setSessionIdManager(idMgr);
+                    request.setSessionHandler(handler);
+                    request.setSession(new TestSession(handler, "12345"));
+                    handler.setCheckingRemoteSessionIdEncoding(false);
+
+                    response.sendRedirect(tests[i][0]);
+
+                    String location = response.getHeader("Location");
+
+                    String expected = tests[i][1]
+                        .replace("@HOST@", host == null ? request.getLocalAddr() : (host.contains(":") ? ("[" + host + "]") : host))
+                        .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
+                    assertEquals(expected, location, "test-" + i + " " + host + ":" + port);
+                }
+            }
+        }
+    }
+
+    @Test
     public void testInvalidSendRedirect()
     {
         // Request is /path/info, so we need 3 ".." for an invalid redirect.
@@ -1111,7 +1188,7 @@ public class ResponseTest
 
         assertEquals("name=value; Path=/path; Domain=domain; Secure; HttpOnly", set);
     }
-    
+
     @Test
     public void testAddCookieInInclude() throws Exception
     {
@@ -1128,7 +1205,7 @@ public class ResponseTest
 
         assertNull(response.getHttpFields().get("Set-Cookie"));
     }
-    
+
     @Test
     public void testAddCookieSameSiteDefault() throws Exception
     {
@@ -1145,12 +1222,12 @@ public class ResponseTest
         response.addCookie(cookie);
         String set = response.getHttpFields().get("Set-Cookie");
         assertEquals("name=value; Path=/path; Domain=domain; Secure; HttpOnly; SameSite=Strict", set);
-        
+
         response.getHttpFields().remove("Set-Cookie");
-        
+
         //test bad default samesite value
         context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "FooBar");
-        
+
         assertThrows(IllegalStateException.class,
             () -> response.addCookie(cookie));
     }
@@ -1225,7 +1302,7 @@ public class ResponseTest
 
         response.setContentType("some/type");
         response.setContentLength(3);
-        response.setHeader(HttpHeader.EXPIRES,"never");
+        response.setHeader(HttpHeader.EXPIRES, "never");
 
         response.setHeader("SomeHeader", "SomeValue");
 
@@ -1293,7 +1370,7 @@ public class ResponseTest
         List<String> actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat("HttpCookie order", actual, hasItems(expected));
     }
-    
+
     @Test
     public void testReplaceHttpCookieSameSite()
     {
@@ -1335,7 +1412,7 @@ public class ResponseTest
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems(new String[]{"Foo=replaced; Path=/path; Domain=Bah"}));
     }
-    
+
     @Test
     public void testReplaceParsedHttpCookieSiteDefault()
     {
@@ -1378,7 +1455,7 @@ public class ResponseTest
             super(handler, new SessionData(id, "", "0.0.0.0", 0, 0, 0, 300));
         }
     }
-    
+
     private static class TestServletContextHandler extends ContextHandler
     {
         private class Context extends ContextHandler.Context
@@ -1400,7 +1477,7 @@ public class ResponseTest
             @Override
             public void setAttribute(String name, Object object)
             {
-                _attributes.put(name,object);
+                _attributes.put(name, object);
             }
 
             @Override

@@ -106,6 +106,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                 {
                     if (isClosed())
                     {
+                        updateLastRemoteStreamId(streamId);
                         reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
                     }
                     else
@@ -155,17 +156,6 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                 onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_headers_frame");
             }
         }
-    }
-
-    @Override
-    protected void onResetForUnknownStream(ResetFrame frame)
-    {
-        int streamId = frame.getStreamId();
-        boolean closed = isClientStream(streamId) ? isRemoteStreamClosed(streamId) : isLocalStreamClosed(streamId);
-        if (closed)
-            notifyReset(this, frame);
-        else
-            onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_rst_stream_frame");
     }
 
     @Override
