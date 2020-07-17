@@ -26,6 +26,7 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -67,11 +68,12 @@ public class DigestAuthentication extends AbstractAuthentication
      * @param realm the realm to match for the authentication
      * @param user the user that wants to authenticate
      * @param password the password of the user
-     * @param random the Random generator to use for nonces, or null for a weak algorithm.
+     * @param random the Random generator to use for nonces.
      */
     public DigestAuthentication(URI uri, String realm, String user, String password, Random random)
     {
         super(uri, realm);
+        Objects.requireNonNull(random);
         this.random = random;
         this.user = user;
         this.password = password;
@@ -231,15 +233,9 @@ public class DigestAuthentication extends AbstractAuthentication
 
         private String newClientNonce()
         {
-            if (random != null)
-            {
-                byte[] bytes = new byte[8];
-                random.nextBytes(bytes);
-                return toHexString(bytes);
-            }
-
-            long pseudoRandom = System.nanoTime() ^ System.identityHashCode(new Object());
-            return Long.toHexString(pseudoRandom);
+            byte[] bytes = new byte[8];
+            random.nextBytes(bytes);
+            return toHexString(bytes);
         }
 
         private String toHexString(byte[] bytes)
