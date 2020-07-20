@@ -75,7 +75,7 @@ public class GracefulCloseTest
     }
 
     @ServerEndpoint("/")
-    public static class ServerSocket extends EventSocket.EchoSocket
+    public static class ServerSocket extends EchoSocket
     {
         @Override
         public void onOpen(Session session, EndpointConfig endpointConfig)
