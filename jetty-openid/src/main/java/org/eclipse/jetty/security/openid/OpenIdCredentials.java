@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FormContentProvider;
@@ -38,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
  *
  * <p>
  * This is constructed with an authorization code from the authentication request. This authorization code
- * is then exchanged using {@link #redeemAuthCode(HttpClient)} for a response containing the ID Token and Access Token.
+ * is then exchanged using {@link #redeemAuthCode(OpenIdConfiguration)} for a response containing the ID Token and Access Token.
  * The response is then validated against the {@link OpenIdConfiguration}.
  * </p>
  */
@@ -48,16 +47,14 @@ public class OpenIdCredentials implements Serializable
     private static final long serialVersionUID = 4766053233370044796L;
 
     private final String redirectUri;
-    private final OpenIdConfiguration configuration;
     private String authCode;
     private Map<String, Object> response;
     private Map<String, Object> claims;
 
-    public OpenIdCredentials(String authCode, String redirectUri, OpenIdConfiguration configuration)
+    public OpenIdCredentials(String authCode, String redirectUri)
     {
         this.authCode = authCode;
         this.redirectUri = redirectUri;
-        this.configuration = configuration;
     }
 
     public String getUserId()
@@ -75,7 +72,25 @@ public class OpenIdCredentials implements Serializable
         return response;
     }
 
-    public void redeemAuthCode(HttpClient httpClient) throws Exception
+    public boolean isExpired()
+    {
+        if (authCode != null || claims == null)
+            return true;
+
+        // Check expiry
+        long expiry = (Long)claims.get("exp");
+        long currentTimeSeconds = (long)(System.currentTimeMillis() / 1000F);
+        if (currentTimeSeconds > expiry)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("OpenId Credentials expired {}", this);
+            return true;
+        }
+
+        return false;
+    }
+
+    public void redeemAuthCode(OpenIdConfiguration configuration) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("redeemAuthCode() {}", this);
@@ -84,7 +99,7 @@ public class OpenIdCredentials implements Serializable
         {
             try
             {
-                response = claimAuthCode(httpClient, authCode);
+                response = claimAuthCode(configuration);
                 if (LOG.isDebugEnabled())
                     LOG.debug("response: {}", response);
 
@@ -103,7 +118,7 @@ public class OpenIdCredentials implements Serializable
                 claims = JwtDecoder.decode(idToken);
                 if (LOG.isDebugEnabled())
                     LOG.debug("claims {}", claims);
-                validateClaims();
+                validateClaims(configuration);
             }
             finally
             {
@@ -113,14 +128,14 @@ public class OpenIdCredentials implements Serializable
         }
     }
 
-    private void validateClaims()
+    private void validateClaims(OpenIdConfiguration configuration)
     {
         // Issuer Identifier for the OpenID Provider MUST exactly match the value of the iss (issuer) Claim.
         if (!configuration.getIssuer().equals(claims.get("iss")))
             throw new IllegalArgumentException("Issuer Identifier MUST exactly match the iss Claim");
 
         // The aud (audience) Claim MUST contain the client_id value.
-        validateAudience();
+        validateAudience(configuration);
 
         // If an azp (authorized party) Claim is present, verify that its client_id is the Claim Value.
         Object azp = claims.get("azp");
@@ -128,7 +143,7 @@ public class OpenIdCredentials implements Serializable
             throw new IllegalArgumentException("Authorized party claim value should be the client_id");
     }
 
-    private void validateAudience()
+    private void validateAudience(OpenIdConfiguration configuration)
     {
         Object aud = claims.get("aud");
         String clientId = configuration.getClientId();
@@ -150,25 +165,8 @@ public class OpenIdCredentials implements Serializable
             throw new IllegalArgumentException("Audience claim was not valid");
     }
 
-    public boolean isExpired()
-    {
-        if (authCode != null || claims == null)
-            return true;
-
-        // Check expiry
-        long expiry = (Long)claims.get("exp");
-        long currentTimeSeconds = (long)(System.currentTimeMillis() / 1000F);
-        if (currentTimeSeconds > expiry)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("OpenId Credentials expired {}", this);
-            return true;
-        }
-
-        return false;
-    }
-
-    private Map<String, Object> claimAuthCode(HttpClient httpClient, String authCode) throws Exception
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> claimAuthCode(OpenIdConfiguration configuration) throws Exception
     {
         Fields fields = new Fields();
         fields.add("code", authCode);
@@ -177,7 +175,7 @@ public class OpenIdCredentials implements Serializable
         fields.add("redirect_uri", redirectUri);
         fields.add("grant_type", "authorization_code");
         FormContentProvider formContentProvider = new FormContentProvider(fields);
-        Request request = httpClient.POST(configuration.getTokenEndpoint())
+        Request request = configuration.getHttpClient().POST(configuration.getTokenEndpoint())
                 .content(formContentProvider)
                 .timeout(10, TimeUnit.SECONDS);
         ContentResponse response = request.send();
@@ -188,6 +186,6 @@ public class OpenIdCredentials implements Serializable
         Object parsedResponse = JSON.parse(responseBody);
         if (!(parsedResponse instanceof Map))
             throw new IllegalStateException("Malformed response from OpenID Provider");
-        return (Map)parsedResponse;
+        return (Map<String, Object>)parsedResponse;
     }
 }
