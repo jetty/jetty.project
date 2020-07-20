@@ -129,9 +129,11 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
     public Enumeration<URL> getResources(String name) throws IOException
     {
         Enumeration<URL> osgiUrls = _osgiBundleClassLoader.getResources(name);
+        if (osgiUrls != null && osgiUrls.hasMoreElements())
+            return osgiUrls;
+        
         Enumeration<URL> urls = super.getResources(name);
-        List<URL> resources = toList(osgiUrls, urls);
-        return Collections.enumeration(resources);
+        return urls;
     }
 
     @Override
