@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core.internal;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.Executor;
@@ -84,6 +85,29 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                                ByteBufferPool bufferPool,
                                WebSocketCoreSession coreSession)
     {
+        this(endp, executor, scheduler, bufferPool, coreSession, null);
+    }
+
+    /**
+     * Create a WSConnection.
+     * <p>
+     * It is assumed that the WebSocket Upgrade Handshake has already
+     * completed successfully before creating this connection.
+     * </p>
+     * @param endp The endpoint ever which Websockot is sent/received
+     * @param executor A thread executor to use for WS callbacks.
+     * @param scheduler A scheduler to use for timeouts
+     * @param bufferPool A pool of buffers to use.
+     * @param coreSession The WC core session to which frames are delivered.
+     * @param randomMask A Random used to mask frames. If null then SecureRandom will be created if needed.
+     */
+    public WebSocketConnection(EndPoint endp,
+                               Executor executor,
+                               Scheduler scheduler,
+                               ByteBufferPool bufferPool,
+                               WebSocketCoreSession coreSession,
+                               Random randomMask)
+    {
         super(endp, executor);
 
         Objects.requireNonNull(endp, "EndPoint");
@@ -92,15 +116,15 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         Objects.requireNonNull(bufferPool, "ByteBufferPool");
 
         this.bufferPool = bufferPool;
-
         this.coreSession = coreSession;
-
         this.generator = new Generator();
         this.parser = new Parser(bufferPool, coreSession);
         this.flusher = new Flusher(scheduler, coreSession.getOutputBufferSize(), generator, endp);
         this.setInputBufferSize(coreSession.getInputBufferSize());
 
-        this.random = this.coreSession.getBehavior() == Behavior.CLIENT ? new Random(endp.hashCode()) : null;
+        if (this.coreSession.getBehavior() == Behavior.CLIENT && randomMask == null)
+            randomMask = new SecureRandom();
+        this.random = randomMask;
     }
 
     @Override
