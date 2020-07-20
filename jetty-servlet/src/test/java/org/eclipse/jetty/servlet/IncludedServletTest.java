@@ -224,8 +224,6 @@ public class IncludedServletTest
     public void testIncludeAttributes() throws IOException
     {
         URI uri = baseUri.resolve("/attr/one");
-        System.out.println("GET (String): " + uri.toASCIIString());
-
         InputStream in = null;
         BufferedReader reader = null;
         HttpURLConnection connection = null;
