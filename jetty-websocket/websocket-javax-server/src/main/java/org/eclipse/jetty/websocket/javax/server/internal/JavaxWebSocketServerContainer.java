@@ -307,9 +307,22 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
     @Override
     public CompletableFuture<Void> shutdown()
     {
-        LifeCycle.stop(sessionTracker);
         CompletableFuture<Void> shutdown = new CompletableFuture<>();
-        shutdown.complete(null);
+        new Thread(() ->
+        {
+            try
+            {
+                LifeCycle.stop(sessionTracker);
+            }
+            catch (Throwable t)
+            {
+                LOG.warn("Error while stopping SessionTracker", t);
+            }
+            finally
+            {
+                shutdown.complete(null);
+            }
+        }).start();
         return shutdown;
     }
 

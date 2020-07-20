@@ -63,6 +63,9 @@ public class GracefulCloseTest
         server.start();
         serverUri = WSURI.toWebsocket(server.getURI());
 
+        // StopTimeout is necessary for the websocket server sessions to gracefully close.
+        server.setStopTimeout(1000);
+
         client = new JavaxWebSocketClientContainer();
         client.start();
     }
