@@ -378,6 +378,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>test-jetty-osgi-webapp-resources</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
       <artifactId>test-jetty-osgi-fragment</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -487,6 +494,23 @@
       </plugins>
     </pluginManagement>
     <plugins>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            </execution>
+        </executions>
+        <configuration>
+          <includeArtifactIds>test-jetty-osgi-webapp-resources</includeArtifactIds>
+          <outputDirectory>target</outputDirectory>
+          <stripVersion>true</stripVersion>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.servicemix.tooling</groupId>
         <artifactId>depends-maven-plugin</artifactId>
