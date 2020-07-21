@@ -104,6 +104,16 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
             reload();
     }
 
+    @ManagedOperation(value = "Scan for changes in the SSL Keystore", impact = "ACTION")
+    public void scan()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("scanning");
+
+        _scanner.scan();
+        _scanner.scan();
+    }
+
     @ManagedOperation(value = "Reload the SSL Keystore", impact = "ACTION")
     public void reload()
     {

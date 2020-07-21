@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.util.Calendar;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManager;
@@ -57,10 +56,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ExtendWith(WorkDirExtension.class)
 public class KeyStoreScannerTest
 {
-    private static final int scanInterval = 1;
     public WorkDir testdir;
     private Server server;
     private Path keystoreDir;
+    private KeyStoreScanner keystoreScanner;
 
     @BeforeEach
     public void before()
@@ -99,8 +98,8 @@ public class KeyStoreScannerTest
         server.addConnector(connector);
 
         // Configure Keystore Reload.
-        KeyStoreScanner keystoreScanner = new KeyStoreScanner(sslContextFactory);
-        keystoreScanner.setScanInterval(scanInterval);
+        keystoreScanner = new KeyStoreScanner(sslContextFactory);
+        keystoreScanner.setScanInterval(0);
         server.addBean(keystoreScanner);
 
         server.start();
@@ -123,7 +122,7 @@ public class KeyStoreScannerTest
 
         // Switch to use newKeystore which has a later expiry date.
         useKeystore("newKeystore");
-        Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
+        keystoreScanner.scan();
 
         // The scanner should have detected the updated keystore, expiry should be renewed.
         X509Certificate cert2 = getCertificateFromServer();
@@ -143,11 +142,11 @@ public class KeyStoreScannerTest
         try (StacklessLogging ignored = new StacklessLogging(KeyStoreScanner.class))
         {
             useKeystore("badKeystore");
-            Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
+            keystoreScanner.scan();
         }
 
         // The good keystore is removed, now the bad keystore now causes an exception.
-        assertThrows(Throwable.class, () -> getCertificateFromServer());
+        assertThrows(Throwable.class, this::getCertificateFromServer);
     }
 
     @Test
@@ -163,15 +162,15 @@ public class KeyStoreScannerTest
         try (StacklessLogging ignored = new StacklessLogging(KeyStoreScanner.class))
         {
             useKeystore(null);
-            Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
+            keystoreScanner.scan();
         }
 
         // The good keystore is removed, having no keystore causes an exception.
-        assertThrows(Throwable.class, () -> getCertificateFromServer());
+        assertThrows(Throwable.class, this::getCertificateFromServer);
 
         // Switch to use keystore2 which has a later expiry date.
         useKeystore("newKeystore");
-        Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
+        keystoreScanner.scan();
         X509Certificate cert2 = getCertificateFromServer();
         assertThat(getExpiryYear(cert2), is(2020));
     }
@@ -195,7 +194,7 @@ public class KeyStoreScannerTest
         // Change the symlink to point to the newKeystore file location which has a later expiry date.
         Files.delete(keystorePath);
         Files.createSymbolicLink(keystorePath, useKeystore("newKeystore"));
-        Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
+        keystoreScanner.scan();
 
         // The scanner should have detected the updated keystore, expiry should be renewed.
         X509Certificate cert2 = getCertificateFromServer();
@@ -220,7 +219,7 @@ public class KeyStoreScannerTest
 
         // Change the target file of the symlink to the newKeystore which has a later expiry date.
         useKeystore("newKeystore");
-        Thread.sleep(Duration.ofSeconds(scanInterval * 2).toMillis());
+        keystoreScanner.scan();
 
         // The scanner should have detected the updated keystore, expiry should be renewed.
         X509Certificate cert2 = getCertificateFromServer();
