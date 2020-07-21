@@ -38,6 +38,12 @@
       <artifactId>pax-exam-container-forked</artifactId>
       <version>${pax.exam.version}</version>
       <scope>test</scope>
+      <exclusions>
+          <exclusion>
+              <groupId>biz.aQute.bnd</groupId>
+              <artifactId>bndlib</artifactId>
+          </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.swissbox</groupId>
@@ -68,17 +74,6 @@
       <artifactId>pax-url-aether</artifactId>
       <version>${pax.url.version}</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.tinybundles</groupId>
-      <artifactId>tinybundles</artifactId>
-      <version>3.0.0</version>
-      <exclusions>
-        <exclusion>
-          <groupId>biz.aQute.bnd</groupId>
-          <artifactId>bnd</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.url</groupId>

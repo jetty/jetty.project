@@ -26,7 +26,7 @@
             </Item>
           </Array>
         </Arg>
-        <Call name="addLifeCycleListener">
+        <Call name="addEventListener">
           <Arg>
             <New class="org.eclipse.jetty.osgi.boot.utils.ServerConnectorListener">
               <Set name="sysPropertyName">boot.resources.port</Set>
