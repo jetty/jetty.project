@@ -38,6 +38,12 @@
       <artifactId>pax-exam-container-forked</artifactId>
       <version>${pax.exam.version}</version>
       <scope>test</scope>
+      <exclusions>
+          <exclusion>
+              <groupId>biz.aQute.bnd</groupId>
+              <artifactId>bndlib</artifactId>
+          </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.swissbox</groupId>
@@ -68,17 +74,6 @@
       <artifactId>pax-url-aether</artifactId>
       <version>${pax.url.version}</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.tinybundles</groupId>
-      <artifactId>tinybundles</artifactId>
-      <version>3.0.0</version>
-      <exclusions>
-        <exclusion>
-          <groupId>biz.aQute.bnd</groupId>
-          <artifactId>bnd</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.ops4j.pax.url</groupId>
@@ -409,6 +404,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
+      <artifactId>test-jetty-osgi-webapp-resources</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.osgi</groupId>
       <artifactId>test-jetty-osgi-fragment</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -564,6 +566,23 @@
       </plugins>
     </pluginManagement>
     <plugins>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            </execution>
+        </executions>
+        <configuration>
+          <includeArtifactIds>test-jetty-osgi-webapp-resources</includeArtifactIds>
+          <outputDirectory>target</outputDirectory>
+          <stripVersion>true</stripVersion>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.servicemix.tooling</groupId>
         <artifactId>depends-maven-plugin</artifactId>
