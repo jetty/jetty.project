@@ -61,6 +61,8 @@ public class TestJettyOSGiClasspathResources
     public static Option[] configure()
     {        
         ArrayList<Option> options = new ArrayList<>();
+        options.addAll(TestOSGiUtil.configurePaxExamLogging());
+
         options.add(CoreOptions.junitBundles());
         options.addAll(TestOSGiUtil.configureJettyHomeAndPort(false, "jetty-http-boot-with-resources.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
@@ -69,22 +71,18 @@ public class TestJettyOSGiClasspathResources
             "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
 
         options.addAll(TestOSGiUtil.coreJettyDependencies());
-        options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("biz.aQute.bndlib").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
+        options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
+
+        //Note: we have to back down the version of bnd used here because tinybundles expects only this version
+        options.add(mavenBundle().groupId("biz.aQute.bnd").artifactId("bndlib").version("2.4.0").start());
         options.add(mavenBundle().groupId("org.ops4j.pax.tinybundles").artifactId("tinybundles").version("2.1.1").start());
         options.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("test-jetty-osgi-webapp-resources").type("war").versionAsInProject());
         options.add(CoreOptions.cleanCaches(true));   
         return options.toArray(new Option[options.size()]);
     }
    
-    //Fake test to keep the test runner happy while we Ignore the real tests.
     @Test
-    public void fake() throws Exception
-    {
-        if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
-            TestOSGiUtil.diagnoseBundles(bundleContext);
-    }
-
-    @Ignore
     public void testWebInfResourceNotOnBundleClasspath() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
@@ -111,7 +109,7 @@ public class TestJettyOSGiClasspathResources
         }
     }
 
-    @Ignore
+    @Test
     public void testWebInfResourceOnBundleClasspath() throws Exception
     {
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
