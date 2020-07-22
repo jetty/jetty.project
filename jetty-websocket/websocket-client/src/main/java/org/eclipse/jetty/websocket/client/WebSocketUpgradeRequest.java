@@ -421,12 +421,17 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         }
         this.localEndpoint = this.wsClient.getEventDriverFactory().wrap(localEndpoint);
 
-        this.fut = new CompletableFuture<Session>();
+        this.fut = new CompletableFuture<>();
+        this.fut.whenComplete((session, throwable) ->
+        {
+            if (throwable != null)
+                abort(throwable);
+        });
 
         getConversation().setAttribute(HttpConnectionUpgrader.class.getName(), this);
     }
 
-    private final String genRandomKey()
+    private String genRandomKey()
     {
         byte[] bytes = new byte[16];
         ThreadLocalRandom.current().nextBytes(bytes);
@@ -580,7 +585,7 @@ public class WebSocketUpgradeRequest extends HttpRequest implements CompleteList
         String expectedHash = AcceptHash.hashKey(reqKey);
         String respHash = response.getHeaders().get(HttpHeader.SEC_WEBSOCKET_ACCEPT);
 
-        if (expectedHash.equalsIgnoreCase(respHash) == false)
+        if (!expectedHash.equalsIgnoreCase(respHash))
         {
             throw new HttpResponseException("Invalid Sec-WebSocket-Accept hash", response);
         }
