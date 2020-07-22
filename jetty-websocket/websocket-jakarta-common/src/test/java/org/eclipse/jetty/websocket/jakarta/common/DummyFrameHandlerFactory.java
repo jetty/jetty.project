@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jakarta.common;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig;
-import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import org.eclipse.jetty.websocket.util.InvokerUtils;
 
@@ -42,7 +41,7 @@ public class DummyFrameHandlerFactory extends JakartaWebSocketFrameHandlerFactor
     {
         if (jakarta.websocket.Endpoint.class.isAssignableFrom(endpointClass))
         {
-            return createEndpointMetadata((Class<? extends Endpoint>)endpointClass, endpointConfig);
+            return createEndpointMetadata(endpointConfig);
         }
 
         if (endpointClass.getAnnotation(ClientEndpoint.class) == null)

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.jakarta.server.internal;
 
-import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
@@ -41,7 +40,7 @@ public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketC
     public JakartaWebSocketFrameHandlerMetadata getMetadata(Class<?> endpointClass, EndpointConfig endpointConfig)
     {
         if (jakarta.websocket.Endpoint.class.isAssignableFrom(endpointClass))
-            return createEndpointMetadata((Class<? extends Endpoint>)endpointClass, endpointConfig);
+            return createEndpointMetadata(endpointConfig);
 
         ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
         if (anno == null)

@@ -18,9 +18,13 @@
 
 package org.eclipse.jetty.websocket.jakarta.tests.client;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import jakarta.websocket.CloseReason;
+import jakarta.websocket.Endpoint;
 
-import jakarta.websocket.ContainerProvider;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
@@ -35,6 +39,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EndpointEchoTest
 {
@@ -104,5 +109,46 @@ public class EndpointEchoTest
 
         session.close();
         endpoint.awaitCloseEvent("Client");
+    }
+
+    @Test
+    public void testEchoAnonymousInstance() throws Exception
+    {
+        CountDownLatch openLatch = new CountDownLatch(1);
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
+        Endpoint clientEndpoint = new Endpoint()
+        {
+            @Override
+            public void onOpen(Session session, EndpointConfig config)
+            {
+                // Cannot replace this with a lambda or it breaks ReflectUtils.findGenericClassFor().
+                session.addMessageHandler(new MessageHandler.Whole<String>()
+                {
+                    @Override
+                    public void onMessage(String message)
+                    {
+                        textMessages.add(message);
+                    }
+                });
+                openLatch.countDown();
+            }
+
+            @Override
+            public void onClose(Session session, CloseReason closeReason)
+            {
+                closeLatch.countDown();
+            }
+        };
+
+        WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        Session session = container.connectToServer(clientEndpoint, null, server.getWsUri().resolve("/echo/text"));
+        assertTrue(openLatch.await(5, TimeUnit.SECONDS));
+        session.getBasicRemote().sendText("Echo");
+
+        String resp = textMessages.poll(1, TimeUnit.SECONDS);
+        assertThat("Response echo", resp, is("Echo"));
+        session.close();
+        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 }

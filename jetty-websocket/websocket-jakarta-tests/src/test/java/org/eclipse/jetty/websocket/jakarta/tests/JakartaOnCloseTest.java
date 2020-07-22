@@ -50,12 +50,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JakartaOnCloseTest
 {
-
-    private static BlockingArrayQueue<OnCloseEndpoint> serverEndpoints = new BlockingArrayQueue<>();
+    private static final BlockingArrayQueue<OnCloseEndpoint> serverEndpoints = new BlockingArrayQueue<>();
 
     private Server server;
     private ServerConnector connector;
-    private JakartaWebSocketClientContainer client = new JakartaWebSocketClientContainer();
+    private final JakartaWebSocketClientContainer client = new JakartaWebSocketClientContainer();
 
     @ServerEndpoint("/")
     public static class OnCloseEndpoint extends EventSocket
@@ -85,7 +84,7 @@ public class JakartaOnCloseTest
     @ClientEndpoint
     public static class BlockingClientEndpoint extends EventSocket
     {
-        private CountDownLatch blockInClose = new CountDownLatch(1);
+        private final CountDownLatch blockInClose = new CountDownLatch(1);
 
         public void unBlockClose()
         {

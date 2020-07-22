@@ -21,6 +21,8 @@ package org.eclipse.jetty.websocket.tests.listeners;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,13 +30,18 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.eclipse.jetty.websocket.tests.EventSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -60,6 +67,8 @@ public class WebSocketListenerTest
         contextHandler.setContextPath("/");
         JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
         {
+            container.addMapping("/echo", (req, res) -> new EchoSocket());
+
             for (Class<?> c : getClassListFromArguments(TextListeners.getTextListeners()))
             {
                 container.addMapping("/text/" + c.getSimpleName(), (req, res) -> construct(c));
@@ -123,6 +132,47 @@ public class WebSocketListenerTest
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.closeCode, is(StatusCode.NORMAL));
         assertThat(clientEndpoint.closeReason, is("standard close"));
+    }
+
+    @Test
+    public void testAnonymousListener() throws Exception
+    {
+        CountDownLatch openLatch = new CountDownLatch(1);
+        CountDownLatch closeLatch = new CountDownLatch(1);
+        BlockingQueue<String> textMessages = new BlockingArrayQueue<>();
+        WebSocketListener clientEndpoint = new WebSocketListener()
+        {
+            @Override
+            public void onWebSocketConnect(Session session)
+            {
+                openLatch.countDown();
+            }
+
+            @Override
+            public void onWebSocketText(String message)
+            {
+                textMessages.add(message);
+            }
+
+            @Override
+            public void onWebSocketClose(int statusCode, String reason)
+            {
+                closeLatch.countDown();
+            }
+        };
+
+        Session session = client.connect(clientEndpoint, serverUri.resolve("/echo")).get(5, TimeUnit.SECONDS);
+        assertTrue(openLatch.await(5, TimeUnit.SECONDS));
+
+        // Send and receive echo on client.
+        String payload = "hello world";
+        session.getRemote().sendString(payload);
+        String echoMessage = textMessages.poll(5, TimeUnit.SECONDS);
+        assertThat(echoMessage, is(payload));
+
+        // Close normally.
+        session.close(StatusCode.NORMAL, "standard close");
+        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 
     private List<Class<?>> getClassListFromArguments(Stream<Arguments> stream)

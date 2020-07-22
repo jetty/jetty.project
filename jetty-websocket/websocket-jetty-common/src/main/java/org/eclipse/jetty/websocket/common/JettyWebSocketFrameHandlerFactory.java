@@ -195,28 +195,31 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
     private JettyWebSocketFrameHandlerMetadata createListenerMetadata(Class<?> endpointClass)
     {
         JettyWebSocketFrameHandlerMetadata metadata = new JettyWebSocketFrameHandlerMetadata();
-        MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getApplicationMethodHandleLookup(endpointClass);
+        MethodHandles.Lookup lookup = JettyWebSocketFrameHandlerFactory.getServerMethodHandleLookup();
 
-        Method openMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketConnect", Session.class);
+        if (!WebSocketConnectionListener.class.isAssignableFrom(endpointClass))
+            throw new IllegalArgumentException("Class " + endpointClass + " does not implement " + WebSocketConnectionListener.class);
+
+        Method openMethod = ReflectUtils.findMethod(WebSocketConnectionListener.class, "onWebSocketConnect", Session.class);
         MethodHandle open = toMethodHandle(lookup, openMethod);
         metadata.setOpenHandler(open, openMethod);
 
-        Method closeMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketClose", int.class, String.class);
+        Method closeMethod = ReflectUtils.findMethod(WebSocketConnectionListener.class, "onWebSocketClose", int.class, String.class);
         MethodHandle close = toMethodHandle(lookup, closeMethod);
         metadata.setCloseHandler(close, closeMethod);
 
-        Method errorMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketError", Throwable.class);
+        Method errorMethod = ReflectUtils.findMethod(WebSocketConnectionListener.class, "onWebSocketError", Throwable.class);
         MethodHandle error = toMethodHandle(lookup, errorMethod);
         metadata.setErrorHandler(error, errorMethod);
 
         // Simple Data Listener
         if (WebSocketListener.class.isAssignableFrom(endpointClass))
         {
-            Method textMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketText", String.class);
+            Method textMethod = ReflectUtils.findMethod(WebSocketListener.class, "onWebSocketText", String.class);
             MethodHandle text = toMethodHandle(lookup, textMethod);
             metadata.setTextHandler(StringMessageSink.class, text, textMethod);
 
-            Method binaryMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketBinary", byte[].class, int.class, int.class);
+            Method binaryMethod = ReflectUtils.findMethod(WebSocketListener.class, "onWebSocketBinary", byte[].class, int.class, int.class);
             MethodHandle binary = toMethodHandle(lookup, binaryMethod);
             metadata.setBinaryHandle(ByteArrayMessageSink.class, binary, binaryMethod);
         }
@@ -224,11 +227,11 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         // Ping/Pong Listener
         if (WebSocketPingPongListener.class.isAssignableFrom(endpointClass))
         {
-            Method pongMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketPong", ByteBuffer.class);
+            Method pongMethod = ReflectUtils.findMethod(WebSocketPingPongListener.class, "onWebSocketPong", ByteBuffer.class);
             MethodHandle pong = toMethodHandle(lookup, pongMethod);
             metadata.setPongHandle(pong, pongMethod);
 
-            Method pingMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketPing", ByteBuffer.class);
+            Method pingMethod = ReflectUtils.findMethod(WebSocketPingPongListener.class, "onWebSocketPing", ByteBuffer.class);
             MethodHandle ping = toMethodHandle(lookup, pingMethod);
             metadata.setPingHandle(ping, pingMethod);
         }
@@ -236,11 +239,11 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         // Partial Data / Message Listener
         if (WebSocketPartialListener.class.isAssignableFrom(endpointClass))
         {
-            Method textMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketPartialText", String.class, boolean.class);
+            Method textMethod = ReflectUtils.findMethod(WebSocketPartialListener.class, "onWebSocketPartialText", String.class, boolean.class);
             MethodHandle text = toMethodHandle(lookup, textMethod);
             metadata.setTextHandler(PartialStringMessageSink.class, text, textMethod);
 
-            Method binaryMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketPartialBinary", ByteBuffer.class, boolean.class);
+            Method binaryMethod = ReflectUtils.findMethod(WebSocketPartialListener.class, "onWebSocketPartialBinary", ByteBuffer.class, boolean.class);
             MethodHandle binary = toMethodHandle(lookup, binaryMethod);
             metadata.setBinaryHandle(PartialByteBufferMessageSink.class, binary, binaryMethod);
         }
@@ -248,7 +251,7 @@ public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle
         // Frame Listener
         if (WebSocketFrameListener.class.isAssignableFrom(endpointClass))
         {
-            Method frameMethod = ReflectUtils.findMethod(endpointClass, "onWebSocketFrame", Frame.class);
+            Method frameMethod = ReflectUtils.findMethod(WebSocketFrameListener.class, "onWebSocketFrame", Frame.class);
             MethodHandle frame = toMethodHandle(lookup, frameMethod);
             metadata.setFrameHandler(frame, frameMethod);
         }
