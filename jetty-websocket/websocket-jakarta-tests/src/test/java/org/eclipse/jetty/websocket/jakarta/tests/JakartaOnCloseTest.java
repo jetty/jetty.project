@@ -223,7 +223,6 @@ public class JakartaOnCloseTest
         assertThat(serverEndpoint.error, instanceOf(RuntimeException.class));
         assertThat(serverEndpoint.error.getMessage(), containsString("trigger onError from server onClose"));
 
-
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientEndpoint.closeReason.getCloseCode(), is(CloseCodes.UNEXPECTED_CONDITION));
         assertThat(clientEndpoint.closeReason.getReasonPhrase(), containsString("trigger onError from server onClose"));
