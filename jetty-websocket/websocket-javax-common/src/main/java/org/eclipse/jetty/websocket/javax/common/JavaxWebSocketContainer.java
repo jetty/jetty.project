@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import javax.websocket.Extension;
@@ -31,13 +32,15 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
+import org.eclipse.jetty.websocket.util.ShutdownUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer
+public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer, Graceful
 {
     private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketContainer.class);
     private final List<JavaxWebSocketSessionListener> sessionListeners = new ArrayList<>();
@@ -49,7 +52,6 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
     {
         this.components = components;
         addSessionListener(sessionTracker);
-        addBean(sessionTracker);
     }
 
     public abstract Executor getExecutor();
@@ -197,5 +199,24 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
                 LOG.info("Exception while invoking listener " + listener, x);
             }
         }
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        sessionTracker.start();
+        super.doStart();
+    }
+
+    @Override
+    public CompletableFuture<Void> shutdown()
+    {
+        return ShutdownUtil.shutdown(sessionTracker);
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        return sessionTracker.isStopped();
     }
 }

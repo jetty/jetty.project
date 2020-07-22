@@ -276,11 +276,4 @@ public class JavaxWebSocketClientContainer extends JavaxWebSocketContainer imple
 
         return new AnnotatedClientEndpointConfig(anno);
     }
-
-    @Override
-    protected void doStop() throws Exception
-    {
-        sessionTracker.stop();
-        super.doStop();
-    }
 }

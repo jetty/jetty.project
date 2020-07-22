@@ -44,6 +44,7 @@ import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
+import org.eclipse.jetty.websocket.util.ShutdownUtil;
 import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
@@ -120,7 +121,6 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         frameHandlerFactory = factory;
 
         addSessionListener(sessionTracker);
-        addBean(sessionTracker);
     }
 
     public void addMapping(String pathSpec, JettyWebSocketCreator creator)
@@ -265,25 +265,16 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     }
 
     @Override
+    protected void doStart() throws Exception
+    {
+        sessionTracker.start();
+        super.doStart();
+    }
+
+    @Override
     public CompletableFuture<Void> shutdown()
     {
-        CompletableFuture<Void> shutdown = new CompletableFuture<>();
-        new Thread(() ->
-        {
-            try
-            {
-                LifeCycle.stop(sessionTracker);
-            }
-            catch (Throwable t)
-            {
-                LOG.warn("Error while stopping SessionTracker", t);
-            }
-            finally
-            {
-                shutdown.complete(null);
-            }
-        }).start();
-        return shutdown;
+        return ShutdownUtil.shutdown(sessionTracker);
     }
 
     @Override

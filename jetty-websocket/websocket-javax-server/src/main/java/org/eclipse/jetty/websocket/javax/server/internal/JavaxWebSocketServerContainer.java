@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.javax.server.internal;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 import javax.servlet.ServletContext;
@@ -35,7 +34,6 @@ import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -50,7 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ManagedObject("JSR356 Server Container")
-public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer implements javax.websocket.server.ServerContainer, LifeCycle.Listener, Graceful
+public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer implements javax.websocket.server.ServerContainer, LifeCycle.Listener
 {
     public static final String JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE = javax.websocket.server.ServerContainer.class.getName();
     private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketServerContainer.class);
@@ -302,33 +300,5 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
             }
             deferredEndpointConfigs.clear();
         }
-    }
-
-    @Override
-    public CompletableFuture<Void> shutdown()
-    {
-        CompletableFuture<Void> shutdown = new CompletableFuture<>();
-        new Thread(() ->
-        {
-            try
-            {
-                LifeCycle.stop(sessionTracker);
-            }
-            catch (Throwable t)
-            {
-                LOG.warn("Error while stopping SessionTracker", t);
-            }
-            finally
-            {
-                shutdown.complete(null);
-            }
-        }).start();
-        return shutdown;
-    }
-
-    @Override
-    public boolean isShutdown()
-    {
-        return sessionTracker.isStopped();
     }
 }

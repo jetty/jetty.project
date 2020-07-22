@@ -63,6 +63,7 @@ public class GracefulCloseTest
         server.setStopTimeout(1000);
 
         client = new WebSocketClient();
+        client.setStopTimeout(1000);
         client.start();
     }
 

@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
@@ -95,6 +96,8 @@ public class GracefulCloseTest
         client.connectToServer(clientEndpoint, serverUri);
         EventSocket serverEndpoint = Objects.requireNonNull(serverEndpoints.poll(5, TimeUnit.SECONDS));
 
+        // There is no API for a Javax WebSocketContainer stop timeout.
+        Graceful.shutdown(client).get(5, TimeUnit.SECONDS);
         client.stop();
 
         // Check that the client endpoint was closed with the correct status code and no error.

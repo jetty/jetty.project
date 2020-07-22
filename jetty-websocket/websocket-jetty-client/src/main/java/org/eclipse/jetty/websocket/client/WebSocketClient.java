@@ -29,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
@@ -53,10 +55,11 @@ import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
+import org.eclipse.jetty.websocket.util.ShutdownUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WebSocketClient extends ContainerLifeCycle implements WebSocketPolicy, WebSocketContainer
+public class WebSocketClient extends ContainerLifeCycle implements WebSocketPolicy, WebSocketContainer, Graceful
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketClient.class);
     private final WebSocketCoreClient coreClient;
@@ -67,6 +70,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     private final Configuration.ConfigurationCustomizer configurationCustomizer = new Configuration.ConfigurationCustomizer();
     private final WebSocketComponents components = new WebSocketComponents();
     private boolean stopAtShutdown = false;
+    private long _stopTimeout = 200;
 
     /**
      * Instantiate a WebSocketClient with defaults
@@ -91,7 +95,6 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
 
         frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this);
         sessionListeners.add(sessionTracker);
-        addBean(sessionTracker);
     }
 
     public CompletableFuture<Session> connect(Object websocket, URI toUri) throws IOException
@@ -380,16 +383,46 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         stopAtShutdown = stop;
     }
 
+    public void setStopTimeout(long stopTimeout)
+    {
+        _stopTimeout = stopTimeout;
+    }
+
+    public long getStopTimeout()
+    {
+        return _stopTimeout;
+    }
+
     public boolean isStopAtShutdown()
     {
         return stopAtShutdown;
     }
 
     @Override
+    protected void doStart() throws Exception
+    {
+        sessionTracker.start();
+        super.doStart();
+    }
+
+    @Override
     protected void doStop() throws Exception
     {
-        sessionTracker.stop();
+        if (getStopTimeout() > 0)
+            Graceful.shutdown(this).get(getStopTimeout(), TimeUnit.MILLISECONDS);
         super.doStop();
+    }
+
+    @Override
+    public CompletableFuture<Void> shutdown()
+    {
+        return ShutdownUtil.shutdown(sessionTracker);
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        return sessionTracker.isStopped();
     }
 
     @Override
