@@ -1041,6 +1041,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
         synchronized (this)
         {
+            if (_factory == null)
+                throw new IllegalStateException("SslContextFactory reload failed");
+
             return _factory._context;
         }
     }
@@ -1420,6 +1423,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
         synchronized (this)
         {
+            if (_factory == null)
+                throw new IllegalStateException("SslContextFactory reload failed");
+
             return _factory._keyStore;
         }
     }
@@ -1441,6 +1447,9 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
         synchronized (this)
         {
+            if (_factory == null)
+                throw new IllegalStateException("SslContextFactory reload failed");
+
             return _factory._trustStore;
         }
     }

@@ -406,7 +406,9 @@ public class HpackEncoder
                     encodeName(buffer, (byte)0x00, 4, header.asString(), name);
                     encodeValue(buffer, true, field.getValue());
                     if (_debug)
-                        encoding = "LitIdxNS" + (1 + NBitInteger.octectsNeeded(4, _context.index(name))) + "HuffV!Idx";
+                        encoding = "Lit" +
+                            ((name == null) ? "HuffN" : "IdxNS" + (1 + NBitInteger.octectsNeeded(4, _context.index(name)))) +
+                            "HuffV!Idx";
                 }
                 else
                 {

@@ -114,4 +114,11 @@ public interface IStream extends Stream, Closeable
      * @see #isClosed()
      */
     boolean isRemotelyClosed();
+
+    /**
+     * @return whether this stream has been reset (locally or remotely) or has been failed
+     * @see #isReset()
+     * @see Listener#onFailure(Stream, int, String, Throwable, Callback)
+     */
+    boolean isResetOrFailed();
 }

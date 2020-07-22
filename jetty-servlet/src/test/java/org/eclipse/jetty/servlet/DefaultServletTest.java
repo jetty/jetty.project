@@ -41,6 +41,8 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.DateGenerator;
@@ -811,6 +813,48 @@ public class DefaultServletTest
                 assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
             }
         }
+    }
+
+    @Test
+    public void testIncludedWelcomeDifferentBase() throws Exception
+    {
+        Path altRoot = workDir.getPath().resolve("altroot");
+        FS.ensureDirExists(altRoot);
+        Path altIndex = altRoot.resolve("index.html");
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/alt/*");
+        defholder.setInitParameter("resourceBase", altRoot.toUri().toASCIIString());
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "false");
+        defholder.setInitParameter("welcomeServlets", "true");
+        defholder.setInitParameter("pathInfoOnly", "true");
+
+        ServletHolder gwholder = new ServletHolder("gateway", new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                    throws ServletException, IOException
+            {
+                req.getRequestDispatcher("/alt/").include(req, resp);
+            }
+        });
+        context.addServlet(gwholder, "/gateway");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        // Test included alt default
+        rawResponse = connector.getResponse("GET /context/gateway HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        // 9.3 "The Include Method" - when include() is used, FileNotFoundException (and HTTP 500)
+        // should be used
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
+
+        createFile(altIndex, "<h1>Alt Index</h1>");
+        rawResponse = connector.getResponse("GET /context/gateway HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("<h1>Alt Index</h1>"));
     }
 
     @Test

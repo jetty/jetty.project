@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * FilterHolderTest
@@ -67,13 +67,13 @@ public class FilterHolderTest
         Filter filter = new Filter()
         {
             @Override
-            public void init(FilterConfig filterConfig) throws ServletException
+            public void init(FilterConfig filterConfig)
             {
                 counter.incrementAndGet();
             }
 
             @Override
-            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             {
             }
 
@@ -89,14 +89,9 @@ public class FilterHolderTest
         fh.setName("xx");
         fh.setFilter(filter);
 
-        try (StacklessLogging stackless = new StacklessLogging(FilterHolder.class))
+        try (StacklessLogging ignored = new StacklessLogging(FilterHolder.class))
         {
-            fh.initialize();
-            fail("Not started");
-        }
-        catch (Exception e)
-        {
-            //expected
+            assertThrows(IllegalStateException.class, fh::initialize);
         }
 
         fh.start();

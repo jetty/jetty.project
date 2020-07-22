@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.thread.Invocable;
 
 /**
- * A transport EndPoint
+ * <p>EndPoint is the abstraction for an I/O channel that transports bytes.</p>
  *
  * <h3>Asynchronous Methods</h3>
  * <p>The asynchronous scheduling methods of {@link EndPoint}
@@ -40,86 +40,90 @@ import org.eclipse.jetty.util.thread.Invocable;
  * some inefficiencies.</p>
  * <p>This class will frequently be used in conjunction with some of the utility
  * implementations of {@link Callback}, such as {@link FutureCallback} and
- * {@link IteratingCallback}. Examples are:</p>
+ * {@link IteratingCallback}.</p>
  *
- * <h3>Blocking Read</h3>
- * <p>A FutureCallback can be used to block until an endpoint is ready to be filled
- * from:</p>
- * <blockquote><pre>
- * FutureCallback&lt;String&gt; future = new FutureCallback&lt;&gt;();
- * endpoint.fillInterested("ContextObj",future);
- * ...
- * String context = future.get(); // This blocks
- * int filled=endpoint.fill(mybuffer);
- * </pre></blockquote>
+ * <h3>Reads</h3>
+ * <p>A {@link FutureCallback} can be used to block until an endpoint is ready
+ * to fill bytes - the notification will be emitted by the NIO subsystem:</p>
+ * <pre>
+ * FutureCallback callback = new FutureCallback();
+ * endPoint.fillInterested(callback);
  *
- * <h3>Dispatched Read</h3>
- * <p>By using a different callback, the read can be done asynchronously in its own dispatched thread:</p>
- * <blockquote><pre>
- * endpoint.fillInterested("ContextObj",new ExecutorCallback&lt;String&gt;(executor)
+ * // Blocks until read to fill bytes.
+ * callback.get();
+ *
+ * // Now bytes can be filled in a ByteBuffer.
+ * int filled = endPoint.fill(byteBuffer);
+ * </pre>
+ *
+ * <h3>Asynchronous Reads</h3>
+ * <p>A {@link Callback} can be used to read asynchronously in its own dispatched
+ * thread:</p>
+ * <pre>
+ * endPoint.fillInterested(new Callback()
  * {
- *   public void onCompleted(String context)
+ *   public void onSucceeded()
  *   {
- *     int filled=endpoint.fill(mybuffer);
- *     ...
+ *     executor.execute(() -&gt;
+ *     {
+ *       // Fill bytes in a different thread.
+ *       int filled = endPoint.fill(byteBuffer);
+ *     });
  *   }
- *   public void onFailed(String context,Throwable cause) {...}
+ *   public void onFailed(Throwable failure)
+ *   {
+ *     endPoint.close();
+ *   }
  * });
- * </pre></blockquote>
- * <p>The executor callback can also be customized to not dispatch in some circumstances when
- * it knows it can use the callback thread and does not need to dispatch.</p>
+ * </pre>
  *
- * <h3>Blocking Write</h3>
- * <p>The write contract is that the callback complete is not called until all data has been
- * written or there is a failure.  For blocking this looks like:</p>
- * <blockquote><pre>
- * FutureCallback&lt;String&gt; future = new FutureCallback&lt;&gt;();
- * endpoint.write("ContextObj",future,headerBuffer,contentBuffer);
- * String context = future.get(); // This blocks
- * </pre></blockquote>
+ * <h3>Blocking Writes</h3>
+ * <p>The write contract is that the callback is completed when all the bytes
+ * have been written or there is a failure.
+ * Blocking writes look like this:</p>
+ * <pre>
+ * FutureCallback callback = new FutureCallback();
+ * endpoint.write(callback, headerBuffer, contentBuffer);
  *
- * <h3>Dispatched Write</h3>
- * <p>Note also that multiple buffers may be passed in write so that gather writes
- * can be done:</p>
- * <blockquote><pre>
- * endpoint.write("ContextObj",new ExecutorCallback&lt;String&gt;(executor)
- * {
- *   public void onCompleted(String context)
- *   {
- *     int filled=endpoint.fill(mybuffer);
- *     ...
- *   }
- *   public void onFailed(String context,Throwable cause) {...}
- * },headerBuffer,contentBuffer);
- * </pre></blockquote>
+ * // Blocks until the write succeeds or fails.
+ * future.get();
+ * </pre>
+ * <p>Note also that multiple buffers may be passed in {@link #write(Callback, ByteBuffer...)}
+ * so that gather writes can be performed for efficiency.</p>
  */
 public interface EndPoint extends Closeable
 {
     /** 
-     * Marks an <code>EndPoint</code> that wraps another <code>EndPoint</code>.
+     * Marks an {@code EndPoint} that wraps another {@code EndPoint}.
      */
     public interface Wrapper 
     {
         /**
-         * @return The wrapped <code>EndPoint</code>
+         * @return The wrapped {@code EndPoint}
          */
         EndPoint unwrap();
     }
-    
+
     /**
-     * @return The local Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
-     * if this <code>EndPoint</code> does not represent a network connection.
+     * @return The local Inet address to which this {@code EndPoint} is bound, or {@code null}
+     * if this {@code EndPoint} does not represent a network connection.
      */
     InetSocketAddress getLocalAddress();
 
     /**
-     * @return The remote Inet address to which this <code>EndPoint</code> is bound, or <code>null</code>
-     * if this <code>EndPoint</code> does not represent a network connection.
+     * @return The remote Inet address to which this {@code EndPoint} is bound, or {@code null}
+     * if this {@code EndPoint} does not represent a network connection.
      */
     InetSocketAddress getRemoteAddress();
 
+    /**
+     * @return whether this EndPoint is open
+     */
     boolean isOpen();
 
+    /**
+     * @return the epoch time in milliseconds when this EndPoint was created
+     */
     long getCreatedTimeStamp();
 
     /**
@@ -177,7 +181,7 @@ public interface EndPoint extends Closeable
      *
      * @param buffer The buffer to fill. The position and limit are modified during the fill. After the
      * operation, the position is unchanged and the limit is increased to reflect the new data filled.
-     * @return an <code>int</code> value indicating the number of bytes
+     * @return an {@code int} value indicating the number of bytes
      * filled or -1 if EOF is read or the input is shutdown.
      * @throws IOException if the endpoint is closed.
      */
@@ -252,27 +256,27 @@ public interface EndPoint extends Closeable
     void write(Callback callback, ByteBuffer... buffers) throws WritePendingException;
 
     /**
-     * @return the {@link Connection} associated with this {@link EndPoint}
+     * @return the {@link Connection} associated with this EndPoint
      * @see #setConnection(Connection)
      */
     Connection getConnection();
 
     /**
-     * @param connection the {@link Connection} associated with this {@link EndPoint}
+     * @param connection the {@link Connection} associated with this EndPoint
      * @see #getConnection()
      * @see #upgrade(Connection)
      */
     void setConnection(Connection connection);
 
     /**
-     * <p>Callback method invoked when this {@link EndPoint} is opened.</p>
+     * <p>Callback method invoked when this EndPoint is opened.</p>
      *
      * @see #onClose(Throwable)
      */
     void onOpen();
 
     /**
-     * <p>Callback method invoked when this {@link EndPoint} is close.</p>
+     * <p>Callback method invoked when this {@link EndPoint} is closed.</p>
      *
      * @param cause The reason for the close, or null if a normal close.
      * @see #onOpen()
@@ -280,13 +284,18 @@ public interface EndPoint extends Closeable
     void onClose(Throwable cause);
 
     /**
-     * Upgrade connections.
-     * Close the old connection, update the endpoint and open the new connection.
-     * If the oldConnection is an instance of {@link Connection.UpgradeFrom} then
-     * a prefilled buffer is requested and passed to the newConnection if it is an instance
-     * of {@link Connection.UpgradeTo}
+     * <p>Upgrades this EndPoint from the current connection to the given new connection.</p>
+     * <p>Closes the current connection, links this EndPoint to the new connection and
+     * then opens the new connection.</p>
+     * <p>If the current connection is an instance of {@link Connection.UpgradeFrom} then
+     * a buffer of unconsumed bytes is requested.
+     * If the buffer of unconsumed bytes is non-null and non-empty, then the new
+     * connection is tested: if it is an instance of {@link Connection.UpgradeTo}, then
+     * the unconsumed buffer is passed to the new connection; otherwise, an exception
+     * is thrown since there are unconsumed bytes that cannot be consumed by the new
+     * connection.</p>
      *
-     * @param newConnection The connection to upgrade to
+     * @param newConnection the connection to upgrade to
      */
     public void upgrade(Connection newConnection);
 }

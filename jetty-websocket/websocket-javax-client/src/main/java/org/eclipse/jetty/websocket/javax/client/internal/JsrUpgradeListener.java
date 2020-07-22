@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 
 public class JsrUpgradeListener implements UpgradeListener
 {
-    private Configurator configurator;
+    private final Configurator configurator;
 
     public JsrUpgradeListener(Configurator configurator)
     {
@@ -46,7 +46,7 @@ public class JsrUpgradeListener implements UpgradeListener
         if (configurator == null)
             return;
 
-        HttpFields.Mutable fields = request.getHeaders();
+        HttpFields fields = request.getHeaders();
         Map<String, List<String>> originalHeaders = new HashMap<>();
         fields.forEach(field ->
         {
@@ -59,8 +59,11 @@ public class JsrUpgradeListener implements UpgradeListener
         configurator.beforeRequest(originalHeaders);
 
         // Reset headers on HttpRequest per configurator
-        fields.clear();
-        originalHeaders.forEach(fields::put);
+        request.headers(headers ->
+        {
+            headers.clear();
+            originalHeaders.forEach(headers::put);
+        });
     }
 
     @Override

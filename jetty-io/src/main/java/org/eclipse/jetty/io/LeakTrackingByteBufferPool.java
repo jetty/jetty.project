@@ -23,10 +23,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.LeakDetector;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ManagedObject
 public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements ByteBufferPool
 {
     private static final Logger LOG = LoggerFactory.getLogger(LeakTrackingByteBufferPool.class);
@@ -47,11 +50,11 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
         }
     };
 
-    private static final boolean NOISY = Boolean.getBoolean(LeakTrackingByteBufferPool.class.getName() + ".NOISY");
-    private final ByteBufferPool delegate;
-    private final AtomicLong leakedReleases = new AtomicLong(0);
     private final AtomicLong leakedAcquires = new AtomicLong(0);
+    private final AtomicLong leakedReleases = new AtomicLong(0);
+    private final AtomicLong leakedRemoves = new AtomicLong(0);
     private final AtomicLong leaked = new AtomicLong(0);
+    private final ByteBufferPool delegate;
 
     public LeakTrackingByteBufferPool(ByteBufferPool delegate)
     {
@@ -64,12 +67,12 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
     public ByteBuffer acquire(int size, boolean direct)
     {
         ByteBuffer buffer = delegate.acquire(size, direct);
-        boolean leaked = leakDetector.acquired(buffer);
-        if (NOISY || !leaked)
+        boolean acquired = leakDetector.acquired(buffer);
+        if (!acquired)
         {
             leakedAcquires.incrementAndGet();
-            LOG.info(String.format("ByteBuffer acquire %s leaked.acquired=%s", leakDetector.id(buffer), leaked ? "normal" : "LEAK"),
-                new Throwable("LeakStack.Acquire"));
+            if (LOG.isDebugEnabled())
+                LOG.debug("ByteBuffer leaked acquire for id {}", leakDetector.id(buffer), new Throwable("acquire"));
         }
         return buffer;
     }
@@ -79,16 +82,36 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
     {
         if (buffer == null)
             return;
-        boolean leaked = leakDetector.released(buffer);
-        if (NOISY || !leaked)
+        boolean released = leakDetector.released(buffer);
+        if (!released)
         {
             leakedReleases.incrementAndGet();
-            LOG.info(String.format("ByteBuffer release %s leaked.released=%s", leakDetector.id(buffer), leaked ? "normal" : "LEAK"), new Throwable(
-                "LeakStack.Release"));
+            if (LOG.isDebugEnabled())
+                LOG.debug("ByteBuffer leaked release for id {}", leakDetector.id(buffer), new Throwable("release"));
         }
         delegate.release(buffer);
     }
 
+    @Override
+    public void remove(ByteBuffer buffer)
+    {
+        if (buffer == null)
+            return;
+        boolean released = leakDetector.released(buffer);
+        if (!released)
+        {
+            leakedRemoves.incrementAndGet();
+            if (LOG.isDebugEnabled())
+                LOG.debug("ByteBuffer leaked remove for id {}", leakDetector.id(buffer), new Throwable("remove"));
+        }
+        delegate.remove(buffer);
+    }
+
+    /**
+     * Clears the tracking data returned by {@link #getLeakedAcquires()},
+     * {@link #getLeakedReleases()}, {@link #getLeakedResources()}.
+     */
+    @ManagedAttribute("Clears the tracking data")
     public void clearTracking()
     {
         leakedAcquires.set(0);
@@ -96,24 +119,36 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
     }
 
     /**
-     * @return count of BufferPool.acquire() calls that detected a leak
+     * @return count of ByteBufferPool.acquire() calls that detected a leak
      */
+    @ManagedAttribute("The number of acquires that produced a leak")
     public long getLeakedAcquires()
     {
         return leakedAcquires.get();
     }
 
     /**
-     * @return count of BufferPool.release() calls that detected a leak
+     * @return count of ByteBufferPool.release() calls that detected a leak
      */
+    @ManagedAttribute("The number of releases that produced a leak")
     public long getLeakedReleases()
     {
         return leakedReleases.get();
     }
 
     /**
+     * @return count of ByteBufferPool.remove() calls that detected a leak
+     */
+    @ManagedAttribute("The number of removes that produced a leak")
+    public long getLeakedRemoves()
+    {
+        return leakedRemoves.get();
+    }
+
+    /**
      * @return count of resources that were acquired but not released
      */
+    @ManagedAttribute("The number of resources that were leaked")
     public long getLeakedResources()
     {
         return leaked.get();

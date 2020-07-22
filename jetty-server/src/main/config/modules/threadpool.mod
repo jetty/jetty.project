@@ -1,4 +1,4 @@
-DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
 Enables the Server thread pool.
@@ -19,7 +19,7 @@ etc/jetty-threadpool.xml
 #jetty.threadPool.maxThreads=200
 
 ## Number of reserved threads (-1 for heuristic)
-# jetty.threadPool.reservedThreads=-1
+#jetty.threadPool.reservedThreads=-1
 
 ## Thread Idle Timeout (in milliseconds)
 #jetty.threadPool.idleTimeout=60000

@@ -41,7 +41,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -109,7 +108,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
-    public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request) throws IOException
+    public CompletableFuture<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request) throws IOException
     {
         return connect(websocket, toUri, request, null);
     }
@@ -124,7 +123,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      * @return the future for the session, available on success of connect
      * @throws IOException if unable to connect
      */
-    public CompletableFuture<Session> connect(Object websocket, URI toUri, UpgradeRequest request, JettyUpgradeListener upgradeListener) throws IOException
+    public CompletableFuture<Session> connect(Object websocket, URI toUri, ClientUpgradeRequest request, JettyUpgradeListener upgradeListener) throws IOException
     {
         for (Connection.Listener listener : getBeans(Connection.Listener.class))
         {
@@ -132,6 +131,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         }
 
         JettyClientUpgradeRequest upgradeRequest = new JettyClientUpgradeRequest(coreClient, request, toUri, frameHandlerFactory, websocket);
+        upgradeRequest.setConfiguration(configurationCustomizer);
         if (upgradeListener != null)
         {
             upgradeRequest.addListener(new UpgradeListener()
@@ -149,9 +149,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
                 }
             });
         }
-        upgradeRequest.setConfiguration(configurationCustomizer);
-        CompletableFuture<Session> futureSession = new CompletableFuture<>();
 
+        CompletableFuture<Session> futureSession = new CompletableFuture<>();
         coreClient.connect(upgradeRequest).whenComplete((coreSession, error) ->
         {
             if (error != null)

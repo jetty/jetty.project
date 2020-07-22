@@ -160,7 +160,7 @@ public class HazelcastSessionDataStore extends AbstractSessionDataStore
         EntryObject eo = Predicates.newPredicateBuilder().getEntryObject();
         @SuppressWarnings("unchecked")
         Predicate<String, SessionData> predicate = eo.get("expiry").greaterThan(0)
-        .and(eo.get("expiry").lessEqual(timeLimit));
+            .and(eo.get("expiry").lessEqual(timeLimit));
         sessionDataMap.removeAll(predicate);
     }
 
