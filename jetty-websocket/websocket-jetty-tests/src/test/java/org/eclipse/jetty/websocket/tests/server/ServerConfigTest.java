@@ -230,7 +230,7 @@ public class ServerConfigTest
         assertNull(serverEndpoint.error);
 
         assertTrue(clientEndpoint.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(clientEndpoint.closeCode, is(StatusCode.NO_CODE));
+        assertThat(clientEndpoint.closeCode, is(StatusCode.NORMAL));
 
         listener.assertClosed();
     }

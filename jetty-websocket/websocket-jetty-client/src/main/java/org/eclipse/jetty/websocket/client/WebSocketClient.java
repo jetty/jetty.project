@@ -50,6 +50,7 @@ import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -151,7 +152,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         }
 
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
-        coreClient.connect(upgradeRequest).whenComplete((coreSession, error) ->
+        CompletableFuture<CoreSession> coreConnect = coreClient.connect(upgradeRequest);
+        coreConnect.whenComplete((coreSession, error) ->
         {
             if (error != null)
             {
@@ -163,6 +165,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
             futureSession.complete(frameHandler.getSession());
         });
 
+        // If the returned future is cancelled we want to try to cancel the core future if possible.
+        futureSession.whenComplete((session, throwable) ->
+        {
+            if (throwable != null)
+                coreConnect.completeExceptionally(throwable);
+        });
         return futureSession;
     }
 

@@ -93,6 +93,7 @@ public class JakartaWebSocketSession implements jakarta.websocket.Session
         }
 
         this.userProperties = endpointConfig.getUserProperties();
+        container.notifySessionListeners((listener) -> listener.onJakartaWebSocketSessionCreated(this));
     }
 
     public CoreSession getCoreSession()

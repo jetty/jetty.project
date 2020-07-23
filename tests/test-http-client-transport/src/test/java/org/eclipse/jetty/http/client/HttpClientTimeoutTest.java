@@ -57,6 +57,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.opentest4j.TestAbortedException;
 
 import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -507,7 +508,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
             // connect to them will hang the connection attempt, which is
             // what we want to simulate in this test.
             socket.connect(new InetSocketAddress(host, port), connectTimeout);
-            // Abort the test if we can connect.
+            // Fail the test if we can connect.
             fail("Error: Should not have been able to connect to " + host + ":" + port);
         }
         catch (SocketTimeoutException ignored)
@@ -517,7 +518,7 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
         catch (Throwable x)
         {
             // Abort if any other exception happens.
-            fail(x);
+            throw new TestAbortedException("Not able to validate connect timeout conditions", x);
         }
     }
 
