@@ -439,8 +439,6 @@ public class ServletHandler extends ScopedHandler
         // Get the base requests
         final ServletPathMapping old_servlet_path_mapping = baseRequest.getServletPathMapping();
 
-        DispatcherType type = baseRequest.getDispatcherType();
-
         ServletHolder servletHolder = null;
         UserIdentity.Scope oldScope = null;
 
@@ -472,8 +470,7 @@ public class ServletHandler extends ScopedHandler
             if (oldScope != null)
                 baseRequest.setUserIdentityScope(oldScope);
 
-            if (!(DispatcherType.INCLUDE.equals(type)))
-                baseRequest.setServletPathMapping(old_servlet_path_mapping);
+            baseRequest.setServletPathMapping(old_servlet_path_mapping);
         }
     }
 
