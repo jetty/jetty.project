@@ -47,7 +47,6 @@ import org.eclipse.jetty.websocket.tests.CloseTrackingEndpoint;
 import org.eclipse.jetty.websocket.tests.EchoSocket;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -58,7 +57,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled() // TODO: merge changes from PR #5030 properly.
 public class ConnectFutureTest
 {
     private Server server;
@@ -89,27 +87,6 @@ public class ConnectFutureTest
             client.stop();
         if (server != null)
             server.stop();
-    }
-
-    @Test
-    public void test()
-    {
-        CompletableFuture<String> future1 = new CompletableFuture<>();
-        future1.whenComplete((s, t) -> System.err.println(String.format("future1{%s,%s}", s, t)));
-
-        CompletableFuture<String> future2 = new CompletableFuture<>();
-        future1.whenComplete((s, t) ->
-        {
-            if (t != null)
-            {
-                future1.completeExceptionally(t);
-                return;
-            }
-
-            future1.complete(s);
-        });
-
-
     }
 
     @Test
@@ -178,12 +155,13 @@ public class ConnectFutureTest
         CloseTrackingEndpoint clientSocket = new CloseTrackingEndpoint();
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
 
-        // Abort when session is created, this is before future has been added to session and before the connection upgrade.
+        // Abort when session is created, this is during the connection upgrade.
         assertTrue(enteredListener.await(5, TimeUnit.SECONDS));
         assertTrue(connect.cancel(true));
         assertThrows(CancellationException.class, () -> connect.get(5, TimeUnit.SECONDS));
         exitListener.countDown();
-        assertFalse(clientSocket.openLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(clientSocket.openLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket.errorLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientSocket.error.get(), instanceOf(CancellationException.class));
     }
 
@@ -215,12 +193,13 @@ public class ConnectFutureTest
         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()), upgradeRequest, upgradeListener);
 
-        // Abort after after handshake response, which is before connection upgrade, but after future has been set on session.
+        // Abort after after handshake response, this is during the connection upgrade.
         assertTrue(enteredListener.await(5, TimeUnit.SECONDS));
         assertTrue(connect.cancel(true));
         assertThrows(CancellationException.class, () -> connect.get(5, TimeUnit.SECONDS));
         exitListener.countDown();
-        assertFalse(clientSocket.openLatch.await(1, TimeUnit.SECONDS));
+        assertTrue(clientSocket.openLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket.errorLatch.await(5, TimeUnit.SECONDS));
         assertThat(clientSocket.error.get(), instanceOf(CancellationException.class));
     }
 
@@ -247,8 +226,7 @@ public class ConnectFutureTest
             }
         };
 
-        // Abort during the call to onOpened. This is after future has been added to session,
-        // and after connection has been upgraded, but before future completion.
+        // Abort during the call to onOpened. This is after the connection upgrade, but before future completion.
         Future<Session> connect = client.connect(clientSocket, WSURI.toWebsocket(server.getURI()));
         assertTrue(clientSocket.openLatch.await(5, TimeUnit.SECONDS));
         assertTrue(connect.cancel(true));
@@ -345,17 +323,19 @@ public class ConnectFutureTest
 
         // Exception from the future is correct.
         ExecutionException futureError = assertThrows(ExecutionException.class, () -> connect.get(5, TimeUnit.SECONDS));
-        Throwable cause = futureError.getCause();
-        assertThat(cause, instanceOf(WebSocketException.class));
-        assertThat(cause.getMessage(), is("custom exception"));
+        Throwable futureCause = futureError.getCause();
+        assertThat(futureCause, instanceOf(WebSocketException.class));
+        assertThat(futureCause.getMessage(), is("custom exception"));
 
         // Exception from the endpoint is correct.
         assertTrue(clientSocket.errorLatch.await(5, TimeUnit.SECONDS));
-        Throwable endpointError = clientSocket.error.get();
-        assertThat(endpointError, instanceOf(UpgradeException.class));
-        Throwable endpointErrorCause = endpointError.getCause();
-        assertThat(endpointError, instanceOf(WebSocketException.class));
-        assertThat(endpointErrorCause.getMessage(), is("custom exception"));
+        Throwable upgradeException = clientSocket.error.get();
+        assertThat(upgradeException, instanceOf(UpgradeException.class));
+        Throwable coreUpgradeException = upgradeException.getCause();
+        assertThat(coreUpgradeException, instanceOf(org.eclipse.jetty.websocket.core.exception.UpgradeException.class));
+        Throwable cause = coreUpgradeException.getCause();
+        assertThat(cause, instanceOf(WebSocketException.class));
+        assertThat(cause.getMessage(), is("custom exception"));
     }
 
     @Test

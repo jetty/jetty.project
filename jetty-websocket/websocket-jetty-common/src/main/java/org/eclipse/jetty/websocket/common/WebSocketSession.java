@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
@@ -57,7 +58,7 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     @Override
     public void close()
     {
-        remoteEndpoint.close();
+        remoteEndpoint.close(StatusCode.NORMAL, null);
     }
 
     @Override
