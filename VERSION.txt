@@ -1,3 +1,5 @@
+jetty-9.4.32-SNAPSHOT
+
 jetty-9.4.31.v20200723 - 23 July 2020
  + 1100 JSR356 Encoder#init is not called when created on demand
  + 4736 Update Import-Package version start ranges
