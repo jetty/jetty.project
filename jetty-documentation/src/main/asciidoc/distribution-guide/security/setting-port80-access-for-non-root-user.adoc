@@ -102,8 +102,8 @@ As well as opening the connectors as `root`, you can also have Jetty start the S
 ____
 
 .  A native code library is required to perform user switching.
-This code is hosted as part of the Jetty ToolChain project and is released independently from Jetty itself.
-You can find the source code https://github.com/eclipsejetty.toolchain[here] in the https://github.com/eclipse/jetty.toolchain/jetty-setuid[jetty-setuid] project.
+This code is hosted as part of the https://github.com/eclipse/jetty.toolchain[Jetty ToolChain] project and is released independently from Jetty itself.
+You can find the source code in the https://github.com/eclipse/jetty.toolchain/tree/master/jetty-setuid[eclipse/jetty.toolchain/jetty-setuid] project.
 Build it locally, which will produce a native library appropriate for the operating system:
 +
 [source, screen, subs="{sub-order}"]
