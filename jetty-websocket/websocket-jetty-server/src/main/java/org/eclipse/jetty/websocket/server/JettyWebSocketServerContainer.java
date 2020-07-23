@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
+import org.eclipse.jetty.websocket.util.ReflectUtils;
 import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
@@ -129,6 +130,24 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         webSocketMapping.addMapping(ps,
             (req, resp) -> creator.createWebSocket(new JettyServerUpgradeRequest(req), new JettyServerUpgradeResponse(resp)),
             frameHandlerFactory, customizer);
+    }
+
+    public void addMapping(String pathSpec, final Class<?> endpointClass)
+    {
+        if (!ReflectUtils.isDefaultConstructable(endpointClass))
+            throw new IllegalArgumentException("Cannot access default constructor for the class: " + endpointClass.getName());
+
+        addMapping(pathSpec, (req, resp) ->
+        {
+            try
+            {
+                return endpointClass.getDeclaredConstructor().newInstance();
+            }
+            catch (Exception e)
+            {
+                throw new org.eclipse.jetty.websocket.api.WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
+            }
+        });
     }
 
     @Override

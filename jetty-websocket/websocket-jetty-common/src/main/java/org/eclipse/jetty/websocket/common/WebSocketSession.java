@@ -30,6 +30,7 @@ import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.websocket.api.WebSocketContainer;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,13 +44,14 @@ public class WebSocketSession implements Session, SuspendToken, Dumpable
     private final UpgradeRequest upgradeRequest;
     private final UpgradeResponse upgradeResponse;
 
-    public WebSocketSession(CoreSession coreSession, JettyWebSocketFrameHandler frameHandler)
+    public WebSocketSession(WebSocketContainer container, CoreSession coreSession, JettyWebSocketFrameHandler frameHandler)
     {
         this.frameHandler = Objects.requireNonNull(frameHandler);
         this.coreSession = Objects.requireNonNull(coreSession);
         this.upgradeRequest = frameHandler.getUpgradeRequest();
         this.upgradeResponse = frameHandler.getUpgradeResponse();
         this.remoteEndpoint = new JettyWebSocketRemoteEndpoint(coreSession, frameHandler.getBatchMode());
+        container.notifySessionListeners((listener) -> listener.onWebSocketSessionCreated(this));
     }
 
     @Override

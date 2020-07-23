@@ -111,6 +111,11 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
         this.wsClient = webSocketClient;
         this.futureCoreSession = new CompletableFuture<>();
+        this.futureCoreSession.whenComplete((session, throwable) ->
+        {
+            if (throwable != null)
+                abort(throwable);
+        });
     }
 
     public void setConfiguration(Configuration.ConfigurationCustomizer config)

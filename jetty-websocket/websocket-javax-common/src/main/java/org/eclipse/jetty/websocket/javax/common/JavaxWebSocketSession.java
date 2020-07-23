@@ -93,6 +93,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
         }
 
         this.userProperties = endpointConfig.getUserProperties();
+        container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionCreated(this));
     }
 
     public CoreSession getCoreSession()
