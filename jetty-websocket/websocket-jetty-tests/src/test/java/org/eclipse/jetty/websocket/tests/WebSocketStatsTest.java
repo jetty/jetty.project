@@ -33,6 +33,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.internal.Generator;
@@ -150,7 +151,7 @@ public class WebSocketStatsTest
         assertThat(statistics.getReceivedMessages(), is(numMessages + 2L));
 
         Frame textFrame = new Frame(OpCode.TEXT, msgText);
-        Frame closeFrame = new Frame(OpCode.CLOSE);
+        Frame closeFrame = CloseStatus.NORMAL_STATUS.toFrame();
 
         final long textFrameSize = getFrameByteSize(textFrame);
         final long closeFrameSize = getFrameByteSize(closeFrame);
