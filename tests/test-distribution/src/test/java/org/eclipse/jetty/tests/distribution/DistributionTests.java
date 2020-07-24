@@ -467,7 +467,7 @@ public class DistributionTests extends AbstractDistributionTest
                 assertThat(webSocketListener.textMessages.poll(5, TimeUnit.SECONDS), is("echo message"));
                 session.close();
                 assertTrue(webSocketListener.closeLatch.await(5, TimeUnit.SECONDS));
-                assertThat(webSocketListener.closeCode, is(StatusCode.NO_CODE));
+                assertThat(webSocketListener.closeCode, is(StatusCode.NORMAL));
 
                 // Verify that /test2 and /test3 could not be started.
                 ContentResponse response = client.GET(serverUri.resolve("/test2/badonopen/a"));
@@ -482,7 +482,7 @@ public class DistributionTests extends AbstractDistributionTest
                 assertThat(webSocketListener.textMessages.poll(5, TimeUnit.SECONDS), is("echo message"));
                 session.close();
                 assertTrue(webSocketListener.closeLatch.await(5, TimeUnit.SECONDS));
-                assertThat(webSocketListener.closeCode, is(StatusCode.NO_CODE));
+                assertThat(webSocketListener.closeCode, is(StatusCode.NORMAL));
             }
         }
     }

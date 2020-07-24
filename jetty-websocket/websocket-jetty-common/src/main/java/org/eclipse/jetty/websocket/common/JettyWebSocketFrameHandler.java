@@ -153,7 +153,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         try
         {
             customizer.customize(coreSession);
-            session = new WebSocketSession(coreSession, this);
+            session = new WebSocketSession(container, coreSession, this);
 
             frameHandle = InvokerUtils.bindTo(frameHandle, session);
             openHandle = InvokerUtils.bindTo(openHandle, session);

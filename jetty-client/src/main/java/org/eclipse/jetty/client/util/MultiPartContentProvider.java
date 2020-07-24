@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.client.AsyncContentProvider;
@@ -102,15 +101,10 @@ public class MultiPartContentProvider extends AbstractTypedContentProvider imple
 
     private static String makeBoundary()
     {
-        Random random = new Random();
         StringBuilder builder = new StringBuilder("JettyHttpClientBoundary");
-        int length = builder.length();
-        while (builder.length() < length + 16)
-        {
-            long rnd = random.nextLong();
-            builder.append(Long.toString(rnd < 0 ? -rnd : rnd, 36));
-        }
-        builder.setLength(length + 16);
+        builder.append(Long.toString(System.identityHashCode(builder), 36));
+        builder.append(Long.toString(System.identityHashCode(Thread.currentThread()), 36));
+        builder.append(Long.toString(System.nanoTime(), 36));
         return builder.toString();
     }
 

@@ -111,6 +111,11 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
 
         this.wsClient = webSocketClient;
         this.futureCoreSession = new CompletableFuture<>();
+        this.futureCoreSession.whenComplete((session, throwable) ->
+        {
+            if (throwable != null)
+                abort(throwable);
+        });
     }
 
     public void setConfiguration(Configuration.ConfigurationCustomizer config)
@@ -439,7 +444,16 @@ public abstract class ClientUpgradeRequest extends HttpRequest implements Respon
         try
         {
             endPoint.upgrade(wsConnection);
-            futureCoreSession.complete(coreSession);
+
+            // Try to complete the future but if we could't we should abort the CoreSession
+            if (!futureCoreSession.complete(coreSession))
+            {
+                futureCoreSession.exceptionally(t ->
+                {
+                    coreSession.processConnectionError(t, Callback.NOOP);
+                    return null;
+                });
+            }
         }
         catch (Throwable t)
         {
