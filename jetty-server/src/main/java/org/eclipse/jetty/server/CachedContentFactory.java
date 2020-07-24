@@ -193,9 +193,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         // Is the content in the parent cache?
         if (_parent != null)
         {
-            HttpContent httpContent = _parent.getContent(pathInContext, maxBufferSize);
-            if (httpContent != null)
-                return httpContent;
+            return _parent.getContent(pathInContext, maxBufferSize);
         }
 
         return null;
@@ -582,7 +580,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     buffer = _indirectBuffer.get();
                 }
             }
-            return buffer == null ? null : buffer.asReadOnlyBuffer();
+            return buffer;
         }
 
         @Override

@@ -30,17 +30,10 @@ import org.eclipse.jetty.util.BufferUtil;
 public class ByteBufferRangeWriter implements RangeWriter
 {
     private final ByteBuffer buffer;
-    private boolean closed = false;
 
     public ByteBufferRangeWriter(ByteBuffer buffer)
     {
-        this.buffer = buffer.asReadOnlyBuffer();
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        closed = true;
+        this.buffer = buffer;
     }
 
     @Override
@@ -60,5 +53,10 @@ public class ByteBufferRangeWriter implements RangeWriter
         src.position((int)skipTo);
         src.limit(Math.addExact((int)skipTo, (int)length));
         BufferUtil.writeTo(src, outputStream);
+    }
+
+    @Override
+    public void close() throws IOException
+    {
     }
 }

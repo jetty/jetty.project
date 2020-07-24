@@ -45,12 +45,8 @@ public class HttpContentRangeWriter
     {
         Objects.requireNonNull(content, "HttpContent");
 
-        // Try direct buffer
-        ByteBuffer buffer = content.getDirectBuffer();
-        if (buffer == null)
-        {
-            buffer = content.getIndirectBuffer();
-        }
+        // Use an indirect buffer as we might be able to access array directly to prevent a copy.
+        ByteBuffer buffer = content.getIndirectBuffer();
         if (buffer != null)
         {
             return new ByteBufferRangeWriter(buffer);
@@ -78,6 +74,6 @@ public class HttpContentRangeWriter
                 LOG.debug("Skipping ReadableByteChannel option", e);
         }
 
-        return new InputStreamRangeWriter(() -> content.getInputStream());
+        return new InputStreamRangeWriter(content::getInputStream);
     }
 }

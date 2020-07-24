@@ -50,7 +50,12 @@ public class CompressedContentFormat
         if (_extension == null && ccf._extension != null)
             return false;
 
-        return _encoding.equalsIgnoreCase(ccf._encoding) && _extension.equalsIgnoreCase(ccf._extension);
+        return equalsIgnoreCase(_encoding, ccf._encoding) && equalsIgnoreCase(_extension, ccf._extension);
+    }
+
+    private static boolean equalsIgnoreCase(String a, String b)
+    {
+        return (a == null) ? (b == null) : a.equalsIgnoreCase(b);
     }
 
     public static boolean tagEquals(String etag, String tag)

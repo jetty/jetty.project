@@ -74,7 +74,7 @@ public class ResourceService
     private boolean _acceptRanges = true;
     private boolean _dirAllowed = true;
     private boolean _redirectWelcome = false;
-    private CompressedContentFormat[] _precompressedFormats = new CompressedContentFormat[0];
+    private CompressedContentFormat[] _precompressedFormats = CompressedContentFormat.NONE;
     private String[] _preferredEncodingOrder = new String[0];
     private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
     private int _encodingCacheSize = 100;
@@ -197,8 +197,8 @@ public class ResourceService
     public boolean doGet(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
-        String servletPath = null;
-        String pathInfo = null;
+        String servletPath;
+        String pathInfo;
         Enumeration<String> reqRanges = null;
         boolean included = request.getAttribute(RequestDispatcher.INCLUDE_REQUEST_URI) != null;
         if (included)
@@ -578,7 +578,7 @@ public class ResourceService
             {
                 //Get jetty's Response impl
                 String mdlm = content.getLastModifiedValue();
-                if (mdlm != null && ifms.equals(mdlm))
+                if (ifms.equals(mdlm))
                 {
                     sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
                     return false;
@@ -621,7 +621,7 @@ public class ResourceService
             return;
         }
 
-        byte[] data = null;
+        byte[] data;
         String base = URIUtil.addEncodedPaths(request.getRequestURI(), URIUtil.SLASH);
         String dir = resource.getListHTML(base, pathInContext.length() > 1, request.getQueryString());
         if (dir == null)
@@ -674,10 +674,10 @@ public class ResourceService
                 content.getResource().writeTo(out, 0, content_length);
             }
             // else if we can't do a bypass write because of wrapping
-            else if (written || !(out instanceof HttpOutput))
+            else if (written)
             {
                 // write normally
-                putHeaders(response, content, written ? -1 : 0);
+                putHeaders(response, content, -1);
                 ByteBuffer buffer = content.getIndirectBuffer();
                 if (buffer != null)
                     BufferUtil.writeTo(buffer, out);
@@ -764,7 +764,7 @@ public class ResourceService
             //  content-length header
             //
             putHeaders(response, content, -1);
-            String mimetype = (content == null ? null : content.getContentTypeValue());
+            String mimetype = content.getContentTypeValue();
             if (mimetype == null)
                 LOG.warn("Unknown mimetype for " + request.getRequestURI());
             MultiPartOutputStream multi = new MultiPartOutputStream(out);
