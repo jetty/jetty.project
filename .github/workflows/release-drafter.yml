@@ -1,0 +1,14 @@
+name: Release Drafter
+on:
+  push:
+    branches:
+      - jetty-9.4.x
+      - jetty-10.0.x
+      - jetty-11.0.x
+jobs:
+  update_release_draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@v5.11.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

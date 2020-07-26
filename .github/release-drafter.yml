@@ -1,0 +1,57 @@
+# Configuration for Release Drafter: https://github.com/toolmantim/release-drafter
+name-template: $NEXT_MINOR_VERSION
+tag-template: $NEXT_MINOR_VERSION
+version-template: $MAJOR.$MINOR.$PATCH
+
+# Emoji reference: https://gitmoji.carloscuesta.me/
+categories:
+  - title: ":boom: Breaking changes"
+    labels:
+      - breaking
+  - title: 🚨 Removed
+    label: removed
+  - title: ":tada: Major features and improvements"
+    labels:
+      - major-enhancement
+      - major-rfe
+  - title: 🐛 Major bug fixes
+    labels:
+      - major-bug
+  - title: ⚠️ Deprecated
+    label: deprecated
+  - title: 🚀 New features and improvements
+    labels:
+      - enhancement
+      - feature
+      - rfe
+  - title: 🐛 Bug Fixes
+    labels:
+      - bug
+      - fix
+      - bugfix
+      - regression
+  - title: ":construction_worker: Changes for plugin developers"
+    labels:
+      - developer
+  # Default label used by Dependabot
+  - title: 📦 Dependency updates
+    label: dependencies
+  - title: 📝 Documentation updates
+    label: documentation
+  - title: 👻 Maintenance
+    labels:
+      - chore
+      - internal
+  - title: 🚦 Tests
+    labels:
+      - test
+      - tests
+exclude-labels:
+  - reverted
+  - no-changelog
+  - skip-changelog
+  - invalid
+
+template: |
+  <!-- Optional: add a release summary here -->
+  $CHANGES
