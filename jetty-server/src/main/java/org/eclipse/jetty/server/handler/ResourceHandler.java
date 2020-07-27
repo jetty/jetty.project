@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
@@ -102,7 +103,8 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         if (_mimeTypes == null)
             _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
 
-        _resourceService.setContentFactory(new ResourceContentFactory(this, _mimeTypes, _resourceService.getPrecompressedFormats()));
+        ByteBufferPool bufferPool = (_context == null) ? null : _context.getServer().getBean(ByteBufferPool.class);
+        _resourceService.setContentFactory(new ResourceContentFactory(this, _mimeTypes, _resourceService.getPrecompressedFormats(), bufferPool));
         _resourceService.setWelcomeFactory(this);
 
         super.doStart();

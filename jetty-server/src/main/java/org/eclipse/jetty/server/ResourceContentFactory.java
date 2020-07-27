@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpContent.ContentFactory;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.ResourceHttpContent;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
@@ -41,12 +42,19 @@ public class ResourceContentFactory implements ContentFactory
     private final ResourceFactory _factory;
     private final MimeTypes _mimeTypes;
     private final CompressedContentFormat[] _precompressedFormats;
+    private final ByteBufferPool _bufferPool;
 
     public ResourceContentFactory(ResourceFactory factory, MimeTypes mimeTypes, CompressedContentFormat[] precompressedFormats)
+    {
+        this(factory, mimeTypes, precompressedFormats, null);
+    }
+
+    public ResourceContentFactory(ResourceFactory factory, MimeTypes mimeTypes, CompressedContentFormat[] precompressedFormats, ByteBufferPool bufferPool)
     {
         _factory = factory;
         _mimeTypes = mimeTypes;
         _precompressedFormats = precompressedFormats;
+        _bufferPool = bufferPool;
     }
 
     @Override
@@ -57,8 +65,7 @@ public class ResourceContentFactory implements ContentFactory
         {
             // try loading the content from our factory.
             Resource resource = _factory.getResource(pathInContext);
-            HttpContent loaded = load(pathInContext, resource, maxBufferSize);
-            return loaded;
+            return load(pathInContext, resource, maxBufferSize);
         }
         catch (Throwable t)
         {
@@ -74,7 +81,7 @@ public class ResourceContentFactory implements ContentFactory
             return null;
 
         if (resource.isDirectory())
-            return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(resource.toString()), maxBufferSize);
+            return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(resource.toString()), maxBufferSize, null, _bufferPool);
 
         // Look for a precompressed resource or content
         String mt = _mimeTypes.getMimeByExtension(pathInContext);
@@ -89,12 +96,12 @@ public class ResourceContentFactory implements ContentFactory
                 if (compressedResource != null && compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,
-                        new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
+                        new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize, null, _bufferPool));
             }
             if (!compressedContents.isEmpty())
-                return new ResourceHttpContent(resource, mt, maxBufferSize, compressedContents);
+                return new ResourceHttpContent(resource, mt, maxBufferSize, compressedContents, _bufferPool);
         }
-        return new ResourceHttpContent(resource, mt, maxBufferSize);
+        return new ResourceHttpContent(resource, mt, maxBufferSize, null, _bufferPool);
     }
 
     @Override

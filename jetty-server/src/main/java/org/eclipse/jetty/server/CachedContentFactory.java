@@ -43,6 +43,8 @@ import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.PrecompressedHttpContent;
 import org.eclipse.jetty.http.ResourceHttpContent;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPoolUtil;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -63,6 +65,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     private final boolean _etags;
     private final CompressedContentFormat[] _precompressedFormats;
     private final boolean _useFileMappedBuffer;
+    private final ByteBufferPool _bufferPool;
 
     private int _maxCachedFileSize = 128 * 1024 * 1024;
     private int _maxCachedFiles = 2048;
@@ -80,6 +83,22 @@ public class CachedContentFactory implements HttpContent.ContentFactory
      */
     public CachedContentFactory(CachedContentFactory parent, ResourceFactory factory, MimeTypes mimeTypes, boolean useFileMappedBuffer, boolean etags, CompressedContentFormat[] precompressedFormats)
     {
+        this(parent, factory, mimeTypes, useFileMappedBuffer, etags, precompressedFormats, null);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param parent the parent resource cache
+     * @param factory the resource factory
+     * @param mimeTypes Mimetype to use for meta data
+     * @param useFileMappedBuffer true to file memory mapped buffers
+     * @param etags true to support etags
+     * @param precompressedFormats array of precompression formats to support
+     * @param bufferPool the ByteBufferPool to use
+     */
+    public CachedContentFactory(CachedContentFactory parent, ResourceFactory factory, MimeTypes mimeTypes, boolean useFileMappedBuffer, boolean etags, CompressedContentFormat[] precompressedFormats, ByteBufferPool bufferPool)
+    {
         _factory = factory;
         _cache = new ConcurrentHashMap<>();
         _cachedSize = new AtomicInteger();
@@ -89,6 +108,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         _useFileMappedBuffer = useFileMappedBuffer;
         _etags = etags;
         _precompressedFormats = precompressedFormats;
+        _bufferPool = bufferPool;
     }
 
     public int getCachedSize()
@@ -220,7 +240,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             return null;
 
         if (resource.isDirectory())
-            return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(resource.toString()), getMaxCachedFileSize());
+            return new ResourceHttpContent(resource, _mimeTypes.getMimeByExtension(resource.toString()), getMaxCachedFileSize(), null, _bufferPool);
 
         // Will it fit in the cache?
         if (isCacheable(resource))
@@ -288,13 +308,13 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
                     compressedResource.length() < resource.length())
                     compressedContents.put(format,
-                        new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
+                        new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize, null, _bufferPool));
             }
             if (!compressedContents.isEmpty())
-                return new ResourceHttpContent(resource, mt, maxBufferSize, compressedContents);
+                return new ResourceHttpContent(resource, mt, maxBufferSize, compressedContents, _bufferPool);
         }
 
-        return new ResourceHttpContent(resource, mt, maxBufferSize);
+        return new ResourceHttpContent(resource, mt, maxBufferSize, null, _bufferPool);
     }
 
     private void shrinkCache()
@@ -333,7 +353,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     {
         try
         {
-            return BufferUtil.toBuffer(resource, false);
+            return ByteBufferPoolUtil.resourceToBuffer(resource, false, _bufferPool);
         }
         catch (IOException | IllegalArgumentException e)
         {
@@ -364,7 +384,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
     {
         try
         {
-            return BufferUtil.toBuffer(resource, true);
+            return ByteBufferPoolUtil.resourceToBuffer(resource, true, _bufferPool);
         }
         catch (IOException | IllegalArgumentException e)
         {
@@ -483,6 +503,8 @@ public class CachedContentFactory implements HttpContent.ContentFactory
 
         protected void invalidate()
         {
+            release();
+
             ByteBuffer indirect = _indirectBuffer.getAndSet(null);
             if (indirect != null)
                 _cachedSize.addAndGet(-BufferUtil.length(indirect));
@@ -548,6 +570,16 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         @Override
         public void release()
         {
+            if (_bufferPool != null)
+            {
+                ByteBuffer indirectBuffer = _indirectBuffer.get();
+                if (indirectBuffer != null)
+                    _bufferPool.release(indirectBuffer);
+
+                ByteBuffer directBuffer = _directBuffer.get();
+                if (directBuffer != null)
+                    _bufferPool.release(directBuffer);
+            }
         }
 
         @Override
@@ -577,10 +609,11 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 }
                 else
                 {
+                    _bufferPool.release(buffer2);
                     buffer = _indirectBuffer.get();
                 }
             }
-            return buffer;
+            return buffer.slice();
         }
 
         @Override
@@ -613,6 +646,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                         }
                         else
                         {
+                            _bufferPool.release(direct);
                             buffer = _directBuffer.get();
                         }
                     }

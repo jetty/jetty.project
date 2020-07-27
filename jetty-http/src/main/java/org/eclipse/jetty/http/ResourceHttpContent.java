@@ -22,11 +22,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPoolUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
@@ -40,24 +43,31 @@ public class ResourceHttpContent implements HttpContent
     final Resource _resource;
     final String _contentType;
     final int _maxBuffer;
-    Map<CompressedContentFormat, HttpContent> _precompressedContents;
-    String _etag;
+    final ByteBufferPool _bufferPool;
+    final Map<CompressedContentFormat, HttpContent> _precompressedContents;
+    final List<ByteBuffer> _allocatedBuffers = new ArrayList<>();
 
     public ResourceHttpContent(final Resource resource, final String contentType)
     {
-        this(resource, contentType, -1, null);
+        this(resource, contentType, -1, null, null);
     }
 
     public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer)
     {
-        this(resource, contentType, maxBuffer, null);
+        this(resource, contentType, maxBuffer, null, null);
     }
 
     public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer, Map<CompressedContentFormat, HttpContent> precompressedContents)
     {
+        this(resource, contentType, maxBuffer, null, null);
+    }
+
+    public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer, Map<CompressedContentFormat, HttpContent> precompressedContents, ByteBufferPool bufferPool)
+    {
         _resource = resource;
         _contentType = contentType;
         _maxBuffer = maxBuffer;
+        _bufferPool = bufferPool;
         if (precompressedContents == null)
         {
             _precompressedContents = null;
@@ -123,21 +133,6 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public ByteBuffer getDirectBuffer()
-    {
-        if (_resource.length() <= 0 || _maxBuffer > 0 && _resource.length() > _maxBuffer)
-            return null;
-        try
-        {
-            return BufferUtil.toBuffer(_resource, true);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
     public HttpField getETag()
     {
         return new HttpField(HttpHeader.ETAG, getETagValue());
@@ -156,7 +151,26 @@ public class ResourceHttpContent implements HttpContent
             return null;
         try
         {
-            return BufferUtil.toBuffer(_resource, false);
+            ByteBuffer byteBuffer = ByteBufferPoolUtil.resourceToBuffer(_resource, false, _bufferPool);
+            _allocatedBuffers.add(byteBuffer);
+            return byteBuffer;
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public ByteBuffer getDirectBuffer()
+    {
+        if (_resource.length() <= 0 || _maxBuffer > 0 && _resource.length() > _maxBuffer)
+            return null;
+        try
+        {
+            ByteBuffer byteBuffer = ByteBufferPoolUtil.resourceToBuffer(_resource, true, _bufferPool);
+            _allocatedBuffers.add(byteBuffer);
+            return byteBuffer;
         }
         catch (IOException e)
         {
@@ -198,6 +212,15 @@ public class ResourceHttpContent implements HttpContent
     @Override
     public void release()
     {
+        if (_bufferPool != null)
+        {
+            for (ByteBuffer byteBuffer : _allocatedBuffers)
+            {
+                _bufferPool.release(byteBuffer);
+            }
+        }
+
+        _allocatedBuffers.clear();
         _resource.close();
     }
 

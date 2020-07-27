@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.CachedContentFactory;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
@@ -253,11 +254,12 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             _cache = (CachedContentFactory)_servletContext.getAttribute(resourceCache);
         }
 
+        ByteBufferPool bufferPool = _contextHandler.getServer().getBean(ByteBufferPool.class);
         try
         {
             if (_cache == null && (maxCachedFiles != -2 || maxCacheSize != -2 || maxCachedFileSize != -2))
             {
-                _cache = new CachedContentFactory(null, this, _mimeTypes, _useFileMappedBuffer, _resourceService.isEtags(), _resourceService.getPrecompressedFormats());
+                _cache = new CachedContentFactory(null, this, _mimeTypes, _useFileMappedBuffer, _resourceService.isEtags(), _resourceService.getPrecompressedFormats(), bufferPool);
                 if (maxCacheSize >= 0)
                     _cache.setMaxCacheSize(maxCacheSize);
                 if (maxCachedFileSize >= -1)
@@ -276,7 +278,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         HttpContent.ContentFactory contentFactory = _cache;
         if (contentFactory == null)
         {
-            contentFactory = new ResourceContentFactory(this, _mimeTypes, _resourceService.getPrecompressedFormats());
+            contentFactory = new ResourceContentFactory(this, _mimeTypes, _resourceService.getPrecompressedFormats(), bufferPool);
             if (resourceCache != null)
                 _servletContext.setAttribute(resourceCache, contentFactory);
         }
