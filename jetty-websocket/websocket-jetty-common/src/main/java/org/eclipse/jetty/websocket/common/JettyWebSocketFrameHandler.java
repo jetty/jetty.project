@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
@@ -60,6 +61,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
         CLOSED
     }
 
+    private final AutoLock lock = new AutoLock();
     private final Logger log;
     private final WebSocketContainer container;
     private final Object endpointInstance;
@@ -189,7 +191,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             switch (state)
             {
@@ -298,11 +300,8 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
-        synchronized (this)
-        {
-            // We are now closed and cannot suspend or resume.
-            state = SuspendState.CLOSED;
-        }
+        // We are now closed and cannot suspend or resume.
+        lock.runLocked(() -> state = SuspendState.CLOSED);
 
         notifyOnClose(closeStatus, callback);
         container.notifySessionListeners((listener) -> listener.onWebSocketSessionClosed(session));
@@ -425,7 +424,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
     public void suspend()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             switch (state)
             {
@@ -443,7 +442,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         boolean needDemand = false;
         Runnable delayedFrame = null;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             switch (state)
             {
@@ -480,7 +479,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private void demand()
     {
         boolean demand = false;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             switch (state)
             {

@@ -375,7 +375,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
      * @see Runtime#addShutdownHook(Thread)
      * @see ShutdownThread
      */
-    public synchronized void setStopAtShutdown(boolean stop)
+    public void setStopAtShutdown(boolean stop)
     {
         if (stop)
         {

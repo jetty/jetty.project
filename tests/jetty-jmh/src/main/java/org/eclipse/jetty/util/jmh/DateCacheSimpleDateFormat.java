@@ -23,6 +23,8 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import org.eclipse.jetty.util.thread.AutoLock;
+
 /**
  * Date Format Cache.
  * Computes String representations of Dates and caches
@@ -40,14 +42,11 @@ import java.util.TimeZone;
  */
 public class DateCacheSimpleDateFormat
 {
-
     public static final String DEFAULT_FORMAT = "EEE MMM dd HH:mm:ss zzz yyyy";
 
+    private final AutoLock _lock = new AutoLock();
     private final String _formatString;
-    private final String _tzFormatString;
     private final SimpleDateFormat _tzFormat;
-    private final Locale _locale;
-
     private volatile Tick _tick;
 
     public static class Tick
@@ -96,9 +95,9 @@ public class DateCacheSimpleDateFormat
     public DateCacheSimpleDateFormat(String format, Locale l, TimeZone tz)
     {
         _formatString = format;
-        _locale = l;
 
         int zIndex = _formatString.indexOf("ZZZ");
+        String tzFormatString;
         if (zIndex >= 0)
         {
             final String ss1 = _formatString.substring(0, zIndex);
@@ -129,19 +128,17 @@ public class DateCacheSimpleDateFormat
             sb.append('\'');
 
             sb.append(ss2);
-            _tzFormatString = sb.toString();
+            tzFormatString = sb.toString();
         }
         else
-            _tzFormatString = _formatString;
+        {
+            tzFormatString = _formatString;
+        }
 
-        if (_locale != null)
-        {
-            _tzFormat = new SimpleDateFormat(_tzFormatString, _locale);
-        }
+        if (l != null)
+            _tzFormat = new SimpleDateFormat(tzFormatString, l);
         else
-        {
-            _tzFormat = new SimpleDateFormat(_tzFormatString);
-        }
+            _tzFormat = new SimpleDateFormat(tzFormatString);
         _tzFormat.setTimeZone(tz);
 
         _tick = null;
@@ -168,10 +165,7 @@ public class DateCacheSimpleDateFormat
         if (tick == null || seconds != tick._seconds)
         {
             // It's a cache miss
-            synchronized (this)
-            {
-                return _tzFormat.format(inDate);
-            }
+            return _lock.runLocked(() -> _tzFormat.format(inDate));
         }
 
         return tick._string;
@@ -196,10 +190,7 @@ public class DateCacheSimpleDateFormat
         {
             // It's a cache miss
             Date d = new Date(inDate);
-            synchronized (this)
-            {
-                return _tzFormat.format(d);
-            }
+            return _lock.runLocked(() -> _tzFormat.format(d));
         }
 
         return tick._string;
@@ -241,7 +232,7 @@ public class DateCacheSimpleDateFormat
         long seconds = now / 1000;
 
         // Synchronize to protect _tzFormat
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
             // recheck the tick, to save multiple formats
             if (_tick == null || _tick._seconds != seconds)

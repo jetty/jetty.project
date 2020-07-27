@@ -122,7 +122,7 @@ public class ServerConnectorTimeoutTest extends ConnectorTimeoutTest
         });
     }
 
-    private synchronized String process(String content) throws IOException, InterruptedException
+    private String process(String content) throws IOException, InterruptedException
     {
         String request = "GET / HTTP/1.1\r\n" + "Host: localhost\r\n";
 

@@ -35,6 +35,7 @@ import javax.xml.parsers.SAXParserFactory;
 
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
@@ -56,17 +57,15 @@ public class XmlParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(XmlParser.class);
 
-    private Map<String, URL> _redirectMap = new HashMap<String, URL>();
+    private final AutoLock _lock = new AutoLock();
+    private final Map<String, URL> _redirectMap = new HashMap<>();
+    private final Stack<ContentHandler> _observers = new Stack<>();
     private SAXParser _parser;
     private Map<String, ContentHandler> _observerMap;
-    private Stack<ContentHandler> _observers = new Stack<ContentHandler>();
     private String _xpath;
     private Object _xpaths;
     private String _dtd;
 
-    /**
-     * Construct
-     */
     public XmlParser()
     {
         SAXParserFactory factory = SAXParserFactory.newInstance();
@@ -79,6 +78,11 @@ public class XmlParser
     public XmlParser(boolean validating)
     {
         setValidating(validating);
+    }
+
+    AutoLock lock()
+    {
+        return _lock.lock();
     }
 
     public void setValidating(boolean validating)
@@ -127,10 +131,10 @@ public class XmlParser
         return _parser.isValidating();
     }
 
-    public synchronized void redirectEntity(String name, URL entity)
+    public void redirectEntity(String name, URL entity)
     {
         if (entity != null)
-            _redirectMap.put(name, entity);
+            _lock.runLocked(() -> _redirectMap.put(name, entity));
     }
 
     /**
@@ -170,29 +174,35 @@ public class XmlParser
      * @param trigger Tag local or q name.
      * @param observer SAX ContentHandler
      */
-    public synchronized void addContentHandler(String trigger, ContentHandler observer)
+    public void addContentHandler(String trigger, ContentHandler observer)
     {
-        if (_observerMap == null)
-            _observerMap = new HashMap<>();
-        _observerMap.put(trigger, observer);
+        try (AutoLock ignored = _lock.lock())
+        {
+            if (_observerMap == null)
+                _observerMap = new HashMap<>();
+            _observerMap.put(trigger, observer);
+        }
     }
 
-    public synchronized Node parse(InputSource source) throws IOException, SAXException
+    public Node parse(InputSource source) throws IOException, SAXException
     {
-        _dtd = null;
-        Handler handler = new Handler();
-        XMLReader reader = _parser.getXMLReader();
-        reader.setContentHandler(handler);
-        reader.setErrorHandler(handler);
-        reader.setEntityResolver(handler);
-        if (LOG.isDebugEnabled())
-            LOG.debug("parsing: sid=" + source.getSystemId() + ",pid=" + source.getPublicId());
-        _parser.parse(source, handler);
-        if (handler._error != null)
-            throw handler._error;
-        Node doc = (Node)handler._top.get(0);
-        handler.clear();
-        return doc;
+        try (AutoLock ignored = _lock.lock())
+        {
+            _dtd = null;
+            Handler handler = new Handler();
+            XMLReader reader = _parser.getXMLReader();
+            reader.setContentHandler(handler);
+            reader.setErrorHandler(handler);
+            reader.setEntityResolver(handler);
+            if (LOG.isDebugEnabled())
+                LOG.debug("parsing: sid=" + source.getSystemId() + ",pid=" + source.getPublicId());
+            _parser.parse(source, handler);
+            if (handler._error != null)
+                throw handler._error;
+            Node doc = (Node)handler._top.get(0);
+            handler.clear();
+            return doc;
+        }
     }
 
     /**
@@ -203,7 +213,7 @@ public class XmlParser
      * @throws IOException if unable to load the xml
      * @throws SAXException if unable to parse the xml
      */
-    public synchronized Node parse(String url) throws IOException, SAXException
+    public Node parse(String url) throws IOException, SAXException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("parse: " + url);
@@ -218,7 +228,7 @@ public class XmlParser
      * @throws IOException if unable to load the xml
      * @throws SAXException if unable to parse the xml
      */
-    public synchronized Node parse(File file) throws IOException, SAXException
+    public Node parse(File file) throws IOException, SAXException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("parse: " + file);
@@ -233,20 +243,9 @@ public class XmlParser
      * @throws IOException if unable to load the xml
      * @throws SAXException if unable to parse the xml
      */
-    public synchronized Node parse(InputStream in) throws IOException, SAXException
+    public Node parse(InputStream in) throws IOException, SAXException
     {
-        _dtd = null;
-        Handler handler = new Handler();
-        XMLReader reader = _parser.getXMLReader();
-        reader.setContentHandler(handler);
-        reader.setErrorHandler(handler);
-        reader.setEntityResolver(handler);
-        _parser.parse(new InputSource(in), handler);
-        if (handler._error != null)
-            throw handler._error;
-        Node doc = (Node)handler._top.get(0);
-        handler.clear();
-        return doc;
+        return parse(new InputSource(in));
     }
 
     protected InputSource resolveEntity(String pid, String sid)
@@ -629,7 +628,7 @@ public class XmlParser
         public void add(int i, Object o)
         {
             if (_list == null)
-                _list = new ArrayList<Object>();
+                _list = new ArrayList<>();
             if (o instanceof String)
             {
                 if (_lastString)
@@ -676,7 +675,7 @@ public class XmlParser
         }
 
         @Override
-        public synchronized String toString()
+        public String toString()
         {
             return toString(true);
         }
@@ -687,7 +686,7 @@ public class XmlParser
          * @param tag If false, only _content is shown.
          * @return the string value
          */
-        public synchronized String toString(boolean tag)
+        public String toString(boolean tag)
         {
             StringBuilder buf = new StringBuilder();
             toString(buf, tag);
@@ -701,7 +700,7 @@ public class XmlParser
          * @param trim true to trim the content
          * @return the trimmed content
          */
-        public synchronized String toString(boolean tag, boolean trim)
+        public String toString(boolean tag, boolean trim)
         {
             String s = toString(tag);
             if (s != null && trim)
@@ -709,7 +708,7 @@ public class XmlParser
             return s;
         }
 
-        private synchronized void toString(StringBuilder buf, boolean tag)
+        private void toString(StringBuilder buf, boolean tag)
         {
             if (tag)
             {

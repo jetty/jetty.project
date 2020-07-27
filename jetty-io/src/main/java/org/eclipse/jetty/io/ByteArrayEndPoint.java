@@ -31,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -69,8 +68,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     private static final ByteBuffer EOF = BufferUtil.allocate(0);
 
     private final Runnable _runFillable = () -> getFillInterest().fillable();
-    private final AutoLock _lock = new AutoLock();
-    private final Condition _hasOutput = _lock.newCondition();
+    private final AutoLock.WithCondition _lock = new AutoLock.WithCondition();
     private final Queue<ByteBuffer> _inQ = new ArrayDeque<>();
     private ByteBuffer _out;
     private boolean _growOutput;
@@ -127,9 +125,9 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void doShutdownOutput()
     {
         super.doShutdownOutput();
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock.WithCondition lock = _lock.lock())
         {
-            _hasOutput.signalAll();
+            lock.signalAll();
         }
     }
 
@@ -137,9 +135,9 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void doClose()
     {
         super.doClose();
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock.WithCondition lock = _lock.lock())
         {
-            _hasOutput.signalAll();
+            lock.signalAll();
         }
     }
 
@@ -303,11 +301,11 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         ByteBuffer b;
 
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock.WithCondition lock = _lock.lock())
         {
             while (BufferUtil.isEmpty(_out) && !isOutputShutdown())
             {
-                if (!_hasOutput.await(time, unit))
+                if (!lock.await(time, unit))
                     return null;
             }
             b = _out;
@@ -401,7 +399,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
         boolean flushed = true;
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock.WithCondition lock = _lock.lock())
         {
             if (!isOpen())
                 throw new IOException("CLOSED");
@@ -438,7 +436,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
             if (!idle)
             {
                 notIdle();
-                _hasOutput.signalAll();
+                lock.signalAll();
             }
         }
         return flushed;
@@ -447,11 +445,11 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     @Override
     public void reset()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock.WithCondition lock = _lock.lock())
         {
             _inQ.clear();
-            _hasOutput.signalAll();
             BufferUtil.clear(_out);
+            lock.signalAll();
         }
         super.reset();
     }

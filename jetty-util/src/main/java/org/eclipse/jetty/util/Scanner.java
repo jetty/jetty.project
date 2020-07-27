@@ -43,6 +43,7 @@ import java.util.TimerTask;
 import java.util.function.Predicate;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,16 +64,17 @@ public class Scanner extends AbstractLifeCycle
      */
     public static final int DEFAULT_SCAN_DEPTH = 1;
     public static final int MAX_SCAN_DEPTH = Integer.MAX_VALUE;
-
     private static final Logger LOG = LoggerFactory.getLogger(Scanner.class);
     private static int __scannerId = 0;
-    private int _scanInterval;
-    private int _scanCount = 0;
+
+    private final AutoLock _lock = new AutoLock();
     private final List<Listener> _listeners = new ArrayList<>();
     private final Map<String, TimeNSize> _prevScan = new HashMap<>();
     private final Map<String, TimeNSize> _currentScan = new HashMap<>();
-    private FilenameFilter _filter;
     private final Map<Path, IncludeExcludeSet<PathMatcher, Path>> _scannables = new HashMap<>();
+    private int _scanInterval;
+    private int _scanCount = 0;
+    private FilenameFilter _filter;
     private volatile boolean _running = false;
     private boolean _reportExisting = true;
     private boolean _reportDirs = true;
@@ -296,9 +298,9 @@ public class Scanner extends AbstractLifeCycle
      *
      * @return interval between scans in seconds
      */
-    public synchronized int getScanInterval()
+    public int getScanInterval()
     {
-        return _scanInterval;
+        return _lock.runLocked(() -> _scanInterval);
     }
 
     /**
@@ -306,10 +308,13 @@ public class Scanner extends AbstractLifeCycle
      *
      * @param scanInterval pause between scans in seconds, or 0 for no scan after the initial scan.
      */
-    public synchronized void setScanInterval(int scanInterval)
+    public void setScanInterval(int scanInterval)
     {
-        _scanInterval = scanInterval;
-        schedule();
+        try (AutoLock ignored = _lock.lock())
+        {
+            _scanInterval = scanInterval;
+            schedule();
+        }
     }
 
     public void setScanDirs(List<File> dirs)
@@ -325,11 +330,11 @@ public class Scanner extends AbstractLifeCycle
     }
 
     @Deprecated
-    public synchronized void addScanDir(File dir)
+    public void addScanDir(File dir)
     {
         if (dir == null)
             return;
-        try
+        try (AutoLock ignored = _lock.lock())
         {
             if (dir.isDirectory())
                 addDirectory(dir.toPath());
@@ -348,15 +353,14 @@ public class Scanner extends AbstractLifeCycle
      * @param p the Path of the file to scan.
      * @throws IOException 
      */
-    public synchronized void addFile(Path p) throws IOException
+    public void addFile(Path p) throws IOException
     {
         if (p == null)
             throw new IllegalStateException("Null path");
-        
         File f = p.toFile();
         if (!f.exists() || f.isDirectory())
             throw new IllegalStateException("Not file or doesn't exist: " + f.getCanonicalPath());
-        _scannables.put(p, null);
+        _lock.runLocked(() -> _scannables.put(p, null));
     }
 
     /**
@@ -366,24 +370,24 @@ public class Scanner extends AbstractLifeCycle
      * @return an IncludeExcludeSet to which the caller can add PathMatcher patterns to match
      * @throws IOException
      */
-    public synchronized IncludeExcludeSet<PathMatcher, Path> addDirectory(Path p)
-        throws IOException
+    public IncludeExcludeSet<PathMatcher, Path> addDirectory(Path p) throws IOException
     {
         if (p == null)
             throw new IllegalStateException("Null path");
-        
         File f = p.toFile();
         if (!f.exists() || !f.isDirectory())
             throw new IllegalStateException("Not directory or doesn't exist: " + f.getCanonicalPath());
-        
-        IncludeExcludeSet<PathMatcher, Path> includesExcludes = _scannables.get(p);
-        if (includesExcludes == null)
+
+        try (AutoLock ignored = _lock.lock())
         {
-            includesExcludes = new IncludeExcludeSet<>(PathMatcherSet.class);
-            _scannables.put(p.toRealPath(), includesExcludes);
+            IncludeExcludeSet<PathMatcher, Path> includesExcludes = _scannables.get(p);
+            if (includesExcludes == null)
+            {
+                includesExcludes = new IncludeExcludeSet<>(PathMatcherSet.class);
+                _scannables.put(p.toRealPath(), includesExcludes);
+            }
+            return includesExcludes;
         }
-        
-        return includesExcludes;
     }
 
     @Deprecated
@@ -500,11 +504,11 @@ public class Scanner extends AbstractLifeCycle
      *
      * @param listener the listener to add
      */
-    public synchronized void addListener(Listener listener)
+    public void addListener(Listener listener)
     {
         if (listener == null)
             return;
-        _listeners.add(listener);
+        _lock.runLocked(() -> _listeners.add(listener));
     }
 
     /**
@@ -512,40 +516,43 @@ public class Scanner extends AbstractLifeCycle
      *
      * @param listener the Listener to be removed
      */
-    public synchronized void removeListener(Listener listener)
+    public void removeListener(Listener listener)
     {
         if (listener == null)
             return;
-        _listeners.remove(listener);
+        _lock.runLocked(() -> _listeners.remove(listener));
     }
 
     /**
      * Start the scanning action.
      */
     @Override
-    public synchronized void doStart()
+    public void doStart()
     {
-        if (_running)
-            return;
-
-        _running = true;
-        if (LOG.isDebugEnabled())
-            LOG.debug("Scanner start: rprtExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}", 
-                _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
-
-        if (_reportExisting)
+        try (AutoLock ignored = _lock.lock())
         {
-            // if files exist at startup, report them
-            scan();
-            scan(); // scan twice so files reported as stable
+            if (_running)
+                return;
+
+            _running = true;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Scanner start: rprtExists={}, depth={}, rprtDirs={}, interval={}, filter={}, scannables={}",
+                    _reportExisting, _scanDepth, _reportDirs, _scanInterval, _filter, _scannables);
+
+            if (_reportExisting)
+            {
+                // if files exist at startup, report them
+                scan();
+                scan(); // scan twice so files reported as stable
+            }
+            else
+            {
+                //just register the list of existing files and only report changes
+                scanFiles();
+                _prevScan.putAll(_currentScan);
+            }
+            schedule();
         }
-        else
-        {
-            //just register the list of existing files and only report changes
-            scanFiles();
-            _prevScan.putAll(_currentScan);
-        }
-        schedule();
     }
 
     public TimerTask newTimerTask()
@@ -586,17 +593,20 @@ public class Scanner extends AbstractLifeCycle
      * Stop the scanning.
      */
     @Override
-    public synchronized void doStop()
+    public void doStop()
     {
-        if (_running)
+        try (AutoLock ignored = _lock.lock())
         {
-            _running = false;
-            if (_timer != null)
-                _timer.cancel();
-            if (_task != null)
-                _task.cancel();
-            _task = null;
-            _timer = null;
+            if (_running)
+            {
+                _running = false;
+                if (_timer != null)
+                    _timer.cancel();
+                if (_task != null)
+                    _task.cancel();
+                _task = null;
+                _timer = null;
+            }
         }
     }
     
@@ -634,25 +644,28 @@ public class Scanner extends AbstractLifeCycle
     /**
      * Perform a pass of the scanner and report changes
      */
-    public synchronized void scan()
+    public void scan()
     {
-        reportScanStart(++_scanCount);
-        scanFiles();
-        reportDifferences(_currentScan, _prevScan);
-        _prevScan.clear();
-        _prevScan.putAll(_currentScan);
-        reportScanEnd(_scanCount);
-
-        for (Listener l : _listeners)
+        try (AutoLock ignored = _lock.lock())
         {
-            try
+            reportScanStart(++_scanCount);
+            scanFiles();
+            reportDifferences(_currentScan, _prevScan);
+            _prevScan.clear();
+            _prevScan.putAll(_currentScan);
+            reportScanEnd(_scanCount);
+
+            for (Listener l : _listeners)
             {
-                if (l instanceof ScanListener)
-                    ((ScanListener)l).scan();
-            }
-            catch (Throwable e)
-            {
-                LOG.warn("Unable to scan", e);
+                try
+                {
+                    if (l instanceof ScanListener)
+                        ((ScanListener)l).scan();
+                }
+                catch (Throwable e)
+                {
+                    LOG.warn("Unable to scan", e);
+                }
             }
         }
     }
@@ -660,18 +673,21 @@ public class Scanner extends AbstractLifeCycle
     /**
      * Scan all of the given paths.
      */
-    public synchronized void scanFiles()
+    public void scanFiles()
     {
-        _currentScan.clear();
-        for (Path p : _scannables.keySet())
+        try (AutoLock ignored = _lock.lock())
         {
-            try
+            _currentScan.clear();
+            for (Path p : _scannables.keySet())
             {
-                Files.walkFileTree(p, EnumSet.allOf(FileVisitOption.class),_scanDepth, new Visitor(p, _scannables.get(p), _currentScan));
-            }
-            catch (IOException e)
-            {
-                LOG.warn("Error scanning files.", e);
+                try
+                {
+                    Files.walkFileTree(p, EnumSet.allOf(FileVisitOption.class),_scanDepth, new Visitor(p, _scannables.get(p), _currentScan));
+                }
+                catch (IOException e)
+                {
+                    LOG.warn("Error scanning files.", e);
+                }
             }
         }
     }
@@ -682,91 +698,94 @@ public class Scanner extends AbstractLifeCycle
      * @param currentScan the info from the most recent pass
      * @param oldScan info from the previous pass
      */
-    private synchronized void reportDifferences(Map<String, TimeNSize> currentScan, Map<String, TimeNSize> oldScan)
+    private void reportDifferences(Map<String, TimeNSize> currentScan, Map<String, TimeNSize> oldScan)
     {
-        // scan the differences and add what was found to the map of notifications:
-        Set<String> oldScanKeys = new HashSet<>(oldScan.keySet());
-
-        // Look for new and changed files
-        for (Map.Entry<String, TimeNSize> entry : currentScan.entrySet())
+        try (AutoLock ignored = _lock.lock())
         {
-            String file = entry.getKey();
-            if (!oldScanKeys.contains(file))
+            // scan the differences and add what was found to the map of notifications:
+            Set<String> oldScanKeys = new HashSet<>(oldScan.keySet());
+
+            // Look for new and changed files
+            for (Entry<String, TimeNSize> entry : currentScan.entrySet())
             {
-                Notification old = _notifications.put(file, Notification.ADDED);
-                if (old != null)
+                String file = entry.getKey();
+                if (!oldScanKeys.contains(file))
                 {
-                    switch (old)
+                    Notification old = _notifications.put(file, Notification.ADDED);
+                    if (old != null)
                     {
-                        case REMOVED:
-                        case CHANGED:
-                            _notifications.put(file, Notification.CHANGED);
-                            break;
-                        default:
-                            break;
+                        switch (old)
+                        {
+                            case REMOVED:
+                            case CHANGED:
+                                _notifications.put(file, Notification.CHANGED);
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
+                else if (!oldScan.get(file).equals(currentScan.get(file)))
+                {
+                    Notification old = _notifications.put(file, Notification.CHANGED);
+                    if (old == Notification.ADDED)
+                        _notifications.put(file, Notification.ADDED);
+                }
             }
-            else if (!oldScan.get(file).equals(currentScan.get(file)))
+
+            // Look for deleted files
+            for (String file : oldScan.keySet())
             {
-                Notification old = _notifications.put(file, Notification.CHANGED);
-                if (old == Notification.ADDED)
-                    _notifications.put(file, Notification.ADDED);
+                if (!currentScan.containsKey(file))
+                {
+                    Notification old = _notifications.put(file, Notification.REMOVED);
+                    if (old == Notification.ADDED)
+                        _notifications.remove(file);
+                }
             }
-        }
 
-        // Look for deleted files
-        for (String file : oldScan.keySet())
-        {
-            if (!currentScan.containsKey(file))
+            if (LOG.isDebugEnabled())
+                LOG.debug("scanned " + _scannables.keySet() + ": " + _notifications);
+
+            // Process notifications
+            // Only process notifications that are for stable files (ie same in old and current scan).
+            List<String> bulkChanges = new ArrayList<>();
+            for (Iterator<Entry<String, Notification>> iter = _notifications.entrySet().iterator(); iter.hasNext(); )
             {
-                Notification old = _notifications.put(file, Notification.REMOVED);
-                if (old == Notification.ADDED)
-                    _notifications.remove(file);
-            }
-        }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("scanned " + _scannables.keySet() + ": " + _notifications);
-
-        // Process notifications
-        // Only process notifications that are for stable files (ie same in old and current scan).
-        List<String> bulkChanges = new ArrayList<>();
-        for (Iterator<Entry<String, Notification>> iter = _notifications.entrySet().iterator(); iter.hasNext(); )
-        {
-
-            Entry<String, Notification> entry = iter.next();
-            String file = entry.getKey();
-            // Is the file stable?
-            if (oldScan.containsKey(file))
-            {
-                if (!oldScan.get(file).equals(currentScan.get(file)))
+                Entry<String, Notification> entry = iter.next();
+                String file = entry.getKey();
+                // Is the file stable?
+                if (oldScan.containsKey(file))
+                {
+                    if (!oldScan.get(file).equals(currentScan.get(file)))
+                        continue;
+                }
+                else if (currentScan.containsKey(file))
                     continue;
-            }
-            else if (currentScan.containsKey(file))
-                continue;
 
-            // File is stable so notify
-            Notification notification = entry.getValue();
-            iter.remove();
-            bulkChanges.add(file);
-            switch (notification)
-            {
-                case ADDED:
-                    reportAddition(file);
-                    break;
-                case CHANGED:
-                    reportChange(file);
-                    break;
-                case REMOVED:
-                    reportRemoval(file);
-                    break;
-                default:
-                    break;
+                // File is stable so notify
+                Notification notification = entry.getValue();
+                iter.remove();
+                bulkChanges.add(file);
+                switch (notification)
+                {
+                    case ADDED:
+                        reportAddition(file);
+                        break;
+                    case CHANGED:
+                        reportChange(file);
+                        break;
+                    case REMOVED:
+                        reportRemoval(file);
+                        break;
+                    default:
+                        break;
+                }
             }
+            if (!bulkChanges.isEmpty())
+                reportBulkChanges(bulkChanges);
         }
-        if (!bulkChanges.isEmpty())
-            reportBulkChanges(bulkChanges);
     }
 
     private void warn(Object listener, String filename, Throwable th)

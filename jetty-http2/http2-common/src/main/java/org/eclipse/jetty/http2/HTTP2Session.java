@@ -70,6 +70,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1748,6 +1749,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
      */
     private class StreamCreator
     {
+        private final AutoLock lock = new AutoLock();
         private final Queue<Slot> slots = new ArrayDeque<>();
         private Thread flushing;
 
@@ -1825,7 +1827,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             if (streamId <= 0)
             {
-                synchronized (this)
+                try (AutoLock ignored = lock.lock())
                 {
                     streamId = localStreamIds.getAndAdd(2);
                     slots.offer(slot);
@@ -1833,20 +1835,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             }
             else
             {
-                synchronized (this)
-                {
-                    slots.offer(slot);
-                }
+                lock.runLocked(() -> slots.offer(slot));
             }
             return streamId;
         }
 
         private void releaseSlotFlushAndFail(Slot slot, Promise<Stream> promise, Throwable x)
         {
-            synchronized (this)
-            {
-                slots.remove(slot);
-            }
+            lock.runLocked(() -> slots.remove(slot));
             flush();
             promise.failed(x);
         }
@@ -1870,7 +1866,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             while (true)
             {
                 ControlEntry entry;
-                synchronized (this)
+                try (AutoLock ignored = lock.lock())
                 {
                     if (flushing == null)
                         flushing = thread;

@@ -23,6 +23,7 @@ import java.util.Queue;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ public abstract class TransformingFlusher
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
+    private final AutoLock lock = new AutoLock();
     private final Queue<FrameEntry> entries = new ArrayDeque<>();
     private final IteratingCallback flusher = new Flusher();
     private boolean finished = true;
@@ -68,12 +70,10 @@ public abstract class TransformingFlusher
             log.debug("Queuing {}", entry);
 
         boolean enqueued = false;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (failure == null)
-            {
                 enqueued = entries.add(entry);
-            }
         }
 
         if (enqueued)
@@ -84,7 +84,7 @@ public abstract class TransformingFlusher
 
     private void onFailure(Throwable t)
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (failure == null)
                 failure = t;
@@ -97,10 +97,7 @@ public abstract class TransformingFlusher
 
     private FrameEntry pollEntry()
     {
-        synchronized (this)
-        {
-            return entries.poll();
-        }
+        return lock.runLocked(entries::poll);
     }
 
     private class Flusher extends IteratingCallback implements Callback
@@ -137,7 +134,7 @@ public abstract class TransformingFlusher
         protected void onCompleteFailure(Throwable t)
         {
             if (log.isDebugEnabled())
-                log.debug("failed {}", t);
+                log.debug("failed to flush", t);
 
             notifyCallbackFailure(current.callback, t);
             current = null;

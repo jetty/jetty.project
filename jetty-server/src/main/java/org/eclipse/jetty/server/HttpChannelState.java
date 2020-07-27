@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import javax.servlet.AsyncListener;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletResponse;
@@ -32,6 +33,7 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,6 +146,7 @@ public class HttpChannelState
         WAIT,             // Wait for further events
     }
 
+    private final AutoLock _lock = new AutoLock();
     private final HttpChannel _channel;
     private List<AsyncListener> _asyncListeners;
     private State _state = State.IDLE;
@@ -161,17 +164,24 @@ public class HttpChannelState
         _channel = channel;
     }
 
+    AutoLock lock()
+    {
+        return _lock.lock();
+    }
+
+    <R> R runLocked(Supplier<R> code)
+    {
+        return _lock.runLocked(code);
+    }
+
     public State getState()
     {
-        synchronized (this)
-        {
-            return _state;
-        }
+        return runLocked(() -> _state);
     }
 
     public void addListener(AsyncListener listener)
     {
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (_asyncListeners == null)
                 _asyncListeners = new ArrayList<>();
@@ -181,7 +191,7 @@ public class HttpChannelState
 
     public boolean hasListener(AsyncListener listener)
     {
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (_asyncListeners == null)
                 return false;
@@ -200,43 +210,28 @@ public class HttpChannelState
 
     public boolean isSendError()
     {
-        synchronized (this)
-        {
-            return _sendError;
-        }
+        return runLocked(() -> _sendError);
     }
 
     public void setTimeout(long ms)
     {
-        synchronized (this)
-        {
-            _timeoutMs = ms;
-        }
+        runLocked(() -> _timeoutMs = ms);
     }
 
     public long getTimeout()
     {
-        synchronized (this)
-        {
-            return _timeoutMs;
-        }
+        return runLocked(() -> _timeoutMs);
     }
 
     public AsyncContextEvent getAsyncContextEvent()
     {
-        synchronized (this)
-        {
-            return _event;
-        }
+        return runLocked(() -> _event);
     }
 
     @Override
     public String toString()
     {
-        synchronized (this)
-        {
-            return toStringLocked();
-        }
+        return runLocked(this::toStringLocked);
     }
 
     private String toStringLocked()
@@ -262,15 +257,12 @@ public class HttpChannelState
 
     public String getStatusString()
     {
-        synchronized (this)
-        {
-            return getStatusStringLocked();
-        }
+        return runLocked(this::getStatusStringLocked);
     }
 
     public boolean commitResponse()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             switch (_outputState)
             {
@@ -286,7 +278,7 @@ public class HttpChannelState
 
     public boolean partialResponse()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             switch (_outputState)
             {
@@ -302,7 +294,7 @@ public class HttpChannelState
 
     public boolean completeResponse()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             switch (_outputState)
             {
@@ -319,7 +311,7 @@ public class HttpChannelState
 
     public boolean isResponseCommitted()
     {
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
             switch (_outputState)
             {
@@ -333,15 +325,12 @@ public class HttpChannelState
 
     public boolean isResponseCompleted()
     {
-        synchronized (this)
-        {
-            return _outputState == OutputState.COMPLETED;
-        }
+        return runLocked(() -> _outputState == OutputState.COMPLETED);
     }
 
     public boolean abortResponse()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             switch (_outputState)
             {
@@ -365,7 +354,7 @@ public class HttpChannelState
      */
     public Action handling()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("handling {}", toStringLocked());
@@ -407,7 +396,7 @@ public class HttpChannelState
      */
     protected Action unhandle()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("unhandle {}", toStringLocked());
@@ -526,7 +515,7 @@ public class HttpChannelState
     {
         final List<AsyncListener> lastAsyncListeners;
 
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("startAsync {}", toStringLocked());
@@ -575,7 +564,7 @@ public class HttpChannelState
     {
         boolean dispatch = false;
         AsyncContextEvent event;
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("dispatch {} -> {}", toStringLocked(), path);
@@ -611,7 +600,7 @@ public class HttpChannelState
     protected void timeout()
     {
         boolean dispatch = false;
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Timeout {}", toStringLocked());
@@ -639,7 +628,7 @@ public class HttpChannelState
     {
         final List<AsyncListener> listeners;
         AsyncContextEvent event;
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onTimeout {}", toStringLocked());
@@ -687,7 +676,7 @@ public class HttpChannelState
     {
         boolean handle = false;
         AsyncContextEvent event;
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("complete {}", toStringLocked());
@@ -725,7 +714,7 @@ public class HttpChannelState
         // actually handled by #thrownException
 
         AsyncContextEvent event = null;
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("asyncError " + toStringLocked(), failure);
@@ -756,7 +745,7 @@ public class HttpChannelState
     {
         final AsyncContextEvent asyncEvent;
         final List<AsyncListener> asyncListeners;
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("thrownException " + getStatusStringLocked(), th);
@@ -820,7 +809,7 @@ public class HttpChannelState
         });
 
         // check the actions of the listeners
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (_requestState == RequestState.ASYNC && !_sendError)
             {
@@ -892,7 +881,7 @@ public class HttpChannelState
         if (message == null)
             message = HttpStatus.getMessage(code);
 
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("sendError {}", toStringLocked());
@@ -933,7 +922,7 @@ public class HttpChannelState
 
     protected void completing()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("completing {}", toStringLocked());
@@ -954,7 +943,7 @@ public class HttpChannelState
         final AsyncContextEvent event;
         boolean handle = false;
 
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("completed {}", toStringLocked());
@@ -1008,7 +997,7 @@ public class HttpChannelState
             }
             event.completed();
 
-            synchronized (this)
+            try (AutoLock ignored = lock())
             {
                 _requestState = RequestState.COMPLETED;
                 if (_state == State.WAITING)
@@ -1026,7 +1015,7 @@ public class HttpChannelState
     protected void recycle()
     {
         cancelTimeout();
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("recycle {}", toStringLocked());
@@ -1055,7 +1044,7 @@ public class HttpChannelState
     public void upgrade()
     {
         cancelTimeout();
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("upgrade {}", toStringLocked());
@@ -1085,11 +1074,7 @@ public class HttpChannelState
 
     protected void cancelTimeout()
     {
-        final AsyncContextEvent event;
-        synchronized (this)
-        {
-            event = _event;
-        }
+        AsyncContextEvent event = runLocked(() -> _event);
         cancelTimeout(event);
     }
 
@@ -1101,48 +1086,33 @@ public class HttpChannelState
 
     public boolean isIdle()
     {
-        synchronized (this)
-        {
-            return _state == State.IDLE;
-        }
+        return runLocked(() -> _state == State.IDLE);
     }
 
     public boolean isExpired()
     {
-        synchronized (this)
-        {
-            // TODO review
-            return _requestState == RequestState.EXPIRE || _requestState == RequestState.EXPIRING;
-        }
+        // TODO review
+        return runLocked(() -> _requestState == RequestState.EXPIRE || _requestState == RequestState.EXPIRING);
     }
 
     public boolean isInitial()
     {
-        synchronized (this)
-        {
-            return _initial;
-        }
+        return runLocked(() -> _initial);
     }
 
     public boolean isSuspended()
     {
-        synchronized (this)
-        {
-            return _state == State.WAITING || _state == State.HANDLING && _requestState == RequestState.ASYNC;
-        }
+        return runLocked(() -> _state == State.WAITING || _state == State.HANDLING && _requestState == RequestState.ASYNC);
     }
 
     boolean isCompleted()
     {
-        synchronized (this)
-        {
-            return _requestState == RequestState.COMPLETED;
-        }
+        return runLocked(() -> _requestState == RequestState.COMPLETED);
     }
 
     public boolean isAsyncStarted()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (_state == State.HANDLING)
                 return _requestState != RequestState.BLOCKING;
@@ -1152,10 +1122,7 @@ public class HttpChannelState
 
     public boolean isAsync()
     {
-        synchronized (this)
-        {
-            return !_initial || _requestState != RequestState.BLOCKING;
-        }
+        return runLocked(() -> !_initial || _requestState != RequestState.BLOCKING);
     }
 
     public Request getBaseRequest()
@@ -1170,12 +1137,7 @@ public class HttpChannelState
 
     public ContextHandler getContextHandler()
     {
-        final AsyncContextEvent event;
-        synchronized (this)
-        {
-            event = _event;
-        }
-        return getContextHandler(event);
+        return getContextHandler(getAsyncContextEvent());
     }
 
     ContextHandler getContextHandler(AsyncContextEvent event)
@@ -1191,12 +1153,7 @@ public class HttpChannelState
 
     public ServletResponse getServletResponse()
     {
-        final AsyncContextEvent event;
-        synchronized (this)
-        {
-            event = _event;
-        }
-        return getServletResponse(event);
+        return getServletResponse(getAsyncContextEvent());
     }
 
     public ServletResponse getServletResponse(AsyncContextEvent event)
@@ -1240,7 +1197,7 @@ public class HttpChannelState
     public void onReadUnready()
     {
         boolean interested = false;
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onReadUnready {}", toStringLocked());
@@ -1286,7 +1243,7 @@ public class HttpChannelState
     public boolean onContentAdded()
     {
         boolean woken = false;
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onContentAdded {}", toStringLocked());
@@ -1329,7 +1286,7 @@ public class HttpChannelState
     public boolean onReadReady()
     {
         boolean woken = false;
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onReadReady {}", toStringLocked());
@@ -1362,7 +1319,7 @@ public class HttpChannelState
     public boolean onReadPossible()
     {
         boolean woken = false;
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onReadPossible {}", toStringLocked());
@@ -1394,7 +1351,7 @@ public class HttpChannelState
     public boolean onReadEof()
     {
         boolean woken = false;
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onEof {}", toStringLocked());
@@ -1414,7 +1371,7 @@ public class HttpChannelState
     {
         boolean wake = false;
 
-        synchronized (this)
+        try (AutoLock ignored = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onWritePossible {}", toStringLocked());

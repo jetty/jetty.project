@@ -32,6 +32,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
 {
     private static final Logger LOG = LoggerFactory.getLogger(MultiplexConnectionPool.class);
 
+    private final AutoLock lock = new AutoLock();
     private final Deque<Holder> idleConnections;
     private final Map<Connection, Holder> activeConnections;
     private int maxMultiplex;
@@ -80,19 +82,13 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     @Override
     public int getMaxMultiplex()
     {
-        synchronized (this)
-        {
-            return maxMultiplex;
-        }
+        return lock.runLocked(() -> maxMultiplex);
     }
 
     @Override
     public void setMaxMultiplex(int maxMultiplex)
     {
-        synchronized (this)
-        {
-            this.maxMultiplex = maxMultiplex;
-        }
+        lock.runLocked(() -> this.maxMultiplex = maxMultiplex);
     }
 
     @Override
@@ -103,7 +99,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
             LOG.debug("Accepted {} {}", accepted, connection);
         if (accepted)
         {
-            synchronized (this)
+            try (AutoLock ignored = lock.lock())
             {
                 Holder holder = new Holder(connection);
                 activeConnections.put(connection, holder);
@@ -117,20 +113,14 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     @Override
     public boolean isActive(Connection connection)
     {
-        synchronized (this)
-        {
-            return activeConnections.containsKey(connection);
-        }
+        return lock.runLocked(() -> activeConnections.containsKey(connection));
     }
 
     @Override
     protected void onCreated(Connection connection)
     {
-        synchronized (this)
-        {
-            // Use "cold" connections as last.
-            idleConnections.offer(new Holder(connection));
-        }
+        // Use "cold" connections as last.
+        lock.runLocked(() -> idleConnections.offer(new Holder(connection)));
         idle(connection, false);
     }
 
@@ -138,7 +128,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     protected Connection activate()
     {
         Holder result = null;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             for (Holder holder : activeConnections.values())
             {
@@ -169,7 +159,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
         boolean closed = isClosed();
         boolean idle = false;
         Holder holder;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             holder = activeConnections.get(connection);
             if (holder != null)
@@ -205,7 +195,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     {
         boolean activeRemoved = true;
         boolean idleRemoved = false;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             Holder holder = activeConnections.remove(connection);
             if (holder == null)
@@ -236,7 +226,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     {
         super.close();
         List<Connection> connections;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             connections = idleConnections.stream().map(holder -> holder.connection).collect(Collectors.toList());
             connections.addAll(activeConnections.keySet());
@@ -249,7 +239,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     {
         DumpableCollection active;
         DumpableCollection idle;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             active = new DumpableCollection("active", new ArrayList<>(activeConnections.values()));
             idle = new DumpableCollection("idle", new ArrayList<>(idleConnections));
@@ -261,7 +251,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     public boolean sweep()
     {
         List<Connection> toSweep = new ArrayList<>();
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             activeConnections.values().stream()
                 .map(holder -> holder.connection)
@@ -289,7 +279,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     {
         int activeSize;
         int idleSize;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             activeSize = activeConnections.size();
             idleSize = idleConnections.size();

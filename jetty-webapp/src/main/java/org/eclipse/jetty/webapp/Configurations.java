@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,15 +67,18 @@ import org.slf4j.LoggerFactory;
 public class Configurations extends AbstractList<Configuration> implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Configurations.class);
-
+    private static final AutoLock __lock = new AutoLock();
     private static final List<Configuration> __known = new ArrayList<>();
     private static final List<Configuration> __unavailable = new ArrayList<>();
     private static final Set<String> __knownByClassName = new HashSet<>();
 
-    public static synchronized List<Configuration> getKnown()
+    public static List<Configuration> getKnown()
     {
-        if (__known.isEmpty())
+        try (AutoLock ignored = __lock.lock())
         {
+            if (!__known.isEmpty())
+                return __known;
+
             TypeUtil.serviceProviderStream(ServiceLoader.load(Configuration.class)).forEach(provider ->
             {
                 try
@@ -95,7 +99,6 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
                     LOG.warn("Unable to get known Configuration", e);
                 }
             });
-
             sort(__known);
             if (LOG.isDebugEnabled())
             {
@@ -105,53 +108,62 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
                 }
             }
 
-            LOG.debug("Known Configurations {}", __knownByClassName);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Known Configurations {}", __knownByClassName);
+            return __known;
         }
-        return __known;
     }
 
-    public static synchronized void setKnown(String... classes)
+    public static void setKnown(String... classes)
     {
-        if (!__known.isEmpty())
-            throw new IllegalStateException("Known configuration classes already set");
-
-        for (String c : classes)
+        try (AutoLock ignored = __lock.lock())
         {
-            try
+            if (!__known.isEmpty())
+                throw new IllegalStateException("Known configuration classes already set");
+
+            for (String c : classes)
             {
-                Class<? extends Configuration> clazz = Loader.loadClass(c);
-                Configuration configuration = clazz.getConstructor().newInstance();
-                if (!configuration.isAvailable())
+                try
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.warn("Configuration unavailable: " + configuration);
-                    __unavailable.add(configuration);
-                    continue;
+                    Class<? extends Configuration> clazz = Loader.loadClass(c);
+                    Configuration configuration = clazz.getConstructor().newInstance();
+                    if (!configuration.isAvailable())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.warn("Configuration unavailable: " + configuration);
+                        __unavailable.add(configuration);
+                        continue;
+                    }
+                    __known.add(clazz.getConstructor().newInstance());
+                    __knownByClassName.add(c);
                 }
-                __known.add(clazz.getConstructor().newInstance());
-                __knownByClassName.add(c);
+                catch (Exception e)
+                {
+                    LOG.warn("Problem loading known class", e);
+                }
             }
-            catch (Exception e)
+            sort(__known);
+            if (LOG.isDebugEnabled())
             {
-                LOG.warn("Problem loading known class", e);
+                for (Configuration c : __known)
+                {
+                    LOG.debug("known {}", c);
+                }
             }
-        }
-        sort(__known);
-        if (LOG.isDebugEnabled())
-        {
-            for (Configuration c : __known)
-            {
-                LOG.debug("known {}", c);
-            }
-        }
 
-        LOG.debug("Known Configurations {}", __knownByClassName);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Known Configurations {}", __knownByClassName);
+        }
     }
 
-    static synchronized void cleanKnown()
+    // Only used by tests.
+    static void clearKnown()
     {
-        __known.clear();
-        __unavailable.clear();
+        try (AutoLock ignored = __lock.lock())
+        {
+            __known.clear();
+            __unavailable.clear();
+        }
     }
 
     /**

@@ -38,6 +38,7 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Flusher.class);
     private static final ByteBuffer[] EMPTY_BYTE_BUFFERS = new ByteBuffer[0];
 
+    private final AutoLock lock = new AutoLock();
     private final Queue<WindowEntry> windows = new ArrayDeque<>();
     private final Deque<Entry> entries = new ArrayDeque<>();
     private final Queue<Entry> pendingEntries = new ArrayDeque<>();
@@ -64,7 +66,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public void window(IStream stream, WindowUpdateFrame frame)
     {
         Throwable closed;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
             if (closed == null)
@@ -78,7 +80,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public boolean prepend(Entry entry)
     {
         Throwable closed;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
             if (closed == null)
@@ -97,7 +99,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public boolean append(Entry entry)
     {
         Throwable closed;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
             if (closed == null)
@@ -115,18 +117,12 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
     private int getWindowQueueSize()
     {
-        synchronized (this)
-        {
-            return windows.size();
-        }
+        return lock.runLocked(windows::size);
     }
 
     public int getFrameQueueSize()
     {
-        synchronized (this)
-        {
-            return entries.size();
-        }
+        return lock.runLocked(entries::size);
     }
 
     @Override
@@ -135,7 +131,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("Flushing {}", session);
 
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (terminated != null)
                 throw terminated;
@@ -323,7 +319,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         Throwable closed;
         Set<Entry> allEntries;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
             terminated = x;
@@ -352,7 +348,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     void terminate(Throwable cause)
     {
         Throwable closed;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             closed = terminated;
             terminated = cause;

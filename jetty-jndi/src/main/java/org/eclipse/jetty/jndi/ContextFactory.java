@@ -19,7 +19,6 @@
 package org.eclipse.jetty.jndi;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -32,6 +31,7 @@ import javax.naming.spi.ObjectFactory;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,12 +41,12 @@ import org.slf4j.LoggerFactory;
  * This is an object factory that produces a jndi naming
  * context based on a classloader.
  * <p>
- * It is used for the <code>java:comp</code> context.
+ * It is used for the {@code java:comp} context.
  * <p>
- * This object factory is bound at <code>java:comp</code>. When a
+ * This object factory is bound at {@code java:comp}. When a
  * lookup arrives for java:comp,  this object factory
  * is invoked and will return a context specific to
- * the caller's environment (so producing the <code>java:comp/env</code>
+ * the caller's environment (so producing the {@code java:comp/env}
  * specific to a webapp).
  * <p>
  * The context selected is based on classloaders. First
@@ -63,19 +63,21 @@ public class ContextFactory implements ObjectFactory
     /**
      * Map of classloaders to contexts.
      */
-    private static final Map<ClassLoader, Context> __contextMap = Collections.synchronizedMap(new WeakHashMap<>());
+    private static final Map<ClassLoader, Context> __contextMap = new WeakHashMap<>();
 
     /**
      * Threadlocal for injecting a context to use
      * instead of looking up the map.
      */
-    private static final ThreadLocal<Context> __threadContext = new ThreadLocal<Context>();
+    private static final ThreadLocal<Context> __threadContext = new ThreadLocal<>();
 
     /**
      * Threadlocal for setting a classloader which must be used
      * when finding the comp context.
      */
-    private static final ThreadLocal<ClassLoader> __threadClassLoader = new ThreadLocal<ClassLoader>();
+    private static final ThreadLocal<ClassLoader> __threadClassLoader = new ThreadLocal<>();
+
+    private static final AutoLock __lock = new AutoLock();
 
     /**
      * Find or create a context which pertains to a classloader.
@@ -90,8 +92,6 @@ public class ContextFactory implements ObjectFactory
      * <p>
      * If there is no current jetty Context, or it has no associated classloader, we
      * return null.
-     *
-     * @see javax.naming.spi.ObjectFactory#getObjectInstance(java.lang.Object, javax.naming.Name, javax.naming.Context, java.util.Hashtable)
      */
     @Override
     public Object getObjectInstance(Object obj,
@@ -101,7 +101,7 @@ public class ContextFactory implements ObjectFactory
         throws Exception
     {
         //First, see if we have had a context injected into us to use.
-        Context ctx = (Context)__threadContext.get();
+        Context ctx = __threadContext.get();
         if (ctx != null)
         {
             if (LOG.isDebugEnabled())
@@ -111,12 +111,12 @@ public class ContextFactory implements ObjectFactory
 
         //See if there is a classloader to use for finding the comp context
         //Don't use its parent hierarchy if set.
-        ClassLoader loader = (ClassLoader)__threadClassLoader.get();
+        ClassLoader loader = __threadClassLoader.get();
         if (loader != null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Using threadlocal classloader");
-            synchronized (__contextMap)
+            try (AutoLock ignored = __lock.lock())
             {
                 ctx = getContextForClassLoader(loader);
                 if (ctx == null)
@@ -137,12 +137,12 @@ public class ContextFactory implements ObjectFactory
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Trying thread context classloader");
-            synchronized (__contextMap)
+            try (AutoLock ignored = __lock.lock())
             {
                 while (ctx == null && loader != null)
                 {
                     ctx = getContextForClassLoader(loader);
-                    if (ctx == null && loader != null)
+                    if (ctx == null)
                         loader = loader.getParent();
                 }
 
@@ -161,12 +161,12 @@ public class ContextFactory implements ObjectFactory
         //classloader associated with the current context
         if (ContextHandler.getCurrentContext() != null)
         {
-            if (LOG.isDebugEnabled() && loader != null)
+            if (LOG.isDebugEnabled())
                 LOG.debug("Trying classloader of current org.eclipse.jetty.server.handler.ContextHandler");
-            synchronized (__contextMap)
+            try (AutoLock ignored = __lock.lock())
             {
                 loader = ContextHandler.getCurrentContext().getContextHandler().getClassLoader();
-                ctx = (Context)__contextMap.get(loader);
+                ctx = __contextMap.get(loader);
 
                 if (ctx == null && loader != null)
                 {
@@ -221,7 +221,7 @@ public class ContextFactory implements ObjectFactory
         if (loader == null)
             return null;
 
-        return (Context)__contextMap.get(loader);
+        return __lock.runLocked(() -> __contextMap.get(loader));
     }
 
     /**
@@ -233,7 +233,7 @@ public class ContextFactory implements ObjectFactory
      */
     public static Context associateContext(final Context ctx)
     {
-        Context previous = (Context)__threadContext.get();
+        Context previous = __threadContext.get();
         __threadContext.set(ctx);
         return previous;
     }
@@ -245,7 +245,7 @@ public class ContextFactory implements ObjectFactory
 
     public static ClassLoader associateClassLoader(final ClassLoader loader)
     {
-        ClassLoader prev = (ClassLoader)__threadClassLoader.get();
+        ClassLoader prev = __threadClassLoader.get();
         __threadClassLoader.set(loader);
         return prev;
     }
@@ -257,7 +257,7 @@ public class ContextFactory implements ObjectFactory
 
     public static void dump(Appendable out, String indent) throws IOException
     {
-        synchronized (__contextMap)
+        try (AutoLock ignored = __lock.lock())
         {
             Dumpable.dumpObjects(out, indent, String.format("o.e.j.jndi.ContextFactory@%x", __contextMap.hashCode()), __contextMap);
         }

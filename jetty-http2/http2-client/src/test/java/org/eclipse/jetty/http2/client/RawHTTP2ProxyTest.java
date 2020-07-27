@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -316,7 +317,7 @@ public class RawHTTP2ProxyTest
 
     private static class ClientToProxyToServer extends IteratingCallback implements Stream.Listener
     {
-        private final Object lock = this;
+        private final AutoLock lock = new AutoLock();
         private final Map<Stream, Deque<FrameInfo>> frames = new HashMap<>();
         private final Map<Stream, Stream> streams = new HashMap<>();
         private final ServerToProxyToClient serverToProxyToClient = new ServerToProxyToClient();
@@ -339,7 +340,7 @@ public class RawHTTP2ProxyTest
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("CPS queueing {} for {} on {}", frame, stream, stream.getSession());
             boolean connected;
-            synchronized (lock)
+            try (AutoLock ignored = lock.lock())
             {
                 Deque<FrameInfo> deque = frames.computeIfAbsent(stream, s -> new ArrayDeque<>());
                 deque.offer(new FrameInfo(frame, callback));
@@ -363,10 +364,7 @@ public class RawHTTP2ProxyTest
                 {
                     if (LOGGER.isDebugEnabled())
                         LOGGER.debug("CPS connected to {} with {}", address, result);
-                    synchronized (lock)
-                    {
-                        proxyToServerSession = result;
-                    }
+                    lock.runLocked(() -> proxyToServerSession = result);
                     iterate();
                 }
 
@@ -385,7 +383,7 @@ public class RawHTTP2ProxyTest
         {
             Stream proxyToServerStream = null;
             Session proxyToServerSession = null;
-            synchronized (lock)
+            try (AutoLock ignored = lock.lock())
             {
                 for (Map.Entry<Stream, Deque<FrameInfo>> entry : frames.entrySet())
                 {
@@ -415,12 +413,9 @@ public class RawHTTP2ProxyTest
                     @Override
                     public void succeeded(Stream result)
                     {
-                        synchronized (lock)
-                        {
-                            if (LOGGER.isDebugEnabled())
-                                LOGGER.debug("CPS created {}", result);
-                            streams.put(clientToProxyStream, result);
-                        }
+                        if (LOGGER.isDebugEnabled())
+                            LOGGER.debug("CPS created {}", result);
+                        lock.runLocked(() -> streams.put(clientToProxyStream, result));
                         serverToProxyToClient.link(result, clientToProxyStream);
                         ClientToProxyToServer.this.succeeded();
                     }
@@ -549,17 +544,17 @@ public class RawHTTP2ProxyTest
 
     private static class ServerToProxyToClient extends IteratingCallback implements Stream.Listener
     {
-        private final Object lock = this;
+        private final AutoLock lock = new AutoLock();
         private final Map<Stream, Deque<FrameInfo>> frames = new HashMap<>();
         private final Map<Stream, Stream> streams = new HashMap<>();
         private FrameInfo frameInfo;
         private Stream serverToProxyStream;
 
         @Override
-        protected Action process() throws Throwable
+        protected Action process()
         {
             Stream proxyToClientStream = null;
-            synchronized (lock)
+            try (AutoLock ignored = lock.lock())
             {
                 for (Map.Entry<Stream, Deque<FrameInfo>> entry : frames.entrySet())
                 {
@@ -630,7 +625,7 @@ public class RawHTTP2ProxyTest
         {
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("SPC queueing {} for {} on {}", frame, stream, stream.getSession());
-            synchronized (lock)
+            try (AutoLock ignored = lock.lock())
             {
                 Deque<FrameInfo> deque = frames.computeIfAbsent(stream, s -> new ArrayDeque<>());
                 deque.offer(new FrameInfo(frame, callback));
@@ -682,10 +677,7 @@ public class RawHTTP2ProxyTest
 
         private void link(Stream proxyToServerStream, Stream clientToProxyStream)
         {
-            synchronized (lock)
-            {
-                streams.put(proxyToServerStream, clientToProxyStream);
-            }
+            lock.runLocked(() -> streams.put(proxyToServerStream, clientToProxyStream));
             iterate();
         }
     }

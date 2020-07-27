@@ -26,10 +26,12 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.thread.AutoLock;
 
 @ManagedObject
 public class RoundRobinConnectionPool extends AbstractConnectionPool implements ConnectionPool.Multiplexable
 {
+    private final AutoLock lock = new AutoLock();
     private final List<Entry> entries;
     private int maxMultiplex;
     private int index;
@@ -53,19 +55,13 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
     @Override
     public int getMaxMultiplex()
     {
-        synchronized (this)
-        {
-            return maxMultiplex;
-        }
+        return lock.runLocked(() -> maxMultiplex);
     }
 
     @Override
     public void setMaxMultiplex(int maxMultiplex)
     {
-        synchronized (this)
-        {
-            this.maxMultiplex = maxMultiplex;
-        }
+        lock.runLocked(() -> this.maxMultiplex = maxMultiplex);
     }
 
     /**
@@ -86,7 +82,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
     @Override
     protected void onCreated(Connection connection)
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             for (Entry entry : entries)
             {
@@ -104,7 +100,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
     protected Connection activate()
     {
         Connection connection = null;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             int offset = 0;
             int capacity = getMaxConnectionCount();
@@ -139,7 +135,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
     @Override
     public boolean isActive(Connection connection)
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             for (Entry entry : entries)
             {
@@ -155,7 +151,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
     {
         boolean found = false;
         boolean idle = false;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             for (Entry entry : entries)
             {
@@ -180,7 +176,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
     public boolean remove(Connection connection)
     {
         boolean found = false;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             for (Entry entry : entries)
             {
@@ -203,11 +199,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        List<Entry> connections;
-        synchronized (this)
-        {
-            connections = new ArrayList<>(entries);
-        }
+        List<Entry> connections = lock.runLocked(() -> new ArrayList<>(entries));
         Dumpable.dumpObjects(out, indent, out, connections);
     }
 
@@ -216,7 +208,7 @@ public class RoundRobinConnectionPool extends AbstractConnectionPool implements 
     {
         int present = 0;
         int active = 0;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             for (Entry entry : entries)
             {

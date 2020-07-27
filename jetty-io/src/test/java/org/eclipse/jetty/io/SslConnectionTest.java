@@ -214,7 +214,7 @@ public class SslConnectionTest
         }
 
         @Override
-        public synchronized void onFillable()
+        public void onFillable()
         {
             EndPoint endp = getEndPoint();
             try

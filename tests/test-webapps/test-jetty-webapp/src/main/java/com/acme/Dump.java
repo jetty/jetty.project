@@ -919,7 +919,7 @@ public class Dump extends HttpServlet
     }
 
     @Override
-    public synchronized void destroy()
+    public void destroy()
     {
         _timer.cancel();
     }

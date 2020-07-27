@@ -24,6 +24,7 @@ import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -38,8 +39,9 @@ import org.slf4j.LoggerFactory;
 public class HouseKeeper extends AbstractLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(HouseKeeper.class);
-
     public static final long DEFAULT_PERIOD_MS = 1000L * 60 * 10;
+
+    private final AutoLock _lock = new AutoLock();
     protected SessionIdManager _sessionIdManager;
     protected Scheduler _scheduler;
     protected Scheduler.Task _task; //scavenge task
@@ -125,7 +127,7 @@ public class HouseKeeper extends AbstractLifeCycle
      */
     protected void startScavenging() throws Exception
     {
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
             if (_scheduler != null)
             {
@@ -147,7 +149,7 @@ public class HouseKeeper extends AbstractLifeCycle
      */
     protected void stopScavenging() throws Exception
     {
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
             if (_task != null)
             {
@@ -168,7 +170,7 @@ public class HouseKeeper extends AbstractLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
             stopScavenging();
             _scheduler = null;

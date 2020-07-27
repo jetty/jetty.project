@@ -185,8 +185,6 @@ public abstract class Credential implements Serializable
     {
         private static final long serialVersionUID = 5533846540822684240L;
         private static final String __TYPE = "MD5:";
-        private static final Object __md5Lock = new Object();
-        private static MessageDigest __md;
 
         private final byte[] _digest;
 
@@ -210,15 +208,8 @@ public abstract class Credential implements Serializable
                     credentials = new String((char[])credentials);
                 if (credentials instanceof Password || credentials instanceof String)
                 {
-                    byte[] digest;
-                    synchronized (__md5Lock)
-                    {
-                        if (__md == null)
-                            __md = MessageDigest.getInstance("MD5");
-                        __md.reset();
-                        __md.update(credentials.toString().getBytes(StandardCharsets.ISO_8859_1));
-                        digest = __md.digest();
-                    }
+                    MessageDigest md5 = MessageDigest.getInstance("MD5");
+                    byte[] digest = md5.digest(credentials.toString().getBytes(StandardCharsets.ISO_8859_1));
                     return byteEquals(_digest, digest);
                 }
                 else if (credentials instanceof MD5)
@@ -256,27 +247,8 @@ public abstract class Credential implements Serializable
         {
             try
             {
-                byte[] digest;
-                synchronized (__md5Lock)
-                {
-                    if (__md == null)
-                    {
-                        try
-                        {
-                            __md = MessageDigest.getInstance("MD5");
-                        }
-                        catch (Exception e)
-                        {
-                            LOG.warn("Unable to access MD5 message digest", e);
-                            return null;
-                        }
-                    }
-
-                    __md.reset();
-                    __md.update(password.getBytes(StandardCharsets.ISO_8859_1));
-                    digest = __md.digest();
-                }
-
+                MessageDigest md5 = MessageDigest.getInstance("MD5");
+                byte[] digest = md5.digest(password.getBytes(StandardCharsets.ISO_8859_1));
                 return __TYPE + TypeUtil.toString(digest, 16);
             }
             catch (Exception e)

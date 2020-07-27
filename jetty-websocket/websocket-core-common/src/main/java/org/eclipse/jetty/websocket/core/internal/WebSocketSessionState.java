@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.core.internal;
 import java.nio.channels.ClosedChannelException;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -41,6 +42,7 @@ public class WebSocketSessionState
         CLOSED
     }
 
+    private final AutoLock lock = new AutoLock();
     private State _sessionState = State.CONNECTING;
     private byte _incomingContinuation = OpCode.UNDEFINED;
     private byte _outgoingContinuation = OpCode.UNDEFINED;
@@ -48,7 +50,7 @@ public class WebSocketSessionState
 
     public void onConnected()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (_sessionState != State.CONNECTING)
                 throw new IllegalStateException(_sessionState.toString());
@@ -59,7 +61,7 @@ public class WebSocketSessionState
 
     public void onOpen()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             switch (_sessionState)
             {
@@ -78,12 +80,9 @@ public class WebSocketSessionState
         }
     }
 
-    public State getState()
+    private State getState()
     {
-        synchronized (this)
-        {
-            return _sessionState;
-        }
+        return lock.runLocked(() -> _sessionState);
     }
 
     public boolean isClosed()
@@ -105,15 +104,12 @@ public class WebSocketSessionState
 
     public CloseStatus getCloseStatus()
     {
-        synchronized (this)
-        {
-            return _closeStatus;
-        }
+        return lock.runLocked(() -> _closeStatus);
     }
 
     public boolean onClosed(CloseStatus closeStatus)
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (_sessionState == State.CLOSED)
                 return false;
@@ -142,7 +138,7 @@ public class WebSocketSessionState
      */
     public void onError(Throwable t)
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (_sessionState != State.CLOSED || _closeStatus == null)
                 throw new IllegalArgumentException();
@@ -159,7 +155,7 @@ public class WebSocketSessionState
 
     public boolean onEof()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             switch (_sessionState)
             {
@@ -181,7 +177,7 @@ public class WebSocketSessionState
         byte opcode = frame.getOpCode();
         boolean fin = frame.isFin();
 
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (!isOutputOpen())
                 throw new ClosedChannelException();
@@ -224,7 +220,7 @@ public class WebSocketSessionState
         byte opcode = frame.getOpCode();
         boolean fin = frame.isFin();
 
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (!isInputOpen())
                 throw new IllegalStateException(_sessionState.toString());

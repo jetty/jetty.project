@@ -58,6 +58,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 
 public class HTTP2ServerConnection extends HTTP2Connection
 {
@@ -84,7 +85,8 @@ public class HTTP2ServerConnection extends HTTP2Connection
                 return false;
         }
     }
-    
+
+    private final AutoLock lock = new AutoLock();
     private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
     private final List<Frame> upgradeFrames = new ArrayList<>();
     private final AtomicLong totalRequests = new AtomicLong();
@@ -286,27 +288,15 @@ public class HTTP2ServerConnection extends HTTP2Connection
     private void offerHttpChannel(HttpChannelOverHTTP2 channel)
     {
         if (isRecycleHttpChannels())
-        {
-            synchronized (this)
-            {
-                channels.offer(channel);
-            }
-        }
+            lock.runLocked(() -> channels.offer(channel));
     }
 
     private HttpChannelOverHTTP2 pollHttpChannel()
     {
         if (isRecycleHttpChannels())
-        {
-            synchronized (this)
-            {
-                return channels.poll();
-            }
-        }
+            return lock.runLocked(channels::poll);
         else
-        {
             return null;
-        }
     }
 
     public boolean upgrade(Request request, HttpFields.Mutable responseFields)

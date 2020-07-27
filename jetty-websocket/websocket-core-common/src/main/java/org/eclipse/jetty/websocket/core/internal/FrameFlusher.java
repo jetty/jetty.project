@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -50,6 +51,7 @@ public class FrameFlusher extends IteratingCallback
     private static final Logger LOG = LoggerFactory.getLogger(FrameFlusher.class);
     private static final Throwable CLOSED_CHANNEL = new ClosedChannelException();
 
+    private final AutoLock lock = new AutoLock();
     private final LongAdder messagesOut = new LongAdder();
     private final LongAdder bytesOut = new LongAdder();
     private final ByteBufferPool bufferPool;
@@ -114,7 +116,7 @@ public class FrameFlusher extends IteratingCallback
         List<Entry> failedEntries = null;
         CloseStatus closeStatus = null;
 
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (canEnqueue)
             {
@@ -186,11 +188,7 @@ public class FrameFlusher extends IteratingCallback
 
     public void onClose(Throwable cause)
     {
-        synchronized (this)
-        {
-            closedCause = cause == null ? CLOSED_CHANNEL : cause;
-        }
-
+        lock.runLocked(() -> closedCause = cause == null ? CLOSED_CHANNEL : cause);
         iterate();
     }
 
@@ -202,7 +200,7 @@ public class FrameFlusher extends IteratingCallback
 
         boolean flush = false;
         Callback releasingCallback = this;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (closedCause != null)
                 throw closedCause;
@@ -349,16 +347,13 @@ public class FrameFlusher extends IteratingCallback
 
     private int getQueueSize()
     {
-        synchronized (this)
-        {
-            return queue.size();
-        }
+        return lock.runLocked(queue::size);
     }
 
     public void timeoutExpired()
     {
         boolean failed = false;
-        synchronized (FrameFlusher.this)
+        try (AutoLock ignored = lock.lock())
         {
             if (closedCause != null)
                 return;
@@ -409,7 +404,7 @@ public class FrameFlusher extends IteratingCallback
     {
         BufferUtil.clear(batchBuffer);
         releaseAggregate();
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             failedEntries.addAll(queue);
             queue.clear();

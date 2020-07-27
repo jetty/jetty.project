@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,6 +91,8 @@ public class MultiPartFormInputStream
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormInputStream.class);
+
+    private final AutoLock _lock = new AutoLock();
     private final MultiMap<Part> _parts = new MultiMap<>();
     private final InputStream _in;
     private final MultipartConfigElement _config;
@@ -100,7 +103,7 @@ public class MultiPartFormInputStream
     private volatile boolean _deleteOnExit;
     private volatile boolean _writeFilesWithFilenames;
     private volatile int _bufferSize = 16 * 1024;
-    private State state = State.UNPARSED;
+    private State _state = State.UNPARSED;
 
     public class MultiPart implements Part
     {
@@ -375,7 +378,7 @@ public class MultiPartFormInputStream
             if (((ServletInputStream)in).isFinished())
             {
                 _in = null;
-                state = State.PARSED;
+                _state = State.PARSED;
                 return;
             }
         }
@@ -407,24 +410,24 @@ public class MultiPartFormInputStream
      */
     public void deleteParts()
     {
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
-            switch (state)
+            switch (_state)
             {
                 case DELETED:
                 case DELETING:
                     return;
 
                 case PARSING:
-                    state = State.DELETING;
+                    _state = State.DELETING;
                     return;
 
                 case UNPARSED:
-                    state = State.DELETED;
+                    _state = State.DELETED;
                     return;
 
                 case PARSED:
-                    state = State.DELETED;
+                    _state = State.DELETED;
                     break;
             }
         }
@@ -510,19 +513,19 @@ public class MultiPartFormInputStream
      */
     protected void parse()
     {
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
-            switch (state)
+            switch (_state)
             {
                 case UNPARSED:
-                    state = State.PARSING;
+                    _state = State.PARSING;
                     break;
 
                 case PARSED:
                     return;
 
                 default:
-                    _err = new IOException(state.name());
+                    _err = new IOException(_state.name());
                     return;
             }
         }
@@ -563,11 +566,11 @@ public class MultiPartFormInputStream
 
             while (true)
             {
-                synchronized (this)
+                try (AutoLock ignored = _lock.lock())
                 {
-                    if (state != State.PARSING)
+                    if (_state != State.PARSING)
                     {
-                        _err = new IOException(state.name());
+                        _err = new IOException(_state.name());
                         return;
                     }
                 }
@@ -629,21 +632,21 @@ public class MultiPartFormInputStream
         finally
         {
             boolean cleanup = false;
-            synchronized (this)
+            try (AutoLock ignored = _lock.lock())
             {
-                switch (state)
+                switch (_state)
                 {
                     case PARSING:
-                        state = State.PARSED;
+                        _state = State.PARSED;
                         break;
 
                     case DELETING:
-                        state = State.DELETED;
+                        _state = State.DELETED;
                         cleanup = true;
                         break;
 
                     default:
-                        _err = new IllegalStateException(state.name());
+                        _err = new IllegalStateException(_state.name());
                 }
             }
 

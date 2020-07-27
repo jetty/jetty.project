@@ -562,7 +562,7 @@ public class DeploymentManager extends ContainerLifeCycle
         requestAppGoal(appentry, nodeName);
     }
 
-    private synchronized void addOnStartupError(Throwable cause)
+    private void addOnStartupError(Throwable cause)
     {
         if (onStartupErrors == null)
         {

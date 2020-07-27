@@ -76,7 +76,7 @@ public class WebAppContextTest
     @AfterEach
     public void tearDown()
     {
-        Configurations.cleanKnown();
+        Configurations.clearKnown();
     }
 
     @Test
@@ -157,7 +157,7 @@ public class WebAppContextTest
     @Test
     public void testConfigurationClassesFromDefault()
     {
-        Configurations.cleanKnown();
+        Configurations.clearKnown();
         String[] knownAndEnabled = Configurations.getKnown().stream()
             .filter(c -> c.isEnabledByDefault())
             .map(c -> c.getClass().getName())
@@ -182,7 +182,7 @@ public class WebAppContextTest
     @Test
     public void testConfigurationOrder()
     {
-        Configurations.cleanKnown();
+        Configurations.clearKnown();
         WebAppContext wac = new WebAppContext();
         wac.setServer(new Server());
         assertThat(wac.getConfigurations().stream().map(c -> c.getClass().getName()).collect(Collectors.toList()),
@@ -199,7 +199,7 @@ public class WebAppContextTest
     @Test
     public void testConfigurationInstances()
     {
-        Configurations.cleanKnown();
+        Configurations.clearKnown();
         Configuration[] configs = {new WebInfConfiguration()};
         WebAppContext wac = new WebAppContext();
         wac.setConfigurations(configs);

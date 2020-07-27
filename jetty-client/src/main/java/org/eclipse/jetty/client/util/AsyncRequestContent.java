@@ -27,7 +27,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,8 +41,7 @@ public class AsyncRequestContent implements Request.Content, Request.Content.Sub
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncRequestContent.class);
 
-    private final AutoLock lock = new AutoLock();
-    private final Condition flush = lock.newCondition();
+    private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final Deque<Chunk> chunks = new ArrayDeque<>();
     private final String contentType;
     private long length = -1;
@@ -118,7 +116,7 @@ public class AsyncRequestContent implements Request.Content, Request.Content.Sub
     public void fail(Throwable failure)
     {
         List<Callback> toFail = List.of();
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock.WithCondition l = lock.lock())
         {
             if (this.failure == null)
             {
@@ -128,7 +126,7 @@ public class AsyncRequestContent implements Request.Content, Request.Content.Sub
                     .map(chunk -> chunk.callback)
                     .collect(Collectors.toList());
                 chunks.clear();
-                flush.signal();
+                l.signal();
             }
         }
         toFail.forEach(c -> c.failed(failure));
@@ -293,15 +291,15 @@ public class AsyncRequestContent implements Request.Content, Request.Content.Sub
 
     private void notifyFlush()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock.WithCondition l = lock.lock())
         {
-            flush.signal();
+            l.signal();
         }
     }
 
     public void flush() throws IOException
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock.WithCondition l = lock.lock())
         {
             try
             {
@@ -313,7 +311,7 @@ public class AsyncRequestContent implements Request.Content, Request.Content.Sub
                         throw new IOException(failure);
                     if (chunks.isEmpty())
                         return;
-                    flush.await();
+                    l.await();
                 }
             }
             catch (InterruptedException x)
@@ -327,7 +325,7 @@ public class AsyncRequestContent implements Request.Content, Request.Content.Sub
     public void close()
     {
         boolean produce = false;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock.WithCondition l = lock.lock())
         {
             if (closed)
                 return;
@@ -340,7 +338,7 @@ public class AsyncRequestContent implements Request.Content, Request.Content.Sub
                     produce = true;
                 }
             }
-            flush.signal();
+            l.signal();
         }
         if (produce)
             produce();

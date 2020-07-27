@@ -44,6 +44,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -413,6 +414,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
      */
     private class TransportCallback implements Callback
     {
+        private final AutoLock _lock = new AutoLock();
         private State _state = State.IDLE;
         private Callback _callback;
         private boolean _commit;
@@ -420,7 +422,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
         private void reset(Throwable failure)
         {
-            assert Thread.holdsLock(this);
+            assert _lock.isHeldByCurrentThread();
             _state = failure != null ? State.FAILED : State.IDLE;
             _callback = null;
             _commit = false;
@@ -443,7 +445,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
         private Throwable sending(Callback callback, boolean commit)
         {
-            synchronized (this)
+            try (AutoLock ignored = _lock.lock())
             {
                 switch (_state)
                 {
@@ -471,7 +473,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         {
             Callback callback;
             boolean commit;
-            synchronized (this)
+            try (AutoLock ignored = _lock.lock())
             {
                 if (_state != State.SENDING)
                 {
@@ -495,7 +497,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         {
             Callback callback;
             boolean commit;
-            synchronized (this)
+            try (AutoLock ignored = _lock.lock())
             {
                 if (_state != State.SENDING)
                 {
@@ -517,7 +519,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         private boolean idleTimeout(Throwable failure)
         {
             Callback callback = null;
-            synchronized (this)
+            try (AutoLock ignored = _lock.lock())
             {
                 // Ignore idle timeouts if not writing,
                 // as the application may be suspended.
@@ -541,11 +543,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         @Override
         public InvocationType getInvocationType()
         {
-            Callback callback;
-            synchronized (this)
-            {
-                callback = _callback;
-            }
+            Callback callback = _lock.runLocked(() -> _callback);
             return callback != null ? callback.getInvocationType() : Callback.super.getInvocationType();
         }
     }

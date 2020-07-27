@@ -32,6 +32,8 @@ import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.eclipse.jetty.util.thread.AutoLock;
+
 /**
  * RolloverFileOutputStream.
  *
@@ -53,11 +55,11 @@ public class RolloverFileOutputStream extends OutputStream
     static final String ROLLOVER_FILE_BACKUP_FORMAT = "HHmmssSSS";
     static final int ROLLOVER_FILE_RETAIN_DAYS = 31;
 
+    private final AutoLock _lock = new AutoLock();
     private OutputStream _out;
     private RollTask _rollTask;
     private SimpleDateFormat _fileBackupFormat;
     private SimpleDateFormat _fileDateFormat;
-
     private String _filename;
     private File _file;
     private boolean _append;
@@ -176,11 +178,7 @@ public class RolloverFileOutputStream extends OutputStream
         // Calculate Today's Midnight, based on Configured TimeZone (will be in past, even if by a few milliseconds)
         setFile(now);
 
-        synchronized (RolloverFileOutputStream.class)
-        {
-            if (__rollover == null)
-                __rollover = new Timer(RolloverFileOutputStream.class.getName(), true);
-        }
+        __rollover = new Timer(RolloverFileOutputStream.class.getName(), true);
 
         // This will schedule the rollover event to the next midnight
         scheduleNextRollover(now);
@@ -205,10 +203,7 @@ public class RolloverFileOutputStream extends OutputStream
 
         // Schedule next rollover event to occur, based on local machine's Unix Epoch milliseconds
         long delay = midnight.toInstant().toEpochMilli() - now.toInstant().toEpochMilli();
-        synchronized (RolloverFileOutputStream.class)
-        {
-            __rollover.schedule(_rollTask, delay);
-        }
+        __rollover.schedule(_rollTask, delay);
     }
 
     public String getFilename()
@@ -234,7 +229,7 @@ public class RolloverFileOutputStream extends OutputStream
         File oldFile = null;
         File newFile = null;
         File backupFile = null;
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
             // Check directory
             File file = new File(_filename);
@@ -350,27 +345,25 @@ public class RolloverFileOutputStream extends OutputStream
     @Override
     public void write(int b) throws IOException
     {
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
             _out.write(b);
         }
     }
 
     @Override
-    public void write(byte[] buf)
-        throws IOException
+    public void write(byte[] buf) throws IOException
     {
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
             _out.write(buf);
         }
     }
 
     @Override
-    public void write(byte[] buf, int off, int len)
-        throws IOException
+    public void write(byte[] buf, int off, int len) throws IOException
     {
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
             _out.write(buf, off, len);
         }
@@ -379,17 +372,16 @@ public class RolloverFileOutputStream extends OutputStream
     @Override
     public void flush() throws IOException
     {
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
             _out.flush();
         }
     }
 
     @Override
-    public void close()
-        throws IOException
+    public void close() throws IOException
     {
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
             try
             {
@@ -402,13 +394,9 @@ public class RolloverFileOutputStream extends OutputStream
             }
         }
 
-        synchronized (RolloverFileOutputStream.class)
-        {
-            if (_rollTask != null)
-            {
-                _rollTask.cancel();
-            }
-        }
+        RollTask rollTask = _rollTask;
+        if (rollTask != null)
+            rollTask.cancel();
     }
 
     private class RollTask extends TimerTask

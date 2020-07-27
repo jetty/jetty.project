@@ -35,6 +35,7 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -54,19 +55,17 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
      */
     private static final int MIN_BUFFER_SIZE = Generator.MAX_HEADER_LENGTH;
 
+    private final AutoLock lock = new AutoLock();
     private final ByteBufferPool bufferPool;
     private final Generator generator;
     private final Parser parser;
     private final WebSocketCoreSession coreSession;
-
     private final Flusher flusher;
     private final Random random;
-
     private long demand;
     private boolean fillingAndParsing;
     private final LongAdder messagesIn = new LongAdder();
     private final LongAdder bytesIn = new LongAdder();
-
     // Read / Parse variables
     private RetainableByteBuffer networkBuffer;
     private boolean useInputDirectByteBuffers;
@@ -265,7 +264,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private void acquireNetworkBuffer()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (networkBuffer == null)
                 networkBuffer = newNetworkBuffer(getInputBufferSize());
@@ -274,7 +273,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private void reacquireNetworkBuffer()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (networkBuffer == null)
                 throw new IllegalStateException();
@@ -294,7 +293,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private void releaseNetworkBuffer()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (networkBuffer == null)
                 throw new IllegalStateException();
@@ -329,7 +328,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             throw new IllegalArgumentException("Demand must be positive");
 
         boolean fillAndParse = false;
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("demand {} d={} fp={} {} {}", n, demand, fillingAndParsing, networkBuffer, this);
@@ -362,7 +361,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     public boolean moreDemand()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("moreDemand? d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
@@ -382,7 +381,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     public boolean meetDemand()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("meetDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
@@ -401,11 +400,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     public void cancelDemand()
     {
-        synchronized (this)
+        try (AutoLock ignored = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("cancelDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
-
             demand = -1;
         }
     }
@@ -489,10 +487,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Set initial buffer - {}", BufferUtil.toDetailString(initialBuffer));
-        synchronized (this)
-        {
-            networkBuffer = newNetworkBuffer(initialBuffer.remaining());
-        }
+        lock.runLocked(() -> networkBuffer = newNetworkBuffer(initialBuffer.remaining()));
         ByteBuffer buffer = networkBuffer.getBuffer();
         BufferUtil.clearToFill(buffer);
         BufferUtil.put(initialBuffer, buffer);

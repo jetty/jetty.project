@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,7 +164,7 @@ public class Invoker extends HttpServlet
                 return;
             }
 
-            synchronized (_servletHandler)
+            try (AutoLock ignored = _servletHandler.lock())
             {
                 // find the entry for the invoker (me)
                 _invokerEntry = _servletHandler.getMappedServlet(servletPath);
@@ -175,7 +176,7 @@ public class Invoker extends HttpServlet
                 if (entry != null && !entry.equals(_invokerEntry))
                 {
                     // Use the holder
-                    holder = (ServletHolder)entry.getServletHolder();
+                    holder = entry.getServletHolder();
                 }
                 else
                 {

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.util.security.Credential;
+import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * UserInfo
@@ -34,10 +35,10 @@ import org.eclipse.jetty.util.security.Credential;
  */
 public class UserInfo
 {
-
-    private String _userName;
-    private Credential _credential;
-    protected List<String> _roleNames = new ArrayList<>();
+    private final AutoLock _lock = new AutoLock();
+    protected final List<String> _roleNames = new ArrayList<>();
+    private final String _userName;
+    private final Credential _credential;
     protected boolean _rolesLoaded = false;
 
     /**
@@ -80,7 +81,7 @@ public class UserInfo
 
     public void fetchRoles() throws Exception
     {
-        synchronized (_roleNames)
+        try (AutoLock ignored = _lock.lock())
         {
             if (!_rolesLoaded)
             {

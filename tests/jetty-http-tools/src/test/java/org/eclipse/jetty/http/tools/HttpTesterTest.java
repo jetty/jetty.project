@@ -256,7 +256,7 @@ public class HttpTesterTest
         PipedInputStream stream = new PipedInputStream(src)
         {
             @Override
-            public synchronized int read(byte[] b, int off, int len) throws IOException
+            public int read(byte[] b, int off, int len) throws IOException
             {
                 if (available() == 0)
                     return 0;
