@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.cloud.datastore.Blob;
 import com.google.cloud.datastore.BlobValue;
@@ -640,7 +641,30 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     @Override
     public void doCleanOrphans(long timeLimit)
     {
-        // TODO
+        // Gcloud datastore does not support DELETE statements with query params.
+        // Therefore need to do a query, and then a separate operation to delete keys 
+        //returned.
+        try
+        {    
+            Set<ExpiryInfo> info = null;
+            if (_indexesPresent)
+                info = queryExpiryByIndex(timeLimit);
+            else
+                info = queryExpiryByEntity(timeLimit);
+
+            //iterate over each of the returned infos,
+            //make a key for each, then do the delete
+            Set<Key> keys = info.stream().map(i ->
+            {
+                return makeKey(i.getId(), i.getContextPath(), i.getVhost());
+            }).collect(Collectors.toSet());
+            
+            _datastore.delete(keys.toArray(new Key[keys.size()]));
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Error deleting orphaned sessions", e);
+        }   
     }
 
     /**
@@ -890,7 +914,12 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      */
     protected Key makeKey(String id, SessionContext context)
     {
-        String key = context.getCanonicalContextPath() + "_" + context.getVhost() + "_" + id;
+        return makeKey(id, context.getCanonicalContextPath(), context.getVhost());
+    }
+    
+    protected Key makeKey(String id, String canonicalContextPath, String canonicalVHost)
+    {
+        String key = canonicalContextPath + "_" + canonicalVHost + "_" + id;
         return _keyFactory.newKey(key);
     }
 

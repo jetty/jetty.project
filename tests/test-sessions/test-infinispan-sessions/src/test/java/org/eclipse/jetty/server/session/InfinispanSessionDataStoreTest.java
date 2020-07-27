@@ -136,12 +136,6 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
     }
     
     @Test
-    public void testCleanOrphans() throws Exception
-    {
-        super.testCleanOrphans();
-    }
-    
-    @Test
     public void testQuery() throws Exception
     {
         InfinispanSessionData sd1 = new InfinispanSessionData("sd1", "", "", 0, 0, 0, 1000);
