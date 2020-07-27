@@ -34,9 +34,13 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.Callback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpChannelOverHTTP2 extends HttpChannel
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverHTTP2.class);
+
     private final Stream.Listener listener = new Listener();
     private final HttpConnectionOverHTTP2 connection;
     private final Session session;
