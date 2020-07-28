@@ -49,7 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class CachingSessionDataStoreTest
 {
-
     @Test
     public void testSessionCRUD() throws Exception
     {

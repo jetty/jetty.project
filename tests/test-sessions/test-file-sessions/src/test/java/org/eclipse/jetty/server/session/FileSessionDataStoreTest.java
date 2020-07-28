@@ -93,11 +93,4 @@ public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
             Thread.currentThread().setContextClassLoader(old);
         }
     }
-
-    @Override
-    @Test
-    public void testStoreSession() throws Exception
-    {
-        super.testStoreSession();
-    }
 }

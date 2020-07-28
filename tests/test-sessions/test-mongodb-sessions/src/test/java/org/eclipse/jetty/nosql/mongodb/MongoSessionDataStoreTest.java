@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
-
     @BeforeEach
     public void beforeEach() throws Exception
     {

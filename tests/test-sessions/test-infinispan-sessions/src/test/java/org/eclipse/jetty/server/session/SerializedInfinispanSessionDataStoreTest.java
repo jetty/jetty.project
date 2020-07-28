@@ -39,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
-
     public InfinispanTestSupport _testSupport;
 
     @BeforeEach
@@ -114,9 +113,6 @@ public class SerializedInfinispanSessionDataStoreTest extends AbstractSessionDat
         assertThrows(UnreadableSessionDataException.class,() -> store.load("222"));
     }
 
-    /**
-     *
-     */
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {

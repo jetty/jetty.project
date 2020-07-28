@@ -117,9 +117,6 @@ public class InfinispanSessionDataStoreTest extends AbstractSessionDataStoreTest
         assertThrows(UnreadableSessionDataException.class, () -> store.load("222"));
     }
 
-    /**
-     *
-     */
     @Override
     public boolean checkSessionPersisted(SessionData data) throws Exception
     {

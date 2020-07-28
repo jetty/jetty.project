@@ -37,7 +37,6 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
-
     HazelcastTestHelper _testHelper;
 
     @Override
