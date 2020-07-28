@@ -56,11 +56,10 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.util.ShutdownUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WebSocketClient extends ContainerLifeCycle implements WebSocketPolicy, WebSocketContainer, Graceful
+public class WebSocketClient extends ContainerLifeCycle implements WebSocketPolicy, WebSocketContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketClient.class);
     private final WebSocketCoreClient coreClient;
@@ -96,6 +95,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
 
         frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this);
         sessionListeners.add(sessionTracker);
+        addBean(sessionTracker);
     }
 
     public CompletableFuture<Session> connect(Object websocket, URI toUri) throws IOException
@@ -411,30 +411,11 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     @Override
-    protected void doStart() throws Exception
-    {
-        sessionTracker.start();
-        super.doStart();
-    }
-
-    @Override
     protected void doStop() throws Exception
     {
         if (getStopTimeout() > 0)
             Graceful.shutdown(this).get(getStopTimeout(), TimeUnit.MILLISECONDS);
         super.doStop();
-    }
-
-    @Override
-    public CompletableFuture<Void> shutdown()
-    {
-        return ShutdownUtil.stop(sessionTracker);
-    }
-
-    @Override
-    public boolean isShutdown()
-    {
-        return sessionTracker.isStopped();
     }
 
     @Override

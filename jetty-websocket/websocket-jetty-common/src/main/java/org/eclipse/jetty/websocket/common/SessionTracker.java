@@ -20,16 +20,19 @@ package org.eclipse.jetty.websocket.common;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 
-public class SessionTracker extends AbstractLifeCycle implements WebSocketSessionListener
+public class SessionTracker extends AbstractLifeCycle implements WebSocketSessionListener, Graceful
 {
     private final List<Session> sessions = new CopyOnWriteArrayList<>();
+    private boolean isShutdown = false;
 
     public Collection<Session> getSessions()
     {
@@ -49,17 +52,39 @@ public class SessionTracker extends AbstractLifeCycle implements WebSocketSessio
     }
 
     @Override
+    protected void doStart() throws Exception
+    {
+        isShutdown = false;
+        super.doStart();
+    }
+
+    @Override
     protected void doStop() throws Exception
     {
-        for (Session session : sessions)
-        {
-            if (Thread.interrupted())
-                break;
-
-            // SHUTDOWN is abnormal close status so it will hard close connection after sent.
-            session.close(StatusCode.SHUTDOWN, "Container being shut down");
-        }
-
+        sessions.clear();
         super.doStop();
+    }
+
+    @Override
+    public CompletableFuture<Void> shutdown()
+    {
+        isShutdown = true;
+        return Graceful.shutdown(() ->
+        {
+            for (Session session : sessions)
+            {
+                if (Thread.interrupted())
+                    break;
+
+                // SHUTDOWN is abnormal close status so it will hard close connection after sent.
+                session.close(StatusCode.SHUTDOWN, "Container being shut down");
+            }
+        });
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        return isShutdown;
     }
 }

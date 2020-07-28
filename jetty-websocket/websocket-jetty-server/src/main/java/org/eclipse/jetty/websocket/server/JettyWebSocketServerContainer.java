@@ -22,7 +22,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import javax.servlet.ServletContext;
@@ -30,7 +29,6 @@ import javax.servlet.ServletContext;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
@@ -45,13 +43,12 @@ import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.ReflectUtils;
-import org.eclipse.jetty.websocket.util.ShutdownUtil;
 import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class JettyWebSocketServerContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketPolicy, LifeCycle.Listener, Graceful
+public class JettyWebSocketServerContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketPolicy, LifeCycle.Listener
 {
     public static final String JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE = WebSocketContainer.class.getName();
 
@@ -122,6 +119,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         frameHandlerFactory = factory;
 
         addSessionListener(sessionTracker);
+        addBean(sessionTracker);
     }
 
     public void addMapping(String pathSpec, JettyWebSocketCreator creator)
@@ -281,24 +279,5 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     public void setAutoFragment(boolean autoFragment)
     {
         customizer.setAutoFragment(autoFragment);
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        sessionTracker.start();
-        super.doStart();
-    }
-
-    @Override
-    public CompletableFuture<Void> shutdown()
-    {
-        return ShutdownUtil.stop(sessionTracker);
-    }
-
-    @Override
-    public boolean isShutdown()
-    {
-        return sessionTracker.isStopped();
     }
 }
