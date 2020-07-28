@@ -245,21 +245,21 @@ public class IncludedServletTest
             }
 
             assertThat(result, Matchers.contains(
-                "BEFORE0: javax.servlet.include.context_path='null'",
-                "BEFORE0: javax.servlet.include.servlet_path='null'",
-                "BEFORE0: javax.servlet.include.path_info='null'",
-                "BEFORE1: javax.servlet.include.context_path=''",
-                "BEFORE1: javax.servlet.include.servlet_path='/attr'",
-                "BEFORE1: javax.servlet.include.path_info='/one'",
-                "DURING: javax.servlet.include.context_path=''",
-                "DURING: javax.servlet.include.servlet_path='/attr'",
-                "DURING: javax.servlet.include.path_info='/two'",
-                "AFTER1: javax.servlet.include.context_path=''",
-                "AFTER1: javax.servlet.include.servlet_path='/attr'",
-                "AFTER1: javax.servlet.include.path_info='/one'",
-                "AFTER0: javax.servlet.include.context_path='null'",
-                "AFTER0: javax.servlet.include.servlet_path='null'",
-                "AFTER0: javax.servlet.include.path_info='null'"
+                "BEFORE0: jakarta.servlet.include.context_path='null'",
+                "BEFORE0: jakarta.servlet.include.servlet_path='null'",
+                "BEFORE0: jakarta.servlet.include.path_info='null'",
+                "BEFORE1: jakarta.servlet.include.context_path=''",
+                "BEFORE1: jakarta.servlet.include.servlet_path='/attr'",
+                "BEFORE1: jakarta.servlet.include.path_info='/one'",
+                "DURING: jakarta.servlet.include.context_path=''",
+                "DURING: jakarta.servlet.include.servlet_path='/attr'",
+                "DURING: jakarta.servlet.include.path_info='/two'",
+                "AFTER1: jakarta.servlet.include.context_path=''",
+                "AFTER1: jakarta.servlet.include.servlet_path='/attr'",
+                "AFTER1: jakarta.servlet.include.path_info='/one'",
+                "AFTER0: jakarta.servlet.include.context_path='null'",
+                "AFTER0: jakarta.servlet.include.servlet_path='null'",
+                "AFTER0: jakarta.servlet.include.path_info='null'"
             ));
         }
         finally
