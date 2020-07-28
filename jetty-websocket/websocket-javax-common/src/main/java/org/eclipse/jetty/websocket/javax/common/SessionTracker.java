@@ -57,6 +57,9 @@ public class SessionTracker extends AbstractLifeCycle implements JavaxWebSocketS
     {
         for (Session session : sessions)
         {
+            if (Thread.interrupted())
+                break;
+
             try
             {
                 // GOING_AWAY is abnormal close status so it will hard close connection after sent.

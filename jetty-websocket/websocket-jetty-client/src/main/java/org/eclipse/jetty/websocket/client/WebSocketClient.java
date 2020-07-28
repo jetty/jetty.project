@@ -71,7 +71,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     private final Configuration.ConfigurationCustomizer configurationCustomizer = new Configuration.ConfigurationCustomizer();
     private final WebSocketComponents components = new WebSocketComponents();
     private boolean stopAtShutdown = false;
-    private long _stopTimeout = 200;
+    private long _stopTimeout = Long.MAX_VALUE;
 
     /**
      * Instantiate a WebSocketClient with defaults
@@ -391,6 +391,10 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         stopAtShutdown = stop;
     }
 
+    /**
+     * The timeout to allow all remaining open Sessions to be closed gracefully using  the close code {@link org.eclipse.jetty.websocket.api.StatusCode#SHUTDOWN}.
+     * @param stopTimeout the time in ms to wait for the graceful close, use a value less than or equal to 0 to not gracefully close.
+     */
     public void setStopTimeout(long stopTimeout)
     {
         _stopTimeout = stopTimeout;
@@ -424,7 +428,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     @Override
     public CompletableFuture<Void> shutdown()
     {
-        return ShutdownUtil.shutdown(sessionTracker);
+        return ShutdownUtil.stop(sessionTracker);
     }
 
     @Override

@@ -293,7 +293,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     @Override
     public CompletableFuture<Void> shutdown()
     {
-        return ShutdownUtil.shutdown(sessionTracker);
+        return ShutdownUtil.stop(sessionTracker);
     }
 
     @Override

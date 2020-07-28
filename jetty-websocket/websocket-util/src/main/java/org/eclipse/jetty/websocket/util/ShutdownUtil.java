@@ -30,11 +30,11 @@ public class ShutdownUtil
     private static final Logger LOG = LoggerFactory.getLogger(ShutdownUtil.class);
 
     /**
-     * Shutdown a {@link LifeCycle} in a new daemon thread and be notified on the result in a {@link CompletableFuture}.
+     * Stop a {@link LifeCycle} in a new daemon thread and be notified of the result in a {@link CompletableFuture}.
      * @param lifeCycle the LifeCycle to stop.
      * @return the CompletableFuture to be notified when the stop either completes or fails.
      */
-    public static CompletableFuture<Void> shutdown(LifeCycle lifeCycle)
+    public static CompletableFuture<Void> stop(LifeCycle lifeCycle)
     {
         AtomicReference<Thread> stopThreadReference = new AtomicReference<>();
         CompletableFuture<Void> shutdown = new CompletableFuture<>()

@@ -211,7 +211,7 @@ public abstract class JavaxWebSocketContainer extends ContainerLifeCycle impleme
     @Override
     public CompletableFuture<Void> shutdown()
     {
-        return ShutdownUtil.shutdown(sessionTracker);
+        return ShutdownUtil.stop(sessionTracker);
     }
 
     @Override

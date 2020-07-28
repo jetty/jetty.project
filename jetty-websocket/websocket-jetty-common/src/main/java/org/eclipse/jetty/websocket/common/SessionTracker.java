@@ -53,6 +53,9 @@ public class SessionTracker extends AbstractLifeCycle implements WebSocketSessio
     {
         for (Session session : sessions)
         {
+            if (Thread.interrupted())
+                break;
+
             // SHUTDOWN is abnormal close status so it will hard close connection after sent.
             session.close(StatusCode.SHUTDOWN, "Container being shut down");
         }
