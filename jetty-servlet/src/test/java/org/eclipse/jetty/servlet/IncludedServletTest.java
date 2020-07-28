@@ -42,7 +42,6 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -108,12 +107,13 @@ public class IncludedServletTest
 
         private void dumpAttrs(String tag, HttpServletRequest req, ServletOutputStream out) throws IOException
         {
-            out.println(String.format("%s: %s='%s'", tag, RequestDispatcher.INCLUDE_CONTEXT_PATH,
-                req.getAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH)));
-            out.println(String.format("%s: %s='%s'", tag, RequestDispatcher.INCLUDE_SERVLET_PATH,
-                req.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH)));
-            out.println(String.format("%s: %s='%s'", tag, RequestDispatcher.INCLUDE_PATH_INFO,
-                req.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO)));
+            String contextPath = (String)req.getAttribute(RequestDispatcher.INCLUDE_CONTEXT_PATH);
+            String servletPath = (String)req.getAttribute(RequestDispatcher.INCLUDE_SERVLET_PATH);
+            String pathInfo = (String)req.getAttribute(RequestDispatcher.INCLUDE_PATH_INFO);
+
+            out.println(String.format("%s: %s='%s'", tag, RequestDispatcher.INCLUDE_CONTEXT_PATH, contextPath));
+            out.println(String.format("%s: %s='%s'", tag, RequestDispatcher.INCLUDE_SERVLET_PATH, servletPath));
+            out.println(String.format("%s: %s='%s'", tag, RequestDispatcher.INCLUDE_PATH_INFO, pathInfo));
         }
     }
 
@@ -221,7 +221,6 @@ public class IncludedServletTest
         }
     }
 
-    @Disabled // TODO: complete merge of PR #5058.
     @Test
     public void testIncludeAttributes() throws IOException
     {
