@@ -58,7 +58,7 @@ public class MemcachedTestHelper
         }
 
         @Override
-        public boolean exists(String id) throws Exception
+        public boolean doExists(String id) throws Exception
         {
             return _store.get(id) != null;
         }

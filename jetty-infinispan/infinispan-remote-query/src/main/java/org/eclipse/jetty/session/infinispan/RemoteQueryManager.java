@@ -58,7 +58,8 @@ public class RemoteQueryManager implements QueryManager
             .and()
             .having("expiry").lte(time)
             .and()
-            .having("expiry").gt(0).build();
+            .having("expiry").gt(0)
+            .build();
 
         List<Object[]> list = q.list();
         Set<String> ids = list.stream().map(a -> (String)a[0]).collect(toSet());
@@ -72,7 +73,8 @@ public class RemoteQueryManager implements QueryManager
         Query q = qf.from(InfinispanSessionData.class)
             .select("id", "contextPath", "vhost")
             .having("expiry").lte(time)
-            .and().having("expiry").gt(0)
+            .and()
+            .having("expiry").gt(0)
             .build();
         List<Object[]> list = q.list();
         list.stream().forEach(a ->
@@ -87,5 +89,25 @@ public class RemoteQueryManager implements QueryManager
                 LOG.warn("Error deleting {}", key, e);
             }
         });  
+    }
+
+    @Override
+    public boolean exists(SessionContext sessionContext, String id)
+    {
+        Objects.requireNonNull(sessionContext);
+        QueryFactory qf = Search.getQueryFactory(_cache);
+        Query q = qf.from(InfinispanSessionData.class)
+            .select("id")
+            .having("id").eq(id)
+            .and()
+            .having("contextPath").eq(sessionContext.getCanonicalContextPath())
+            .and()
+            .having("expiry").gt(System.currentTimeMillis())
+            .or()
+            .having("expiry").lte(0)
+            .build();
+
+        List<Object[]> list = q.list();
+        return !list.isEmpty();
     }
 }

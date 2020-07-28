@@ -779,7 +779,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     }
    
     @Override
-    public boolean exists(String id) throws Exception
+    public boolean doExists(String id) throws Exception
     {
         if (_indexesPresent)
         {

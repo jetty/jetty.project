@@ -79,7 +79,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
-    public boolean exists(String id)
+    public boolean doExists(String id)
     {
         return false;
     }

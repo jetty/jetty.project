@@ -447,7 +447,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
-    public boolean exists(String id) throws Exception
+    public boolean doExists(String id) throws Exception
     {
         String idWithContext = getIdWithContext(id);
         String filename = _sessionFileMap.get(idWithContext);

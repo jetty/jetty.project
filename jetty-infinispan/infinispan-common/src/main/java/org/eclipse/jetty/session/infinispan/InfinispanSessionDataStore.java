@@ -236,48 +236,26 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
     {
         return _passivating;
     }
-    
+
     @Override
-    public boolean exists(String id) throws Exception
+    public boolean doExists(String id) throws Exception
     {
-        // TODO find a better way to do this that does not pull into memory the
-        // whole session object
-        final AtomicBoolean reference = new AtomicBoolean();
-        final AtomicReference<Exception> exception = new AtomicReference<>();
-
-        Runnable load = new Runnable()
+        //if we have a query manager we can do a query with a projection to check
+        //if there is an unexpired session with the given id
+        if (_queryManager != null)
+            return _queryManager.exists(_context, id);
+        else
         {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    SessionData sd = load(id);
-                    if (sd == null)
-                    {
-                        reference.set(false);
-                        return;
-                    }
+            //no query manager, load the entire session data object
+            SessionData sd = doLoad(id);
+            if (sd == null)
+                return false;
 
-                    if (sd.getExpiry() <= 0)
-                        reference.set(true); //never expires
-                    else
-                        reference.set(sd.getExpiry() > System.currentTimeMillis()); //not expired yet
-                }
-                catch (Exception e)
-                {
-                    exception.set(e);
-                }
-            }
-        };
-        
-        //ensure the load runs in the context classloader scope
-        _context.run(load);
-        
-        if (exception.get() != null)
-            throw exception.get();
-        
-        return reference.get();
+            if (sd.getExpiry() <= 0)
+                return true;
+            else
+                return (sd.getExpiry() > System.currentTimeMillis()); //not expired yet
+        }
     }
 
     @Override

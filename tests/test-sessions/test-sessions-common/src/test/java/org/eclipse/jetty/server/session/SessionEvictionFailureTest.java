@@ -66,7 +66,7 @@ public class SessionEvictionFailureTest
         }
 
         @Override
-        public boolean exists(String id) throws Exception
+        public boolean doExists(String id) throws Exception
         {
             return true;
         }

@@ -44,6 +44,14 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     protected int _savePeriodSec = 0; //time in sec between saves
 
     /**
+     * Check if a session for the given id exists.
+     * 
+     * @param id the session id to check
+     * @return true if the session exists in the persistent store, false otherwise
+     */
+    public abstract boolean doExists(String id) throws Exception;
+    
+    /**
      * Store the session data persistently.
      *
      * @param id identity of session to store
@@ -218,6 +226,34 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         _context.run(r);
         if (exception.get() != null)
             throw exception.get();
+    }
+
+    @Override
+    public boolean exists(String id) throws Exception
+    {
+        final AtomicReference<Exception> exception = new AtomicReference<>();
+        final AtomicReference<Boolean> result = new AtomicReference<>();
+        Runnable r = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    result.set(doExists(id));
+                }
+                catch (Exception e)
+                {
+                    exception.set(e);
+                }
+            }
+        };
+
+        _context.run(r);
+        if (exception.get() != null)
+            throw exception.get();
+        
+        return result.get();
     }
 
     @Override

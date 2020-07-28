@@ -957,7 +957,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
-    public boolean exists(String id)
+    public boolean doExists(String id)
         throws Exception
     {
         try (Connection connection = _dbAdaptor.getConnection())

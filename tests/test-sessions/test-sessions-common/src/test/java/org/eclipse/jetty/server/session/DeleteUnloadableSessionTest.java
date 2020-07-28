@@ -63,7 +63,7 @@ public class DeleteUnloadableSessionTest
         }
 
         @Override
-        public boolean exists(String id)
+        public boolean doExists(String id)
         {
             return o != null;
         }

@@ -64,7 +64,7 @@ public abstract class AbstractSessionCacheTest
         }
 
         @Override
-        public boolean exists(String id) throws Exception
+        public boolean doExists(String id) throws Exception
         {
             return _data != null;
         }

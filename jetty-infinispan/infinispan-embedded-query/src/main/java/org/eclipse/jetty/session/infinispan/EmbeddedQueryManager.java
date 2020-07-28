@@ -83,4 +83,23 @@ public class EmbeddedQueryManager implements QueryManager
             }
         });
     }
+
+    @Override
+    public boolean exists(SessionContext sessionContext, String id)
+    {
+        Objects.requireNonNull(sessionContext);
+        QueryFactory qf = Search.getQueryFactory(_cache);
+        Query q = qf.from(InfinispanSessionData.class)
+            .select("id")
+            .having("id").eq(id)
+            .and()
+            .having("contextPath").eq(sessionContext.getCanonicalContextPath())
+            .and()
+            .having("expiry").gt(System.currentTimeMillis())
+            .or()
+            .having("expiry").lte(0)
+            .build();
+        List<Object[]> list = q.list();
+        return !list.isEmpty();
+    }
 }

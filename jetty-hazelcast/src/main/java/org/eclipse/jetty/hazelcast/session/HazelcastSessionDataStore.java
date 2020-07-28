@@ -264,11 +264,11 @@ public class HazelcastSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
-    public boolean exists(String id)
+    public boolean doExists(String id)
         throws Exception
     {
         //TODO find way to do query without pulling in whole session data
-        SessionData sd = load(id);
+        SessionData sd = doLoad(id);
         if (sd == null)
             return false;
 

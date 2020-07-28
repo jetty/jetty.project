@@ -27,4 +27,6 @@ public interface QueryManager
     Set<String> queryExpiredSessions(SessionContext sessionContext, long currentTime);
 
     public void deleteOrphanSessions(long time);
+    
+    public boolean exists(SessionContext sessionContext, String id);
 }

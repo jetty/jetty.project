@@ -319,7 +319,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
     @Override
-    public boolean exists(String id) throws Exception
+    public boolean doExists(String id) throws Exception
     {
         DBObject fields = new BasicDBObject();
         fields.put(__EXPIRY, 1);
