@@ -231,7 +231,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     public enum Availability
     {
-        STOPPED, STARTING, AVAILABLE, UNAVAILABLE, SHUTDOWN,
+        STOPPED,        // stopped and can't be made unavailable nor shutdown
+        STARTING,       // starting inside of doStart. It may go to any of the next states.
+        AVAILABLE,      // running normally
+        UNAVAILABLE,    // Either a startup error or explicit call to setAvailable(false)
+        SHUTDOWN,       // graceful shutdown
     }
 
     private final AtomicReference<Availability> _availability = new AtomicReference<>(Availability.STOPPED);
@@ -787,6 +791,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     return new FutureCallback(new IllegalStateException(getState()));
                 case STARTING:
                 case AVAILABLE:
+                case UNAVAILABLE:
                     if (!_availability.compareAndSet(availability, Availability.SHUTDOWN))
                         continue;
                     break;
@@ -818,7 +823,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         //   STARTING -----false--> UNAVAILABLE
         //   AVAILABLE ----false--> UNAVAILABLE
         if (available)
-            _availability.compareAndSet(Availability.UNAVAILABLE, Availability.AVAILABLE);
+        {
+            if (_availability.compareAndSet(Availability.UNAVAILABLE, Availability.AVAILABLE))
+                throw new IllegalStateException(_availability.get().toString());
+        }
         else
         {
             while (true)
