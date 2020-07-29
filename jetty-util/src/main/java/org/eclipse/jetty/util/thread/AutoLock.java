@@ -22,7 +22,6 @@ import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 
 /**
  * <p>Reentrant lock that can be used in a try-with-resources statement.</p>
@@ -36,6 +35,8 @@ import java.util.function.Supplier;
  */
 public class AutoLock implements AutoCloseable, Serializable
 {
+    private static final long serialVersionUID = 3300696774541816341L;
+
     private final ReentrantLock _lock = new ReentrantLock();
 
     /**
@@ -47,48 +48,6 @@ public class AutoLock implements AutoCloseable, Serializable
     {
         _lock.lock();
         return this;
-    }
-
-    /**
-     * <p>Runs the given code with the lock held.</p>
-     * <p>This is equivalent to:</p>
-     * <pre>
-     * try (AutoLock ignored = lock())
-     * {
-     *     code.run();
-     * }
-     * </pre>
-     *
-     * @param code the code to run with the lock held.
-     */
-    public void runLocked(Runnable code)
-    {
-        try (AutoLock ignored = lock())
-        {
-            code.run();
-        }
-    }
-
-    /**
-     * <p>Returns the result of running the given code with the lock held.</p>
-     * <p>This is equivalent to:</p>
-     * <pre>
-     * try (AutoLock ignored = lock())
-     * {
-     *     return code.get();
-     * }
-     * </pre>
-     *
-     * @param code the code to run with the lock held.
-     * @param <T> the result type
-     * @return the result of the code run
-     */
-    public <T> T runLocked(Supplier<T> code)
-    {
-        try (AutoLock ignored = lock())
-        {
-            return code.get();
-        }
     }
 
     /**

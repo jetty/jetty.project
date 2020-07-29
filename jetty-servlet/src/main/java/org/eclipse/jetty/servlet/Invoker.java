@@ -164,7 +164,7 @@ public class Invoker extends HttpServlet
                 return;
             }
 
-            try (AutoLock ignored = _servletHandler.lock())
+            try (AutoLock l = _servletHandler.lock())
             {
                 // find the entry for the invoker (me)
                 _invokerEntry = _servletHandler.getMappedServlet(servletPath);
@@ -176,7 +176,7 @@ public class Invoker extends HttpServlet
                 if (entry != null && !entry.equals(_invokerEntry))
                 {
                     // Use the holder
-                    holder = entry.getServletHolder();
+                    holder = (ServletHolder)entry.getServletHolder();
                 }
                 else
                 {

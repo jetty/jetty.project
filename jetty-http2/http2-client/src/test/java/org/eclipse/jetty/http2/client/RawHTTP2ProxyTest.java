@@ -340,7 +340,7 @@ public class RawHTTP2ProxyTest
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("CPS queueing {} for {} on {}", frame, stream, stream.getSession());
             boolean connected;
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 Deque<FrameInfo> deque = frames.computeIfAbsent(stream, s -> new ArrayDeque<>());
                 deque.offer(new FrameInfo(frame, callback));
@@ -364,7 +364,10 @@ public class RawHTTP2ProxyTest
                 {
                     if (LOGGER.isDebugEnabled())
                         LOGGER.debug("CPS connected to {} with {}", address, result);
-                    lock.runLocked(() -> proxyToServerSession = result);
+                    try (AutoLock l = lock.lock())
+                    {
+                        proxyToServerSession = result;
+                    }
                     iterate();
                 }
 
@@ -383,7 +386,7 @@ public class RawHTTP2ProxyTest
         {
             Stream proxyToServerStream = null;
             Session proxyToServerSession = null;
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 for (Map.Entry<Stream, Deque<FrameInfo>> entry : frames.entrySet())
                 {
@@ -413,9 +416,12 @@ public class RawHTTP2ProxyTest
                     @Override
                     public void succeeded(Stream result)
                     {
-                        if (LOGGER.isDebugEnabled())
-                            LOGGER.debug("CPS created {}", result);
-                        lock.runLocked(() -> streams.put(clientToProxyStream, result));
+                        try (AutoLock l = lock.lock())
+                        {
+                            if (LOGGER.isDebugEnabled())
+                                LOGGER.debug("CPS created {}", result);
+                            streams.put(clientToProxyStream, result);
+                        }
                         serverToProxyToClient.link(result, clientToProxyStream);
                         ClientToProxyToServer.this.succeeded();
                     }
@@ -551,10 +557,10 @@ public class RawHTTP2ProxyTest
         private Stream serverToProxyStream;
 
         @Override
-        protected Action process()
+        protected Action process() throws Throwable
         {
             Stream proxyToClientStream = null;
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 for (Map.Entry<Stream, Deque<FrameInfo>> entry : frames.entrySet())
                 {
@@ -625,7 +631,7 @@ public class RawHTTP2ProxyTest
         {
             if (LOGGER.isDebugEnabled())
                 LOGGER.debug("SPC queueing {} for {} on {}", frame, stream, stream.getSession());
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 Deque<FrameInfo> deque = frames.computeIfAbsent(stream, s -> new ArrayDeque<>());
                 deque.offer(new FrameInfo(frame, callback));
@@ -677,7 +683,10 @@ public class RawHTTP2ProxyTest
 
         private void link(Stream proxyToServerStream, Stream clientToProxyStream)
         {
-            lock.runLocked(() -> streams.put(proxyToServerStream, clientToProxyStream));
+            try (AutoLock l = lock.lock())
+            {
+                streams.put(proxyToServerStream, clientToProxyStream);
+            }
             iterate();
         }
     }

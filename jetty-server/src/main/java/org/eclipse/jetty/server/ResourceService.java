@@ -377,19 +377,22 @@ public class ResourceService
         if (!endsWithSlash)
         {
             StringBuffer buf = request.getRequestURL();
-            int param = buf.lastIndexOf(";");
-            if (param < 0)
-                buf.append('/');
-            else
-                buf.insert(param, '/');
-            String q = request.getQueryString();
-            if (q != null && q.length() != 0)
+            synchronized (buf)
             {
-                buf.append('?');
-                buf.append(q);
+                int param = buf.lastIndexOf(";");
+                if (param < 0)
+                    buf.append('/');
+                else
+                    buf.insert(param, '/');
+                String q = request.getQueryString();
+                if (q != null && q.length() != 0)
+                {
+                    buf.append('?');
+                    buf.append(q);
+                }
+                response.setContentLength(0);
+                response.sendRedirect(response.encodeRedirectURL(buf.toString()));
             }
-            response.setContentLength(0);
-            response.sendRedirect(response.encodeRedirectURL(buf.toString()));
             return;
         }
 

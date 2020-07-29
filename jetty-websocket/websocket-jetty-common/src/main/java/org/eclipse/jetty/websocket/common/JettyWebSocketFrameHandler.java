@@ -191,7 +191,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onFrame(Frame frame, Callback callback)
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             switch (state)
             {
@@ -300,8 +300,11 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     @Override
     public void onClosed(CloseStatus closeStatus, Callback callback)
     {
-        // We are now closed and cannot suspend or resume.
-        lock.runLocked(() -> state = SuspendState.CLOSED);
+        try (AutoLock l = lock.lock())
+        {
+            // We are now closed and cannot suspend or resume.
+            state = SuspendState.CLOSED;
+        }
 
         notifyOnClose(closeStatus, callback);
         container.notifySessionListeners((listener) -> listener.onWebSocketSessionClosed(session));
@@ -424,7 +427,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
 
     public void suspend()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             switch (state)
             {
@@ -442,7 +445,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     {
         boolean needDemand = false;
         Runnable delayedFrame = null;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             switch (state)
             {
@@ -479,7 +482,7 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     private void demand()
     {
         boolean demand = false;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             switch (state)
             {

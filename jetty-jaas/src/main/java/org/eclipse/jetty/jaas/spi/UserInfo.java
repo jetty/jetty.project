@@ -36,9 +36,9 @@ import org.eclipse.jetty.util.thread.AutoLock;
 public class UserInfo
 {
     private final AutoLock _lock = new AutoLock();
-    protected final List<String> _roleNames = new ArrayList<>();
-    private final String _userName;
-    private final Credential _credential;
+    private String _userName;
+    private Credential _credential;
+    protected List<String> _roleNames = new ArrayList<>();
     protected boolean _rolesLoaded = false;
 
     /**
@@ -81,7 +81,7 @@ public class UserInfo
 
     public void fetchRoles() throws Exception
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (!_rolesLoaded)
             {

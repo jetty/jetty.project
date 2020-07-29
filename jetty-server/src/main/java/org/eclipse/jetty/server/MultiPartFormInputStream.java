@@ -103,7 +103,7 @@ public class MultiPartFormInputStream
     private volatile boolean _deleteOnExit;
     private volatile boolean _writeFilesWithFilenames;
     private volatile int _bufferSize = 16 * 1024;
-    private State _state = State.UNPARSED;
+    private State state = State.UNPARSED;
 
     public class MultiPart implements Part
     {
@@ -378,7 +378,7 @@ public class MultiPartFormInputStream
             if (((ServletInputStream)in).isFinished())
             {
                 _in = null;
-                _state = State.PARSED;
+                state = State.PARSED;
                 return;
             }
         }
@@ -410,24 +410,24 @@ public class MultiPartFormInputStream
      */
     public void deleteParts()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
-            switch (_state)
+            switch (state)
             {
                 case DELETED:
                 case DELETING:
                     return;
 
                 case PARSING:
-                    _state = State.DELETING;
+                    state = State.DELETING;
                     return;
 
                 case UNPARSED:
-                    _state = State.DELETED;
+                    state = State.DELETED;
                     return;
 
                 case PARSED:
-                    _state = State.DELETED;
+                    state = State.DELETED;
                     break;
             }
         }
@@ -513,19 +513,19 @@ public class MultiPartFormInputStream
      */
     protected void parse()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
-            switch (_state)
+            switch (state)
             {
                 case UNPARSED:
-                    _state = State.PARSING;
+                    state = State.PARSING;
                     break;
 
                 case PARSED:
                     return;
 
                 default:
-                    _err = new IOException(_state.name());
+                    _err = new IOException(state.name());
                     return;
             }
         }
@@ -566,11 +566,11 @@ public class MultiPartFormInputStream
 
             while (true)
             {
-                try (AutoLock ignored = _lock.lock())
+                try (AutoLock l = _lock.lock())
                 {
-                    if (_state != State.PARSING)
+                    if (state != State.PARSING)
                     {
-                        _err = new IOException(_state.name());
+                        _err = new IOException(state.name());
                         return;
                     }
                 }
@@ -632,21 +632,21 @@ public class MultiPartFormInputStream
         finally
         {
             boolean cleanup = false;
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
-                switch (_state)
+                switch (state)
                 {
                     case PARSING:
-                        _state = State.PARSED;
+                        state = State.PARSED;
                         break;
 
                     case DELETING:
-                        _state = State.DELETED;
+                        state = State.DELETED;
                         cleanup = true;
                         break;
 
                     default:
-                        _err = new IllegalStateException(_state.name());
+                        _err = new IllegalStateException(state.name());
                 }
             }
 

@@ -59,7 +59,7 @@ public class MessageInputStream extends InputStream implements MessageSink
             LOG.debug("accepting {}", frame);
 
         boolean succeed = false;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             // If closed or we have no payload, request the next frame.
             if (closed || (!frame.hasPayload() && !frame.isFin()))
@@ -137,7 +137,7 @@ public class MessageInputStream extends InputStream implements MessageSink
             LOG.debug("close()");
 
         ArrayList<Entry> entries = new ArrayList<>();
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (closed)
                 return;
@@ -172,7 +172,7 @@ public class MessageInputStream extends InputStream implements MessageSink
     private void succeedCurrentEntry()
     {
         Entry current;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             current = currentEntry;
             currentEntry = null;
@@ -183,7 +183,7 @@ public class MessageInputStream extends InputStream implements MessageSink
 
     private Entry getCurrentEntry() throws IOException
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (currentEntry != null)
                 return currentEntry;
@@ -208,7 +208,7 @@ public class MessageInputStream extends InputStream implements MessageSink
                     throw new IOException(String.format("Read timeout: %,dms expired", timeoutMs));
             }
 
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 currentEntry = result;
                 return currentEntry;

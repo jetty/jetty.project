@@ -39,7 +39,7 @@ public class AttributeContainerMap extends ContainerLifeCycle implements Attribu
     @Override
     public void setAttribute(String name, Object attribute)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             Object old = _map.put(name, attribute);
             updateBean(old, attribute);
@@ -49,7 +49,7 @@ public class AttributeContainerMap extends ContainerLifeCycle implements Attribu
     @Override
     public void removeAttribute(String name)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             Object removed = _map.remove(name);
             if (removed != null)
@@ -60,25 +60,34 @@ public class AttributeContainerMap extends ContainerLifeCycle implements Attribu
     @Override
     public Object getAttribute(String name)
     {
-        return _lock.runLocked(() -> _map.get(name));
+        try (AutoLock l = _lock.lock())
+        {
+            return _map.get(name);
+        }
     }
 
     @Override
     public Enumeration<String> getAttributeNames()
     {
-        return _lock.runLocked(() -> Collections.enumeration(getAttributeNameSet()));
+        try (AutoLock l = _lock.lock())
+        {
+            return Collections.enumeration(_map.keySet());
+        }
     }
 
     @Override
     public Set<String> getAttributeNameSet()
     {
-        return _lock.runLocked(_map::keySet);
+        try (AutoLock l = _lock.lock())
+        {
+            return _map.keySet();
+        }
     }
 
     @Override
     public void clearAttributes()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _map.clear();
             this.removeBeans();

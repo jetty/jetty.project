@@ -177,7 +177,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
     @Override
     public void write(String requestEntry) throws IOException
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_writer == null)
                 return;
@@ -190,7 +190,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
     @Override
     protected void doStart() throws Exception
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_filename != null)
             {
@@ -204,8 +204,8 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
             }
             _out = _fileOut;
             _writer = new OutputStreamWriter(_out);
+            super.doStart();
         }
-        super.doStart();
     }
 
     public void setTimeZone(String timeZone)
@@ -222,9 +222,9 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
     @Override
     protected void doStop() throws Exception
     {
-        super.doStop();
         try (AutoLock ignored = _lock.lock())
         {
+            super.doStop();
             try
             {
                 if (_writer != null)

@@ -309,7 +309,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     private int acquireRequest()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             int last = requests.getLast();
             int request = last + 1;
@@ -320,7 +320,10 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     private void releaseRequest(int request)
     {
-        lock.runLocked(() -> requests.removeFirstOccurrence(request));
+        try (AutoLock l = lock.lock())
+        {
+            requests.removeFirstOccurrence(request);
+        }
     }
 
     protected HttpChannelOverFCGI acquireHttpChannel(int id, Request request)

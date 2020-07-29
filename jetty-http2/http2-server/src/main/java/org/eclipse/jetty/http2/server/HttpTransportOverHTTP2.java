@@ -445,7 +445,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
         private Throwable sending(Callback callback, boolean commit)
         {
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 switch (_state)
                 {
@@ -473,7 +473,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         {
             Callback callback;
             boolean commit;
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 if (_state != State.SENDING)
                 {
@@ -497,7 +497,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         {
             Callback callback;
             boolean commit;
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 if (_state != State.SENDING)
                 {
@@ -519,7 +519,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         private boolean idleTimeout(Throwable failure)
         {
             Callback callback = null;
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 // Ignore idle timeouts if not writing,
                 // as the application may be suspended.
@@ -543,7 +543,11 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         @Override
         public InvocationType getInvocationType()
         {
-            Callback callback = _lock.runLocked(() -> _callback);
+            Callback callback;
+            try (AutoLock l = _lock.lock())
+            {
+                callback = _callback;
+            }
             return callback != null ? callback.getInvocationType() : Callback.super.getInvocationType();
         }
     }

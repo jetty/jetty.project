@@ -70,7 +70,7 @@ public abstract class TransformingFlusher
             log.debug("Queuing {}", entry);
 
         boolean enqueued = false;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (failure == null)
                 enqueued = entries.add(entry);
@@ -84,7 +84,7 @@ public abstract class TransformingFlusher
 
     private void onFailure(Throwable t)
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (failure == null)
                 failure = t;
@@ -97,7 +97,10 @@ public abstract class TransformingFlusher
 
     private FrameEntry pollEntry()
     {
-        return lock.runLocked(entries::poll);
+        try (AutoLock l = lock.lock())
+        {
+            return entries.poll();
+        }
     }
 
     private class Flusher extends IteratingCallback implements Callback

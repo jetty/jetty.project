@@ -68,13 +68,13 @@ public class Scanner extends AbstractLifeCycle
     private static int __scannerId = 0;
 
     private final AutoLock _lock = new AutoLock();
+    private int _scanInterval;
+    private int _scanCount = 0;
     private final List<Listener> _listeners = new ArrayList<>();
     private final Map<String, TimeNSize> _prevScan = new HashMap<>();
     private final Map<String, TimeNSize> _currentScan = new HashMap<>();
-    private final Map<Path, IncludeExcludeSet<PathMatcher, Path>> _scannables = new HashMap<>();
-    private int _scanInterval;
-    private int _scanCount = 0;
     private FilenameFilter _filter;
+    private final Map<Path, IncludeExcludeSet<PathMatcher, Path>> _scannables = new HashMap<>();
     private volatile boolean _running = false;
     private boolean _reportExisting = true;
     private boolean _reportDirs = true;
@@ -300,7 +300,10 @@ public class Scanner extends AbstractLifeCycle
      */
     public int getScanInterval()
     {
-        return _lock.runLocked(() -> _scanInterval);
+        try (AutoLock l = _lock.lock())
+        {
+            return _scanInterval;
+        }
     }
 
     /**
@@ -310,7 +313,7 @@ public class Scanner extends AbstractLifeCycle
      */
     public void setScanInterval(int scanInterval)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _scanInterval = scanInterval;
             schedule();
@@ -334,7 +337,7 @@ public class Scanner extends AbstractLifeCycle
     {
         if (dir == null)
             return;
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (dir.isDirectory())
                 addDirectory(dir.toPath());
@@ -357,10 +360,15 @@ public class Scanner extends AbstractLifeCycle
     {
         if (p == null)
             throw new IllegalStateException("Null path");
+
         File f = p.toFile();
         if (!f.exists() || f.isDirectory())
             throw new IllegalStateException("Not file or doesn't exist: " + f.getCanonicalPath());
-        _lock.runLocked(() -> _scannables.put(p, null));
+
+        try (AutoLock l = _lock.lock())
+        {
+            _scannables.put(p, null);
+        }
     }
 
     /**
@@ -374,11 +382,12 @@ public class Scanner extends AbstractLifeCycle
     {
         if (p == null)
             throw new IllegalStateException("Null path");
+
         File f = p.toFile();
         if (!f.exists() || !f.isDirectory())
             throw new IllegalStateException("Not directory or doesn't exist: " + f.getCanonicalPath());
 
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             IncludeExcludeSet<PathMatcher, Path> includesExcludes = _scannables.get(p);
             if (includesExcludes == null)
@@ -508,7 +517,10 @@ public class Scanner extends AbstractLifeCycle
     {
         if (listener == null)
             return;
-        _lock.runLocked(() -> _listeners.add(listener));
+        try (AutoLock l = _lock.lock())
+        {
+            _listeners.add(listener);
+        }
     }
 
     /**
@@ -520,7 +532,10 @@ public class Scanner extends AbstractLifeCycle
     {
         if (listener == null)
             return;
-        _lock.runLocked(() -> _listeners.remove(listener));
+        try (AutoLock l = _lock.lock())
+        {
+            _listeners.remove(listener);
+        }
     }
 
     /**
@@ -529,7 +544,7 @@ public class Scanner extends AbstractLifeCycle
     @Override
     public void doStart()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_running)
                 return;
@@ -595,7 +610,7 @@ public class Scanner extends AbstractLifeCycle
     @Override
     public void doStop()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_running)
             {
@@ -646,7 +661,7 @@ public class Scanner extends AbstractLifeCycle
      */
     public void scan()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             reportScanStart(++_scanCount);
             scanFiles();
@@ -655,12 +670,12 @@ public class Scanner extends AbstractLifeCycle
             _prevScan.putAll(_currentScan);
             reportScanEnd(_scanCount);
 
-            for (Listener l : _listeners)
+            for (Listener listener : _listeners)
             {
                 try
                 {
-                    if (l instanceof ScanListener)
-                        ((ScanListener)l).scan();
+                    if (listener instanceof ScanListener)
+                        ((ScanListener)listener).scan();
                 }
                 catch (Throwable e)
                 {
@@ -675,7 +690,7 @@ public class Scanner extends AbstractLifeCycle
      */
     public void scanFiles()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _currentScan.clear();
             for (Path p : _scannables.keySet())
@@ -700,7 +715,7 @@ public class Scanner extends AbstractLifeCycle
      */
     private void reportDifferences(Map<String, TimeNSize> currentScan, Map<String, TimeNSize> oldScan)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             // scan the differences and add what was found to the map of notifications:
             Set<String> oldScanKeys = new HashSet<>(oldScan.keySet());

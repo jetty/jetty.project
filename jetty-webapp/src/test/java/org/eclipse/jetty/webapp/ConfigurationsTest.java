@@ -34,13 +34,13 @@ public class ConfigurationsTest
     @AfterEach
     public void tearDown()
     {
-        Configurations.clearKnown();
+        Configurations.cleanKnown();
     }
 
     @BeforeEach
     public void setup()
     {
-        Configurations.clearKnown();
+        Configurations.cleanKnown();
     }
 
     @Test

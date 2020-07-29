@@ -271,7 +271,10 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
         private void enqueue(DataInfo dataInfo)
         {
-            lock.runLocked(() -> queue.offer(dataInfo));
+            try (AutoLock l = lock.lock())
+            {
+                queue.offer(dataInfo);
+            }
         }
 
         private void process(boolean resume)
@@ -284,7 +287,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                 return;
 
             // Process only if there is demand.
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 if (!resume && demand() <= 0)
                 {
@@ -308,7 +311,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                     }
                 }
 
-                try (AutoLock ignored = lock.lock())
+                try (AutoLock l = lock.lock())
                 {
                     dataInfo = queue.poll();
                     if (LOG.isDebugEnabled())
@@ -346,7 +349,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
         private boolean active(boolean resume)
         {
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 if (active)
                 {
@@ -379,7 +382,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
          */
         private boolean stall()
         {
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 if (resume)
                 {
@@ -399,7 +402,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         private void reset()
         {
             dataInfo = null;
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 queue.clear();
                 active = false;

@@ -173,7 +173,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
 
     protected void setInstance(T instance)
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             _instance = instance;
             if (instance == null)
@@ -185,12 +185,15 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
 
     protected T getInstance()
     {
-        return _lock.runLocked(() -> _instance);
+        try (AutoLock l = lock())
+        {
+            return _instance;
+        }
     }
 
     protected T createInstance() throws Exception
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             ServletContext ctx = getServletContext();
             if (ctx == null)
@@ -230,7 +233,10 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
      */
     public boolean isInstance()
     {
-        return _lock.runLocked(() -> _instance != null);
+        try (AutoLock l = lock())
+        {
+            return _instance != null;
+        }
     }
 
     @Override

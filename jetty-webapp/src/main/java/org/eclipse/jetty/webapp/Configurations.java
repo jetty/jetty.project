@@ -74,49 +74,47 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
 
     public static List<Configuration> getKnown()
     {
-        try (AutoLock ignored = __lock.lock())
+        try (AutoLock l = __lock.lock())
         {
-            if (!__known.isEmpty())
-                return __known;
-
-            TypeUtil.serviceProviderStream(ServiceLoader.load(Configuration.class)).forEach(provider ->
+            if (__known.isEmpty())
             {
-                try
+                TypeUtil.serviceProviderStream(ServiceLoader.load(Configuration.class)).forEach(provider ->
                 {
-                    Configuration configuration = provider.get();
-                    if (!configuration.isAvailable())
+                    try
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Configuration unavailable: " + configuration);
-                        __unavailable.add(configuration);
-                        return;
+                        Configuration configuration = provider.get();
+                        if (!configuration.isAvailable())
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Configuration unavailable: " + configuration);
+                            __unavailable.add(configuration);
+                            return;
+                        }
+                        __known.add(configuration);
+                        __knownByClassName.add(configuration.getClass().getName());
                     }
-                    __known.add(configuration);
-                    __knownByClassName.add(configuration.getClass().getName());
-                }
-                catch (Throwable e)
+                    catch (Throwable e)
+                    {
+                        LOG.warn("Unable to get known Configuration", e);
+                    }
+                });
+                sort(__known);
+                if (LOG.isDebugEnabled())
                 {
-                    LOG.warn("Unable to get known Configuration", e);
-                }
-            });
-            sort(__known);
-            if (LOG.isDebugEnabled())
-            {
-                for (Configuration c : __known)
-                {
-                    LOG.debug("known {}", c);
+                    for (Configuration c : __known)
+                    {
+                        LOG.debug("known {}", c);
+                    }
+                    LOG.debug("Known Configurations {}", __knownByClassName);
                 }
             }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("Known Configurations {}", __knownByClassName);
             return __known;
         }
     }
 
     public static void setKnown(String... classes)
     {
-        try (AutoLock ignored = __lock.lock())
+        try (AutoLock l = __lock.lock())
         {
             if (!__known.isEmpty())
                 throw new IllegalStateException("Known configuration classes already set");
@@ -149,17 +147,15 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
                 {
                     LOG.debug("known {}", c);
                 }
-            }
-
-            if (LOG.isDebugEnabled())
                 LOG.debug("Known Configurations {}", __knownByClassName);
+            }
         }
     }
 
     // Only used by tests.
-    static void clearKnown()
+    static void cleanKnown()
     {
-        try (AutoLock ignored = __lock.lock())
+        try (AutoLock l = __lock.lock())
         {
             __known.clear();
             __unavailable.clear();

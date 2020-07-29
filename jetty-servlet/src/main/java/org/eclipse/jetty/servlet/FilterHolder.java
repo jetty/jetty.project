@@ -103,7 +103,7 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public void initialize() throws Exception
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (_filter != null)
                 return;
@@ -136,7 +136,7 @@ public class FilterHolder extends Holder<Filter>
     @Override
     protected Filter createInstance() throws Exception
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             Filter filter = super.createInstance();
             if (filter == null)

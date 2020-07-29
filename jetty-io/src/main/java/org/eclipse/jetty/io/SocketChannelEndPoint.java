@@ -319,7 +319,7 @@ public class SocketChannelEndPoint extends AbstractEndPoint implements ManagedSe
         int readyOps = _key.readyOps();
         int oldInterestOps;
         int newInterestOps;
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _updatePending = true;
             // Remove the readyOps, that here can only be OP_READ or OP_WRITE (or both).
@@ -363,7 +363,7 @@ public class SocketChannelEndPoint extends AbstractEndPoint implements ManagedSe
         {
             int oldInterestOps;
             int newInterestOps;
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 _updatePending = false;
                 oldInterestOps = _currentInterestOps;
@@ -405,7 +405,7 @@ public class SocketChannelEndPoint extends AbstractEndPoint implements ManagedSe
         int oldInterestOps;
         int newInterestOps;
         boolean pending;
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             pending = _updatePending;
             oldInterestOps = _desiredInterestOps;

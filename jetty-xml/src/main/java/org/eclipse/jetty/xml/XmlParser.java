@@ -58,14 +58,17 @@ public class XmlParser
     private static final Logger LOG = LoggerFactory.getLogger(XmlParser.class);
 
     private final AutoLock _lock = new AutoLock();
-    private final Map<String, URL> _redirectMap = new HashMap<>();
-    private final Stack<ContentHandler> _observers = new Stack<>();
+    private Map<String, URL> _redirectMap = new HashMap<String, URL>();
     private SAXParser _parser;
     private Map<String, ContentHandler> _observerMap;
+    private Stack<ContentHandler> _observers = new Stack<ContentHandler>();
     private String _xpath;
     private Object _xpaths;
     private String _dtd;
 
+    /**
+     * Construct
+     */
     public XmlParser()
     {
         SAXParserFactory factory = SAXParserFactory.newInstance();
@@ -134,7 +137,12 @@ public class XmlParser
     public void redirectEntity(String name, URL entity)
     {
         if (entity != null)
-            _lock.runLocked(() -> _redirectMap.put(name, entity));
+        {
+            try (AutoLock l = _lock.lock())
+            {
+                _redirectMap.put(name, entity);
+            }
+        }
     }
 
     /**
@@ -176,7 +184,7 @@ public class XmlParser
      */
     public void addContentHandler(String trigger, ContentHandler observer)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_observerMap == null)
                 _observerMap = new HashMap<>();
@@ -186,7 +194,7 @@ public class XmlParser
 
     public Node parse(InputSource source) throws IOException, SAXException
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _dtd = null;
             Handler handler = new Handler();
@@ -628,7 +636,7 @@ public class XmlParser
         public void add(int i, Object o)
         {
             if (_list == null)
-                _list = new ArrayList<>();
+                _list = new ArrayList<Object>();
             if (o instanceof String)
             {
                 if (_lastString)

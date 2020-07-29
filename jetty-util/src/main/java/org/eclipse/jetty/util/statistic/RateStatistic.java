@@ -64,7 +64,7 @@ public class RateStatistic
      */
     public void reset()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _samples.clear();
             _max = 0;
@@ -91,7 +91,7 @@ public class RateStatistic
     protected void age(long period, TimeUnit units)
     {
         long increment = TimeUnit.NANOSECONDS.convert(period, units);
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             int size = _samples.size();
             for (int i = 0; i < size; i++)
@@ -110,7 +110,7 @@ public class RateStatistic
     public int record()
     {
         long now = System.nanoTime();
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _count++;
             _samples.add(now);
@@ -127,7 +127,7 @@ public class RateStatistic
      */
     public int getRate()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             update();
             return _samples.size();
@@ -139,7 +139,10 @@ public class RateStatistic
      */
     public long getMax()
     {
-        return _lock.runLocked(() -> _max);
+        try (AutoLock l = _lock.lock())
+        {
+            return _max;
+        }
     }
 
     /**
@@ -148,7 +151,7 @@ public class RateStatistic
      */
     public long getOldest(TimeUnit units)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             Long head = _samples.peekFirst();
             if (head == null)
@@ -162,7 +165,10 @@ public class RateStatistic
      */
     public long getCount()
     {
-        return _lock.runLocked(() -> _count);
+        try (AutoLock l = _lock.lock())
+        {
+            return _count;
+        }
     }
 
     public String dump()
@@ -173,7 +179,7 @@ public class RateStatistic
     public String dump(TimeUnit units)
     {
         long now = System.nanoTime();
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             String samples = _samples.stream()
                 .mapToLong(t -> units.convert(now - t, TimeUnit.NANOSECONDS))
@@ -191,7 +197,7 @@ public class RateStatistic
 
     private String toString(long nanoTime)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             update(nanoTime);
             return String.format("%s@%x{count=%d,max=%d,rate=%d per %d %s}",

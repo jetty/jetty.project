@@ -46,7 +46,9 @@ public class DateCacheSimpleDateFormat
 
     private final AutoLock _lock = new AutoLock();
     private final String _formatString;
+    private final String _tzFormatString;
     private final SimpleDateFormat _tzFormat;
+    private final Locale _locale;
     private volatile Tick _tick;
 
     public static class Tick
@@ -95,9 +97,9 @@ public class DateCacheSimpleDateFormat
     public DateCacheSimpleDateFormat(String format, Locale l, TimeZone tz)
     {
         _formatString = format;
+        _locale = l;
 
         int zIndex = _formatString.indexOf("ZZZ");
-        String tzFormatString;
         if (zIndex >= 0)
         {
             final String ss1 = _formatString.substring(0, zIndex);
@@ -128,17 +130,21 @@ public class DateCacheSimpleDateFormat
             sb.append('\'');
 
             sb.append(ss2);
-            tzFormatString = sb.toString();
+            _tzFormatString = sb.toString();
         }
         else
         {
-            tzFormatString = _formatString;
+            _tzFormatString = _formatString;
         }
 
-        if (l != null)
-            _tzFormat = new SimpleDateFormat(tzFormatString, l);
+        if (_locale != null)
+        {
+            _tzFormat = new SimpleDateFormat(_tzFormatString, _locale);
+        }
         else
-            _tzFormat = new SimpleDateFormat(tzFormatString);
+        {
+            _tzFormat = new SimpleDateFormat(_tzFormatString);
+        }
         _tzFormat.setTimeZone(tz);
 
         _tick = null;
@@ -165,7 +171,10 @@ public class DateCacheSimpleDateFormat
         if (tick == null || seconds != tick._seconds)
         {
             // It's a cache miss
-            return _lock.runLocked(() -> _tzFormat.format(inDate));
+            try (AutoLock l = _lock.lock())
+            {
+                return _tzFormat.format(inDate);
+            }
         }
 
         return tick._string;
@@ -190,7 +199,10 @@ public class DateCacheSimpleDateFormat
         {
             // It's a cache miss
             Date d = new Date(inDate);
-            return _lock.runLocked(() -> _tzFormat.format(d));
+            try (AutoLock l = _lock.lock())
+            {
+                return _tzFormat.format(d);
+            }
         }
 
         return tick._string;
@@ -232,7 +244,7 @@ public class DateCacheSimpleDateFormat
         long seconds = now / 1000;
 
         // Synchronize to protect _tzFormat
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             // recheck the tick, to save multiple formats
             if (_tick == null || _tick._seconds != seconds)

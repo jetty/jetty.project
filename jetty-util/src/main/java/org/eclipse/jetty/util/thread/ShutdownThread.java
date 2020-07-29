@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -37,11 +36,11 @@ import org.slf4j.LoggerFactory;
 public class ShutdownThread extends Thread
 {
     private static final Logger LOG = LoggerFactory.getLogger(ShutdownThread.class);
-    private static final ShutdownThread INSTANCE = new ShutdownThread();
+    private static final ShutdownThread _thread = new ShutdownThread();
 
     private final AutoLock _lock = new AutoLock();
-    private final List<LifeCycle> _lifeCycles = new CopyOnWriteArrayList<>();
     private boolean _hooked;
+    private final List<LifeCycle> _lifeCycles = new CopyOnWriteArrayList<LifeCycle>();
 
     /**
      * Default constructor for the singleton
@@ -55,7 +54,7 @@ public class ShutdownThread extends Thread
 
     private void hook()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (!_hooked)
                 Runtime.getRuntime().addShutdownHook(this);
@@ -70,7 +69,7 @@ public class ShutdownThread extends Thread
 
     private void unhook()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _hooked = false;
             Runtime.getRuntime().removeShutdownHook(this);
@@ -83,53 +82,57 @@ public class ShutdownThread extends Thread
     }
 
     /**
-     * @return the singleton instance of the ShutdownThread
+     * Returns the instance of the singleton
+     *
+     * @return the singleton instance of the {@link ShutdownThread}
      */
     public static ShutdownThread getInstance()
     {
-        return INSTANCE;
+        return _thread;
     }
 
     public static void register(LifeCycle... lifeCycles)
     {
-        try (AutoLock ignored = INSTANCE._lock.lock())
+        try (AutoLock l = _thread._lock.lock())
         {
-            INSTANCE._lifeCycles.addAll(Arrays.asList(lifeCycles));
-            if (INSTANCE._lifeCycles.size() > 0)
-                INSTANCE.hook();
+            _thread._lifeCycles.addAll(Arrays.asList(lifeCycles));
+            if (_thread._lifeCycles.size() > 0)
+                _thread.hook();
         }
     }
 
     public static void register(int index, LifeCycle... lifeCycles)
     {
-        try (AutoLock ignored = INSTANCE._lock.lock())
+        try (AutoLock l = _thread._lock.lock())
         {
-            INSTANCE._lifeCycles.addAll(index, Arrays.asList(lifeCycles));
-            if (INSTANCE._lifeCycles.size() > 0)
-                INSTANCE.hook();
+            _thread._lifeCycles.addAll(index, Arrays.asList(lifeCycles));
+            if (_thread._lifeCycles.size() > 0)
+                _thread.hook();
         }
     }
 
     public static void deregister(LifeCycle lifeCycle)
     {
-        try (AutoLock ignored = INSTANCE._lock.lock())
+        try (AutoLock l = _thread._lock.lock())
         {
-            INSTANCE._lifeCycles.remove(lifeCycle);
-            if (INSTANCE._lifeCycles.size() == 0)
-                INSTANCE.unhook();
+            _thread._lifeCycles.remove(lifeCycle);
+            if (_thread._lifeCycles.size() == 0)
+                _thread.unhook();
         }
     }
 
     public static boolean isRegistered(LifeCycle lifeCycle)
     {
-        return INSTANCE._lock.runLocked(() -> INSTANCE._lifeCycles.contains(lifeCycle));
+        try (AutoLock l = _thread._lock.lock())
+        {
+            return _thread._lifeCycles.contains(lifeCycle);
+        }
     }
 
     @Override
     public void run()
     {
-        List<LifeCycle> lifeCycles = INSTANCE._lock.runLocked(() -> new ArrayList<>(INSTANCE._lifeCycles));
-        for (LifeCycle lifeCycle : lifeCycles)
+        for (LifeCycle lifeCycle : _thread._lifeCycles)
         {
             try
             {

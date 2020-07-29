@@ -57,7 +57,7 @@ public class JarResource extends URLResource
     @Override
     public void close()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _jarConnection = null;
             super.close();
@@ -67,7 +67,7 @@ public class JarResource extends URLResource
     @Override
     protected boolean checkConnection()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             super.checkConnection();
             try

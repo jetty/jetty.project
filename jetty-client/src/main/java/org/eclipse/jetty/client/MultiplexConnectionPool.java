@@ -82,13 +82,19 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     @Override
     public int getMaxMultiplex()
     {
-        return lock.runLocked(() -> maxMultiplex);
+        try (AutoLock l = lock.lock())
+        {
+            return maxMultiplex;
+        }
     }
 
     @Override
     public void setMaxMultiplex(int maxMultiplex)
     {
-        lock.runLocked(() -> this.maxMultiplex = maxMultiplex);
+        try (AutoLock l = lock.lock())
+        {
+            this.maxMultiplex = maxMultiplex;
+        }
     }
 
     @Override
@@ -99,7 +105,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
             LOG.debug("Accepted {} {}", accepted, connection);
         if (accepted)
         {
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 Holder holder = new Holder(connection);
                 activeConnections.put(connection, holder);
@@ -113,14 +119,20 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     @Override
     public boolean isActive(Connection connection)
     {
-        return lock.runLocked(() -> activeConnections.containsKey(connection));
+        try (AutoLock l = lock.lock())
+        {
+            return activeConnections.containsKey(connection);
+        }
     }
 
     @Override
     protected void onCreated(Connection connection)
     {
-        // Use "cold" connections as last.
-        lock.runLocked(() -> idleConnections.offer(new Holder(connection)));
+        try (AutoLock l = lock.lock())
+        {
+            // Use "cold" connections as last.
+            idleConnections.offer(new Holder(connection));
+        }
         idle(connection, false);
     }
 
@@ -128,7 +140,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     protected Connection activate()
     {
         Holder result = null;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             for (Holder holder : activeConnections.values())
             {
@@ -159,7 +171,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
         boolean closed = isClosed();
         boolean idle = false;
         Holder holder;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             holder = activeConnections.get(connection);
             if (holder != null)
@@ -195,7 +207,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     {
         boolean activeRemoved = true;
         boolean idleRemoved = false;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             Holder holder = activeConnections.remove(connection);
             if (holder == null)
@@ -226,7 +238,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     {
         super.close();
         List<Connection> connections;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             connections = idleConnections.stream().map(holder -> holder.connection).collect(Collectors.toList());
             connections.addAll(activeConnections.keySet());
@@ -239,7 +251,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     {
         DumpableCollection active;
         DumpableCollection idle;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             active = new DumpableCollection("active", new ArrayList<>(activeConnections.values()));
             idle = new DumpableCollection("idle", new ArrayList<>(idleConnections));
@@ -251,7 +263,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     public boolean sweep()
     {
         List<Connection> toSweep = new ArrayList<>();
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             activeConnections.values().stream()
                 .map(holder -> holder.connection)
@@ -279,7 +291,7 @@ public class MultiplexConnectionPool extends AbstractConnectionPool implements C
     {
         int activeSize;
         int idleSize;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             activeSize = activeConnections.size();
             idleSize = idleConnections.size();

@@ -55,7 +55,7 @@ public class JarFileResource extends JarResource
     @Override
     public void close()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _exists = false;
             _list = null;
@@ -87,7 +87,7 @@ public class JarFileResource extends JarResource
     @Override
     protected boolean checkConnection()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             try
             {
@@ -110,7 +110,7 @@ public class JarFileResource extends JarResource
     @Override
     protected void newConnection() throws IOException
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             super.newConnection();
 
@@ -265,7 +265,7 @@ public class JarFileResource extends JarResource
     @Override
     public String[] list()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (isDirectory() && _list == null)
             {

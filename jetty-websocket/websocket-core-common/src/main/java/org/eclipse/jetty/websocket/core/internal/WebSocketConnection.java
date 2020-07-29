@@ -264,7 +264,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private void acquireNetworkBuffer()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (networkBuffer == null)
                 networkBuffer = newNetworkBuffer(getInputBufferSize());
@@ -273,7 +273,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private void reacquireNetworkBuffer()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (networkBuffer == null)
                 throw new IllegalStateException();
@@ -293,7 +293,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     private void releaseNetworkBuffer()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (networkBuffer == null)
                 throw new IllegalStateException();
@@ -328,7 +328,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
             throw new IllegalArgumentException("Demand must be positive");
 
         boolean fillAndParse = false;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("demand {} d={} fp={} {} {}", n, demand, fillingAndParsing, networkBuffer, this);
@@ -361,7 +361,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     public boolean moreDemand()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("moreDemand? d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
@@ -381,7 +381,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     public boolean meetDemand()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("meetDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
@@ -400,7 +400,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
 
     public void cancelDemand()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("cancelDemand d={} fp={} {} {}", demand, fillingAndParsing, networkBuffer, this);
@@ -487,7 +487,10 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Set initial buffer - {}", BufferUtil.toDetailString(initialBuffer));
-        lock.runLocked(() -> networkBuffer = newNetworkBuffer(initialBuffer.remaining()));
+        try (AutoLock l = lock.lock())
+        {
+            networkBuffer = newNetworkBuffer(initialBuffer.remaining());
+        }
         ByteBuffer buffer = networkBuffer.getBuffer();
         BufferUtil.clearToFill(buffer);
         BufferUtil.put(initialBuffer, buffer);

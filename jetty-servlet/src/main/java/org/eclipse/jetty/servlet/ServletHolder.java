@@ -256,7 +256,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public void setUserRoleLink(String name, String link)
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (_roleMap == null)
                 _roleMap = new HashMap<>();
@@ -273,7 +273,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      */
     public String getUserRoleLink(String name)
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (_roleMap == null)
                 return name;
@@ -399,7 +399,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
         _config = new Config();
 
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (getHeldClass() != null && javax.servlet.SingleThreadModel.class.isAssignableFrom(getHeldClass()))
                 _servlet = new SingleThreadedWrapper();
@@ -410,7 +410,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public void initialize()
         throws Exception
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (_servlet == null && (_initOnStartup || isInstance()))
             {
@@ -424,7 +424,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public void doStop()
         throws Exception
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             Servlet servlet = _servlet;
             if (servlet != null)
@@ -470,7 +470,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     public Servlet getServlet()
         throws ServletException
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (_servlet == null && isRunning())
             {
@@ -531,7 +531,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     private Servlet makeUnavailable(UnavailableException e)
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             _servlet = new UnavailableServlet(e, _servlet);
             return _servlet;
@@ -562,7 +562,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private void initServlet()
         throws ServletException
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (_servlet == null)
                 _servlet = getInstance();
@@ -1016,12 +1016,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     private class SingleThreadedWrapper implements Servlet
     {
-        private final Stack<Servlet> _stack = new Stack<>();
+        Stack<Servlet> _stack = new Stack<>();
 
         @Override
         public void destroy()
         {
-            try (AutoLock ignored = lock())
+            try (AutoLock l = lock())
             {
                 while (_stack.size() > 0)
                 {
@@ -1053,7 +1053,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         @Override
         public void init(ServletConfig config) throws ServletException
         {
-            try (AutoLock ignored = lock())
+            try (AutoLock l = lock())
             {
                 if (_stack.size() == 0)
                 {
@@ -1079,10 +1079,10 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
         {
             Servlet s;
-            try (AutoLock ignored = lock())
+            try (AutoLock l = lock())
             {
                 if (_stack.size() > 0)
-                    s = _stack.pop();
+                    s = (Servlet)_stack.pop();
                 else
                 {
                     try
@@ -1107,7 +1107,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             }
             finally
             {
-                try (AutoLock ignored = lock())
+                try (AutoLock l = lock())
                 {
                     _stack.push(s);
                 }
@@ -1131,7 +1131,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     @Override
     protected Servlet createInstance() throws Exception
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             Servlet servlet = super.createInstance();
             if (servlet == null)
@@ -1205,7 +1205,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                 ((HttpServletResponse)res).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             else
             {
-                try (AutoLock ignored = lock())
+                try (AutoLock l = lock())
                 {
                     ServletHolder.this._servlet = this._servlet;
                     _servlet.service(req, res);

@@ -1827,7 +1827,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         {
             if (streamId <= 0)
             {
-                try (AutoLock ignored = lock.lock())
+                try (AutoLock l = lock.lock())
                 {
                     streamId = localStreamIds.getAndAdd(2);
                     slots.offer(slot);
@@ -1835,14 +1835,20 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             }
             else
             {
-                lock.runLocked(() -> slots.offer(slot));
+                try (AutoLock l = lock.lock())
+                {
+                    slots.offer(slot);
+                }
             }
             return streamId;
         }
 
         private void releaseSlotFlushAndFail(Slot slot, Promise<Stream> promise, Throwable x)
         {
-            lock.runLocked(() -> slots.remove(slot));
+            try (AutoLock l = lock.lock())
+            {
+                slots.remove(slot);
+            }
             flush();
             promise.failed(x);
         }
@@ -1866,7 +1872,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             while (true)
             {
                 ControlEntry entry;
-                try (AutoLock ignored = lock.lock())
+                try (AutoLock l = lock.lock())
                 {
                     if (flushing == null)
                         flushing = thread;

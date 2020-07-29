@@ -229,7 +229,7 @@ public class RolloverFileOutputStream extends OutputStream
         File oldFile = null;
         File newFile = null;
         File backupFile = null;
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             // Check directory
             File file = new File(_filename);
@@ -345,7 +345,7 @@ public class RolloverFileOutputStream extends OutputStream
     @Override
     public void write(int b) throws IOException
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _out.write(b);
         }
@@ -354,7 +354,7 @@ public class RolloverFileOutputStream extends OutputStream
     @Override
     public void write(byte[] buf) throws IOException
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _out.write(buf);
         }
@@ -363,7 +363,7 @@ public class RolloverFileOutputStream extends OutputStream
     @Override
     public void write(byte[] buf, int off, int len) throws IOException
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _out.write(buf, off, len);
         }
@@ -372,7 +372,7 @@ public class RolloverFileOutputStream extends OutputStream
     @Override
     public void flush() throws IOException
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _out.flush();
         }
@@ -381,7 +381,7 @@ public class RolloverFileOutputStream extends OutputStream
     @Override
     public void close() throws IOException
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             try
             {

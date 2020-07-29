@@ -297,7 +297,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
         public boolean seen(int count)
         {
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 if (count >= _seen.size())
                     return true;

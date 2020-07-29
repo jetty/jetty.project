@@ -62,7 +62,7 @@ public class URLResource extends Resource
 
     protected boolean checkConnection()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_connection == null)
             {
@@ -86,7 +86,7 @@ public class URLResource extends Resource
     @Override
     public void close()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_in != null)
             {
@@ -114,7 +114,7 @@ public class URLResource extends Resource
     {
         try
         {
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 if (checkConnection() && _in == null)
                     _in = _connection.getInputStream();
@@ -219,7 +219,7 @@ public class URLResource extends Resource
      */
     protected InputStream getInputStream(boolean resetConnection) throws IOException
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (!checkConnection())
                 throw new IOException("Invalid resource");

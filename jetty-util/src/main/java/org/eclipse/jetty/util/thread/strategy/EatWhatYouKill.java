@@ -99,7 +99,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     public void dispatch()
     {
         boolean execute = false;
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             switch (_state)
             {
@@ -142,7 +142,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         if (LOG.isDebugEnabled())
             LOG.debug("{} tryProduce {}", this, wasPending);
 
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (wasPending)
                 _pending = false;
@@ -187,7 +187,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
         if (task == null)
         {
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 // Could another task just have been queued with a produce call?
                 switch (_state)
@@ -239,7 +239,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 case BLOCKING:
                     // The task is blocking, so PC is not an option. Thus we choose
                     // between EPC and PEC based on the availability of a reserved thread.
-                    try (AutoLock ignored = _lock.lock())
+                    try (AutoLock l = _lock.lock())
                     {
                         if (_pending)
                         {
@@ -262,7 +262,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 case EITHER:
                     // The task may be non blocking, so PC is an option. Thus we choose
                     // between EPC and PC based on the availability of a reserved thread.
-                    try (AutoLock ignored = _lock.lock())
+                    try (AutoLock l = _lock.lock())
                     {
                         if (_pending)
                         {
@@ -315,7 +315,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 runTask(task);
 
                 // Try to produce again?
-                try (AutoLock ignored = _lock.lock())
+                try (AutoLock l = _lock.lock())
                 {
                     if (_state == State.IDLE)
                     {
@@ -422,7 +422,10 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     @ManagedAttribute(value = "whether this execution strategy is idle", readonly = true)
     public boolean isIdle()
     {
-        return _lock.runLocked(() -> _state == State.IDLE);
+        try (AutoLock l = _lock.lock())
+        {
+            return _state == State.IDLE;
+        }
     }
 
     @ManagedOperation(value = "resets the task counts", impact = "ACTION")
@@ -437,7 +440,10 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     @Override
     public String toString()
     {
-        return _lock.runLocked(this::toStringLocked);
+        try (AutoLock l = _lock.lock())
+        {
+            return toStringLocked();
+        }
     }
 
     public String toStringLocked()

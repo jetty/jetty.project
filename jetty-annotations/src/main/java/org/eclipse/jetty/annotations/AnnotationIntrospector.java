@@ -198,7 +198,7 @@ public class AnnotationIntrospector
 
         Class<?> clazz = o.getClass();
 
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             // Lock to ensure that only 1 thread can be introspecting, and that
             // thread must have fully finished generating the products of

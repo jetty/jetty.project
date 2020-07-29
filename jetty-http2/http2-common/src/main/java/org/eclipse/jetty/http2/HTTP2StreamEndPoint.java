@@ -173,7 +173,11 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     @Override
     public int fill(ByteBuffer sink) throws IOException
     {
-        Entry entry = lock.runLocked(dataQueue::poll);
+        Entry entry;
+        try (AutoLock l = lock.lock())
+        {
+            entry = dataQueue.poll();
+        }
 
         if (LOG.isDebugEnabled())
             LOG.debug("filled {} on {}", entry, this);
@@ -204,7 +208,10 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
 
         if (source.hasRemaining())
         {
-            lock.runLocked(() -> dataQueue.offerFirst(entry));
+            try (AutoLock l = lock.lock())
+            {
+                dataQueue.offerFirst(entry);
+            }
         }
         else
         {
@@ -543,13 +550,19 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
 
     private void offer(ByteBuffer buffer, Callback callback, Throwable failure)
     {
-        Entry entry = new Entry(buffer, callback, failure);
-        lock.runLocked(() -> dataQueue.offer(entry));
+        try (AutoLock l = lock.lock())
+        {
+            dataQueue.offer(new Entry(buffer, callback, failure));
+        }
     }
 
     protected void process()
     {
-        boolean empty = lock.runLocked(dataQueue::isEmpty);
+        boolean empty;
+        try (AutoLock l = lock.lock())
+        {
+            empty = dataQueue.isEmpty();
+        }
         if (!empty)
         {
             Callback callback = readCallback.getAndSet(null);

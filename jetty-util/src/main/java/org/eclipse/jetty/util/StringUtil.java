@@ -376,12 +376,15 @@ public class StringUtil
                               int offset,
                               int length)
     {
-        int end = offset + length;
-        for (int i = offset; i < end; i++)
+        synchronized (buf)
         {
-            if (i >= s.length())
-                break;
-            buf.append(s.charAt(i));
+            int end = offset + length;
+            for (int i = offset; i < end; i++)
+            {
+                if (i >= s.length())
+                    break;
+                buf.append(s.charAt(i));
+            }
         }
     }
 

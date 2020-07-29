@@ -50,7 +50,7 @@ public class WebSocketSessionState
 
     public void onConnected()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (_sessionState != State.CONNECTING)
                 throw new IllegalStateException(_sessionState.toString());
@@ -61,7 +61,7 @@ public class WebSocketSessionState
 
     public void onOpen()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             switch (_sessionState)
             {
@@ -82,7 +82,10 @@ public class WebSocketSessionState
 
     private State getState()
     {
-        return lock.runLocked(() -> _sessionState);
+        try (AutoLock l = lock.lock())
+        {
+            return _sessionState;
+        }
     }
 
     public boolean isClosed()
@@ -104,12 +107,15 @@ public class WebSocketSessionState
 
     public CloseStatus getCloseStatus()
     {
-        return lock.runLocked(() -> _closeStatus);
+        try (AutoLock l = lock.lock())
+        {
+            return _closeStatus;
+        }
     }
 
     public boolean onClosed(CloseStatus closeStatus)
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (_sessionState == State.CLOSED)
                 return false;
@@ -138,7 +144,7 @@ public class WebSocketSessionState
      */
     public void onError(Throwable t)
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (_sessionState != State.CLOSED || _closeStatus == null)
                 throw new IllegalArgumentException();
@@ -155,7 +161,7 @@ public class WebSocketSessionState
 
     public boolean onEof()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             switch (_sessionState)
             {
@@ -177,7 +183,7 @@ public class WebSocketSessionState
         byte opcode = frame.getOpCode();
         boolean fin = frame.isFin();
 
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (!isOutputOpen())
                 throw new ClosedChannelException();
@@ -220,7 +226,7 @@ public class WebSocketSessionState
         byte opcode = frame.getOpCode();
         boolean fin = frame.isFin();
 
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (!isInputOpen())
                 throw new IllegalStateException(_sessionState.toString());

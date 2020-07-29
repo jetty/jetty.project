@@ -277,9 +277,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         if (_budget != null)
             _budget.reset();
 
-        try (AutoLock.WithCondition lock = _joinLock.lock())
+        try (AutoLock.WithCondition l = _joinLock.lock())
         {
-            lock.signalAll();
+            l.signalAll();
         }
     }
 
@@ -570,11 +570,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @Override
     public void join() throws InterruptedException
     {
-        try (AutoLock.WithCondition lock = _joinLock.lock())
+        try (AutoLock.WithCondition l = _joinLock.lock())
         {
             while (isRunning())
             {
-                lock.await();
+                l.await();
             }
         }
 

@@ -125,7 +125,7 @@ public class MessageOutputStream extends OutputStream
 
     private void flush(boolean fin) throws IOException
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (closed)
                 throw new IOException("Stream is closed");
@@ -159,7 +159,7 @@ public class MessageOutputStream extends OutputStream
 
     private void send(ByteBuffer data) throws IOException
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (closed)
                 throw new IOException("Stream is closed");
@@ -199,19 +199,30 @@ public class MessageOutputStream extends OutputStream
 
     public void setCallback(Callback callback)
     {
-        lock.runLocked(() -> this.callback = callback);
+        try (AutoLock l = lock.lock())
+        {
+            this.callback = callback;
+        }
     }
 
     private void notifySuccess()
     {
-        Callback callback = lock.runLocked(() -> this.callback);
+        Callback callback;
+        try (AutoLock l = lock.lock())
+        {
+            callback = this.callback;
+        }
         if (callback != null)
             callback.succeeded();
     }
 
     private void notifyFailure(Throwable failure)
     {
-        Callback callback = lock.runLocked(() -> this.callback);
+        Callback callback;
+        try (AutoLock l = lock.lock())
+        {
+            callback = this.callback;
+        }
         if (callback != null)
             callback.failed(failure);
     }

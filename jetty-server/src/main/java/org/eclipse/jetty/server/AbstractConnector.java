@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -142,7 +143,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 {
     protected static final Logger LOG = LoggerFactory.getLogger(AbstractConnector.class);
 
-    private final AutoLock.WithCondition _lock = new AutoLock.WithCondition();
+    private final AutoLock _lock = new AutoLock();
+    private final Condition _setAccepting = _lock.newCondition();
     private final Map<String, ConnectionFactory> _factories = new LinkedHashMap<>(); // Order is important on server side, so we use a LinkedHashMap
     private final Server _server;
     private final Executor _executor;
@@ -446,10 +448,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void setAccepting(boolean accepting)
     {
-        try (AutoLock.WithCondition lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _accepting = accepting;
-            lock.signalAll();
+            _setAccepting.signalAll();
         }
     }
 
@@ -702,17 +704,20 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             if (_acceptorPriorityDelta != 0)
                 thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, priority + _acceptorPriorityDelta)));
 
-            _lock.runLocked(() -> _acceptors[_id] = thread);
+            try (AutoLock l = _lock.lock())
+            {
+                _acceptors[_id] = thread;
+            }
 
             try
             {
                 while (isRunning() && !_shutdown.isShutdown())
                 {
-                    try (AutoLock.WithCondition lock = _lock.lock())
+                    try (AutoLock l = _lock.lock())
                     {
                         if (!_accepting && isRunning())
                         {
-                            lock.await();
+                            _setAccepting.await();
                             continue;
                         }
                     }
@@ -738,8 +743,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 if (_acceptorPriorityDelta != 0)
                     thread.setPriority(priority);
 
-                _lock.runLocked(() -> _acceptors[_id] = null);
-
+                try (AutoLock l = _lock.lock())
+                {
+                    _acceptors[_id] = null;
+                }
                 Shutdown shutdown = _shutdown;
                 if (shutdown != null)
                     shutdown.check();

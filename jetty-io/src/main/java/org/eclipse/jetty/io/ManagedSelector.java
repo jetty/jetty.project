@@ -254,7 +254,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             LOG.debug("Queued change lazy={} {} on {}", lazy, update, this);
 
         Selector selector = null;
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _updates.offer(update);
 
@@ -280,7 +280,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             LOG.debug("Wakeup {}", this);
 
         Selector selector = null;
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_selecting)
             {
@@ -384,7 +384,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private int getActionSize()
     {
-        return _lock.runLocked(() -> _updates.size());
+        try (AutoLock l = _lock.lock())
+        {
+            return _updates.size();
+        }
     }
 
     static int safeReadyOps(SelectionKey selectionKey)
@@ -423,7 +426,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             DumpKeys dump = new DumpKeys();
             String updatesAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 updates = new ArrayList<>(_updates);
                 _updates.addFirst(dump);
@@ -513,7 +516,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
         private void processUpdates()
         {
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 Deque<SelectorUpdate> updates = _updates;
                 _updates = _updateable;
@@ -542,7 +545,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
             Selector selector;
             int updates;
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 updates = _updates.size();
                 _selecting = updates == 0;
@@ -578,7 +581,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                             LOG.debug("Selector {} woken up from select, {}/{}/{} selected", selector, selected, selector.selectedKeys().size(), selector.keys().size());
 
                         int updates;
-                        try (AutoLock ignored = _lock.lock())
+                        try (AutoLock l = _lock.lock())
                         {
                             // finished selecting
                             _selecting = false;

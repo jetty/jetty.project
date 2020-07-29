@@ -288,15 +288,27 @@ public class HTTP2ServerConnection extends HTTP2Connection
     private void offerHttpChannel(HttpChannelOverHTTP2 channel)
     {
         if (isRecycleHttpChannels())
-            lock.runLocked(() -> channels.offer(channel));
+        {
+            try (AutoLock l = lock.lock())
+            {
+                channels.offer(channel);
+            }
+        }
     }
 
     private HttpChannelOverHTTP2 pollHttpChannel()
     {
         if (isRecycleHttpChannels())
-            return lock.runLocked(channels::poll);
+        {
+            try (AutoLock l = lock.lock())
+            {
+                return channels.poll();
+            }
+        }
         else
+        {
             return null;
+        }
     }
 
     public boolean upgrade(Request request, HttpFields.Mutable responseFields)

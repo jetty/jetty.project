@@ -192,7 +192,10 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     private void offerTask(Runnable task)
     {
-        lock.runLocked(() -> tasks.offer(task));
+        try (AutoLock l = lock.lock())
+        {
+            tasks.offer(task);
+        }
     }
 
     protected void produce()
@@ -219,7 +222,10 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     private Runnable pollTask()
     {
-        return lock.runLocked(tasks::poll);
+        try (AutoLock l = lock.lock())
+        {
+            return tasks.poll();
+        }
     }
 
     @Override

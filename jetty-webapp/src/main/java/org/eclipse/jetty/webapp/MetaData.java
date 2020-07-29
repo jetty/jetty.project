@@ -367,7 +367,7 @@ public class MetaData
         if (annotation == null)
             return;
 
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             //if no resource associated with an annotation map it to empty resource - these
             //annotations will always be processed first

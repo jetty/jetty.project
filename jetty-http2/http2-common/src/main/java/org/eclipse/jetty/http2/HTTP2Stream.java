@@ -143,7 +143,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (isReset())
                 return;
@@ -156,7 +156,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private boolean startWrite(Callback callback)
     {
         Throwable failure;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             failure = this.failure;
             if (failure == null && sendCallback == null)
@@ -192,18 +192,27 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public boolean isReset()
     {
-        return lock.runLocked(() -> localReset || remoteReset);
+        try (AutoLock l = lock.lock())
+        {
+            return localReset || remoteReset;
+        }
     }
 
     private boolean isFailed()
     {
-        return lock.runLocked(() -> failure != null);
+        try (AutoLock l = lock.lock())
+        {
+            return failure != null;
+        }
     }
 
     @Override
     public boolean isResetOrFailed()
     {
-        return lock.runLocked(() -> isReset() || isFailed());
+        try (AutoLock l = lock.lock())
+        {
+            return isReset() || isFailed();
+        }
     }
 
     @Override
@@ -382,7 +391,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         boolean initial;
         boolean proceed = false;
         DataEntry entry = new DataEntry(frame, callback);
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             dataQueue.offer(entry);
             initial = dataInitial;
@@ -403,7 +412,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             if (LOG.isDebugEnabled())
                 LOG.debug("Starting data processing of {} for {}", frame, this);
             notifyBeforeData(this);
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 dataProcess = proceed = dataDemand > 0;
             }
@@ -421,7 +430,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             throw new IllegalArgumentException("Invalid demand " + n);
         long demand;
         boolean proceed = false;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             demand = dataDemand = MathUtils.cappedAdd(dataDemand, n);
             if (!dataProcess)
@@ -438,7 +447,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         while (true)
         {
             DataEntry dataEntry;
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 if (dataQueue.isEmpty() || dataDemand == 0)
                 {
@@ -459,12 +468,15 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private long demand()
     {
-        return lock.runLocked(() -> dataDemand);
+        try (AutoLock l = lock.lock())
+        {
+            return dataDemand;
+        }
     }
 
     private void onReset(ResetFrame frame, Callback callback)
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             remoteReset = true;
             failure = new EofException("reset");
@@ -489,7 +501,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private void onFailure(FailureFrame frame, Callback callback)
     {
-        lock.runLocked(() -> failure = frame.getFailure());
+        try (AutoLock l = lock.lock())
+        {
+            failure = frame.getFailure();
+        }
         close();
         session.removeStream(this);
         notifyFailure(this, frame, callback);
@@ -674,7 +689,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private Callback endWrite()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             Callback callback = sendCallback;
             sendCallback = null;

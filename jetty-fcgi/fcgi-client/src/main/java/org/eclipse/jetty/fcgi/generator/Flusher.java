@@ -53,12 +53,18 @@ public class Flusher
 
     private void offer(Generator.Result result)
     {
-        lock.runLocked(() -> queue.offer(result));
+        try (AutoLock l = lock.lock())
+        {
+            queue.offer(result);
+        }
     }
 
     private Generator.Result poll()
     {
-        return lock.runLocked(queue::poll);
+        try (AutoLock l = lock.lock())
+        {
+            return queue.poll();
+        }
     }
 
     public void shutdown()

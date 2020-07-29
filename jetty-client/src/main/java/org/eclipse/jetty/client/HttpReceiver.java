@@ -100,7 +100,7 @@ public abstract class HttpReceiver
             throw new IllegalArgumentException("Invalid demand " + n);
 
         boolean resume = false;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             demand = MathUtils.cappedAdd(demand, n);
             if (stalled)
@@ -128,12 +128,15 @@ public abstract class HttpReceiver
 
     private long demand(LongUnaryOperator operator)
     {
-        return lock.runLocked(() -> demand = operator.applyAsLong(demand));
+        try (AutoLock l = lock.lock())
+        {
+            return demand = operator.applyAsLong(demand);
+        }
     }
 
     protected boolean hasDemandOrStall()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             stalled = demand <= 0;
             return !stalled;

@@ -125,7 +125,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     @ManagedOperation(value = "Resets the accept rate", impact = "ACTION")
     public void reset()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _rate.reset();
             if (_limiting)
@@ -144,7 +144,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     @Override
     protected void doStart() throws Exception
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_server != null)
             {
@@ -170,7 +170,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     @Override
     protected void doStop() throws Exception
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_task != null)
                 _task.cancel();
@@ -205,7 +205,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     @Override
     public void onAccepting(SelectableChannel channel)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             int rate = _rate.record();
             if (LOG.isDebugEnabled())
@@ -215,6 +215,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
                 if (!_limiting)
                 {
                     _limiting = true;
+
                     LOG.warn("AcceptLimit rate exceeded {}>{} on {}", rate, _acceptRateLimit, _connectors);
                     limit();
                 }
@@ -237,7 +238,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     @Override
     public void run()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _task = null;
             if (!isRunning())

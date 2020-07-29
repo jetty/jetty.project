@@ -101,7 +101,7 @@ public abstract class Holder<T> extends BaseHolder<T>
     @Override
     protected void setInstance(T instance)
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             super.setInstance(instance);
             if (getName() == null)

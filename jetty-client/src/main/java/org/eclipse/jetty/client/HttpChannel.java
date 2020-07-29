@@ -60,7 +60,7 @@ public abstract class HttpChannel
     {
         boolean result = false;
         boolean abort = true;
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_exchange == null)
             {
@@ -87,7 +87,7 @@ public abstract class HttpChannel
     public boolean disassociate(HttpExchange exchange)
     {
         boolean result = false;
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             HttpExchange existing = _exchange;
             _exchange = null;
@@ -105,7 +105,10 @@ public abstract class HttpChannel
 
     public HttpExchange getHttpExchange()
     {
-        return _lock.runLocked(() -> _exchange);
+        try (AutoLock l = _lock.lock())
+        {
+            return _exchange;
+        }
     }
 
     protected abstract HttpSender getHttpSender();

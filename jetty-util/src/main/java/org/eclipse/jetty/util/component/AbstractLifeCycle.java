@@ -77,7 +77,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     @Override
     public final void start() throws Exception
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             try
             {
@@ -118,7 +118,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     @Override
     public final void stop() throws Exception
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             try
             {

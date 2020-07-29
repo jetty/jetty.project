@@ -44,11 +44,11 @@ import org.eclipse.jetty.util.thread.AutoLock;
  * and to emit event source events.</p>
  * <p>This servlet supports the following configuration parameters:</p>
  * <ul>
- * <li>{@code heartBeatPeriod}, that specifies the heartbeat period, in seconds, used to check
+ * <li><code>heartBeatPeriod</code>, that specifies the heartbeat period, in seconds, used to check
  * whether the connection has been closed by the client; defaults to 10 seconds.</li>
  * </ul>
  *
- * <p>NOTE: there is currently no support for {@code last-event-id}.</p>
+ * <p>NOTE: there is currently no support for <code>last-event-id</code>.</p>
  */
 public abstract class EventSourceServlet extends HttpServlet
 {
@@ -79,6 +79,7 @@ public abstract class EventSourceServlet extends HttpServlet
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
+        @SuppressWarnings("unchecked")
         Enumeration<String> acceptValues = request.getHeaders("Accept");
         while (acceptValues.hasMoreElements())
         {
@@ -145,7 +146,7 @@ public abstract class EventSourceServlet extends HttpServlet
         @Override
         public void event(String name, String data) throws IOException
         {
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 output.write(EVENT_FIELD);
                 output.write(name.getBytes(StandardCharsets.UTF_8));
@@ -157,7 +158,7 @@ public abstract class EventSourceServlet extends HttpServlet
         @Override
         public void data(String data) throws IOException
         {
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 BufferedReader reader = new BufferedReader(new StringReader(data));
                 String line;
@@ -175,7 +176,7 @@ public abstract class EventSourceServlet extends HttpServlet
         @Override
         public void comment(String comment) throws IOException
         {
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 output.write(COMMENT_FIELD);
                 output.write(comment.getBytes(StandardCharsets.UTF_8));
@@ -193,7 +194,7 @@ public abstract class EventSourceServlet extends HttpServlet
             // on the second flush()
             try
             {
-                try (AutoLock ignored = lock.lock())
+                try (AutoLock l = lock.lock())
                 {
                     output.write('\r');
                     flush();
@@ -219,7 +220,7 @@ public abstract class EventSourceServlet extends HttpServlet
         @Override
         public void close()
         {
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 closed = true;
                 heartBeat.cancel(false);
@@ -229,7 +230,7 @@ public abstract class EventSourceServlet extends HttpServlet
 
         private void scheduleHeartBeat()
         {
-            try (AutoLock ignored = lock.lock())
+            try (AutoLock l = lock.lock())
             {
                 if (!closed)
                     heartBeat = scheduler.schedule(this, heartBeatPeriod, TimeUnit.SECONDS);

@@ -52,7 +52,9 @@ import org.slf4j.LoggerFactory;
 public class DefaultSessionIdManager extends ContainerLifeCycle implements SessionIdManager
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultSessionIdManager.class);
+
     public static final String __NEW_SESSION_ID = "org.eclipse.jetty.server.newSessionId";
+
     protected static final AtomicLong COUNTER = new AtomicLong();
 
     private final AutoLock _lock = new AutoLock();
@@ -229,7 +231,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         // pick a new unique ID!
         String id = null;
 
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             while (id == null || id.length() == 0)
             {
@@ -268,7 +270,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
                 if (!StringUtil.isBlank(_workerName))
                     id = _workerName + id;
 
-                id = id + COUNTER.getAndIncrement();
+                id = id + Long.toString(COUNTER.getAndIncrement());
             }
         }
         return id;

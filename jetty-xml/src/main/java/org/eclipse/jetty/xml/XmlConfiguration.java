@@ -250,7 +250,7 @@ public class XmlConfiguration
      */
     public XmlConfiguration(Resource resource) throws SAXException, IOException
     {
-        try (AutoLock ignored = PARSER.lock())
+        try (AutoLock l = PARSER.lock())
         {
             _location = resource;
             try (InputStream inputStream = resource.getInputStream())

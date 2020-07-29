@@ -1154,7 +1154,7 @@ public class DoSFilter implements Filter
         public boolean isRateExceeded(long now)
         {
             final long last;
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 last = _timestamps[_next];
                 _timestamps[_next] = now;
@@ -1283,7 +1283,7 @@ public class DoSFilter implements Filter
             // rate limit is never exceeded, but we keep track of the request timestamps
             // so that we know whether there was recent activity on this tracker
             // and whether it should be expired
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 _timestamps[_next] = now;
                 _next = (_next + 1) % _timestamps.length;

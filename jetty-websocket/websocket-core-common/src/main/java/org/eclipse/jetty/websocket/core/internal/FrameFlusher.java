@@ -116,7 +116,7 @@ public class FrameFlusher extends IteratingCallback
         List<Entry> failedEntries = null;
         CloseStatus closeStatus = null;
 
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (canEnqueue)
             {
@@ -188,7 +188,10 @@ public class FrameFlusher extends IteratingCallback
 
     public void onClose(Throwable cause)
     {
-        lock.runLocked(() -> closedCause = cause == null ? CLOSED_CHANNEL : cause);
+        try (AutoLock l = lock.lock())
+        {
+            closedCause = cause == null ? CLOSED_CHANNEL : cause;
+        }
         iterate();
     }
 
@@ -200,7 +203,7 @@ public class FrameFlusher extends IteratingCallback
 
         boolean flush = false;
         Callback releasingCallback = this;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (closedCause != null)
                 throw closedCause;
@@ -347,13 +350,16 @@ public class FrameFlusher extends IteratingCallback
 
     private int getQueueSize()
     {
-        return lock.runLocked(queue::size);
+        try (AutoLock l = lock.lock())
+        {
+            return queue.size();
+        }
     }
 
     public void timeoutExpired()
     {
         boolean failed = false;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (closedCause != null)
                 return;
@@ -404,7 +410,7 @@ public class FrameFlusher extends IteratingCallback
     {
         BufferUtil.clear(batchBuffer);
         releaseAggregate();
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             failedEntries.addAll(queue);
             queue.clear();

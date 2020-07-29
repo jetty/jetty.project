@@ -153,7 +153,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public void recycle()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_content != null)
                 _content.failed(null);
@@ -214,7 +214,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         int available = 0;
         boolean woken = false;
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_content == null)
                 _content = _inputQ.poll();
@@ -261,8 +261,8 @@ public class HttpInput extends ServletInputStream implements Runnable
     public int read(byte[] b, int off, int len) throws IOException
     {
         boolean wake = false;
-        int l;
-        try (AutoLock ignored = _lock.lock())
+        int read;
+        try (AutoLock l = _lock.lock())
         {
             // Calculate minimum request rate for DOS protection
             long minRequestDataRate = _channelState.getHttpChannel().getHttpConfiguration().getMinRequestDataRate();
@@ -289,9 +289,9 @@ public class HttpInput extends ServletInputStream implements Runnable
                 Content item = nextContent();
                 if (item != null)
                 {
-                    l = get(item, b, off, len);
+                    read = get(item, b, off, len);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} read {} from {}", this, l, item);
+                        LOG.debug("{} read {} from {}", this, read, item);
 
                     // Consume any following poison pills
                     if (item.isEmpty())
@@ -303,9 +303,9 @@ public class HttpInput extends ServletInputStream implements Runnable
                 if (!_state.blockForContent(this))
                 {
                     // Not blocking, so what should we return?
-                    l = _state.noContent();
+                    read = _state.noContent();
 
-                    if (l < 0)
+                    if (read < 0)
                         // If EOF do we need to wake for allDataRead callback?
                         wake = _channelState.onReadEof();
                     break;
@@ -315,7 +315,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
         if (wake)
             wake();
-        return l;
+        return read;
     }
 
     /**
@@ -335,7 +335,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public void asyncReadProduce() throws IOException
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             produceContent();
         }
@@ -524,6 +524,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     protected void blockForContent() throws IOException
     {
+        assert _lock.isHeldByCurrentThread();
         try
         {
             _waitingForContent = true;
@@ -562,7 +563,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      */
     public boolean addContent(Content content)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _waitingForContent = false;
             if (_firstByteTimeStamp == -1)
@@ -596,20 +597,26 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean hasContent()
     {
-        return _lock.runLocked(() -> _content != null || _inputQ.size() > 0);
+        try (AutoLock l = _lock.lock())
+        {
+            return _content != null || _inputQ.size() > 0;
+        }
     }
 
     public void unblock()
     {
-        try (AutoLock.WithCondition lock = _lock.lock())
+        try (AutoLock.WithCondition l = _lock.lock())
         {
-            lock.signal();
+            l.signal();
         }
     }
 
     public long getContentConsumed()
     {
-        return _lock.runLocked(() -> _contentConsumed);
+        try (AutoLock l = _lock.lock())
+        {
+            return _contentConsumed;
+        }
     }
 
     /**
@@ -636,7 +643,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean consumeAll()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             try
             {
@@ -665,18 +672,27 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean isError()
     {
-        return _lock.runLocked(() -> _state instanceof ErrorState);
+        try (AutoLock l = _lock.lock())
+        {
+            return _state instanceof ErrorState;
+        }
     }
 
     public boolean isAsync()
     {
-        return _lock.runLocked(() -> _state == ASYNC);
+        try (AutoLock l = _lock.lock())
+        {
+            return _state == ASYNC;
+        }
     }
 
     @Override
     public boolean isFinished()
     {
-        return _lock.runLocked(() -> _state instanceof EOFState);
+        try (AutoLock l = _lock.lock())
+        {
+            return _state instanceof EOFState;
+        }
     }
 
     @Override
@@ -684,7 +700,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         try
         {
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 if (_listener == null)
                     return true;
@@ -712,7 +728,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         boolean woken = false;
         try
         {
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 if (_listener != null)
                     throw new IllegalStateException("ReadListener already set");
@@ -760,7 +776,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean onIdleTimeout(Throwable x)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             boolean neverDispatched = getHttpChannelState().isIdle();
             if ((_waitingForContent || neverDispatched) && !isError())
@@ -775,7 +791,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public boolean failed(Throwable x)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             // Errors may be reported multiple times, for example
             // a local idle timeout and a remote I/O failure.
@@ -803,6 +819,7 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     private boolean wakeup()
     {
+        assert _lock.isHeldByCurrentThread();
         if (_listener != null)
             return _channelState.onContentAdded();
         _lock.signal();
@@ -820,7 +837,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         Throwable error;
         boolean aeof = false;
 
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             listener = _listener;
 
@@ -909,7 +926,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         long consumed;
         int q;
         Content content;
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             state = _state;
             consumed = _contentConsumed;

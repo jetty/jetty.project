@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import javax.servlet.AsyncListener;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletResponse;
@@ -169,19 +168,17 @@ public class HttpChannelState
         return _lock.lock();
     }
 
-    <R> R runLocked(Supplier<R> code)
-    {
-        return _lock.runLocked(code);
-    }
-
     public State getState()
     {
-        return runLocked(() -> _state);
+        try (AutoLock l = lock())
+        {
+            return _state;
+        }
     }
 
     public void addListener(AsyncListener listener)
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (_asyncListeners == null)
                 _asyncListeners = new ArrayList<>();
@@ -210,28 +207,43 @@ public class HttpChannelState
 
     public boolean isSendError()
     {
-        return runLocked(() -> _sendError);
+        try (AutoLock l = lock())
+        {
+            return _sendError;
+        }
     }
 
     public void setTimeout(long ms)
     {
-        runLocked(() -> _timeoutMs = ms);
+        try (AutoLock l = lock())
+        {
+            _timeoutMs = ms;
+        }
     }
 
     public long getTimeout()
     {
-        return runLocked(() -> _timeoutMs);
+        try (AutoLock l = lock())
+        {
+            return _timeoutMs;
+        }
     }
 
     public AsyncContextEvent getAsyncContextEvent()
     {
-        return runLocked(() -> _event);
+        try (AutoLock l = lock())
+        {
+            return _event;
+        }
     }
 
     @Override
     public String toString()
     {
-        return runLocked(this::toStringLocked);
+        try (AutoLock l = lock())
+        {
+            return toStringLocked();
+        }
     }
 
     private String toStringLocked()
@@ -257,12 +269,15 @@ public class HttpChannelState
 
     public String getStatusString()
     {
-        return runLocked(this::getStatusStringLocked);
+        try (AutoLock l = lock())
+        {
+            return getStatusStringLocked();
+        }
     }
 
     public boolean commitResponse()
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             switch (_outputState)
             {
@@ -278,7 +293,7 @@ public class HttpChannelState
 
     public boolean partialResponse()
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             switch (_outputState)
             {
@@ -294,7 +309,7 @@ public class HttpChannelState
 
     public boolean completeResponse()
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             switch (_outputState)
             {
@@ -311,7 +326,7 @@ public class HttpChannelState
 
     public boolean isResponseCommitted()
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = lock())
         {
             switch (_outputState)
             {
@@ -325,12 +340,15 @@ public class HttpChannelState
 
     public boolean isResponseCompleted()
     {
-        return runLocked(() -> _outputState == OutputState.COMPLETED);
+        try (AutoLock l = lock())
+        {
+            return _outputState == OutputState.COMPLETED;
+        }
     }
 
     public boolean abortResponse()
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             switch (_outputState)
             {
@@ -354,7 +372,7 @@ public class HttpChannelState
      */
     public Action handling()
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("handling {}", toStringLocked());
@@ -396,7 +414,7 @@ public class HttpChannelState
      */
     protected Action unhandle()
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("unhandle {}", toStringLocked());
@@ -515,7 +533,7 @@ public class HttpChannelState
     {
         final List<AsyncListener> lastAsyncListeners;
 
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("startAsync {}", toStringLocked());
@@ -564,7 +582,7 @@ public class HttpChannelState
     {
         boolean dispatch = false;
         AsyncContextEvent event;
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("dispatch {} -> {}", toStringLocked(), path);
@@ -600,7 +618,7 @@ public class HttpChannelState
     protected void timeout()
     {
         boolean dispatch = false;
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Timeout {}", toStringLocked());
@@ -628,7 +646,7 @@ public class HttpChannelState
     {
         final List<AsyncListener> listeners;
         AsyncContextEvent event;
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onTimeout {}", toStringLocked());
@@ -676,7 +694,7 @@ public class HttpChannelState
     {
         boolean handle = false;
         AsyncContextEvent event;
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("complete {}", toStringLocked());
@@ -714,7 +732,7 @@ public class HttpChannelState
         // actually handled by #thrownException
 
         AsyncContextEvent event = null;
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("asyncError " + toStringLocked(), failure);
@@ -745,7 +763,7 @@ public class HttpChannelState
     {
         final AsyncContextEvent asyncEvent;
         final List<AsyncListener> asyncListeners;
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("thrownException " + getStatusStringLocked(), th);
@@ -809,7 +827,7 @@ public class HttpChannelState
         });
 
         // check the actions of the listeners
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (_requestState == RequestState.ASYNC && !_sendError)
             {
@@ -881,7 +899,7 @@ public class HttpChannelState
         if (message == null)
             message = HttpStatus.getMessage(code);
 
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("sendError {}", toStringLocked());
@@ -922,7 +940,7 @@ public class HttpChannelState
 
     protected void completing()
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("completing {}", toStringLocked());
@@ -943,7 +961,7 @@ public class HttpChannelState
         final AsyncContextEvent event;
         boolean handle = false;
 
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("completed {}", toStringLocked());
@@ -997,7 +1015,7 @@ public class HttpChannelState
             }
             event.completed();
 
-            try (AutoLock ignored = lock())
+            try (AutoLock l = lock())
             {
                 _requestState = RequestState.COMPLETED;
                 if (_state == State.WAITING)
@@ -1015,7 +1033,7 @@ public class HttpChannelState
     protected void recycle()
     {
         cancelTimeout();
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("recycle {}", toStringLocked());
@@ -1044,7 +1062,7 @@ public class HttpChannelState
     public void upgrade()
     {
         cancelTimeout();
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("upgrade {}", toStringLocked());
@@ -1074,8 +1092,7 @@ public class HttpChannelState
 
     protected void cancelTimeout()
     {
-        AsyncContextEvent event = runLocked(() -> _event);
-        cancelTimeout(event);
+        cancelTimeout(getAsyncContextEvent());
     }
 
     protected void cancelTimeout(AsyncContextEvent event)
@@ -1086,33 +1103,48 @@ public class HttpChannelState
 
     public boolean isIdle()
     {
-        return runLocked(() -> _state == State.IDLE);
+        try (AutoLock l = lock())
+        {
+            return _state == State.IDLE;
+        }
     }
 
     public boolean isExpired()
     {
-        // TODO review
-        return runLocked(() -> _requestState == RequestState.EXPIRE || _requestState == RequestState.EXPIRING);
+        try (AutoLock l = lock())
+        {
+            // TODO review
+            return _requestState == RequestState.EXPIRE || _requestState == RequestState.EXPIRING;
+        }
     }
 
     public boolean isInitial()
     {
-        return runLocked(() -> _initial);
+        try (AutoLock l = lock())
+        {
+            return _initial;
+        }
     }
 
     public boolean isSuspended()
     {
-        return runLocked(() -> _state == State.WAITING || _state == State.HANDLING && _requestState == RequestState.ASYNC);
+        try (AutoLock l = lock())
+        {
+            return _state == State.WAITING || _state == State.HANDLING && _requestState == RequestState.ASYNC;
+        }
     }
 
     boolean isCompleted()
     {
-        return runLocked(() -> _requestState == RequestState.COMPLETED);
+        try (AutoLock l = lock())
+        {
+            return _requestState == RequestState.COMPLETED;
+        }
     }
 
     public boolean isAsyncStarted()
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (_state == State.HANDLING)
                 return _requestState != RequestState.BLOCKING;
@@ -1122,7 +1154,10 @@ public class HttpChannelState
 
     public boolean isAsync()
     {
-        return runLocked(() -> !_initial || _requestState != RequestState.BLOCKING);
+        try (AutoLock l = lock())
+        {
+            return !_initial || _requestState != RequestState.BLOCKING;
+        }
     }
 
     public Request getBaseRequest()
@@ -1197,7 +1232,7 @@ public class HttpChannelState
     public void onReadUnready()
     {
         boolean interested = false;
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onReadUnready {}", toStringLocked());
@@ -1243,7 +1278,7 @@ public class HttpChannelState
     public boolean onContentAdded()
     {
         boolean woken = false;
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onContentAdded {}", toStringLocked());
@@ -1286,7 +1321,7 @@ public class HttpChannelState
     public boolean onReadReady()
     {
         boolean woken = false;
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onReadReady {}", toStringLocked());
@@ -1319,7 +1354,7 @@ public class HttpChannelState
     public boolean onReadPossible()
     {
         boolean woken = false;
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onReadPossible {}", toStringLocked());
@@ -1351,7 +1386,7 @@ public class HttpChannelState
     public boolean onReadEof()
     {
         boolean woken = false;
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onEof {}", toStringLocked());
@@ -1371,7 +1406,7 @@ public class HttpChannelState
     {
         boolean wake = false;
 
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("onWritePossible {}", toStringLocked());

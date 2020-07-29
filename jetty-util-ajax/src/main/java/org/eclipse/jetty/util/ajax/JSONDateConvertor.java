@@ -79,7 +79,7 @@ public class JSONDateConvertor implements JSON.Convertor
             throw new UnsupportedOperationException();
         try
         {
-            try (AutoLock ignored = _lock.lock())
+            try (AutoLock l = _lock.lock())
             {
                 return _format.parseObject((String)map.get("value"));
             }

@@ -66,7 +66,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public void window(IStream stream, WindowUpdateFrame frame)
     {
         Throwable closed;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             closed = terminated;
             if (closed == null)
@@ -80,7 +80,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public boolean prepend(Entry entry)
     {
         Throwable closed;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             closed = terminated;
             if (closed == null)
@@ -99,7 +99,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     public boolean append(Entry entry)
     {
         Throwable closed;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             closed = terminated;
             if (closed == null)
@@ -117,12 +117,18 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
     private int getWindowQueueSize()
     {
-        return lock.runLocked(windows::size);
+        try (AutoLock l = lock.lock())
+        {
+            return windows.size();
+        }
     }
 
     public int getFrameQueueSize()
     {
-        return lock.runLocked(entries::size);
+        try (AutoLock l = lock.lock())
+        {
+            return entries.size();
+        }
     }
 
     @Override
@@ -131,7 +137,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("Flushing {}", session);
 
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (terminated != null)
                 throw terminated;
@@ -319,7 +325,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         Throwable closed;
         Set<Entry> allEntries;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             closed = terminated;
             terminated = x;
@@ -348,7 +354,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     void terminate(Throwable cause)
     {
         Throwable closed;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             closed = terminated;
             terminated = cause;

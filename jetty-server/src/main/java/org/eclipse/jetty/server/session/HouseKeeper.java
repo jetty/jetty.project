@@ -127,7 +127,7 @@ public class HouseKeeper extends AbstractLifeCycle
      */
     protected void startScavenging() throws Exception
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_scheduler != null)
             {
@@ -149,7 +149,7 @@ public class HouseKeeper extends AbstractLifeCycle
      */
     protected void stopScavenging() throws Exception
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_task != null)
             {
@@ -170,7 +170,7 @@ public class HouseKeeper extends AbstractLifeCycle
     @Override
     protected void doStop() throws Exception
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             stopScavenging();
             _scheduler = null;

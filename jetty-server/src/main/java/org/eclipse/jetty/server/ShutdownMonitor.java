@@ -98,9 +98,8 @@ public class ShutdownMonitor
     /**
      * Creates a ShutdownMonitor using configuration from the System properties.
      * <p>
-     * {@code STOP.PORT} = the port to listen on (empty, null, or values less than 0 disable the stop ability)
-     * <br>
-     * {@code STOP.KEY} = the magic key/passphrase to allow the stop<br>
+     * <code>STOP.PORT</code> = the port to listen on (empty, null, or values less than 0 disable the stop ability)<br>
+     * <code>STOP.KEY</code> = the magic key/passphrase to allow the stop<br>
      * <p>
      * Note: server socket will only listen on localhost, and a successful stop will issue a System.exit() call.
      */
@@ -115,17 +114,26 @@ public class ShutdownMonitor
 
     private void addLifeCycles(LifeCycle... lifeCycles)
     {
-        _lock.runLocked(() -> _lifeCycles.addAll(Arrays.asList(lifeCycles)));
+        try (AutoLock l = _lock.lock())
+        {
+            _lifeCycles.addAll(Arrays.asList(lifeCycles));
+        }
     }
 
     private void removeLifeCycle(LifeCycle lifeCycle)
     {
-        _lock.runLocked(() -> _lifeCycles.remove(lifeCycle));
+        try (AutoLock l = _lock.lock())
+        {
+            _lifeCycles.remove(lifeCycle);
+        }
     }
 
     private boolean containsLifeCycle(LifeCycle lifeCycle)
     {
-        return _lock.runLocked(() -> _lifeCycles.contains(lifeCycle));
+        try (AutoLock l = _lock.lock())
+        {
+            return _lifeCycles.contains(lifeCycle);
+        }
     }
 
     private void debug(String format, Object... args)
@@ -142,17 +150,26 @@ public class ShutdownMonitor
 
     public String getKey()
     {
-        return _lock.runLocked(() -> key);
+        try (AutoLock l = _lock.lock())
+        {
+            return key;
+        }
     }
 
     public int getPort()
     {
-        return _lock.runLocked(() -> port);
+        try (AutoLock l = _lock.lock())
+        {
+            return port;
+        }
     }
 
     public boolean isExitVm()
     {
-        return _lock.runLocked(() -> exitVm);
+        try (AutoLock l = _lock.lock())
+        {
+            return exitVm;
+        }
     }
 
     public void setDebug(boolean flag)
@@ -165,7 +182,7 @@ public class ShutdownMonitor
      */
     public void setExitVm(boolean exitVm)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (alive)
                 throw new IllegalStateException("ShutdownMonitor already started");
@@ -175,7 +192,7 @@ public class ShutdownMonitor
 
     public void setKey(String key)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (alive)
                 throw new IllegalStateException("ShutdownMonitor already started");
@@ -185,7 +202,7 @@ public class ShutdownMonitor
 
     public void setPort(int port)
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (alive)
                 throw new IllegalStateException("ShutdownMonitor already started");
@@ -195,7 +212,7 @@ public class ShutdownMonitor
 
     protected void start() throws Exception
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (alive)
             {
@@ -216,28 +233,31 @@ public class ShutdownMonitor
 
     private void stop()
     {
-        try (AutoLock.WithCondition lock = _lock.lock())
+        try (AutoLock.WithCondition l = _lock.lock())
         {
             alive = false;
-            lock.signalAll();
+            l.signalAll();
         }
     }
 
     // For test purposes only.
     void await() throws InterruptedException
     {
-        try (AutoLock.WithCondition lock = _lock.lock())
+        try (AutoLock.WithCondition l = _lock.lock())
         {
             while (alive)
             {
-                lock.await();
+                l.await();
             }
         }
     }
 
     protected boolean isAlive()
     {
-        return _lock.runLocked(() -> alive);
+        try (AutoLock l = _lock.lock())
+        {
+            return alive;
+        }
     }
 
     private ServerSocket listen()
@@ -411,7 +431,12 @@ public class ShutdownMonitor
 
         private void stopLifeCycles(Predicate<LifeCycle> predicate, boolean destroy)
         {
-            List<LifeCycle> lifeCycles = _lock.runLocked(() -> new ArrayList<>(_lifeCycles));
+            List<LifeCycle> lifeCycles;
+            try (AutoLock l = _lock.lock())
+            {
+                lifeCycles = new ArrayList<>(_lifeCycles);
+            }
+
             for (LifeCycle l : lifeCycles)
             {
                 try

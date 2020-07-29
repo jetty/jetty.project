@@ -30,7 +30,7 @@ public class FrameSequence
 
     public void check(byte opcode, boolean fin) throws ProtocolException
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (state == OpCode.CLOSE)
                 throw new ProtocolException(OpCode.name(opcode) + " after CLOSE");

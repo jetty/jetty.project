@@ -108,7 +108,7 @@ public class ListenerHolder extends BaseHolder<EventListener>
     @Override
     protected EventListener createInstance() throws Exception
     {
-        try (AutoLock ignored = lock())
+        try (AutoLock l = lock())
         {
             EventListener listener = super.createInstance();
             if (listener == null)

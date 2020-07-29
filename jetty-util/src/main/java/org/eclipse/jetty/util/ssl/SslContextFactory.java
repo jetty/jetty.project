@@ -214,7 +214,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     protected void doStart() throws Exception
     {
         super.doStart();
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             load();
         }
@@ -438,7 +438,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     @Override
     protected void doStop() throws Exception
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             unload();
         }
@@ -1041,7 +1041,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         if (!isStarted())
             return _setContext;
 
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_factory == null)
                 throw new IllegalStateException("SslContextFactory reload failed");
@@ -1422,7 +1422,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         if (!isStarted())
             return _setKeyStore;
 
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_factory == null)
                 throw new IllegalStateException("SslContextFactory reload failed");
@@ -1445,7 +1445,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         if (!isStarted())
             return _setTrustStore;
 
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (_factory == null)
                 throw new IllegalStateException("SslContextFactory reload failed");
@@ -1882,7 +1882,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     public void reload(Consumer<SslContextFactory> consumer) throws Exception
     {
-        try (AutoLock ignored = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             consumer.accept(this);
             unload();
