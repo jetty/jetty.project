@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.client.impl;
 
 import java.net.HttpCookie;
-import java.net.SocketAddress;
 import java.net.URI;
 import java.security.Principal;
 import java.util.Collections;
@@ -46,8 +45,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
 {
     private final ClientUpgradeRequest delegate;
-    private SocketAddress localSocketAddress;
-    private SocketAddress remoteSocketAddress;
 
     public DelegatedJettyClientUpgradeRequest(ClientUpgradeRequest delegate)
     {
@@ -101,8 +98,6 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
 
     public void configure(EndPoint endpoint)
     {
-        this.localSocketAddress = endpoint.getLocalAddress();
-        this.remoteSocketAddress = endpoint.getRemoteAddress();
     }
 
     @Override
@@ -168,18 +163,6 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public void addExtensions(org.eclipse.jetty.websocket.api.extensions.ExtensionConfig... configs)
-    {
-        // TODO
-    }
-
-    @Override
-    public void addExtensions(String... configs)
-    {
-        // TODO
-    }
-
-    @Override
     public Object getSession()
     {
         return null;
@@ -192,12 +175,6 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public void setCookies(List<HttpCookie> cookies)
-    {
-        // TODO
-    }
-
-    @Override
     public List<ExtensionConfig> getExtensions()
     {
         List<String> rawExtensions = delegate.getHeaders().getValuesList(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
@@ -205,47 +182,5 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
             return Collections.emptyList();
 
         return rawExtensions.stream().map(ExtensionConfig::parse).collect(Collectors.toList());
-    }
-
-    @Override
-    public void setExtensions(List<org.eclipse.jetty.websocket.api.extensions.ExtensionConfig> configs)
-    {
-        // TODO
-    }
-
-    @Override
-    public void setHeader(String name, List<String> values)
-    {
-        // TODO
-    }
-
-    @Override
-    public void setHeader(String name, String value)
-    {
-        // TODO
-    }
-
-    @Override
-    public void setHeaders(Map<String, List<String>> headers)
-    {
-        // TODO
-    }
-
-    @Override
-    public void setSession(Object session)
-    {
-        // TODO
-    }
-
-    @Override
-    public void setSubProtocols(List<String> protocols)
-    {
-        // TODO
-    }
-
-    @Override
-    public void setSubProtocols(String... protocols)
-    {
-        // TODO
     }
 }

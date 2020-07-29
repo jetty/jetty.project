@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 
 /**
@@ -64,50 +65,15 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public void addExtensions(ExtensionConfig... configs)
-    {
-        Collections.addAll(extensions, configs);
-    }
-
-    @Override
-    public void addExtensions(String... configs)
-    {
-        for (String config : configs)
-        {
-            extensions.add(ExtensionConfig.parse(config));
-        }
-    }
-
-    @Override
     public List<HttpCookie> getCookies()
     {
         return cookies;
     }
 
     @Override
-    public void setCookies(List<HttpCookie> cookies)
-    {
-        this.cookies.clear();
-        if (cookies != null && !cookies.isEmpty())
-        {
-            this.cookies.addAll(cookies);
-        }
-    }
-
-    @Override
     public List<ExtensionConfig> getExtensions()
     {
         return extensions;
-    }
-
-    @Override
-    public void setExtensions(List<ExtensionConfig> configs)
-    {
-        this.extensions.clear();
-        if (configs != null)
-        {
-            this.extensions.addAll(configs);
-        }
     }
 
     @Override
@@ -219,28 +185,6 @@ public final class ClientUpgradeRequest implements UpgradeRequest
         throw new UnsupportedOperationException("User Principal not available on Client request");
     }
 
-    /**
-     * Set Sub Protocol request list.
-     *
-     * @param protocols the sub protocols desired
-     */
-    @Override
-    public void setSubProtocols(String... protocols)
-    {
-        subProtocols.clear();
-        Collections.addAll(subProtocols, protocols);
-    }
-
-    @Override
-    public void setSubProtocols(List<String> subProtocols)
-    {
-        this.subProtocols.clear();
-        if (subProtocols != null)
-        {
-            this.subProtocols.addAll(subProtocols);
-        }
-    }
-
     @Override
     public boolean hasSubProtocol(String test)
     {
@@ -260,13 +204,84 @@ public final class ClientUpgradeRequest implements UpgradeRequest
         throw new UnsupportedOperationException("Request.isSecure not available on Client request");
     }
 
-    @Override
+    /**
+     * Add WebSocket Extension Configuration(s) to Upgrade Request.
+     * <p>
+     * This is merely the list of requested Extensions to use, see {@link UpgradeResponse#getExtensions()} for what was
+     * negotiated
+     *
+     * @param configs the configuration(s) to add
+     */
+    public void addExtensions(ExtensionConfig... configs)
+    {
+        Collections.addAll(extensions, configs);
+    }
+
+    /**
+     * Add WebSocket Extension Configuration(s) to request
+     * <p>
+     * This is merely the list of requested Extensions to use, see {@link UpgradeResponse#getExtensions()} for what was
+     * negotiated
+     *
+     * @param configs the configuration(s) to add
+     */
+    public void addExtensions(String... configs)
+    {
+        for (String config : configs)
+        {
+            extensions.add(ExtensionConfig.parse(config));
+        }
+    }
+
+    /**
+     * Set the list of Cookies on the request
+     *
+     * @param cookies the cookies to use
+     */
+    public void setCookies(List<HttpCookie> cookies)
+    {
+        this.cookies.clear();
+        if (cookies != null && !cookies.isEmpty())
+        {
+            this.cookies.addAll(cookies);
+        }
+    }
+
+    /**
+     * Set the list of WebSocket Extension configurations on the request.
+     *
+     * @param configs the list of extension configurations
+     */
+    public void setExtensions(List<ExtensionConfig> configs)
+    {
+        this.extensions.clear();
+        if (configs != null)
+        {
+            this.extensions.addAll(configs);
+        }
+    }
+
+    /**
+     * Set a specific header with multi-value field
+     * <p>
+     * Overrides any previous value for this named header
+     *
+     * @param name the name of the header
+     * @param values the multi-value field
+     */
     public void setHeader(String name, List<String> values)
     {
         headers.put(name, values);
     }
 
-    @Override
+    /**
+     * Set a specific header value
+     * <p>
+     * Overrides any previous value for this named header
+     *
+     * @param name the header to set
+     * @param value the value to set it to
+     */
     public void setHeader(String name, String value)
     {
         List<String> values = new ArrayList<>();
@@ -274,7 +289,17 @@ public final class ClientUpgradeRequest implements UpgradeRequest
         setHeader(name, values);
     }
 
-    @Override
+    /**
+     * Sets multiple headers on the request.
+     * <p>
+     * Only sets those headers provided, does not remove
+     * headers that exist on request and are not provided in the
+     * parameter for this method.
+     * <p>
+     * Convenience method vs calling {@link #setHeader(String, List)} multiple times.
+     *
+     * @param headers the headers to set
+     */
     public void setHeaders(Map<String, List<String>> headers)
     {
         this.headers.clear();
@@ -286,10 +311,29 @@ public final class ClientUpgradeRequest implements UpgradeRequest
         }
     }
 
-    @Override
-    public void setSession(Object session)
+    /**
+     * Set the offered WebSocket Sub-Protocol list.
+     *
+     * @param protocols the offered sub-protocol list
+     */
+    public void setSubProtocols(List<String> protocols)
     {
-        throw new UnsupportedOperationException("HttpSession not available on Client request");
+        this.subProtocols.clear();
+        if (protocols != null)
+        {
+            this.subProtocols.addAll(protocols);
+        }
+    }
+
+    /**
+     * Set the offered WebSocket Sub-Protocol list.
+     *
+     * @param protocols the offered sub-protocol list
+     */
+    public void setSubProtocols(String... protocols)
+    {
+        subProtocols.clear();
+        Collections.addAll(subProtocols, protocols);
     }
 
     /**
