@@ -30,9 +30,10 @@ import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
-public class JettyClientUpgradeRequest extends org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest
+public class JettyClientUpgradeRequest extends CoreClientUpgradeRequest
 {
     private final JettyWebSocketFrameHandler frameHandler;
 

@@ -31,9 +31,7 @@ import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeResponse;
 
-public class JettyServerFrameHandlerFactory
-    extends JettyWebSocketFrameHandlerFactory
-    implements FrameHandlerFactory, LifeCycle.Listener
+public class JettyServerFrameHandlerFactory extends JettyWebSocketFrameHandlerFactory implements FrameHandlerFactory, LifeCycle.Listener
 {
     public static JettyServerFrameHandlerFactory getFactory(ServletContext context)
     {

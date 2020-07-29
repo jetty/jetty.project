@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
 
 public class JettyServerUpgradeRequest
 {
-    private ServletUpgradeRequest upgradeRequest;
+    private final ServletUpgradeRequest upgradeRequest;
 
     JettyServerUpgradeRequest(ServletUpgradeRequest request)
     {

@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -44,9 +44,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
 {
-    private final ClientUpgradeRequest delegate;
+    private final CoreClientUpgradeRequest delegate;
 
-    public DelegatedJettyClientUpgradeRequest(ClientUpgradeRequest delegate)
+    public DelegatedJettyClientUpgradeRequest(CoreClientUpgradeRequest delegate)
     {
         this.delegate = delegate;
     }

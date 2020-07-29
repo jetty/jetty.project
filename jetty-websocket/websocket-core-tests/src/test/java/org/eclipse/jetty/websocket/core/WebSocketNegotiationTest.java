@@ -37,7 +37,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
@@ -146,7 +146,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("testExtensionSelection");
         upgradeRequest.addExtensions("permessage-deflate;server_no_context_takeover", "permessage-deflate;client_no_context_takeover");
 
@@ -177,7 +177,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("testNotOfferedParameter");
         upgradeRequest.addExtensions("permessage-deflate;client_no_context_takeover");
 
@@ -207,7 +207,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("testInvalidExtensionParameter");
         upgradeRequest.addExtensions("permessage-deflate;invalid_parameter");
 
@@ -223,7 +223,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("testNotAcceptingExtensions");
         upgradeRequest.addExtensions("permessage-deflate;server_no_context_takeover", "permessage-deflate;client_no_context_takeover");
 
@@ -271,7 +271,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("testAcceptTwoExtensionsOfSameName");
         upgradeRequest.addExtensions("permessage-deflate;server_no_context_takeover", "permessage-deflate;client_no_context_takeover");
 
@@ -302,7 +302,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
 
         try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannel.class))
         {
@@ -317,7 +317,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
     public void testNoSubProtocolSelected() throws Exception
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("testNoSubProtocolSelected");
         CompletableFuture<HttpFields> headers = new CompletableFuture<>();
         upgradeRequest.addListener(new UpgradeListener()
@@ -378,7 +378,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("test");
 
         CompletableFuture<String> extensionHeader = new CompletableFuture<>();
@@ -409,7 +409,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
     public void testListenerExtensionSelectionError() throws Exception
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("test");
         upgradeRequest.addExtensions("permessage-deflate;server_no_context_takeover");
 
@@ -467,7 +467,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
 
         TestFrameHandler clientHandler = new TestFrameHandler();
         CompletableFuture<String> extensionHeader = new CompletableFuture<>();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, server.getUri(), clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, server.getUri(), clientHandler);
         upgradeRequest.setSubProtocols("test");
         if (!StringUtil.isEmpty(reqExts))
             upgradeRequest.addExtensions(reqExts.split(","));
