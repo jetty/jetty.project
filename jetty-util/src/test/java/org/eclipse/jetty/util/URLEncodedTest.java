@@ -262,7 +262,6 @@ public class URLEncodedTest
         assertThat(urlEncoded.getString("text"), is(expected));
     }
 
-
     public static Stream<Arguments> invalidTestData()
     {
         ArrayList<Arguments> data = new ArrayList<>();
