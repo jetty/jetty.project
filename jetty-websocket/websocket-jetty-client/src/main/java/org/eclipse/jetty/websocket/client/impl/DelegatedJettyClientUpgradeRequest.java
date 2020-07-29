@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.EndPoint;
@@ -163,8 +164,7 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     @Override
     public boolean isSecure()
     {
-        // TODO: figure out how to obtain from HttpClient's HttpRequest
-        return false;
+        return HttpClient.isSchemeSecure(delegate.getScheme());
     }
 
     @Override
@@ -204,7 +204,7 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
         if (rawExtensions == null || rawExtensions.isEmpty())
             return Collections.emptyList();
 
-        return rawExtensions.stream().map((parameterizedName) -> ExtensionConfig.parse(parameterizedName)).collect(Collectors.toList());
+        return rawExtensions.stream().map(ExtensionConfig::parse).collect(Collectors.toList());
     }
 
     @Override
