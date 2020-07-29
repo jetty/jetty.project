@@ -22,13 +22,13 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.session.HouseKeeper.Runner;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -121,14 +121,16 @@ public class HouseKeeperTest
         
         //start it, but set a different interval after start
         hk.start();
+        Scheduler.Task oldTask = hk.getTask();
         hk.setIntervalSec(50000);
         assertEquals(50000, hk.getIntervalSec());
         assertNotNull(hk.getRunner());
         assertNotNull(hk.getTask());
-        assertNotNull(hk.getScheduler());
-        assertTrue(hk.isOwnScheduler());
         //Note: it would be nice to test if the old task was
         //cancelled, but the Scheduler.Task interface does not
         //provide that functionality.
+        assertNotSame(oldTask, hk.getTask());
+        assertNotNull(hk.getScheduler());
+        assertTrue(hk.isOwnScheduler());
     }
 }
