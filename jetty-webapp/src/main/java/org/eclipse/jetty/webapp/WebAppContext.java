@@ -1434,7 +1434,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
                 setClassLoader(null);
             }
 
-            setAvailable(true);
+            setAvailable(false);
             _unavailableException = null;
         }
     }
