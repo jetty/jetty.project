@@ -410,7 +410,7 @@ public class Dispatcher implements RequestDispatcher
                     case INCLUDE_CONTEXT_PATH:
                     {
                         ContextHandler.Context context = _baseRequest.getContext();
-                        return context == null ? null : context.getContextHandler().getContextPathEncoded();
+                        return context == null ? null : context.getContextHandler().getRequestContextPath();
                     }
                     case INCLUDE_QUERY_STRING:
                         return _query;

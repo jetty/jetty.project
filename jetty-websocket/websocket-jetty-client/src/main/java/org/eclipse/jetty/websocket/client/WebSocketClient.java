@@ -29,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -38,6 +39,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
@@ -50,6 +52,7 @@ import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
@@ -67,6 +70,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     private final Configuration.ConfigurationCustomizer configurationCustomizer = new Configuration.ConfigurationCustomizer();
     private final WebSocketComponents components = new WebSocketComponents();
     private boolean stopAtShutdown = false;
+    private long _stopTimeout = Long.MAX_VALUE;
 
     /**
      * Instantiate a WebSocketClient with defaults
@@ -151,7 +155,8 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         }
 
         CompletableFuture<Session> futureSession = new CompletableFuture<>();
-        coreClient.connect(upgradeRequest).whenComplete((coreSession, error) ->
+        CompletableFuture<CoreSession> coreConnect = coreClient.connect(upgradeRequest);
+        coreConnect.whenComplete((coreSession, error) ->
         {
             if (error != null)
             {
@@ -163,6 +168,12 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
             futureSession.complete(frameHandler.getSession());
         });
 
+        // If the returned future is cancelled we want to try to cancel the core future if possible.
+        futureSession.whenComplete((session, throwable) ->
+        {
+            if (throwable != null)
+                coreConnect.completeExceptionally(throwable);
+        });
         return futureSession;
     }
 
@@ -380,9 +391,31 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
         stopAtShutdown = stop;
     }
 
+    /**
+     * The timeout to allow all remaining open Sessions to be closed gracefully using  the close code {@link org.eclipse.jetty.websocket.api.StatusCode#SHUTDOWN}.
+     * @param stopTimeout the time in ms to wait for the graceful close, use a value less than or equal to 0 to not gracefully close.
+     */
+    public void setStopTimeout(long stopTimeout)
+    {
+        _stopTimeout = stopTimeout;
+    }
+
+    public long getStopTimeout()
+    {
+        return _stopTimeout;
+    }
+
     public boolean isStopAtShutdown()
     {
         return stopAtShutdown;
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        if (getStopTimeout() > 0)
+            Graceful.shutdown(this).get(getStopTimeout(), TimeUnit.MILLISECONDS);
+        super.doStop();
     }
 
     @Override

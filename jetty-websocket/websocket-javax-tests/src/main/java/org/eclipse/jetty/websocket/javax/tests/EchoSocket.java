@@ -16,22 +16,28 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.websocket.javax.tests;
 
-/**
- * Interface for Listeners that are interested in knowing about the Session history.
- */
-public interface WebSocketSessionListener
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import javax.websocket.ClientEndpoint;
+import javax.websocket.server.ServerEndpoint;
+
+@ServerEndpoint("/")
+@ClientEndpoint
+public class EchoSocket extends EventSocket
 {
-    default void onWebSocketSessionCreated(Session session)
+    @Override
+    public void onMessage(String message) throws IOException
     {
+        super.onMessage(message);
+        session.getBasicRemote().sendText(message);
     }
 
-    default void onWebSocketSessionOpened(Session session)
+    @Override
+    public void onMessage(ByteBuffer message) throws IOException
     {
-    }
-
-    default void onWebSocketSessionClosed(Session session)
-    {
+        super.onMessage(message);
+        session.getBasicRemote().sendBinary(message);
     }
 }

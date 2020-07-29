@@ -139,4 +139,54 @@ public interface Graceful
 
         return CompletableFuture.allOf(gracefuls.stream().map(Graceful::shutdown).toArray(CompletableFuture[]::new));
     }
+
+    /**
+     * Utility method to execute a {@link ThrowingRunnable} in a new daemon thread and
+     * be notified of the result in a {@link CompletableFuture}.
+     * @param runnable the ThrowingRunnable to run.
+     * @return the CompletableFuture to be notified when the runnable either completes or fails.
+     */
+    static CompletableFuture<Void> shutdown(ThrowingRunnable runnable)
+    {
+        AtomicReference<Thread> stopThreadReference = new AtomicReference<>();
+        CompletableFuture<Void> shutdown = new CompletableFuture<>()
+        {
+            @Override
+            public boolean cancel(boolean mayInterruptIfRunning)
+            {
+                boolean canceled = super.cancel(mayInterruptIfRunning);
+                if (canceled && mayInterruptIfRunning)
+                {
+                    Thread thread = stopThreadReference.get();
+                    if (thread != null)
+                        thread.interrupt();
+                }
+
+                return canceled;
+            }
+        };
+
+        Thread stopThread = new Thread(() ->
+        {
+            try
+            {
+                runnable.run();
+                shutdown.complete(null);
+            }
+            catch (Throwable t)
+            {
+                shutdown.completeExceptionally(t);
+            }
+        });
+        stopThread.setDaemon(true);
+        stopThreadReference.set(stopThread);
+        stopThread.start();
+        return shutdown;
+    }
+
+    @FunctionalInterface
+    interface ThrowingRunnable
+    {
+        void run() throws Exception;
+    }
 }

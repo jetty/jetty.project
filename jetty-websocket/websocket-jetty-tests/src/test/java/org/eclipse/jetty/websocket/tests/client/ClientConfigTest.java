@@ -159,7 +159,7 @@ public class ClientConfigTest
         assertNull(clientEndpoint.error);
 
         assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
-        assertThat(serverSocket.closeCode, is(StatusCode.NO_CODE));
+        assertThat(serverSocket.closeCode, is(StatusCode.NORMAL));
     }
 
     @ParameterizedTest

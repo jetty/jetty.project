@@ -33,9 +33,13 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpChannelOverFCGI extends HttpChannel
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverFCGI.class);
+
     private final HttpConnectionOverFCGI connection;
     private final Flusher flusher;
     private final HttpSenderOverFCGI sender;

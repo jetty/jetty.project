@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class HttpChannel
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
 
     private final HttpDestination _destination;
     private final TimeoutCompleteListener _totalTimeout;
