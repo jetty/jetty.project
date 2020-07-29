@@ -225,7 +225,7 @@ public class URLEncodedTest
     {
         try (ByteArrayInputStream in3 = new ByteArrayInputStream("name=libell%E9".getBytes(StringUtil.__ISO_8859_1)))
         {
-            MultiMap m3 = new MultiMap();
+            MultiMap<String> m3 = new MultiMap<>();
             Charset nullCharset = null; // use the one from the system property
             UrlEncoded.decodeTo(in3, m3, nullCharset, -1, -1);
             assertEquals("libell\u00E9", m3.getString("name"), "stream name");
