@@ -18,22 +18,20 @@
 
 package org.eclipse.jetty.websocket.javax.common;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
 import javax.websocket.CloseReason;
 import javax.websocket.Session;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.util.component.Graceful;
 
-public class SessionTracker extends AbstractLifeCycle implements JavaxWebSocketSessionListener
+public class SessionTracker extends AbstractLifeCycle implements JavaxWebSocketSessionListener, Graceful
 {
-    private static final Logger LOG = LoggerFactory.getLogger(SessionTracker.class);
-
     private final CopyOnWriteArraySet<JavaxWebSocketSession> sessions = new CopyOnWriteArraySet<>();
+    private boolean isShutdown = false;
 
     public Set<Session> getSessions()
     {
@@ -53,21 +51,39 @@ public class SessionTracker extends AbstractLifeCycle implements JavaxWebSocketS
     }
 
     @Override
+    protected void doStart() throws Exception
+    {
+        isShutdown = false;
+        super.doStart();
+    }
+
+    @Override
     protected void doStop() throws Exception
     {
-        for (Session session : sessions)
+        sessions.clear();
+        super.doStop();
+    }
+
+    @Override
+    public CompletableFuture<Void> shutdown()
+    {
+        isShutdown = true;
+        return Graceful.shutdown(() ->
         {
-            try
+            for (Session session : sessions)
             {
+                if (Thread.interrupted())
+                    break;
+
                 // GOING_AWAY is abnormal close status so it will hard close connection after sent.
                 session.close(new CloseReason(CloseReason.CloseCodes.GOING_AWAY, "Container being shut down"));
             }
-            catch (IOException e)
-            {
-                LOG.trace("IGNORED", e);
-            }
-        }
+        });
+    }
 
-        super.doStop();
+    @Override
+    public boolean isShutdown()
+    {
+        return isShutdown;
     }
 }

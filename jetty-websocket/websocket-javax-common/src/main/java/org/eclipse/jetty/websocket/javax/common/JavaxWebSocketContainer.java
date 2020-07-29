@@ -40,8 +40,8 @@ import org.slf4j.LoggerFactory;
 public abstract class JavaxWebSocketContainer extends ContainerLifeCycle implements javax.websocket.WebSocketContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketContainer.class);
-    private final SessionTracker sessionTracker = new SessionTracker();
     private final List<JavaxWebSocketSessionListener> sessionListeners = new ArrayList<>();
+    protected final SessionTracker sessionTracker = new SessionTracker();
     protected final Configuration.ConfigurationCustomizer defaultCustomizer = new Configuration.ConfigurationCustomizer();
     protected final WebSocketComponents components;
 
