@@ -40,8 +40,8 @@ import org.slf4j.LoggerFactory;
 public abstract class JakartaWebSocketContainer extends ContainerLifeCycle implements jakarta.websocket.WebSocketContainer
 {
     private static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketContainer.class);
-    private final SessionTracker sessionTracker = new SessionTracker();
     private final List<JakartaWebSocketSessionListener> sessionListeners = new ArrayList<>();
+    protected final SessionTracker sessionTracker = new SessionTracker();
     protected final Configuration.ConfigurationCustomizer defaultCustomizer = new Configuration.ConfigurationCustomizer();
     protected final WebSocketComponents components;
 

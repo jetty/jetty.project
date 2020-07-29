@@ -40,7 +40,7 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketSession;
 import org.eclipse.jetty.websocket.jakarta.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.jakarta.tests.EventSocket.EchoSocket;
+import org.eclipse.jetty.websocket.jakarta.tests.EchoSocket;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;

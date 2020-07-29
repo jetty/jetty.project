@@ -119,6 +119,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         frameHandlerFactory = factory;
 
         addSessionListener(sessionTracker);
+        addBean(sessionTracker);
     }
 
     public void addMapping(String pathSpec, JettyWebSocketCreator creator)
