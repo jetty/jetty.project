@@ -149,15 +149,6 @@ public interface UpgradeRequest
     URI getRequestURI();
 
     /**
-     * Access the Servlet HTTP Session (if present)
-     * <p>
-     * Note: Never present on a Client UpgradeRequest.
-     *
-     * @return the Servlet HTTPSession on server side UpgradeRequests
-     */
-    Object getSession();
-
-    /**
      * Get the list of offered WebSocket sub-protocols.
      *
      * @return the list of offered sub-protocols

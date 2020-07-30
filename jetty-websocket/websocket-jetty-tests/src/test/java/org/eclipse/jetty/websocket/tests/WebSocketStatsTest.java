@@ -65,8 +65,8 @@ public class WebSocketStatsTest
     private ServerConnector connector;
     private WebSocketClient client;
     private ConnectionStatistics statistics;
-    private CountDownLatch wsUpgradeComplete = new CountDownLatch(1);
-    private CountDownLatch wsConnectionClosed = new CountDownLatch(1);
+    private final CountDownLatch wsUpgradeComplete = new CountDownLatch(1);
+    private final CountDownLatch wsConnectionClosed = new CountDownLatch(1);
 
     @BeforeEach
     public void start() throws Exception

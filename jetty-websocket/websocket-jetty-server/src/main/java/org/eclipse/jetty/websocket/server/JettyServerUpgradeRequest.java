@@ -18,255 +18,99 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import java.net.HttpCookie;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.URI;
-import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
-import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeRequest;
 
-public class JettyServerUpgradeRequest implements UpgradeRequest
+public interface JettyServerUpgradeRequest extends UpgradeRequest
 {
-    private final ServerUpgradeRequest upgradeRequest;
-
-    JettyServerUpgradeRequest(ServerUpgradeRequest request)
-    {
-        upgradeRequest = request;
-    }
-
-    @Override
-    public List<HttpCookie> getCookies()
-    {
-        return upgradeRequest.getCookies();
-    }
-
-    @Override
-    public List<ExtensionConfig> getExtensions()
-    {
-        return upgradeRequest.getExtensions().stream().map(JettyExtensionConfig::new).collect(Collectors.toList());
-    }
-
-    @Override
-    public String getHeader(String name)
-    {
-        return upgradeRequest.getHeader(name);
-    }
-
-    @Override
-    public int getHeaderInt(String name)
-    {
-        return upgradeRequest.getHeaderInt(name);
-    }
-
-    @Override
-    public Map<String, List<String>> getHeaders()
-    {
-        return upgradeRequest.getHeadersMap();
-    }
-
-    @Override
-    public List<String> getHeaders(String name)
-    {
-        return upgradeRequest.getHeaders(name);
-    }
-
-    @Override
-    public String getHost()
-    {
-        return upgradeRequest.getHost();
-    }
-
-    @Override
-    public String getHttpVersion()
-    {
-        return upgradeRequest.getHttpVersion();
-    }
-
-    @Override
-    public String getMethod()
-    {
-        return upgradeRequest.getMethod();
-    }
-
-    @Override
-    public String getOrigin()
-    {
-        return upgradeRequest.getOrigin();
-    }
-
-    @Override
-    public Map<String, List<String>> getParameterMap()
-    {
-        return upgradeRequest.getParameterMap();
-    }
-
-    @Override
-    public String getProtocolVersion()
-    {
-        return upgradeRequest.getProtocolVersion();
-    }
-
-    @Override
-    public String getQueryString()
-    {
-        return upgradeRequest.getQueryString();
-    }
-
-    @Override
-    public URI getRequestURI()
-    {
-        return upgradeRequest.getRequestURI();
-    }
-
-    @Override
-    public HttpSession getSession()
-    {
-        return upgradeRequest.getSession();
-    }
-
-    @Override
-    public List<String> getSubProtocols()
-    {
-        return upgradeRequest.getSubProtocols();
-    }
-
-    @Override
-    public Principal getUserPrincipal()
-    {
-        return upgradeRequest.getUserPrincipal();
-    }
-
-    @Override
-    public boolean hasSubProtocol(String subprotocol)
-    {
-        return upgradeRequest.hasSubProtocol(subprotocol);
-    }
-
-    @Override
-    public boolean isSecure()
-    {
-        return upgradeRequest.isSecure();
-    }
+    /**
+     * Access the Servlet HTTP Session (if present)
+     * <p>
+     * Note: Never present on a Client UpgradeRequest.
+     *
+     * @return the Servlet HTTPSession on server side UpgradeRequests
+     */
+    Object getSession();
 
     /**
      * @return The {@link X509Certificate} instance at request attribute "javax.servlet.request.X509Certificate" or null.
      */
-    public X509Certificate[] getCertificates()
-    {
-        return upgradeRequest.getCertificates();
-    }
+    X509Certificate[] getCertificates();
 
     /**
      * @return Immutable version of {@link HttpServletRequest}
      */
-    public HttpServletRequest getHttpServletRequest()
-    {
-        return upgradeRequest.getHttpServletRequest();
-    }
+    HttpServletRequest getHttpServletRequest();
 
     /**
      * @return The requested Locale
      * @see HttpServletRequest#getLocale()
      */
-    public Locale getLocale()
-    {
-        return upgradeRequest.getLocale();
-    }
+    Locale getLocale();
 
     /**
      * @return The requested Locales
      * @see HttpServletRequest#getLocales()
      */
-    public Enumeration<Locale> getLocales()
-    {
-        return upgradeRequest.getLocales();
-    }
+    Enumeration<Locale> getLocales();
 
     /**
      * @return The local requested address, which is typically an {@link InetSocketAddress}, but may be another derivation of {@link SocketAddress}
      * @see ServletRequest#getLocalAddr()
      * @see ServletRequest#getLocalPort()
      */
-    public SocketAddress getLocalSocketAddress()
-    {
-        return upgradeRequest.getLocalSocketAddress();
-    }
+    SocketAddress getLocalSocketAddress();
 
     /**
      * @return The remote request address, which is typically an {@link InetSocketAddress}, but may be another derivation of {@link SocketAddress}
      * @see ServletRequest#getRemoteAddr()
      * @see ServletRequest#getRemotePort()
      */
-    public SocketAddress getRemoteSocketAddress()
-    {
-        return upgradeRequest.getRemoteSocketAddress();
-    }
+    SocketAddress getRemoteSocketAddress();
 
     /**
      * @return The request URI path within the context
      */
-    public String getRequestPath()
-    {
-        return upgradeRequest.getRequestPath();
-    }
+    String getRequestPath();
 
     /**
      * @param name Attribute name
      * @return Attribute value or null
      * @see ServletRequest#getAttribute(String)
      */
-    public Object getServletAttribute(String name)
-    {
-        return upgradeRequest.getServletAttribute(name);
-    }
+    Object getServletAttribute(String name);
 
     /**
      * @return Request attribute map
      */
-    public Map<String, Object> getServletAttributes()
-    {
-        return upgradeRequest.getServletAttributes();
-    }
+    Map<String, Object> getServletAttributes();
 
     /**
      * @return Request parameters
      * @see ServletRequest#getParameterMap()
      */
-    public Map<String, List<String>> getServletParameters()
-    {
-        return upgradeRequest.getServletParameters();
-    }
+    Map<String, List<String>> getServletParameters();
 
     /**
      * @param role The user role
      * @return True if the requests user has the role
      * @see HttpServletRequest#isUserInRole(String)
      */
-    public boolean isUserInRole(String role)
-    {
-        return upgradeRequest.isUserInRole(role);
-    }
+    boolean isUserInRole(String role);
 
     /**
      * @param name Attribute name
      * @param value Attribute value to set
      * @see ServletRequest#setAttribute(String, Object)
      */
-    public void setServletAttribute(String name, Object value)
-    {
-        upgradeRequest.setServletAttribute(name, value);
-    }
+    void setServletAttribute(String name, Object value);
 }

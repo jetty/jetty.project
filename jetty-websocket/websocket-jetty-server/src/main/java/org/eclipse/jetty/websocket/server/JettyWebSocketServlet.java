@@ -32,6 +32,8 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
+import org.eclipse.jetty.websocket.server.internal.DelegatedServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.internal.DelegatedServerUpgradeResponse;
 import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
@@ -278,7 +280,7 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         @Override
         public Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp)
         {
-            return creator.createWebSocket(new JettyServerUpgradeRequest(req), new JettyServerUpgradeResponse(resp));
+            return creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
         }
     }
 }

@@ -48,8 +48,8 @@ public class JettyServerFrameHandlerFactory extends JettyWebSocketFrameHandlerFa
     public FrameHandler newFrameHandler(Object websocketPojo, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse)
     {
         JettyWebSocketFrameHandler frameHandler = super.newJettyFrameHandler(websocketPojo);
-        frameHandler.setUpgradeRequest(new UpgradeRequestAdapter(upgradeRequest));
-        frameHandler.setUpgradeResponse(new UpgradeResponseAdapter(upgradeResponse));
+        frameHandler.setUpgradeRequest(new DelegatedServerUpgradeRequest(upgradeRequest));
+        frameHandler.setUpgradeResponse(new DelegatedServerUpgradeResponse(upgradeResponse));
         return frameHandler;
     }
 

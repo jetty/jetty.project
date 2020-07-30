@@ -163,12 +163,6 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public Object getSession()
-    {
-        return null;
-    }
-
-    @Override
     public Principal getUserPrincipal()
     {
         return null;

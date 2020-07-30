@@ -168,12 +168,6 @@ public final class ClientUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public Object getSession()
-    {
-        throw new UnsupportedOperationException("HttpSession not available on Client request");
-    }
-
-    @Override
     public List<String> getSubProtocols()
     {
         return subProtocols;
