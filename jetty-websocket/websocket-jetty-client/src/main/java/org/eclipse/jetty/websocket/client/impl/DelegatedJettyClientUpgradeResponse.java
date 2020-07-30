@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
  */
 public class DelegatedJettyClientUpgradeResponse implements UpgradeResponse
 {
-    private HttpResponse delegate;
+    private final HttpResponse delegate;
 
     public DelegatedJettyClientUpgradeResponse(HttpResponse response)
     {

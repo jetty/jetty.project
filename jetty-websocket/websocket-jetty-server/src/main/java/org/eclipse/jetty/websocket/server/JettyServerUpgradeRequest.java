@@ -33,18 +33,132 @@ import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
-import org.eclipse.jetty.websocket.core.server.Negotiation;
-import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeRequest;
 
-public class JettyServerUpgradeRequest
+public class JettyServerUpgradeRequest implements UpgradeRequest
 {
-    private final ServletUpgradeRequest upgradeRequest;
+    private final ServerUpgradeRequest upgradeRequest;
 
-    JettyServerUpgradeRequest(ServletUpgradeRequest request)
+    JettyServerUpgradeRequest(ServerUpgradeRequest request)
     {
         upgradeRequest = request;
+    }
+
+    @Override
+    public List<HttpCookie> getCookies()
+    {
+        return upgradeRequest.getCookies();
+    }
+
+    @Override
+    public List<ExtensionConfig> getExtensions()
+    {
+        return upgradeRequest.getExtensions().stream().map(JettyExtensionConfig::new).collect(Collectors.toList());
+    }
+
+    @Override
+    public String getHeader(String name)
+    {
+        return upgradeRequest.getHeader(name);
+    }
+
+    @Override
+    public int getHeaderInt(String name)
+    {
+        return upgradeRequest.getHeaderInt(name);
+    }
+
+    @Override
+    public Map<String, List<String>> getHeaders()
+    {
+        return upgradeRequest.getHeadersMap();
+    }
+
+    @Override
+    public List<String> getHeaders(String name)
+    {
+        return upgradeRequest.getHeaders(name);
+    }
+
+    @Override
+    public String getHost()
+    {
+        return upgradeRequest.getHost();
+    }
+
+    @Override
+    public String getHttpVersion()
+    {
+        return upgradeRequest.getHttpVersion();
+    }
+
+    @Override
+    public String getMethod()
+    {
+        return upgradeRequest.getMethod();
+    }
+
+    @Override
+    public String getOrigin()
+    {
+        return upgradeRequest.getOrigin();
+    }
+
+    @Override
+    public Map<String, List<String>> getParameterMap()
+    {
+        return upgradeRequest.getParameterMap();
+    }
+
+    @Override
+    public String getProtocolVersion()
+    {
+        return upgradeRequest.getProtocolVersion();
+    }
+
+    @Override
+    public String getQueryString()
+    {
+        return upgradeRequest.getQueryString();
+    }
+
+    @Override
+    public URI getRequestURI()
+    {
+        return upgradeRequest.getRequestURI();
+    }
+
+    @Override
+    public HttpSession getSession()
+    {
+        return upgradeRequest.getSession();
+    }
+
+    @Override
+    public List<String> getSubProtocols()
+    {
+        return upgradeRequest.getSubProtocols();
+    }
+
+    @Override
+    public Principal getUserPrincipal()
+    {
+        return upgradeRequest.getUserPrincipal();
+    }
+
+    @Override
+    public boolean hasSubProtocol(String subprotocol)
+    {
+        return upgradeRequest.hasSubProtocol(subprotocol);
+    }
+
+    @Override
+    public boolean isSecure()
+    {
+        return upgradeRequest.isSecure();
     }
 
     /**
@@ -56,84 +170,11 @@ public class JettyServerUpgradeRequest
     }
 
     /**
-     * @return Request cookies
-     * @see HttpServletRequest#getCookies()
-     */
-    public List<HttpCookie> getCookies()
-    {
-        return upgradeRequest.getCookies();
-    }
-
-    /**
-     * @return The extensions offered
-     * @see Negotiation#getOfferedExtensions()
-     */
-    public List<ExtensionConfig> getExtensions()
-    {
-        return upgradeRequest.getExtensions().stream().map(JettyExtensionConfig::new).collect(Collectors.toList());
-    }
-
-    /**
-     * @param name Header name
-     * @return Header value or null
-     * @see HttpServletRequest#getHeader(String)
-     */
-    public String getHeader(String name)
-    {
-        return upgradeRequest.getHeader(name);
-    }
-
-    /**
-     * @param name Header name
-     * @return Header value as integer or -1
-     * @see HttpServletRequest#getHeader(String)
-     */
-    public int getHeaderInt(String name)
-    {
-        return upgradeRequest.getHeaderInt(name);
-    }
-
-    /**
-     * @return Map of headers
-     */
-    public Map<String, List<String>> getHeadersMap()
-    {
-        return upgradeRequest.getHeadersMap();
-    }
-
-    /**
-     * @param name Header name
-     * @return List of header values or null
-     */
-    public List<String> getHeaders(String name)
-    {
-        return upgradeRequest.getHeaders(name);
-    }
-
-    /**
-     * @return The requested host
-     * @see HttpServletRequest#getRequestURL()
-     */
-    public String getHost()
-    {
-        return upgradeRequest.getHost();
-    }
-
-    /**
      * @return Immutable version of {@link HttpServletRequest}
      */
     public HttpServletRequest getHttpServletRequest()
     {
         return upgradeRequest.getHttpServletRequest();
-    }
-
-    /**
-     * @return The HTTP protocol version
-     * @see HttpServletRequest#getProtocol()
-     */
-    public String getHttpVersion()
-    {
-        return upgradeRequest.getHttpVersion();
     }
 
     /**
@@ -165,49 +206,6 @@ public class JettyServerUpgradeRequest
     }
 
     /**
-     * @return The requested method
-     * @see HttpServletRequest#getMethod()
-     */
-    public String getMethod()
-    {
-        return upgradeRequest.getMethod();
-    }
-
-    /**
-     * @return The origin header value
-     */
-    public String getOrigin()
-    {
-        return upgradeRequest.getOrigin();
-    }
-
-    /**
-     * @return The request parameter map
-     * @see ServletRequest#getParameterMap()
-     */
-    public Map<String, List<String>> getParameterMap()
-    {
-        return upgradeRequest.getParameterMap();
-    }
-
-    /**
-     * @return WebSocket protocol version from "Sec-WebSocket-Version" header
-     */
-    public String getProtocolVersion()
-    {
-        return upgradeRequest.getProtocolVersion();
-    }
-
-    /**
-     * @return The request query string
-     * @see HttpServletRequest#getQueryString()
-     */
-    public String getQueryString()
-    {
-        return upgradeRequest.getQueryString();
-    }
-
-    /**
      * @return The remote request address, which is typically an {@link InetSocketAddress}, but may be another derivation of {@link SocketAddress}
      * @see ServletRequest#getRemoteAddr()
      * @see ServletRequest#getRemotePort()
@@ -223,15 +221,6 @@ public class JettyServerUpgradeRequest
     public String getRequestPath()
     {
         return upgradeRequest.getRequestPath();
-    }
-
-    /**
-     * @return The request URI
-     * @see HttpServletRequest#getRequestURL()
-     */
-    public URI getRequestURI()
-    {
-        return upgradeRequest.getRequestURI();
     }
 
     /**
@@ -259,50 +248,6 @@ public class JettyServerUpgradeRequest
     public Map<String, List<String>> getServletParameters()
     {
         return upgradeRequest.getServletParameters();
-    }
-
-    /**
-     * @return The HttpSession, which may be null or invalidated
-     * @see HttpServletRequest#getSession(boolean)
-     */
-    public HttpSession getSession()
-    {
-        return upgradeRequest.getSession();
-    }
-
-    /**
-     * @return Get WebSocket negotiation offered sub protocols
-     */
-    public List<String> getSubProtocols()
-    {
-        return upgradeRequest.getSubProtocols();
-    }
-
-    /**
-     * @return The User's {@link Principal} or null
-     * @see HttpServletRequest#getUserPrincipal()
-     */
-    public Principal getUserPrincipal()
-    {
-        return upgradeRequest.getUserPrincipal();
-    }
-
-    /**
-     * @param subprotocol A sub protocol name
-     * @return True if the sub protocol was offered
-     */
-    public boolean hasSubProtocol(String subprotocol)
-    {
-        return upgradeRequest.hasSubProtocol(subprotocol);
-    }
-
-    /**
-     * @return True if the request is secure
-     * @see ServletRequest#isSecure()
-     */
-    public boolean isSecure()
-    {
-        return upgradeRequest.isSecure();
     }
 
     /**

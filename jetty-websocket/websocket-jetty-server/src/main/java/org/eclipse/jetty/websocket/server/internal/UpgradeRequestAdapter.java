@@ -28,13 +28,13 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
-import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeRequest;
 
 public class UpgradeRequestAdapter implements UpgradeRequest
 {
-    private final ServletUpgradeRequest _servletRequest;
+    private final ServerUpgradeRequest _servletRequest;
 
-    public UpgradeRequestAdapter(ServletUpgradeRequest servletRequest)
+    public UpgradeRequestAdapter(ServerUpgradeRequest servletRequest)
     {
         _servletRequest = servletRequest;
     }

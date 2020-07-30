@@ -24,67 +24,103 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
-import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeResponse;
 
-public class JettyServerUpgradeResponse
+public class JettyServerUpgradeResponse implements UpgradeResponse
 {
-    private ServletUpgradeResponse upgradeResponse;
+    private final ServerUpgradeResponse upgradeResponse;
 
-    JettyServerUpgradeResponse(ServletUpgradeResponse response)
+    JettyServerUpgradeResponse(ServerUpgradeResponse response)
     {
         upgradeResponse = response;
     }
 
+    @Override
     public void addHeader(String name, String value)
     {
         upgradeResponse.addHeader(name, value);
     }
 
+    @Override
     public void setHeader(String name, String value)
     {
         upgradeResponse.setHeader(name, value);
     }
 
-    public void setHeader(String name, List<String> values)
-    {
-        upgradeResponse.setHeader(name, values);
-    }
-
+    @Override
     public String getAcceptedSubProtocol()
     {
         return upgradeResponse.getAcceptedSubProtocol();
     }
 
+    @Override
     public List<ExtensionConfig> getExtensions()
     {
         return upgradeResponse.getExtensions().stream().map(JettyExtensionConfig::new).collect(Collectors.toList());
     }
 
+    @Override
     public String getHeader(String name)
     {
         return upgradeResponse.getHeader(name);
     }
 
+    @Override
     public Set<String> getHeaderNames()
     {
         return upgradeResponse.getHeaderNames();
     }
 
-    public Map<String, List<String>> getHeadersMap()
+    @Override
+    public Map<String, List<String>> getHeaders()
     {
         return upgradeResponse.getHeadersMap();
     }
 
+    @Override
     public List<String> getHeaders(String name)
     {
         return upgradeResponse.getHeaders(name);
     }
 
+    @Override
     public int getStatusCode()
     {
         return upgradeResponse.getStatusCode();
+    }
+
+    @Override
+    public void sendForbidden(String message) throws IOException
+    {
+        upgradeResponse.sendForbidden(message);
+    }
+
+    @Override
+    public void setAcceptedSubProtocol(String protocol)
+    {
+        upgradeResponse.setAcceptedSubProtocol(protocol);
+    }
+
+    @Override
+    public void setExtensions(List<ExtensionConfig> configs)
+    {
+        upgradeResponse.setExtensions(configs.stream()
+            .map(c -> new org.eclipse.jetty.websocket.core.ExtensionConfig(c.getName(), c.getParameters()))
+            .collect(Collectors.toList()));
+    }
+
+    @Override
+    public void setStatusCode(int statusCode)
+    {
+        upgradeResponse.setStatusCode(statusCode);
+    }
+
+    public void setHeader(String name, List<String> values)
+    {
+        upgradeResponse.setHeader(name, values);
     }
 
     public boolean isCommitted()
@@ -95,27 +131,5 @@ public class JettyServerUpgradeResponse
     public void sendError(int statusCode, String message) throws IOException
     {
         upgradeResponse.sendError(statusCode, message);
-    }
-
-    public void sendForbidden(String message) throws IOException
-    {
-        upgradeResponse.sendForbidden(message);
-    }
-
-    public void setAcceptedSubProtocol(String protocol)
-    {
-        upgradeResponse.setAcceptedSubProtocol(protocol);
-    }
-
-    public void setExtensions(List<ExtensionConfig> configs)
-    {
-        upgradeResponse.setExtensions(configs.stream()
-            .map(c -> new org.eclipse.jetty.websocket.core.ExtensionConfig(c.getName(), c.getParameters()))
-            .collect(Collectors.toList()));
-    }
-
-    public void setStatusCode(int statusCode)
-    {
-        upgradeResponse.setStatusCode(statusCode);
     }
 }
