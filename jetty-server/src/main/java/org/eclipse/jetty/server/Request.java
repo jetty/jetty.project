@@ -1805,7 +1805,7 @@ public class Request implements HttpServletRequest
         }
         else if (encoded.startsWith("/"))
         {
-            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(URIUtil.decodePath(encoded));
+            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(uri.getDecodedPath());
         }
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
         {
