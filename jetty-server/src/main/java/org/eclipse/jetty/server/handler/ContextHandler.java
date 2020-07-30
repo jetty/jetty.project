@@ -824,8 +824,22 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         //   AVAILABLE ----false--> UNAVAILABLE
         if (available)
         {
-            if (_availability.compareAndSet(Availability.UNAVAILABLE, Availability.AVAILABLE))
-                throw new IllegalStateException(_availability.get().toString());
+            while (true)
+            {
+                Availability availability = _availability.get();
+                switch (availability)
+                {
+                    case AVAILABLE:
+                        break;
+                    case UNAVAILABLE:
+                        if (!_availability.compareAndSet(availability, Availability.AVAILABLE))
+                            continue;
+                        break;
+                    default:
+                        throw new IllegalStateException(availability.toString());
+                }
+                break;
+            }
         }
         else
         {
