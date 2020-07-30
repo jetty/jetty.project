@@ -1,4 +1,31 @@
-jetty-9.4.31-SNAPSHOT
+jetty-9.4.32-SNAPSHOT
+
+jetty-9.4.31.v20200723 - 23 July 2020
+ + 1100 JSR356 Encoder#init is not called when created on demand
+ + 4736 Update Import-Package version start ranges
+ + 4890 JettyClient behavior when SETTINGS_HEADER_TABLE_SIZE is set to 0 in
+   SETTINGS Frame.
+ + 4904 WebsocketClient creates more connections than needed
+ + 4965 WINDOW_UPDATE for locally failed stream should not close the HTTP/2
+   session
+ + 4967 Possible buffer corruption in HTTP/2 session failures
+ + 4971 Simplify Connection.upgradeFrom()/upgradeTo()
+ + 4976 HttpClient async content throws NPE in DEBUG log
+ + 4981 Incorrect example for TryFilesFilter API docs
+ + 4985 Fix NPE related to use of Attributes.Wrapper getAttributeNameSet()
+ + 4989 Prevent parsing of module-info.class in OSGi bundles
+ + 5000 NPE from Server.dump of FilterMapping
+ + 5013 Bundle-ClassPath and lib place on WEB-INF/lib make classpath duplicate
+ + 5018 WebSocketClient connect / upgrade timeout not configurable
+ + 5019 Automatically hot-reload SSL certificates if keystore file changed
+ + 5020 LifeCycle.Listener not called for Filter/Servlet/Listener lifecycle
+   events
+ + 5025 dispatcher.include() with welcome files lead to stack overflow error
+ + 5053 CWE-331 in DigestAuthentication class
+ + 5057 `javax.servlet.include.context_path` attribute on root context. should
+   be empty string, but is `"/"`
+ + 5064 NotSerializableException for OpenIdConfiguration
+ + 5069 HttpClientTimeoutTests can occasionally fail due to unreachable network
 
 jetty-9.4.30.v20200611 - 11 June 2020
  + 4776 Incorrect path matching for WebSocket using PathMappings
