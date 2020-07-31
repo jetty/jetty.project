@@ -74,17 +74,14 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-        Collection<Connection> idleConnections = connectionPool.getIdleConnections();
-        assertEquals(0, idleConnections.size());
-
-        Collection<Connection> activeConnections = connectionPool.getActiveConnections();
-        assertEquals(0, activeConnections.size());
+        assertEquals(0, connectionPool.getIdleConnections().size());
+        assertEquals(0, connectionPool.getActiveConnections().size());
 
         request.onRequestSuccess(r -> successLatch.countDown())
             .onResponseHeaders(response ->
             {
-                assertEquals(0, idleConnections.size());
-                assertEquals(1, activeConnections.size());
+                assertEquals(0, ((DuplexConnectionPool)destination.getConnectionPool()).getIdleConnections().size());
+                assertEquals(1, ((DuplexConnectionPool)destination.getConnectionPool()).getActiveConnections().size());
                 headersLatch.countDown();
             })
             .send(new Response.Listener.Adapter()
@@ -106,8 +103,8 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         assertTrue(headersLatch.await(30, TimeUnit.SECONDS));
         assertTrue(successLatch.await(30, TimeUnit.SECONDS));
 
-        assertEquals(1, idleConnections.size());
-        assertEquals(0, activeConnections.size());
+        assertEquals(1, ((DuplexConnectionPool)destination.getConnectionPool()).getIdleConnections().size());
+        assertEquals(0, ((DuplexConnectionPool)destination.getConnectionPool()).getActiveConnections().size());
     }
 
     @ParameterizedTest
@@ -124,18 +121,15 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         HttpDestination destination = (HttpDestination)client.resolveDestination(request);
         DuplexConnectionPool connectionPool = (DuplexConnectionPool)destination.getConnectionPool();
 
-        Collection<Connection> idleConnections = connectionPool.getIdleConnections();
-        assertEquals(0, idleConnections.size());
-
-        Collection<Connection> activeConnections = connectionPool.getActiveConnections();
-        assertEquals(0, activeConnections.size());
+        assertEquals(0, connectionPool.getIdleConnections().size());
+        assertEquals(0, connectionPool.getActiveConnections().size());
 
         request.listener(new Request.Listener.Adapter()
         {
             @Override
             public void onBegin(Request request)
             {
-                activeConnections.iterator().next().close();
+                connectionPool.getActiveConnections().iterator().next().close();
                 beginLatch.countDown();
             }
 
@@ -144,24 +138,23 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             {
                 failureLatch.countDown();
             }
-        })
-            .send(new Response.Listener.Adapter()
+        }).send(new Response.Listener.Adapter()
+        {
+            @Override
+            public void onComplete(Result result)
             {
-                @Override
-                public void onComplete(Result result)
-                {
-                    assertTrue(result.isFailed());
-                    assertEquals(0, idleConnections.size());
-                    assertEquals(0, activeConnections.size());
-                    failureLatch.countDown();
-                }
-            });
+                assertTrue(result.isFailed());
+                assertEquals(0, connectionPool.getIdleConnections().size());
+                assertEquals(0, connectionPool.getActiveConnections().size());
+                failureLatch.countDown();
+            }
+        });
 
         assertTrue(beginLatch.await(30, TimeUnit.SECONDS));
         assertTrue(failureLatch.await(30, TimeUnit.SECONDS));
 
-        assertEquals(0, idleConnections.size());
-        assertEquals(0, activeConnections.size());
+        assertEquals(0, connectionPool.getIdleConnections().size());
+        assertEquals(0, connectionPool.getActiveConnections().size());
     }
 
     @ParameterizedTest
