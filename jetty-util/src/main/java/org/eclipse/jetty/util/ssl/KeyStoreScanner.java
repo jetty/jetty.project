@@ -27,8 +27,8 @@ import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The {@link KeyStoreScanner} is used to monitor the KeyStore file used by the {@link SslContextFactory}.
@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.DiscreteListener
 {
-    private static final Logger LOG = Log.getLogger(KeyStoreScanner.class);
+    private static final Logger LOG = LoggerFactory.getLogger(KeyStoreScanner.class);
 
     private final SslContextFactory sslContextFactory;
     private final File keystoreFile;

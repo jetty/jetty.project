@@ -26,12 +26,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A fast container of poolable objects, with optional support for
@@ -48,7 +47,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class Pool<T> implements AutoCloseable, Dumpable
 {
-    private static final Logger LOGGER = Log.getLogger(Pool.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Pool.class);
 
     private final List<Entry> sharedList = new CopyOnWriteArrayList<>();
     /*
@@ -60,7 +59,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * normally so the cache has no visible effect besides performance.
      */
     private final ThreadLocal<List<Entry>> cache;
-    private final Lock lock = new ReentrantLock();
+    private final AutoLock lock = new AutoLock();
     private final int maxEntries;
     private final int cacheSize;
     private volatile boolean closed;
@@ -143,8 +142,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         if (maxReservations >= 0 && getPendingConnectionCount() >= maxReservations)
             return null;
 
-        lock.lock();
-        try
+        try (AutoLock l = lock.lock())
         {
             if (!closed && sharedList.size() < maxEntries)
             {
@@ -153,10 +151,6 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 return entry;
             }
             return null;
-        }
-        finally
-        {
-            lock.unlock();
         }
     }
 
@@ -281,16 +275,11 @@ public class Pool<T> implements AutoCloseable, Dumpable
     public void close()
     {
         List<Entry> copy;
-        lock.lock();
-        try
+        try (AutoLock l = lock.lock())
         {
             closed = true;
             copy = new ArrayList<>(sharedList);
             sharedList.clear();
-        }
-        finally
-        {
-            lock.unlock();
         }
 
         // iterate the copy and close its entries
