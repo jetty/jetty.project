@@ -19,15 +19,15 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -66,10 +66,10 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
 
     public ValidatingConnectionPool(HttpDestination destination, int maxConnections, Callback requester, Scheduler scheduler, long timeout)
     {
-        super(destination, maxConnections, requester);
+        super((HttpDestination)destination, maxConnections, requester);
         this.scheduler = scheduler;
         this.timeout = timeout;
-        this.quarantine = new HashMap<>(maxConnections);
+        this.quarantine = new ConcurrentHashMap<>(maxConnections);
     }
 
     @ManagedAttribute(value = "The number of validating connections", readonly = true)
@@ -81,21 +81,11 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
     @Override
     public boolean release(Connection connection)
     {
-        lock();
-        try
-        {
-            if (!getActiveConnections().remove(connection))
-                return false;
-            Holder holder = new Holder(connection);
-            holder.task = scheduler.schedule(holder, timeout, TimeUnit.MILLISECONDS);
-            quarantine.put(connection, holder);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Validating for {}ms {}", timeout, connection);
-        }
-        finally
-        {
-            unlock();
-        }
+        Holder holder = new Holder(connection);
+        holder.task = scheduler.schedule(holder, timeout, TimeUnit.MILLISECONDS);
+        quarantine.put(connection, holder);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Validating for {}ms {}", timeout, connection);
 
         released(connection);
         return true;
@@ -104,16 +94,7 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
     @Override
     public boolean remove(Connection connection)
     {
-        Holder holder;
-        lock();
-        try
-        {
-            holder = quarantine.remove(connection);
-        }
-        finally
-        {
-            unlock();
-        }
+        Holder holder = quarantine.remove(connection);
 
         if (holder == null)
             return super.remove(connection);
@@ -129,25 +110,16 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
     }
 
     @Override
-    protected void dump(Appendable out, String indent, Object... items) throws IOException
+    public void dump(Appendable out, String indent) throws IOException
     {
         DumpableCollection toDump = new DumpableCollection("quarantine", quarantine.values());
-        super.dump(out, indent, Stream.concat(Stream.of(items), Stream.of(toDump)));
+        Dumpable.dumpObjects(out, indent, this, toDump);
     }
 
     @Override
     public String toString()
     {
-        int size;
-        lock();
-        try
-        {
-            size = quarantine.size();
-        }
-        finally
-        {
-            unlock();
-        }
+        int size = quarantine.size();
         return String.format("%s[v=%d]", super.toString(), size);
     }
 
@@ -169,20 +141,11 @@ public class ValidatingConnectionPool extends DuplexConnectionPool
             if (done.compareAndSet(false, true))
             {
                 boolean closed = isClosed();
-                lock();
-                try
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Validated {}", connection);
-                    quarantine.remove(connection);
-                    if (!closed)
-                        deactivate(connection);
-                }
-                finally
-                {
-                    unlock();
-                }
-
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Validated {}", connection);
+                quarantine.remove(connection);
+                if (!closed)
+                    deactivate(connection);
                 idle(connection, closed);
                 proceed();
             }

@@ -57,6 +57,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.junit.jupiter.api.AfterEach;
@@ -834,14 +835,14 @@ public class DispatcherTest
             assertEquals(null, request.getPathInfo());
             assertEquals(null, request.getPathTranslated());
 
-            UrlEncoded query = new UrlEncoded();
-            query.decode(request.getQueryString());
+            MultiMap<String> query = new MultiMap<>();
+            UrlEncoded.decodeTo(request.getQueryString(), query, UrlEncoded.ENCODING);
             assertThat(query.getString("do"), is("end"));
 
             // Russian for "selected=Temperature"
-            UrlEncoded q2 = new UrlEncoded();
-            q2.decode(query.getString("else"));
-            String russian = q2.encode();
+            MultiMap<String> q2 = new MultiMap<>();
+            UrlEncoded.decodeTo(query.getString("else"), q2, UrlEncoded.ENCODING);
+            String russian = UrlEncoded.encode(q2, UrlEncoded.ENCODING, false);
             assertThat(russian, is("%D0%B2%D1%8B%D0%B1%D1%80%D0%B0%D0%BD%D0%BE=%D0%A2%D0%B5%D0%BC%D0%BF%D0%B5%D1%80%D0%B0%D1%82%D1%83%D1%80%D0%B0"));
             assertThat(query.containsKey("test"), is(false));
             assertThat(query.containsKey("foreign"), is(false));
