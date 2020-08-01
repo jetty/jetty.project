@@ -109,6 +109,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
     private String _viaHost;
     private HttpClient _client;
     private long _timeout;
+    private boolean oldAddViaHeaderCalled;
 
     @Override
     public void init() throws ServletException
@@ -167,6 +168,9 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     public String getViaHost()
     {
+        if (_viaHost == null)
+            _viaHost = viaHost();
+
         return _viaHost;
     }
 
@@ -509,13 +513,59 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected void addProxyHeaders(HttpServletRequest clientRequest, Request proxyRequest)
     {
-        addViaHeader(proxyRequest);
+        addViaHeader(clientRequest, proxyRequest);
         addXForwardedHeaders(clientRequest, proxyRequest);
     }
 
+    /**
+     * Adds the HTTP Via header to the proxied request.
+     *
+     * @deprecated Use {@link #addViaHeader(HttpServletRequest, Request)} instead.
+     * @param proxyRequest the request being proxied
+     */
+    @Deprecated
     protected void addViaHeader(Request proxyRequest)
     {
-        proxyRequest.header(HttpHeader.VIA, "http/1.1 " + getViaHost());
+        oldAddViaHeaderCalled = true;
+    }
+
+    /**
+     * Adds the HTTP Via header to the proxied request, taking into account data present in the client request.
+     * This method considers the protocol of the client request when forming the proxied request. If it
+     * is HTTP, then the protocol name will not be included in the Via header that is sent by the proxy, and only
+     * the protocol version will be sent. If it is not, the entire protocol (name and version) will be included. 
+     * If the client request includes a Via header, the result will be appended to that to form a chain.
+     *
+     * @param clientRequest the client request
+     * @param proxyRequest the request being proxied
+     * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.7.1">RFC 7230 section 5.7.1</a>
+     */
+    protected void addViaHeader(HttpServletRequest clientRequest, Request proxyRequest)
+    {
+        // For backward compatibility reasons, call old, deprecated version of this method.
+        // If our flag isn't set, the deprecated method was overridden and we shouldn't do
+        // anything more.
+
+        oldAddViaHeaderCalled = false;
+        addViaHeader(proxyRequest);
+
+        if (!oldAddViaHeaderCalled)
+            return; // Old method was overridden, so bail out.
+
+        // Old version of this method wasn't overridden, so do the new logic instead.
+
+        String protocol = clientRequest.getProtocol();
+        String[] parts = protocol.split("/", 2);
+        String protocolName = parts.length == 2 && "HTTP".equals(parts[0]) ? parts[1] : protocol;
+        String viaHeaderValue = "";
+        String clientViaHeader = clientRequest.getHeader(HttpHeader.VIA.name());
+
+        if (clientViaHeader != null)
+            viaHeaderValue = clientViaHeader;
+
+        viaHeaderValue += protocolName + " " + getViaHost();
+
+        proxyRequest.header(HttpHeader.VIA, viaHeaderValue);
     }
 
     protected void addXForwardedHeaders(HttpServletRequest clientRequest, Request proxyRequest)
