@@ -63,8 +63,11 @@ public class HouseKeeper extends AbstractLifeCycle
             }
             finally
             {
-                if (_scheduler != null && _scheduler.isRunning())
-                    _task = _scheduler.schedule(this, _intervalMs, TimeUnit.MILLISECONDS);
+                synchronized (HouseKeeper.this)
+                {
+                    if (_scheduler != null && _scheduler.isRunning())
+                        _task = _scheduler.schedule(this, _intervalMs, TimeUnit.MILLISECONDS);
+                }
             }
         }
     }
@@ -76,12 +79,11 @@ public class HouseKeeper extends AbstractLifeCycle
      */
     public void setSessionIdManager(SessionIdManager sessionIdManager)
     {
+        if (isStarted())
+            throw new IllegalStateException("HouseKeeper started");
         _sessionIdManager = sessionIdManager;
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
-     */
     @Override
     protected void doStart() throws Exception
     {
@@ -153,13 +155,10 @@ public class HouseKeeper extends AbstractLifeCycle
                 _scheduler.stop();
                 _scheduler = null;
             }
+            _runner = null;
         }
-        _runner = null;
     }
 
-    /**
-     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
-     */
     @Override
     protected void doStop() throws Exception
     {
@@ -223,7 +222,10 @@ public class HouseKeeper extends AbstractLifeCycle
     @ManagedAttribute(value = "secs between scavenge cycles", readonly = true)
     public long getIntervalSec()
     {
-        return _intervalMs / 1000;
+        synchronized (this)
+        {
+            return _intervalMs / 1000;
+        }
     }
 
     /**
@@ -255,12 +257,12 @@ public class HouseKeeper extends AbstractLifeCycle
         }
     }
 
-    /**
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString()
     {
-        return super.toString() + "[interval=" + _intervalMs + ", ownscheduler=" + _ownScheduler + "]";
+        synchronized (this)
+        {
+            return super.toString() + "[interval=" + _intervalMs + ", ownscheduler=" + _ownScheduler + "]";
+        }
     }
 }

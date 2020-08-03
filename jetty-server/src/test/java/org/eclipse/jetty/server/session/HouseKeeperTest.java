@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * HouseKeeperTest
- *
  */
 public class HouseKeeperTest
 {
