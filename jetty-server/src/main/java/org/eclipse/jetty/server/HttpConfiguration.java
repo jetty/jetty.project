@@ -76,6 +76,7 @@ public class HttpConfiguration implements Dumpable
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.LEGACY; // TODO change default in jetty-10
     private boolean _notifyRemoteAsyncErrors = true;
+    private boolean _relativeRedirectAllowed;
 
     /**
      * <p>An interface that allows a request object to be customized
@@ -142,6 +143,7 @@ public class HttpConfiguration implements Dumpable
         _responseCookieCompliance = config._responseCookieCompliance;
         _multiPartCompliance = config._multiPartCompliance;
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
+        _relativeRedirectAllowed = config._relativeRedirectAllowed;
     }
 
     /**
@@ -642,6 +644,23 @@ public class HttpConfiguration implements Dumpable
         return _notifyRemoteAsyncErrors;
     }
 
+    /**
+     * @param allowed True if relative redirection locations are allowed
+     */
+    public void setRelativeRedirectAllowed(boolean allowed)
+    {
+        _relativeRedirectAllowed = allowed;
+    }
+
+    /**
+     * @return True if relative redirection locations are allowed
+     */
+    @ManagedAttribute("Whether relative redirection locations are allowed")
+    public boolean isRelativeRedirectAllowed()
+    {
+        return _relativeRedirectAllowed;
+    }
+
     @Override
     public String dump()
     {
@@ -673,7 +692,8 @@ public class HttpConfiguration implements Dumpable
             "minResponseDataRate=" + _minResponseDataRate,
             "cookieCompliance=" + _requestCookieCompliance,
             "setRequestCookieCompliance=" + _responseCookieCompliance,
-            "notifyRemoteAsyncErrors=" + _notifyRemoteAsyncErrors
+            "notifyRemoteAsyncErrors=" + _notifyRemoteAsyncErrors,
+            "relativeRedirectAllowed=" + _relativeRedirectAllowed
         );
     }
 

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.client.masks;
 
+import java.security.SecureRandom;
+import java.util.Objects;
 import java.util.Random;
 
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
@@ -28,11 +30,12 @@ public class RandomMasker implements Masker
 
     public RandomMasker()
     {
-        this(new Random());
+        this(new SecureRandom());
     }
 
     public RandomMasker(Random random)
     {
+        Objects.requireNonNull(random);
         this.random = random;
     }
 

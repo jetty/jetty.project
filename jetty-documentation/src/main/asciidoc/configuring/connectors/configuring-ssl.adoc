@@ -989,3 +989,15 @@ As a reminder, when configuring your includes/excludes, *excludes always win*.
 
 Dumps can be configured as part of the `jetty.xml` configuration for your server.
 Please see the documentation on the link:#jetty-dump-tool[Jetty Dump Tool] for more information.
+
+
+==== SslContextFactory KeyStore Reload
+
+Jetty can be configured to monitor the directory of the KeyStore file specified in the SslContextFactory, and reload the
+SslContextFactory if any changes are detected to the KeyStore file.
+
+If changes need to be done to other file such as the TrustStore file, this must be done before the change to the Keystore
+file which will then trigger the `SslContextFactory` reload.
+
+With the Jetty distribution this feature can be used by simply activating the `ssl-reload` startup module.
+For embedded usage the `KeyStoreScanner` should be created given the `SslContextFactory` and added as a bean on the Server.

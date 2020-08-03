@@ -40,7 +40,7 @@ public class LeakTrackingConnectionPool extends DuplexConnectionPool
 
     public LeakTrackingConnectionPool(Destination destination, int maxConnections, Callback requester)
     {
-        super(destination, maxConnections, requester);
+        super((HttpDestination)destination, maxConnections, requester);
         start();
     }
 

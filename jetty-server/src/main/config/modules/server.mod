@@ -1,4 +1,4 @@
-DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
 Enables the core Jetty server on the classpath.
@@ -71,6 +71,9 @@ patch-module: servlet.api=lib/jetty-schemas-3.1.jar
 
 ## multipart/form-data compliance mode of: LEGACY(slow), RFC7578(fast)
 # jetty.httpConfig.multiPartFormDataCompliance=LEGACY
+
+## Relative Redirect Locations allowed
+# jetty.httpConfig.relativeRedirectAllowed=false
 
 ### Server configuration
 ## Whether ctrl+c on the console gracefully stops the Jetty server

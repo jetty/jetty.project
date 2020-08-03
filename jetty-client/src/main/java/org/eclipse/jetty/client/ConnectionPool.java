@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.client.api.Connection;
 
@@ -27,6 +28,16 @@ import org.eclipse.jetty.client.api.Connection;
  */
 public interface ConnectionPool extends Closeable
 {
+    /**
+     * Optionally pre-create up to <code>connectionCount</code>
+     * connections so they are immediately ready for use.
+     * @param connectionCount the number of connections to pre-start.
+     */
+    default CompletableFuture<Void> preCreateConnections(int connectionCount)
+    {
+        return CompletableFuture.completedFuture(null);
+    }
+
     /**
      * @param connection the connection to test
      * @return whether the given connection is currently in use

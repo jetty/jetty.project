@@ -18,11 +18,9 @@
 
 package org.eclipse.jetty.security.openid;
 
-import java.security.Principal;
 import javax.security.auth.Subject;
 import javax.servlet.ServletRequest;
 
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.UserIdentity;
@@ -43,7 +41,6 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
 
     private final OpenIdConfiguration configuration;
     private final LoginService loginService;
-    private final HttpClient httpClient;
     private IdentityService identityService;
     private boolean authenticateNewUsers;
 
@@ -63,7 +60,6 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
     {
         this.configuration = configuration;
         this.loginService = loginService;
-        this.httpClient = configuration.getHttpClient();
         addBean(this.configuration);
         addBean(this.loginService);
     }
@@ -88,9 +84,7 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
         OpenIdCredentials openIdCredentials = (OpenIdCredentials)credentials;
         try
         {
-            openIdCredentials.redeemAuthCode(httpClient);
-            if (openIdCredentials.isExpired())
-                return null;
+            openIdCredentials.redeemAuthCode(configuration);
         }
         catch (Throwable e)
         {
@@ -141,12 +135,10 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
     @Override
     public boolean validate(UserIdentity user)
     {
-        Principal userPrincipal = user.getUserPrincipal();
-        if (!(userPrincipal instanceof OpenIdUserPrincipal))
+        if (!(user.getUserPrincipal() instanceof OpenIdUserPrincipal))
             return false;
 
-        OpenIdCredentials credentials = ((OpenIdUserPrincipal)userPrincipal).getCredentials();
-        return !credentials.isExpired();
+        return loginService == null || loginService.validate(user);
     }
 
     @Override
@@ -170,5 +162,7 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
     @Override
     public void logout(UserIdentity user)
     {
+        if (loginService != null)
+            loginService.logout(user);
     }
 }

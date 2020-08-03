@@ -404,7 +404,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
         if (LOG.isDebugEnabled())
             LOG.debug("callApplicationOnError()", cause);
 
-        if (openFuture != null && !openFuture.isDone())
+        if (openFuture != null)
             openFuture.completeExceptionally(cause);
 
         // Only notify onError if onClose has not been called.
@@ -478,7 +478,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             return;
         }
 
-        try (ThreadClassLoaderScope scope = new ThreadClassLoaderScope(classLoader))
+        try (ThreadClassLoaderScope ignored = new ThreadClassLoaderScope(classLoader))
         {
             // Upgrade success
             if (connection.opening())
@@ -535,6 +535,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     public void setFuture(CompletableFuture<Session> fut)
     {
         this.openFuture = fut;
+        fut.whenComplete((s, t) ->
+        {
+            if (t != null)
+                close(t);
+        });
     }
 
     /**

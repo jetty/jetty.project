@@ -29,8 +29,8 @@ import java.nio.charset.StandardCharsets;
 public class MultiPartOutputStream extends FilterOutputStream
 {
 
-    private static final byte[] __CRLF = {'\r', '\n'};
-    private static final byte[] __DASHDASH = {'-', '-'};
+    private static final byte[] CRLF = {'\r', '\n'};
+    private static final byte[] DASHDASH = {'-', '-'};
 
     public static final String MULTIPART_MIXED = "multipart/mixed";
     public static final String MULTIPART_X_MIXED_REPLACE = "multipart/x-mixed-replace";
@@ -71,11 +71,11 @@ public class MultiPartOutputStream extends FilterOutputStream
         try
         {
             if (inPart)
-                out.write(__CRLF);
-            out.write(__DASHDASH);
+                out.write(CRLF);
+            out.write(DASHDASH);
             out.write(boundaryBytes);
-            out.write(__DASHDASH);
-            out.write(__CRLF);
+            out.write(DASHDASH);
+            out.write(CRLF);
             inPart = false;
         }
         finally
@@ -104,15 +104,19 @@ public class MultiPartOutputStream extends FilterOutputStream
         throws IOException
     {
         if (inPart)
-            out.write(__CRLF);
+        {
+            out.write(CRLF);
+        }
         inPart = true;
-        out.write(__DASHDASH);
+        out.write(DASHDASH);
         out.write(boundaryBytes);
-        out.write(__CRLF);
+        out.write(CRLF);
         if (contentType != null)
+        {
             out.write(("Content-Type: " + contentType).getBytes(StandardCharsets.ISO_8859_1));
-        out.write(__CRLF);
-        out.write(__CRLF);
+            out.write(CRLF);
+        }
+        out.write(CRLF);
     }
 
     /**
@@ -126,20 +130,22 @@ public class MultiPartOutputStream extends FilterOutputStream
         throws IOException
     {
         if (inPart)
-            out.write(__CRLF);
+            out.write(CRLF);
         inPart = true;
-        out.write(__DASHDASH);
+        out.write(DASHDASH);
         out.write(boundaryBytes);
-        out.write(__CRLF);
+        out.write(CRLF);
         if (contentType != null)
+        {
             out.write(("Content-Type: " + contentType).getBytes(StandardCharsets.ISO_8859_1));
-        out.write(__CRLF);
+            out.write(CRLF);
+        }
         for (int i = 0; headers != null && i < headers.length; i++)
         {
             out.write(headers[i].getBytes(StandardCharsets.ISO_8859_1));
-            out.write(__CRLF);
+            out.write(CRLF);
         }
-        out.write(__CRLF);
+        out.write(CRLF);
     }
 
     @Override
@@ -148,7 +154,3 @@ public class MultiPartOutputStream extends FilterOutputStream
         out.write(b, off, len);
     }
 }
-
-
-
-

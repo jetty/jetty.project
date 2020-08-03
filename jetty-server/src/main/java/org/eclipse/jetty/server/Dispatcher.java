@@ -109,7 +109,7 @@ public class Dispatcher implements RequestDispatcher
                 IncludeAttributes attr = new IncludeAttributes(old_attr);
 
                 attr._requestURI = _uri.getPath();
-                attr._contextPath = _contextHandler.getContextPath();
+                attr._contextPath = _contextHandler.getRequestContextPath();
                 attr._servletPath = null; // set by ServletHandler
                 attr._pathInfo = _pathInContext;
                 attr._query = _uri.getQuery();

@@ -138,9 +138,9 @@ public class ErrorCloseTest
         EventSocket clientSocket = new EventSocket();
         client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
 
-        assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
-        assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
-        assertThat(serverSocket.failure.getMessage(), is("throwing from onOpen"));
+        assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(serverSocket.error.getMessage(), is("throwing from onOpen"));
 
         // Check we have stopped the WebSocketSession properly.
         assertFalse(serverSocket.session.isOpen());
@@ -156,9 +156,9 @@ public class ErrorCloseTest
         client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
         clientSocket.session.getRemote().sendString("trigger onMessage error");
 
-        assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
-        assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
-        assertThat(serverSocket.failure.getMessage(), is("throwing from onMessage"));
+        assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(serverSocket.error.getMessage(), is("throwing from onMessage"));
 
         // Check we have stopped the WebSocketSession properly.
         assertFalse(serverSocket.session.isOpen());
@@ -177,8 +177,8 @@ public class ErrorCloseTest
         try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketSession.class))
         {
             client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
-            assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
-            assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
         }
 
         // Check we have stopped the WebSocketSession properly.
@@ -199,8 +199,8 @@ public class ErrorCloseTest
         try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketSession.class))
         {
             clientSocket.session.getRemote().sendString("trigger onMessage error");
-            assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
-            assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
         }
 
         // Check we have stopped the WebSocketSession properly.
@@ -218,14 +218,14 @@ public class ErrorCloseTest
         client.connect(clientSocket, serverUri).get(5, TimeUnit.SECONDS);
 
         // Set a short idleTimeout on the server.
-        assertTrue(serverSocket.open.await(5, TimeUnit.SECONDS));
+        assertTrue(serverSocket.openLatch.await(5, TimeUnit.SECONDS));
         serverSocket.session.setIdleTimeout(1000);
 
         // Wait for server to timeout.
         try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketSession.class))
         {
-            assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
-            assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
         }
 
         // Check we have stopped the WebSocketSession properly.
@@ -245,8 +245,8 @@ public class ErrorCloseTest
         try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketSession.class))
         {
             clientSocket.session.disconnect();
-            assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
-            assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
         }
 
         // Check we have stopped the WebSocketSession properly.
@@ -266,8 +266,8 @@ public class ErrorCloseTest
         try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketSession.class))
         {
             serverSocket.session.disconnect();
-            assertTrue(serverSocket.closed.await(5, TimeUnit.SECONDS));
-            assertTrue(clientSocket.closed.await(5, TimeUnit.SECONDS));
+            assertTrue(serverSocket.closeLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(clientSocket.closeLatch.await(5, TimeUnit.SECONDS));
         }
 
         // Check we have stopped the WebSocketSession properly.
