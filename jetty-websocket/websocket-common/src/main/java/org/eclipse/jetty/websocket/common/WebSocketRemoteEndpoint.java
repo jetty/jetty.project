@@ -47,7 +47,7 @@ import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
  */
 public class WebSocketRemoteEndpoint implements RemoteEndpoint
 {
-    private enum MsgType
+    protected enum MsgType
     {
         BLOCKING,
         ASYNC,
@@ -56,7 +56,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         PARTIAL_BINARY
     }
 
-    private static final WriteCallback NOOP_CALLBACK = new WriteCallback()
+    protected static final WriteCallback NOOP_CALLBACK = new WriteCallback()
     {
         @Override
         public void writeSuccess()
@@ -69,7 +69,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
     };
 
-    private static final Logger LOG = Log.getLogger(WebSocketRemoteEndpoint.class);
+    protected static final Logger LOG = Log.getLogger(WebSocketRemoteEndpoint.class);
 
     private static final int ASYNC_MASK = 0x0000FFFF;
     private static final int BLOCK_MASK = 0x00010000;
@@ -99,7 +99,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         this.batchMode = batchMode;
     }
 
-    private void blockingWrite(WebSocketFrame frame) throws IOException
+    protected void blockingWrite(WebSocketFrame frame) throws IOException
     {
         try (WriteBlocker b = blocker.acquireWriteBlocker())
         {
@@ -108,7 +108,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
     }
 
-    private boolean lockMsg(MsgType type)
+    protected boolean lockMsg(MsgType type)
     {
         // Blocking -> BLOCKING  ; Async -> ASYNC     ; Partial -> PARTIAL_XXXX ; Stream -> STREAMING
         // Blocking -> Pending!! ; Async -> BLOCKING  ; Partial -> Pending!!    ; Stream -> STREAMING 
@@ -173,7 +173,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
     }
 
-    private void unlockMsg(MsgType type)
+    protected void unlockMsg(MsgType type)
     {
         while (true)
         {
@@ -234,7 +234,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
      * @param frame the frame to write
      * @return the future for the network write of the frame
      */
-    private Future<Void> sendAsyncFrame(WebSocketFrame frame)
+    protected Future<Void> sendAsyncFrame(WebSocketFrame frame)
     {
         FutureWriteCallback future = new FutureWriteCallback();
         uncheckedSendFrame(frame, future);
