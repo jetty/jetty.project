@@ -20,8 +20,8 @@ package org.eclipse.jetty.websocket.common;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -29,31 +29,40 @@ import org.eclipse.jetty.util.component.LifeCycle;
 
 public class SessionTracker extends AbstractLifeCycle implements WebSocketSessionListener, Dumpable
 {
-    private CopyOnWriteArraySet<WebSocketSession> sessions = new CopyOnWriteArraySet<>();
+    private final Set<WebSocketSession> sessions = new HashSet<>();
 
     public Set<WebSocketSession> getSessions()
     {
-        return Collections.unmodifiableSet(sessions);
+        synchronized (this)
+        {
+            return Collections.unmodifiableSet(new HashSet<>(sessions));
+        }
     }
 
     @Override
     public void onSessionCreated(WebSocketSession session)
     {
         LifeCycle.start(session);
-        sessions.add(session);
+        synchronized (this)
+        {
+            sessions.add(session);
+        }
     }
 
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
-        sessions.remove(session);
+        synchronized (this)
+        {
+            sessions.remove(session);
+        }
         LifeCycle.stop(session);
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        for (WebSocketSession session : sessions)
+        for (WebSocketSession session : getSessions())
         {
             LifeCycle.stop(session);
         }
@@ -63,6 +72,6 @@ public class SessionTracker extends AbstractLifeCycle implements WebSocketSessio
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this, sessions);
+        Dumpable.dumpObjects(out, indent, this, getSessions());
     }
 }

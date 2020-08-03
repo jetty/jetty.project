@@ -19,37 +19,47 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
+import javax.websocket.Session;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 public class JsrSessionTracker extends AbstractLifeCycle implements JsrSessionListener
 {
-    private CopyOnWriteArraySet<JsrSession> sessions = new CopyOnWriteArraySet<>();
+    private final Set<JsrSession> sessions = new HashSet<>();
 
-    public Set<javax.websocket.Session> getSessions()
+    public Set<Session> getSessions()
     {
-        return Collections.unmodifiableSet(sessions);
+        synchronized (this)
+        {
+            return Collections.unmodifiableSet(new HashSet<>(sessions));
+        }
     }
 
     @Override
     public void onSessionOpened(JsrSession session)
     {
-        sessions.add(session);
+        synchronized (this)
+        {
+            sessions.add(session);
+        }
     }
 
     @Override
     public void onSessionClosed(JsrSession session)
     {
-        sessions.remove(session);
+        synchronized (this)
+        {
+            sessions.remove(session);
+        }
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        for (JsrSession session : sessions)
+        for (Session session : getSessions())
         {
             LifeCycle.stop(session);
         }
