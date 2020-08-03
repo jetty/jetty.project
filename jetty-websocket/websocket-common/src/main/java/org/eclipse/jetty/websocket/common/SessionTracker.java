@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -29,40 +30,31 @@ import org.eclipse.jetty.util.component.LifeCycle;
 
 public class SessionTracker extends AbstractLifeCycle implements WebSocketSessionListener, Dumpable
 {
-    private final Set<WebSocketSession> sessions = new HashSet<>();
+    private final Set<WebSocketSession> sessions = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public Set<WebSocketSession> getSessions()
     {
-        synchronized (this)
-        {
-            return Collections.unmodifiableSet(new HashSet<>(sessions));
-        }
+        return Collections.unmodifiableSet(new HashSet<>(sessions));
     }
 
     @Override
     public void onSessionCreated(WebSocketSession session)
     {
         LifeCycle.start(session);
-        synchronized (this)
-        {
-            sessions.add(session);
-        }
+        sessions.add(session);
     }
 
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
-        synchronized (this)
-        {
-            sessions.remove(session);
-        }
+        sessions.remove(session);
         LifeCycle.stop(session);
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        for (WebSocketSession session : getSessions())
+        for (WebSocketSession session : sessions)
         {
             LifeCycle.stop(session);
         }
@@ -72,6 +64,6 @@ public class SessionTracker extends AbstractLifeCycle implements WebSocketSessio
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this, getSessions());
+        Dumpable.dumpObjects(out, indent, this, sessions);
     }
 }
