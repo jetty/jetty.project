@@ -122,7 +122,7 @@ public class HouseKeeperTest
         hk.start();
         Scheduler.Task oldTask = hk.getTask();
         hk.setIntervalSec(50000);
-        assertEquals(50000, hk.getIntervalSec());
+        assertTrue(hk.getIntervalSec() >= 50000);
         assertNotNull(hk.getRunner());
         assertNotNull(hk.getTask());
         //Note: it would be nice to test if the old task was
