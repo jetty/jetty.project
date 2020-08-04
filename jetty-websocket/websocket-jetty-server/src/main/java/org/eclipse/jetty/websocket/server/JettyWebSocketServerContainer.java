@@ -43,6 +43,7 @@ import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.ReflectUtils;
+import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
@@ -86,6 +87,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
     private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketServerContainer.class);
 
+    private final ServletContextHandler contextHandler;
     private final WebSocketMapping webSocketMapping;
     private final WebSocketComponents webSocketComponents;
     private final FrameHandlerFactory frameHandlerFactory;
@@ -104,6 +106,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
      */
     JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMapping webSocketMapping, WebSocketComponents webSocketComponents, Executor executor)
     {
+        this.contextHandler = contextHandler;
         this.webSocketMapping = webSocketMapping;
         this.webSocketComponents = webSocketComponents;
         this.executor = executor;
@@ -128,6 +131,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         if (webSocketMapping.getMapping(ps) != null)
             throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
 
+        WebSocketUpgradeFilter.ensureFilter(contextHandler.getServletContext());
         webSocketMapping.addMapping(ps,
             (req, resp) -> creator.createWebSocket(new JettyServerUpgradeRequest(req), new JettyServerUpgradeResponse(resp)),
             frameHandlerFactory, customizer);
