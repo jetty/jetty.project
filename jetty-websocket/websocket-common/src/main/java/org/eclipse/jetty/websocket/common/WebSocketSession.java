@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseStatus;
+import org.eclipse.jetty.websocket.api.FrameRemoteEndpoint;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
@@ -78,6 +79,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     private String protocolVersion;
     private Map<String, String[]> parameterMap = new HashMap<>();
     private RemoteEndpoint remote;
+    private FrameRemoteEndpoint frameRemote;
     private IncomingFrames incomingHandler;
     private OutgoingFrames outgoingHandler;
     private UpgradeRequest upgradeRequest;
@@ -274,11 +276,32 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
     public RemoteEndpoint getRemote()
     {
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("[{}] {}.getRemote()", policy.getBehavior(), this.getClass().getSimpleName());
-        }
 
+        if (frameRemote != null)
+            throw new IllegalStateException("Mixed usage of RemoteEndpoint and FrameRemoteEndpoint");
+
+        if (remote == null)
+        {
+            remote = remoteEndpointFactory.newRemoteEndpoint(connection, this, getBatchMode());
+            if (LOG.isDebugEnabled())
+                LOG.debug("[{}] {}.open() remote={}", policy.getBehavior(), this.getClass().getSimpleName(), remote);
+        }
         return remote;
+    }
+
+    @Override
+    public FrameRemoteEndpoint getFrameRemote()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("[{}] {}.getFrameRemote()", policy.getBehavior(), this.getClass().getSimpleName());
+
+        if (remote != null)
+            throw new IllegalStateException("Mixed usage of RemoteEndpoint and FrameRemoteEndpoint");
+
+        if (frameRemote == null)
+            frameRemote = new WebSocketRemoteEndpoint(connection, this, getBatchMode());
+        return frameRemote;
     }
 
     @Override
@@ -483,11 +506,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             // Upgrade success
             if (connection.opening())
             {
-                // Connect remote
-                remote = remoteEndpointFactory.newRemoteEndpoint(connection, this, getBatchMode());
-                if (LOG.isDebugEnabled())
-                    LOG.debug("[{}] {}.open() remote={}", policy.getBehavior(), this.getClass().getSimpleName(), remote);
-
                 // Open WebSocket - and call Application onOpen
                 websocket.openSession(this);
 

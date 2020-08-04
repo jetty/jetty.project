@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.eclipse.jetty.websocket.api.CloseStatus;
+import org.eclipse.jetty.websocket.api.FrameRemoteEndpoint;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.SuspendToken;
@@ -77,6 +78,12 @@ public class EmptySession implements Session, SuspendToken
 
     @Override
     public RemoteEndpoint getRemote()
+    {
+        return null;
+    }
+
+    @Override
+    public FrameRemoteEndpoint getFrameRemote()
     {
         return null;
     }

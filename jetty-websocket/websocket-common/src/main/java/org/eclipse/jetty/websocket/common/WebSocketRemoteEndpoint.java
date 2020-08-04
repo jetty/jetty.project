@@ -29,8 +29,10 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.FrameRemoteEndpoint;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.WriteCallback;
+import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.BlockingWriteCallback.WriteBlocker;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
@@ -45,7 +47,7 @@ import org.eclipse.jetty.websocket.common.io.FutureWriteCallback;
 /**
  * Endpoint for Writing messages to the Remote websocket.
  */
-public class WebSocketRemoteEndpoint implements RemoteEndpoint
+public class WebSocketRemoteEndpoint implements RemoteEndpoint, FrameRemoteEndpoint
 {
     private enum MsgType
     {
@@ -298,10 +300,11 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         }
     }
 
-    public void uncheckedSendFrame(WebSocketFrame frame, WriteCallback callback)
+    @Override
+    public void uncheckedSendFrame(Frame frame, WriteCallback callback)
     {
         BatchMode batchMode = BatchMode.OFF;
-        if (frame.isDataFrame())
+        if (frame.getType().isData() || frame.getType().isContinuation())
             batchMode = getBatchMode();
         outgoing.outgoingFrame(frame, callback, batchMode);
     }

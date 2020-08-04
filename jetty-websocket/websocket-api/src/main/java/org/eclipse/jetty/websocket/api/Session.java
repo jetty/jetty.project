@@ -125,6 +125,18 @@ public interface Session extends Closeable
     RemoteEndpoint getRemote();
 
     /**
+     * Return a reference to the FrameRemoteEndpoint object representing the other end of this conversation.
+     * This allows sending raw unchecked WebSocket frames to the remote endpoint. Either this method or
+     * {@link #getRemote()} can be used to write to the remote endpoint, but these cannot be used in combination.
+     *
+     * @return the frame remote endpoint
+     * @throws IllegalStateException if getRemote() has already been called on this session.
+     * @deprecated Removed in Jetty-10 where the low level websocket-core API allows direct sending of WebSocket frames.
+     */
+    @Deprecated
+    FrameRemoteEndpoint getFrameRemote();
+
+    /**
      * Get the address of the remote side.
      *
      * @return the remote side address
