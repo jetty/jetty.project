@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.jakarta.common;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.Session;
@@ -30,12 +30,12 @@ import org.eclipse.jetty.util.component.Graceful;
 
 public class SessionTracker extends AbstractLifeCycle implements JakartaWebSocketSessionListener, Graceful
 {
-    private final CopyOnWriteArraySet<JakartaWebSocketSession> sessions = new CopyOnWriteArraySet<>();
+    private final Set<JakartaWebSocketSession> sessions = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private boolean isShutdown = false;
 
     public Set<Session> getSessions()
     {
-        return Collections.unmodifiableSet(sessions);
+        return Set.copyOf(sessions);
     }
 
     @Override

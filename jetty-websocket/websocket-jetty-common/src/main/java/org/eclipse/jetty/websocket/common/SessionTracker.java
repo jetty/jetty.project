@@ -19,8 +19,12 @@
 package org.eclipse.jetty.websocket.common;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -31,12 +35,12 @@ import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 
 public class SessionTracker extends AbstractLifeCycle implements WebSocketSessionListener, Graceful
 {
-    private final List<Session> sessions = new CopyOnWriteArrayList<>();
+    private final Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private boolean isShutdown = false;
 
     public Collection<Session> getSessions()
     {
-        return sessions;
+        return Set.copyOf(sessions);
     }
 
     @Override
