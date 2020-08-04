@@ -44,12 +44,13 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpConnectionOverHTTP extends AbstractConnection implements IConnection, org.eclipse.jetty.io.Connection.UpgradeFrom, Sweeper.Sweepable
+public class HttpConnectionOverHTTP extends AbstractConnection implements IConnection, org.eclipse.jetty.io.Connection.UpgradeFrom, Sweeper.Sweepable, Attachable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverHTTP.class);
 
@@ -159,6 +160,18 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
     public boolean isClosed()
     {
         return closed.get();
+    }
+
+    @Override
+    public void setAttachment(Object obj)
+    {
+        delegate.setAttachment(obj);
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        return delegate.getAttachment();
     }
 
     @Override

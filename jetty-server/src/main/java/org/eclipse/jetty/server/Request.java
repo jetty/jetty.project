@@ -794,14 +794,7 @@ public class Request implements HttpServletRequest
         if (context == null)
             return null;
 
-        // For some reason the spec requires the context path to be encoded (unlike getServletPath).
-        String contextPath = context.getContextHandler().getContextPathEncoded();
-
-        // For the root context, the spec requires that the empty string is returned instead of the leading '/'
-        // which is included in the pathInContext
-        if (URIUtil.SLASH.equals(contextPath))
-            return "";
-        return contextPath;
+        return context.getContextHandler().getRequestContextPath();
     }
 
     /** Get the path in the context.
@@ -1714,7 +1707,7 @@ public class Request implements HttpServletRequest
             // TODO this is not really right for CONNECT
             path = _uri.isAbsolute() ? "/" : null;
         else if (encoded.startsWith("/"))
-            path = (encoded.length() == 1) ? "/" : _uri.getDecodedPath();
+            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(_uri.getDecodedPath());
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
             path = encoded;
         else

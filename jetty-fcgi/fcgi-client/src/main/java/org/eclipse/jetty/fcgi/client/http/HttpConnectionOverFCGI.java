@@ -51,6 +51,7 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -58,7 +59,7 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpConnectionOverFCGI extends AbstractConnection implements IConnection
+public class HttpConnectionOverFCGI extends AbstractConnection implements IConnection, Attachable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverFCGI.class);
 
@@ -73,6 +74,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private final Delegate delegate;
     private final ClientParser parser;
     private RetainableByteBuffer networkBuffer;
+    private Object attachment;
 
     public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
@@ -265,6 +267,18 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     public boolean isClosed()
     {
         return closed.get();
+    }
+
+    @Override
+    public void setAttachment(Object obj)
+    {
+        this.attachment = obj;
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        return attachment;
     }
 
     protected boolean closeByHTTP(HttpFields fields)

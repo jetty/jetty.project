@@ -35,17 +35,19 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class HttpConnection implements IConnection
+public abstract class HttpConnection implements IConnection, Attachable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
 
     private final AutoLock lock = new AutoLock();
     private final HttpDestination destination;
+    private Object attachment;
     private int idleTimeoutGuard;
     private long idleTimeoutStamp;
 
@@ -271,6 +273,18 @@ public abstract class HttpConnection implements IConnection
                 return false;
             }
         }
+    }
+
+    @Override
+    public void setAttachment(Object obj)
+    {
+        this.attachment = obj;
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        return attachment;
     }
 
     @Override

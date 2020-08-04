@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -225,11 +226,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     public enum Availability
     {
-        UNAVAILABLE, STARTING, AVAILABLE, SHUTDOWN,
+        STOPPED,        // stopped and can't be made unavailable nor shutdown
+        STARTING,       // starting inside of doStart. It may go to any of the next states.
+        AVAILABLE,      // running normally
+        UNAVAILABLE,    // Either a startup error or explicit call to setAvailable(false)
+        SHUTDOWN,       // graceful shutdown
     }
 
-    ;
-    private volatile Availability _availability = Availability.UNAVAILABLE;
+    private final AtomicReference<Availability> _availability = new AtomicReference<>(Availability.STOPPED);
 
     public ContextHandler()
     {
@@ -727,7 +731,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @ManagedAttribute("true for graceful shutdown, which allows existing requests to complete")
     public boolean isShutdown()
     {
-        return _availability == Availability.SHUTDOWN;
+        return _availability.get() == Availability.SHUTDOWN;
     }
 
     /**
@@ -737,10 +741,25 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     public CompletableFuture<Void> shutdown()
     {
-        _availability = isRunning() ? Availability.SHUTDOWN : Availability.UNAVAILABLE;
-        CompletableFuture<Void> shutdown = new CompletableFuture<Void>();
-        shutdown.complete(null);
-        return shutdown;
+        while (true)
+        {
+            Availability availability = _availability.get();
+            switch (availability)
+            {
+                case STOPPED:
+                    return CompletableFuture.failedFuture(new IllegalStateException(getState()));
+                case STARTING:
+                case AVAILABLE:
+                case UNAVAILABLE:
+                    if (!_availability.compareAndSet(availability, Availability.SHUTDOWN))
+                        continue;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        return CompletableFuture.completedFuture(null);
     }
 
     /**
@@ -748,7 +767,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public boolean isAvailable()
     {
-        return _availability == Availability.AVAILABLE;
+        return _availability.get() == Availability.AVAILABLE;
     }
 
     /**
@@ -758,12 +777,46 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setAvailable(boolean available)
     {
-        try (AutoLock l = _lock.lock())
+        // Only supported state transitions are:
+        //   UNAVAILABLE --true---> AVAILABLE
+        //   STARTING -----false--> UNAVAILABLE
+        //   AVAILABLE ----false--> UNAVAILABLE
+        if (available)
         {
-            if (available && isRunning())
-                _availability = Availability.AVAILABLE;
-            else if (!available || !isRunning())
-                _availability = Availability.UNAVAILABLE;
+            while (true)
+            {
+                Availability availability = _availability.get();
+                switch (availability)
+                {
+                    case AVAILABLE:
+                        break;
+                    case UNAVAILABLE:
+                        if (!_availability.compareAndSet(availability, Availability.AVAILABLE))
+                            continue;
+                        break;
+                    default:
+                        throw new IllegalStateException(availability.toString());
+                }
+                break;
+            }
+        }
+        else
+        {
+            while (true)
+            {
+                Availability availability = _availability.get();
+                switch (availability)
+                {
+                    case STARTING:
+                    case AVAILABLE:
+                        if (!_availability.compareAndSet(availability, Availability.UNAVAILABLE))
+                            continue;
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            }
         }
     }
 
@@ -780,7 +833,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     protected void doStart() throws Exception
     {
-        _availability = Availability.STARTING;
+        _availability.set(Availability.STARTING);
 
         if (_contextPath == null)
             throw new IllegalStateException("Null contextPath");
@@ -817,13 +870,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             
             contextInitialized();
 
-            _availability = Availability.AVAILABLE;
+            _availability.compareAndSet(Availability.STARTING, Availability.AVAILABLE);
             LOG.info("Started {}", this);
         }
         finally
         {
-            if (_availability == Availability.STARTING)
-                _availability = Availability.UNAVAILABLE;
+            _availability.compareAndSet(Availability.STARTING, Availability.UNAVAILABLE);
             exitScope(null);
             __context.set(oldContext);
             // reset the classloader
@@ -971,7 +1023,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         if (getServer().isDryRun())
             return;
-        
+
         if (LOG.isDebugEnabled())
             LOG.debug("contextInitialized: {}->{}", e, l);
         l.contextInitialized(e);
@@ -981,7 +1033,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         if (getServer().isDryRun())
             return;
-        
+
         if (LOG.isDebugEnabled())
             LOG.debug("contextDestroyed: {}->{}", e, l);
         l.contextDestroyed(e);
@@ -993,7 +1045,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         // Should we attempt a graceful shutdown?
         MultiException mex = null;
 
-        _availability = Availability.UNAVAILABLE;
+        _availability.set(Availability.STOPPED);
 
         ClassLoader oldClassloader = null;
         ClassLoader oldWebapploader = null;
@@ -1148,8 +1200,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return false;
         }
 
-        switch (_availability)
+        switch (_availability.get())
         {
+            case STOPPED:
+                return false;
             case SHUTDOWN:
             case UNAVAILABLE:
                 baseRequest.setHandled(true);
@@ -1504,6 +1558,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setClassLoader(ClassLoader classLoader)
     {
+        if (isStarted())
+            throw new IllegalStateException(getState());
         _classLoader = classLoader;
     }
 
@@ -1776,7 +1832,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         b.append('{');
         if (getDisplayName() != null)
             b.append(getDisplayName()).append(',');
-        b.append(getContextPath()).append(',').append(getBaseResource()).append(',').append(_availability);
+        b.append(getContextPath()).append(',').append(getBaseResource()).append(',').append(_availability.get());
 
         if (vhosts != null && vhosts.length > 0)
             b.append(',').append(vhosts[0]);
