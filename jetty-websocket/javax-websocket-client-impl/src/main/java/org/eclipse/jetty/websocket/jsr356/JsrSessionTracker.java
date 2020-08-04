@@ -19,19 +19,21 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.websocket.Session;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 public class JsrSessionTracker extends AbstractLifeCycle implements JsrSessionListener
 {
-    private CopyOnWriteArraySet<JsrSession> sessions = new CopyOnWriteArraySet<>();
+    private final Set<JsrSession> sessions = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-    public Set<javax.websocket.Session> getSessions()
+    public Set<Session> getSessions()
     {
-        return Collections.unmodifiableSet(sessions);
+        return Collections.unmodifiableSet(new HashSet<>(sessions));
     }
 
     @Override
@@ -49,7 +51,7 @@ public class JsrSessionTracker extends AbstractLifeCycle implements JsrSessionLi
     @Override
     protected void doStop() throws Exception
     {
-        for (JsrSession session : sessions)
+        for (Session session : sessions)
         {
             LifeCycle.stop(session);
         }

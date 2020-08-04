@@ -20,8 +20,9 @@ package org.eclipse.jetty.websocket.common;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -29,11 +30,11 @@ import org.eclipse.jetty.util.component.LifeCycle;
 
 public class SessionTracker extends AbstractLifeCycle implements WebSocketSessionListener, Dumpable
 {
-    private CopyOnWriteArraySet<WebSocketSession> sessions = new CopyOnWriteArraySet<>();
+    private final Set<WebSocketSession> sessions = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public Set<WebSocketSession> getSessions()
     {
-        return Collections.unmodifiableSet(sessions);
+        return Collections.unmodifiableSet(new HashSet<>(sessions));
     }
 
     @Override
