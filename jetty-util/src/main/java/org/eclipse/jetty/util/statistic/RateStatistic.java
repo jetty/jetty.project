@@ -23,6 +23,8 @@ import java.util.Deque;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.thread.AutoLock;
+
 /**
  * <p>Statistics on a time sequence rate.</p>
  * <p>Calculates the rate at which the {@link #record()} method is called
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
  */
 public class RateStatistic
 {
+    private final AutoLock _lock = new AutoLock();
     private final Deque<Long> _samples = new ArrayDeque<>();
     private final long _nanoPeriod;
     private final TimeUnit _units;
@@ -61,7 +64,7 @@ public class RateStatistic
      */
     public void reset()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             _samples.clear();
             _max = 0;
@@ -88,7 +91,7 @@ public class RateStatistic
     protected void age(long period, TimeUnit units)
     {
         long increment = TimeUnit.NANOSECONDS.convert(period, units);
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             int size = _samples.size();
             for (int i = 0; i < size; i++)
@@ -107,7 +110,7 @@ public class RateStatistic
     public int record()
     {
         long now = System.nanoTime();
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             _count++;
             _samples.add(now);
@@ -124,7 +127,7 @@ public class RateStatistic
      */
     public int getRate()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             update();
             return _samples.size();
@@ -136,7 +139,7 @@ public class RateStatistic
      */
     public long getMax()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             return _max;
         }
@@ -148,7 +151,7 @@ public class RateStatistic
      */
     public long getOldest(TimeUnit units)
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             Long head = _samples.peekFirst();
             if (head == null)
@@ -162,7 +165,7 @@ public class RateStatistic
      */
     public long getCount()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             return _count;
         }
@@ -176,7 +179,7 @@ public class RateStatistic
     public String dump(TimeUnit units)
     {
         long now = System.nanoTime();
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             String samples = _samples.stream()
                 .mapToLong(t -> units.convert(now - t, TimeUnit.NANOSECONDS))
@@ -194,7 +197,7 @@ public class RateStatistic
 
     private String toString(long nanoTime)
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             update(nanoTime);
             return String.format("%s@%x{count=%d,max=%d,rate=%d per %d %s}",

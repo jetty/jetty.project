@@ -23,6 +23,8 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import org.eclipse.jetty.util.thread.AutoLock;
+
 /**
  * Date Format Cache.
  * Computes String representations of Dates and caches
@@ -40,14 +42,13 @@ import java.util.TimeZone;
  */
 public class DateCacheSimpleDateFormat
 {
-
     public static final String DEFAULT_FORMAT = "EEE MMM dd HH:mm:ss zzz yyyy";
 
+    private final AutoLock _lock = new AutoLock();
     private final String _formatString;
     private final String _tzFormatString;
     private final SimpleDateFormat _tzFormat;
     private final Locale _locale;
-
     private volatile Tick _tick;
 
     public static class Tick
@@ -132,7 +133,9 @@ public class DateCacheSimpleDateFormat
             _tzFormatString = sb.toString();
         }
         else
+        {
             _tzFormatString = _formatString;
+        }
 
         if (_locale != null)
         {
@@ -168,7 +171,7 @@ public class DateCacheSimpleDateFormat
         if (tick == null || seconds != tick._seconds)
         {
             // It's a cache miss
-            synchronized (this)
+            try (AutoLock l = _lock.lock())
             {
                 return _tzFormat.format(inDate);
             }
@@ -196,7 +199,7 @@ public class DateCacheSimpleDateFormat
         {
             // It's a cache miss
             Date d = new Date(inDate);
-            synchronized (this)
+            try (AutoLock l = _lock.lock())
             {
                 return _tzFormat.format(d);
             }
@@ -241,7 +244,7 @@ public class DateCacheSimpleDateFormat
         long seconds = now / 1000;
 
         // Synchronize to protect _tzFormat
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             // recheck the tick, to save multiple formats
             if (_tick == null || _tick._seconds != seconds)

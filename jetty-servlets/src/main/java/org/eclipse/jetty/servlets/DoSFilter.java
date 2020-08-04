@@ -57,6 +57,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -1127,6 +1128,7 @@ public class DoSFilter implements Filter
     {
         private static final long serialVersionUID = 3534663738034577872L;
 
+        final AutoLock _lock = new AutoLock();
         protected final String _filterName;
         protected transient ServletContext _context;
         protected final String _id;
@@ -1152,7 +1154,7 @@ public class DoSFilter implements Filter
         public boolean isRateExceeded(long now)
         {
             final long last;
-            synchronized (this)
+            try (AutoLock l = _lock.lock())
             {
                 last = _timestamps[_next];
                 _timestamps[_next] = now;
@@ -1281,7 +1283,7 @@ public class DoSFilter implements Filter
             // rate limit is never exceeded, but we keep track of the request timestamps
             // so that we know whether there was recent activity on this tracker
             // and whether it should be expired
-            synchronized (this)
+            try (AutoLock l = _lock.lock())
             {
                 _timestamps[_next] = now;
                 _next = (_next + 1) % _timestamps.length;

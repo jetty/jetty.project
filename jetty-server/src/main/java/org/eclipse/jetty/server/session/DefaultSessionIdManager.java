@@ -32,6 +32,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
 
     protected static final AtomicLong COUNTER = new AtomicLong();
 
+    private final AutoLock _lock = new AutoLock();
     protected Random _random;
     protected boolean _weakRandom;
     protected String _workerName;
@@ -166,7 +168,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     /**
      * @param random a random number generator for generating ids
      */
-    public synchronized void setRandom(Random random)
+    public void setRandom(Random random)
     {
         _random = random;
         _weakRandom = false;
@@ -229,7 +231,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         // pick a new unique ID!
         String id = null;
 
-        synchronized (_random)
+        try (AutoLock l = _lock.lock())
         {
             while (id == null || id.length() == 0)
             {

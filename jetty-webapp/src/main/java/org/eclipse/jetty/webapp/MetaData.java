@@ -29,6 +29,7 @@ import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,7 @@ public class MetaData
     public static final String ORDERED_LIBS = "javax.servlet.context.orderedLibs";
     public static final Resource NON_FRAG_RESOURCE = EmptyResource.INSTANCE;
 
+    private final AutoLock _lock = new AutoLock();
     protected Map<String, OriginInfo> _origins = new HashMap<>();
     protected WebDescriptor _webDefaultsRoot;
     protected WebDescriptor _webXmlRoot;
@@ -360,41 +362,38 @@ public class MetaData
      *
      * @param annotation the discovered annotation
      */
-    public synchronized void addDiscoveredAnnotation(DiscoveredAnnotation annotation)
+    public void addDiscoveredAnnotation(DiscoveredAnnotation annotation)
     {
         if (annotation == null)
             return;
 
-        //if no resource associated with an annotation map it to empty resource - these
-        //annotations will always be processed first
-        Resource enclosingResource = EmptyResource.INSTANCE;
-        Resource resource = annotation.getResource();
-        if (resource != null)
+        try (AutoLock l = _lock.lock())
         {
-            //check if any of the web-inf classes dirs is a parent 
-            enclosingResource = getEnclosingResource(_webInfClasses, resource);
+            //if no resource associated with an annotation map it to empty resource - these
+            //annotations will always be processed first
+            Resource enclosingResource = EmptyResource.INSTANCE;
+            Resource resource = annotation.getResource();
+            if (resource != null)
+            {
+                //check if any of the web-inf classes dirs is a parent
+                enclosingResource = getEnclosingResource(_webInfClasses, resource);
 
-            //check if any of the web-inf jars is a parent
-            if (enclosingResource == null)
-                enclosingResource = getEnclosingResource(_webInfJars, resource);
+                //check if any of the web-inf jars is a parent
+                if (enclosingResource == null)
+                    enclosingResource = getEnclosingResource(_webInfJars, resource);
 
-            //check if any of the container resources is a parent
-            if (enclosingResource == null)
-                enclosingResource = getEnclosingResource(_orderedContainerResources, resource);
+                //check if any of the container resources is a parent
+                if (enclosingResource == null)
+                    enclosingResource = getEnclosingResource(_orderedContainerResources, resource);
 
-            //Couldn't find a parent resource in any of the known resources, map it to the empty resource
-            if (enclosingResource == null)
-                enclosingResource = EmptyResource.INSTANCE;
+                //Couldn't find a parent resource in any of the known resources, map it to the empty resource
+                if (enclosingResource == null)
+                    enclosingResource = EmptyResource.INSTANCE;
+            }
+
+            List<DiscoveredAnnotation> list = _annotations.computeIfAbsent(enclosingResource, k -> new ArrayList<>());
+            list.add(annotation);
         }
-
-        List<DiscoveredAnnotation> list = _annotations.get(enclosingResource);
-        if (list == null)
-        {
-            list = new ArrayList<>();
-            _annotations.put(enclosingResource, list);
-        }
-
-        list.add(annotation);
     }
 
     /**

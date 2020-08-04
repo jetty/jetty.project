@@ -63,7 +63,7 @@ public class Slf4jRequestLogWriter extends AbstractLifeCycle implements RequestL
     }
 
     @Override
-    protected synchronized void doStart() throws Exception
+    protected void doStart() throws Exception
     {
         logger = LoggerFactory.getLogger(loggerName);
         super.doStart();

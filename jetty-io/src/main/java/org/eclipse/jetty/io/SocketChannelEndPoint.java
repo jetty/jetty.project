@@ -29,6 +29,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ public class SocketChannelEndPoint extends AbstractEndPoint implements ManagedSe
 {
     private static final Logger LOG = LoggerFactory.getLogger(SocketChannelEndPoint.class);
 
+    private final AutoLock _lock = new AutoLock();
     private final SocketChannel _channel;
     private final ManagedSelector _selector;
     private SelectionKey _key;
@@ -317,7 +319,7 @@ public class SocketChannelEndPoint extends AbstractEndPoint implements ManagedSe
         int readyOps = _key.readyOps();
         int oldInterestOps;
         int newInterestOps;
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             _updatePending = true;
             // Remove the readyOps, that here can only be OP_READ or OP_WRITE (or both).
@@ -361,7 +363,7 @@ public class SocketChannelEndPoint extends AbstractEndPoint implements ManagedSe
         {
             int oldInterestOps;
             int newInterestOps;
-            synchronized (this)
+            try (AutoLock l = _lock.lock())
             {
                 _updatePending = false;
                 oldInterestOps = _currentInterestOps;
@@ -403,7 +405,7 @@ public class SocketChannelEndPoint extends AbstractEndPoint implements ManagedSe
         int oldInterestOps;
         int newInterestOps;
         boolean pending;
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             pending = _updatePending;
             oldInterestOps = _desiredInterestOps;

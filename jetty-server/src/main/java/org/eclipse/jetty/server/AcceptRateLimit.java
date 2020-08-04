@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.statistic.RateStatistic;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +65,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
 {
     private static final Logger LOG = LoggerFactory.getLogger(AcceptRateLimit.class);
 
+    private final AutoLock _lock = new AutoLock();
     private final Server _server;
     private final List<AbstractConnector> _connectors = new ArrayList<>();
     private final Rate _rate;
@@ -123,7 +125,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     @ManagedOperation(value = "Resets the accept rate", impact = "ACTION")
     public void reset()
     {
-        synchronized (_rate)
+        try (AutoLock l = _lock.lock())
         {
             _rate.reset();
             if (_limiting)
@@ -142,7 +144,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     @Override
     protected void doStart() throws Exception
     {
-        synchronized (_rate)
+        try (AutoLock l = _lock.lock())
         {
             if (_server != null)
             {
@@ -156,7 +158,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("AcceptLimit accept<{} rate<{} in {} for {}", _acceptRateLimit, _rate, _connectors);
+                LOG.debug("AcceptLimit accept<{} rate<{} in {}", _acceptRateLimit, _rate, _connectors);
 
             for (AbstractConnector c : _connectors)
             {
@@ -168,7 +170,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     @Override
     protected void doStop() throws Exception
     {
-        synchronized (_rate)
+        try (AutoLock l = _lock.lock())
         {
             if (_task != null)
                 _task.cancel();
@@ -203,13 +205,11 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     @Override
     public void onAccepting(SelectableChannel channel)
     {
-        synchronized (_rate)
+        try (AutoLock l = _lock.lock())
         {
             int rate = _rate.record();
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug("onAccepting rate {}/{} for {} {}", rate, _acceptRateLimit, _rate, channel);
-            }
             if (rate > _acceptRateLimit)
             {
                 if (!_limiting)
@@ -238,7 +238,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
     @Override
     public void run()
     {
-        synchronized (_rate)
+        try (AutoLock l = _lock.lock())
         {
             _task = null;
             if (!isRunning())
@@ -258,7 +258,7 @@ public class AcceptRateLimit extends AbstractLifeCycle implements SelectorManage
         }
     }
 
-    private final class Rate extends RateStatistic
+    private static final class Rate extends RateStatistic
     {
         private Rate(long period, TimeUnit units)
         {

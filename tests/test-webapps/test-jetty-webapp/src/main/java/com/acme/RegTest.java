@@ -164,11 +164,6 @@ public class RegTest extends HttpServlet
         return "Rego Servlet";
     }
 
-    @Override
-    public synchronized void destroy()
-    {
-    }
-
     private String notag(String s)
     {
         if (s == null)

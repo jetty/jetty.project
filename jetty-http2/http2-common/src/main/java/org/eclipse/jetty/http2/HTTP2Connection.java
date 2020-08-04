@@ -36,6 +36,7 @@ import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.TryExecutor;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
@@ -49,6 +50,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
     // TODO remove this once we are sure EWYK is OK for http2
     private static final boolean PEC_MODE = Boolean.getBoolean("org.eclipse.jetty.http2.PEC_MODE");
 
+    private final AutoLock lock = new AutoLock();
     private final Queue<Runnable> tasks = new ArrayDeque<>();
     private final HTTP2Producer producer = new HTTP2Producer();
     private final AtomicLong bytesIn = new AtomicLong();
@@ -190,7 +192,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     private void offerTask(Runnable task)
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             tasks.offer(task);
         }
@@ -220,7 +222,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
 
     private Runnable pollTask()
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             return tasks.poll();
         }

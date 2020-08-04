@@ -255,9 +255,4 @@ public class DispatchServlet extends HttpServlet
     {
         return "Include Servlet";
     }
-
-    @Override
-    public synchronized void destroy()
-    {
-    }
 }

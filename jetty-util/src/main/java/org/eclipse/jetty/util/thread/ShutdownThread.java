@@ -38,6 +38,7 @@ public class ShutdownThread extends Thread
     private static final Logger LOG = LoggerFactory.getLogger(ShutdownThread.class);
     private static final ShutdownThread _thread = new ShutdownThread();
 
+    private final AutoLock _lock = new AutoLock();
     private boolean _hooked;
     private final List<LifeCycle> _lifeCycles = new CopyOnWriteArrayList<LifeCycle>();
 
@@ -51,9 +52,9 @@ public class ShutdownThread extends Thread
         super("JettyShutdownThread");
     }
 
-    private synchronized void hook()
+    private void hook()
     {
-        try
+        try (AutoLock l = _lock.lock())
         {
             if (!_hooked)
                 Runtime.getRuntime().addShutdownHook(this);
@@ -66,9 +67,9 @@ public class ShutdownThread extends Thread
         }
     }
 
-    private synchronized void unhook()
+    private void unhook()
     {
-        try
+        try (AutoLock l = _lock.lock())
         {
             _hooked = false;
             Runtime.getRuntime().removeShutdownHook(this);
@@ -90,30 +91,42 @@ public class ShutdownThread extends Thread
         return _thread;
     }
 
-    public static synchronized void register(LifeCycle... lifeCycles)
+    public static void register(LifeCycle... lifeCycles)
     {
-        _thread._lifeCycles.addAll(Arrays.asList(lifeCycles));
-        if (_thread._lifeCycles.size() > 0)
-            _thread.hook();
+        try (AutoLock l = _thread._lock.lock())
+        {
+            _thread._lifeCycles.addAll(Arrays.asList(lifeCycles));
+            if (_thread._lifeCycles.size() > 0)
+                _thread.hook();
+        }
     }
 
-    public static synchronized void register(int index, LifeCycle... lifeCycles)
+    public static void register(int index, LifeCycle... lifeCycles)
     {
-        _thread._lifeCycles.addAll(index, Arrays.asList(lifeCycles));
-        if (_thread._lifeCycles.size() > 0)
-            _thread.hook();
+        try (AutoLock l = _thread._lock.lock())
+        {
+            _thread._lifeCycles.addAll(index, Arrays.asList(lifeCycles));
+            if (_thread._lifeCycles.size() > 0)
+                _thread.hook();
+        }
     }
 
-    public static synchronized void deregister(LifeCycle lifeCycle)
+    public static void deregister(LifeCycle lifeCycle)
     {
-        _thread._lifeCycles.remove(lifeCycle);
-        if (_thread._lifeCycles.size() == 0)
-            _thread.unhook();
+        try (AutoLock l = _thread._lock.lock())
+        {
+            _thread._lifeCycles.remove(lifeCycle);
+            if (_thread._lifeCycles.size() == 0)
+                _thread.unhook();
+        }
     }
 
-    public static synchronized boolean isRegistered(LifeCycle lifeCycle)
+    public static boolean isRegistered(LifeCycle lifeCycle)
     {
-        return _thread._lifeCycles.contains(lifeCycle);
+        try (AutoLock l = _thread._lock.lock())
+        {
+            return _thread._lifeCycles.contains(lifeCycle);
+        }
     }
 
     @Override

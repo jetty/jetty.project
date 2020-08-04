@@ -24,6 +24,7 @@ import java.util.Queue;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,7 @@ public class Flusher
 {
     private static final Logger LOG = LoggerFactory.getLogger(Flusher.class);
 
+    private final AutoLock lock = new AutoLock();
     private final Queue<Generator.Result> queue = new ArrayDeque<>();
     private final IteratingCallback flushCallback = new FlushCallback();
     private final EndPoint endPoint;
@@ -51,7 +53,7 @@ public class Flusher
 
     private void offer(Generator.Result result)
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             queue.offer(result);
         }
@@ -59,7 +61,7 @@ public class Flusher
 
     private Generator.Result poll()
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             return queue.poll();
         }
