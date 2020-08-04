@@ -26,5 +26,11 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 @Deprecated
 public interface FrameRemoteEndpoint
 {
+    /**
+     * Initiates the asynchronous transmission of a WebSocket frame to the remote endpoint.
+     * This method returns before the frame is transmitted.
+     * @param frame the WebSocket frame to send.
+     * @param callback the callback to notify of success or failure of the write operation
+     */
     void uncheckedSendFrame(Frame frame, WriteCallback callback);
 }
