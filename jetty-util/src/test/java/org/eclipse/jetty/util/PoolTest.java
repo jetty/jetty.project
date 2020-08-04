@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class PoolTest
 {
-
     @Test
     public void testAcquireRelease()
     {
@@ -96,24 +95,24 @@ public class PoolTest
     public void testReserve()
     {
         Pool<String> pool = new Pool<>(2, 0);
-        Pool<String>.Entry entry = pool.reserve(-1);
+        Pool<String>.Reservation reservation = pool.reserve(-1);
         assertThat(pool.size(), is(1));
         assertThat(pool.acquire(), nullValue());
-        assertThat(entry.isClosed(), is(true));
+        assertThat(reservation.getEntry().isClosed(), is(true));
 
-        assertThrows(NullPointerException.class, () -> entry.enable(null));
+        assertThrows(NullPointerException.class, () -> reservation.enable(null));
         assertThat(pool.acquire(), nullValue());
-        assertThat(entry.isClosed(), is(true));
+        assertThat(reservation.getEntry().isClosed(), is(true));
 
-        entry.enable("aaa");
-        assertThat(entry.isClosed(), is(false));
+        reservation.enable("aaa");
+        assertThat(reservation.getEntry().isClosed(), is(false));
         assertThat(pool.acquire().getPooled(), notNullValue());
 
-        assertThrows(IllegalStateException.class, () -> entry.enable("bbb"));
+        assertThrows(IllegalStateException.class, () -> reservation.enable("bbb"));
 
-        Pool<String>.Entry e2 = pool.reserve(-1);
+        Pool<String>.Reservation r2 = pool.reserve(-1);
         assertThat(pool.size(), is(2));
-        assertThat(pool.remove(e2), is(true));
+        r2.remove();
         assertThat(pool.size(), is(1));
 
         pool.reserve(-1);
@@ -121,7 +120,7 @@ public class PoolTest
         pool.close();
         assertThat(pool.size(), is(0));
         assertThat(pool.reserve(-1), nullValue());
-        assertThat(entry.isClosed(), is(true));
+        assertThat(reservation.getEntry().isClosed(), is(true));
     }
 
     @Test
@@ -354,11 +353,11 @@ public class PoolTest
     public void testReleaseThenRemoveNonEnabledEntry()
     {
         Pool<String> pool = new Pool<>(1, 0);
-        Pool<String>.Entry e = pool.reserve(-1);
+        Pool<String>.Reservation r = pool.reserve(-1);
         assertThat(pool.size(), is(1));
-        assertThat(pool.release(e), is(false));
+        assertThat(pool.release(r.getEntry()), is(false));
         assertThat(pool.size(), is(1));
-        assertThat(pool.remove(e), is(true));
+        assertThat(pool.remove(r.getEntry()), is(true));
         assertThat(pool.size(), is(0));
     }
 
@@ -366,10 +365,12 @@ public class PoolTest
     public void testRemoveNonEnabledEntry()
     {
         Pool<String> pool = new Pool<>(1, 0);
-        Pool<String>.Entry e = pool.reserve(-1);
+        Pool<String>.Reservation r = pool.reserve(-1);
         assertThat(pool.size(), is(1));
-        assertThat(pool.remove(e), is(true));
+        assertThat(pool.getPendingConnectionCount(), is(1));
+        assertThat(pool.remove(r.getEntry()), is(true));
         assertThat(pool.size(), is(0));
+        assertThat(pool.getPendingConnectionCount(), is(0));
     }
 
     @Test

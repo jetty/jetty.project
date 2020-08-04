@@ -206,8 +206,8 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("tryCreate {}/{} connections {}/{} pending", pool.size(), pool.getMaxEntries(), getPendingConnectionCount(), maxPending);
 
-        Pool<Connection>.Entry entry = pool.reserve(maxPending);
-        if (entry == null)
+        Pool<Connection>.Reservation reservation = pool.reserve(maxPending);
+        if (reservation == null)
         {
             future.complete(null);
             return future;
@@ -223,8 +223,8 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Connection {}/{} creation succeeded {}", pool.size(), pool.getMaxEntries(), connection);
-                adopt(entry, connection);
-                future.complete(null);
+                adopt(reservation, connection);
+                future.complete(null);  // TODO could this now be a future that passes back the connection?
                 proceed();
             }
 
@@ -233,7 +233,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Connection " + pool.size() + "/" + pool.getMaxEntries() + " creation failed", x);
-                pool.remove(entry);
+                reservation.remove();
                 future.completeExceptionally(x);
                 requester.failed(x);
             }
@@ -246,16 +246,16 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         requester.succeeded();
     }
 
-    private void adopt(Pool<Connection>.Entry entry, Connection connection)
+    private void adopt(Pool<Connection>.Reservation reservation, Connection connection)
     {
         if (!(connection instanceof Attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
         Attachable attachable = (Attachable)connection;
-        attachable.setAttachment(entry);
+        attachable.setAttachment(reservation.getEntry());
         if (LOG.isDebugEnabled())
-            LOG.debug("onCreating {}", entry);
+            LOG.debug("adopt {} {}", reservation.getEntry(), connection);
         onCreated(connection);
-        entry.enable(connection);
+        reservation.enable(connection);
         idle(connection, false);
     }
 
