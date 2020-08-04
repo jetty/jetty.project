@@ -29,6 +29,7 @@ import java.net.URLConnection;
 import java.nio.channels.ReadableByteChannel;
 
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,9 +39,10 @@ import org.slf4j.LoggerFactory;
 public class URLResource extends Resource
 {
     private static final Logger LOG = LoggerFactory.getLogger(URLResource.class);
+
+    protected final AutoLock _lock = new AutoLock();
     protected final URL _url;
     protected final String _urlString;
-
     protected URLConnection _connection;
     protected InputStream _in = null;
     transient boolean _useCaches = Resource.__defaultUseCaches;
@@ -58,44 +60,50 @@ public class URLResource extends Resource
         _useCaches = useCaches;
     }
 
-    protected synchronized boolean checkConnection()
+    protected boolean checkConnection()
     {
-        if (_connection == null)
+        try (AutoLock l = _lock.lock())
         {
-            try
+            if (_connection == null)
             {
-                _connection = _url.openConnection();
-                _connection.setUseCaches(_useCaches);
+                try
+                {
+                    _connection = _url.openConnection();
+                    _connection.setUseCaches(_useCaches);
+                }
+                catch (IOException e)
+                {
+                    LOG.trace("IGNORED", e);
+                }
             }
-            catch (IOException e)
-            {
-                LOG.trace("IGNORED", e);
-            }
+            return _connection != null;
         }
-        return _connection != null;
     }
 
     /**
      * Release any resources held by the resource.
      */
     @Override
-    public synchronized void close()
+    public void close()
     {
-        if (_in != null)
+        try (AutoLock l = _lock.lock())
         {
-            try
+            if (_in != null)
             {
-                _in.close();
+                try
+                {
+                    _in.close();
+                }
+                catch (IOException e)
+                {
+                    LOG.trace("IGNORED", e);
+                }
+                _in = null;
             }
-            catch (IOException e)
-            {
-                LOG.trace("IGNORED", e);
-            }
-            _in = null;
-        }
 
-        if (_connection != null)
-            _connection = null;
+            if (_connection != null)
+                _connection = null;
+        }
     }
 
     /**
@@ -106,7 +114,7 @@ public class URLResource extends Resource
     {
         try
         {
-            synchronized (this)
+            try (AutoLock l = _lock.lock())
             {
                 if (checkConnection() && _in == null)
                     _in = _connection.getInputStream();
@@ -193,8 +201,7 @@ public class URLResource extends Resource
      * url connection will be nulled out to prevent re-use.
      */
     @Override
-    public synchronized InputStream getInputStream()
-        throws java.io.IOException
+    public InputStream getInputStream() throws IOException
     {
         return getInputStream(true); //backwards compatibility
     }
@@ -210,29 +217,31 @@ public class URLResource extends Resource
      * @return the inputstream for this resource
      * @throws IOException if unable to open the input stream
      */
-    protected synchronized InputStream getInputStream(boolean resetConnection)
-        throws IOException
+    protected InputStream getInputStream(boolean resetConnection) throws IOException
     {
-        if (!checkConnection())
-            throw new IOException("Invalid resource");
+        try (AutoLock l = _lock.lock())
+        {
+            if (!checkConnection())
+                throw new IOException("Invalid resource");
 
-        try
-        {
-            if (_in != null)
+            try
             {
-                InputStream in = _in;
-                _in = null;
-                return in;
+                if (_in != null)
+                {
+                    InputStream in = _in;
+                    _in = null;
+                    return in;
+                }
+                return _connection.getInputStream();
             }
-            return _connection.getInputStream();
-        }
-        finally
-        {
-            if (resetConnection)
+            finally
             {
-                _connection = null;
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Connection nulled");
+                if (resetConnection)
+                {
+                    _connection = null;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Connection nulled");
+                }
             }
         }
     }

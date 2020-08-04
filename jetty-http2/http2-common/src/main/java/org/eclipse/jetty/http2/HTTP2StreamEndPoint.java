@@ -35,6 +35,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2StreamEndPoint.class);
 
+    private final AutoLock lock = new AutoLock();
     private final Deque<Entry> dataQueue = new ArrayDeque<>();
     private final AtomicReference<WriteState> writeState = new AtomicReference<>(WriteState.IDLE);
     private final AtomicReference<Callback> readCallback = new AtomicReference<>();
@@ -172,7 +174,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     public int fill(ByteBuffer sink) throws IOException
     {
         Entry entry;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             entry = dataQueue.poll();
         }
@@ -206,7 +208,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
 
         if (source.hasRemaining())
         {
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 dataQueue.offerFirst(entry);
             }
@@ -548,7 +550,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
 
     private void offer(ByteBuffer buffer, Callback callback, Throwable failure)
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             dataQueue.offer(new Entry(buffer, callback, failure));
         }
@@ -557,7 +559,7 @@ public abstract class HTTP2StreamEndPoint implements EndPoint
     protected void process()
     {
         boolean empty;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             empty = dataQueue.isEmpty();
         }

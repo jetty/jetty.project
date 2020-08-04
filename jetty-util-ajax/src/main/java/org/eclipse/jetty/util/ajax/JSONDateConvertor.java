@@ -27,6 +27,7 @@ import java.util.TimeZone;
 
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.ajax.JSON.Output;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,7 @@ public class JSONDateConvertor implements JSON.Convertor
 {
     private static final Logger LOG = LoggerFactory.getLogger(JSONDateConvertor.class);
 
+    private final AutoLock _lock = new AutoLock();
     private final boolean _fromJSON;
     private final DateCache _dateCache;
     private final SimpleDateFormat _format;
@@ -77,7 +79,7 @@ public class JSONDateConvertor implements JSON.Convertor
             throw new UnsupportedOperationException();
         try
         {
-            synchronized (_format)
+            try (AutoLock l = _lock.lock())
             {
                 return _format.parseObject((String)map.get("value"));
             }

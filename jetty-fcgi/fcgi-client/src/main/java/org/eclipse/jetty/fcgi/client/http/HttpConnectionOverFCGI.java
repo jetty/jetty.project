@@ -55,6 +55,7 @@ import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +63,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverFCGI.class);
 
+    private final AutoLock lock = new AutoLock();
     private final LinkedList<Integer> requests = new LinkedList<>();
     private final Map<Integer, HttpChannelOverFCGI> activeChannels = new ConcurrentHashMap<>();
     private final Queue<HttpChannelOverFCGI> idleChannels = new ConcurrentLinkedQueue<>();
@@ -321,7 +323,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     private int acquireRequest()
     {
-        synchronized (requests)
+        try (AutoLock l = lock.lock())
         {
             int last = requests.getLast();
             int request = last + 1;
@@ -332,7 +334,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     private void releaseRequest(int request)
     {
-        synchronized (requests)
+        try (AutoLock l = lock.lock())
         {
             requests.removeFirstOccurrence(request);
         }

@@ -43,6 +43,7 @@ import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,6 +105,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         WAIT_FOR_FILL // Waiting for a fill to happen
     }
 
+    private final AutoLock _lock = new AutoLock();
     private final List<SslHandshakeListener> handshakeListeners = new ArrayList<>();
     private final ByteBufferPool _bufferPool;
     private final SSLEngine _sslEngine;
@@ -435,7 +437,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
     private void releaseEncryptedOutputBuffer()
     {
-        if (!Thread.holdsLock(_decryptedEndPoint))
+        if (!_lock.isHeldByCurrentThread())
             throw new IllegalStateException();
         if (_encryptedOutput != null && !_encryptedOutput.hasRemaining())
         {
@@ -514,7 +516,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
                 boolean waitingForFill;
-                synchronized (_decryptedEndPoint)
+                try (AutoLock l = _lock.lock())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("onFillable {}", SslConnection.this);
@@ -527,7 +529,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
                 if (waitingForFill)
                 {
-                    synchronized (_decryptedEndPoint)
+                    try (AutoLock l = _lock.lock())
                     {
                         waitingForFill = _flushState == FlushState.WAIT_FOR_FILL;
                     }
@@ -545,7 +547,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         {
             // If we are handshaking, then wake up any waiting write as well as it may have been blocked on the read
             boolean fail = false;
-            synchronized (_decryptedEndPoint)
+            try (AutoLock l = _lock.lock())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("onFillableFail {}", SslConnection.this, failure);
@@ -594,7 +596,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         {
             try
             {
-                synchronized (_decryptedEndPoint)
+                try (AutoLock l = _lock.lock())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug(">fill {}", SslConnection.this);
@@ -814,7 +816,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 boolean fillable;
                 ByteBuffer write = null;
                 boolean interest = false;
-                synchronized (_decryptedEndPoint)
+                try (AutoLock l = _lock.lock())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug(">needFillInterest s={}/{} uf={} ei={} di={} {}",
@@ -958,7 +960,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         {
             try
             {
-                synchronized (_decryptedEndPoint)
+                try (AutoLock l = _lock.lock())
                 {
                     if (LOG.isDebugEnabled())
                     {
@@ -1148,7 +1150,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 boolean fillInterest = false;
                 ByteBuffer write = null;
-                synchronized (_decryptedEndPoint)
+                try (AutoLock l = _lock.lock())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug(">onIncompleteFlush {} {}", SslConnection.this, BufferUtil.toDetailString(_encryptedOutput));
@@ -1242,7 +1244,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 boolean close;
                 boolean flush = false;
-                synchronized (_decryptedEndPoint)
+                try (AutoLock l = _lock.lock())
                 {
                     boolean ishut = endPoint.isInputShutdown();
                     boolean oshut = endPoint.isOutputShutdown();
@@ -1268,7 +1270,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         // If we still can't flush, but we are not closing the endpoint,
                         // let's just flush the encrypted output in the background.
                         ByteBuffer write = null;
-                        synchronized (_decryptedEndPoint)
+                        try (AutoLock l = _lock.lock())
                         {
                             if (BufferUtil.hasContent(_encryptedOutput))
                             {
@@ -1280,7 +1282,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                         {
                             endPoint.write(Callback.from(() ->
                             {
-                                synchronized (_decryptedEndPoint)
+                                try (AutoLock l = _lock.lock())
                                 {
                                     _flushState = FlushState.IDLE;
                                     releaseEncryptedOutputBuffer();
@@ -1455,7 +1457,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
 
         private Throwable handleException(Throwable x, String context)
         {
-            synchronized (_decryptedEndPoint)
+            try (AutoLock l = _lock.lock())
             {
                 if (_failure == null)
                 {
@@ -1497,7 +1499,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 boolean fillable;
                 boolean interested;
-                synchronized (_decryptedEndPoint)
+                try (AutoLock l = _lock.lock())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("IncompleteWriteCB succeeded {}", SslConnection.this);
@@ -1522,7 +1524,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             public void failed(final Throwable x)
             {
                 boolean failFillInterest;
-                synchronized (_decryptedEndPoint)
+                try (AutoLock l = _lock.lock())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("IncompleteWriteCB failed {}", SslConnection.this, x);

@@ -18,17 +18,19 @@
 
 package org.eclipse.jetty.websocket.core.internal;
 
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.exception.ProtocolException;
 
 public class FrameSequence
 {
+    private final AutoLock lock = new AutoLock();
     // TODO should we be able to get a non fin frame then get a close frame without error
     private byte state = OpCode.UNDEFINED;
 
     public void check(byte opcode, boolean fin) throws ProtocolException
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             if (state == OpCode.CLOSE)
                 throw new ProtocolException(OpCode.name(opcode) + " after CLOSE");

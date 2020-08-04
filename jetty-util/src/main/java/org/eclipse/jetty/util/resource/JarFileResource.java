@@ -30,12 +30,14 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JarFileResource extends JarResource
 {
     private static final Logger LOG = LoggerFactory.getLogger(JarFileResource.class);
+
     private JarFile _jarFile;
     private File _file;
     private String[] _list;
@@ -51,73 +53,81 @@ public class JarFileResource extends JarResource
     }
 
     @Override
-    public synchronized void close()
+    public void close()
     {
-        _exists = false;
-        _list = null;
-        _entry = null;
-        _file = null;
-        //if the jvm is not doing url caching, then the JarFiles will not be cached either,
-        //and so they are safe to close
-        if (!getUseCaches())
+        try (AutoLock l = _lock.lock())
         {
-            if (_jarFile != null)
+            _exists = false;
+            _list = null;
+            _entry = null;
+            _file = null;
+            //if the jvm is not doing url caching, then the JarFiles will not be cached either,
+            //and so they are safe to close
+            if (!getUseCaches())
             {
-                try
+                if (_jarFile != null)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Closing JarFile " + _jarFile.getName());
-                    _jarFile.close();
-                }
-                catch (IOException ioe)
-                {
-                    LOG.trace("IGNORED", ioe);
+                    try
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Closing JarFile " + _jarFile.getName());
+                        _jarFile.close();
+                    }
+                    catch (IOException ioe)
+                    {
+                        LOG.trace("IGNORED", ioe);
+                    }
                 }
             }
+            _jarFile = null;
+            super.close();
         }
-        _jarFile = null;
-        super.close();
     }
 
     @Override
-    protected synchronized boolean checkConnection()
+    protected boolean checkConnection()
     {
-        try
+        try (AutoLock l = _lock.lock())
         {
-            super.checkConnection();
-        }
-        finally
-        {
-            if (_jarConnection == null)
+            try
             {
-                _entry = null;
-                _file = null;
-                _jarFile = null;
-                _list = null;
+                super.checkConnection();
             }
+            finally
+            {
+                if (_jarConnection == null)
+                {
+                    _entry = null;
+                    _file = null;
+                    _jarFile = null;
+                    _list = null;
+                }
+            }
+            return _jarFile != null;
         }
-        return _jarFile != null;
     }
 
     @Override
-    protected synchronized void newConnection()
-        throws IOException
+    protected void newConnection() throws IOException
     {
-        super.newConnection();
+        try (AutoLock l = _lock.lock())
+        {
+            super.newConnection();
 
-        _entry = null;
-        _file = null;
-        _jarFile = null;
-        _list = null;
+            _entry = null;
+            _file = null;
+            _jarFile = null;
+            _list = null;
 
-        // Work with encoded URL path (_urlString is assumed to be encoded)
-        int sep = _urlString.lastIndexOf("!/");
-        _jarUrl = _urlString.substring(0, sep + 2);
-        _path = URIUtil.decodePath(_urlString.substring(sep + 2));
-        if (_path.length() == 0)
-            _path = null;
-        _jarFile = _jarConnection.getJarFile();
-        _file = new File(_jarFile.getName());
+            // Work with encoded URL path (_urlString is assumed to be encoded)
+            int sep = _urlString.lastIndexOf("!/");
+            _jarUrl = _urlString.substring(0, sep + 2);
+            _path = URIUtil.decodePath(_urlString.substring(sep + 2));
+            if (_path.length() == 0)
+                _path = null;
+            _jarFile = _jarConnection.getJarFile();
+            _file = new File(_jarFile.getName());
+        }
     }
 
     /**
@@ -253,36 +263,39 @@ public class JarFileResource extends JarResource
     }
 
     @Override
-    public synchronized String[] list()
+    public String[] list()
     {
-        if (isDirectory() && _list == null)
+        try (AutoLock l = _lock.lock())
         {
-            List<String> list = null;
-            try
+            if (isDirectory() && _list == null)
             {
-                list = listEntries();
-            }
-            catch (Exception e)
-            {
-                //Sun's JarURLConnection impl for jar: protocol will close a JarFile in its connect() method if
-                //useCaches == false (eg someone called URLConnection with defaultUseCaches==true).
-                //As their sun.net.www.protocol.jar package caches JarFiles and/or connections, we can wind up in 
-                //the situation where the JarFile we have remembered in our _jarFile member has actually been closed
-                //by other code.
-                //So, do one retry to drop a connection and get a fresh JarFile
-                LOG.warn("Retrying list:" + e);
-                LOG.debug("JarFile list failure", e);
-                close();
-                list = listEntries();
-            }
+                List<String> list = null;
+                try
+                {
+                    list = listEntries();
+                }
+                catch (Exception e)
+                {
+                    //Sun's JarURLConnection impl for jar: protocol will close a JarFile in its connect() method if
+                    //useCaches == false (eg someone called URLConnection with defaultUseCaches==true).
+                    //As their sun.net.www.protocol.jar package caches JarFiles and/or connections, we can wind up in
+                    //the situation where the JarFile we have remembered in our _jarFile member has actually been closed
+                    //by other code.
+                    //So, do one retry to drop a connection and get a fresh JarFile
+                    LOG.warn("Retrying list:" + e);
+                    LOG.debug("JarFile list failure", e);
+                    close();
+                    list = listEntries();
+                }
 
-            if (list != null)
-            {
-                _list = new String[list.size()];
-                list.toArray(_list);
+                if (list != null)
+                {
+                    _list = new String[list.size()];
+                    list.toArray(_list);
+                }
             }
+            return _list;
         }
-        return _list;
     }
 
     private List<String> listEntries()

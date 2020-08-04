@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.TryExecutor;
@@ -72,6 +73,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         EXECUTE_PRODUCE_CONSUME // Eat What You Kill!
     }
 
+    private final AutoLock _lock = new AutoLock();
     private final LongAdder _pcMode = new LongAdder();
     private final LongAdder _picMode = new LongAdder();
     private final LongAdder _pecMode = new LongAdder();
@@ -97,7 +99,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     public void dispatch()
     {
         boolean execute = false;
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             switch (_state)
             {
@@ -140,7 +142,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
         if (LOG.isDebugEnabled())
             LOG.debug("{} tryProduce {}", this, wasPending);
 
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             if (wasPending)
                 _pending = false;
@@ -185,7 +187,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
 
         if (task == null)
         {
-            synchronized (this)
+            try (AutoLock l = _lock.lock())
             {
                 // Could another task just have been queued with a produce call?
                 switch (_state)
@@ -237,7 +239,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 case BLOCKING:
                     // The task is blocking, so PC is not an option. Thus we choose
                     // between EPC and PEC based on the availability of a reserved thread.
-                    synchronized (this)
+                    try (AutoLock l = _lock.lock())
                     {
                         if (_pending)
                         {
@@ -260,7 +262,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 case EITHER:
                     // The task may be non blocking, so PC is an option. Thus we choose
                     // between EPC and PC based on the availability of a reserved thread.
-                    synchronized (this)
+                    try (AutoLock l = _lock.lock())
                     {
                         if (_pending)
                         {
@@ -313,7 +315,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
                 runTask(task);
 
                 // Try to produce again?
-                synchronized (this)
+                try (AutoLock l = _lock.lock())
                 {
                     if (_state == State.IDLE)
                     {
@@ -420,7 +422,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     @ManagedAttribute(value = "whether this execution strategy is idle", readonly = true)
     public boolean isIdle()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             return _state == State.IDLE;
         }
@@ -438,7 +440,7 @@ public class EatWhatYouKill extends ContainerLifeCycle implements ExecutionStrat
     @Override
     public String toString()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             return toStringLocked();
         }

@@ -408,7 +408,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */
     @Override
-    protected synchronized void doStart() throws Exception
+    protected void doStart() throws Exception
     {
         if (_ignorePaths != null && _ignorePaths.length > 0)
         {

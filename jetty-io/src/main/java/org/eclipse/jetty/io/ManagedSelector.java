@@ -48,6 +48,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.strategy.EatWhatYouKill;
@@ -79,6 +80,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
+    private final AutoLock _lock = new AutoLock();
     private final AtomicBoolean _started = new AtomicBoolean(false);
     private boolean _selecting;
     private final SelectorManager _selectorManager;
@@ -252,7 +254,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             LOG.debug("Queued change lazy={} {} on {}", lazy, update, this);
 
         Selector selector = null;
-        synchronized (ManagedSelector.this)
+        try (AutoLock l = _lock.lock())
         {
             _updates.offer(update);
 
@@ -278,7 +280,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             LOG.debug("Wakeup {}", this);
 
         Selector selector = null;
-        synchronized (ManagedSelector.this)
+        try (AutoLock l = _lock.lock())
         {
             if (_selecting)
             {
@@ -382,7 +384,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
     private int getActionSize()
     {
-        synchronized (ManagedSelector.this)
+        try (AutoLock l = _lock.lock())
         {
             return _updates.size();
         }
@@ -424,7 +426,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             DumpKeys dump = new DumpKeys();
             String updatesAt = DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(ZonedDateTime.now());
-            synchronized (ManagedSelector.this)
+            try (AutoLock l = _lock.lock())
             {
                 updates = new ArrayList<>(_updates);
                 _updates.addFirst(dump);
@@ -514,7 +516,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
         private void processUpdates()
         {
-            synchronized (ManagedSelector.this)
+            try (AutoLock l = _lock.lock())
             {
                 Deque<SelectorUpdate> updates = _updates;
                 _updates = _updateable;
@@ -543,7 +545,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
 
             Selector selector;
             int updates;
-            synchronized (ManagedSelector.this)
+            try (AutoLock l = _lock.lock())
             {
                 updates = _updates.size();
                 _selecting = updates == 0;
@@ -579,7 +581,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                             LOG.debug("Selector {} woken up from select, {}/{}/{} selected", selector, selected, selector.selectedKeys().size(), selector.keys().size());
 
                         int updates;
-                        synchronized (ManagedSelector.this)
+                        try (AutoLock l = _lock.lock())
                         {
                             // finished selecting
                             _selecting = false;

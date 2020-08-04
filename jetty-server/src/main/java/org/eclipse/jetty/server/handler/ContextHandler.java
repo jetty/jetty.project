@@ -87,6 +87,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,6 +185,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         DESTROYED
     }
 
+    private final AutoLock _lock = new AutoLock();
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     protected Context _scontext;
     private final AttributesMap _attributes;
@@ -1841,10 +1843,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (className == null)
             return null;
 
-        if (_classLoader == null)
-            return Loader.loadClass(className);
+        try (AutoLock l = _lock.lock())
+        {
+            if (_classLoader == null)
+                return Loader.loadClass(className);
 
-        return _classLoader.loadClass(className);
+            return _classLoader.loadClass(className);
+        }
     }
 
     public void addLocaleEncoding(String locale, String encoding)
@@ -2076,6 +2081,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public class Context extends StaticContext
     {
+        private final AutoLock _lock = new AutoLock();
         protected boolean _enabled = true; // whether or not the dynamic API is enabled for callers
         protected boolean _extendedListenerTypes = false;
 
@@ -2315,52 +2321,60 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public Object getAttribute(String name)
         {
-            Object o = ContextHandler.this.getAttribute(name);
-            if (o == null)
-                o = super.getAttribute(name);
-            return o;
+            try (AutoLock l = _lock.lock())
+            {
+                Object o = ContextHandler.this.getAttribute(name);
+                if (o == null)
+                    o = super.getAttribute(name);
+                return o;
+            }
         }
 
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            HashSet<String> set = new HashSet<>();
-            Enumeration<String> e = super.getAttributeNames();
-            while (e.hasMoreElements())
+            try (AutoLock l = _lock.lock())
             {
-                set.add(e.nextElement());
+                HashSet<String> set = new HashSet<>();
+                Enumeration<String> e = super.getAttributeNames();
+                while (e.hasMoreElements())
+                {
+                    set.add(e.nextElement());
+                }
+                e = ContextHandler.this.getAttributeNames();
+                while (e.hasMoreElements())
+                {
+                    set.add(e.nextElement());
+                }
+                return Collections.enumeration(set);
             }
-            e = _attributes.getAttributeNames();
-            while (e.hasMoreElements())
-            {
-                set.add(e.nextElement());
-            }
-
-            return Collections.enumeration(set);
         }
 
         @Override
         public void setAttribute(String name, Object value)
         {
-            Object oldValue = super.getAttribute(name);
-
-            if (value == null)
-                super.removeAttribute(name);
-            else
-                super.setAttribute(name, value);
-
-            if (!_servletContextAttributeListeners.isEmpty())
+            try (AutoLock l = _lock.lock())
             {
-                ServletContextAttributeEvent event = new ServletContextAttributeEvent(_scontext, name, oldValue == null ? value : oldValue);
+                Object oldValue = super.getAttribute(name);
 
-                for (ServletContextAttributeListener l : _servletContextAttributeListeners)
+                if (value == null)
+                    super.removeAttribute(name);
+                else
+                    super.setAttribute(name, value);
+
+                if (!_servletContextAttributeListeners.isEmpty())
                 {
-                    if (oldValue == null)
-                        l.attributeAdded(event);
-                    else if (value == null)
-                        l.attributeRemoved(event);
-                    else
-                        l.attributeReplaced(event);
+                    ServletContextAttributeEvent event = new ServletContextAttributeEvent(_scontext, name, oldValue == null ? value : oldValue);
+
+                    for (ServletContextAttributeListener listener : _servletContextAttributeListeners)
+                    {
+                        if (oldValue == null)
+                            listener.attributeAdded(event);
+                        else if (value == null)
+                            listener.attributeRemoved(event);
+                        else
+                            listener.attributeReplaced(event);
+                    }
                 }
             }
         }
@@ -2368,15 +2382,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public void removeAttribute(String name)
         {
-            Object oldValue = super.getAttribute(name);
-            super.removeAttribute(name);
-            if (oldValue != null && !_servletContextAttributeListeners.isEmpty())
+            try (AutoLock l = _lock.lock())
             {
-                ServletContextAttributeEvent event = new ServletContextAttributeEvent(_scontext, name, oldValue);
-
-                for (ServletContextAttributeListener l : _servletContextAttributeListeners)
+                Object oldValue = super.getAttribute(name);
+                super.removeAttribute(name);
+                if (oldValue != null && !_servletContextAttributeListeners.isEmpty())
                 {
-                    l.attributeRemoved(event);
+                    ServletContextAttributeEvent event = new ServletContextAttributeEvent(_scontext, name, oldValue);
+                    for (ServletContextAttributeListener listener : _servletContextAttributeListeners)
+                    {
+                        listener.attributeRemoved(event);
+                    }
                 }
             }
         }

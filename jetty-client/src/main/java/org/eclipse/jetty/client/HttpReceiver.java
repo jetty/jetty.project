@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +75,7 @@ public abstract class HttpReceiver
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiver.class);
 
+    private final AutoLock lock = new AutoLock();
     private final AtomicReference<ResponseState> responseState = new AtomicReference<>(ResponseState.IDLE);
     private final HttpChannel channel;
     private ContentListeners contentListeners;
@@ -98,7 +100,7 @@ public abstract class HttpReceiver
             throw new IllegalArgumentException("Invalid demand " + n);
 
         boolean resume = false;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             demand = MathUtils.cappedAdd(demand, n);
             if (stalled)
@@ -126,7 +128,7 @@ public abstract class HttpReceiver
 
     private long demand(LongUnaryOperator operator)
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             return demand = operator.applyAsLong(demand);
         }
@@ -134,7 +136,7 @@ public abstract class HttpReceiver
 
     protected boolean hasDemandOrStall()
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             stalled = demand <= 0;
             return !stalled;

@@ -35,6 +35,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.util.thread.AutoLock;
+
 /**
  * <p>A servlet that implements the <a href="http://www.w3.org/TR/eventsource/">event source protocol</a>,
  * also known as "server sent events".</p>
@@ -128,6 +130,7 @@ public abstract class EventSourceServlet extends HttpServlet
 
     protected class EventSourceEmitter implements EventSource.Emitter, Runnable
     {
+        private final AutoLock lock = new AutoLock();
         private final EventSource eventSource;
         private final AsyncContext async;
         private final ServletOutputStream output;
@@ -144,7 +147,7 @@ public abstract class EventSourceServlet extends HttpServlet
         @Override
         public void event(String name, String data) throws IOException
         {
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 output.write(EVENT_FIELD);
                 output.write(name.getBytes(StandardCharsets.UTF_8));
@@ -156,7 +159,7 @@ public abstract class EventSourceServlet extends HttpServlet
         @Override
         public void data(String data) throws IOException
         {
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 BufferedReader reader = new BufferedReader(new StringReader(data));
                 String line;
@@ -174,7 +177,7 @@ public abstract class EventSourceServlet extends HttpServlet
         @Override
         public void comment(String comment) throws IOException
         {
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 output.write(COMMENT_FIELD);
                 output.write(comment.getBytes(StandardCharsets.UTF_8));
@@ -192,7 +195,7 @@ public abstract class EventSourceServlet extends HttpServlet
             // on the second flush()
             try
             {
-                synchronized (this)
+                try (AutoLock l = lock.lock())
                 {
                     output.write('\r');
                     flush();
@@ -218,7 +221,7 @@ public abstract class EventSourceServlet extends HttpServlet
         @Override
         public void close()
         {
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 closed = true;
                 heartBeat.cancel(false);
@@ -228,7 +231,7 @@ public abstract class EventSourceServlet extends HttpServlet
 
         private void scheduleHeartBeat()
         {
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 if (!closed)
                     heartBeat = scheduler.schedule(this, heartBeatPeriod, TimeUnit.SECONDS);

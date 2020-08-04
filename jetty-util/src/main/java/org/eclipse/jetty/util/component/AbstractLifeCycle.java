@@ -26,6 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +54,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     public static final String STOPPING = State.STOPPING.toString();
 
     private final List<EventListener> _eventListener = new CopyOnWriteArrayList<>();
-    private final Object _lock = new Object();
+    private final AutoLock _lock = new AutoLock();
     private volatile State _state = State.STOPPED;
 
     /**
@@ -76,7 +77,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     @Override
     public final void start() throws Exception
     {
-        synchronized (_lock)
+        try (AutoLock l = _lock.lock())
         {
             try
             {
@@ -117,7 +118,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     @Override
     public final void stop() throws Exception
     {
-        synchronized (_lock)
+        try (AutoLock l = _lock.lock())
         {
             try
             {

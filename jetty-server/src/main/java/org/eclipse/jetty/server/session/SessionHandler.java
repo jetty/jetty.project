@@ -399,6 +399,7 @@ public class SessionHandler extends ScopedHandler
         _context = ContextHandler.getCurrentContext();
         _loader = Thread.currentThread().getContextClassLoader();
 
+        // Use a coarser lock to serialize concurrent start of many contexts.
         synchronized (server)
         {
             //Get a SessionDataStore and a SessionDataStore, falling back to in-memory sessions only

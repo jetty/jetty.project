@@ -37,6 +37,7 @@ import jakarta.websocket.PongMessage;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -60,6 +61,7 @@ import org.slf4j.LoggerFactory;
 
 public class JakartaWebSocketFrameHandler implements FrameHandler
 {
+    private final AutoLock lock = new AutoLock();
     private final Logger logger;
     private final JakartaWebSocketContainer container;
     private final Object endpointInstance;
@@ -98,9 +100,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
     private MethodHandle pongHandle;
     private JakartaWebSocketMessageMetadata textMetadata;
     private JakartaWebSocketMessageMetadata binaryMetadata;
-
     private UpgradeRequest upgradeRequest;
-
     private EndpointConfig endpointConfig;
     private final Map<Byte, RegisteredMessageHandler> messageHandlerMap = new HashMap<>();
     private MessageSink textSink;
@@ -108,7 +108,6 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
     private MessageSink activeMessageSink;
     private JakartaWebSocketSession session;
     private CoreSession coreSession;
-
     protected byte dataType = OpCode.UNDEFINED;
 
     public JakartaWebSocketFrameHandler(JakartaWebSocketContainer container,
@@ -526,7 +525,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
 
     private <T> MessageSink registerMessageHandler(byte basicWebSocketMessageType, Class<T> handlerType, MessageHandler handler, MessageSink messageSink)
     {
-        synchronized (messageHandlerMap)
+        try (AutoLock l = lock.lock())
         {
             RegisteredMessageHandler registeredHandler = messageHandlerMap.get(basicWebSocketMessageType);
             if (registeredHandler != null)
@@ -546,7 +545,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
 
     public void removeMessageHandler(MessageHandler handler)
     {
-        synchronized (messageHandlerMap)
+        try (AutoLock l = lock.lock())
         {
             Optional<Map.Entry<Byte, RegisteredMessageHandler>> optionalEntry = messageHandlerMap.entrySet().stream()
                 .filter((entry) -> entry.getValue().getMessageHandler().equals(handler))

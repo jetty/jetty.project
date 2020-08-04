@@ -325,8 +325,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                     return false;
 
                 for (Thread a : _acceptors)
+                {
                     if (a != null)
                         return false;
+                }
 
                 return true;
             }
@@ -446,7 +448,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void setAccepting(boolean accepting)
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _accepting = accepting;
             _setAccepting.signalAll();
@@ -702,13 +704,16 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             if (_acceptorPriorityDelta != 0)
                 thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, priority + _acceptorPriorityDelta)));
 
-            _acceptors[_id] = thread;
+            try (AutoLock l = _lock.lock())
+            {
+                _acceptors[_id] = thread;
+            }
 
             try
             {
                 while (isRunning() && !_shutdown.isShutdown())
                 {
-                    try (AutoLock lock = _lock.lock())
+                    try (AutoLock l = _lock.lock())
                     {
                         if (!_accepting && isRunning())
                         {
@@ -738,7 +743,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 if (_acceptorPriorityDelta != 0)
                     thread.setPriority(priority);
 
-                synchronized (AbstractConnector.this)
+                try (AutoLock l = _lock.lock())
                 {
                     _acceptors[_id] = null;
                 }

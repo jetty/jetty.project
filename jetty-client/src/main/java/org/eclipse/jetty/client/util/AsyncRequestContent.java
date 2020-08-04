@@ -118,7 +118,7 @@ public class AsyncRequestContent implements Request.Content, Request.Content.Sub
     public void fail(Throwable failure)
     {
         List<Callback> toFail = List.of();
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (this.failure == null)
             {
@@ -293,7 +293,7 @@ public class AsyncRequestContent implements Request.Content, Request.Content.Sub
 
     private void notifyFlush()
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             flush.signal();
         }
@@ -301,7 +301,7 @@ public class AsyncRequestContent implements Request.Content, Request.Content.Sub
 
     public void flush() throws IOException
     {
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             try
             {
@@ -327,7 +327,7 @@ public class AsyncRequestContent implements Request.Content, Request.Content.Sub
     public void close()
     {
         boolean produce = false;
-        try (AutoLock ignored = lock.lock())
+        try (AutoLock l = lock.lock())
         {
             if (closed)
                 return;

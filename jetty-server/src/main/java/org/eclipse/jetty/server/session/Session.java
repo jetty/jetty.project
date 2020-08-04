@@ -123,7 +123,7 @@ public class Session implements SessionHandler.SessionIf
                     long now = System.currentTimeMillis();
                     //handle what to do with the session after the timer expired
                     getSessionHandler().sessionInactivityTimerExpired(Session.this, now);
-                    try (AutoLock lock = Session.this.lock())
+                    try (AutoLock l = Session.this.lock())
                     {
                         //grab the lock and check what happened to the session: if it didn't get evicted and
                         //it hasn't expired, we need to reset the timer
@@ -208,7 +208,7 @@ public class Session implements SessionHandler.SessionIf
      */
     public long getRequests()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             return _requests;
         }
@@ -221,7 +221,7 @@ public class Session implements SessionHandler.SessionIf
 
     protected void cookieSet()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _sessionData.setCookieSet(_sessionData.getAccessed());
         }
@@ -229,7 +229,7 @@ public class Session implements SessionHandler.SessionIf
 
     protected void use()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _requests++;
 
@@ -242,7 +242,7 @@ public class Session implements SessionHandler.SessionIf
 
     protected boolean access(long time)
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (!isValid() || !isResident())
                 return false;
@@ -262,7 +262,7 @@ public class Session implements SessionHandler.SessionIf
 
     protected void complete()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _requests--;
 
@@ -289,7 +289,7 @@ public class Session implements SessionHandler.SessionIf
      */
     protected boolean isExpiredAt(long time)
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             return _sessionData.isExpiredAt(time);
         }
@@ -304,7 +304,7 @@ public class Session implements SessionHandler.SessionIf
     protected boolean isIdleLongerThan(int sec)
     {
         long now = System.currentTimeMillis();
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             return ((_sessionData.getAccessed() + (sec * 1000)) <= now);
         }
@@ -413,7 +413,7 @@ public class Session implements SessionHandler.SessionIf
 
     public boolean isValid()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             return _state == State.VALID;
         }
@@ -421,7 +421,7 @@ public class Session implements SessionHandler.SessionIf
 
     public boolean isInvalid()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             return _state == State.INVALID || _state == State.INVALIDATING;
         }
@@ -429,7 +429,7 @@ public class Session implements SessionHandler.SessionIf
 
     public long getCookieSetTime()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             return _sessionData.getCookieSet();
         }
@@ -438,7 +438,7 @@ public class Session implements SessionHandler.SessionIf
     @Override
     public long getCreationTime() throws IllegalStateException
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             checkValidForRead();
             return _sessionData.getCreated();
@@ -448,7 +448,7 @@ public class Session implements SessionHandler.SessionIf
     @Override
     public String getId()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             return _sessionData.getId();
         }
@@ -472,7 +472,7 @@ public class Session implements SessionHandler.SessionIf
     @Override
     public long getLastAccessedTime()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (isInvalid())
             {
@@ -493,7 +493,7 @@ public class Session implements SessionHandler.SessionIf
     @Override
     public void setMaxInactiveInterval(int secs)
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _sessionData.setMaxInactiveMs((long)secs * 1000L);
             _sessionData.calcAndSetExpiry();
@@ -526,7 +526,7 @@ public class Session implements SessionHandler.SessionIf
     {
         long time = 0;
 
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             long remaining = _sessionData.getExpiry() - now;
             long maxInactive = _sessionData.getMaxInactiveMs();
@@ -587,7 +587,7 @@ public class Session implements SessionHandler.SessionIf
     @Override
     public int getMaxInactiveInterval()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             long maxInactiveMs = _sessionData.getMaxInactiveMs();
             return (int)(maxInactiveMs < 0 ? -1 : maxInactiveMs / 1000);
@@ -655,7 +655,7 @@ public class Session implements SessionHandler.SessionIf
     @Override
     public Object getAttribute(String name)
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             checkValidForRead();
             return _sessionData.getAttribute(name);
@@ -666,7 +666,7 @@ public class Session implements SessionHandler.SessionIf
     @Deprecated(since = "Servlet API 2.2")
     public Object getValue(String name)
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             checkValidForRead();
             return _sessionData.getAttribute(name);
@@ -676,7 +676,7 @@ public class Session implements SessionHandler.SessionIf
     @Override
     public Enumeration<String> getAttributeNames()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             checkValidForRead();
             final Iterator<String> itor = _sessionData.getKeys().iterator();
@@ -716,7 +716,7 @@ public class Session implements SessionHandler.SessionIf
     @Deprecated(since = "Servlet API 2.2")
     public String[] getValueNames() throws IllegalStateException
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             checkValidForRead();
             Iterator<String> itor = _sessionData.getKeys().iterator();
@@ -735,7 +735,7 @@ public class Session implements SessionHandler.SessionIf
     public void setAttribute(String name, Object value)
     {
         Object old = null;
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             // if session is not valid, don't accept the set
             checkValidForWrite();
@@ -779,7 +779,7 @@ public class Session implements SessionHandler.SessionIf
 
         String id = null;
         String extendedId = null;
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             while (true)
             {
@@ -815,7 +815,7 @@ public class Session implements SessionHandler.SessionIf
 
         String newId = _handler._sessionIdManager.renewSessionId(id, extendedId, request);
 
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             switch (_state)
             {
@@ -905,9 +905,8 @@ public class Session implements SessionHandler.SessionIf
     {
         boolean result = false;
 
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
-
             while (true)
             {
                 switch (_state)
@@ -964,7 +963,7 @@ public class Session implements SessionHandler.SessionIf
      */
     protected void finishInvalidate() throws IllegalStateException
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             try
             {
@@ -1002,7 +1001,7 @@ public class Session implements SessionHandler.SessionIf
     @Override
     public boolean isNew() throws IllegalStateException
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             checkValidForRead();
             return _newSession;
@@ -1011,7 +1010,7 @@ public class Session implements SessionHandler.SessionIf
 
     public void setIdChanged(boolean changed)
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _idChanged = changed;
         }
@@ -1019,7 +1018,7 @@ public class Session implements SessionHandler.SessionIf
 
     public boolean isIdChanged()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             return _idChanged;
         }
@@ -1053,7 +1052,7 @@ public class Session implements SessionHandler.SessionIf
     @Override
     public String toString()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             return String.format("%s@%x{id=%s,x=%s,req=%d,res=%b}",
                 getClass().getSimpleName(),

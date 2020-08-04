@@ -28,6 +28,7 @@ import java.util.Set;
 import org.eclipse.jetty.servlet.BaseHolder;
 import org.eclipse.jetty.servlet.Source.Origin;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebDescriptor;
 import org.slf4j.Logger;
@@ -41,6 +42,8 @@ import org.slf4j.LoggerFactory;
 public class AnnotationIntrospector
 {
     private static final Logger LOG = LoggerFactory.getLogger(AnnotationIntrospector.class);
+
+    private final AutoLock _lock = new AutoLock();
     private final Set<Class<?>> _introspectedClasses = new HashSet<>();
     private final List<IntrospectableAnnotationHandler> _handlers = new ArrayList<IntrospectableAnnotationHandler>();
     private final WebAppContext _context;
@@ -195,14 +198,13 @@ public class AnnotationIntrospector
 
         Class<?> clazz = o.getClass();
 
-        synchronized (_introspectedClasses)
+        try (AutoLock l = _lock.lock())
         {
-            //Synchronize on the set of already introspected classes.
-            //This ensures that only 1 thread can be introspecting, and that
-            //thread must have fully finished generating the products of
-            //introspection before another thread is allowed in.
-            //We remember the classes that we have introspected to avoid
-            //reprocessing the same class.
+            // Lock to ensure that only 1 thread can be introspecting, and that
+            // thread must have fully finished generating the products of
+            // the introspection before another thread is allowed in.
+            // We remember the classes that we have introspected to avoid
+            // reprocessing the same class.
             if (_introspectedClasses.add(clazz))
             {
                 for (IntrospectableAnnotationHandler handler : _handlers)

@@ -26,52 +26,72 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * An Attributes implementation that holds it's values in an immutable {@link ContainerLifeCycle}
  */
 public class AttributeContainerMap extends ContainerLifeCycle implements Attributes
 {
+    private final AutoLock _lock = new AutoLock();
     private final Map<String, Object> _map = new HashMap<>();
 
     @Override
-    public synchronized void setAttribute(String name, Object attribute)
+    public void setAttribute(String name, Object attribute)
     {
-        Object old = _map.put(name, attribute);
-        updateBean(old, attribute);
+        try (AutoLock l = _lock.lock())
+        {
+            Object old = _map.put(name, attribute);
+            updateBean(old, attribute);
+        }
     }
 
     @Override
-    public synchronized void removeAttribute(String name)
+    public void removeAttribute(String name)
     {
-        Object removed = _map.remove(name);
-        if (removed != null)
-            removeBean(removed);
+        try (AutoLock l = _lock.lock())
+        {
+            Object removed = _map.remove(name);
+            if (removed != null)
+                removeBean(removed);
+        }
     }
 
     @Override
-    public synchronized Object getAttribute(String name)
+    public Object getAttribute(String name)
     {
-        return _map.get(name);
+        try (AutoLock l = _lock.lock())
+        {
+            return _map.get(name);
+        }
     }
 
     @Override
-    public synchronized Enumeration<String> getAttributeNames()
+    public Enumeration<String> getAttributeNames()
     {
-        return Collections.enumeration(_map.keySet());
+        try (AutoLock l = _lock.lock())
+        {
+            return Collections.enumeration(_map.keySet());
+        }
     }
 
     @Override
     public Set<String> getAttributeNameSet()
     {
-        return _map.keySet();
+        try (AutoLock l = _lock.lock())
+        {
+            return _map.keySet();
+        }
     }
 
     @Override
-    public synchronized void clearAttributes()
+    public void clearAttributes()
     {
-        _map.clear();
-        this.removeBeans();
+        try (AutoLock l = _lock.lock())
+        {
+            _map.clear();
+            this.removeBeans();
+        }
     }
 
     @Override

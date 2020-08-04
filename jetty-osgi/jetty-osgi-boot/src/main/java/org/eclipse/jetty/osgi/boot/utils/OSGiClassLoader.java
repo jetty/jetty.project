@@ -96,37 +96,40 @@ public class OSGiClassLoader extends URLClassLoader
     }
 
     @Override
-    protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
     {
-        Class<?> c = findLoadedClass(name);
-        ClassNotFoundException ex = null;
-        boolean triedParent = false;
-
-        if (c == null)
+        synchronized (getClassLoadingLock(name))
         {
-            try
+            Class<?> c = findLoadedClass(name);
+            ClassNotFoundException ex = null;
+            boolean triedParent = false;
+
+            if (c == null)
             {
-                c = this.findClass(name);
+                try
+                {
+                    c = this.findClass(name);
+                }
+                catch (ClassNotFoundException e)
+                {
+                    ex = e;
+                }
             }
-            catch (ClassNotFoundException e)
-            {
-                ex = e;
-            }
+
+            if (c == null && _parent != null && !triedParent)
+                c = _parent.loadClass(name);
+
+            if (c == null)
+                throw ex;
+
+            if (resolve)
+                resolveClass(c);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("loaded " + c + " from " + c.getClassLoader());
+
+            return c;
         }
-
-        if (c == null && _parent != null && !triedParent)
-            c = _parent.loadClass(name);
-
-        if (c == null)
-            throw ex;
-
-        if (resolve)
-            resolveClass(c);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("loaded " + c + " from " + c.getClassLoader());
-
-        return c;
     }
 
     @Override

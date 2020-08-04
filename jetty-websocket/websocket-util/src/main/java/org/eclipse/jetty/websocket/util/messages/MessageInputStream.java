@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,8 @@ public class MessageInputStream extends InputStream implements MessageSink
     private static final Logger LOG = LoggerFactory.getLogger(MessageInputStream.class);
     private static final Entry EOF = new Entry(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
     private static final Entry CLOSED = new Entry(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+
+    private final AutoLock lock = new AutoLock();
     private final BlockingArrayQueue<Entry> buffers = new BlockingArrayQueue<>();
     private boolean closed = false;
     private Entry currentEntry;
@@ -56,7 +59,7 @@ public class MessageInputStream extends InputStream implements MessageSink
             LOG.debug("accepting {}", frame);
 
         boolean succeed = false;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             // If closed or we have no payload, request the next frame.
             if (closed || (!frame.hasPayload() && !frame.isFin()))
@@ -134,7 +137,7 @@ public class MessageInputStream extends InputStream implements MessageSink
             LOG.debug("close()");
 
         ArrayList<Entry> entries = new ArrayList<>();
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             if (closed)
                 return;
@@ -169,7 +172,7 @@ public class MessageInputStream extends InputStream implements MessageSink
     private void succeedCurrentEntry()
     {
         Entry current;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             current = currentEntry;
             currentEntry = null;
@@ -180,7 +183,7 @@ public class MessageInputStream extends InputStream implements MessageSink
 
     private Entry getCurrentEntry() throws IOException
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             if (currentEntry != null)
                 return currentEntry;
@@ -205,7 +208,7 @@ public class MessageInputStream extends InputStream implements MessageSink
                     throw new IOException(String.format("Read timeout: %,dms expired", timeoutMs));
             }
 
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 currentEntry = result;
                 return currentEntry;

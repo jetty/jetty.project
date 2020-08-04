@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,6 +91,8 @@ public class MultiPartFormInputStream
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(MultiPartFormInputStream.class);
+
+    private final AutoLock _lock = new AutoLock();
     private final MultiMap<Part> _parts = new MultiMap<>();
     private final InputStream _in;
     private final MultipartConfigElement _config;
@@ -407,7 +410,7 @@ public class MultiPartFormInputStream
      */
     public void deleteParts()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             switch (state)
             {
@@ -510,7 +513,7 @@ public class MultiPartFormInputStream
      */
     protected void parse()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             switch (state)
             {
@@ -563,7 +566,7 @@ public class MultiPartFormInputStream
 
             while (true)
             {
-                synchronized (this)
+                try (AutoLock l = _lock.lock())
                 {
                     if (state != State.PARSING)
                     {
@@ -629,7 +632,7 @@ public class MultiPartFormInputStream
         finally
         {
             boolean cleanup = false;
-            synchronized (this)
+            try (AutoLock l = _lock.lock())
             {
                 switch (state)
                 {

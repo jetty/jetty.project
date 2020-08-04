@@ -143,7 +143,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             if (isReset())
                 return;
@@ -156,7 +156,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private boolean startWrite(Callback callback)
     {
         Throwable failure;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             failure = this.failure;
             if (failure == null && sendCallback == null)
@@ -192,7 +192,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public boolean isReset()
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             return localReset || remoteReset;
         }
@@ -200,7 +200,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private boolean isFailed()
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             return failure != null;
         }
@@ -209,7 +209,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public boolean isResetOrFailed()
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             return isReset() || isFailed();
         }
@@ -476,7 +476,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private void onReset(ResetFrame frame, Callback callback)
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             remoteReset = true;
             failure = new EofException("reset");
@@ -501,7 +501,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private void onFailure(FailureFrame frame, Callback callback)
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             failure = frame.getFailure();
         }
@@ -689,7 +689,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
 
     private Callback endWrite()
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             Callback callback = sendCallback;
             sendCallback = null;

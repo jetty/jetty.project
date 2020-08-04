@@ -33,7 +33,6 @@ public class WriterOutputStream extends OutputStream
 {
     protected final Writer _writer;
     protected final Charset _encoding;
-    private final byte[] _buf = new byte[1];
 
     public WriterOutputStream(Writer writer, String encoding)
     {
@@ -82,11 +81,9 @@ public class WriterOutputStream extends OutputStream
     }
 
     @Override
-    public synchronized void write(int b)
+    public void write(int b)
         throws IOException
     {
-        _buf[0] = (byte)b;
-        write(_buf);
+        write(new byte[]{(byte)b});
     }
 }
-

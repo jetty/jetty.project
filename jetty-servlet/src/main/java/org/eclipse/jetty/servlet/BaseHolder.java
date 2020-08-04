@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
 {
     private static final Logger LOG = LoggerFactory.getLogger(BaseHolder.class);
 
+    private final AutoLock _lock = new AutoLock();
     private final Source _source;
     private Class<? extends T> _class;
     private String _className;
@@ -58,6 +60,11 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     public Source getSource()
     {
         return _source;
+    }
+
+    AutoLock lock()
+    {
+        return _lock.lock();
     }
 
     /**
@@ -164,30 +171,39 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         }
     }
 
-    protected synchronized void setInstance(T instance)
+    protected void setInstance(T instance)
     {
-        _instance = instance;
-        if (instance == null)
-            setHeldClass(null);
-        else
-            setHeldClass((Class<T>)instance.getClass());
+        try (AutoLock l = lock())
+        {
+            _instance = instance;
+            if (instance == null)
+                setHeldClass(null);
+            else
+                setHeldClass((Class<T>)instance.getClass());
+        }
     }
 
-    protected synchronized T getInstance()
+    protected T getInstance()
     {
-        return _instance;
+        try (AutoLock l = lock())
+        {
+            return _instance;
+        }
     }
 
-    protected synchronized T createInstance() throws Exception
+    protected T createInstance() throws Exception
     {
-        ServletContext ctx = getServletContext();
-        if (ctx == null)
-            return getHeldClass().getDeclaredConstructor().newInstance();
+        try (AutoLock l = lock())
+        {
+            ServletContext ctx = getServletContext();
+            if (ctx == null)
+                return getHeldClass().getDeclaredConstructor().newInstance();
 
-        if (ServletContextHandler.Context.class.isAssignableFrom(ctx.getClass()))
-            return ((ServletContextHandler.Context)ctx).createInstance(this);
+            if (ServletContextHandler.Context.class.isAssignableFrom(ctx.getClass()))
+                return ((ServletContextHandler.Context)ctx).createInstance(this);
 
-        return null;
+            return null;
+        }
     }
 
     public ServletContext getServletContext()
@@ -215,9 +231,12 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     /**
      * @return True if this holder was created for a specific instance.
      */
-    public synchronized boolean isInstance()
+    public boolean isInstance()
     {
-        return _instance != null;
+        try (AutoLock l = lock())
+        {
+            return _instance != null;
+        }
     }
 
     @Override
