@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JettyWebSocketFilterTest
@@ -41,6 +43,7 @@ public class JettyWebSocketFilterTest
     private Server server;
     private ServerConnector connector;
     private WebSocketClient client;
+    private ServletContextHandler contextHandler;
 
     @BeforeEach
     public void start() throws Exception
@@ -49,12 +52,11 @@ public class JettyWebSocketFilterTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextHandler.setContextPath("/");
         server.setHandler(contextHandler);
 
-        JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            container.addMapping("/", (req, resp) -> new EchoSocket()));
+        JettyWebSocketServletContainerInitializer.configure(contextHandler, null);
         server.start();
 
         client = new WebSocketClient();
@@ -69,8 +71,20 @@ public class JettyWebSocketFilterTest
     }
 
     @Test
-    public void test() throws Exception
+    public void testLazyWebSocketUpgradeFilter() throws Exception
     {
+        // JettyWebSocketServerContainer has already been created.
+        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(contextHandler.getServletContext());
+        assertNotNull(container);
+
+        // We should have no WebSocketUpgradeFilter installed because we have added no mappings.
+        assertThat(contextHandler.getServletHandler().getFilters().length, is(0));
+
+        // After mapping is added we have an UpgradeFilter.
+        container.addMapping("/", EchoSocket.class);
+        assertThat(contextHandler.getServletHandler().getFilters().length, is(1));
+
+        // Test we can upgrade to websocket and send a message.
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
         CompletableFuture<Session> connect = client.connect(socket, uri);
