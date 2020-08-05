@@ -265,8 +265,8 @@ public class WebSocketMapping implements Dumpable, LifeCycle.Listener
             if (servletContext == null)
                 throw new IllegalStateException("null servletContext from request");
 
-            ServletUpgradeRequest upgradeRequest = new ServletUpgradeRequest(negotiation);
-            ServletUpgradeResponse upgradeResponse = new ServletUpgradeResponse(negotiation);
+            ServerUpgradeRequest upgradeRequest = new ServerUpgradeRequest(negotiation);
+            ServerUpgradeResponse upgradeResponse = new ServerUpgradeResponse(negotiation);
 
             AtomicReference<Object> result = new AtomicReference<>();
             ((ContextHandler.Context)servletContext).getContextHandler().handle(() ->

@@ -26,8 +26,8 @@ import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientFrameHan
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketContainer;
 import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandlerMetadata;
 import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
-import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeResponse;
 
 public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketClientFrameHandlerFactory implements FrameHandlerFactory
 {
@@ -53,7 +53,7 @@ public class JakartaWebSocketServerFrameHandlerFactory extends JakartaWebSocketC
     }
 
     @Override
-    public FrameHandler newFrameHandler(Object websocketPojo, ServletUpgradeRequest upgradeRequest, ServletUpgradeResponse upgradeResponse)
+    public FrameHandler newFrameHandler(Object websocketPojo, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse)
     {
         return newJakartaWebSocketFrameHandler(websocketPojo, new JakartaServerUpgradeRequest(upgradeRequest));
     }

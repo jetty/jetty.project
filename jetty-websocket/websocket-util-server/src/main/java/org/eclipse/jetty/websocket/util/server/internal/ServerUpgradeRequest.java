@@ -46,7 +46,7 @@ import org.eclipse.jetty.websocket.core.server.Negotiation;
 /**
  * Holder of request data for a WebSocket upgrade request.
  */
-public class ServletUpgradeRequest
+public class ServerUpgradeRequest
 {
     private final URI requestURI;
     private final String queryString;
@@ -56,7 +56,7 @@ public class ServletUpgradeRequest
     private List<HttpCookie> cookies;
     private Map<String, List<String>> parameterMap;
 
-    public ServletUpgradeRequest(Negotiation negotiation) throws BadMessageException
+    public ServerUpgradeRequest(Negotiation negotiation) throws BadMessageException
     {
         this.negotiation = negotiation;
         HttpServletRequest httpRequest = negotiation.getRequest();

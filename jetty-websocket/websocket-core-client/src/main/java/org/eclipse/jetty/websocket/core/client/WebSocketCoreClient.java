@@ -71,11 +71,11 @@ public class WebSocketCoreClient extends ContainerLifeCycle
 
     public CompletableFuture<CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException
     {
-        ClientUpgradeRequest request = ClientUpgradeRequest.from(this, wsUri, frameHandler);
+        CoreClientUpgradeRequest request = CoreClientUpgradeRequest.from(this, wsUri, frameHandler);
         return connect(request);
     }
 
-    public CompletableFuture<CoreSession> connect(ClientUpgradeRequest request) throws IOException
+    public CompletableFuture<CoreSession> connect(CoreClientUpgradeRequest request) throws IOException
     {
         if (!isStarted())
             throw new IllegalStateException(WebSocketCoreClient.class.getSimpleName() + "@" + this.hashCode() + " is not started");
