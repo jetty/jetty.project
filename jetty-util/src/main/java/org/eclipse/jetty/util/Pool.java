@@ -155,7 +155,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
             if (space <= 0)
                 return null;
 
-            // The pending count is an AtomicInt that is only ever incremented here with
+            // The pending count is an AtomicInteger that is only ever incremented here with
             // the lock held.  Thus the pending count can be reduced immediately after the
             // test below, but never incremented.  Thus the maxReservations limit can be
             // enforced.
@@ -248,7 +248,8 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
         catch (Throwable th)
         {
-            LOGGER.warn(th);
+            reservation.remove();
+            throw th;
         }
 
         if (value == null)
@@ -436,7 +437,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         public String toString()
         {
             return String.format("%s@%x{%s}",
-                getClass().getName(),
+                getClass().getSimpleName(),
                 hashCode(),
                 entry);
         }
@@ -571,7 +572,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         {
             long encoded = state.get();
             return String.format("%s@%x{hi=%d,lo=%d.p=%s}",
-                getClass().getName(),
+                getClass().getSimpleName(),
                 hashCode(),
                 AtomicBiInteger.getHi(encoded),
                 AtomicBiInteger.getLo(encoded),

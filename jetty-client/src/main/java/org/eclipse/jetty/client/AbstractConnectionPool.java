@@ -224,7 +224,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                 if (LOG.isDebugEnabled())
                     LOG.debug("Connection {}/{} creation succeeded {}", pool.size(), pool.getMaxEntries(), connection);
                 adopt(reservation, connection);
-                future.complete(null);  // TODO could this now be a future that passes back the connection?
+                future.complete(null);
                 proceed();
             }
 
@@ -253,7 +253,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         Attachable attachable = (Attachable)connection;
         attachable.setAttachment(reservation.getEntry());
         if (LOG.isDebugEnabled())
-            LOG.debug("adopt {} {}", reservation.getEntry(), connection);
+            LOG.debug("adopt {} {}", reservation, connection);
         onCreated(connection);
         reservation.enable(connection);
         idle(connection, false);
