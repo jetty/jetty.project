@@ -134,7 +134,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
             if (resource.exists() && resource.getFile().canRead())
                 files.add(resource.getFile());
             else
-                LOG.warn("Does not exist: " + resource);
+                LOG.warn("Does not exist: {}", resource);
         }
 
         _scanner = new Scanner();

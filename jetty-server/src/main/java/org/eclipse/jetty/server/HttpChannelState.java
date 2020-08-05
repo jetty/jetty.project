@@ -801,7 +801,7 @@ public class HttpChannelState
                     break;
 
                 default:
-                    LOG.warn("unhandled in state " + _requestState, new IllegalStateException(th));
+                    LOG.warn("unhandled in state {}", _requestState, new IllegalStateException(th));
                     return;
             }
         }
@@ -837,7 +837,7 @@ public class HttpChannelState
             }
             else if (_requestState != RequestState.COMPLETE)
             {
-                LOG.warn("unhandled in state " + _requestState, new IllegalStateException(th));
+                LOG.warn("unhandled in state {}", _requestState, new IllegalStateException(th));
             }
         }
     }

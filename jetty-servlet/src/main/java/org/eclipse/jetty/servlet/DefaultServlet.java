@@ -216,7 +216,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
                 _stylesheet = Resource.newResource(css);
                 if (!_stylesheet.exists())
                 {
-                    LOG.warn("!" + css);
+                    LOG.warn("!{}", css);
                     _stylesheet = null;
                 }
             }
@@ -227,9 +227,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         }
         catch (Exception e)
         {
-            LOG.warn("Unable to use stylesheet: {} - {}", css, e.toString());
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to use stylesheet: {}", css, e);
+                LOG.warn("Unable to use stylesheet: {}", css, e);
+            else
+                LOG.warn("Unable to use stylesheet: {} - {}", css, e.toString());
         }
 
         int encodingHeaderCacheSize = getInitInt("encodingHeaderCacheSize", -1);

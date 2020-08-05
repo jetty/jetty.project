@@ -65,14 +65,14 @@ public class WebServletAnnotation extends DiscoveredAnnotation
 
         if (clazz == null)
         {
-            LOG.warn(_className + " cannot be loaded");
+            LOG.warn("{} cannot be loaded", _className);
             return;
         }
 
         //Servlet Spec 8.1.1
         if (!HttpServlet.class.isAssignableFrom(clazz))
         {
-            LOG.warn(clazz.getName() + " is not assignable from javax.servlet.http.HttpServlet");
+            LOG.warn("{} is not assignable from javax.servlet.http.HttpServlet", clazz.getName());
             return;
         }
 
@@ -80,7 +80,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
 
         if (annotation.urlPatterns().length > 0 && annotation.value().length > 0)
         {
-            LOG.warn(clazz.getName() + " defines both @WebServlet.value and @WebServlet.urlPatterns");
+            LOG.warn("{} defines both @WebServlet.value and @WebServlet.urlPatterns", clazz.getName());
             return;
         }
 
@@ -90,7 +90,7 @@ public class WebServletAnnotation extends DiscoveredAnnotation
 
         if (urlPatterns.length == 0)
         {
-            LOG.warn(clazz.getName() + " defines neither @WebServlet.value nor @WebServlet.urlPatterns");
+            LOG.warn("{} defines neither @WebServlet.value nor @WebServlet.urlPatterns", clazz.getName());
             return;
         }
 

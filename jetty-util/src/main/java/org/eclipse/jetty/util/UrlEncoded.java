@@ -73,7 +73,7 @@ public class UrlEncoded
         }
         catch (Exception e)
         {
-            LOG.warn("Unable to set default UrlEncoding charset: " + charset, e);
+            LOG.warn("Unable to set default UrlEncoding charset: {}", charset, e);
             encoding = StandardCharsets.UTF_8;
         }
         ENCODING = encoding;

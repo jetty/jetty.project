@@ -788,7 +788,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             generateQuickStartWebXml(context, fos);
             LOG.info("Generated {}", _quickStartWebXml);
             if (context.getAttribute(WebInfConfiguration.TEMPORARY_RESOURCE_BASE) != null && !context.isPersistTempDirectory())
-                LOG.warn("Generated to non persistent location: " + _quickStartWebXml);
+                LOG.warn("Generated to non persistent location: {}", _quickStartWebXml);
         }
     }
 

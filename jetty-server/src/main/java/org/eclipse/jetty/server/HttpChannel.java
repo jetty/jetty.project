@@ -602,7 +602,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             // No stack trace unless there is debug turned on
             if (LOG.isDebugEnabled())
-                LOG.warn("handleException " + _request.getRequestURI(), failure);
+                LOG.warn("handleException {}", _request.getRequestURI(), failure);
             else
                 LOG.warn("handleException {} {}", _request.getRequestURI(), noStack.toString());
         }

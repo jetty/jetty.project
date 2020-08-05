@@ -389,7 +389,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             // Now do we have something usable?
             if (!webApp.exists() || !webApp.isDirectory())
             {
-                LOG.warn("Web application not found " + war);
+                LOG.warn("Web application not found {}", war);
                 throw new java.io.FileNotFoundException(war);
             }
 

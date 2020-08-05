@@ -162,7 +162,7 @@ public class ServerInstanceWrapper
             }
             catch (Exception e)
             {
-                LOG.warn("Configuration error in " + jettyConfiguration);
+                LOG.warn("Configuration error in {}", jettyConfiguration);
                 throw e;
             }
         }

@@ -258,7 +258,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                     if (defaultWebXml.exists())
                         _webApp.setDefaultsDescriptor(defaultWebXml.getAbsolutePath());
                     else
-                        LOG.warn(defaultWebXml.getAbsolutePath() + " does not exist");
+                        LOG.warn("{} does not exist", defaultWebXml.getAbsolutePath());
                 }
             }
 
@@ -399,7 +399,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                     return;
 
                 // Apply it just as the standard jetty ContextProvider would do
-                LOG.info("Applying " + contextXmlUri + " to " + _webApp);
+                LOG.info("Applying {} to {}", contextXmlUri, _webApp);
 
                 XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.newResource(contextXmlUri));
                 WebAppClassLoader.runWithServerClassAccess(() ->

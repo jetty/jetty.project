@@ -61,7 +61,7 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
 
         if (clazz == null)
         {
-            LOG.warn(_className + " cannot be loaded");
+            LOG.warn("{} cannot be loaded", _className);
             return;
         }
 
@@ -84,7 +84,7 @@ public class WebListenerAnnotation extends DiscoveredAnnotation
                 }
             }
             else
-                LOG.warn(clazz.getName() + " does not implement one of the servlet listener interfaces");
+                LOG.warn("{} does not implement one of the servlet listener interfaces", clazz.getName());
         }
         catch (Exception e)
         {

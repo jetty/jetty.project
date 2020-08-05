@@ -221,7 +221,7 @@ public class ProxyServletLoadTest
             }
             catch (Throwable x)
             {
-                LOG.warn("Error processing request " + iterations, x);
+                LOG.warn("Error processing request {}", iterations, x);
                 success.set(false);
             }
             finally

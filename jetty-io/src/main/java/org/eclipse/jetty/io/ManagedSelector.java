@@ -609,9 +609,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                 }
                 else
                 {
-                    LOG.warn(x.toString());
                     if (LOG.isDebugEnabled())
-                        LOG.debug("select() failure", x);
+                        LOG.warn("select() failure", x);
+                    else
+                        LOG.warn(x.toString());
                 }
             }
             return false;

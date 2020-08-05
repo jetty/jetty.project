@@ -160,7 +160,7 @@ public abstract class Credential implements Serializable
             if (credentials instanceof char[])
                 credentials = new String((char[])credentials);
             if (!(credentials instanceof String) && !(credentials instanceof Password))
-                LOG.warn("Can't check " + credentials.getClass() + " against CRYPT");
+                LOG.warn("Can't check {} against CRYPT", credentials.getClass());
             return stringEquals(_cooked, UnixCrypt.crypt(credentials.toString(), _cooked));
         }
 
@@ -234,7 +234,7 @@ public abstract class Credential implements Serializable
                 }
                 else
                 {
-                    LOG.warn("Can't check " + credentials.getClass() + " against MD5");
+                    LOG.warn("Can't check {} against MD5", credentials.getClass());
                     return false;
                 }
             }

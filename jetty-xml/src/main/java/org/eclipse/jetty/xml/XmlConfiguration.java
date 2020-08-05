@@ -513,7 +513,7 @@ public class XmlConfiguration
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Config error at " + node, e.toString() + " in " + _configuration);
+                    LOG.warn("Config error {} at {} in {}", e.toString(), node, _configuration);
                     throw e;
                 }
             }
@@ -1485,7 +1485,7 @@ public class XmlConfiguration
             if ("Env".equals(tag))
                 return envObj(node);
 
-            LOG.warn("Unknown value tag: " + node + " in " + _configuration, new Throwable());
+            LOG.warn("Unknown value tag: {} in {}", node,  _configuration, new Throwable());
             return null;
         }
 

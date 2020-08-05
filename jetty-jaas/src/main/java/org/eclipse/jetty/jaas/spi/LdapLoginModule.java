@@ -501,7 +501,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
         String userDn = searchResult.getNameInNamespace();
 
-        LOG.info("Attempting authentication: " + userDn);
+        LOG.info("Attempting authentication: {}", userDn);
 
         Hashtable<Object, Object> environment = getEnvironment();
 

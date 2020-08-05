@@ -546,7 +546,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             ServletContext ctx = getServletHandler().getServletContext();
             if (ctx == null)
-                LOG.info("unavailable", e);
+                LOG.warn("unavailable", e);
             else
                 ctx.log("unavailable", e);
             UnavailableException unavailable = new UnavailableException(String.valueOf(e), -1)

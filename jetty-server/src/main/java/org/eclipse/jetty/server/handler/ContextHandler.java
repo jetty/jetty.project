@@ -1612,12 +1612,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (contextPath.endsWith("/*"))
         {
-            LOG.warn(this + " contextPath ends with /*");
+            LOG.warn("{} contextPath ends with /*", this);
             contextPath = contextPath.substring(0, contextPath.length() - 2);
         }
         else if (contextPath.length() > 1 && contextPath.endsWith("/"))
         {
-            LOG.warn(this + " contextPath ends with /");
+            LOG.warn("{} contextPath ends with /", this);
             contextPath = contextPath.substring(0, contextPath.length() - 1);
         }
 
@@ -1699,8 +1699,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         catch (Exception e)
         {
-            LOG.warn(e.toString());
-            LOG.debug("Unable to set baseResource: {}", resourceBase, e);
+            if (LOG.isDebugEnabled())
+                LOG.warn("Unable to set baseResource: {}", resourceBase, e);
+            else
+                LOG.warn(e.toString());
             throw new IllegalArgumentException(resourceBase);
         }
     }

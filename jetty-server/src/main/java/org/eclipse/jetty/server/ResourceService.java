@@ -236,7 +236,7 @@ public class ResourceService
             // Find the content
             content = _contentFactory.getContent(pathInContext, response.getBufferSize());
             if (LOG.isDebugEnabled())
-                LOG.info("content={}", content);
+                LOG.debug("content={}", content);
 
             // Not found?
             if (content == null || !content.getResource().exists())
@@ -765,7 +765,7 @@ public class ResourceService
             putHeaders(response, content, -1);
             String mimetype = (content == null ? null : content.getContentTypeValue());
             if (mimetype == null)
-                LOG.warn("Unknown mimetype for " + request.getRequestURI());
+                LOG.warn("Unknown mimetype for {}", request.getRequestURI());
             response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
             if (!response.containsHeader(HttpHeader.DATE.asString()))
                 response.addDateHeader(HttpHeader.DATE.asString(), System.currentTimeMillis());

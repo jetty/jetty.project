@@ -215,15 +215,13 @@ public class Invoker extends HttpServlet
                                 LOG.trace("IGNORED", e);
                             }
 
-                            LOG.warn("Dynamic servlet " + s +
-                                " not loaded from context " +
-                                request.getContextPath());
+                            LOG.warn("Dynamic servlet {} not loaded from context {}", s, request.getContextPath());
                             throw new UnavailableException("Not in context");
                         }
                     }
 
                     if (_verbose && LOG.isDebugEnabled())
-                        LOG.debug("Dynamic load '" + servlet + "' at " + path);
+                        LOG.debug("Dynamic load '{}' at {}", servlet, path);
                 }
             }
         }
@@ -237,7 +235,7 @@ public class Invoker extends HttpServlet
         }
         else
         {
-            LOG.info("Can't find holder for servlet: " + servlet);
+            LOG.info("Can't find holder for servlet: {}", servlet);
             response.sendError(404);
         }
     }

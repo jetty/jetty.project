@@ -65,17 +65,17 @@ public class RunAsAnnotationHandler extends AbstractIntrospectableAnnotationHand
                 }
             }
             else
-                LOG.warn("Bad value for @RunAs annotation on class " + clazz.getName());
+                LOG.warn("Bad value for @RunAs annotation on class {}", clazz.getName());
         }
     }
 
     public void handleField(String className, String fieldName, int access, String fieldType, String signature, Object value, String annotation)
     {
-        LOG.warn("@RunAs annotation not applicable for fields: " + className + "." + fieldName);
+        LOG.warn("@RunAs annotation not applicable for fields: {}.{}", className, fieldName);
     }
 
     public void handleMethod(String className, String methodName, int access, String params, String signature, String[] exceptions, String annotation)
     {
-        LOG.warn("@RunAs annotation ignored on method: " + className + "." + methodName + " " + signature);
+        LOG.warn("@RunAs annotation ignored on method: {}.{} {}", className, methodName, signature);
     }
 }

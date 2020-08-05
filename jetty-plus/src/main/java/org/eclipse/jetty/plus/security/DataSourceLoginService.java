@@ -254,11 +254,11 @@ public class DataSourceLoginService extends AbstractLoginService
         }
         catch (NamingException e)
         {
-            LOG.warn("No datasource for " + _jndiName, e);
+            LOG.warn("No datasource for {}", _jndiName, e);
         }
         catch (SQLException e)
         {
-            LOG.warn("Problem loading user info for " + username, e);
+            LOG.warn("Problem loading user info for {}", username, e);
         }
         return null;
     }
@@ -290,11 +290,11 @@ public class DataSourceLoginService extends AbstractLoginService
         }
         catch (NamingException e)
         {
-            LOG.warn("No datasource for " + _jndiName, e);
+            LOG.warn("No datasource for {}", _jndiName, e);
         }
         catch (SQLException e)
         {
-            LOG.warn("Problem loading user info for " + user.getName(), e);
+            LOG.warn("Problem loading user info for {}", user.getName(), e);
         }
         return null;
     }

@@ -343,7 +343,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Cannot parse load-on-startup " + s + ". Please use integer");
+                    LOG.warn("Cannot parse load-on-startup {}. Please use integer", s);
                     LOG.trace("IGNORED", e);
                 }
             }
@@ -426,7 +426,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
             else
             {
-                LOG.warn("Ignored invalid security-role-ref element: " + "servlet-name=" + holder.getName() + ", " + securityRef);
+                LOG.warn("Ignored invalid security-role-ref element: servlet-name={}, {}", holder.getName(), securityRef);
             }
         }
 
@@ -1492,7 +1492,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     scBase.setDataConstraint(Constraint.DC_CONFIDENTIAL);
                 else
                 {
-                    LOG.warn("Unknown user-data-constraint:" + guarantee);
+                    LOG.warn("Unknown user-data-constraint: {}", guarantee);
                     scBase.setDataConstraint(Constraint.DC_CONFIDENTIAL);
                 }
             }
@@ -1941,7 +1941,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
         catch (Exception e)
         {
-            LOG.warn("Could not instantiate listener " + className, e);
+            LOG.warn("Could not instantiate listener {}", className, e);
             return;
         }
     }

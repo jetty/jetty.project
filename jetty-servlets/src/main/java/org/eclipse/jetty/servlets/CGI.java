@@ -118,19 +118,19 @@ public class CGI extends HttpServlet
         File dir = new File(tmp);
         if (!dir.exists())
         {
-            LOG.warn("CGI: CGI bin does not exist - " + dir);
+            LOG.warn("CGI: CGI bin does not exist - {}", dir);
             return;
         }
 
         if (!dir.canRead())
         {
-            LOG.warn("CGI: CGI bin is not readable - " + dir);
+            LOG.warn("CGI: CGI bin is not readable - {}", dir);
             return;
         }
 
         if (!dir.isDirectory())
         {
-            LOG.warn("CGI: CGI bin is not a directory - " + dir);
+            LOG.warn("CGI: CGI bin is not a directory - {}", dir);
             return;
         }
 
@@ -140,7 +140,7 @@ public class CGI extends HttpServlet
         }
         catch (IOException e)
         {
-            LOG.warn("CGI: CGI bin failed - " + dir, e);
+            LOG.warn("CGI: CGI bin failed - {}", dir, e);
             return;
         }
 
@@ -427,7 +427,7 @@ public class CGI extends HttpServlet
                 int exitValue = p.exitValue();
                 if (0 != exitValue)
                 {
-                    LOG.warn("Non-zero exit status (" + exitValue + ") from CGI program: " + absolutePath);
+                    LOG.warn("Non-zero exit status ({}) from CGI program: {}", exitValue, absolutePath);
                     if (!res.isCommitted())
                         res.sendError(500, "Failed to exec CGI");
                 }

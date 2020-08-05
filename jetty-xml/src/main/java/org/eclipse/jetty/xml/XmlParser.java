@@ -432,8 +432,10 @@ public class XmlParser
         @Override
         public void warning(SAXParseException ex)
         {
-            LOG.debug("SAX Parse Issue", ex);
-            LOG.warn("WARNING@" + getLocationString(ex) + " : " + ex.toString());
+            if (LOG.isDebugEnabled())
+                LOG.warn("SAX Parse Issue", ex);
+            else
+                LOG.warn("SAX Parse Issue @{} : {}",getLocationString(ex), ex.toString());
         }
 
         @Override
@@ -442,16 +444,20 @@ public class XmlParser
             // Save error and continue to report other errors
             if (_error == null)
                 _error = ex;
-            LOG.debug("SAX Parse Issue", ex);
-            LOG.error("ERROR@" + getLocationString(ex) + " : " + ex.toString());
+            if (LOG.isDebugEnabled())
+                LOG.error("SAX Parse Issue", ex);
+            else
+                LOG.error("SAX Parse Issue @{} : {}",getLocationString(ex), ex.toString());
         }
 
         @Override
         public void fatalError(SAXParseException ex) throws SAXException
         {
             _error = ex;
-            LOG.debug("SAX Parse Issue", ex);
-            LOG.error("FATAL@" + getLocationString(ex) + " : " + ex.toString());
+            if (LOG.isDebugEnabled())
+                LOG.error("Fatal AX Parse Issue", ex);
+            else
+                LOG.error("Fatal SAX Parse Issue @{} : {}", getLocationString(ex), ex.toString());
             throw ex;
         }
 

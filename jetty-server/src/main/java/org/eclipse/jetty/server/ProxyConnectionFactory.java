@@ -541,7 +541,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
                 }
                 catch (Throwable x)
                 {
-                    LOG.warn("Proxy v2 error for " + getEndPoint(), x);
+                    LOG.warn("Proxy v2 error for {}", getEndPoint(), x);
                     releaseAndClose();
                 }
             }

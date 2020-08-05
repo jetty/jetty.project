@@ -651,7 +651,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         {
             boolean dsdel = _sessionDataStore.delete(id);
             if (LOG.isDebugEnabled())
-                LOG.debug("Session {} deleted in session data store {}", id, dsdel);
+                LOG.debug("Session id={} deleted in session data store {}", id, dsdel);
         }
 
         //delete it from the session object store
@@ -792,7 +792,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
                 _sessionDataStore.store(newId, session.getSessionData()); //save the session data with the new id
             }
             if (LOG.isDebugEnabled())
-                LOG.debug("Session id {} swapped for new id {}", oldId, newId);
+                LOG.debug("Session id={} swapped for new id={}", oldId, newId);
         }
     }
 
@@ -831,7 +831,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     public Session newSession(HttpServletRequest request, String id, long time, long maxInactiveMs)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Creating new session id=" + id);
+            LOG.debug("Creating new session id={}", id);
         Session session = newSession(request, _sessionDataStore.newSessionData(id, time, time, time, maxInactiveMs));
         session.getSessionData().setLastNode(_context.getWorkerName());
         try
