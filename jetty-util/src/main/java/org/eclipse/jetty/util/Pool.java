@@ -465,7 +465,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
         /**
          * Release the entry.
-         * This is equivalent to calling {@link Pool#release(Entry)} passing this entry.
+         * This is equivalent to calling {@link Pool#release(Pool.Entry)} passing this entry.
          * @return true if released.
          */
         public boolean release()
