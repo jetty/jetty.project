@@ -54,7 +54,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.server.internal.JavaxWebSocketCreator;
 import org.eclipse.jetty.websocket.javax.tests.LocalServer;
@@ -430,7 +430,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/capture-request-headers");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.addExtensions("identity");
         Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -454,7 +454,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/no-extensions");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.addExtensions("identity");
         Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -478,7 +478,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/capture-request-headers");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.headers(headers -> headers.put("X-Dummy", "Bogus"));
         Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -503,7 +503,7 @@ public class ConfiguratorTest
 
         // First Request
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, wsUri, clientSocket);
         Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
@@ -522,7 +522,7 @@ public class ConfiguratorTest
 
         // Second request
         clientSocket = new FrameHandlerTracker();
-        upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
+        upgradeRequest = CoreClientUpgradeRequest.from(client, wsUri, clientSocket);
         clientConnectFuture = client.connect(upgradeRequest);
 
         coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
@@ -550,7 +550,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/addr");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, wsUri, clientSocket);
         Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
         CoreSession coreSession = clientConnectFuture.get(Timeouts.CONNECT_MS, TimeUnit.MILLISECONDS);
@@ -591,7 +591,7 @@ public class ConfiguratorTest
         ProtocolsConfigurator.seenProtocols.set(null);
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("status");
         Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -610,7 +610,7 @@ public class ConfiguratorTest
         ProtocolsConfigurator.seenProtocols.set(null);
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("echo", "chat", "status");
         Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -629,7 +629,7 @@ public class ConfiguratorTest
         ProtocolsConfigurator.seenProtocols.set(null);
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("echo", "chat", "status");
         Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -648,7 +648,7 @@ public class ConfiguratorTest
         ProtocolsConfigurator.seenProtocols.set(null);
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("echo", "chat", "status");
         Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 
@@ -681,7 +681,7 @@ public class ConfiguratorTest
         URI wsUri = server.getWsUri().resolve("/timedecoder");
 
         FrameHandlerTracker clientSocket = new FrameHandlerTracker();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, wsUri, clientSocket);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, wsUri, clientSocket);
         upgradeRequest.setSubProtocols("gmt");
         Future<CoreSession> clientConnectFuture = client.connect(upgradeRequest);
 

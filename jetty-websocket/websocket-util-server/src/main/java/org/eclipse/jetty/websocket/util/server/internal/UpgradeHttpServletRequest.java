@@ -81,7 +81,7 @@ public class UpgradeHttpServletRequest implements HttpServletRequest
     private final Map<String, Object> attributes = new HashMap<>(2);
     private final List<Locale> locales = new ArrayList<>(2);
 
-    private HttpSession session;
+    private final HttpSession session;
 
     private final InetSocketAddress localAddress;
     private final String localName;

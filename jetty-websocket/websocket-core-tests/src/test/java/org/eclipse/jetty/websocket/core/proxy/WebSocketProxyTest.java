@@ -45,7 +45,7 @@ import org.eclipse.jetty.websocket.core.EchoFrameHandler;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.TestAsyncFrameHandler;
-import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
@@ -161,7 +161,7 @@ public class WebSocketProxyTest
         WebSocketProxy.Client2Proxy proxyClientSide = proxy.client2Proxy;
         WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
         upgradeRequest.setConfiguration(defaultCustomizer);
         CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
 
@@ -201,7 +201,7 @@ public class WebSocketProxyTest
         TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT");
         try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketCoreSession.class))
         {
-            ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
+            CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
             upgradeRequest.setConfiguration(defaultCustomizer);
             CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
             response.get(5, TimeUnit.SECONDS);
@@ -240,7 +240,7 @@ public class WebSocketProxyTest
 
         try (StacklessLogging stacklessLogging = new StacklessLogging(WebSocketCoreSession.class))
         {
-            ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
+            CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
             upgradeRequest.setConfiguration(defaultCustomizer);
             CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
             Exception e = assertThrows(ExecutionException.class, () -> response.get(5, TimeUnit.SECONDS));
@@ -271,7 +271,7 @@ public class WebSocketProxyTest
         WebSocketProxy.Server2Proxy proxyServerSide = proxy.server2Proxy;
 
         TestAsyncFrameHandler clientFrameHandler = new TestAsyncFrameHandler("CLIENT");
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
         upgradeRequest.setConfiguration(defaultCustomizer);
         CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
 
@@ -335,7 +335,7 @@ public class WebSocketProxyTest
             }
         };
 
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(_client, new URI("ws://localhost:" + PROXY_PORT + "/proxy/"), clientFrameHandler);
         upgradeRequest.setConfiguration(defaultCustomizer);
         CompletableFuture<CoreSession> response = _client.connect(upgradeRequest);
         response.get(5, TimeUnit.SECONDS);
