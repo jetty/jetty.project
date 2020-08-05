@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -99,7 +100,7 @@ public class MultiPartFormInputStream
     private final File _contextTmpDir;
     private final String _contentType;
     private volatile Throwable _err;
-    private volatile File _tmpDir;
+    private volatile Path _tmpDir;
     private volatile boolean _deleteOnExit;
     private volatile boolean _writeFilesWithFilenames;
     private volatile int _bufferSize = 16 * 1024;
@@ -185,12 +186,17 @@ public class MultiPartFormInputStream
         @Override
         public void write(String fileName) throws IOException
         {
+            Path p = FileSystems.getDefault().getPath(fileName);
+            
             if (_file == null)
             {
                 _temporary = false;
 
                 // part data is only in the ByteArrayOutputStream and never been written to disk
-                _file = new File(_tmpDir, fileName);
+                if (p.isAbsolute())
+                    _file = Files.createFile(p).toFile();
+                else
+                    _file = Files.createFile(_tmpDir.resolve(p)).toFile();
 
                 try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(_file)))
                 {
@@ -208,7 +214,7 @@ public class MultiPartFormInputStream
                 _temporary = false;
 
                 Path src = _file.toPath();
-                Path target = src.resolveSibling(fileName);
+                Path target = (p.isAbsolute() ? p : _tmpDir.resolve(p));
                 Files.move(src, target, StandardCopyOption.REPLACE_EXISTING);
                 _file = target.toFile();
             }
@@ -222,7 +228,7 @@ public class MultiPartFormInputStream
             final boolean USER = true;
             final boolean WORLD = false;
 
-            _file = File.createTempFile("MultiPart", "", MultiPartFormInputStream.this._tmpDir);
+            _file = Files.createTempFile(MultiPartFormInputStream.this._tmpDir, "MultiPart", "").toFile();
             _file.setReadable(false, WORLD); // (reset) disable it for everyone first
             _file.setReadable(true, USER); // enable for user only
 
@@ -535,20 +541,20 @@ public class MultiPartFormInputStream
         {
             // sort out the location to which to write the files
             if (_config.getLocation() == null)
-                _tmpDir = _contextTmpDir;
+                _tmpDir = _contextTmpDir.toPath();
             else if ("".equals(_config.getLocation()))
-                _tmpDir = _contextTmpDir;
+                _tmpDir = _contextTmpDir.toPath();
             else
             {
-                File f = new File(_config.getLocation());
-                if (f.isAbsolute())
-                    _tmpDir = f;
+                Path location = FileSystems.getDefault().getPath(_config.getLocation());
+                if (location.isAbsolute())
+                    _tmpDir = location;
                 else
-                    _tmpDir = new File(_contextTmpDir, _config.getLocation());
+                    _tmpDir = _contextTmpDir.toPath().resolve(location);
             }
 
-            if (!_tmpDir.exists())
-                _tmpDir.mkdirs();
+            if (!Files.exists(_tmpDir))
+                Files.createDirectories(_tmpDir);
 
             String contentTypeBoundary = "";
             int bstart = _contentType.indexOf("boundary=");
