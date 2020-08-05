@@ -45,6 +45,11 @@ import org.eclipse.jetty.util.thread.Locker;
  * This can greatly speed up acquisition when both the acquisition and the
  * release of the entries is done on the same thread as this avoids iterating
  * the global, thread-safe collection of entries.
+ * </p>
+ * <p>
+ * When the method {@link #close()} is called, all {@link Closeable}s in the pool
+ * are also closed.
+ * </p>
  * @param <T>
  */
 public class Pool<T> implements AutoCloseable, Dumpable
@@ -338,16 +343,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         for (Entry entry : copy)
         {
             if (entry.tryRemove() && entry.pooled instanceof Closeable)
-            {
-                try
-                {
-                    ((Closeable)entry.pooled).close();
-                }
-                catch (IOException e)
-                {
-                    LOGGER.warn("Error closing entry {}", entry, e);
-                }
-            }
+                IO.close((Closeable)entry.pooled);
         }
     }
 

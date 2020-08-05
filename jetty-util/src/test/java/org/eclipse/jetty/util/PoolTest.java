@@ -19,10 +19,14 @@
 package org.eclipse.jetty.util;
 
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,8 +39,26 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class PoolTest
 {
-    @Test
-    public void testAcquireRelease()
+
+    public static Stream<Object[]> cacheSize()
+    {
+        List<Object[]> data = new ArrayList<>();
+        data.add(new Object[]{0});
+        data.add(new Object[]{1});
+        data.add(new Object[]{2});
+        return data.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testCache(int cacheSize)
+    {
+        System.err.println(cacheSize);
+    }
+    
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testAcquireRelease(int cacheSize)
     {
         Pool<String> pool = new Pool<>(1,0);
         pool.reserve(-1).enable("aaa");
@@ -55,8 +77,9 @@ public class PoolTest
         assertThrows(NullPointerException.class, () -> pool.release(null));
     }
 
-    @Test
-    public void testRemoveBeforeRelease()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testRemoveBeforeRelease(int cacheSize)
     {
         Pool<String> pool = new Pool<>(1,0);
         pool.reserve(-1).enable("aaa");
@@ -67,8 +90,9 @@ public class PoolTest
         assertThat(pool.release(e1), is(false));
     }
 
-    @Test
-    public void testCloseBeforeRelease()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testCloseBeforeRelease(int cacheSize)
     {
         Pool<String> pool = new Pool<>(1,0);
         pool.reserve(-1).enable("aaa");
@@ -80,10 +104,11 @@ public class PoolTest
         assertThat(pool.release(e1), is(false));
     }
 
-    @Test
-    public void testMaxPoolSize()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testMaxPoolSize(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1, 0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         assertThat(pool.size(), is(0));
         assertThat(pool.reserve(-1), notNullValue());
         assertThat(pool.size(), is(1));
@@ -91,10 +116,11 @@ public class PoolTest
         assertThat(pool.size(), is(1));
     }
 
-    @Test
-    public void testReserve()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testReserve(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(2, 0);
+        Pool<String> pool = new Pool<>(2, cacheSize);
         Pool<String>.Reservation reservation = pool.reserve(-1);
         assertThat(pool.size(), is(1));
         assertThat(pool.acquire(), nullValue());
@@ -123,10 +149,11 @@ public class PoolTest
         assertThat(reservation.getEntry().isClosed(), is(true));
     }
 
-    @Test
-    public void testReserveMaxPending()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testReserveMaxPending(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(2, 0);
+        Pool<String> pool = new Pool<>(2, cacheSize);
         assertThat(pool.reserve(0), nullValue());
         assertThat(pool.reserve(1), notNullValue());
         assertThat(pool.reserve(1), nullValue());
@@ -136,19 +163,21 @@ public class PoolTest
         assertThat(pool.reserve(-1), nullValue());
     }
 
-    @Test
-    public void testReserveNegativeMaxPending()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testReserveNegativeMaxPending(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(2, 0);
+        Pool<String> pool = new Pool<>(2, cacheSize);
         assertThat(pool.reserve(-1), notNullValue());
         assertThat(pool.reserve(-1), notNullValue());
         assertThat(pool.reserve(-1), nullValue());
     }
 
-    @Test
-    public void testClose()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testClose(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1, 0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         pool.reserve(-1).enable("aaa");
         assertThat(pool.isClosed(), is(false));
         pool.close();
@@ -160,8 +189,9 @@ public class PoolTest
         assertThat(pool.reserve(-1), nullValue());
     }
 
-    @Test
-    public void testClosingCloseable()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testClosingCloseable(int cacheSize)
     {
         AtomicBoolean closed = new AtomicBoolean();
         Pool<Closeable> pool = new Pool<>(1,0);
@@ -172,10 +202,11 @@ public class PoolTest
         assertThat(closed.get(), is(true));
     }
 
-    @Test
-    public void testRemove()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testRemove(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1, 0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         pool.reserve(-1).enable("aaa");
 
         Pool<String>.Entry e1 = pool.acquire();
@@ -186,10 +217,11 @@ public class PoolTest
         assertThrows(NullPointerException.class, () -> pool.remove(null));
     }
 
-    @Test
-    public void testValuesSize()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testValuesSize(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(2, 0);
+        Pool<String> pool = new Pool<>(2, cacheSize);
 
         assertThat(pool.size(), is(0));
         assertThat(pool.values().isEmpty(), is(true));
@@ -199,10 +231,11 @@ public class PoolTest
         assertThat(pool.size(), is(2));
     }
 
-    @Test
-    public void testValuesContainsAcquiredEntries()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testValuesContainsAcquiredEntries(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(2, 0);
+        Pool<String> pool = new Pool<>(2, cacheSize);
 
         pool.reserve(-1).enable("aaa");
         pool.reserve(-1).enable("bbb");
@@ -212,10 +245,11 @@ public class PoolTest
         assertThat(pool.values().isEmpty(), is(false));
     }
 
-    @Test
-    public void testAcquireAt()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testAcquireAt(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(2, 0);
+        Pool<String> pool = new Pool<>(2, cacheSize);
 
         pool.reserve(-1).enable("aaa");
         pool.reserve(-1).enable("bbb");
@@ -227,10 +261,11 @@ public class PoolTest
         assertThat(pool.acquireAt(1), nullValue());
     }
 
-    @Test
-    public void testMaxUsageCount()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testMaxUsageCount(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1, 0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         pool.setMaxUsageCount(3);
         pool.reserve(-1).enable("aaa");
 
@@ -249,10 +284,11 @@ public class PoolTest
         assertThat(pool.release(e1Copy), is(false));
     }
 
-    @Test
-    public void testMaxMultiplex()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testMaxMultiplex(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(2, 0);
+        Pool<String> pool = new Pool<>(2, cacheSize);
         pool.setMaxMultiplex(3);
         pool.reserve(-1).enable("aaa");
         pool.reserve(-1).enable("bbb");
@@ -272,10 +308,11 @@ public class PoolTest
         assertThat(e4, sameInstance(e6));
     }
 
-    @Test
-    public void testRemoveMultiplexed()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testRemoveMultiplexed(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1, 0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         pool.setMaxMultiplex(2);
         pool.reserve(-1).enable("aaa");
 
@@ -296,10 +333,11 @@ public class PoolTest
         assertThat(pool.remove(e1), is(false));
     }
 
-    @Test
-    public void testMultiplexRemoveThenAcquireThenReleaseRemove()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testMultiplexRemoveThenAcquireThenReleaseRemove(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1, 0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         pool.setMaxMultiplex(2);
         pool.reserve(-1).enable("aaa");
 
@@ -313,10 +351,11 @@ public class PoolTest
         assertThat(pool.remove(e2), is(true));
     }
 
-    @Test
-    public void testNonMultiplexRemoveAfterAcquire()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testNonMultiplexRemoveAfterAcquire(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1, 0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         pool.setMaxMultiplex(2);
         pool.reserve(-1).enable("aaa");
 
@@ -325,10 +364,11 @@ public class PoolTest
         assertThat(pool.size(), is(0));
     }
 
-    @Test
-    public void testMultiplexRemoveAfterAcquire()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testMultiplexRemoveAfterAcquire(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1, 0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         pool.setMaxMultiplex(2);
         pool.reserve(-1).enable("aaa");
 
@@ -349,10 +389,11 @@ public class PoolTest
         assertThat(pool.size(), is(0));
     }
 
-    @Test
-    public void testReleaseThenRemoveNonEnabledEntry()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testReleaseThenRemoveNonEnabledEntry(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1, 0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         Pool<String>.Reservation r = pool.reserve(-1);
         assertThat(pool.size(), is(1));
         assertThat(pool.release(r.getEntry()), is(false));
@@ -361,10 +402,11 @@ public class PoolTest
         assertThat(pool.size(), is(0));
     }
 
-    @Test
-    public void testRemoveNonEnabledEntry()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testRemoveNonEnabledEntry(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1, 0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         Pool<String>.Reservation r = pool.reserve(-1);
         assertThat(pool.size(), is(1));
         assertThat(pool.getPendingConnectionCount(), is(1));
@@ -373,10 +415,11 @@ public class PoolTest
         assertThat(pool.getPendingConnectionCount(), is(0));
     }
 
-    @Test
-    public void testMultiplexMaxUsageReachedAcquireThenRemove()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testMultiplexMaxUsageReachedAcquireThenRemove(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1, 0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         pool.setMaxMultiplex(2);
         pool.setMaxUsageCount(3);
         pool.reserve(-1).enable("aaa");
@@ -393,10 +436,11 @@ public class PoolTest
         assertThat(pool.size(), is(0));
     }
     
-    @Test
-    public void testMultiplexMaxUsageReachedAcquireThenReleaseThenRemove()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testMultiplexMaxUsageReachedAcquireThenReleaseThenRemove(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1, 0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         pool.setMaxMultiplex(2);
         pool.setMaxUsageCount(3);
         pool.reserve(-1).enable("aaa");
@@ -417,10 +461,11 @@ public class PoolTest
         assertThat(pool.size(), is(0));
     }
 
-    @Test
-    public void testUsageCountAfterReachingMaxMultiplexLimit()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testUsageCountAfterReachingMaxMultiplexLimit(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1, 0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         pool.setMaxMultiplex(2);
         pool.setMaxUsageCount(10);
         pool.reserve(-1).enable("aaa");
@@ -433,11 +478,74 @@ public class PoolTest
         assertThat(e1.getUsageCount(), is(2));
     }
 
-    @Test
-    public void testConfigLimits()
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testConfigLimits(int cacheSize)
     {
         assertThrows(IllegalArgumentException.class, () -> new Pool<String>(1, 0).setMaxMultiplex(0));
         assertThrows(IllegalArgumentException.class, () -> new Pool<String>(1, 0).setMaxMultiplex(-1));
         assertThrows(IllegalArgumentException.class, () -> new Pool<String>(1, 0).setMaxUsageCount(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testAcquireWithCreator(int cacheSize)
+    {
+        Pool<String> pool = new Pool<>(2, cacheSize);
+
+        assertThat(pool.size(), is(0));
+        assertThat(pool.acquire(e -> null), nullValue());
+        assertThat(pool.size(), is(0));
+
+        Pool<String>.Entry e1 = pool.acquire(e -> "e1");
+        assertThat(e1.getPooled(), is("e1"));
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getPendingConnectionCount(), is(0));
+        assertThat(pool.getInUseConnectionCount(), is(1));
+
+        assertThat(pool.acquire(e -> null), nullValue());
+        assertThat(pool.size(), is(1));
+
+        Pool<String>.Entry e2 = pool.acquire(e -> "e2");
+        assertThat(e2.getPooled(), is("e2"));
+        assertThat(pool.size(), is(2));
+        assertThat(pool.getPendingConnectionCount(), is(0));
+        assertThat(pool.getInUseConnectionCount(), is(2));
+
+        Pool<String>.Entry e3 = pool.acquire(e -> "e3");
+        assertThat(e3, nullValue());
+        assertThat(pool.size(), is(2));
+        assertThat(pool.getPendingConnectionCount(), is(0));
+        assertThat(pool.getInUseConnectionCount(), is(2));
+
+        assertThat(pool.acquire(e ->
+        {
+            throw new IllegalStateException();
+        }), nullValue());
+
+        e2.release();
+        assertThat(pool.size(), is(2));
+        assertThat(pool.getPendingConnectionCount(), is(0));
+        assertThat(pool.getInUseConnectionCount(), is(1));
+
+        Pool<String>.Entry e4 = pool.acquire(e -> "e4");
+        assertThat(e4.getPooled(), is("e2"));
+        assertThat(pool.size(), is(2));
+        assertThat(pool.getPendingConnectionCount(), is(0));
+        assertThat(pool.getInUseConnectionCount(), is(2));
+
+        pool.remove(e1);
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getPendingConnectionCount(), is(0));
+        assertThat(pool.getInUseConnectionCount(), is(1));
+
+        assertThrows(IllegalStateException.class, () -> pool.acquire(e ->
+        {
+            throw new IllegalStateException();
+        }));
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getPendingConnectionCount(), is(0));
+        assertThat(pool.getInUseConnectionCount(), is(1));
+
     }
 }
