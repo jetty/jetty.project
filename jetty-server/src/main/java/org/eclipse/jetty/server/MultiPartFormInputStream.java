@@ -19,22 +19,25 @@
 package org.eclipse.jetty.server;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.file.FileSystems;
+import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.DosFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
@@ -78,6 +81,7 @@ import org.slf4j.LoggerFactory;
  *                      +---------------> DELETING -------------------+
  *                        deleteParts()               parsing thread
  * }</pre>
+ *
  * @see <a href="https://tools.ietf.org/html/rfc7578">https://tools.ietf.org/html/rfc7578</a>
  */
 public class MultiPartFormInputStream
@@ -97,11 +101,9 @@ public class MultiPartFormInputStream
     private final MultiMap<Part> _parts = new MultiMap<>();
     private final InputStream _in;
     private final MultipartConfigElement _config;
-    private final File _contextTmpDir;
     private final String _contentType;
+    private final Path _location;
     private volatile Throwable _err;
-    private volatile Path _tmpDir;
-    private volatile boolean _deleteOnExit;
     private volatile boolean _writeFilesWithFilenames;
     private volatile int _bufferSize = 16 * 1024;
     private State state = State.UNPARSED;
@@ -110,7 +112,7 @@ public class MultiPartFormInputStream
     {
         protected String _name;
         protected String _filename;
-        protected File _file;
+        protected Path _path;
         protected OutputStream _out;
         protected ByteArrayOutputStream2 _bout;
         protected String _contentType;
@@ -127,7 +129,7 @@ public class MultiPartFormInputStream
         @Override
         public String toString()
         {
-            return String.format("Part{n=%s,fn=%s,ct=%s,s=%d,tmp=%b,file=%s}", _name, _filename, _contentType, _size, _temporary, _file);
+            return String.format("Part{n=%s,fn=%s,ct=%s,s=%d,tmp=%b,path=%s}", _name, _filename, _contentType, _size, _temporary, _path);
         }
 
         protected void setContentType(String contentType)
@@ -163,7 +165,7 @@ public class MultiPartFormInputStream
                 throw new IllegalStateException("Multipart Mime part " + _name + " exceeds max filesize");
 
             if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 &&
-                _size + 1 > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
+                _size + 1 > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _path == null)
                 createFile();
 
             _out.write(b);
@@ -176,7 +178,7 @@ public class MultiPartFormInputStream
                 throw new IllegalStateException("Multipart Mime part " + _name + " exceeds max filesize");
 
             if (MultiPartFormInputStream.this._config.getFileSizeThreshold() > 0 &&
-                _size + length > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _file == null)
+                _size + length > MultiPartFormInputStream.this._config.getFileSizeThreshold() && _path == null)
                 createFile();
 
             _out.write(bytes, offset, length);
@@ -186,22 +188,26 @@ public class MultiPartFormInputStream
         @Override
         public void write(String fileName) throws IOException
         {
-            Path p = FileSystems.getDefault().getPath(fileName);
-            
-            if (_file == null)
+            // We cannot determine absolute vs relative here from just the fileName, so always
+            // resolve against the _location (if the filesystem determines that it's relative, then
+            // it will use it in a relative fashion, if the filesystem says it's absolute, it will
+            // be used in an absolute fashion)
+            // Bonus feature of Path.resolve(String) is that the fileName can use Unix/URI syntax for paths
+            // even on windows.
+            Path target = _location.resolve(fileName);
+
+            if (_path == null)
             {
                 _temporary = false;
-
-                // part data is only in the ByteArrayOutputStream and never been written to disk
-                if (p.isAbsolute())
-                    _file = Files.createFile(p).toFile();
-                else
-                    _file = Files.createFile(_tmpDir.resolve(p)).toFile();
-
-                try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(_file)))
+                _path = target;
+                // Always create new file, failing if the output file cannot be created.
+                // Truncate any existing file once opened, opened in WRITE mode.
+                // Example: If the parent directories for output doesn't exist, this will fail.
+                // TODO: this should probably be StandardOpenOption.CREATE_NEW to fail if the file already exists.
+                // TODO: double check above with spec
+                try (OutputStream out = Files.newOutputStream(_path))
                 {
-                    _bout.writeTo(bos);
-                    bos.flush();
+                    _bout.writeTo(out);
                 }
                 finally
                 {
@@ -212,40 +218,104 @@ public class MultiPartFormInputStream
             {
                 // the part data is already written to a temporary file, just rename it
                 _temporary = false;
-
-                Path src = _file.toPath();
-                Path target = (p.isAbsolute() ? p : _tmpDir.resolve(p));
-                Files.move(src, target, StandardCopyOption.REPLACE_EXISTING);
-                _file = target.toFile();
+                Files.move(_path, target, StandardCopyOption.REPLACE_EXISTING);
+                _path = target;
             }
         }
 
         protected void createFile() throws IOException
         {
-            /*
-             * Some statics just to make the code below easier to understand This get optimized away during the compile anyway
-             */
-            final boolean USER = true;
-            final boolean WORLD = false;
+            _path = Files.createTempFile(MultiPartFormInputStream.this._location, "MultiPart", "");
+            setReadableForUser(_path);
 
-            _file = Files.createTempFile(MultiPartFormInputStream.this._tmpDir, "MultiPart", "").toFile();
-            _file.setReadable(false, WORLD); // (reset) disable it for everyone first
-            _file.setReadable(true, USER); // enable for user only
-
-            if (_deleteOnExit)
-                _file.deleteOnExit();
-            FileOutputStream fos = new FileOutputStream(_file);
-            BufferedOutputStream bos = new BufferedOutputStream(fos);
+            OutputStream fileOutputStream = Files.newOutputStream(_path);
 
             if (_size > 0 && _out != null)
             {
                 // already written some bytes, so need to copy them into the file
                 _out.flush();
-                _bout.writeTo(bos);
+                _bout.writeTo(fileOutputStream);
                 _out.close();
             }
             _bout = null;
-            _out = bos;
+            _out = fileOutputStream;
+        }
+
+        /**
+         * Attempt to set the Path as readable for the FileSystem / FileStore of the Path.
+         *
+         * For Unix/Linux/OSX, that means User only can read.
+         * For Windows/Dos, that means The File is Readable.
+         *
+         * @param path the path to control
+         */
+        private void setReadableForUser(Path path)
+        {
+            // Attempt to set file to read-only for the active user (not the world or group)
+            FileStore fileStore = null;
+            try
+            {
+                // Obtain a reference to the FileStore to know what kind of read-only we are capable of.
+                fileStore = Files.getFileStore(path);
+
+                if (fileStore == null)
+                {
+                    // Not on a properly implemented FileStore (seen with 3rd party FileStore implementations)
+                    // We cannot do anything in this case, so just return.
+                    return;
+                }
+
+                if (fileStore.supportsFileAttributeView(DosFileAttributeView.class))
+                {
+                    // We are on a Windows / DOS filesystem.
+                    try
+                    {
+                        DosFileAttributeView att = Files.getFileAttributeView(path, DosFileAttributeView.class);
+                        // The file itself doesn't have World vs Group vs User concepts.
+                        // We don't want to be in the business of changing ACLs, so we keep it simple.
+                        att.setReadOnly(false);
+                    }
+                    catch (IOException e)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Unable to set DosFileAttribute readable on: {}", path, e);
+                    }
+                    return;
+                }
+
+                if (fileStore.supportsFileAttributeView(PosixFileAttributeView.class))
+                {
+                    // We are on a Unix / Linux / OSX system
+                    try
+                    {
+                        PosixFileAttributes attrs = Files.readAttributes(path, PosixFileAttributes.class);
+                        Set<PosixFilePermission> perms = attrs.permissions();
+                        // Remove READ permission (if set) for Others / World
+                        perms.remove(PosixFilePermission.OTHERS_READ);
+                        // Remove READ permission (if set) for Group
+                        perms.remove(PosixFilePermission.GROUP_READ);
+                        // Ensure that Owner can read/write
+                        perms.add(PosixFilePermission.OWNER_WRITE);
+                        perms.add(PosixFilePermission.OWNER_READ);
+
+                        Files.setPosixFilePermissions(path, perms);
+                    }
+                    catch (IOException e)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Unable to set PosixFileAttribute readable on: {}", path, e);
+                    }
+                    return;
+                }
+
+                // If we reached this point, we have a Path on a FileSystem / FileStore that we cannot control.
+                // So skip the attempt to set readable.
+            }
+            catch (IOException e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to set ReadOnly attributes on path: {}", _path, e);
+            }
         }
 
         protected void setHeaders(MultiMap<String> headers)
@@ -283,10 +353,10 @@ public class MultiPartFormInputStream
         @Override
         public InputStream getInputStream() throws IOException
         {
-            if (_file != null)
+            if (_path != null)
             {
                 // written to a file, whether temporary or not
-                return new BufferedInputStream(new FileInputStream(_file));
+                return Files.newInputStream(_path);
             }
             else
             {
@@ -326,9 +396,10 @@ public class MultiPartFormInputStream
         @Override
         public void delete() throws IOException
         {
-            if (_file != null && _file.exists())
-                if (!_file.delete())
-                    throw new IOException("Could Not Delete File");
+            if (_path == null)
+                return;
+            if (!Files.deleteIfExists(_path))
+                throw new IOException("Could not delete file: " + _path);
         }
 
         /**
@@ -346,10 +417,24 @@ public class MultiPartFormInputStream
          * Get the file
          *
          * @return the file, if any, the data has been written to.
+         * @deprecated use {@link #getPath()} instead
          */
+        @Deprecated
         public File getFile()
         {
-            return _file;
+            if (_path == null)
+                return null;
+            return getPath().toFile();
+        }
+
+        /**
+         * Get the Path for the file
+         *
+         * @return the path, if any, the data has been written to.
+         */
+        public Path getPath()
+        {
+            return _path;
         }
 
         /**
@@ -376,8 +461,33 @@ public class MultiPartFormInputStream
         if (_contentType == null || !_contentType.startsWith("multipart/form-data"))
             throw new IllegalArgumentException("content type is not multipart/form-data");
 
-        _contextTmpDir =  (contextTmpDir != null) ? contextTmpDir : new File(System.getProperty("java.io.tmpdir"));
-        _config = (config != null) ? config : new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
+        Path tempPath = (contextTmpDir != null) ? contextTmpDir.toPath() : Paths.get(System.getProperty("java.io.tmpdir"));
+        _config = (config != null) ? config : new MultipartConfigElement(tempPath.toAbsolutePath().toString());
+
+        // Sort out the location to which to write files:
+        // If there is a MultiPartConfigElement.location, use it
+        // otherwise default to the context tmp dir
+        Path locationPath;
+        if (StringUtil.isBlank(_config.getLocation()))
+        {
+            locationPath = tempPath;
+        }
+        else
+        {
+            // We cannot determine if _config.getLocation() is absolute or relative simply from the String
+            // in a way that functions for all JVM Runtimes / OS / FileSystem / FileStore combinations out
+            // available in the world.  The Java API also not able to make this decisions purely from
+            // a String, and it must make the call on if the String is absolute or relative based on
+            // a resolved Path point.
+            // All we can do is rely on the FileSystem implementation to determine that for us.
+            // So we always resolve against the tempPath, if the _config.getLocation() is absolute
+            // for the the runtime FileSystem then it will become an absolute resolution, otherwise
+            // it will become a relative path.
+            locationPath = tempPath.resolve(_config.getLocation());
+        }
+        _location = locationPath;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Location is {}", _location);
 
         if (in instanceof ServletInputStream)
         {
@@ -388,7 +498,7 @@ public class MultiPartFormInputStream
                 return;
             }
         }
-        
+
         _in = new BufferedInputStream(in);
     }
 
@@ -539,24 +649,8 @@ public class MultiPartFormInputStream
         MultiPartParser parser = null;
         try
         {
-            // Sort out the location to which to write files:
-            // If there is a MultiPartConfigElement.location, use it
-            // otherwise default to the context tmp dir
-            if (StringUtil.isBlank(_config.getLocation()))
-                _tmpDir = _contextTmpDir.toPath();
-            else
-            {
-                // If the MultiPartConfigElement.location is
-                // relative, make it relative to the context tmp dir
-                Path location = FileSystems.getDefault().getPath(_config.getLocation());
-                if (location.isAbsolute())
-                    _tmpDir = location;
-                else
-                    _tmpDir = _contextTmpDir.toPath().resolve(location);
-            }
-
-            if (!Files.exists(_tmpDir))
-                Files.createDirectories(_tmpDir);
+            if (!Files.exists(_location))
+                Files.createDirectories(_location);
 
             String contentTypeBoundary = "";
             int bstart = _contentType.indexOf("boundary=");
@@ -688,7 +782,6 @@ public class MultiPartFormInputStream
 
             // Transfer encoding is not longer considers as it is deprecated as per
             // https://tools.ietf.org/html/rfc7578#section-4.7
-
         }
 
         @Override
@@ -827,9 +920,13 @@ public class MultiPartFormInputStream
         }
     }
 
+    /**
+     * @deprecated does nothing (no replacement)
+     */
+    @SuppressWarnings("unused")
+    @Deprecated
     public void setDeleteOnExit(boolean deleteOnExit)
     {
-        _deleteOnExit = deleteOnExit;
     }
 
     public void setWriteFilesWithFilenames(boolean writeFilesWithFilenames)
@@ -842,9 +939,13 @@ public class MultiPartFormInputStream
         return _writeFilesWithFilenames;
     }
 
+    /**
+     * @deprecated always returns false (no replacement)
+     */
+    @Deprecated
     public boolean isDeleteOnExit()
     {
-        return _deleteOnExit;
+        return false;
     }
 
     private static String value(String nameEqualsValue)
