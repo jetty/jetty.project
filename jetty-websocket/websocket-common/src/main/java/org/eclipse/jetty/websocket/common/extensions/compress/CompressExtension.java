@@ -193,7 +193,8 @@ public abstract class CompressExtension extends AbstractExtension
         {
             if (!supplyInput(inflater, buf))
             {
-                LOG.debug("Needed input, but no buffer could supply input");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Needed input, but no buffer could supply input");
                 return;
             }
 
@@ -202,26 +203,22 @@ public abstract class CompressExtension extends AbstractExtension
             {
                 if (read == 0)
                 {
-                    LOG.debug("Decompress: read 0 {}", toDetail(inflater));
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Decompress: read 0 {}", toDetail(inflater));
                     break;
                 }
                 else
                 {
                     // do something with output
                     if (LOG.isDebugEnabled())
-                    {
                         LOG.debug("Decompressed {} bytes: {}", read, toDetail(inflater));
-                    }
-
                     accumulator.copyChunk(output, 0, read);
                 }
             }
         }
 
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("Decompress: exiting {}", toDetail(inflater));
-        }
     }
 
     @Override
@@ -293,9 +290,7 @@ public abstract class CompressExtension extends AbstractExtension
         if (buf == null || buf.remaining() <= 0)
         {
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug("No data left left to supply to Inflater");
-            }
             return false;
         }
 
@@ -322,9 +317,7 @@ public abstract class CompressExtension extends AbstractExtension
 
         inflater.setInput(input, inputOffset, len);
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("Supplied {} input bytes: {}", input.length, toDetail(inflater));
-        }
         return true;
     }
 
@@ -333,9 +326,7 @@ public abstract class CompressExtension extends AbstractExtension
         if (buf == null || buf.remaining() <= 0)
         {
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug("No data left left to supply to Deflater");
-            }
             return false;
         }
 
@@ -362,9 +353,7 @@ public abstract class CompressExtension extends AbstractExtension
 
         deflater.setInput(input, inputOffset, len);
         if (LOG.isDebugEnabled())
-        {
             LOG.debug("Supplied {} input bytes: {}", input.length, toDetail(deflater));
-        }
         return true;
     }
 
@@ -462,7 +451,8 @@ public abstract class CompressExtension extends AbstractExtension
             if (finished)
             {
                 current = pollEntry();
-                LOG.debug("Processing {}", current);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Processing {}", current);
                 if (current == null)
                     return Action.IDLE;
                 deflate(current);
@@ -570,9 +560,7 @@ public abstract class CompressExtension extends AbstractExtension
             }
 
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug("Compressed {}: input:{} -> payload:{}", entry, outputLength, payload.remaining());
-            }
 
             boolean continuation = frame.getType().isContinuation() || !first;
             DataFrame chunk = new DataFrame(frame, continuation);
