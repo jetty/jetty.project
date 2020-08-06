@@ -18,16 +18,19 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.websocket.Session;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 
-public class JsrSessionTracker extends AbstractLifeCycle implements JsrSessionListener
+public class JsrSessionTracker extends AbstractLifeCycle implements JsrSessionListener, Dumpable
 {
     private final Set<JsrSession> sessions = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -56,5 +59,17 @@ public class JsrSessionTracker extends AbstractLifeCycle implements JsrSessionLi
             LifeCycle.stop(session);
         }
         super.doStop();
+    }
+
+    @ManagedAttribute("Total number of active WebSocket Sessions")
+    public int getNumSessions()
+    {
+        return sessions.size();
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, sessions);
     }
 }
