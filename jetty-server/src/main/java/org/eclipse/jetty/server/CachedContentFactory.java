@@ -255,7 +255,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 {
                     String compressedPathInContext = pathInContext + format._extension;
                     CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
-                    if (compressedContent == null || compressedContent.isValid())
+                    if (compressedContent == null || !compressedContent.isValid())
                     {
                         compressedContent = null;
                         Resource compressedResource = _factory.getResource(compressedPathInContext);

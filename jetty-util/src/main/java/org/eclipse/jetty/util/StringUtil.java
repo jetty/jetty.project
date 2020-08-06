@@ -193,6 +193,11 @@ public class StringUtil
         return String.valueOf(chars);
     }
 
+    public static boolean equalsIgnoreCase(String a, String b)
+    {
+        return (a == null) ? (b == null) : a.equalsIgnoreCase(b);
+    }
+
     public static boolean startsWithIgnoreCase(String s, String w)
     {
         if (w == null)

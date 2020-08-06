@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http;
 
+import org.eclipse.jetty.util.StringUtil;
+
 public class CompressedContentFormat
 {
     public static final CompressedContentFormat GZIP = new CompressedContentFormat("gzip", ".gz");
@@ -44,18 +46,9 @@ public class CompressedContentFormat
     {
         if (!(o instanceof CompressedContentFormat))
             return false;
+
         CompressedContentFormat ccf = (CompressedContentFormat)o;
-        if (_encoding == null && ccf._encoding != null)
-            return false;
-        if (_extension == null && ccf._extension != null)
-            return false;
-
-        return equalsIgnoreCase(_encoding, ccf._encoding) && equalsIgnoreCase(_extension, ccf._extension);
-    }
-
-    private static boolean equalsIgnoreCase(String a, String b)
-    {
-        return (a == null) ? (b == null) : a.equalsIgnoreCase(b);
+        return StringUtil.equalsIgnoreCase(_encoding, ccf._encoding) && StringUtil.equalsIgnoreCase(_extension, ccf._extension);
     }
 
     public static boolean tagEquals(String etag, String tag)
