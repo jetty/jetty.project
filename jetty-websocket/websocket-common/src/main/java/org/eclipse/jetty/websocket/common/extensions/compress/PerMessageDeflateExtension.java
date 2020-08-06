@@ -105,7 +105,8 @@ public class PerMessageDeflateExtension extends CompressExtension
     {
         if (frame.isFin() && !incomingContextTakeover)
         {
-            LOG.debug("Incoming Context Reset");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Incoming Context Reset");
             decompressCount.set(0);
             getInflater().reset();
         }
@@ -117,7 +118,8 @@ public class PerMessageDeflateExtension extends CompressExtension
     {
         if (frame.isFin() && !outgoingContextTakeover)
         {
-            LOG.debug("Outgoing Context Reset");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Outgoing Context Reset");
             getDeflater().reset();
         }
         super.nextOutgoingFrame(frame, callback, batchMode);
@@ -188,7 +190,8 @@ public class PerMessageDeflateExtension extends CompressExtension
             }
         }
 
-        LOG.debug("config: outgoingContextTakeover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("config: outgoingContextTakeover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
         super.setConfig(configNegotiated);
     }
