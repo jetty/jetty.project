@@ -143,7 +143,8 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Ext
 
     protected void nextIncomingFrame(Frame frame)
     {
-        log.debug("nextIncomingFrame({})", frame);
+        if (log.isDebugEnabled())
+            log.debug("nextIncomingFrame({})", frame);
         this.nextIncoming.incomingFrame(frame);
     }
 
@@ -151,7 +152,8 @@ public abstract class AbstractExtension extends AbstractLifeCycle implements Ext
     {
         try
         {
-            log.debug("nextOutgoingFrame({})", frame);
+            if (log.isDebugEnabled())
+                log.debug("nextOutgoingFrame({})", frame);
             this.nextOutgoing.outgoingFrame(frame, callback, batchMode);
         }
         catch (Throwable t)
