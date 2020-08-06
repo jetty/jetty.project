@@ -539,13 +539,15 @@ public class MultiPartFormInputStream
         MultiPartParser parser = null;
         try
         {
-            // sort out the location to which to write the files
-            if (_config.getLocation() == null)
-                _tmpDir = _contextTmpDir.toPath();
-            else if ("".equals(_config.getLocation()))
+            // Sort out the location to which to write files:
+            // If there is a MultiPartConfigElement.location, use it
+            // otherwise default to the context tmp dir
+            if (StringUtil.isBlank(_config.getLocation()))
                 _tmpDir = _contextTmpDir.toPath();
             else
             {
+                // If the MultiPartConfigElement.location is
+                // relative, make it relative to the context tmp dir
                 Path location = FileSystems.getDefault().getPath(_config.getLocation());
                 if (location.isAbsolute())
                     _tmpDir = location;
