@@ -947,13 +947,47 @@ public class WebInfConfiguration extends AbstractConfiguration
         StringTokenizer tokenizer = new StringTokenizer(context.getExtraClasspath(), ",;");
         while (tokenizer.hasMoreTokens())
         {
-            Resource resource = context.newResource(tokenizer.nextToken().trim());
-            String fnlc = resource.getName().toLowerCase(Locale.ENGLISH);
-            int dot = fnlc.lastIndexOf('.');
-            String extension = (dot < 0 ? null : fnlc.substring(dot));
-            if (extension != null && (extension.equals(".jar") || extension.equals(".zip")))
+            String token = tokenizer.nextToken().trim();
+
+            // Is this a Glob Reference?
+            if (isGlobReference(token))
             {
-                jarResources.add(resource);
+                String dir = token.substring(0, token.length() - 2);
+                // Use directory
+                Resource dirResource = context.newResource(dir);
+                if (dirResource.exists() && dirResource.isDirectory())
+                {
+                    // To obtain the list of files
+                    String[] files = dirResource.list();
+                    if (files != null)
+                    {
+                        Arrays.sort(files);
+                        for (String file : files)
+                        {
+                            try
+                            {
+                                Resource fileResource = dirResource.addPath(file);
+                                if (isFileSupported(fileResource))
+                                {
+                                    jarResources.add(fileResource);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                LOG.warn(Log.EXCEPTION, ex);
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Simple reference, add as-is
+                Resource resource = context.newResource(token);
+                if (isFileSupported(resource))
+                {
+                    jarResources.add(resource);
+                }
             }
         }
 
@@ -1003,11 +1037,28 @@ public class WebInfConfiguration extends AbstractConfiguration
         StringTokenizer tokenizer = new StringTokenizer(context.getExtraClasspath(), ",;");
         while (tokenizer.hasMoreTokens())
         {
-            Resource resource = context.newResource(tokenizer.nextToken().trim());
-            if (resource.exists() && resource.isDirectory())
-                dirResources.add(resource);
+            String token = tokenizer.nextToken().trim();
+            if (!isGlobReference(token))
+            {
+                Resource resource = context.newResource(token);
+                if (resource.exists() && resource.isDirectory())
+                    dirResources.add(resource);
+            }
         }
 
         return dirResources;
+    }
+
+    private boolean isGlobReference(String token)
+    {
+        return token.endsWith("/*") || token.endsWith("\\*");
+    }
+
+    private boolean isFileSupported(Resource resource)
+    {
+        String filenameLowercase = resource.getName().toLowerCase(Locale.ENGLISH);
+        int dot = filenameLowercase.lastIndexOf('.');
+        String extension = (dot < 0 ? null : filenameLowercase.substring(dot));
+        return (extension != null && (extension.equals(".jar") || extension.equals(".zip")));
     }
 }

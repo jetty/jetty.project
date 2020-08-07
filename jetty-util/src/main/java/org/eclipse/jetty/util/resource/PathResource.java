@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.File;
+import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -184,7 +185,7 @@ public class PathResource extends Resource
             // different number of segments
             return false;
         }
-        
+
         // compare each segment of path, backwards
         for (int i = bCount; i-- > 0; )
         {
@@ -193,7 +194,7 @@ public class PathResource extends Resource
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -226,7 +227,23 @@ public class PathResource extends Resource
      */
     public PathResource(Path path)
     {
-        this.path = path.toAbsolutePath();
+        Path absPath = path;
+        try
+        {
+            absPath = path.toAbsolutePath();
+        }
+        catch (IOError ioError)
+        {
+            // Not able to resolve absolute path from provided path
+            // This could be due to a glob reference, or a reference
+            // to a path that doesn't exist (yet)
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to get absolute path for {}", path, ioError);
+        }
+
+        // cleanup any lingering relative path nonsense (like "/./" and "/../")
+        this.path = absPath.normalize();
+
         assertValidPath(path);
         this.uri = this.path.toUri();
         this.alias = checkAliasPath();
