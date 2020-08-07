@@ -187,15 +187,14 @@ public class MultiPartFormInputStream
         public void write(String fileName) throws IOException
         {
             Path p = Path.of(fileName);
+            if (!p.isAbsolute())
+                p = _tmpDir.resolve(p);
             
             if (_file == null)
             {
                 _temporary = false;
 
                 // part data is only in the ByteArrayOutputStream and never been written to disk
-                if (!p.isAbsolute())
-                    p = _tmpDir.resolve(p);
-
                 _file = Files.createFile(p).toFile();
 
                 try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(_file)))
@@ -214,9 +213,8 @@ public class MultiPartFormInputStream
                 _temporary = false;
 
                 Path src = _file.toPath();
-                Path target = (p.isAbsolute() ? p : _tmpDir.resolve(p));
-                Files.move(src, target, StandardCopyOption.REPLACE_EXISTING);
-                _file = target.toFile();
+                Files.move(src, p, StandardCopyOption.REPLACE_EXISTING);
+                _file = p.toFile();
             }
         }
 
