@@ -20,6 +20,7 @@ package org.eclipse.jetty.client;
 
 import java.util.Objects;
 
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.URIUtil;
 
 public class Origin
@@ -107,7 +108,7 @@ public class Origin
 
         public Address(String host, int port)
         {
-            this.host = Objects.requireNonNull(host);
+            this.host = HostPort.normalizeHost(Objects.requireNonNull(host));
             this.port = port;
         }
 

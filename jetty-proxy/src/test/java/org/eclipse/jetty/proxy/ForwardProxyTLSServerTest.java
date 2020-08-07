@@ -465,6 +465,34 @@ public class ForwardProxyTLSServerTest
 
     @ParameterizedTest
     @MethodSource("proxyTLS")
+    public void testIPv6(SslContextFactory.Server proxyTLS) throws Exception
+    {
+        startTLSServer(new ServerHandler());
+        startProxy(proxyTLS);
+
+        HttpClient httpClient = new HttpClient(newClientSslContextFactory());
+        HttpProxy httpProxy = new HttpProxy(new Origin.Address("[::1]", proxyConnector.getLocalPort()), proxyTLS != null);
+        httpClient.getProxyConfiguration().getProxies().add(httpProxy);
+        httpClient.start();
+
+        try
+        {
+            ContentResponse response = httpClient.newRequest("[::1]", serverConnector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .path("/echo?body=")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("proxyTLS")
     public void testProxyAuthentication(SslContextFactory.Server proxyTLS) throws Exception
     {
         String realm = "test-realm";

@@ -27,6 +27,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,8 +55,10 @@ public class OneWebAppTest extends AbstractEmbeddedTest
     }
 
     @Test
+    @Tag("external")
     public void testGetAsyncRest() throws Exception
     {
+        // The async rest webapp forwards the call to ebay.com.
         URI uri = server.getURI().resolve("/testAsync?items=mouse,beer,gnome");
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.GET)
