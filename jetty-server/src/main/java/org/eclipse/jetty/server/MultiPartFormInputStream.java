@@ -186,17 +186,17 @@ public class MultiPartFormInputStream
         @Override
         public void write(String fileName) throws IOException
         {
-            Path p = FileSystems.getDefault().getPath(fileName);
+            Path p = Path.of(fileName);
             
             if (_file == null)
             {
                 _temporary = false;
 
                 // part data is only in the ByteArrayOutputStream and never been written to disk
-                if (p.isAbsolute())
-                    _file = Files.createFile(p).toFile();
-                else
-                    _file = Files.createFile(_tmpDir.resolve(p)).toFile();
+                if (!p.isAbsolute())
+                    p = _tmpDir.resolve(p);
+
+                _file = Files.createFile(p).toFile();
 
                 try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(_file)))
                 {
@@ -549,10 +549,7 @@ public class MultiPartFormInputStream
                 // If the MultiPartConfigElement.location is
                 // relative, make it relative to the context tmp dir
                 Path location = FileSystems.getDefault().getPath(_config.getLocation());
-                if (location.isAbsolute())
-                    _tmpDir = location;
-                else
-                    _tmpDir = _contextTmpDir.toPath().resolve(location);
+                _tmpDir = (location.isAbsolute() ? location : _contextTmpDir.toPath().resolve(location));
             }
 
             if (!Files.exists(_tmpDir))
