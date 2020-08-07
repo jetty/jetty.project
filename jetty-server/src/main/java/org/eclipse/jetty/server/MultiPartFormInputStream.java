@@ -25,19 +25,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.DosFileAttributeView;
-import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.PosixFileAttributes;
-import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
@@ -226,7 +220,6 @@ public class MultiPartFormInputStream
         protected void createFile() throws IOException
         {
             _path = Files.createTempFile(MultiPartFormInputStream.this._location, "MultiPart", "");
-            setReadableForUser(_path);
 
             OutputStream fileOutputStream = Files.newOutputStream(_path);
 
@@ -239,83 +232,6 @@ public class MultiPartFormInputStream
             }
             _bout = null;
             _out = fileOutputStream;
-        }
-
-        /**
-         * Attempt to set the Path as readable for the FileSystem / FileStore of the Path.
-         *
-         * For Unix/Linux/OSX, that means User only can read.
-         * For Windows/Dos, that means The File is Readable.
-         *
-         * @param path the path to control
-         */
-        private void setReadableForUser(Path path)
-        {
-            // Attempt to set file to read-only for the active user (not the world or group)
-            FileStore fileStore = null;
-            try
-            {
-                // Obtain a reference to the FileStore to know what kind of read-only we are capable of.
-                fileStore = Files.getFileStore(path);
-
-                if (fileStore == null)
-                {
-                    // Not on a properly implemented FileStore (seen with 3rd party FileStore implementations)
-                    // We cannot do anything in this case, so just return.
-                    return;
-                }
-
-                if (fileStore.supportsFileAttributeView(DosFileAttributeView.class))
-                {
-                    // We are on a Windows / DOS filesystem.
-                    try
-                    {
-                        DosFileAttributeView att = Files.getFileAttributeView(path, DosFileAttributeView.class);
-                        // The file itself doesn't have World vs Group vs User concepts.
-                        // We don't want to be in the business of changing ACLs, so we keep it simple.
-                        att.setReadOnly(false);
-                    }
-                    catch (IOException e)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Unable to set DosFileAttribute readable on: {}", path, e);
-                    }
-                    return;
-                }
-
-                if (fileStore.supportsFileAttributeView(PosixFileAttributeView.class))
-                {
-                    // We are on a Unix / Linux / OSX system
-                    try
-                    {
-                        PosixFileAttributes attrs = Files.readAttributes(path, PosixFileAttributes.class);
-                        Set<PosixFilePermission> perms = attrs.permissions();
-                        // Remove READ permission (if set) for Others / World
-                        perms.remove(PosixFilePermission.OTHERS_READ);
-                        // Remove READ permission (if set) for Group
-                        perms.remove(PosixFilePermission.GROUP_READ);
-                        // Ensure that Owner can read/write
-                        perms.add(PosixFilePermission.OWNER_WRITE);
-                        perms.add(PosixFilePermission.OWNER_READ);
-
-                        Files.setPosixFilePermissions(path, perms);
-                    }
-                    catch (IOException e)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Unable to set PosixFileAttribute readable on: {}", path, e);
-                    }
-                    return;
-                }
-
-                // If we reached this point, we have a Path on a FileSystem / FileStore that we cannot control.
-                // So skip the attempt to set readable.
-            }
-            catch (IOException e)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to set ReadOnly attributes on path: {}", _path, e);
-            }
         }
 
         protected void setHeaders(MultiMap<String> headers)
