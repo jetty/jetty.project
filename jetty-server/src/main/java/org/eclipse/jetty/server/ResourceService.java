@@ -789,16 +789,17 @@ public class ResourceService
             for (InclusiveByteRange ibr : ranges)
             {
                 header[i] = ibr.toHeaderRangeString(content_length);
-                length +=
-                    ((i > 0) ? 2 : 0) +
-                        2 + multi.getBoundary().length() + 2 +
-                        (mimetype == null ? 0 : HttpHeader.CONTENT_TYPE.asString().length() + 2 + mimetype.length()) + 2 +
-                        HttpHeader.CONTENT_RANGE.asString().length() + 2 + header[i].length() + 2 +
-                        2 +
-                        (ibr.getLast() - ibr.getFirst()) + 1;
+                if (i > 0) // in-part
+                    length += 2;
+                length += 2 + multi.getBoundary().length() + 2; // "--" boundary CR LF
+                if (mimetype != null)
+                    length += HttpHeader.CONTENT_TYPE.asString().length() + 2 + mimetype.length() + 2; // "Content-Type" ": " <len> CR LF
+                length += HttpHeader.CONTENT_RANGE.asString().length() + 2 + header[i].length() + 2; // "Content-Range" ": " <len> CR LF
+                length += 2; // CR LF
+                length += ((ibr.getLast() - ibr.getFirst()) + 1); // content size
                 i++;
             }
-            length += 2 + 2 + multi.getBoundary().length() + 2 + 2;
+            length += 2 + 2 + multi.getBoundary().length() + 2 + 2; // CR LF "--" boundary "--" CR LF
             response.setContentLength(length);
 
             try (RangeWriter rangeWriter = HttpContentRangeWriter.newRangeWriter(content))
