@@ -134,17 +134,17 @@ public class WebInfConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
-        //Make a temp directory for the webapp if one is not already set
+        // Make a temp directory for the webapp if one is not already set
         resolveTempDirectory(context);
 
-        //Extract webapp if necessary
+        // Extract webapp if necessary
         unpack(context);
 
         findAndFilterContainerPaths(context);
 
         findAndFilterWebAppPaths(context);
 
-        //No pattern to appy to classes, just add to metadata
+        // No pattern to apply to classes, just add to metadata
         context.getMetaData().setWebInfClassesDirs(findClassDirs(context));
     }
 
