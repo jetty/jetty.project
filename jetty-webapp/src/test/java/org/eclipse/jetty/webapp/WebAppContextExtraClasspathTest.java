@@ -133,7 +133,12 @@ public class WebAppContextExtraClasspathTest
         Path extLibsDir = MavenTestingUtils.getTestResourcePathDir("ext");
         extLibsDir = extLibsDir.toAbsolutePath();
         List<Path> expectedPaths = Files.list(extLibsDir)
-            .filter((path) -> path.toString().endsWith(".jar"))
+            .filter((path) ->
+            {
+                if (Files.isDirectory(path))
+                    return true;
+                return Files.isRegularFile(path) && path.toString().endsWith(".jar");
+            })
             .collect(Collectors.toList());
         List<Path> actualPaths = new ArrayList<>();
         for (URL url : webAppClassLoader.getURLs())

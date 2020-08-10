@@ -29,8 +29,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -943,55 +943,10 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (context == null || context.getExtraClasspath() == null)
             return null;
 
-        List<Resource> jarResources = new ArrayList<>();
-        StringTokenizer tokenizer = new StringTokenizer(context.getExtraClasspath(), ",;");
-        while (tokenizer.hasMoreTokens())
-        {
-            String token = tokenizer.nextToken().trim();
-
-            // Is this a Glob Reference?
-            if (isGlobReference(token))
-            {
-                String dir = token.substring(0, token.length() - 2);
-                // Use directory
-                Resource dirResource = context.newResource(dir);
-                if (dirResource.exists() && dirResource.isDirectory())
-                {
-                    // To obtain the list of files
-                    String[] files = dirResource.list();
-                    if (files != null)
-                    {
-                        Arrays.sort(files);
-                        for (String file : files)
-                        {
-                            try
-                            {
-                                Resource fileResource = dirResource.addPath(file);
-                                if (isFileSupported(fileResource))
-                                {
-                                    jarResources.add(fileResource);
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                LOG.warn(Log.EXCEPTION, ex);
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // Simple reference, add as-is
-                Resource resource = context.newResource(token);
-                if (isFileSupported(resource))
-                {
-                    jarResources.add(resource);
-                }
-            }
-        }
-
-        return jarResources;
+        return Resource.fromReferences(context.getExtraClasspath())
+            .stream()
+            .filter(WebInfConfiguration::isFileSupported)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -1033,28 +988,13 @@ public class WebInfConfiguration extends AbstractConfiguration
         if (context == null || context.getExtraClasspath() == null)
             return null;
 
-        List<Resource> dirResources = new ArrayList<>();
-        StringTokenizer tokenizer = new StringTokenizer(context.getExtraClasspath(), ",;");
-        while (tokenizer.hasMoreTokens())
-        {
-            String token = tokenizer.nextToken().trim();
-            if (!isGlobReference(token))
-            {
-                Resource resource = context.newResource(token);
-                if (resource.exists() && resource.isDirectory())
-                    dirResources.add(resource);
-            }
-        }
-
-        return dirResources;
+        return Resource.fromReferences(context.getExtraClasspath())
+            .stream()
+            .filter(Resource::isDirectory)
+            .collect(Collectors.toList());
     }
 
-    private boolean isGlobReference(String token)
-    {
-        return token.endsWith("/*") || token.endsWith("\\*");
-    }
-
-    private boolean isFileSupported(Resource resource)
+    private static boolean isFileSupported(Resource resource)
     {
         String filenameLowercase = resource.getName().toLowerCase(Locale.ENGLISH);
         int dot = filenameLowercase.lastIndexOf('.');
