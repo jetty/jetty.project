@@ -216,7 +216,7 @@ public class HazelcastSessionDataStore extends AbstractSessionDataStore
     }
     
     @Override
-    public Set<String> doGetExpired(Set<String> candidates, long time)
+    public Set<String> doCheckExpired(Set<String> candidates, long time)
     {
         Set<String> expiredSessionIds = candidates.stream().filter(candidate ->
         {

@@ -150,7 +150,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * that are not currently loaded into the SessionCache
      */
     @Override
-    public Set<String> doGetExpired(final Set<String> candidates, long time)
+    public Set<String> doCheckExpired(final Set<String> candidates, long time)
     {
         HashSet<String> expired = new HashSet<>();
 

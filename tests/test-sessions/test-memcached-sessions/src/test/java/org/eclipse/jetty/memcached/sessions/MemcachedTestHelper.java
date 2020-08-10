@@ -93,7 +93,7 @@ public class MemcachedTestHelper
         }
 
         @Override
-        public Set<String> doGetExpired(Set<String> candidates, long time)
+        public Set<String> doCheckExpired(Set<String> candidates, long time)
         {
             Set<String> expiredIds = new HashSet<>();
             if (candidates != null)

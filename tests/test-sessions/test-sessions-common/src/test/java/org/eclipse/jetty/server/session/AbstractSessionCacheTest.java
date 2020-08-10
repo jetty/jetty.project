@@ -92,7 +92,7 @@ public abstract class AbstractSessionCacheTest
         }
 
         @Override
-        public Set<String> doGetExpired(Set<String> candidates, long time)
+        public Set<String> doCheckExpired(Set<String> candidates, long time)
         {
             return null;
         }

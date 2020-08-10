@@ -551,7 +551,7 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
-    public Set<String> doGetExpired(Set<String> candidates, long time)
+    public Set<String> doCheckExpired(Set<String> candidates, long time)
     {
         Set<String> expired = new HashSet<String>();
 

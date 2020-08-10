@@ -350,7 +350,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
     @Override
-    public Set<String> doGetExpired(Set<String> candidates, long time)
+    public Set<String> doCheckExpired(Set<String> candidates, long time)
     {
         Set<String> expiredSessions = new HashSet<>();
 

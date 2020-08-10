@@ -797,7 +797,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
-    public Set<String> doGetExpired(Set<String> candidates, long time)
+    public Set<String> doCheckExpired(Set<String> candidates, long time)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Getting expired sessions at time {}", time);

@@ -57,7 +57,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
-    public Set<String> doGetExpired(Set<String> candidates, long time)
+    public Set<String> doCheckExpired(Set<String> candidates, long time)
     {
         return candidates; //whatever is suggested we accept
     }
