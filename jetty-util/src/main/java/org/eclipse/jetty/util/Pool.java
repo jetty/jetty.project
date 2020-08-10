@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -227,43 +226,6 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 return entry;
         }
         return null;
-    }
-
-    /**
-     * Utility method to acquire an entry from the pool,
-     * reserving and creating a new entry if necessary.
-     *
-     * @param creator a function to create the pooled value for a reserved entry.
-     * @return an entry from the pool or null if none is available.
-     */
-    public Entry acquire(Function<Entry, T> creator)
-    {
-        Entry entry = acquire();
-        if (entry != null)
-            return entry;
-
-        Reservation reservation = reserve(getMaxEntries());
-        if (reservation == null)
-            return null;
-
-        T value = null;
-        try
-        {
-            value = creator.apply(reservation.getEntry());
-        }
-        catch (Throwable th)
-        {
-            reservation.remove();
-            throw th;
-        }
-
-        if (value == null)
-        {
-            reservation.remove();
-            return null;
-        }
-
-        return reservation.acquire(value);
     }
 
     /**
