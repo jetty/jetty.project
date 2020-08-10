@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
@@ -453,7 +454,7 @@ public class MultiPartFormInputStreamTest
     }
 
     @Test
-    public void testPartFileNotDeleted() throws Exception
+    public void testPartFileRelative() throws Exception
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(createMultipartRequestString("tptfd").getBytes()),
@@ -465,7 +466,7 @@ public class MultiPartFormInputStreamTest
 
         MultiPart part = (MultiPart)mpis.getPart("stuff");
         File stuff = part.getFile();
-        assertThat(stuff, notNullValue()); // longer than 100 bytes, should already be a tmp file
+        assertThat(stuff, notNullValue()); // longer than 50 bytes, should already be a tmp file
         part.write("tptfd.txt");
         File tptfd = new File(_dirname + File.separator + "tptfd.txt");
         assertThat(tptfd.exists(), is(true));
@@ -473,6 +474,77 @@ public class MultiPartFormInputStreamTest
         part.cleanUp();
         assertThat(tptfd.exists(), is(true));  //explicitly written file did not get removed after cleanup
         tptfd.deleteOnExit(); //clean up test
+    }
+    
+    @Test
+    public void testPartFileAbsolute() throws Exception
+    {
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
+        MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(createMultipartRequestString("tpfa").getBytes()),
+            _contentType,
+            config,
+            _tmpDir);
+        mpis.setDeleteOnExit(true);
+        mpis.getParts();
+
+        MultiPart part = (MultiPart)mpis.getPart("stuff");
+        File stuff = part.getFile();
+        assertThat(stuff, notNullValue()); // longer than 50 bytes, should already be a tmp file
+        Path path = MavenTestingUtils.getTargetTestingPath().resolve("tpfa.txt");
+        part.write(path.toFile().getAbsolutePath());
+        File tpfa = path.toFile();
+        assertThat(tpfa.exists(), is(true));
+        assertThat(stuff.exists(), is(false)); //got renamed
+        part.cleanUp();
+        assertThat(tpfa.exists(), is(true));  //explicitly written file did not get removed after cleanup
+        tpfa.deleteOnExit(); //clean up test 
+    }
+    
+    @Test
+    public void testPartFileAbsoluteFromBuffer() throws Exception
+    {
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 5000);
+        MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(createMultipartRequestString("tpfafb").getBytes()),
+            _contentType,
+            config,
+            _tmpDir);
+        mpis.setDeleteOnExit(true);
+        mpis.getParts();
+
+        MultiPart part = (MultiPart)mpis.getPart("stuff");
+        //Content should still be in the buffer, because the length is < 5000, 
+        assertNull(part.getFile());
+        //test writing to an absolute filename
+        Path path = MavenTestingUtils.getTargetTestingPath().resolve("tpfafb.txt");
+        part.write(path.toFile().getAbsolutePath());
+        File tpfafb = path.toFile();
+        assertThat(tpfafb.exists(), is(true));
+        part.cleanUp();
+        assertThat(tpfafb.exists(), is(true));  //explicitly written file did not get removed after cleanup
+        tpfafb.deleteOnExit(); //clean up test 
+    }
+    
+    @Test
+    public void testPartFileRelativeFromBuffer() throws Exception
+    {
+        MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 5000);
+        MultiPartFormInputStream mpis = new MultiPartFormInputStream(new ByteArrayInputStream(createMultipartRequestString("tpfrfb").getBytes()),
+            _contentType,
+            config,
+            _tmpDir);
+        mpis.setDeleteOnExit(true);
+        mpis.getParts();
+
+        MultiPart part = (MultiPart)mpis.getPart("stuff");
+        //Content should still be in the buffer, because the length is < 5000, 
+        assertNull(part.getFile());
+        //test writing to a relative filename
+        part.write("tpfrfb.txt");
+        File tpfrfb = new File(_tmpDir, "tpfrfb.txt");
+        assertThat(tpfrfb.exists(), is(true));
+        part.cleanUp();
+        assertThat(tpfrfb.exists(), is(true));  //explicitly written file did not get removed after cleanup
+        tpfrfb.deleteOnExit(); //clean up test 
     }
 
     @Test
@@ -488,7 +560,7 @@ public class MultiPartFormInputStreamTest
 
         MultiPart part = (MultiPart)mpis.getPart("stuff");
         File stuff = part.getFile();
-        assertThat(stuff, notNullValue()); // longer than 100 bytes, should already be a tmp file
+        assertThat(stuff, notNullValue()); // longer than 50 bytes, should already be a tmp file
         assertThat(stuff.exists(), is(true));
         part.cleanUp();
         assertThat(stuff.exists(), is(false));  //tmp file was removed after cleanup
