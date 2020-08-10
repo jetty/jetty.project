@@ -59,11 +59,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -467,6 +469,8 @@ public class ForwardProxyTLSServerTest
     @MethodSource("proxyTLS")
     public void testIPv6(SslContextFactory.Server proxyTLS) throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
+
         startTLSServer(new ServerHandler());
         startProxy(proxyTLS);
 

@@ -46,6 +46,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -53,6 +54,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -226,6 +228,8 @@ public class ForwardProxyServerTest
     @ValueSource(strings = {"::2", "[::3]"})
     public void testIPv6WithXForwardedForHeader(String ipv6) throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
+
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
         ConnectionFactory http = new HttpConnectionFactory(httpConfig);
@@ -263,6 +267,8 @@ public class ForwardProxyServerTest
     @Test
     public void testIPv6WithForwardedHeader() throws Exception
     {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
+
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.addCustomizer(new ForwardedRequestCustomizer());
         ConnectionFactory http = new HttpConnectionFactory(httpConfig);
