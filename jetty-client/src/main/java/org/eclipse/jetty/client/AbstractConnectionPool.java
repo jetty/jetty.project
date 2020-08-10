@@ -201,21 +201,17 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
 
     private CompletableFuture<Void> tryCreateReturningFuture(int maxPending)
     {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-
         if (LOG.isDebugEnabled())
             LOG.debug("tryCreate {}/{} connections {}/{} pending", pool.size(), pool.getMaxEntries(), getPendingConnectionCount(), maxPending);
 
-        Pool<Connection>.Reservation reservation = pool.reserve(maxPending);
-        if (reservation == null)
-        {
-            future.complete(null);
-            return future;
-        }
+        Pool<Connection>.Entry entry = pool.reserve(maxPending);
+        if (entry == null)
+            return CompletableFuture.completedFuture(null);
 
         if (LOG.isDebugEnabled())
             LOG.debug("newConnection {}/{} connections {}/{} pending", pool.size(), pool.getMaxEntries(), getPendingConnectionCount(), maxPending);
 
+        CompletableFuture<Void> future = new CompletableFuture<>();
         destination.newConnection(new Promise<Connection>()
         {
             @Override
@@ -223,7 +219,12 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Connection {}/{} creation succeeded {}", pool.size(), pool.getMaxEntries(), connection);
-                adopt(reservation, connection);
+                if (!(connection instanceof Attachable))
+                    throw new IllegalArgumentException("Invalid connection object: " + connection);
+                ((Attachable)connection).setAttachment(entry);
+                onCreated(connection);
+                entry.enable(connection, false);
+                idle(connection, false);
                 future.complete(null);
                 proceed();
             }
@@ -233,30 +234,18 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Connection " + pool.size() + "/" + pool.getMaxEntries() + " creation failed", x);
-                reservation.remove();
+                entry.remove();
                 future.completeExceptionally(x);
                 requester.failed(x);
             }
         });
+
         return future;
     }
 
     protected void proceed()
     {
         requester.succeeded();
-    }
-
-    private void adopt(Pool<Connection>.Reservation reservation, Connection connection)
-    {
-        if (!(connection instanceof Attachable))
-            throw new IllegalArgumentException("Invalid connection object: " + connection);
-        Attachable attachable = (Attachable)connection;
-        attachable.setAttachment(reservation.getEntry());
-        if (LOG.isDebugEnabled())
-            LOG.debug("adopt {} {}", reservation, connection);
-        onCreated(connection);
-        reservation.enable(connection);
-        idle(connection, false);
     }
 
     protected Connection activate()

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
@@ -34,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
 
 /**
- * A fast container of poolable objects, with optional support for
+ * A fast pool of objects, with optional support for
  * multiplexing, max usage count and thread-local caching.
  * <p>
  * The thread-local caching mechanism is about remembering up to N previously
@@ -101,7 +102,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     public int getInUseConnectionCount()
     {
-        return (int)sharedList.stream().filter(entry -> !entry.isIdle()).count();
+        return (int)sharedList.stream().filter(Entry::isInUse).count();
     }
 
     public int getMaxEntries()
@@ -135,12 +136,8 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     /**
      * Create a new disabled slot into the pool.
-     * The returned Reservation holds an entry that will not
-     * be acquirable until {@link Reservation#enable(Object)} is called.
-     * Alternately {@link Reservation#acquire(Object)} can be called to
-     * atomically enable and acquire the entry.
-     * If a value cannot be created for the slot, then {@link Reservation#remove()}
-     * must be called to free the slot.
+     * The returned entry must ultimately have the {@link Entry#enable(Object, boolean)}
+     * method called or be removed via {@link Entry#remove()} or {@link #remove(Entry)}.
      *
      * @param maxReservations the max desired number of reserved entries,
      * or a negative number to always trigger the reservation of a new entry.
@@ -148,7 +145,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * or null if the pool is closed or if the pool already contains
      * {@link #getMaxEntries()} entries.
      */
-    public Reservation reserve(int maxReservations)
+    public Entry reserve(int maxReservations)
     {
         try (Locker.Lock l = locker.lock())
         {
@@ -167,9 +164,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 return null;
             pending.incrementAndGet();
 
-            Reservation reservation = new Reservation();
-            sharedList.add(reservation.getEntry());
-            return reservation;
+            Entry entry = new Entry();
+            sharedList.add(entry);
+            return entry;
         }
     }
 
@@ -199,7 +196,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     /**
      * Acquire an entry from the pool.
-     *
+     * Only enabled entries will be returned from this method and their enable method must not be called.
      * @return an entry from the pool or null if none is available.
      */
     public Entry acquire()
@@ -226,6 +223,43 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 return entry;
         }
         return null;
+    }
+
+    /**
+     * Utility method to acquire an entry from the pool,
+     * reserving and creating a new entry if necessary.
+     *
+     * @param creator a function to create the pooled value for a reserved entry.
+     * @return an entry from the pool or null if none is available.
+     */
+    public Entry acquire(Function<Pool<T>.Entry, T> creator)
+    {
+        Entry entry = acquire();
+        if (entry != null)
+            return entry;
+
+        entry = reserve(getMaxEntries());
+        if (entry == null)
+            return null;
+
+        T value = null;
+        try
+        {
+            value = creator.apply(entry);
+        }
+        catch (Throwable th)
+        {
+            Pool.this.remove(entry);
+            throw th;
+        }
+
+        if (value == null)
+        {
+            Pool.this.remove(entry);
+            return null;
+        }
+
+        return entry.enable(value, true) ? entry : null;
     }
 
     /**
@@ -331,76 +365,6 @@ public class Pool<T> implements AutoCloseable, Dumpable
         return getClass().getSimpleName() + " size=" + sharedList.size() + " closed=" + closed + " entries=" + sharedList;
     }
 
-    /**
-     * A Reservation of a slot in the Pool
-     */
-    public class Reservation
-    {
-        private final Entry entry = new Entry();
-
-        /**
-         * @return The reserved {@link Entry}, which will be closed until enabled.
-         */
-        public Pool<T>.Entry getEntry()
-        {
-            return entry;
-        }
-
-        /** Enable the reserved {@link Entry}.
-         * Once enabled, the entry is immediately available to be acquired, potentially by
-         * another thread.  If the caller wishes to acquire the associated entry, they should
-         * use {@link #acquire(Object)} to atomically enable and acquire.
-         * @param pooled The pooled item for the entry
-         */
-        public void enable(T pooled)
-        {
-            enable(pooled, false);
-        }
-
-        /** Enable and acquire the reserved {@link Entry}.
-         * The associated entry is atomically enabled and acquired, so that no other thread can acquire it and
-         * the {@link #getEntry()} value may be used by the caller.
-         * @param pooled The pooled item for the entry
-         */
-        public Pool<T>.Entry acquire(T pooled)
-        {
-            enable(pooled, true);
-            return entry;
-        }
-
-        private void enable(T pooled, boolean acquire)
-        {
-            Objects.requireNonNull(pooled);
-            if (entry.state.getHi() != Integer.MIN_VALUE)
-                throw new IllegalStateException("Open entries cannot be enabled : " + this);
-            entry.pooled = pooled;
-            int usage = acquire ? 1 : 0;
-            if (!entry.state.compareAndSet(Integer.MIN_VALUE, usage, 0, usage))
-            {
-                entry.pooled = null;
-                throw new IllegalStateException("Entry cannot be enabled : " + this);
-            }
-            pending.decrementAndGet();
-        }
-
-        /**
-         * Remove the reservation without enabling.
-         */
-        public void remove()
-        {
-            Pool.this.remove(entry);
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x{%s}",
-                getClass().getSimpleName(),
-                hashCode(),
-                entry);
-        }
-    }
-
     public class Entry
     {
         // hi: positive=open/maxUsage counter; negative=closed; MIN_VALUE pending
@@ -417,6 +381,40 @@ public class Pool<T> implements AutoCloseable, Dumpable
             this.state = new AtomicBiInteger(Integer.MIN_VALUE, 0);
         }
 
+        /** Enable a reserved entry {@link Entry}.
+         * An entry returned from the {@link #reserve(int)} method must be enabled with this method,
+         * once and only once, before it is usable by the pool.
+         * The entry may be enabled and not acquired, in which case it is immediately available to be
+         * acquired, potentially by another thread; or it can be enabled and acquired atomically so that
+         * no other thread can acquired it, although the acquire may still fail if the pool has been closed.
+         * @param pooled The pooled item for the entry
+         * @param acquire If true the entry is atomically enabled and acquired.
+         * @return true If the entry was enabled.
+         * @throws IllegalStateException if the entry was already enabled
+         */
+        public boolean enable(T pooled, boolean acquire)
+        {
+            Objects.requireNonNull(pooled);
+
+            if (state.getHi() != Integer.MIN_VALUE)
+            {
+                if (state.getHi() == -1)
+                    return false; // Pool has been closed
+                throw new IllegalStateException("Entry already enabled: " + this);
+            }
+            this.pooled = pooled;
+            int usage = acquire ? 1 : 0;
+            if (!state.compareAndSet(Integer.MIN_VALUE, usage, 0, usage))
+            {
+                this.pooled = null;
+                if (state.getHi() == -1)
+                    return false; // Pool has been closed
+                throw new IllegalStateException("Entry already enabled: " + this);
+            }
+            pending.decrementAndGet();
+            return true;
+        }
+
         public T getPooled()
         {
             return pooled;
@@ -430,6 +428,16 @@ public class Pool<T> implements AutoCloseable, Dumpable
         public boolean release()
         {
             return Pool.this.release(this);
+        }
+
+        /**
+         * Remove the entry.
+         * This is equivalent to calling {@link Pool#remove(Pool.Entry)} passing this entry.
+         * @return true if remove.
+         */
+        public boolean remove()
+        {
+            return Pool.this.remove(this);
         }
 
         /**
@@ -517,7 +525,14 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
         public boolean isIdle()
         {
-            return state.getLo() <= 0;
+            long encoded = state.get();
+            return AtomicBiInteger.getHi(encoded) >= 0 && AtomicBiInteger.getLo(encoded) == 0;
+        }
+
+        public boolean isInUse()
+        {
+            long encoded = state.get();
+            return AtomicBiInteger.getHi(encoded) >= 0 && AtomicBiInteger.getLo(encoded) > 0;
         }
 
         public int getUsageCount()
