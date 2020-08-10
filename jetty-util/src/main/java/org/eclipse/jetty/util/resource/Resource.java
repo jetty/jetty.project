@@ -1006,7 +1006,7 @@ public abstract class Resource implements ResourceFactory, Closeable
          * Create a new Resource from the factory's point of view.
          * <p>
          * This is different then {@link ResourceFactory} in that
-         * it must return a {@link Resource} or throw an Exception,
+         * it must return a {@link Resource} or throw an IOException,
          * never null.
          * </p>
          *
@@ -1015,17 +1015,6 @@ public abstract class Resource implements ResourceFactory, Closeable
          * @throws IOException if unable to create a Resource reference
          */
         Resource newResource(String reference) throws IOException;
-    }
-
-    private static class DefaultFactory implements Factory
-    {
-        public static final Factory INSTANCE = new DefaultFactory();
-
-        @Override
-        public Resource newResource(String reference) throws IOException
-        {
-            return Resource.newResource(reference);
-        }
     }
 
     /**
@@ -1043,7 +1032,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      */
     public static List<Resource> fromReferences(String delimitedReferences) throws IOException
     {
-        return fromReferences(delimitedReferences, DefaultFactory.INSTANCE);
+        return fromReferences(delimitedReferences, Resource::newResource);
     }
 
     /**
