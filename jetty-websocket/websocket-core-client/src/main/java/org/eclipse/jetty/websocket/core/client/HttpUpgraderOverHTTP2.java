@@ -31,9 +31,9 @@ import org.eclipse.jetty.websocket.core.WebSocketConstants;
 public class HttpUpgraderOverHTTP2 implements HttpUpgrader
 {
     private static final PreEncodedHttpField WS_VERSION_FIELD = new PreEncodedHttpField(HttpHeader.SEC_WEBSOCKET_VERSION, WebSocketConstants.SPEC_VERSION_STRING);
-    private final ClientUpgradeRequest clientUpgradeRequest;
+    private final CoreClientUpgradeRequest clientUpgradeRequest;
 
-    public HttpUpgraderOverHTTP2(ClientUpgradeRequest clientUpgradeRequest)
+    public HttpUpgraderOverHTTP2(CoreClientUpgradeRequest clientUpgradeRequest)
     {
         this.clientUpgradeRequest = clientUpgradeRequest;
     }

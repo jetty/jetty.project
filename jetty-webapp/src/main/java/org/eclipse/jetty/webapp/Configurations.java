@@ -41,6 +41,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,36 +67,79 @@ import org.slf4j.LoggerFactory;
 public class Configurations extends AbstractList<Configuration> implements Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Configurations.class);
-
+    private static final AutoLock __lock = new AutoLock();
     private static final List<Configuration> __known = new ArrayList<>();
     private static final List<Configuration> __unavailable = new ArrayList<>();
     private static final Set<String> __knownByClassName = new HashSet<>();
 
-    public static synchronized List<Configuration> getKnown()
+    public static List<Configuration> getKnown()
     {
-        if (__known.isEmpty())
+        try (AutoLock l = __lock.lock())
         {
-            TypeUtil.serviceProviderStream(ServiceLoader.load(Configuration.class)).forEach(provider ->
+            if (__known.isEmpty())
+            {
+                TypeUtil.serviceProviderStream(ServiceLoader.load(Configuration.class)).forEach(provider ->
+                {
+                    try
+                    {
+                        Configuration configuration = provider.get();
+                        if (!configuration.isAvailable())
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Configuration unavailable: " + configuration);
+                            __unavailable.add(configuration);
+                            return;
+                        }
+                        __known.add(configuration);
+                        __knownByClassName.add(configuration.getClass().getName());
+                    }
+                    catch (Throwable e)
+                    {
+                        LOG.warn("Unable to get known Configuration", e);
+                    }
+                });
+                sort(__known);
+                if (LOG.isDebugEnabled())
+                {
+                    for (Configuration c : __known)
+                    {
+                        LOG.debug("known {}", c);
+                    }
+                    LOG.debug("Known Configurations {}", __knownByClassName);
+                }
+            }
+            return __known;
+        }
+    }
+
+    public static void setKnown(String... classes)
+    {
+        try (AutoLock l = __lock.lock())
+        {
+            if (!__known.isEmpty())
+                throw new IllegalStateException("Known configuration classes already set");
+
+            for (String c : classes)
             {
                 try
                 {
-                    Configuration configuration = provider.get();
+                    Class<? extends Configuration> clazz = Loader.loadClass(c);
+                    Configuration configuration = clazz.getConstructor().newInstance();
                     if (!configuration.isAvailable())
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Configuration unavailable: " + configuration);
+                            LOG.warn("Configuration unavailable: " + configuration);
                         __unavailable.add(configuration);
-                        return;
+                        continue;
                     }
-                    __known.add(configuration);
-                    __knownByClassName.add(configuration.getClass().getName());
+                    __known.add(clazz.getConstructor().newInstance());
+                    __knownByClassName.add(c);
                 }
-                catch (Throwable e)
+                catch (Exception e)
                 {
-                    LOG.warn("Unable to get known Configuration", e);
+                    LOG.warn("Problem loading known class", e);
                 }
-            });
-
+            }
             sort(__known);
             if (LOG.isDebugEnabled())
             {
@@ -103,55 +147,19 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
                 {
                     LOG.debug("known {}", c);
                 }
+                LOG.debug("Known Configurations {}", __knownByClassName);
             }
-
-            LOG.debug("Known Configurations {}", __knownByClassName);
         }
-        return __known;
     }
 
-    public static synchronized void setKnown(String... classes)
+    // Only used by tests.
+    static void cleanKnown()
     {
-        if (!__known.isEmpty())
-            throw new IllegalStateException("Known configuration classes already set");
-
-        for (String c : classes)
+        try (AutoLock l = __lock.lock())
         {
-            try
-            {
-                Class<? extends Configuration> clazz = Loader.loadClass(c);
-                Configuration configuration = clazz.getConstructor().newInstance();
-                if (!configuration.isAvailable())
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.warn("Configuration unavailable: " + configuration);
-                    __unavailable.add(configuration);
-                    continue;
-                }
-                __known.add(clazz.getConstructor().newInstance());
-                __knownByClassName.add(c);
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Problem loading known class", e);
-            }
+            __known.clear();
+            __unavailable.clear();
         }
-        sort(__known);
-        if (LOG.isDebugEnabled())
-        {
-            for (Configuration c : __known)
-            {
-                LOG.debug("known {}", c);
-            }
-        }
-
-        LOG.debug("Known Configurations {}", __knownByClassName);
-    }
-
-    static synchronized void cleanKnown()
-    {
-        __known.clear();
-        __unavailable.clear();
     }
 
     /**

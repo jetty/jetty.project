@@ -37,6 +37,7 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -60,47 +61,19 @@ import org.slf4j.LoggerFactory;
 
 public class JavaxWebSocketFrameHandler implements FrameHandler
 {
+    private final AutoLock lock = new AutoLock();
     private final Logger logger;
     private final JavaxWebSocketContainer container;
     private final Object endpointInstance;
     private final AtomicBoolean closeNotified = new AtomicBoolean();
 
-    /**
-     * List of configured named variables in the uri-template.
-     * <p>
-     *     Used to bind uri-template variables, with their values from the upgrade, to the methods
-     *     that have declared their interest in these values via {@code @PathParam} annotations.
-     * </p>
-     * <p>
-     *     Can be null if client side, or no named variables were configured on the server side.
-     * </p>
-     */
-    /**
-     * The Map of path parameter values that arrived during the server side upgrade process.
-     * <p>
-     * Used to bind uri-template variables, with their values from the upgrade, to the methods
-     * that have declared their interest in these values via {@code @PathParam} annotations.
-     * </p>
-     * <p>
-     * The values are represented as {@link String} and are essentially static for this
-     * instance of the the JavaxWebSocketFrameHandler.   They will be converted to the
-     * type declared by the {@code @PathParam} annotations following the JSR356 advice
-     * to only support String, Java Primitives (or their Boxed version).
-     * </p>
-     * <p>
-     * Can be null if client side, or no named variables were configured on the server side,
-     * or the server side component didn't use the {@link org.eclipse.jetty.http.pathmap.UriTemplatePathSpec} for its mapping.
-     * </p>
-     */
     private MethodHandle openHandle;
     private MethodHandle closeHandle;
     private MethodHandle errorHandle;
     private MethodHandle pongHandle;
     private JavaxWebSocketMessageMetadata textMetadata;
     private JavaxWebSocketMessageMetadata binaryMetadata;
-
     private UpgradeRequest upgradeRequest;
-
     private EndpointConfig endpointConfig;
     private final Map<Byte, RegisteredMessageHandler> messageHandlerMap = new HashMap<>();
     private MessageSink textSink;
@@ -108,7 +81,6 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     private MessageSink activeMessageSink;
     private JavaxWebSocketSession session;
     private CoreSession coreSession;
-
     protected byte dataType = OpCode.UNDEFINED;
 
     public JavaxWebSocketFrameHandler(JavaxWebSocketContainer container,
@@ -526,7 +498,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
     private <T> MessageSink registerMessageHandler(byte basicWebSocketMessageType, Class<T> handlerType, MessageHandler handler, MessageSink messageSink)
     {
-        synchronized (messageHandlerMap)
+        try (AutoLock l = lock.lock())
         {
             RegisteredMessageHandler registeredHandler = messageHandlerMap.get(basicWebSocketMessageType);
             if (registeredHandler != null)
@@ -546,7 +518,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
 
     public void removeMessageHandler(MessageHandler handler)
     {
-        synchronized (messageHandlerMap)
+        try (AutoLock l = lock.lock())
         {
             Optional<Map.Entry<Byte, RegisteredMessageHandler>> optionalEntry = messageHandlerMap.entrySet().stream()
                 .filter((entry) -> entry.getValue().getMessageHandler().equals(handler))

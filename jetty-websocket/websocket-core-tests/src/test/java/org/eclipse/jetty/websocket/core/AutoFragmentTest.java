@@ -29,7 +29,7 @@ import java.util.zip.Deflater;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -165,7 +165,7 @@ public class AutoFragmentTest
     public void testIncomingAutoFragmentWithPermessageDeflate() throws Exception
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate");
         CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
         connect.get(5, TimeUnit.SECONDS);
@@ -218,7 +218,7 @@ public class AutoFragmentTest
     public void testGzipBomb() throws Exception
     {
         TestFrameHandler clientHandler = new TestFrameHandler();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate");
         CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
         connect.get(5, TimeUnit.SECONDS);
@@ -281,7 +281,7 @@ public class AutoFragmentTest
 
         // Connect to server with permessage-deflate enabled.
         TestFrameHandler clientHandler = new TestFrameHandler();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate");
         CompletableFuture<CoreSession> connect = client.connect(upgradeRequest);
         connect.get(5, TimeUnit.SECONDS);

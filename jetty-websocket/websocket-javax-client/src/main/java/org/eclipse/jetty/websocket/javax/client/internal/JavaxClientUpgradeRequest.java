@@ -24,12 +24,12 @@ import java.security.Principal;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
 
-public class JavaxClientUpgradeRequest extends ClientUpgradeRequest implements UpgradeRequest
+public class JavaxClientUpgradeRequest extends CoreClientUpgradeRequest implements UpgradeRequest
 {
     private final JavaxWebSocketFrameHandler frameHandler;
 

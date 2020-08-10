@@ -64,7 +64,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private final AtomicBiInteger _counts = new AtomicBiInteger(Integer.MIN_VALUE, 0);
     private final AtomicLong _lastShrink = new AtomicLong();
     private final Set<Thread> _threads = ConcurrentHashMap.newKeySet();
-    private final Object _joinLock = new Object();
+    private final AutoLock.WithCondition _joinLock = new AutoLock.WithCondition();
     private final BlockingQueue<Runnable> _jobs;
     private final ThreadGroup _threadGroup;
     private final ThreadFactory _threadFactory;
@@ -277,9 +277,9 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         if (_budget != null)
             _budget.reset();
 
-        synchronized (_joinLock)
+        try (AutoLock.WithCondition l = _joinLock.lock())
         {
-            _joinLock.notifyAll();
+            l.signalAll();
         }
     }
 
@@ -570,11 +570,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @Override
     public void join() throws InterruptedException
     {
-        synchronized (_joinLock)
+        try (AutoLock.WithCondition l = _joinLock.lock())
         {
             while (isRunning())
             {
-                _joinLock.wait();
+                l.await();
             }
         }
 

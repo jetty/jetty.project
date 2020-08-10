@@ -37,8 +37,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -100,7 +98,6 @@ public class LargeHeaderTest
     @Test
     public void testLargeHeader() throws Throwable
     {
-        final Logger CLIENTLOG = Log.getLogger(LargeHeaderTest.class).getLogger(".client");
         ExecutorService executorService = Executors.newFixedThreadPool(8);
 
         int localPort = server.getURI().getPort();
@@ -127,7 +124,6 @@ public class LargeHeaderTest
                 }
                 catch (Throwable t)
                 {
-                    CLIENTLOG.warn("Client Issue", t);
                     issues.addSuppressed(t);
                 }
             });

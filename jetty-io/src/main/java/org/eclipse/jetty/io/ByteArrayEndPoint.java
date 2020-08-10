@@ -127,7 +127,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void doShutdownOutput()
     {
         super.doShutdownOutput();
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _hasOutput.signalAll();
         }
@@ -137,7 +137,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public void doClose()
     {
         super.doClose();
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _hasOutput.signalAll();
         }
@@ -303,7 +303,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     {
         ByteBuffer b;
 
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             while (BufferUtil.isEmpty(_out) && !isOutputShutdown())
             {
@@ -401,7 +401,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
         boolean flushed = true;
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             if (!isOpen())
                 throw new IOException("CLOSED");
@@ -447,7 +447,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     @Override
     public void reset()
     {
-        try (AutoLock lock = _lock.lock())
+        try (AutoLock l = _lock.lock())
         {
             _inQ.clear();
             _hasOutput.signalAll();

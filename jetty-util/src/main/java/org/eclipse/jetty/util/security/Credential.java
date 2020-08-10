@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -185,7 +186,7 @@ public abstract class Credential implements Serializable
     {
         private static final long serialVersionUID = 5533846540822684240L;
         private static final String __TYPE = "MD5:";
-        private static final Object __md5Lock = new Object();
+        private static final AutoLock __md5Lock = new AutoLock();
         private static MessageDigest __md;
 
         private final byte[] _digest;
@@ -211,7 +212,7 @@ public abstract class Credential implements Serializable
                 if (credentials instanceof Password || credentials instanceof String)
                 {
                     byte[] digest;
-                    synchronized (__md5Lock)
+                    try (AutoLock l = __md5Lock.lock())
                     {
                         if (__md == null)
                             __md = MessageDigest.getInstance("MD5");
@@ -257,7 +258,7 @@ public abstract class Credential implements Serializable
             try
             {
                 byte[] digest;
-                synchronized (__md5Lock)
+                try (AutoLock l = __md5Lock.lock())
                 {
                     if (__md == null)
                     {

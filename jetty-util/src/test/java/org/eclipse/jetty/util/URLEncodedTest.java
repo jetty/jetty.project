@@ -24,15 +24,21 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
@@ -49,97 +55,97 @@ public class URLEncodedTest
 
         tests.add(dynamicTest("Initially not empty", () ->
         {
-            UrlEncoded urlEncoded = new UrlEncoded();
+            MultiMap<String> urlEncoded = new MultiMap<>();
             assertEquals(0, urlEncoded.size());
         }));
 
         tests.add(dynamicTest("Not empty after decode(\"\")", () ->
         {
-            UrlEncoded urlEncoded = new UrlEncoded();
+            MultiMap<String> urlEncoded = new MultiMap<>();
             urlEncoded.clear();
-            urlEncoded.decode("");
+            UrlEncoded.decodeTo("", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(0, urlEncoded.size());
         }));
 
         tests.add(dynamicTest("Simple encode", () ->
         {
-            UrlEncoded urlEncoded = new UrlEncoded();
+            MultiMap<String> urlEncoded = new MultiMap<>();
             urlEncoded.clear();
-            urlEncoded.decode("Name1=Value1");
+            UrlEncoded.decodeTo("Name1=Value1", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "simple param size");
-            assertEquals("Name1=Value1", urlEncoded.encode(), "simple encode");
+            assertEquals("Name1=Value1", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "simple encode");
             assertEquals("Value1", urlEncoded.getString("Name1"), "simple get");
         }));
 
         tests.add(dynamicTest("Dangling param", () ->
         {
-            UrlEncoded urlEncoded = new UrlEncoded();
+            MultiMap<String> urlEncoded = new MultiMap<>();
             urlEncoded.clear();
-            urlEncoded.decode("Name2=");
+            UrlEncoded.decodeTo("Name2=", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "dangling param size");
-            assertEquals("Name2", urlEncoded.encode(), "dangling encode");
+            assertEquals("Name2", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "dangling encode");
             assertEquals("", urlEncoded.getString("Name2"), "dangling get");
         }));
 
         tests.add(dynamicTest("noValue param", () ->
         {
-            UrlEncoded urlEncoded = new UrlEncoded();
+            MultiMap<String> urlEncoded = new MultiMap<>();
             urlEncoded.clear();
-            urlEncoded.decode("Name3");
+            UrlEncoded.decodeTo("Name3", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "noValue param size");
-            assertEquals("Name3", urlEncoded.encode(), "noValue encode");
+            assertEquals("Name3", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "noValue encode");
             assertEquals("", urlEncoded.getString("Name3"), "noValue get");
         }));
 
         tests.add(dynamicTest("badly encoded param", () ->
         {
-            UrlEncoded urlEncoded = new UrlEncoded();
+            MultiMap<String> urlEncoded = new MultiMap<>();
             urlEncoded.clear();
-            urlEncoded.decode("Name4=V\u0629lue+4%21");
+            UrlEncoded.decodeTo("Name4=V\u0629lue+4%21", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "encoded param size");
-            assertEquals("Name4=V%D8%A9lue+4%21", urlEncoded.encode(), "encoded encode");
+            assertEquals("Name4=V%D8%A9lue+4%21", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "encoded encode");
             assertEquals("V\u0629lue 4!", urlEncoded.getString("Name4"), "encoded get");
         }));
 
         tests.add(dynamicTest("encoded param 1", () ->
         {
-            UrlEncoded urlEncoded = new UrlEncoded();
+            MultiMap<String> urlEncoded = new MultiMap<>();
             urlEncoded.clear();
-            urlEncoded.decode("Name4=Value%2B4%21");
+            UrlEncoded.decodeTo("Name4=Value%2B4%21", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "encoded param size");
-            assertEquals("Name4=Value%2B4%21", urlEncoded.encode(), "encoded encode");
+            assertEquals("Name4=Value%2B4%21", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "encoded encode");
             assertEquals("Value+4!", urlEncoded.getString("Name4"), "encoded get");
         }));
 
         tests.add(dynamicTest("encoded param 2", () ->
         {
-            UrlEncoded urlEncoded = new UrlEncoded();
+            MultiMap<String> urlEncoded = new MultiMap<>();
             urlEncoded.clear();
-            urlEncoded.decode("Name4=Value+4%21%20%214");
+            UrlEncoded.decodeTo("Name4=Value+4%21%20%214", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "encoded param size");
-            assertEquals("Name4=Value+4%21+%214", urlEncoded.encode(), "encoded encode");
+            assertEquals("Name4=Value+4%21+%214", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "encoded encode");
             assertEquals("Value 4! !4", urlEncoded.getString("Name4"), "encoded get");
         }));
 
         tests.add(dynamicTest("multi param", () ->
         {
-            UrlEncoded urlEncoded = new UrlEncoded();
+            MultiMap<String> urlEncoded = new MultiMap<>();
             urlEncoded.clear();
-            urlEncoded.decode("Name5=aaa&Name6=bbb");
+            UrlEncoded.decodeTo("Name5=aaa&Name6=bbb", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(2, urlEncoded.size(), "multi param size");
-            assertTrue(urlEncoded.encode().equals("Name5=aaa&Name6=bbb") ||
-                    urlEncoded.encode().equals("Name6=bbb&Name5=aaa"),
-                "multi encode " + urlEncoded.encode());
+            assertTrue(UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false).equals("Name5=aaa&Name6=bbb") ||
+                    UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false).equals("Name6=bbb&Name5=aaa"),
+                "multi encode " + UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false));
             assertEquals("aaa", urlEncoded.getString("Name5"), "multi get");
             assertEquals("bbb", urlEncoded.getString("Name6"), "multi get");
         }));
 
         tests.add(dynamicTest("multiple value encoded", () ->
         {
-            UrlEncoded urlEncoded = new UrlEncoded();
+            MultiMap<String> urlEncoded = new MultiMap<>();
             urlEncoded.clear();
-            urlEncoded.decode("Name7=aaa&Name7=b%2Cb&Name7=ccc");
-            assertEquals("Name7=aaa&Name7=b%2Cb&Name7=ccc", urlEncoded.encode(), "multi encode");
+            UrlEncoded.decodeTo("Name7=aaa&Name7=b%2Cb&Name7=ccc", urlEncoded, UrlEncoded.ENCODING);
+            assertEquals("Name7=aaa&Name7=b%2Cb&Name7=ccc", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "multi encode");
             assertEquals("aaa,b,b,ccc", urlEncoded.getString("Name7"), "list get all");
             assertEquals("aaa", urlEncoded.getValues("Name7").get(0), "list get");
             assertEquals("b,b", urlEncoded.getValues("Name7").get(1), "list get");
@@ -148,11 +154,11 @@ public class URLEncodedTest
 
         tests.add(dynamicTest("encoded param", () ->
         {
-            UrlEncoded urlEncoded = new UrlEncoded();
+            MultiMap<String> urlEncoded = new MultiMap<>();
             urlEncoded.clear();
-            urlEncoded.decode("Name8=xx%2C++yy++%2Czz");
+            UrlEncoded.decodeTo("Name8=xx%2C++yy++%2Czz", urlEncoded, UrlEncoded.ENCODING);
             assertEquals(1, urlEncoded.size(), "encoded param size");
-            assertEquals("Name8=xx%2C++yy++%2Czz", urlEncoded.encode(), "encoded encode");
+            assertEquals("Name8=xx%2C++yy++%2Czz", UrlEncoded.encode(urlEncoded,UrlEncoded.ENCODING, false), "encoded encode");
             assertEquals("xx,  yy  ,zz", urlEncoded.getString("Name8"), "encoded get");
         }));
 
@@ -219,7 +225,7 @@ public class URLEncodedTest
     {
         try (ByteArrayInputStream in3 = new ByteArrayInputStream("name=libell%E9".getBytes(StringUtil.__ISO_8859_1)))
         {
-            MultiMap m3 = new MultiMap();
+            MultiMap<String> m3 = new MultiMap<>();
             Charset nullCharset = null; // use the one from the system property
             UrlEncoded.decodeTo(in3, m3, nullCharset, -1, -1);
             assertEquals("libell\u00E9", m3.getString("name"), "stream name");
@@ -230,11 +236,11 @@ public class URLEncodedTest
     public void testUtf8()
         throws Exception
     {
-        UrlEncoded urlEncoded = new UrlEncoded();
+        MultiMap<String> urlEncoded = new MultiMap<>();
         assertEquals(0, urlEncoded.size(), "Empty");
 
         urlEncoded.clear();
-        urlEncoded.decode("text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit");
+        UrlEncoded.decodeTo("text=%E0%B8%9F%E0%B8%AB%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%81%E0%B8%9F%E0%B8%A7%E0%B8%AB%E0%B8%AA%E0%B8%94%E0%B8%B2%E0%B9%88%E0%B8%AB%E0%B8%9F%E0%B8%81%E0%B8%A7%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%9F%E0%B8%81%E0%B8%AB%E0%B8%A3%E0%B8%94%E0%B9%89%E0%B8%9F%E0%B8%AB%E0%B8%99%E0%B8%81%E0%B8%A3%E0%B8%94%E0%B8%B5&Action=Submit", urlEncoded, UrlEncoded.ENCODING);
 
         String hex = "E0B89FE0B8ABE0B881E0B8A7E0B894E0B8B2E0B988E0B881E0B89FE0B8A7E0B8ABE0B8AAE0B894E0B8B2E0B988E0B8ABE0B89FE0B881E0B8A7E0B894E0B8AAE0B8B2E0B89FE0B881E0B8ABE0B8A3E0B894E0B989E0B89FE0B8ABE0B899E0B881E0B8A3E0B894E0B8B5";
         String expected = new String(TypeUtil.fromHexString(hex), "utf-8");
@@ -245,8 +251,8 @@ public class URLEncodedTest
     public void testUtf8MultiByteCodePoint()
     {
         String input = "text=test%C3%A4";
-        UrlEncoded urlEncoded = new UrlEncoded();
-        urlEncoded.decode(input);
+        MultiMap<String> urlEncoded = new MultiMap<>();
+        UrlEncoded.decodeTo(input, urlEncoded, UrlEncoded.ENCODING);
 
         // http://www.ltg.ed.ac.uk/~richard/utf-8.cgi?input=00e4&mode=hex
         // Should be "testä"
@@ -254,5 +260,51 @@ public class URLEncodedTest
 
         String expected = "test\u00e4";
         assertThat(urlEncoded.getString("text"), is(expected));
+    }
+
+    public static Stream<Arguments> invalidTestData()
+    {
+        ArrayList<Arguments> data = new ArrayList<>();
+        data.add(Arguments.of("Name=xx%zzyy", UTF_8, IllegalArgumentException.class));
+        data.add(Arguments.of("Name=%FF%FF%FF", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        data.add(Arguments.of("Name=%EF%EF%EF", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        data.add(Arguments.of("Name=%E%F%F", UTF_8, IllegalArgumentException.class));
+        data.add(Arguments.of("Name=x%", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        data.add(Arguments.of("Name=x%2", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        data.add(Arguments.of("Name=xxx%", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        data.add(Arguments.of("name=X%c0%afZ", UTF_8, Utf8Appendable.NotUtf8Exception.class));
+        return data.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidTestData")
+    public void testInvalidDecode(String inputString, Charset charset, Class<? extends Throwable> expectedThrowable)
+    {
+        assertThrows(expectedThrowable, () ->
+        {
+            UrlEncoded.decodeTo(inputString, new MultiMap<>(), charset);
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidTestData")
+    public void testInvalidDecodeUtf8ToMap(String inputString, Charset charset, Class<? extends Throwable> expectedThrowable)
+    {
+        assertThrows(expectedThrowable, () ->
+        {
+            MultiMap<String> map = new MultiMap<>();
+            UrlEncoded.decodeUtf8To(inputString, map);
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidTestData")
+    public void testInvalidDecodeTo(String inputString, Charset charset, Class<? extends Throwable> expectedThrowable)
+    {
+        assertThrows(expectedThrowable, () ->
+        {
+            MultiMap<String> map = new MultiMap<>();
+            UrlEncoded.decodeTo(inputString, map, charset);
+        });
     }
 }

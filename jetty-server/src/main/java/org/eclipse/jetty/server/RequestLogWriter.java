@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.RolloverFileOutputStream;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +40,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
 {
     private static final Logger LOG = LoggerFactory.getLogger(RequestLogWriter.class);
 
+    private final AutoLock _lock = new AutoLock();
     private String _filename;
     private boolean _append;
     private int _retainDays;
@@ -175,7 +177,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
     @Override
     public void write(String requestEntry) throws IOException
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             if (_writer == null)
                 return;
@@ -186,24 +188,24 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
     }
 
     @Override
-    protected synchronized void doStart() throws Exception
+    protected void doStart() throws Exception
     {
-        if (_filename != null)
+        try (AutoLock l = _lock.lock())
         {
-            _fileOut = new RolloverFileOutputStream(_filename, _append, _retainDays, TimeZone.getTimeZone(getTimeZone()), _filenameDateFormat, null);
-            _closeOut = true;
-            LOG.info("Opened " + getDatedFilename());
-        }
-        else
-            _fileOut = System.err;
-
-        _out = _fileOut;
-
-        synchronized (this)
-        {
+            if (_filename != null)
+            {
+                _fileOut = new RolloverFileOutputStream(_filename, _append, _retainDays, TimeZone.getTimeZone(getTimeZone()), _filenameDateFormat, null);
+                _closeOut = true;
+                LOG.info("Opened " + getDatedFilename());
+            }
+            else
+            {
+                _fileOut = System.err;
+            }
+            _out = _fileOut;
             _writer = new OutputStreamWriter(_out);
+            super.doStart();
         }
-        super.doStart();
     }
 
     public void setTimeZone(String timeZone)
@@ -220,7 +222,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
     @Override
     protected void doStop() throws Exception
     {
-        synchronized (this)
+        try (AutoLock ignored = _lock.lock())
         {
             super.doStop();
             try
@@ -233,6 +235,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
                 LOG.trace("IGNORED", e);
             }
             if (_out != null && _closeOut)
+            {
                 try
                 {
                     _out.close();
@@ -241,6 +244,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
                 {
                     LOG.trace("IGNORED", e);
                 }
+            }
 
             _out = null;
             _fileOut = null;

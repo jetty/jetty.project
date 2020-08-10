@@ -39,7 +39,7 @@ import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
-import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.internal.Generator;
 
@@ -179,7 +179,7 @@ public class NetworkFuzzer extends Fuzzer.Adapter implements Fuzzer, AutoCloseab
         }
     }
 
-    public static class RawUpgradeRequest extends ClientUpgradeRequest
+    public static class RawUpgradeRequest extends CoreClientUpgradeRequest
     {
         private final FrameCapture frameCapture = new FrameCapture();
         private final CompletableFuture<FrameCapture> futureCapture;

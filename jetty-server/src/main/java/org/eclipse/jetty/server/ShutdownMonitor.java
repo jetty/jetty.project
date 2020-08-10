@@ -37,6 +37,7 @@ import java.util.function.Predicate;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 
 /**
@@ -85,6 +86,7 @@ public class ShutdownMonitor
         return getInstance().containsLifeCycle(lifeCycle);
     }
 
+    private final AutoLock.WithCondition _lock = new AutoLock.WithCondition();
     private final Set<LifeCycle> _lifeCycles = new LinkedHashSet<>();
     private boolean debug;
     private final String host;
@@ -112,7 +114,7 @@ public class ShutdownMonitor
 
     private void addLifeCycles(LifeCycle... lifeCycles)
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             _lifeCycles.addAll(Arrays.asList(lifeCycles));
         }
@@ -120,7 +122,7 @@ public class ShutdownMonitor
 
     private void removeLifeCycle(LifeCycle lifeCycle)
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             _lifeCycles.remove(lifeCycle);
         }
@@ -128,7 +130,7 @@ public class ShutdownMonitor
 
     private boolean containsLifeCycle(LifeCycle lifeCycle)
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             return _lifeCycles.contains(lifeCycle);
         }
@@ -148,7 +150,7 @@ public class ShutdownMonitor
 
     public String getKey()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             return key;
         }
@@ -156,7 +158,7 @@ public class ShutdownMonitor
 
     public int getPort()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             return port;
         }
@@ -164,7 +166,7 @@ public class ShutdownMonitor
 
     public boolean isExitVm()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             return exitVm;
         }
@@ -180,7 +182,7 @@ public class ShutdownMonitor
      */
     public void setExitVm(boolean exitVm)
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             if (alive)
                 throw new IllegalStateException("ShutdownMonitor already started");
@@ -190,7 +192,7 @@ public class ShutdownMonitor
 
     public void setKey(String key)
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             if (alive)
                 throw new IllegalStateException("ShutdownMonitor already started");
@@ -200,7 +202,7 @@ public class ShutdownMonitor
 
     public void setPort(int port)
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             if (alive)
                 throw new IllegalStateException("ShutdownMonitor already started");
@@ -210,7 +212,7 @@ public class ShutdownMonitor
 
     protected void start() throws Exception
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             if (alive)
             {
@@ -231,28 +233,28 @@ public class ShutdownMonitor
 
     private void stop()
     {
-        synchronized (this)
+        try (AutoLock.WithCondition l = _lock.lock())
         {
             alive = false;
-            notifyAll();
+            l.signalAll();
         }
     }
 
     // For test purposes only.
     void await() throws InterruptedException
     {
-        synchronized (this)
+        try (AutoLock.WithCondition l = _lock.lock())
         {
             while (alive)
             {
-                wait();
+                l.await();
             }
         }
     }
 
     protected boolean isAlive()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             return alive;
         }
@@ -429,10 +431,10 @@ public class ShutdownMonitor
 
         private void stopLifeCycles(Predicate<LifeCycle> predicate, boolean destroy)
         {
-            List<LifeCycle> lifeCycles = new ArrayList<>();
-            synchronized (this)
+            List<LifeCycle> lifeCycles;
+            try (AutoLock l = _lock.lock())
             {
-                lifeCycles.addAll(_lifeCycles);
+                lifeCycles = new ArrayList<>(_lifeCycles);
             }
 
             for (LifeCycle l : lifeCycles)

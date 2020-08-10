@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -282,6 +283,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
     private static class Nonce
     {
+        private final AutoLock _lock = new AutoLock();
         final String _nonce;
         final long _ts;
         final BitSet _seen;
@@ -295,7 +297,7 @@ public class DigestAuthenticator extends LoginAuthenticator
 
         public boolean seen(int count)
         {
-            synchronized (this)
+            try (AutoLock l = _lock.lock())
             {
                 if (count >= _seen.size())
                     return true;

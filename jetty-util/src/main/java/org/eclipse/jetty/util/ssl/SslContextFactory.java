@@ -90,6 +90,7 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Password;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,6 +138,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         "^.*_anon_.*$"
     };
 
+    private final AutoLock _lock = new AutoLock();
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
     private final Set<String> _includeProtocols = new LinkedHashSet<>();
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
@@ -212,7 +214,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     protected void doStart() throws Exception
     {
         super.doStart();
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             load();
         }
@@ -436,7 +438,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     @Override
     protected void doStop() throws Exception
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             unload();
         }
@@ -1039,11 +1041,10 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         if (!isStarted())
             return _setContext;
 
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             if (_factory == null)
                 throw new IllegalStateException("SslContextFactory reload failed");
-
             return _factory._context;
         }
     }
@@ -1421,11 +1422,10 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         if (!isStarted())
             return _setKeyStore;
 
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             if (_factory == null)
                 throw new IllegalStateException("SslContextFactory reload failed");
-
             return _factory._keyStore;
         }
     }
@@ -1445,11 +1445,10 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         if (!isStarted())
             return _setTrustStore;
 
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             if (_factory == null)
                 throw new IllegalStateException("SslContextFactory reload failed");
-
             return _factory._trustStore;
         }
     }
@@ -1883,7 +1882,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     public void reload(Consumer<SslContextFactory> consumer) throws Exception
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             consumer.accept(this);
             unload();

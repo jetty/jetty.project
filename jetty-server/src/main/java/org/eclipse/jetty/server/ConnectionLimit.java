@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +63,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
 {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionLimit.class);
 
+    private final AutoLock _lock = new AutoLock();
     private final Server _server;
     private final List<AbstractConnector> _connectors = new ArrayList<>();
     private final Set<SelectableChannel> _accepting = new HashSet<>();
@@ -108,7 +110,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     @ManagedAttribute("The maximum number of connections allowed")
     public int getMaxConnections()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             return _maxConnections;
         }
@@ -116,7 +118,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
 
     public void setMaxConnections(int max)
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             _maxConnections = max;
         }
@@ -125,7 +127,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     @ManagedAttribute("The current number of connections ")
     public int getConnections()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             return _connections;
         }
@@ -134,7 +136,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     @Override
     protected void doStart() throws Exception
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             if (_server != null)
             {
@@ -160,7 +162,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     @Override
     protected void doStop() throws Exception
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             for (AbstractConnector c : _connectors)
             {
@@ -229,7 +231,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     @Override
     public void onAccepting(SelectableChannel channel)
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             _accepting.add(channel);
             if (LOG.isDebugEnabled())
@@ -241,7 +243,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     @Override
     public void onAcceptFailed(SelectableChannel channel, Throwable cause)
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             _accepting.remove(channel);
             if (LOG.isDebugEnabled())
@@ -258,7 +260,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     @Override
     public void onOpened(Connection connection)
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             _accepting.remove(connection.getEndPoint().getTransport());
             _connections++;
@@ -271,7 +273,7 @@ public class ConnectionLimit extends AbstractLifeCycle implements Listener, Sele
     @Override
     public void onClosed(Connection connection)
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             _connections--;
             if (LOG.isDebugEnabled())

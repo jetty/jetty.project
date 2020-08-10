@@ -51,16 +51,19 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpConnectionOverFCGI extends AbstractConnection implements IConnection
+public class HttpConnectionOverFCGI extends AbstractConnection implements IConnection, Attachable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverFCGI.class);
 
+    private final AutoLock lock = new AutoLock();
     private final LinkedList<Integer> requests = new LinkedList<>();
     private final Map<Integer, HttpChannelOverFCGI> activeChannels = new ConcurrentHashMap<>();
     private final Queue<HttpChannelOverFCGI> idleChannels = new ConcurrentLinkedQueue<>();
@@ -71,6 +74,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
     private final Delegate delegate;
     private final ClientParser parser;
     private RetainableByteBuffer networkBuffer;
+    private Object attachment;
 
     public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
@@ -265,6 +269,18 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
         return closed.get();
     }
 
+    @Override
+    public void setAttachment(Object obj)
+    {
+        this.attachment = obj;
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        return attachment;
+    }
+
     protected boolean closeByHTTP(HttpFields fields)
     {
         if (!fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
@@ -307,7 +323,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     private int acquireRequest()
     {
-        synchronized (requests)
+        try (AutoLock l = lock.lock())
         {
             int last = requests.getLast();
             int request = last + 1;
@@ -318,7 +334,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements IConne
 
     private void releaseRequest(int request)
     {
-        synchronized (requests)
+        try (AutoLock l = lock.lock())
         {
             requests.removeFirstOccurrence(request);
         }

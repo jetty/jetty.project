@@ -47,6 +47,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,6 +126,7 @@ public class DeploymentManager extends ContainerLifeCycle
         }
     }
 
+    private final AutoLock _lock = new AutoLock();
     private final List<AppProvider> _providers = new ArrayList<AppProvider>();
     private final AppLifeCycle _lifecycle = new AppLifeCycle();
     private final Queue<AppEntry> _apps = new ConcurrentLinkedQueue<AppEntry>();
@@ -562,13 +564,14 @@ public class DeploymentManager extends ContainerLifeCycle
         requestAppGoal(appentry, nodeName);
     }
 
-    private synchronized void addOnStartupError(Throwable cause)
+    private void addOnStartupError(Throwable cause)
     {
-        if (onStartupErrors == null)
+        try (AutoLock l = _lock.lock())
         {
-            onStartupErrors = new MultiException();
+            if (onStartupErrors == null)
+                onStartupErrors = new MultiException();
+            onStartupErrors.add(cause);
         }
-        onStartupErrors.add(cause);
     }
 
     /**

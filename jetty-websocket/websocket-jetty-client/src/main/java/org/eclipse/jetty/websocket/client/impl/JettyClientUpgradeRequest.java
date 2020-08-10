@@ -30,11 +30,11 @@ import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
 import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 
-public class JettyClientUpgradeRequest extends org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest
+public class JettyClientUpgradeRequest extends CoreClientUpgradeRequest
 {
-    private final DelegatedJettyClientUpgradeRequest handshakeRequest;
     private final JettyWebSocketFrameHandler frameHandler;
 
     public JettyClientUpgradeRequest(WebSocketCoreClient coreClient, ClientUpgradeRequest request, URI requestURI, JettyWebSocketFrameHandlerFactory frameHandlerFactory,
@@ -58,15 +58,7 @@ public class JettyClientUpgradeRequest extends org.eclipse.jetty.websocket.core.
             timeout(request.getTimeout(), TimeUnit.MILLISECONDS);
         }
 
-        handshakeRequest = new DelegatedJettyClientUpgradeRequest(this);
         frameHandler = frameHandlerFactory.newJettyFrameHandler(websocketPojo);
-    }
-
-    @Override
-    protected void customize(EndPoint endPoint)
-    {
-        super.customize(endPoint);
-        handshakeRequest.configure(endPoint);
     }
 
     @Override
