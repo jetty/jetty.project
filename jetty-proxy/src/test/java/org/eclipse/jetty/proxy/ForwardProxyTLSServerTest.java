@@ -59,11 +59,13 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -461,6 +463,36 @@ public class ForwardProxyTLSServerTest
                 .send());
 
         httpClient.stop();
+    }
+
+    @ParameterizedTest
+    @MethodSource("proxyTLS")
+    public void testIPv6(SslContextFactory.Server proxyTLS) throws Exception
+    {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
+
+        startTLSServer(new ServerHandler());
+        startProxy(proxyTLS);
+
+        HttpClient httpClient = new HttpClient(newClientSslContextFactory());
+        HttpProxy httpProxy = new HttpProxy(new Origin.Address("[::1]", proxyConnector.getLocalPort()), proxyTLS != null);
+        httpClient.getProxyConfiguration().getProxies().add(httpProxy);
+        httpClient.start();
+
+        try
+        {
+            ContentResponse response = httpClient.newRequest("[::1]", serverConnector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .path("/echo?body=")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+        }
+        finally
+        {
+            httpClient.stop();
+        }
     }
 
     @ParameterizedTest

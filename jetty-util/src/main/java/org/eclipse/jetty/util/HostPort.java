@@ -19,22 +19,18 @@
 package org.eclipse.jetty.util;
 
 /**
- * Parse an authority string into Host and Port
- * <p>Parse a string in the form "host:port", handling IPv4 an IPv6 hosts</p>
- *
- * <p>The System property "org.eclipse.jetty.util.HostPort.STRIP_IPV6" can be set to a boolean
- * value to control of the square brackets are stripped off IPv6 addresses (default false).</p>
+ * <p>Parse an authority string (in the form {@code host:port}) into
+ * {@code host} and {@code port}, handling IPv4 and IPv6 host formats
+ * as defined in https://www.ietf.org/rfc/rfc2732.txt</p>
  */
 public class HostPort
 {
-    private static final boolean STRIP_IPV6 = Boolean.parseBoolean(System.getProperty("org.eclipse.jetty.util.HostPort.STRIP_IPV6", "false"));
-
     private final String _host;
     private final int _port;
 
     public HostPort(String host, int port)
     {
-        _host = host;
+        _host = normalizeHost(host);
         _port = port;
     }
 
@@ -55,7 +51,7 @@ public class HostPort
                 int close = authority.lastIndexOf(']');
                 if (close < 0)
                     throw new IllegalArgumentException("Bad IPv6 host");
-                _host = STRIP_IPV6 ? authority.substring(1, close) : authority.substring(0, close + 1);
+                _host = authority.substring(0, close + 1);
 
                 if (authority.length() > close + 1)
                 {
@@ -64,14 +60,17 @@ public class HostPort
                     _port = parsePort(authority.substring(close + 2));
                 }
                 else
+                {
                     _port = 0;
+                }
             }
             else
             {
-                // ipv4address or hostname
+                // ipv6address or ipv4address or hostname
                 int c = authority.lastIndexOf(':');
                 if (c >= 0)
                 {
+                    // ipv6address
                     if (c != authority.indexOf(':'))
                     {
                         _host = "[" + authority + "]";
@@ -94,14 +93,9 @@ public class HostPort
         {
             throw iae;
         }
-        catch (final Exception ex)
+        catch (Exception ex)
         {
-            throw new IllegalArgumentException("Bad HostPort")
-            {
-                {
-                    initCause(ex);
-                }
-            };
+            throw new IllegalArgumentException("Bad HostPort", ex);
         }
     }
 
@@ -126,7 +120,7 @@ public class HostPort
     }
 
     /**
-     * Get the port.
+     * Get the port or the given default port.
      *
      * @param defaultPort, the default port to return if a port is not specified
      * @return the port
@@ -140,15 +134,17 @@ public class HostPort
     public String toString()
     {
         if (_port > 0)
-            return normalizeHost(_host) + ":" + _port;
+            return _host + ":" + _port;
         return _host;
     }
 
     /**
-     * Normalize IPv6 address as per https://www.ietf.org/rfc/rfc2732.txt
+     * Normalizes IPv6 address as per https://tools.ietf.org/html/rfc2732
+     * and https://tools.ietf.org/html/rfc6874,
+     * surrounding with square brackets if they are absent.
      *
-     * @param host A host name
-     * @return Host name surrounded by '[' and ']' as needed.
+     * @param host a host name, IPv4 address, IPv6 address or IPv6 literal
+     * @return a host name or an IPv4 address or an IPv6 literal (not an IPv6 address)
      */
     public static String normalizeHost(String host)
     {
@@ -165,7 +161,7 @@ public class HostPort
      *
      * @param rawPort the port string.
      * @return the integer value for the port.
-     * @throws IllegalArgumentException
+     * @throws IllegalArgumentException if the port is invalid
      */
     public static int parsePort(String rawPort) throws IllegalArgumentException
     {

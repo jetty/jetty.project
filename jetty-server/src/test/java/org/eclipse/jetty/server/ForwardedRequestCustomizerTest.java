@@ -703,7 +703,7 @@ public class ForwardedRequestCustomizerTest
         public void accept(Actual actual)
         {
             assertThat("scheme", actual.scheme.get(), is(expectedScheme));
-            if (actual.scheme.equals("https"))
+            if (actual.scheme.get().equals("https"))
             {
                 assertTrue(actual.wasSecure.get(), "wasSecure");
             }

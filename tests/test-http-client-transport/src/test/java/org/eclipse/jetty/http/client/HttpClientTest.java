@@ -21,6 +21,7 @@ package org.eclipse.jetty.http.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -47,10 +48,12 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -60,6 +63,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -674,6 +678,59 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
 
         List<Destination> destinations = scenario.client.getDestinations();
         assertEquals(users, destinations.size());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testIPv6Host(Transport transport) throws Exception
+    {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
+
+        init(transport);
+        scenario.start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.setContentType("text/plain");
+                response.getOutputStream().print(request.getHeader("Host"));
+            }
+        });
+
+        // Test with a full URI.
+        String hostAddress = "::1";
+        String host = "[" + hostAddress + "]";
+        int port = Integer.parseInt(scenario.getNetworkConnectorLocalPort().get());
+        String uri = scenario.getScheme() + "://" + host + ":" + port + "/path";
+        ContentResponse response = scenario.client.newRequest(uri)
+            .method(HttpMethod.PUT)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
+        assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1), Matchers.startsWith("[::1]:"));
+
+        // Test with host address.
+        response = scenario.client.newRequest(hostAddress, port)
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.PUT)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
+        assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1), Matchers.startsWith("[::1]:"));
+
+        // Test with host.
+        response = scenario.client.newRequest(host, port)
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.PUT)
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
+        assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1), Matchers.startsWith("[::1]:"));
+
+        assertEquals(1, scenario.client.getDestinations().size());
     }
 
     private void sleep(long time) throws IOException
