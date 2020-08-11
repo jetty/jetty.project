@@ -138,7 +138,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * Create a new disabled slot into the pool.
      * The returned entry must ultimately have the {@link Entry#enable(Object, boolean)}
      * method called or be removed via {@link Pool.Entry#remove()} or
-     * {@link Pool#remove(Entry)}.
+     * {@link Pool#remove(Pool.Entry)}.
      *
      * @param maxReservations the max desired number of reserved entries,
      * or a negative number to always trigger the reservation of a new entry.
