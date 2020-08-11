@@ -785,19 +785,24 @@ public class ResourceService
             int length = 0;
             String[] header = new String[ranges.size()];
             int i = 0;
+            final int CRLF = "\r\n".length();
+            final int DASHDASH = "--".length();
+            final int BOUNDARY = multi.getBoundary().length();
+            final int FIELD_SEP = ": ".length();
             for (InclusiveByteRange ibr : ranges)
             {
                 header[i] = ibr.toHeaderRangeString(content_length);
-                length +=
-                    ((i > 0) ? 2 : 0) +
-                        2 + multi.getBoundary().length() + 2 +
-                        (mimetype == null ? 0 : HttpHeader.CONTENT_TYPE.asString().length() + 2 + mimetype.length()) + 2 +
-                        HttpHeader.CONTENT_RANGE.asString().length() + 2 + header[i].length() + 2 +
-                        2 +
-                        (ibr.getLast() - ibr.getFirst()) + 1;
+                if (i > 0) // in-part
+                    length += CRLF;
+                length += DASHDASH + BOUNDARY + CRLF;
+                if (mimetype != null)
+                    length += HttpHeader.CONTENT_TYPE.asString().length() + FIELD_SEP + mimetype.length() + CRLF;
+                length += HttpHeader.CONTENT_RANGE.asString().length() + FIELD_SEP + header[i].length() + CRLF;
+                length += CRLF;
+                length += ibr.getSize();
                 i++;
             }
-            length += 2 + 2 + multi.getBoundary().length() + 2 + 2;
+            length += CRLF + DASHDASH + BOUNDARY + DASHDASH + CRLF;
             response.setContentLength(length);
 
             try (RangeWriter rangeWriter = HttpContentRangeWriter.newRangeWriter(content))

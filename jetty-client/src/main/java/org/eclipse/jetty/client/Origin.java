@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -147,7 +148,7 @@ public class Origin
 
         public Address(String host, int port)
         {
-            this.host = Objects.requireNonNull(host);
+            this.host = HostPort.normalizeHost(Objects.requireNonNull(host));
             this.port = port;
         }
 

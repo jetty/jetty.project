@@ -1340,12 +1340,10 @@ public class DoSFilter implements Filter
         }
     }
 
-    private String createRemotePortId(final ServletRequest request)
+    private String createRemotePortId(ServletRequest request)
     {
-        final String addr = request.getRemoteAddr();
-        final int port = request.getRemotePort();
-        if (addr.contains(":"))
-            return "[" + addr + "]:" + port;
+        String addr = request.getRemoteAddr();
+        int port = request.getRemotePort();
         return addr + ":" + port;
     }
 }

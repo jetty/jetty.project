@@ -1111,10 +1111,14 @@ public class HttpClient extends ContainerLifeCycle
         return encodingField;
     }
 
+    /**
+     * @param host the host to normalize
+     * @return the host itself
+     * @deprecated no replacement, do not use it
+     */
+    @Deprecated
     protected String normalizeHost(String host)
     {
-        if (host != null && host.startsWith("[") && host.endsWith("]"))
-            return host.substring(1, host.length() - 1);
         return host;
     }
 
