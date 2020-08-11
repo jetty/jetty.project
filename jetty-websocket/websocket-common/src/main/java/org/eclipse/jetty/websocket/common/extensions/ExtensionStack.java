@@ -230,17 +230,20 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             // Check RSV
             if (ext.isRsv1User() && (rsvClaims[0] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV1", config, rsvClaims[0]);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Not adding extension {}. Extension {} already claimed RSV1", config, rsvClaims[0]);
                 continue;
             }
             if (ext.isRsv2User() && (rsvClaims[1] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV2", config, rsvClaims[1]);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Not adding extension {}. Extension {} already claimed RSV2", config, rsvClaims[1]);
                 continue;
             }
             if (ext.isRsv3User() && (rsvClaims[2] != null))
             {
-                LOG.debug("Not adding extension {}. Extension {} already claimed RSV3", config, rsvClaims[2]);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Not adding extension {}. Extension {} already claimed RSV3", config, rsvClaims[2]);
                 continue;
             }
 
@@ -445,7 +448,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while notifying success of callback " + callback, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while notifying success of callback " + callback, x);
             }
         }
 
@@ -458,7 +462,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while notifying failure of callback " + callback, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while notifying failure of callback " + callback, x);
             }
         }
     }
