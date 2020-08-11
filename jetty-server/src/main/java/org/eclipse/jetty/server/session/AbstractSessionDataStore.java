@@ -154,7 +154,6 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     /**
      * Remove all sessions for any context that expired at or before the given time.
      * @param timeLimit the time before which the sessions must have expired.
-     * @throws Exception
      */
     public void cleanOrphans(long timeLimit)
     {
