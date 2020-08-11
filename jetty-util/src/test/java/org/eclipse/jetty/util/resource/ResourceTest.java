@@ -33,6 +33,8 @@ import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -285,6 +287,7 @@ public class ResourceTest
     }
 
     @Test
+    @DisabledOnOs(OS.WINDOWS) // this uses forbidden characters on some Windows Environments
     public void testGlobPath() throws IOException
     {
         Path testDir = MavenTestingUtils.getTargetTestingPath("testGlobPath");
