@@ -64,6 +64,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
@@ -1163,7 +1164,7 @@ public class HttpClient extends ContainerLifeCycle
     @Deprecated
     protected String normalizeHost(String host)
     {
-        return host;
+        return HostPort.normalizeHost(host);
     }
 
     public static int normalizePort(String scheme, int port)
