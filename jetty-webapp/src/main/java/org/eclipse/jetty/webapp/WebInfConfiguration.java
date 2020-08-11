@@ -1038,30 +1038,8 @@ public class WebInfConfiguration extends AbstractConfiguration
         while (tokenizer.hasMoreTokens())
         {
             String token = tokenizer.nextToken().trim();
-            if (isGlobReference(token))
-            {
-                String dir = token.substring(0, token.length() - 2);
-                // Use directory
-                Resource dirResource = context.newResource(dir);
-                if (dirResource.exists() && dirResource.isDirectory())
-                {
-                    // To obtain the list of files
-                    String[] entries = dirResource.list();
-                    if (entries != null)
-                    {
-                        Arrays.sort(entries);
-                        for (String entry : entries)
-                        {
-                            Resource resource = dirResource.addPath(entry);
-                            if (resource.isDirectory())
-                            {
-                                dirResources.add(resource);
-                            }
-                        }
-                    }
-                }
-            }
-            else
+            // ignore glob references, they only refer to lists of jars/zips anyway
+            if (!isGlobReference(token))
             {
                 Resource resource = context.newResource(token);
                 if (resource.exists() && resource.isDirectory())

@@ -331,19 +331,12 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                         Resource resource = lib.addPath(entry);
                         if (LOG.isDebugEnabled())
                             LOG.debug("addJar - {}", resource);
-                        if (resource.isDirectory())
+                        String fnlc = resource.getName().toLowerCase(Locale.ENGLISH);
+                        // don't check if this is a directory (prevents use of symlinks), see Bug 353165
+                        if (isFileSupported(fnlc))
                         {
-                            addURL(resource.getURI().toURL());
-                        }
-                        else
-                        {
-                            String fnlc = resource.getName().toLowerCase(Locale.ENGLISH);
-                            // don't check if this is a directory (prevents use of symlinks), see Bug 353165
-                            if (isFileSupported(fnlc))
-                            {
-                                String jar = URIUtil.encodeSpecific(resource.toString(), ",;");
-                                addClassPath(jar);
-                            }
+                            String jar = URIUtil.encodeSpecific(resource.toString(), ",;");
+                            addClassPath(jar);
                         }
                     }
                     catch (Exception ex)
