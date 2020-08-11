@@ -106,13 +106,13 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     @ManagedAttribute(value = "The number of active connections", readonly = true)
     public int getActiveConnectionCount()
     {
-        return pool.getInUseConnectionCount();
+        return pool.getInUseCount();
     }
 
     @ManagedAttribute(value = "The number of idle connections", readonly = true)
     public int getIdleConnectionCount()
     {
-        return pool.getIdleConnectionCount();
+        return pool.getIdleCount();
     }
 
     @ManagedAttribute(value = "The max number of connections", readonly = true)
@@ -141,7 +141,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     @ManagedAttribute(value = "The number of pending connections", readonly = true)
     public int getPendingConnectionCount()
     {
-        return pool.getPendingConnectionCount();
+        return pool.getReservedCount();
     }
 
     @Override
@@ -220,7 +220,10 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                 if (LOG.isDebugEnabled())
                     LOG.debug("Connection {}/{} creation succeeded {}", pool.size(), pool.getMaxEntries(), connection);
                 if (!(connection instanceof Attachable))
-                    throw new IllegalArgumentException("Invalid connection object: " + connection);
+                {
+                    failed(new IllegalArgumentException("Invalid connection object: " + connection));
+                    return;
+                }
                 ((Attachable)connection).setAttachment(entry);
                 onCreated(connection);
                 entry.enable(connection, false);
