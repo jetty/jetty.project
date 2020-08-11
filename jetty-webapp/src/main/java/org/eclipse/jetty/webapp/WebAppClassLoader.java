@@ -234,23 +234,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         }
         else
         {
-            // Resolve file path if possible
-            File file = resource.getFile();
-            if (file != null)
-            {
-                URL url = resource.getURI().toURL();
-                addURL(url);
-            }
-            else if (resource.isDirectory())
-            {
-                addURL(resource.getURI().toURL());
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Check file exists and is not nested jar: " + resource);
-                throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: " + resource);
-            }
+            addClassPath(resource.toString());
         }
     }
 
@@ -266,9 +250,53 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
         if (classPath == null)
             return;
 
-        for (Resource resource : Resource.fromReferences(classPath, _context::newResource))
+        StringTokenizer tokenizer = new StringTokenizer(classPath, ",;");
+        while (tokenizer.hasMoreTokens())
         {
-            addClassPath(resource);
+            String token = tokenizer.nextToken().trim();
+
+            if (token.endsWith("*"))
+            {
+                if (token.length() > 1)
+                {
+                    token = token.substring(0, token.length() - 1);
+                    Resource resource = _context.newResource(token);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Glob Path resource=" + resource);
+                    resource = _context.newResource(token);
+                    addJars(resource);
+                }
+                return;
+            }
+
+            Resource resource = _context.newResource(token);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Path resource=" + resource);
+
+            if (resource.isDirectory() && resource instanceof ResourceCollection)
+            {
+                addClassPath(resource);
+            }
+            else
+            {
+                // Resolve file path if possible
+                File file = resource.getFile();
+                if (file != null)
+                {
+                    URL url = resource.getURI().toURL();
+                    addURL(url);
+                }
+                else if (resource.isDirectory())
+                {
+                    addURL(resource.getURI().toURL());
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Check file exists and is not nested jar: " + resource);
+                    throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: " + resource);
+                }
+            }
         }
     }
 
@@ -291,29 +319,37 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     {
         if (lib.exists() && lib.isDirectory())
         {
-            String[] files = lib.list();
-            if (files != null)
+            String[] entries = lib.list();
+            if (entries != null)
             {
-                Arrays.sort(files);
-            }
-            for (int f = 0; files != null && f < files.length; f++)
-            {
-                try
+                Arrays.sort(entries);
+
+                for (String entry : entries)
                 {
-                    Resource fn = lib.addPath(files[f]);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("addJar - {}", fn);
-                    String fnlc = fn.getName().toLowerCase(Locale.ENGLISH);
-                    // don't check if this is a directory (prevents use of symlinks), see Bug 353165
-                    if (isFileSupported(fnlc))
+                    try
                     {
-                        String jar = URIUtil.encodeSpecific(fn.toString(), ",;");
-                        addClassPath(jar);
+                        Resource resource = lib.addPath(entry);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("addJar - {}", resource);
+                        if (resource.isDirectory())
+                        {
+                            addURL(resource.getURI().toURL());
+                        }
+                        else
+                        {
+                            String fnlc = resource.getName().toLowerCase(Locale.ENGLISH);
+                            // don't check if this is a directory (prevents use of symlinks), see Bug 353165
+                            if (isFileSupported(fnlc))
+                            {
+                                String jar = URIUtil.encodeSpecific(resource.toString(), ",;");
+                                addClassPath(jar);
+                            }
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    LOG.warn(Log.EXCEPTION, ex);
+                    catch (Exception ex)
+                    {
+                        LOG.warn(Log.EXCEPTION, ex);
+                    }
                 }
             }
         }

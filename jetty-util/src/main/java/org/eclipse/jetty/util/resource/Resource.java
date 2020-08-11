@@ -32,13 +32,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.StringTokenizer;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
@@ -995,108 +993,5 @@ public abstract class Resource implements ResourceFactory, Closeable
     public static URL toURL(File file) throws MalformedURLException
     {
         return file.toURI().toURL();
-    }
-
-    /**
-     * Factory to create new Resource instance from a reference.
-     */
-    public interface Factory
-    {
-        /**
-         * Create a new Resource from the factory's point of view.
-         * <p>
-         * This is different then {@link ResourceFactory} in that
-         * it must return a {@link Resource} or throw an IOException,
-         * never null.
-         * </p>
-         *
-         * @param reference the string reference.
-         * @return the Resource instance
-         * @throws IOException if unable to create a Resource reference
-         */
-        Resource newResource(String reference) throws IOException;
-    }
-
-    /**
-     * Parse a delimited String of resource references and
-     * return the List of Resources instances it represents.
-     * <p>
-     * Supports glob references that end in {@code /*} or {@code \*}.
-     * Glob references will only iterate through the level specified and will not traverse
-     * found directories within the glob reference.
-     * </p>
-     *
-     * @param delimitedReferences the comma {@code ,} or semicolon {@code ;} delimited
-     * String of resource references.
-     * @return the list of resources parsed from input string.
-     */
-    public static List<Resource> fromReferences(String delimitedReferences) throws IOException
-    {
-        return fromReferences(delimitedReferences, Resource::newResource);
-    }
-
-    /**
-     * Parse a delimited String of resource references and
-     * return the List of Resources instances it represents.
-     * <p>
-     * Supports glob references that end in {@code /*} or {@code \*}.
-     * Glob references will only iterate through the level specified and will not traverse
-     * found directories within the glob reference.
-     * </p>
-     *
-     * @param delimitedReferences the comma {@code ,} or semicolon {@code ;} delimited
-     * String of resource references.
-     * @param resourceFactory the Resource.Factory used to create new Resource references
-     * @return the list of resources parsed from input string.
-     */
-    public static List<Resource> fromReferences(String delimitedReferences, Resource.Factory resourceFactory) throws IOException
-    {
-        if (StringUtil.isBlank(delimitedReferences))
-        {
-            return Collections.emptyList();
-        }
-
-        List<Resource> resources = new ArrayList<>();
-
-        StringTokenizer tokenizer = new StringTokenizer(delimitedReferences, ",;");
-        while (tokenizer.hasMoreTokens())
-        {
-            String token = tokenizer.nextToken().trim();
-
-            // Is this a glob reference?
-            if (token.endsWith("/*") || token.endsWith("\\*"))
-            {
-                String dir = token.substring(0, token.length() - 2);
-                // Use directory
-                Resource dirResource = resourceFactory.newResource(dir);
-                if (dirResource.exists() && dirResource.isDirectory())
-                {
-                    // To obtain the list of entries
-                    String[] entries = dirResource.list();
-                    if (entries != null)
-                    {
-                        Arrays.sort(entries);
-                        for (String entry : entries)
-                        {
-                            try
-                            {
-                                resources.add(dirResource.addPath(entry));
-                            }
-                            catch (Exception ex)
-                            {
-                                LOG.warn(Log.EXCEPTION, ex);
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // Simple reference, add as-is
-                resources.add(resourceFactory.newResource(token));
-            }
-        }
-
-        return resources;
     }
 }
