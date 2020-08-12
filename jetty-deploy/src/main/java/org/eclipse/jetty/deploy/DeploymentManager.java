@@ -252,9 +252,10 @@ public class DeploymentManager extends ContainerLifeCycle
             startAppProvider(provider);
         }
 
-        if (_onStartupErrors != null)
+        try (Lock lock = _errorLocker.lock())
         {
-            _onStartupErrors.ifExceptionThrow();
+            if (_onStartupErrors != null)
+                _onStartupErrors.ifExceptionThrow();
         }
 
         super.doStart();
