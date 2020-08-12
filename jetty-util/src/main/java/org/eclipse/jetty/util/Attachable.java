@@ -24,7 +24,7 @@ package org.eclipse.jetty.util;
 public interface Attachable
 {
     /**
-     * @return the object attached to this stream
+     * @return the object attached to this instance
      * @see #setAttachment(Object)
      */
     Object getAttachment();
@@ -32,7 +32,7 @@ public interface Attachable
     /**
      * Attaches the given object to this stream for later retrieval.
      *
-     * @param attachment the object to attach to this stream
+     * @param attachment the object to attach to this instance
      */
     void setAttachment(Object attachment);
 }
