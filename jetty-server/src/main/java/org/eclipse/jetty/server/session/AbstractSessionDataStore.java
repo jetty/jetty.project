@@ -200,25 +200,25 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         if (data == null)
             return;
 
-        final RunnableResult<Object> result = new RunnableResult<>();
+        long lastSave = data.getLastSaved();
+        long savePeriodMs = (_savePeriodSec <= 0 ? 0 : TimeUnit.SECONDS.toMillis(_savePeriodSec));
 
-        Runnable r = () ->
+        if (LOG.isDebugEnabled())
         {
-            long lastSave = data.getLastSaved();
-            long savePeriodMs = (_savePeriodSec <= 0 ? 0 : TimeUnit.SECONDS.toMillis(_savePeriodSec));
+            LOG.debug("Store: id={}, mdirty={}, dirty={}, lsave={}, period={}, elapsed={}", id, data.isMetaDataDirty(),
+                data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis() - lastSave));
+        }
 
-            if (LOG.isDebugEnabled())
+        //save session if attribute changed, never been saved or metadata changed (eg expiry time) and save interval exceeded
+        if (data.isDirty() || (lastSave <= 0) ||
+            (data.isMetaDataDirty() && ((System.currentTimeMillis() - lastSave) >= savePeriodMs)))
+        {
+            //set the last saved time to now
+            data.setLastSaved(System.currentTimeMillis());
+            
+            final RunnableResult<Object> result = new RunnableResult<>();
+            Runnable r = () ->
             {
-                LOG.debug("Store: id={}, mdirty={}, dirty={}, lsave={}, period={}, elapsed={}", id, data.isMetaDataDirty(),
-                    data.isDirty(), data.getLastSaved(), savePeriodMs, (System.currentTimeMillis() - lastSave));
-            }
-
-            //save session if attribute changed, never been saved or metadata changed (eg expiry time) and save interval exceeded
-            if (data.isDirty() || (lastSave <= 0) ||
-                (data.isMetaDataDirty() && ((System.currentTimeMillis() - lastSave) >= savePeriodMs)))
-            {
-                //set the last saved time to now
-                data.setLastSaved(System.currentTimeMillis());
                 try
                 {
                     //call the specific store method, passing in previous save time
@@ -231,18 +231,16 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
                     data.setLastSaved(lastSave);
                     result.setException(e);
                 }
-            }
-        };
-
-        _context.run(r);
-        result.throwIfException();
+            };
+            _context.run(r);
+            result.throwIfException();
+        }
     }
 
     @Override
     public boolean exists(String id) throws Exception
     {
         RunnableResult<Boolean> result = new RunnableResult<>();
-        
         Runnable r = () ->
         {
             try
