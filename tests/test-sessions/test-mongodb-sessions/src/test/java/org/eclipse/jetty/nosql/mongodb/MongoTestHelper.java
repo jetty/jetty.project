@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -53,14 +54,16 @@ public class MongoTestHelper
 
     static GenericContainer mongo =
         new GenericContainer("mongo:" + System.getProperty("mongo.docker.version", "2.2.7"))
-            .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG));
+            .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG))
+            .waitingFor(new LogMessageWaitStrategy()
+                            .withRegEx(".*waiting for connections.*"));
 
     static MongoClient mongoClient;
 
     static String mongoHost;
     static int mongoPort;
 
-    public static void startMongo()
+    static
     {
         try
         {
@@ -70,6 +73,7 @@ public class MongoTestHelper
             mongoPort = mongo.getMappedPort(27017);
             LOG.info("Mongo container started for {}:{} - {}ms", mongoHost, mongoPort,
                      System.currentTimeMillis() - start);
+            mongoClient = new MongoClient(mongoHost, mongoPort);
         }
         catch (Exception e)
         {
@@ -78,24 +82,8 @@ public class MongoTestHelper
         }
     }
 
-    public static void stopMongo()
-    {
-        mongo.stop();
-        mongoClient = null;
-    }
-
     public static MongoClient getMongoClient() throws UnknownHostException
     {
-        boolean restart = false;
-        if (mongo == null || !mongo.isRunning())
-        {
-            startMongo();
-            restart = true;
-        }
-        if (mongoClient == null || restart)
-        {
-            mongoClient = new MongoClient(mongoHost, mongoPort);
-        }
         return mongoClient;
     }
 
