@@ -545,7 +545,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         public String toString()
         {
             long encoded = state.get();
-            return String.format("%s@%x{hi=%d,lo=%d.p=%s}",
+            return String.format("%s@%x{usage=%d,multiplex=%d,pooled=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 AtomicBiInteger.getHi(encoded),
