@@ -32,6 +32,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.function.BiFunction;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
@@ -86,6 +87,115 @@ public class HttpFields implements Iterable<HttpField>
     {
         _fields = Arrays.copyOf(fields._fields, fields._fields.length);
         _size = fields._size;
+    }
+
+    /**
+     * <p>Computes a single field for the given HTTP header name and for existing fields with the same name.</p>
+     *
+     * <p>The compute function receives the field name and a list of fields with the same name
+     * so that their values can be used to compute the value of the field that is returned
+     * by the compute function.
+     * If the compute function returns {@code null}, the fields with the given name are removed.</p>
+     * <p>This method comes handy when you want to add an HTTP header if it does not exist,
+     * or add a value if the HTTP header already exists, similarly to
+     * {@link Map#compute(Object, BiFunction)}.</p>
+     *
+     * <p>This method can be used to {@link #put(HttpField) put} a new field (or blindly replace its value):</p>
+     * <pre>
+     * httpFields.computeField("X-New-Header",
+     *     (name, fields) -> new HttpField(name, "NewValue"));
+     * </pre>
+     *
+     * <p>This method can be used to coalesce many fields into one:</p>
+     * <pre>
+     * // Input:
+     * GET / HTTP/1.1
+     * Host: localhost
+     * Cookie: foo=1
+     * Cookie: bar=2,baz=3
+     * User-Agent: Jetty
+     *
+     * // Computation:
+     * httpFields.computeField("Cookie", (name, fields) ->
+     * {
+     *     // No cookies, nothing to do.
+     *     if (fields == null)
+     *         return null;
+     *
+     *     // Coalesces all cookies.
+     *     String coalesced = fields.stream()
+     *         .flatMap(field -> Stream.of(field.getValues()))
+     *         .collect(Collectors.joining(", "));
+     *
+     *     // Returns a single Cookie header with all cookies.
+     *     return new HttpField(name, coalesced);
+     * }
+     *
+     * // Output:
+     * GET / HTTP/1.1
+     * Host: localhost
+     * Cookie: foo=1, bar=2, baz=3
+     * User-Agent: Jetty
+     * </pre>
+     *
+     * <p>This method can be used to replace a field:</p>
+     * <pre>
+     * httpFields.computeField("X-Length", (name, fields) ->
+     * {
+     *     if (fields == null)
+     *         return null;
+     *
+     *     // Get any value among the X-Length headers.
+     *     String length = fields.stream()
+     *         .map(HttpField::getValue)
+     *         .findAny()
+     *         .orElse("0");
+     *
+     *     // Replace X-Length headers with X-Capacity header.
+     *     return new HttpField("X-Capacity", length);
+     * });
+     * </pre>
+     *
+     * <p>This method can be used to remove a field:</p>
+     * <pre>
+     * httpFields.computeField("Connection", (name, fields) -> null);
+     * </pre>
+     *
+     * @param name the HTTP header name
+     * @param computeFn the compute function
+     */
+    public void computeField(String name, BiFunction<String, List<HttpField>, HttpField> computeFn)
+    {
+        boolean found = false;
+        ListIterator<HttpField> iterator = listIterator();
+        while (iterator.hasNext())
+        {
+            HttpField field = iterator.next();
+            if (field.getName().equalsIgnoreCase(name))
+            {
+                if (found)
+                {
+                    // Remove other headers with the same name, since
+                    // we have computed one from all of them already.
+                    iterator.remove();
+                }
+                else
+                {
+                    found = true;
+                    HttpField newField = computeFn.apply(name, Collections.unmodifiableList(getFields(name)));
+                    if (newField == null)
+                        iterator.remove();
+                    else
+                        iterator.set(newField);
+                }
+            }
+        }
+        if (!found)
+        {
+            HttpField newField = computeFn.apply(name, null);
+            if (newField != null)
+                put(newField);
+        }
     }
 
     public int size()
@@ -180,6 +290,22 @@ public class HttpFields implements Iterable<HttpField>
         {
             HttpField f = _fields[i];
             if (f.getHeader() == header)
+            {
+                if (fields == null)
+                    fields = new ArrayList<>();
+                fields.add(f);
+            }
+        }
+        return fields == null ? Collections.emptyList() : fields;
+    }
+
+    public List<HttpField> getFields(String name)
+    {
+        List<HttpField> fields = null;
+        for (int i = 0; i < _size; i++)
+        {
+            HttpField f = _fields[i];
+            if (f.getName().equalsIgnoreCase(name))
             {
                 if (fields == null)
                     fields = new ArrayList<>();

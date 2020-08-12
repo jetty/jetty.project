@@ -29,6 +29,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -48,6 +50,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
@@ -109,7 +112,6 @@ public abstract class AbstractProxyServlet extends HttpServlet
     private String _viaHost;
     private HttpClient _client;
     private long _timeout;
-    private boolean oldAddViaHeaderCalled;
 
     @Override
     public void init() throws ServletException
@@ -168,9 +170,6 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     public String getViaHost()
     {
-        if (_viaHost == null)
-            _viaHost = viaHost();
-
         return _viaHost;
     }
 
@@ -456,6 +455,14 @@ public abstract class AbstractProxyServlet extends HttpServlet
         return HttpHeaderValue.CONTINUE.is(request.getHeader(HttpHeader.EXPECT.asString()));
     }
 
+    protected Request newProxyRequest(HttpServletRequest request, String rewrittenTarget)
+    {
+        return getHttpClient().newRequest(rewrittenTarget)
+            .method(request.getMethod())
+            .version(HttpVersion.fromString(request.getProtocol()))
+            .attribute(CLIENT_REQUEST_ATTRIBUTE, request);
+    }
+
     protected void copyRequestHeaders(HttpServletRequest clientRequest, Request proxyRequest)
     {
         // First clear possibly existing headers, as we are going to copy those from the client request.
@@ -513,28 +520,28 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected void addProxyHeaders(HttpServletRequest clientRequest, Request proxyRequest)
     {
-        addViaHeader(clientRequest, proxyRequest);
+        addViaHeader(proxyRequest);
         addXForwardedHeaders(clientRequest, proxyRequest);
     }
 
     /**
-     * Adds the HTTP Via header to the proxied request.
+     * Adds the HTTP {@code Via} header to the proxied request.
      *
-     * @deprecated Use {@link #addViaHeader(HttpServletRequest, Request)} instead.
      * @param proxyRequest the request being proxied
+     * @see #addViaHeader(HttpServletRequest, Request)
      */
-    @Deprecated
     protected void addViaHeader(Request proxyRequest)
     {
-        oldAddViaHeaderCalled = true;
+        HttpServletRequest clientRequest = (HttpServletRequest)proxyRequest.getAttributes().get(CLIENT_REQUEST_ATTRIBUTE);
+        addViaHeader(clientRequest, proxyRequest);
     }
 
     /**
-     * Adds the HTTP Via header to the proxied request, taking into account data present in the client request.
-     * This method considers the protocol of the client request when forming the proxied request. If it
-     * is HTTP, then the protocol name will not be included in the Via header that is sent by the proxy, and only
+     * <p>Adds the HTTP {@code Via} header to the proxied request, taking into account data present in the client request.</p>
+     * <p>This method considers the protocol of the client request when forming the proxied request. If it
+     * is HTTP, then the protocol name will not be included in the {@code Via} header that is sent by the proxy, and only
      * the protocol version will be sent. If it is not, the entire protocol (name and version) will be included. 
-     * If the client request includes a Via header, the result will be appended to that to form a chain.
+     * If the client request includes a {@code Via} header, the result will be appended to that to form a chain.</p>
      *
      * @param clientRequest the client request
      * @param proxyRequest the request being proxied
@@ -542,30 +549,25 @@ public abstract class AbstractProxyServlet extends HttpServlet
      */
     protected void addViaHeader(HttpServletRequest clientRequest, Request proxyRequest)
     {
-        // For backward compatibility reasons, call old, deprecated version of this method.
-        // If our flag isn't set, the deprecated method was overridden and we shouldn't do
-        // anything more.
-
-        oldAddViaHeaderCalled = false;
-        addViaHeader(proxyRequest);
-
-        if (!oldAddViaHeaderCalled)
-            return; // Old method was overridden, so bail out.
-
-        // Old version of this method wasn't overridden, so do the new logic instead.
-
         String protocol = clientRequest.getProtocol();
         String[] parts = protocol.split("/", 2);
-        String protocolName = parts.length == 2 && "HTTP".equals(parts[0]) ? parts[1] : protocol;
-        String viaHeaderValue = "";
-        String clientViaHeader = clientRequest.getHeader(HttpHeader.VIA.name());
-
-        if (clientViaHeader != null)
-            viaHeaderValue = clientViaHeader;
-
-        viaHeaderValue += protocolName + " " + getViaHost();
-
-        proxyRequest.header(HttpHeader.VIA, viaHeaderValue);
+        // Retain only the version if the protocol is HTTP.
+        String protocolPart = parts.length == 2 && "HTTP".equalsIgnoreCase(parts[0]) ? parts[1] : protocol;
+        String viaHeaderValue = protocolPart + " " + getViaHost();
+        proxyRequest.getHeaders().computeField(HttpHeader.VIA.asString(), (name, viaFields) ->
+        {
+            if (viaFields == null || viaFields.isEmpty())
+                return new HttpField(name, viaHeaderValue);
+            String separator = ", ";
+            String newValue = viaFields.stream()
+                .flatMap(field -> Stream.of(field.getValues()))
+                .filter(value -> !StringUtil.isBlank(value))
+                .collect(Collectors.joining(separator));
+            if (newValue.length() > 0)
+                newValue += separator;
+            newValue += viaHeaderValue;
+            return new HttpField(HttpHeader.VIA, newValue);
+        });
     }
 
     protected void addXForwardedHeaders(HttpServletRequest clientRequest, Request proxyRequest)

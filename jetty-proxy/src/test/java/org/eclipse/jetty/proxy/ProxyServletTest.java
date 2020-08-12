@@ -26,8 +26,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.ConnectException;
 import java.net.HttpCookie;
-import java.net.InetAddress;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,12 +58,12 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -90,15 +88,18 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.jetty.http.HttpFieldsMatchers.containsHeader;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -117,42 +118,6 @@ public class ProxyServletTest
             AsyncProxyServlet.class,
             AsyncMiddleManServlet.class
         ).map(Arguments::of);
-    }
-
-    public static Stream<Arguments> implsWithProtocols()
-    {
-        String[] protocols = {"HTTP/1.1", "HTTP/2.0", "OTHER/0.9"};
-
-        return impls()
-                .flatMap(impl -> Arrays.stream(protocols)
-                        .flatMap(p -> Stream.of(Arguments.of(impl.get()[0], p))));
-    }
-
-    public static Stream<Arguments> subclassesWithProtocols()
-    {
-        ProxyServlet subclass1 = new ProxyServlet()
-        {
-            @Override
-            protected void addViaHeader(Request proxyRequest)
-            {
-                System.err.println("addViaHeader called: " + proxyRequest);
-                super.addViaHeader(proxyRequest);
-            }
-        };
-        String proto = "MY_GOOD_PROTO/0.8";
-        ProxyServlet subclass2 = new ProxyServlet()
-        {
-            @Override
-            protected void addViaHeader(Request proxyRequest)
-            {
-                proxyRequest.header(HttpHeader.VIA, proto + " " + getViaHost());
-            }
-        };
-
-        return Stream.of(
-                Arguments.of(subclass1, "1.1"), // HTTP 1.1 used by this proxy (w/ the connector created in startServer)
-                Arguments.of(subclass2, proto)
-        );
     }
 
     private HttpClient client;
@@ -185,8 +150,7 @@ public class ProxyServletTest
 
     private void startProxy(Class<? extends ProxyServlet> proxyServletClass, Map<String, String> initParams) throws Exception
     {
-        proxyServlet = proxyServletClass.getDeclaredConstructor().newInstance();
-        startProxy(proxyServlet, initParams);
+        startProxy(proxyServletClass.getConstructor().newInstance(), initParams);
     }
 
     private void startProxy(AbstractProxyServlet proxyServlet, Map<String, String> initParams) throws Exception
@@ -205,6 +169,7 @@ public class ProxyServletTest
         proxy.addConnector(proxyConnector);
 
         proxyContext = new ServletContextHandler(proxy, "/", true, false);
+        this.proxyServlet = proxyServlet;
         ServletHolder proxyServletHolder = new ServletHolder(proxyServlet);
         proxyServletHolder.setInitParameters(initParams);
         proxyContext.addServlet(proxyServletHolder, "/*");
@@ -226,26 +191,6 @@ public class ProxyServletTest
         result.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         result.start();
         return result;
-    }
-
-    private static HttpServletRequest mockClientRequest(String protocol)
-    {
-        return new org.eclipse.jetty.server.Request(null, null)
-        {
-            @Override
-            public String getProtocol()
-            {
-                return protocol;
-            }
-        };
-    }
-
-    private static HttpRequest mockProxyRequest()
-    {
-        return new HttpRequest(new HttpClient(), null, URI.create("https://example.com"))
-        {
-
-        };
     }
 
     @AfterEach
@@ -609,50 +554,21 @@ public class ProxyServletTest
         ContentResponse response = client.GET("http://localhost:" + serverConnector.getLocalPort());
         assertThat("Response expected to contain content of X-Forwarded-Host Header from the request",
             response.getContentAsString(),
-            Matchers.equalTo("localhost:" + serverConnector.getLocalPort()));
-    }
-
-    @ParameterizedTest
-    @MethodSource("subclassesWithProtocols")
-    public void testInheritance(ProxyServlet derivedProxyServlet, String protocol) throws Exception
-    {
-        startServer(new HttpServlet()
-        {
-            @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
-            {
-                PrintWriter writer = resp.getWriter();
-                writer.write(req.getHeader("Via"));
-                writer.flush();
-            }
-        });
-        String viaHost = "my-good-via-host.example.org";
-        startProxy(derivedProxyServlet, Collections.singletonMap("viaHost", viaHost));
-        startClient();
-
-        HttpRequest proxyRequest = mockProxyRequest();
-        derivedProxyServlet.addViaHeader(proxyRequest);
-
-        ContentResponse response = client.GET("http://localhost:" + serverConnector.getLocalPort());
-        String expectedVia = protocol + " " + viaHost;
-
-        assertThat("Response expected to contain content of Via Header from the request",
-                   response.getContentAsString(),
-                   Matchers.equalTo(expectedVia));
+            equalTo("localhost:" + serverConnector.getLocalPort()));
     }
 
     @ParameterizedTest
     @MethodSource("impls")
-    public void testProxyViaHeaderIsPresent(Class<? extends ProxyServlet> proxyServletClass) throws Exception
+    public void testProxyViaHeaderIsAdded(Class<? extends ProxyServlet> proxyServletClass) throws Exception
     {
-        startServer(new HttpServlet()
+        startServer(new EmptyHttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                PrintWriter writer = resp.getWriter();
-                writer.write(req.getHeader("Via"));
-                writer.flush();
+                PrintWriter writer = response.getWriter();
+                List<String> viaValues = Collections.list(request.getHeaders("Via"));
+                writer.write(String.join(", ", viaValues));
             }
         });
         String viaHost = "my-good-via-host.example.org";
@@ -660,29 +576,76 @@ public class ProxyServletTest
         startClient();
 
         ContentResponse response = client.GET("http://localhost:" + serverConnector.getLocalPort());
-        assertThat("Response expected to contain content of Via Header from the request",
-                   response.getContentAsString(),
-                   Matchers.equalTo("1.1 " + viaHost));
+        assertThat(response.getContentAsString(), equalTo("1.1 " + viaHost));
     }
 
     @ParameterizedTest
-    @MethodSource("implsWithProtocols")
-    public void testProxyViaHeaderForVariousProtocols(Class<? extends ProxyServlet> proxyServletClass, String protocol) throws Exception
+    @MethodSource("impls")
+    public void testProxyViaHeaderValueIsAppended(Class<? extends ProxyServlet> proxyServletClass) throws Exception
     {
-        AbstractProxyServlet proxyServlet = proxyServletClass.getDeclaredConstructor().newInstance();
-        String host = InetAddress.getLocalHost().getHostName();
-        HttpServletRequest clientRequest = mockClientRequest(protocol);
-        HttpRequest proxyRequest = mockProxyRequest();
+        startServer(new EmptyHttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                // Make sure the proxy coalesced the Via headers into just one.
+                org.eclipse.jetty.server.Request jettyRequest = (org.eclipse.jetty.server.Request)request;
+                assertEquals(1, jettyRequest.getHttpFields().getFields(HttpHeader.VIA).size());
+                PrintWriter writer = response.getWriter();
+                List<String> viaValues = Collections.list(request.getHeaders("Via"));
+                writer.write(String.join(", ", viaValues));
+            }
+        });
+        String viaHost = "beatrix";
+        startProxy(proxyServletClass, Collections.singletonMap("viaHost", viaHost));
+        startClient();
 
-        proxyServlet.addViaHeader(clientRequest, proxyRequest);
+        String existingViaHeader = "1.0 charon";
+        ContentResponse response = client.newRequest("http://localhost:" + serverConnector.getLocalPort())
+            .header(HttpHeader.VIA, existingViaHeader)
+            .send();
+        String expected = String.join(", ", existingViaHeader, "1.1 " + viaHost);
+        assertThat(response.getContentAsString(), equalTo(expected));
+    }
 
-        String expectedProtocol = protocol.startsWith("HTTP") ? protocol.split("/", 2)[1] : protocol;
-        String expectedVia = expectedProtocol + " " + host;
-        String expectedViaWithLocalhost = expectedProtocol + " localhost";
+    @ParameterizedTest
+    @ValueSource(strings = {"HTTP/2.0", "FCGI/1.0"})
+    public void testViaHeaderProtocols(String protocol) throws Exception
+    {
+        startServer(new EmptyHttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                PrintWriter writer = response.getWriter();
+                List<String> viaValues = Collections.list(request.getHeaders("Via"));
+                writer.write(String.join(", ", viaValues));
+            }
+        });
+        String viaHost = "proxy";
+        startProxy(new ProxyServlet()
+        {
+            @Override
+            protected void addViaHeader(HttpServletRequest clientRequest, Request proxyRequest)
+            {
+                HttpServletRequest wrapped = new HttpServletRequestWrapper(clientRequest)
+                {
+                    @Override
+                    public String getProtocol()
+                    {
+                        return protocol;
+                    }
+                };
+                super.addViaHeader(wrapped, proxyRequest);
+            }
+        }, Collections.singletonMap("viaHost", viaHost));
+        startClient();
 
-        assertThat("Response expected to contain a Via header with the right protocol version and host",
-                   proxyRequest.getHeaders().getField("Via").getValue(),
-                   Matchers.anyOf(Matchers.equalTo(expectedVia), Matchers.equalTo(expectedViaWithLocalhost)));
+        ContentResponse response = client.GET("http://localhost:" + serverConnector.getLocalPort());
+
+        String expectedProtocol = protocol.startsWith("HTTP/") ? protocol.substring("HTTP/".length()) : protocol;
+        String expected = expectedProtocol + " " + viaHost;
+        assertThat(response.getContentAsString(), equalTo(expected));
     }
 
     @ParameterizedTest
@@ -1076,7 +1039,7 @@ public class ProxyServletTest
             ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
-            assertThat(response.getStatus(), Matchers.greaterThanOrEqualTo(500));
+            assertThat(response.getStatus(), greaterThanOrEqualTo(500));
         }
         catch (ExecutionException e)
         {
@@ -1209,7 +1172,7 @@ public class ProxyServletTest
         // Make sure there is error page content, as the proxy-to-client response has been reset.
         InputStream input = listener.getInputStream();
         String body = IO.toString(input);
-        assertThat(body, Matchers.containsString("HTTP ERROR 504"));
+        assertThat(body, containsString("HTTP ERROR 504"));
         chunk1Latch.countDown();
 
         // Result succeeds because a 504 is a valid HTTP response.
