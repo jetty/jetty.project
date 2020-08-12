@@ -49,7 +49,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
      *
      * @param <V> the type of the result.
      */
-    private class RunnableResult<V>
+    private class Result<V>
     {
         private V _result;
         private Exception _exception;
@@ -173,7 +173,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
         if (!isStarted())
             throw new IllegalStateException("Not started");
 
-        final RunnableResult<SessionData> result = new RunnableResult<>();
+        final Result<SessionData> result = new Result<>();
 
         Runnable r = () ->
         {
@@ -216,7 +216,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
             //set the last saved time to now
             data.setLastSaved(System.currentTimeMillis());
             
-            final RunnableResult<Object> result = new RunnableResult<>();
+            final Result<Object> result = new Result<>();
             Runnable r = () ->
             {
                 try
@@ -240,7 +240,7 @@ public abstract class AbstractSessionDataStore extends ContainerLifeCycle implem
     @Override
     public boolean exists(String id) throws Exception
     {
-        RunnableResult<Boolean> result = new RunnableResult<>();
+        Result<Boolean> result = new Result<>();
         Runnable r = () ->
         {
             try
