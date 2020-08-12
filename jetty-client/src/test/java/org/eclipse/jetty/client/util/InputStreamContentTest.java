@@ -89,7 +89,10 @@ public class InputStreamContentTest
             server.stop();
     }
 
-    private static List<BiConsumer<Request, InputStream>> content()
+    /**
+     * need public access to avoid jpms issue
+     */
+    public static List<BiConsumer<Request, InputStream>> content()
     {
         return List.of(
             (request, stream) -> request.body(new InputStreamRequestContent(stream)),
