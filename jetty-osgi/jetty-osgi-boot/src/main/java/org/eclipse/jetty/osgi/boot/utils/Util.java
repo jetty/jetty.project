@@ -35,8 +35,6 @@ import org.osgi.framework.InvalidSyntaxException;
  */
 public class Util
 {
-    public static final String DEFAULT_DELIMS = ",;";
-
     /**
      * Create an osgi filter for the given classname and server name.
      *
@@ -101,7 +99,7 @@ public class Util
     public static List<URL> fileNamesAsURLs(String val, String delims)
         throws Exception
     {
-        String separators = DEFAULT_DELIMS;
+        String separators = StringUtil.DEFAULT_DELIMS;
         if (delims == null)
             delims = separators;
 

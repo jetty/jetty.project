@@ -29,8 +29,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.StringTokenizer;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -131,8 +131,9 @@ public class ResourceCollection extends Resource
      * Instantiates a new resource collection.
      *
      * @param csvResources the string containing comma-separated resource strings
+     * @throws IOException if any listed resource is not valid
      */
-    public ResourceCollection(String csvResources)
+    public ResourceCollection(String csvResources) throws IOException
     {
         setResourcesAsCSV(csvResources);
     }
@@ -145,6 +146,22 @@ public class ResourceCollection extends Resource
     public Resource[] getResources()
     {
         return _resources;
+    }
+
+    /**
+     * Sets the resource collection's resources.
+     *
+     * @param res the resources to set
+     */
+    public void setResources(List<Resource> res)
+    {
+        if (res.isEmpty())
+        {
+            _resources = null;
+            return;
+        }
+
+        _resources = res.toArray(new Resource[0]);
     }
 
     /**
@@ -167,13 +184,7 @@ public class ResourceCollection extends Resource
             res.add(resource);
         }
 
-        if (res.isEmpty())
-        {
-            _resources = null;
-            return;
-        }
-
-        _resources = res.toArray(new Resource[0]);
+        setResources(res);
     }
 
     /**
@@ -182,56 +193,22 @@ public class ResourceCollection extends Resource
      *
      * @param csvResources the comma-separated string containing
      * one or more resource strings.
+     * @throws IOException if unable resource declared is not valid
      */
-    public void setResourcesAsCSV(String csvResources)
+    public void setResourcesAsCSV(String csvResources) throws IOException
     {
-        if (csvResources == null)
+        if (StringUtil.isBlank(csvResources))
         {
-            throw new IllegalArgumentException("CSV String is null");
-        }
-
-        StringTokenizer tokenizer = new StringTokenizer(csvResources, ",;");
-        int len = tokenizer.countTokens();
-        if (len == 0)
-        {
-            throw new IllegalArgumentException("ResourceCollection@setResourcesAsCSV(String) " +
-                " argument must be a string containing one or more comma-separated resource strings.");
+            throw new IllegalArgumentException("CSV String is blank");
         }
 
         List<Resource> res = new ArrayList<>();
-
-        try
+        for (Resource resource : Resource.fromList(csvResources, false))
         {
-            while (tokenizer.hasMoreTokens())
-            {
-                String token = tokenizer.nextToken().trim();
-                // TODO: If we want to support CSV tokens with spaces then we should not trim here
-                //       However, if we decide to to this, then CVS formatting/syntax becomes more strict.
-                if (token.length() == 0)
-                {
-                    continue; // skip
-                }
-                Resource resource = Resource.newResource(token);
-                assertResourceValid(resource);
-                res.add(resource);
-            }
-
-            if (res.isEmpty())
-            {
-                _resources = null;
-                return;
-            }
-
-            _resources = res.toArray(new Resource[0]);
+            assertResourceValid(resource);
+            res.add(resource);
         }
-        catch (RuntimeException e)
-        {
-            throw e;
-        }
-        catch (Exception e)
-        {
-            throw new RuntimeException(e);
-        }
+        setResources(res);
     }
 
     /**

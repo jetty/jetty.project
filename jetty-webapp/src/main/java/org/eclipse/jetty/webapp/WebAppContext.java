@@ -204,7 +204,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _persistTmpDir = false;
 
     private String _war;
-    private String _extraClasspath;
+    private List<Resource> _extraClasspath;
     private Throwable _unavailableException;
 
     private Map<String, String> _resourceAliases;
@@ -1227,17 +1227,29 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     @Override
     @ManagedAttribute(value = "extra classpath for context classloader", readonly = true)
-    public String getExtraClasspath()
+    public List<Resource> getExtraClasspath()
     {
         return _extraClasspath;
     }
 
     /**
+     * Set the Extra ClassPath via delimited String.
+     * <p>
+     * This is a convenience method for {@link #setExtraClasspath(List)}
+     * </p>
+     *
      * @param extraClasspath Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
      * with '/'.
+     * @throws IOException if unable to resolve the resources referenced
+     * @see #setExtraClasspath(List)
      */
-    public void setExtraClasspath(String extraClasspath)
+    public void setExtraClasspath(String extraClasspath) throws IOException
+    {
+        setExtraClasspath(Resource.fromList(extraClasspath, false, this::newResource));
+    }
+
+    public void setExtraClasspath(List<Resource> extraClasspath)
     {
         _extraClasspath = extraClasspath;
     }

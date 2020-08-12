@@ -188,8 +188,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         if (_parent != null)
         {
             HttpContent httpContent = _parent.getContent(pathInContext, maxBufferSize);
-            if (httpContent != null)
-                return httpContent;
+            return httpContent;
         }
 
         return null;
@@ -234,17 +233,25 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     if (compressedContent == null || compressedContent.isValid())
                     {
                         compressedContent = null;
-                        Resource compressedResource = _factory.getResource(compressedPathInContext);
-                        if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
-                            compressedResource.length() < resource.length())
+                        try
                         {
-                            compressedContent = new CachedHttpContent(compressedPathInContext, compressedResource, null);
-                            CachedHttpContent added = _cache.putIfAbsent(compressedPathInContext, compressedContent);
-                            if (added != null)
+                            Resource compressedResource = _factory.getResource(compressedPathInContext);
+                            if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
+                                compressedResource.length() < resource.length())
                             {
-                                compressedContent.invalidate();
-                                compressedContent = added;
+                                compressedContent = new CachedHttpContent(compressedPathInContext, compressedResource, null);
+                                CachedHttpContent added = _cache.putIfAbsent(compressedPathInContext, compressedContent);
+                                if (added != null)
+                                {
+                                    compressedContent.invalidate();
+                                    compressedContent = added;
+                                }
                             }
+                        }
+                        catch (IOException e)
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Unable to find compressed path in context: {}", compressedPathInContext, e);
                         }
                     }
                     if (compressedContent != null)
@@ -279,12 +286,20 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 if (compressedContent != null && compressedContent.isValid() && compressedContent.getResource().lastModified() >= resource.lastModified())
                     compressedContents.put(format, compressedContent);
 
-                // Is there a precompressed resource?
-                Resource compressedResource = _factory.getResource(compressedPathInContext);
-                if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
-                    compressedResource.length() < resource.length())
-                    compressedContents.put(format,
-                        new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
+                try
+                {
+                    // Is there a precompressed resource?
+                    Resource compressedResource = _factory.getResource(compressedPathInContext);
+                    if (compressedResource.exists() && compressedResource.lastModified() >= resource.lastModified() &&
+                        compressedResource.length() < resource.length())
+                        compressedContents.put(format,
+                            new ResourceHttpContent(compressedResource, _mimeTypes.getMimeByExtension(compressedPathInContext), maxBufferSize));
+                }
+                catch (IOException e)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Unable to find compressed path in context: {}", compressedPathInContext, e);
+                }
             }
             if (!compressedContents.isEmpty())
                 return new ResourceHttpContent(resource, mt, maxBufferSize, compressedContents);

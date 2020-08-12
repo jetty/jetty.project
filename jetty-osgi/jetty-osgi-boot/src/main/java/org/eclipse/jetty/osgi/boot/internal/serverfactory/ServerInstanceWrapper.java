@@ -233,7 +233,7 @@ public class ServerInstanceWrapper
             Thread.currentThread().setContextClassLoader(libExtClassLoader);
 
             String jettyConfigurationUrls = (String)props.get(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS);
-            List<URL> jettyConfigurations = jettyConfigurationUrls != null ? Util.fileNamesAsURLs(jettyConfigurationUrls, Util.DEFAULT_DELIMS) : null;
+            List<URL> jettyConfigurations = jettyConfigurationUrls != null ? Util.fileNamesAsURLs(jettyConfigurationUrls, StringUtil.DEFAULT_DELIMS) : null;
 
             _server = configure(server, jettyConfigurations, props);
 
@@ -418,7 +418,7 @@ public class ServerInstanceWrapper
 
         List<URL> libURLs = new ArrayList<>();
 
-        StringTokenizer tokenizer = new StringTokenizer(sharedURLs, ",;", false);
+        StringTokenizer tokenizer = new StringTokenizer(sharedURLs, StringUtil.DEFAULT_DELIMS, false);
         while (tokenizer.hasMoreTokens())
         {
             String tok = tokenizer.nextToken();

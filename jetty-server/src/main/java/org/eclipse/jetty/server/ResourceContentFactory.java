@@ -51,14 +51,12 @@ public class ResourceContentFactory implements ContentFactory
 
     @Override
     public HttpContent getContent(String pathInContext, int maxBufferSize)
-        throws IOException
     {
         try
         {
             // try loading the content from our factory.
             Resource resource = _factory.getResource(pathInContext);
-            HttpContent loaded = load(pathInContext, resource, maxBufferSize);
-            return loaded;
+            return load(pathInContext, resource, maxBufferSize);
         }
         catch (Throwable t)
         {
