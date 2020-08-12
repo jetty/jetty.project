@@ -63,7 +63,7 @@ public class AsyncRestServlet extends AbstractRestServlet
     {
         super.init(servletConfig);
 
-        _client = new HttpClient(new SslContextFactory.Client());
+        _client = new HttpClient();
 
         try
         {
