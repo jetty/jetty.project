@@ -152,18 +152,9 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     public Resource getResource(String path) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} newResource({}): baseResource:{}", _context == null ? _baseResource : _context, path, _baseResource);
+            LOG.debug("{} getResource({}): baseResource:{}", _context == null ? _baseResource : _context, path, _baseResource);
 
-        if (path == null)
-        {
-            throw new IOException("null path");
-        }
-        else if (!path.startsWith("/"))
-        {
-            throw new IOException("Invalid path reference: " + path);
-        }
-
-        try
+        if (path != null && path.startsWith("/"))
         {
             Resource r = null;
 
@@ -172,25 +163,25 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
                 path = URIUtil.canonicalPath(path);
                 r = _baseResource.addPath(path);
 
-                if (r != null && r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
+                if (r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("resource={} alias={}", r, r.getAlias());
-                    throw new IOException("Unacceptable alias reference: " + r);
+                        LOG.debug("Rejected alias resource={} alias={}", r, r.getAlias());
+                    throw new IOException("Rejected (see debug logs)");
                 }
             }
             else if (_context != null)
+            {
                 r = _context.getResource(path);
+                if (r != null)
+                    return r;
+            }
 
             if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
                 r = getStylesheet();
 
             if (r != null)
                 return r;
-        }
-        catch (Exception e)
-        {
-            LOG.debug("Unable to get Resource for {}", path, e);
         }
 
         throw new IOException("Unable to find Resource for " + path);

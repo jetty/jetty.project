@@ -88,7 +88,6 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
      */
     public interface Context extends ClassVisibilityChecker
     {
-
         /**
          * Convert a URL or path to a Resource.
          * The default implementation

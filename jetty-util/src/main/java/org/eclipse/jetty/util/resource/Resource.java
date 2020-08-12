@@ -413,7 +413,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * given name.
      *
      * @param path The path segment to add, which is not encoded
-     * @return the Resource for the resolved path within this Resource.
+     * @return the Resource for the resolved path within this Resource, never null
      * @throws IOException if unable to resolve the path
      * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed.
      */

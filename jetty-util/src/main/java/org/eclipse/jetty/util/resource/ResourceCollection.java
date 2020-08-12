@@ -222,7 +222,7 @@ public class ResourceCollection extends Resource
 
         if (path == null)
         {
-            throw new MalformedURLException();
+            throw new MalformedURLException("null path");
         }
 
         if (path.length() == 0 || URIUtil.SLASH.equals(path))
@@ -270,11 +270,13 @@ public class ResourceCollection extends Resource
         {
             return resource;
         }
+
         if (resources != null)
         {
             return new ResourceCollection(resources.toArray(new Resource[0]));
         }
-        return null;
+
+        throw new MalformedURLException("path does not result in Resource: " + path);
     }
 
     @Override

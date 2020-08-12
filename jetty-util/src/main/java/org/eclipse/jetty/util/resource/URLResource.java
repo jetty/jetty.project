@@ -290,7 +290,9 @@ public class URLResource extends Resource
         throws IOException, MalformedURLException
     {
         if (path == null)
-            return null;
+        {
+            throw new MalformedURLException("null path");
+        }
 
         path = URIUtil.canonicalPath(path);
 
