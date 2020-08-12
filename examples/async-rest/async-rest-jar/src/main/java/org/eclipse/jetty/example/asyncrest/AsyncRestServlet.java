@@ -38,6 +38,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * Servlet implementation class AsyncRESTServlet.

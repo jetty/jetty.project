@@ -109,8 +109,8 @@ public class ProxyConnectionTest
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInfo=/path"));
-        assertThat(response, Matchers.containsString("remote=eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee:65535"));
-        assertThat(response, Matchers.containsString("local=ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff:65535"));
+        assertThat(response, Matchers.containsString("remote=[eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee]:65535"));
+        assertThat(response, Matchers.containsString("local=[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:65535"));
     }
 
     @ParameterizedTest
@@ -147,8 +147,8 @@ public class ProxyConnectionTest
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInfo=/path"));
-        assertThat(response, Matchers.containsString("local=eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee:8080"));
-        assertThat(response, Matchers.containsString("remote=ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff:12345"));
+        assertThat(response, Matchers.containsString("local=[eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee]:8080"));
+        assertThat(response, Matchers.containsString("remote=[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:12345"));
     }
 
     @ParameterizedTest

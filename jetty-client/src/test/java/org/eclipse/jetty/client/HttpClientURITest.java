@@ -67,8 +67,10 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         start(scenario, new EmptyServerHandler());
 
-        String host = "::1";
-        Request request = client.newRequest(host, connector.getLocalPort())
+        String hostAddress = "::1";
+        String host = "[" + hostAddress + "]";
+        // Explicitly use a non-bracketed IPv6 host.
+        Request request = client.newRequest(hostAddress, connector.getLocalPort())
             .scheme(scenario.getScheme())
             .timeout(5, TimeUnit.SECONDS);
 
