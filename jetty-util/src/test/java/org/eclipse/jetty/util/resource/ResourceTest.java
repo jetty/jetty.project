@@ -19,9 +19,11 @@
 package org.eclipse.jetty.util.resource;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.stream.Stream;
 
@@ -30,6 +32,9 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -37,6 +42,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ResourceTest
 {
@@ -278,5 +284,17 @@ public class ResourceTest
         InputStream in = data.resource.getInputStream();
         String c = IO.toString(in);
         assertThat("Content: " + data.test, c, startsWith(data.content));
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS) // this uses forbidden characters on some Windows Environments
+    public void testGlobPath() throws IOException
+    {
+        Path testDir = MavenTestingUtils.getTargetTestingPath("testGlobPath");
+        FS.ensureEmpty(testDir);
+
+        String globReference = testDir.toAbsolutePath().toString() + File.separator + '*';
+        Resource globResource = Resource.newResource(globReference);
+        assertNotNull(globResource, "Should have produced a Resource");
     }
 }
