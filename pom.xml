@@ -136,9 +136,6 @@
     <module>jetty-home</module>
     <module>jetty-bom</module>
     <module>jetty-documentation</module>
-    <!-- modules that need fixed and added back, or simply dropped and not maintained -->
-    <!-- <module>jetty-rhttp</module> -->
-    <!-- <module>jetty-overlay-deployer</module> -->
   </modules>
 
   <build>
