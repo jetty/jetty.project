@@ -230,15 +230,15 @@ public class PathResource extends Resource
         Path absPath = path;
         try
         {
-            absPath = path.toAbsolutePath();
+            absPath = path.toRealPath(NO_FOLLOW_LINKS);
         }
-        catch (IOError ioError)
+        catch (IOError | IOException e)
         {
-            // Not able to resolve absolute path from provided path
+            // Not able to resolve real/canonical path from provided path
             // This could be due to a glob reference, or a reference
             // to a path that doesn't exist (yet)
             if (LOG.isDebugEnabled())
-                LOG.debug("Unable to get absolute path for {}", path, ioError);
+                LOG.debug("Unable to get real/canonical path for {}", path, e);
         }
 
         // cleanup any lingering relative path nonsense (like "/./" and "/../")

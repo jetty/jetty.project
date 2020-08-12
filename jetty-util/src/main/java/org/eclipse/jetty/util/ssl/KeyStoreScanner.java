@@ -29,6 +29,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * <p>The {@link KeyStoreScanner} is used to monitor the KeyStore file used by the {@link SslContextFactory}.
@@ -49,11 +50,22 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         this.sslContextFactory = sslContextFactory;
         try
         {
-            keystoreFile = sslContextFactory.getKeyStoreResource().getFile();
-            if (keystoreFile == null || !keystoreFile.exists())
+            Resource keystoreResource = sslContextFactory.getKeyStoreResource();
+            File monitoredFile = keystoreResource.getFile();
+            if (monitoredFile == null || !monitoredFile.exists())
                 throw new IllegalArgumentException("keystore file does not exist");
-            if (keystoreFile.isDirectory())
+            if (monitoredFile.isDirectory())
                 throw new IllegalArgumentException("expected keystore file not directory");
+
+            if (keystoreResource.getAlias() != null)
+            {
+                // this resource has an alias, use the alias, as that's what's returned in the Scanner
+                monitoredFile = new File(keystoreResource.getAlias());
+            }
+
+            keystoreFile = monitoredFile;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Monitored Keystore File: {}", monitoredFile);
         }
         catch (IOException e)
         {
