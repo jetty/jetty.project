@@ -796,7 +796,7 @@ public interface HttpFields extends Iterable<HttpField>
                 {
                     if (_size == 0)
                         throw new IllegalStateException();
-                    Mutable.this.remove(_index - 1);
+                    Mutable.this.remove(--_index);
                 }
             };
         }
@@ -1059,7 +1059,7 @@ public interface HttpFields extends Iterable<HttpField>
                     }
                     // Remember and remove additional fields
                     found.add(f);
-                    remove(i);
+                    remove(i--);
                 }
             }
 
@@ -1088,7 +1088,7 @@ public interface HttpFields extends Iterable<HttpField>
             {
                 HttpField f = _fields[i];
                 if (f.getHeader() == name)
-                    remove(i);
+                    remove(i--);
             }
             return this;
         }
@@ -1099,7 +1099,7 @@ public interface HttpFields extends Iterable<HttpField>
             {
                 HttpField f = _fields[i];
                 if (fields.contains(f.getHeader()))
-                    remove(i);
+                    remove(i--);
             }
             return this;
         }
@@ -1116,7 +1116,7 @@ public interface HttpFields extends Iterable<HttpField>
             {
                 HttpField f = _fields[i];
                 if (f.is(name))
-                    remove(i);
+                    remove(i--);
             }
             return this;
         }
