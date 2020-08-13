@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.FormRequestContent;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.Fields;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -70,6 +71,7 @@ public class DemoBaseTests extends AbstractDistributionTest
     }
 
     @Test
+    @Tag("external")
     public void testAsyncRest() throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
