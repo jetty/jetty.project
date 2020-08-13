@@ -885,11 +885,12 @@ public class HttpFieldsTest
         header.add(new HttpField("After", "value"));
         assertThat(header.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "Test: one", "After: value"));
 
-        header.add(new HttpField("Test", "extra"));
-        assertThat(header.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "Test: one", "After: value", "Test: extra"));
+        header.add(new HttpField("Test", "two"));
+        header.add(new HttpField("Test", "three"));
+        assertThat(header.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "Test: one", "After: value", "Test: two", "Test: three"));
 
         header.computeField("Test", (n, f) -> new HttpField("TEST", "count=" + f.size()));
-        assertThat(header.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "TEST: count=2", "After: value"));
+        assertThat(header.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "TEST: count=3", "After: value"));
 
         header.computeField("TEST", (n, f) -> null);
         assertThat(header.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "After: value"));

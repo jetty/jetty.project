@@ -218,7 +218,7 @@ public class HttpFields implements Iterable<HttpField>
                 }
                 // Remember and remove additional fields
                 found.add(f);
-                remove(i);
+                remove(i--);
             }
         }
 
