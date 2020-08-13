@@ -140,13 +140,13 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * method called or be removed via {@link Pool.Entry#remove()} or
      * {@link Pool#remove(Pool.Entry)}.
      *
-     * @param maxReservations the max desired number of reserved entries,
+     * @param allotment the desired allotment, where each entry handles an allotment of maxMultiplex,
      * or a negative number to always trigger the reservation of a new entry.
      * @return a disabled entry that is contained in the pool,
      * or null if the pool is closed or if the pool already contains
-     * {@link #getMaxEntries()} entries.
+     * {@link #getMaxEntries()} entries, or the allotment has already been reserved
      */
-    public Entry reserve(int maxReservations)
+    public Entry reserve(int allotment)
     {
         try (Locker.Lock l = locker.lock())
         {
@@ -159,9 +159,8 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
             // The pending count is an AtomicInteger that is only ever incremented here with
             // the lock held.  Thus the pending count can be reduced immediately after the
-            // test below, but never incremented.  Thus the maxReservations limit can be
-            // enforced.
-            if (maxReservations >= 0 && pending.get() >= maxReservations)
+            // test below, but never incremented.  Thus the allotment limit can be enforced.
+            if (allotment >= 0 && (pending.get() * getMaxMultiplex()) >= allotment)
                 return null;
             pending.incrementAndGet();
 
