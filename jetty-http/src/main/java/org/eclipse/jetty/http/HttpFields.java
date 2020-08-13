@@ -167,14 +167,13 @@ public class HttpFields implements Iterable<HttpField>
     public void computeField(String name, BiFunction<String, List<HttpField>, HttpField> computeFn)
     {
         // Look for first occurrence
-        int i = 0;
         int first = -1;
-        for (; i < _size; i++)
+        for (int i = 0; i < _size; i++)
         {
             HttpField f = _fields[i];
             if (f.is(name))
             {
-                first = i++;
+                first = i;
                 break;
             }
         }
@@ -190,7 +189,7 @@ public class HttpFields implements Iterable<HttpField>
 
         // Are there any more occurrences?
         List<HttpField> found = null;
-        for (; i < _size; i++)
+        for (int i = first + 1; i < _size; i++)
         {
             HttpField f = _fields[i];
             if (f.is(name))
@@ -209,6 +208,8 @@ public class HttpFields implements Iterable<HttpField>
         // If no additional fields were found, handle singleton case
         if (found == null)
             found = Collections.singletonList(_fields[first]);
+        else
+            found = Collections.unmodifiableList(found);
 
         HttpField newField = computeFn.apply(name, found);
         if (newField == null)
