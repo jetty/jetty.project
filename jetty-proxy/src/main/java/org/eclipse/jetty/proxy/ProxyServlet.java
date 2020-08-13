@@ -38,7 +38,6 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 
@@ -76,9 +75,7 @@ public class ProxyServlet extends AbstractProxyServlet
             return;
         }
 
-        final Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
-            .method(request.getMethod())
-            .version(HttpVersion.fromString(request.getProtocol()));
+        Request proxyRequest = newProxyRequest(request, rewrittenTarget);
 
         copyRequestHeaders(request, proxyRequest);
 
@@ -95,7 +92,6 @@ public class ProxyServlet extends AbstractProxyServlet
             {
                 DeferredContentProvider deferred = new DeferredContentProvider();
                 proxyRequest.content(deferred);
-                proxyRequest.attribute(CLIENT_REQUEST_ATTRIBUTE, request);
                 proxyRequest.attribute(CONTINUE_ACTION_ATTRIBUTE, (Runnable)() ->
                 {
                     try
