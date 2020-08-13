@@ -171,8 +171,8 @@ public class HttpFields implements Iterable<HttpField>
         int first = -1;
         for (; i < _size; i++)
         {
-            HttpField f = _fields[i++];
-            if (f.getName().equalsIgnoreCase(name))
+            HttpField f = _fields[i];
+            if (f.is(name))
             {
                 first = i++;
                 break;
@@ -192,8 +192,8 @@ public class HttpFields implements Iterable<HttpField>
         List<HttpField> found = null;
         for (; i < _size; i++)
         {
-            HttpField f = _fields[i++];
-            if (f.getName().equalsIgnoreCase(name))
+            HttpField f = _fields[i];
+            if (f.is(name))
             {
                 if (found == null)
                 {
@@ -296,7 +296,7 @@ public class HttpFields implements Iterable<HttpField>
         for (int i = 0; i < _size; i++)
         {
             HttpField f = _fields[i];
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.is(name))
                 return f;
         }
         return null;
@@ -324,7 +324,7 @@ public class HttpFields implements Iterable<HttpField>
         for (int i = 0; i < _size; i++)
         {
             HttpField f = _fields[i];
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.is(name))
             {
                 if (fields == null)
                     fields = new ArrayList<>();
@@ -361,7 +361,7 @@ public class HttpFields implements Iterable<HttpField>
         for (int i = _size; i-- > 0; )
         {
             HttpField f = _fields[i];
-            if (f.getName().equalsIgnoreCase(name) && f.contains(value))
+            if (f.is(name) && f.contains(value))
                 return true;
         }
         return false;
@@ -383,7 +383,7 @@ public class HttpFields implements Iterable<HttpField>
         for (int i = _size; i-- > 0; )
         {
             HttpField f = _fields[i];
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.is(name))
                 return true;
         }
         return false;
@@ -417,7 +417,7 @@ public class HttpFields implements Iterable<HttpField>
         for (int i = 0; i < _size; i++)
         {
             HttpField f = _fields[i];
-            if (f.getName().equalsIgnoreCase(header))
+            if (f.is(header))
                 return f.getValue();
         }
         return null;
@@ -453,7 +453,7 @@ public class HttpFields implements Iterable<HttpField>
         for (int i = 0; i < _size; i++)
         {
             HttpField f = _fields[i];
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.is(name))
             {
                 if (list == null)
                     list = new ArrayList<>(size() - i);
@@ -508,7 +508,7 @@ public class HttpFields implements Iterable<HttpField>
         for (int i = 0; i < _size; i++)
         {
             HttpField f = _fields[i];
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.is(name))
             {
                 if (existing == null)
                     existing = new QuotedCSV(false);
@@ -596,7 +596,7 @@ public class HttpFields implements Iterable<HttpField>
         QuotedCSV values = null;
         for (HttpField f : this)
         {
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.is(name))
             {
                 if (values == null)
                     values = new QuotedCSV(keepQuotes);
@@ -654,7 +654,7 @@ public class HttpFields implements Iterable<HttpField>
         QuotedQualityCSV values = null;
         for (HttpField f : this)
         {
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.is(name))
             {
                 if (values == null)
                     values = new QuotedQualityCSV();
@@ -676,7 +676,7 @@ public class HttpFields implements Iterable<HttpField>
         {
             final HttpField f = _fields[i];
 
-            if (f.getName().equalsIgnoreCase(name) && f.getValue() != null)
+            if (f.is(name) && f.getValue() != null)
             {
                 final int first = i;
                 return new Enumeration<String>()
@@ -692,7 +692,7 @@ public class HttpFields implements Iterable<HttpField>
                             while (i < _size)
                             {
                                 field = _fields[i++];
-                                if (field.getName().equalsIgnoreCase(name) && field.getValue() != null)
+                                if (field.is(name) && field.getValue() != null)
                                     return true;
                             }
                             field = null;
@@ -924,7 +924,7 @@ public class HttpFields implements Iterable<HttpField>
         for (int i = _size; i-- > 0; )
         {
             HttpField f = _fields[i];
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.is(name))
             {
                 removed = f;
                 remove(i);
