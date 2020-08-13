@@ -813,7 +813,7 @@ public class ResponseTest
             };
 
         int[] ports = new int[]{8080, 80};
-        String[] hosts = new String[]{null, "myhost", "192.168.0.1", "0::1"};
+        String[] hosts = new String[]{null, "myhost", "192.168.0.1", "[0::1]"};
         for (int port : ports)
         {
             for (String host : hosts)
@@ -850,7 +850,7 @@ public class ResponseTest
                     String location = response.getHeader("Location");
 
                     String expected = tests[i][1]
-                        .replace("@HOST@", host == null ? request.getLocalAddr() : (host.contains(":") ? ("[" + host + "]") : host))
+                        .replace("@HOST@", host == null ? request.getLocalAddr() : host)
                         .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
                     assertEquals(expected, location, "test-" + i + " " + host + ":" + port);
                 }
@@ -887,7 +887,7 @@ public class ResponseTest
             };
 
         int[] ports = new int[]{8080, 80};
-        String[] hosts = new String[]{null, "myhost", "192.168.0.1", "0::1"};
+        String[] hosts = new String[]{null, "myhost", "192.168.0.1", "[0::1]"};
         for (int port : ports)
         {
             for (String host : hosts)
@@ -925,7 +925,7 @@ public class ResponseTest
                     String location = response.getHeader("Location");
 
                     String expected = tests[i][1]
-                        .replace("@HOST@", host == null ? request.getLocalAddr() : (host.contains(":") ? ("[" + host + "]") : host))
+                        .replace("@HOST@", host == null ? request.getLocalAddr() : host)
                         .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
                     assertEquals(expected, location, "test-" + i + " " + host + ":" + port);
                 }

@@ -351,6 +351,42 @@ public class ConnectionPoolTest
         assertThat(connectionPool.getConnectionCount(), Matchers.lessThanOrEqualTo(count));
     }
 
+    @ParameterizedTest
+    @MethodSource("pools")
+    public void testConnectionMaxUsage(ConnectionPoolFactory factory) throws Exception
+    {
+        startServer(new EmptyServerHandler());
+
+        int maxUsageCount = 2;
+        startClient(destination ->
+        {
+            AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(destination);
+            connectionPool.setMaxUsageCount(maxUsageCount);
+            return connectionPool;
+        });
+        client.setMaxConnectionsPerDestination(1);
+
+        // Send first request, we are within the max usage count.
+        ContentResponse response1 = client.newRequest("localhost", connector.getLocalPort()).send();
+        assertEquals(HttpStatus.OK_200, response1.getStatus());
+
+        HttpDestination destination = (HttpDestination)client.getDestinations().get(0);
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
+
+        assertEquals(0, connectionPool.getActiveConnectionCount());
+        assertEquals(1, connectionPool.getIdleConnectionCount());
+        assertEquals(1, connectionPool.getConnectionCount());
+
+        // Send second request, max usage count will be reached,
+        // the only connection must be closed.
+        ContentResponse response2 = client.newRequest("localhost", connector.getLocalPort()).send();
+        assertEquals(HttpStatus.OK_200, response2.getStatus());
+
+        assertEquals(0, connectionPool.getActiveConnectionCount());
+        assertEquals(0, connectionPool.getIdleConnectionCount());
+        assertEquals(0, connectionPool.getConnectionCount());
+    }
+
     private static class ConnectionPoolFactory
     {
         private final String name;

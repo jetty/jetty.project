@@ -106,13 +106,13 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     @ManagedAttribute(value = "The number of active connections", readonly = true)
     public int getActiveConnectionCount()
     {
-        return pool.getInUseConnectionCount();
+        return pool.getInUseCount();
     }
 
     @ManagedAttribute(value = "The number of idle connections", readonly = true)
     public int getIdleConnectionCount()
     {
-        return pool.getIdleConnectionCount();
+        return pool.getIdleCount();
     }
 
     @ManagedAttribute(value = "The max number of connections", readonly = true)
@@ -141,7 +141,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     @ManagedAttribute(value = "The number of pending connections", readonly = true)
     public int getPendingConnectionCount()
     {
-        return pool.getPendingConnectionCount();
+        return pool.getReservedCount();
     }
 
     @Override
@@ -220,7 +220,10 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
                 if (LOG.isDebugEnabled())
                     LOG.debug("Connection {}/{} creation succeeded {}", pool.size(), pool.getMaxEntries(), connection);
                 if (!(connection instanceof Attachable))
-                    throw new IllegalArgumentException("Invalid connection object: " + connection);
+                {
+                    failed(new IllegalArgumentException("Invalid connection object: " + connection));
+                    return;
+                }
                 ((Attachable)connection).setAttachment(entry);
                 onCreated(connection);
                 entry.enable(connection, false);
@@ -251,10 +254,10 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     protected Connection activate()
     {
         Pool<Connection>.Entry entry = pool.acquire();
-        if (LOG.isDebugEnabled())
-            LOG.debug("activated '{}'", entry);
         if (entry != null)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("activated {}", entry);
             Connection connection = entry.getPooled();
             acquired(connection);
             return connection;
@@ -295,15 +298,13 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         Pool<Connection>.Entry entry = (Pool<Connection>.Entry)attachable.getAttachment();
         if (entry == null)
             return true;
-        if (LOG.isDebugEnabled())
-            LOG.debug("releasing {}", entry);
         boolean reusable = pool.release(entry);
-        if (!reusable)
-        {
-            remove(connection);
-            return false;
-        }
-        return true;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Released ({}) {}", reusable, entry);
+        if (reusable)
+            return true;
+        remove(connection);
+        return false;
     }
 
     @Override
@@ -322,9 +323,9 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         if (entry == null)
             return false;
         attachable.setAttachment(null);
-        if (LOG.isDebugEnabled())
-            LOG.debug("removing {}", entry);
         boolean removed = pool.remove(entry);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Removed ({}) {}", removed, entry);
         if (removed || force)
         {
             released(connection);

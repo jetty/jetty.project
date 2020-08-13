@@ -351,7 +351,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Rem
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while notifying failure of callback " + callback, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while notifying failure of callback " + callback, x);
             }
             return;
         }

@@ -130,10 +130,12 @@ public class FragmentExtension extends AbstractExtension
                 current = pollEntry();
                 if (current == null)
                 {
-                    LOG.debug("Processing IDLE", current);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Processing IDLE", current);
                     return Action.IDLE;
                 }
-                LOG.debug("Processing {}", current);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Processing {}", current);
                 fragment(current, true);
             }
             else

@@ -90,17 +90,17 @@ public class Pool<T> implements AutoCloseable, Dumpable
             this.cache = null;
     }
 
-    public int getPendingConnectionCount()
+    public int getReservedCount()
     {
         return pending.get();
     }
 
-    public int getIdleConnectionCount()
+    public int getIdleCount()
     {
         return (int)sharedList.stream().filter(Entry::isIdle).count();
     }
 
-    public int getInUseConnectionCount()
+    public int getInUseCount()
     {
         return (int)sharedList.stream().filter(Entry::isInUse).count();
     }
@@ -137,7 +137,8 @@ public class Pool<T> implements AutoCloseable, Dumpable
     /**
      * Create a new disabled slot into the pool.
      * The returned entry must ultimately have the {@link Entry#enable(Object, boolean)}
-     * method called or be removed via {@link Entry#remove()} or {@link #remove(Entry)}.
+     * method called or be removed via {@link Pool.Entry#remove()} or
+     * {@link Pool#remove(Pool.Entry)}.
      *
      * @param maxReservations the max desired number of reserved entries,
      * or a negative number to always trigger the reservation of a new entry.
@@ -238,24 +239,24 @@ public class Pool<T> implements AutoCloseable, Dumpable
         if (entry != null)
             return entry;
 
-        entry = reserve(getMaxEntries());
+        entry = reserve(-1);
         if (entry == null)
             return null;
 
-        T value = null;
+        T value;
         try
         {
             value = creator.apply(entry);
         }
         catch (Throwable th)
         {
-            Pool.this.remove(entry);
+            remove(entry);
             throw th;
         }
 
         if (value == null)
         {
-            Pool.this.remove(entry);
+            remove(entry);
             return null;
         }
 
@@ -386,7 +387,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
          * once and only once, before it is usable by the pool.
          * The entry may be enabled and not acquired, in which case it is immediately available to be
          * acquired, potentially by another thread; or it can be enabled and acquired atomically so that
-         * no other thread can acquired it, although the acquire may still fail if the pool has been closed.
+         * no other thread can acquire it, although the acquire may still fail if the pool has been closed.
          * @param pooled The pooled item for the entry
          * @param acquire If true the entry is atomically enabled and acquired.
          * @return true If the entry was enabled.
@@ -544,7 +545,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         public String toString()
         {
             long encoded = state.get();
-            return String.format("%s@%x{hi=%d,lo=%d.p=%s}",
+            return String.format("%s@%x{usage=%d,multiplex=%d,pooled=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 AtomicBiInteger.getHi(encoded),

@@ -319,29 +319,30 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
     {
         if (lib.exists() && lib.isDirectory())
         {
-            String[] files = lib.list();
-            if (files != null)
+            String[] entries = lib.list();
+            if (entries != null)
             {
-                Arrays.sort(files);
-            }
-            for (int f = 0; files != null && f < files.length; f++)
-            {
-                try
+                Arrays.sort(entries);
+
+                for (String entry : entries)
                 {
-                    Resource fn = lib.addPath(files[f]);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("addJar - {}", fn);
-                    String fnlc = fn.getName().toLowerCase(Locale.ENGLISH);
-                    // don't check if this is a directory (prevents use of symlinks), see Bug 353165
-                    if (isFileSupported(fnlc))
+                    try
                     {
-                        String jar = URIUtil.encodeSpecific(fn.toString(), ",;");
-                        addClassPath(jar);
+                        Resource resource = lib.addPath(entry);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("addJar - {}", resource);
+                        String fnlc = resource.getName().toLowerCase(Locale.ENGLISH);
+                        // don't check if this is a directory (prevents use of symlinks), see Bug 353165
+                        if (isFileSupported(fnlc))
+                        {
+                            String jar = URIUtil.encodeSpecific(resource.toString(), ",;");
+                            addClassPath(jar);
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    LOG.warn(Log.EXCEPTION, ex);
+                    catch (Exception ex)
+                    {
+                        LOG.warn(Log.EXCEPTION, ex);
+                    }
                 }
             }
         }

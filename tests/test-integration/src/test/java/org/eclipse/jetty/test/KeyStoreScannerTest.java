@@ -21,6 +21,7 @@ package org.eclipse.jetty.test;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -47,11 +48,14 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 @ExtendWith(WorkDirExtension.class)
 public class KeyStoreScannerTest
@@ -161,7 +165,8 @@ public class KeyStoreScannerTest
         // Delete the keystore.
         try (StacklessLogging ignored = new StacklessLogging(KeyStoreScanner.class))
         {
-            useKeystore(null);
+            Path keystorePath = keystoreDir.resolve("keystore");
+            assertTrue(Files.deleteIfExists(keystorePath));
             keystoreScanner.scan();
         }
 
@@ -176,6 +181,7 @@ public class KeyStoreScannerTest
     }
 
     @Test
+    @DisabledOnOs(WINDOWS) // does not support symbolic link
     public void testReloadChangingSymbolicLink() throws Exception
     {
         Path keystorePath = keystoreDir.resolve("symlinkKeystore");
@@ -202,13 +208,19 @@ public class KeyStoreScannerTest
     }
 
     @Test
+    @DisabledOnOs(WINDOWS) // does not support symbolic link
     public void testReloadChangingTargetOfSymbolicLink() throws Exception
     {
+        Path keystoreLink = keystoreDir.resolve("symlinkKeystore");
+        Path oldKeystoreSrc = MavenTestingUtils.getTestResourcePathFile("oldKeystore");
+        Path newKeystoreSrc = MavenTestingUtils.getTestResourcePathFile("newKeystore");
+        Path target = keystoreDir.resolve("keystore");
+
         start(sslContextFactory ->
         {
-            Path keystorePath = keystoreDir.resolve("symlinkKeystore");
-            Files.createSymbolicLink(keystorePath, useKeystore("oldKeystore"));
-            sslContextFactory.setKeyStorePath(keystorePath.toString());
+            Files.copy(oldKeystoreSrc, target);
+            Files.createSymbolicLink(keystoreLink, target);
+            sslContextFactory.setKeyStorePath(keystoreLink.toString());
             sslContextFactory.setKeyStorePassword("storepwd");
             sslContextFactory.setKeyManagerPassword("keypwd");
         });
@@ -218,7 +230,8 @@ public class KeyStoreScannerTest
         assertThat(getExpiryYear(cert1), is(2015));
 
         // Change the target file of the symlink to the newKeystore which has a later expiry date.
-        useKeystore("newKeystore");
+        Files.copy(newKeystoreSrc, target, StandardCopyOption.REPLACE_EXISTING);
+        System.err.println("### Triggering scan");
         keystoreScanner.scan();
 
         // The scanner should have detected the updated keystore, expiry should be renewed.
@@ -232,11 +245,7 @@ public class KeyStoreScannerTest
         if (Files.exists(keystorePath))
             Files.delete(keystorePath);
 
-        if (keystore == null)
-            return null;
-
-        Files.copy(MavenTestingUtils.getTestResourceFile(keystore).toPath(), keystorePath);
-        keystorePath.toFile().deleteOnExit();
+        Files.copy(MavenTestingUtils.getTestResourcePath(keystore), keystorePath);
 
         if (!Files.exists(keystorePath))
             throw new IllegalStateException("keystore file was not created");
@@ -260,6 +269,7 @@ public class KeyStoreScannerTest
 
         HttpsURLConnection connection = (HttpsURLConnection)serverUrl.openConnection();
         connection.setHostnameVerifier((a, b) -> true);
+        connection.setRequestProperty("Connection", "close");
         connection.connect();
         Certificate[] certs = connection.getServerCertificates();
         connection.disconnect();

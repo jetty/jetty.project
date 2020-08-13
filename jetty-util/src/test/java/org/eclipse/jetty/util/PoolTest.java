@@ -60,28 +60,58 @@ public class PoolTest
     @MethodSource(value = "cacheSize")
     public void testAcquireRelease(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1,0);
-        pool.reserve(-1).enable("aaa", false);
+        System.err.println(cacheSize);
+    }
 
-        assertThat(pool.values().stream().findFirst().get().isIdle(), is(true));
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testAcquireRelease(int cacheSize)
+    {
+        Pool<String> pool = new Pool<>(1,cacheSize);
+        pool.reserve(-1).enable("aaa", false);
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(0));
+
         Pool<String>.Entry e1 = pool.acquire();
         assertThat(e1.getPooled(), equalTo("aaa"));
-        assertThat(pool.values().stream().findFirst().get().isIdle(), is(false));
-        assertThat(pool.acquire(), nullValue());
-        assertThat(pool.release(e1), is(true));
-        assertThat(pool.values().stream().findFirst().get().isIdle(), is(true));
-        assertThrows(IllegalStateException.class, () -> pool.release(e1));
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(1));
+
+        assertNull(pool.acquire());
+
+        e1.release();
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(0));
+
+        assertThrows(IllegalStateException.class, e1::release);
+
         Pool<String>.Entry e2 = pool.acquire();
         assertThat(e2.getPooled(), equalTo("aaa"));
-        assertThat(pool.release(e2), is(true));
-        assertThrows(NullPointerException.class, () -> pool.release(null));
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(1));
+
+        pool.release(e2);
+        assertThat(pool.size(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(0));
+
+        assertThrows(IllegalStateException.class, () -> pool.release(e2));
     }
 
     @ParameterizedTest
     @MethodSource(value = "cacheSize")
     public void testRemoveBeforeRelease(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1,0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         pool.reserve(-1).enable("aaa", false);
 
         Pool<String>.Entry e1 = pool.acquire();
@@ -94,7 +124,7 @@ public class PoolTest
     @MethodSource(value = "cacheSize")
     public void testCloseBeforeRelease(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(1,0);
+        Pool<String> pool = new Pool<>(1, cacheSize);
         pool.reserve(-1).enable("aaa", false);
 
         Pool<String>.Entry e1 = pool.acquire();
@@ -125,51 +155,51 @@ public class PoolTest
         // Reserve an entry
         Pool<String>.Entry e1 = pool.reserve(-1);
         assertThat(pool.size(), is(1));
-        assertThat(pool.getPendingConnectionCount(), is(1));
-        assertThat(pool.getIdleConnectionCount(), is(0));
-        assertThat(pool.getInUseConnectionCount(), is(0));
+        assertThat(pool.getReservedCount(), is(1));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(0));
 
         // max reservations
         assertNull(pool.reserve(1));
         assertThat(pool.size(), is(1));
-        assertThat(pool.getPendingConnectionCount(), is(1));
-        assertThat(pool.getIdleConnectionCount(), is(0));
-        assertThat(pool.getInUseConnectionCount(), is(0));
+        assertThat(pool.getReservedCount(), is(1));
+        assertThat(pool.getIdleCount(), is(0));
+        assertThat(pool.getInUseCount(), is(0));
 
         // enable the entry
         e1.enable("aaa", false);
         assertThat(pool.size(), is(1));
-        assertThat(pool.getPendingConnectionCount(), is(0));
-        assertThat(pool.getIdleConnectionCount(), is(1));
-        assertThat(pool.getInUseConnectionCount(), is(0));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(0));
 
         // Reserve another entry
         Pool<String>.Entry e2 = pool.reserve(-1);
         assertThat(pool.size(), is(2));
-        assertThat(pool.getPendingConnectionCount(), is(1));
-        assertThat(pool.getIdleConnectionCount(), is(1));
-        assertThat(pool.getInUseConnectionCount(), is(0));
+        assertThat(pool.getReservedCount(), is(1));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(0));
 
         // remove the reservation
         e2.remove();
         assertThat(pool.size(), is(1));
-        assertThat(pool.getPendingConnectionCount(), is(0));
-        assertThat(pool.getIdleConnectionCount(), is(1));
-        assertThat(pool.getInUseConnectionCount(), is(0));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(0));
 
         // Reserve another entry
         Pool<String>.Entry e3 = pool.reserve(-1);
         assertThat(pool.size(), is(2));
-        assertThat(pool.getPendingConnectionCount(), is(1));
-        assertThat(pool.getIdleConnectionCount(), is(1));
-        assertThat(pool.getInUseConnectionCount(), is(0));
+        assertThat(pool.getReservedCount(), is(1));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(0));
 
         // enable and acquire the entry
         e3.enable("bbb", true);
         assertThat(pool.size(), is(2));
-        assertThat(pool.getPendingConnectionCount(), is(0));
-        assertThat(pool.getIdleConnectionCount(), is(1));
-        assertThat(pool.getInUseConnectionCount(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getIdleCount(), is(1));
+        assertThat(pool.getInUseCount(), is(1));
 
         // can't reenable
         assertThrows(IllegalStateException.class, () -> e3.enable("xxx", false));
@@ -421,6 +451,30 @@ public class PoolTest
 
     @ParameterizedTest
     @MethodSource(value = "cacheSize")
+    public void testReleaseThenRemoveNonEnabledEntry(int cacheSize)
+    {
+        Pool<String> pool = new Pool<>(1, cacheSize);
+        Pool<String>.Entry e = pool.reserve(-1);
+        assertThat(pool.size(), is(1));
+        assertThat(pool.release(e), is(false));
+        assertThat(pool.size(), is(1));
+        assertThat(pool.remove(e), is(true));
+        assertThat(pool.size(), is(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
+    public void testRemoveNonEnabledEntry(int cacheSize)
+    {
+        Pool<String> pool = new Pool<>(1, cacheSize);
+        Pool<String>.Entry e = pool.reserve(-1);
+        assertThat(pool.size(), is(1));
+        assertThat(pool.remove(e), is(true));
+        assertThat(pool.size(), is(0));
+    }
+
+    @ParameterizedTest
+    @MethodSource(value = "cacheSize")
     public void testMultiplexMaxUsageReachedAcquireThenRemove(int cacheSize)
     {
         Pool<String> pool = new Pool<>(1, cacheSize);
@@ -504,8 +558,8 @@ public class PoolTest
         Pool<String>.Entry e1 = pool.acquire(e -> "e1");
         assertThat(e1.getPooled(), is("e1"));
         assertThat(pool.size(), is(1));
-        assertThat(pool.getPendingConnectionCount(), is(0));
-        assertThat(pool.getInUseConnectionCount(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getInUseCount(), is(1));
 
         assertThat(pool.acquire(e -> null), nullValue());
         assertThat(pool.size(), is(1));
@@ -513,14 +567,14 @@ public class PoolTest
         Pool<String>.Entry e2 = pool.acquire(e -> "e2");
         assertThat(e2.getPooled(), is("e2"));
         assertThat(pool.size(), is(2));
-        assertThat(pool.getPendingConnectionCount(), is(0));
-        assertThat(pool.getInUseConnectionCount(), is(2));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getInUseCount(), is(2));
 
         Pool<String>.Entry e3 = pool.acquire(e -> "e3");
         assertThat(e3, nullValue());
         assertThat(pool.size(), is(2));
-        assertThat(pool.getPendingConnectionCount(), is(0));
-        assertThat(pool.getInUseConnectionCount(), is(2));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getInUseCount(), is(2));
 
         assertThat(pool.acquire(e ->
         {
@@ -529,27 +583,27 @@ public class PoolTest
 
         e2.release();
         assertThat(pool.size(), is(2));
-        assertThat(pool.getPendingConnectionCount(), is(0));
-        assertThat(pool.getInUseConnectionCount(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getInUseCount(), is(1));
 
         Pool<String>.Entry e4 = pool.acquire(e -> "e4");
         assertThat(e4.getPooled(), is("e2"));
         assertThat(pool.size(), is(2));
-        assertThat(pool.getPendingConnectionCount(), is(0));
-        assertThat(pool.getInUseConnectionCount(), is(2));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getInUseCount(), is(2));
 
         pool.remove(e1);
         assertThat(pool.size(), is(1));
-        assertThat(pool.getPendingConnectionCount(), is(0));
-        assertThat(pool.getInUseConnectionCount(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getInUseCount(), is(1));
 
         assertThrows(IllegalStateException.class, () -> pool.acquire(e ->
         {
             throw new IllegalStateException();
         }));
         assertThat(pool.size(), is(1));
-        assertThat(pool.getPendingConnectionCount(), is(0));
-        assertThat(pool.getInUseConnectionCount(), is(1));
+        assertThat(pool.getReservedCount(), is(0));
+        assertThat(pool.getInUseCount(), is(1));
 
     }
 }

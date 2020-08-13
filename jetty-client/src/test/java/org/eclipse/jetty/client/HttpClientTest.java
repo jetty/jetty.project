@@ -1623,29 +1623,32 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void testIPv6Host(Scenario scenario) throws Exception
+    public void testIPv6HostWithHTTP10(Scenario scenario) throws Exception
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.setContentType("text/plain");
-                response.getOutputStream().print(request.getHeader("Host"));
+                response.getOutputStream().print(request.getServerName());
             }
         });
 
         URI uri = URI.create(scenario.getScheme() + "://[::1]:" + connector.getLocalPort() + "/path");
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.PUT)
+            .version(HttpVersion.HTTP_1_0)
+            .onRequestBegin(r -> r.getHeaders().remove(HttpHeader.HOST))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1), Matchers.startsWith("[::1]:"));
+        String content = response.getContentAsString();
+        assertThat(content, Matchers.startsWith("["));
+        assertThat(content, Matchers.endsWith(":1]"));
     }
 
     @ParameterizedTest

@@ -90,7 +90,7 @@ public class AbstractRestServlet extends HttpServlet
     {
         try
         {
-            return ("http://open.api.ebay.com/shopping?MaxEntries=3&appid=" + _appid +
+            return ("https://open.api.ebay.com/shopping?MaxEntries=3&appid=" + _appid +
                 "&version=573&siteid=0&callname=FindItems&responseencoding=JSON&QueryKeywords=" +
                 URLEncoder.encode(item, "UTF-8"));
         }
