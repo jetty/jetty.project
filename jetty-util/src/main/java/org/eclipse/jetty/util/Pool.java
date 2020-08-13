@@ -26,15 +26,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Locker;
 
 /**
- * A fast container of poolable objects, with optional support for
+ * A fast pool of objects, with optional support for
  * multiplexing, max usage count and thread-local caching.
  * <p>
  * The thread-local caching mechanism is about remembering up to N previously
@@ -44,6 +45,11 @@ import org.eclipse.jetty.util.log.Logger;
  * This can greatly speed up acquisition when both the acquisition and the
  * release of the entries is done on the same thread as this avoids iterating
  * the global, thread-safe collection of entries.
+ * </p>
+ * <p>
+ * When the method {@link #close()} is called, all {@link Closeable}s in the pool
+ * are also closed.
+ * </p>
  * @param <T>
  */
 public class Pool<T> implements AutoCloseable, Dumpable
@@ -60,9 +66,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * normally so the cache has no visible effect besides performance.
      */
     private final ThreadLocal<List<Entry>> cache;
-    private final Lock lock = new ReentrantLock();
+    private final Locker locker = new Locker();
     private final int maxEntries;
     private final int cacheSize;
+    private final AtomicInteger pending = new AtomicInteger();
     private volatile boolean closed;
     private volatile int maxMultiplex = 1;
     private volatile int maxUsageCount = -1;
@@ -85,7 +92,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     public int getPendingConnectionCount()
     {
-        return (int)sharedList.stream().filter(entry -> entry.getPooled() == null).count();
+        return pending.get();
     }
 
     public int getIdleConnectionCount()
@@ -95,7 +102,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     public int getInUseConnectionCount()
     {
-        return (int)sharedList.stream().filter(entry -> !entry.isIdle()).count();
+        return (int)sharedList.stream().filter(Entry::isInUse).count();
     }
 
     public int getMaxEntries()
@@ -128,9 +135,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * Create a new disabled slot into the pool. The returned entry
-     * won't be acquirable as long as {@link Entry#enable(Object)}
-     * has not been called.
+     * Create a new disabled slot into the pool.
+     * The returned entry must ultimately have the {@link Entry#enable(Object, boolean)}
+     * method called or be removed via {@link Entry#remove()} or {@link #remove(Entry)}.
      *
      * @param maxReservations the max desired number of reserved entries,
      * or a negative number to always trigger the reservation of a new entry.
@@ -140,23 +147,26 @@ public class Pool<T> implements AutoCloseable, Dumpable
      */
     public Entry reserve(int maxReservations)
     {
-        if (maxReservations >= 0 && getPendingConnectionCount() >= maxReservations)
-            return null;
+        try (Locker.Lock l = locker.lock())
+        {
+            if (closed)
+                return null;
 
-        lock.lock();
-        try
-        {
-            if (!closed && sharedList.size() < maxEntries)
-            {
-                Entry entry = new Entry();
-                sharedList.add(entry);
-                return entry;
-            }
-            return null;
-        }
-        finally
-        {
-            lock.unlock();
+            int space = maxEntries - sharedList.size();
+            if (space <= 0)
+                return null;
+
+            // The pending count is an AtomicInteger that is only ever incremented here with
+            // the lock held.  Thus the pending count can be reduced immediately after the
+            // test below, but never incremented.  Thus the maxReservations limit can be
+            // enforced.
+            if (maxReservations >= 0 && pending.get() >= maxReservations)
+                return null;
+            pending.incrementAndGet();
+
+            Entry entry = new Entry();
+            sharedList.add(entry);
+            return entry;
         }
     }
 
@@ -186,7 +196,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     /**
      * Acquire an entry from the pool.
-     *
+     * Only enabled entries will be returned from this method and their enable method must not be called.
      * @return an entry from the pool or null if none is available.
      */
     public Entry acquire()
@@ -213,6 +223,43 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 return entry;
         }
         return null;
+    }
+
+    /**
+     * Utility method to acquire an entry from the pool,
+     * reserving and creating a new entry if necessary.
+     *
+     * @param creator a function to create the pooled value for a reserved entry.
+     * @return an entry from the pool or null if none is available.
+     */
+    public Entry acquire(Function<Pool<T>.Entry, T> creator)
+    {
+        Entry entry = acquire();
+        if (entry != null)
+            return entry;
+
+        entry = reserve(getMaxEntries());
+        if (entry == null)
+            return null;
+
+        T value = null;
+        try
+        {
+            value = creator.apply(entry);
+        }
+        catch (Throwable th)
+        {
+            Pool.this.remove(entry);
+            throw th;
+        }
+
+        if (value == null)
+        {
+            Pool.this.remove(entry);
+            return null;
+        }
+
+        return entry.enable(value, true) ? entry : null;
     }
 
     /**
@@ -281,32 +328,18 @@ public class Pool<T> implements AutoCloseable, Dumpable
     public void close()
     {
         List<Entry> copy;
-        lock.lock();
-        try
+        try (Locker.Lock l = locker.lock())
         {
             closed = true;
             copy = new ArrayList<>(sharedList);
             sharedList.clear();
-        }
-        finally
-        {
-            lock.unlock();
         }
 
         // iterate the copy and close its entries
         for (Entry entry : copy)
         {
             if (entry.tryRemove() && entry.pooled instanceof Closeable)
-            {
-                try
-                {
-                    ((Closeable)entry.pooled).close();
-                }
-                catch (IOException e)
-                {
-                    LOGGER.warn("Error closing entry {}", entry, e);
-                }
-            }
+                IO.close((Closeable)entry.pooled);
         }
     }
 
@@ -334,13 +367,52 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
     public class Entry
     {
-        // hi: positive=open/maxUsage counter,negative=closed lo: multiplexing counter
+        // hi: positive=open/maxUsage counter; negative=closed; MIN_VALUE pending
+        // lo: multiplexing counter
         private final AtomicBiInteger state;
-        private volatile T pooled;
 
-        public Entry()
+        // The pooled item.  This is not volatile as it is set once and then never changed.
+        // Other threads accessing must check the state field above first, so a good before/after
+        // relationship exists to make a memory barrier.
+        private T pooled;
+
+        Entry()
         {
-            this.state = new AtomicBiInteger(-1, 0);
+            this.state = new AtomicBiInteger(Integer.MIN_VALUE, 0);
+        }
+
+        /** Enable a reserved entry {@link Entry}.
+         * An entry returned from the {@link #reserve(int)} method must be enabled with this method,
+         * once and only once, before it is usable by the pool.
+         * The entry may be enabled and not acquired, in which case it is immediately available to be
+         * acquired, potentially by another thread; or it can be enabled and acquired atomically so that
+         * no other thread can acquired it, although the acquire may still fail if the pool has been closed.
+         * @param pooled The pooled item for the entry
+         * @param acquire If true the entry is atomically enabled and acquired.
+         * @return true If the entry was enabled.
+         * @throws IllegalStateException if the entry was already enabled
+         */
+        public boolean enable(T pooled, boolean acquire)
+        {
+            Objects.requireNonNull(pooled);
+
+            if (state.getHi() != Integer.MIN_VALUE)
+            {
+                if (state.getHi() == -1)
+                    return false; // Pool has been closed
+                throw new IllegalStateException("Entry already enabled: " + this);
+            }
+            this.pooled = pooled;
+            int usage = acquire ? 1 : 0;
+            if (!state.compareAndSet(Integer.MIN_VALUE, usage, 0, usage))
+            {
+                this.pooled = null;
+                if (state.getHi() == -1)
+                    return false; // Pool has been closed
+                throw new IllegalStateException("Entry already enabled: " + this);
+            }
+            pending.decrementAndGet();
+            return true;
         }
 
         public T getPooled()
@@ -348,13 +420,24 @@ public class Pool<T> implements AutoCloseable, Dumpable
             return pooled;
         }
 
-        public void enable(T pooled)
+        /**
+         * Release the entry.
+         * This is equivalent to calling {@link Pool#release(Pool.Entry)} passing this entry.
+         * @return true if released.
+         */
+        public boolean release()
         {
-            if (!isClosed())
-                throw new IllegalStateException("Open entries cannot be enabled : " + this);
-            Objects.requireNonNull(pooled);
-            this.pooled = pooled;
-            state.set(0, 0);
+            return Pool.this.release(this);
+        }
+
+        /**
+         * Remove the entry.
+         * This is equivalent to calling {@link Pool#remove(Pool.Entry)} passing this entry.
+         * @return true if remove.
+         */
+        public boolean remove()
+        {
+            return Pool.this.remove(this);
         }
 
         /**
@@ -364,7 +447,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
          * the multiplex count is maxMultiplex and the entry is not closed,
          * false otherwise.
          */
-        public boolean tryAcquire()
+        boolean tryAcquire()
         {
             while (true)
             {
@@ -387,7 +470,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
          * @return true if the entry was released,
          * false if {@link #tryRemove()} should be called.
          */
-        public boolean tryRelease()
+        boolean tryRelease()
         {
             int newMultiplexingCount;
             int usageCount;
@@ -416,7 +499,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
          * Try to mark the entry as removed.
          * @return true if the entry has to be removed from the containing pool, false otherwise.
          */
-        public boolean tryRemove()
+        boolean tryRemove()
         {
             while (true)
             {
@@ -427,7 +510,11 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
                 boolean removed = state.compareAndSet(usageCount, -1, multiplexCount, newMultiplexCount);
                 if (removed)
+                {
+                    if (usageCount == Integer.MIN_VALUE)
+                        pending.decrementAndGet();
                     return newMultiplexCount == 0;
+                }
             }
         }
 
@@ -438,7 +525,14 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
         public boolean isIdle()
         {
-            return state.getLo() <= 0;
+            long encoded = state.get();
+            return AtomicBiInteger.getHi(encoded) >= 0 && AtomicBiInteger.getLo(encoded) == 0;
+        }
+
+        public boolean isInUse()
+        {
+            long encoded = state.get();
+            return AtomicBiInteger.getHi(encoded) >= 0 && AtomicBiInteger.getLo(encoded) > 0;
         }
 
         public int getUsageCount()
@@ -450,8 +544,12 @@ public class Pool<T> implements AutoCloseable, Dumpable
         public String toString()
         {
             long encoded = state.get();
-            return super.toString() + " stateHi=" + AtomicBiInteger.getHi(encoded) +
-                " stateLo=" + AtomicBiInteger.getLo(encoded) + " pooled=" + pooled;
+            return String.format("%s@%x{hi=%d,lo=%d.p=%s}",
+                getClass().getSimpleName(),
+                hashCode(),
+                AtomicBiInteger.getHi(encoded),
+                AtomicBiInteger.getLo(encoded),
+                pooled);
         }
     }
 }

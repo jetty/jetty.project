@@ -204,16 +204,9 @@ public class XmlConfiguration
 
     ConfigurationParser getParser()
     {
-        Pool<ConfigurationParser>.Entry entry = __parsers.acquire();
+        Pool<ConfigurationParser>.Entry entry = __parsers.acquire(ConfigurationParser::new);
         if (entry == null)
-        {
-            entry = __parsers.reserve(__parsers.getMaxEntries());
-            if (entry != null)
-                entry.enable(new ConfigurationParser(entry));
-            if (entry == null || !entry.tryAcquire())
-                return new ConfigurationParser(null);
-        }
-
+            return new ConfigurationParser(null);
         return entry.getPooled();
     }
 
