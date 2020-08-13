@@ -1125,6 +1125,14 @@ public class HttpChannelState
         }
     }
 
+    public boolean isDispatched()
+    {
+        synchronized (this)
+        {
+            return _requestState == RequestState.DISPATCH;
+        }
+    }
+
     boolean isCompleted()
     {
         synchronized (this)
