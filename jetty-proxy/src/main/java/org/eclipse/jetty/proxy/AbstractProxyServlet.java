@@ -554,10 +554,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
         // Retain only the version if the protocol is HTTP.
         String protocolPart = parts.length == 2 && "HTTP".equalsIgnoreCase(parts[0]) ? parts[1] : protocol;
         String viaHeaderValue = protocolPart + " " + getViaHost();
-        proxyRequest.getHeaders().computeField(HttpHeader.VIA.asString(), (name, viaFields) ->
+        proxyRequest.getHeaders().computeField(HttpHeader.VIA, (header, viaFields) ->
         {
             if (viaFields == null || viaFields.isEmpty())
-                return new HttpField(name, viaHeaderValue);
+                return new HttpField(header, viaHeaderValue);
             String separator = ", ";
             String newValue = viaFields.stream()
                 .flatMap(field -> Stream.of(field.getValues()))

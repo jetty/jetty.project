@@ -90,7 +90,7 @@ public class HttpFields implements Iterable<HttpField>
     }
 
     /**
-     * <p>Computes a single field for the given HTTP header name and for existing fields with the same name.</p>
+     * <p>Computes a single field for the given HttpHeader and for existing fields with the same header.</p>
      *
      * <p>The compute function receives the field name and a list of fields with the same name
      * so that their values can be used to compute the value of the field that is returned
@@ -161,17 +161,34 @@ public class HttpFields implements Iterable<HttpField>
      * httpFields.computeField("Connection", (name, fields) -&gt; null);
      * </pre>
      *
-     * @param name the HTTP header name
+     * @param header the HTTP header
      * @param computeFn the compute function
      */
+    public void computeField(HttpHeader header, BiFunction<HttpHeader, List<HttpField>, HttpField> computeFn)
+    {
+        computeField(header, computeFn, (f, h) -> f.getHeader() == h);
+    }
+
+    /**
+     * <p>Computes a single field for the given HTTP header name and for existing fields with the same name.</p>
+     *
+     * @param name the HTTP header name
+     * @param computeFn the compute function
+     * @see #computeField(HttpHeader, BiFunction)
+     */
     public void computeField(String name, BiFunction<String, List<HttpField>, HttpField> computeFn)
+    {
+        computeField(name, computeFn, HttpField::is);
+    }
+
+    private <T> void computeField(T header, BiFunction<T, List<HttpField>, HttpField> computeFn, BiFunction<HttpField, T, Boolean> matcher)
     {
         // Look for first occurrence
         int first = -1;
         for (int i = 0; i < _size; i++)
         {
             HttpField f = _fields[i];
-            if (f.is(name))
+            if (matcher.apply(f, header))
             {
                 first = i;
                 break;
@@ -181,7 +198,7 @@ public class HttpFields implements Iterable<HttpField>
         // If the header is not found, add a new one;
         if (first < 0)
         {
-            HttpField newField = computeFn.apply(name, null);
+            HttpField newField = computeFn.apply(header, null);
             if (newField != null)
                 add(newField);
             return;
@@ -192,7 +209,7 @@ public class HttpFields implements Iterable<HttpField>
         for (int i = first + 1; i < _size; i++)
         {
             HttpField f = _fields[i];
-            if (f.is(name))
+            if (matcher.apply(f, header))
             {
                 if (found == null)
                 {
@@ -211,7 +228,7 @@ public class HttpFields implements Iterable<HttpField>
         else
             found = Collections.unmodifiableList(found);
 
-        HttpField newField = computeFn.apply(name, found);
+        HttpField newField = computeFn.apply(header, found);
         if (newField == null)
             remove(first);
         else

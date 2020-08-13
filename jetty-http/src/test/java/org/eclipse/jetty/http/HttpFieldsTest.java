@@ -868,7 +868,7 @@ public class HttpFieldsTest
     }
 
     @Test
-    public void testCompute()
+    public void testComputeField()
     {
         HttpFields header = new HttpFields();
         assertThat(header.size(), is(0));
