@@ -103,7 +103,7 @@ public class HttpFields implements Iterable<HttpField>
      * <p>This method can be used to {@link #put(HttpField) put} a new field (or blindly replace its value):</p>
      * <pre>
      * httpFields.computeField("X-New-Header",
-     *     (name, fields) -> new HttpField(name, "NewValue"));
+     *     (name, fields) -&gt; new HttpField(name, "NewValue"));
      * </pre>
      *
      * <p>This method can be used to coalesce many fields into one:</p>
@@ -116,7 +116,7 @@ public class HttpFields implements Iterable<HttpField>
      * User-Agent: Jetty
      *
      * // Computation:
-     * httpFields.computeField("Cookie", (name, fields) ->
+     * httpFields.computeField("Cookie", (name, fields) -&gt;
      * {
      *     // No cookies, nothing to do.
      *     if (fields == null)
@@ -124,7 +124,7 @@ public class HttpFields implements Iterable<HttpField>
      *
      *     // Coalesces all cookies.
      *     String coalesced = fields.stream()
-     *         .flatMap(field -> Stream.of(field.getValues()))
+     *         .flatMap(field -&gt; Stream.of(field.getValues()))
      *         .collect(Collectors.joining(", "));
      *
      *     // Returns a single Cookie header with all cookies.
@@ -140,7 +140,7 @@ public class HttpFields implements Iterable<HttpField>
      *
      * <p>This method can be used to replace a field:</p>
      * <pre>
-     * httpFields.computeField("X-Length", (name, fields) ->
+     * httpFields.computeField("X-Length", (name, fields) -&gt;
      * {
      *     if (fields == null)
      *         return null;
@@ -158,7 +158,7 @@ public class HttpFields implements Iterable<HttpField>
      *
      * <p>This method can be used to remove a field:</p>
      * <pre>
-     * httpFields.computeField("Connection", (name, fields) -> null);
+     * httpFields.computeField("Connection", (name, fields) -&gt; null);
      * </pre>
      *
      * @param name the HTTP header name
