@@ -71,9 +71,7 @@ public class ProxyServlet extends AbstractProxyServlet
             return;
         }
 
-        Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
-            .method(request.getMethod())
-            .version(HttpVersion.fromString(request.getProtocol()));
+        Request proxyRequest = newProxyRequest(request, rewrittenTarget);
 
         copyRequestHeaders(request, proxyRequest);
 
@@ -92,7 +90,6 @@ public class ProxyServlet extends AbstractProxyServlet
                 // that sends the 100 Continue to the client.
                 AsyncRequestContent delegate = new AsyncRequestContent();
                 proxyRequest.body(delegate);
-                proxyRequest.attribute(CLIENT_REQUEST_ATTRIBUTE, request);
                 proxyRequest.attribute(CONTINUE_ACTION_ATTRIBUTE, (Runnable)() ->
                 {
                     try

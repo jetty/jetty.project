@@ -30,6 +30,7 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
@@ -38,6 +39,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -878,5 +880,45 @@ public class HttpFieldsTest
         assertThat(i.next().getName(), is("name3"));
         assertThat(i.next().getName(), is("name4"));
         assertThat(i.hasNext(), is(false));
+    }
+
+    @Test
+    public void testStream()
+    {
+        HttpFields.Mutable fields = HttpFields.build();
+        assertThat(fields.stream().count(), is(0L));
+        fields.put("name1", "valueA");
+        fields.put("name2", "valueB");
+        fields.add("name3", "valueC");
+        assertThat(fields.stream().count(), is(3L));
+        assertThat(fields.stream().map(HttpField::getName).filter("name2"::equalsIgnoreCase).count(), is(1L));
+    }
+
+    @Test
+    public void testComputeField()
+    {
+        HttpFields.Mutable fields = HttpFields.build();
+        assertThat(fields.size(), is(0));
+
+        fields.computeField("Test", (n, f) -> null);
+        assertThat(fields.size(), is(0));
+
+        fields.add(new HttpField("Before", "value"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value"));
+
+        fields.computeField("Test", (n, f) -> new HttpField(n, "one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "Test: one"));
+
+        fields.add(new HttpField("After", "value"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "Test: one", "After: value"));
+
+        fields.add(new HttpField("Test", "extra"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "Test: one", "After: value", "Test: extra"));
+
+        fields.computeField("Test", (n, f) -> new HttpField("TEST", "count=" + f.size()));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "TEST: count=2", "After: value"));
+
+        fields.computeField("TEST", (n, f) -> null);
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "After: value"));
     }
 }
