@@ -292,6 +292,11 @@ public class HttpField
         return _name.equalsIgnoreCase(field.getName());
     }
 
+    public boolean is(String name)
+    {
+        return _name.equalsIgnoreCase(name);
+    }
+
     private int nameHashCode()
     {
         int h = this.hash;
