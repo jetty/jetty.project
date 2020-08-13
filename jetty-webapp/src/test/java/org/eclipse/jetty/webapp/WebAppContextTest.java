@@ -91,42 +91,42 @@ public class WebAppContextTest
         assertNotNull(webDefaultXml);
         assertNotNull(overrideWebXml);
         assertNotNull(webXmlEmptyPath);
-        
+
         try
         {
             WebAppContext wac = new WebAppContext();
             wac.setResourceBase(MavenTestingUtils.getTargetTestingDir().getAbsolutePath());
             server.setHandler(wac);
-            
+
             //test that an empty default-context-path defaults to root
             wac.setDescriptor(webXmlEmptyPath.getAbsolutePath());
             server.start();
             assertEquals("/", wac.getContextPath());
-            
+
             server.stop();
-            
+
             //test web-default.xml value is used
             wac.setDescriptor(null);
             wac.setDefaultsDescriptor(webDefaultXml.getAbsolutePath());
             server.start();
             assertEquals("/one", wac.getContextPath());
-            
+
             server.stop();
-            
+
             //test web.xml value is used
             wac.setDescriptor(webXml.getAbsolutePath());
             server.start();
             assertEquals("/two", wac.getContextPath());
-            
+
             server.stop();
-            
+
             //test override-web.xml value is used
             wac.setOverrideDescriptor(overrideWebXml.getAbsolutePath());
             server.start();
             assertEquals("/three", wac.getContextPath());
 
             server.stop();
-            
+
             //test that explicitly set context path is used instead
             wac.setContextPath("/foo");
             server.start();
@@ -314,7 +314,7 @@ public class WebAppContextTest
         try
         {
             String response = connector.getResponse("GET http://localhost:8080 HTTP/1.1\r\nHost: localhost:8080\r\nConnection: close\r\n\r\n");
-            assertThat(response, containsString("200 OK"));
+            assertThat("Response OK", response, containsString("200 OK"));
         }
         finally
         {
