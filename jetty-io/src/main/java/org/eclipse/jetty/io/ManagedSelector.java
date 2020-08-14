@@ -888,7 +888,11 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             this.channel = channel;
             this.attachment = attachment;
-            this.timeout = ManagedSelector.this._selectorManager.getScheduler().schedule(this, ManagedSelector.this._selectorManager.getConnectTimeout(), TimeUnit.MILLISECONDS);
+            long timeout = ManagedSelector.this._selectorManager.getConnectTimeout();
+            if (timeout > 0)
+                this.timeout = ManagedSelector.this._selectorManager.getScheduler().schedule(this, timeout, TimeUnit.MILLISECONDS);
+            else
+                this.timeout = null;
         }
 
         @Override
@@ -919,7 +923,8 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         {
             if (failed.compareAndSet(false, true))
             {
-                timeout.cancel();
+                if (timeout != null)
+                    timeout.cancel();
                 IO.close(channel);
                 ManagedSelector.this._selectorManager.connectionFailed(channel, failure, attachment);
             }
