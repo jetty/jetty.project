@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.io.IncludeExcludeConnectionStatistics;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
@@ -42,7 +42,6 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
-import org.eclipse.jetty.websocket.common.util.WebSocketConnectionStatistics;
 import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.AfterEach;
@@ -59,17 +58,19 @@ public class WebSocketStatsTest
     private Server server;
     private ServerConnector connector;
     private WebSocketClient client;
-    private ConnectionStatistics statistics;
+    private IncludeExcludeConnectionStatistics statistics;
 
     @BeforeEach
     public void start() throws Exception
     {
-        statistics = new WebSocketConnectionStatistics()
+        statistics = new IncludeExcludeConnectionStatistics();
+        statistics.include(AbstractWebSocketConnection.class);
+
+        Connection.Listener.Adapter wsCloseListener = new Connection.Listener.Adapter()
         {
             @Override
             public void onClosed(Connection connection)
             {
-                super.onClosed(connection);
                 if (connection instanceof AbstractWebSocketConnection)
                     wsConnectionClosed.countDown();
             }
@@ -78,6 +79,7 @@ public class WebSocketStatsTest
         server = new Server();
         connector = new ServerConnector(server);
         connector.addBean(statistics);
+        connector.addBean(wsCloseListener);
         server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
