@@ -396,6 +396,38 @@ public class ConnectionPoolTest
         assertEquals(0, connectionPool.getConnectionCount());
     }
 
+    @ParameterizedTest
+    @MethodSource("pools")
+    public void testIdleTimeoutNoRequests(ConnectionPoolFactory factory) throws Exception
+    {
+        startServer(new EmptyServerHandler());
+        startClient(destination ->
+        {
+            try
+            {
+                ConnectionPool connectionPool = factory.factory.newConnectionPool(destination);
+                connectionPool.preCreateConnections(1).get();
+                return connectionPool;
+            }
+            catch (Exception x)
+            {
+                throw new RuntimeException(x);
+            }
+        });
+        long idleTimeout = 1000;
+        client.setIdleTimeout(idleTimeout);
+
+        // Trigger the creation of a destination, that will create the connection pool.
+        HttpDestination destination = client.resolveDestination(new Origin("http", "localhost", connector.getLocalPort()));
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
+        assertEquals(1, connectionPool.getConnectionCount());
+
+        // Wait for the pre-created connections to idle timeout.
+        Thread.sleep(idleTimeout + idleTimeout / 2);
+
+        assertEquals(0, connectionPool.getConnectionCount());
+    }
+
     private static class ConnectionPoolFactory
     {
         private final String name;

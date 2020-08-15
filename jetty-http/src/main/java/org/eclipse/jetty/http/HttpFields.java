@@ -26,9 +26,12 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -119,7 +122,7 @@ public interface HttpFields extends Iterable<HttpField>
     {
         for (HttpField f : this)
         {
-            if (f.getName().equalsIgnoreCase(name) && f.contains(value))
+            if (f.is(name) && f.contains(value))
                 return true;
         }
         return false;
@@ -149,7 +152,7 @@ public interface HttpFields extends Iterable<HttpField>
     {
         for (HttpField f : this)
         {
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.is(name))
                 return true;
         }
         return false;
@@ -169,7 +172,7 @@ public interface HttpFields extends Iterable<HttpField>
     {
         for (HttpField f : this)
         {
-            if (f.getName().equalsIgnoreCase(header))
+            if (f.is(header))
                 return f.getValue();
         }
         return null;
@@ -211,7 +214,7 @@ public interface HttpFields extends Iterable<HttpField>
         QuotedCSV values = null;
         for (HttpField f : this)
         {
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.is(name))
             {
                 if (values == null)
                     values = new QuotedCSV(keepQuotes);
@@ -266,7 +269,7 @@ public interface HttpFields extends Iterable<HttpField>
     {
         for (HttpField f : this)
         {
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.is(name))
                 return f;
         }
         return null;
@@ -301,7 +304,19 @@ public interface HttpFields extends Iterable<HttpField>
      */
     default List<HttpField> getFields(HttpHeader header)
     {
-        return stream().filter(f -> f.getHeader().equals(header)).collect(Collectors.toList());
+        return getFields(header, (f, h) -> f.getHeader() == h);
+    }
+
+    default List<HttpField> getFields(String name)
+    {
+        return getFields(name, (f, n) -> f.is(name));
+    }
+
+    private <T> List<HttpField> getFields(T header, BiPredicate<HttpField, T> predicate)
+    {
+        return stream()
+            .filter(f -> predicate.test(f, header))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -380,7 +395,7 @@ public interface HttpFields extends Iterable<HttpField>
         QuotedQualityCSV values = null;
         for (HttpField f : this)
         {
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.is(name))
             {
                 if (values == null)
                     values = new QuotedQualityCSV();
@@ -411,7 +426,7 @@ public interface HttpFields extends Iterable<HttpField>
                 while (i.hasNext())
                 {
                     HttpField f = i.next();
-                    if (f.getName().equalsIgnoreCase(name) && f.getValue() != null)
+                    if (f.is(name) && f.getValue() != null)
                     {
                         _field = f;
                         return true;
@@ -462,7 +477,7 @@ public interface HttpFields extends Iterable<HttpField>
         final List<String> list = new ArrayList<>();
         for (HttpField f : this)
         {
-            if (f.getName().equalsIgnoreCase(name))
+            if (f.is(name))
                 list.add(f.getValue());
         }
         return list;
@@ -685,7 +700,7 @@ public interface HttpFields extends Iterable<HttpField>
             QuotedCSV existing = null;
             for (HttpField f : this)
             {
-                if (f.getName().equalsIgnoreCase(name))
+                if (f.is(name))
                 {
                     if (existing == null)
                         existing = new QuotedCSV(false);
@@ -781,7 +796,7 @@ public interface HttpFields extends Iterable<HttpField>
                 {
                     if (_size == 0)
                         throw new IllegalStateException();
-                    System.arraycopy(_fields, _index, _fields, _index - 1, _size-- - _index--);
+                    Mutable.this.remove(--_index);
                 }
             };
         }
@@ -916,6 +931,152 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         /**
+         * <p>Computes a single field for the given HttpHeader and for existing fields with the same header.</p>
+         *
+         * <p>The compute function receives the field name and a list of fields with the same name
+         * so that their values can be used to compute the value of the field that is returned
+         * by the compute function.
+         * If the compute function returns {@code null}, the fields with the given name are removed.</p>
+         * <p>This method comes handy when you want to add an HTTP header if it does not exist,
+         * or add a value if the HTTP header already exists, similarly to
+         * {@link Map#compute(Object, BiFunction)}.</p>
+         *
+         * <p>This method can be used to {@link #put(HttpField) put} a new field (or blindly replace its value):</p>
+         * <pre>
+         * httpFields.computeField("X-New-Header",
+         *     (name, fields) -&gt; new HttpField(name, "NewValue"));
+         * </pre>
+         *
+         * <p>This method can be used to coalesce many fields into one:</p>
+         * <pre>
+         * // Input:
+         * GET / HTTP/1.1
+         * Host: localhost
+         * Cookie: foo=1
+         * Cookie: bar=2,baz=3
+         * User-Agent: Jetty
+         *
+         * // Computation:
+         * httpFields.computeField("Cookie", (name, fields) -&gt;
+         * {
+         *     // No cookies, nothing to do.
+         *     if (fields == null)
+         *         return null;
+         *
+         *     // Coalesces all cookies.
+         *     String coalesced = fields.stream()
+         *         .flatMap(field -&gt; Stream.of(field.getValues()))
+         *         .collect(Collectors.joining(", "));
+         *
+         *     // Returns a single Cookie header with all cookies.
+         *     return new HttpField(name, coalesced);
+         * }
+         *
+         * // Output:
+         * GET / HTTP/1.1
+         * Host: localhost
+         * Cookie: foo=1, bar=2, baz=3
+         * User-Agent: Jetty
+         * </pre>
+         *
+         * <p>This method can be used to replace a field:</p>
+         * <pre>
+         * httpFields.computeField("X-Length", (name, fields) -&gt;
+         * {
+         *     if (fields == null)
+         *         return null;
+         *
+         *     // Get any value among the X-Length headers.
+         *     String length = fields.stream()
+         *         .map(HttpField::getValue)
+         *         .findAny()
+         *         .orElse("0");
+         *
+         *     // Replace X-Length headers with X-Capacity header.
+         *     return new HttpField("X-Capacity", length);
+         * });
+         * </pre>
+         *
+         * <p>This method can be used to remove a field:</p>
+         * <pre>
+         * httpFields.computeField("Connection", (name, fields) -&gt; null);
+         * </pre>
+         *
+         * @param header the HTTP header
+         * @param computeFn the compute function
+         */
+        public void computeField(HttpHeader header, BiFunction<HttpHeader, List<HttpField>, HttpField> computeFn)
+        {
+            computeField(header, computeFn, (f, h) -> f.getHeader() == h);
+        }
+
+        /**
+         * <p>Computes a single field for the given HTTP header name and for existing fields with the same name.</p>
+         *
+         * @param name the HTTP header name
+         * @param computeFn the compute function
+         * @see #computeField(HttpHeader, BiFunction)
+         */
+        public void computeField(String name, BiFunction<String, List<HttpField>, HttpField> computeFn)
+        {
+            computeField(name, computeFn, HttpField::is);
+        }
+
+        private <T> void computeField(T header, BiFunction<T, List<HttpField>, HttpField> computeFn, BiPredicate<HttpField, T> matcher)
+        {
+            // Look for first occurrence
+            int first = -1;
+            for (int i = 0; i < _size; i++)
+            {
+                HttpField f = _fields[i];
+                if (matcher.test(f, header))
+                {
+                    first = i;
+                    break;
+                }
+            }
+
+            // If the header is not found, add a new one;
+            if (first < 0)
+            {
+                HttpField newField = computeFn.apply(header, null);
+                if (newField != null)
+                    add(newField);
+                return;
+            }
+
+            // Are there any more occurrences?
+            List<HttpField> found = null;
+            for (int i = first + 1; i < _size; i++)
+            {
+                HttpField f = _fields[i];
+                if (matcher.test(f, header))
+                {
+                    if (found == null)
+                    {
+                        found = new ArrayList<>();
+                        found.add(_fields[first]);
+                    }
+                    // Remember and remove additional fields
+                    found.add(f);
+                    remove(i--);
+                }
+            }
+
+            // If no additional fields were found, handle singleton case
+            if (found == null)
+                found = Collections.singletonList(_fields[first]);
+            else
+                found = Collections.unmodifiableList(found);
+
+            HttpField newField = computeFn.apply(header, found);
+            if (newField == null)
+                remove(first);
+            else
+                _fields[first] = newField;
+        }
+
+        /**
          * Remove a field.
          *
          * @param name the field to remove
@@ -927,7 +1088,7 @@ public interface HttpFields extends Iterable<HttpField>
             {
                 HttpField f = _fields[i];
                 if (f.getHeader() == name)
-                    System.arraycopy(_fields, i + 1, _fields, i, _size-- - i-- - 1);
+                    remove(i--);
             }
             return this;
         }
@@ -938,7 +1099,7 @@ public interface HttpFields extends Iterable<HttpField>
             {
                 HttpField f = _fields[i];
                 if (fields.contains(f.getHeader()))
-                    System.arraycopy(_fields, i + 1, _fields, i, _size-- - i-- - 1);
+                    remove(i--);
             }
             return this;
         }
@@ -954,10 +1115,17 @@ public interface HttpFields extends Iterable<HttpField>
             for (int i = 0; i < _size; i++)
             {
                 HttpField f = _fields[i];
-                if (f.getName().equalsIgnoreCase(name))
-                    System.arraycopy(_fields, i + 1, _fields, i, _size-- - i-- - 1);
+                if (f.is(name))
+                    remove(i--);
             }
             return this;
+        }
+
+        private void remove(int i)
+        {
+            _size--;
+            System.arraycopy(_fields, i + 1, _fields, i, _size - i);
+            _fields[_size] = null;
         }
 
         public int size()
@@ -1077,9 +1245,7 @@ public interface HttpFields extends Iterable<HttpField>
             {
                 if (_current < 0)
                     throw new IllegalStateException();
-                _size--;
-                System.arraycopy(_fields, _current + 1, _fields, _current, _size - _current);
-                _fields[_size] = null;
+                Mutable.this.remove(_current);
                 _cursor = _current;
                 _current = -1;
             }
@@ -1141,7 +1307,7 @@ public interface HttpFields extends Iterable<HttpField>
         {
             // default impl overridden for efficiency
             for (HttpField f : _fields)
-                if (f.getName().equalsIgnoreCase(header))
+                if (f.is(header))
                     return f.getValue();
             return null;
         }
@@ -1171,7 +1337,7 @@ public interface HttpFields extends Iterable<HttpField>
         {
             // default impl overridden for efficiency
             for (HttpField f : _fields)
-                if (f.getName().equalsIgnoreCase(name))
+                if (f.is(name))
                     return f;
             return null;
         }
