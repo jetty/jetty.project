@@ -51,7 +51,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-exports org.eclipse.jetty.websocket.jakarta.server/org.eclipse.jetty.websocket.jakarta.server.examples=org.eclipse.jetty.websocket.jakarta.common --add-reads org.eclipse.jetty.websocket.jakarta.server=org.eclipse.jetty.security --add-reads org.eclipse.jetty.websocket.jakarta.common=org.eclipse.jetty.websocket.jakarta.server
+            @{argLine} ${jetty.surefire.argLine} --add-reads org.eclipse.jetty.websocket.jakarta.server=org.eclipse.jetty.security --add-reads org.eclipse.jetty.websocket.jakarta.common=org.eclipse.jetty.websocket.jakarta.server
           </argLine>
         </configuration>
       </plugin>
