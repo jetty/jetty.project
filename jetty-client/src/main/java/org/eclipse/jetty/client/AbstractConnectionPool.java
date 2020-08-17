@@ -201,7 +201,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
             public void failed(Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Connection " + pool.size() + "/" + pool.getMaxEntries() + " creation failed", x);
+                    LOG.debug("Connection {}/{} creation failed", pool.size(), pool.getMaxEntries(), x);
                 entry.remove();
                 future.completeExceptionally(x);
                 requester.failed(x);
