@@ -690,7 +690,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the max time, in milliseconds, a connection can take to connect to destinations
+     * @return the max time, in milliseconds, a connection can take to connect to destinations. Zero value means infinite timeout.
      */
     @ManagedAttribute("The timeout, in milliseconds, for connect() operations")
     public long getConnectTimeout()
@@ -699,7 +699,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param connectTimeout the max time, in milliseconds, a connection can take to connect to destinations
+     * @param connectTimeout the max time, in milliseconds, a connection can take to connect to destinations. Zero value means infinite timeout.
      * @see java.net.Socket#connect(SocketAddress, int)
      */
     public void setConnectTimeout(long connectTimeout)

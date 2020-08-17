@@ -866,4 +866,33 @@ public class HttpFieldsTest
         assertThat(header.stream().count(), is(3L));
         assertThat(header.stream().map(HttpField::getName).filter("name2"::equalsIgnoreCase).count(), is(1L));
     }
+
+    @Test
+    public void testComputeField()
+    {
+        HttpFields header = new HttpFields();
+        assertThat(header.size(), is(0));
+
+        header.computeField("Test", (n, f) -> null);
+        assertThat(header.size(), is(0));
+
+        header.add(new HttpField("Before", "value"));
+        assertThat(header.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value"));
+
+        header.computeField("Test", (n, f) -> new HttpField(n, "one"));
+        assertThat(header.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "Test: one"));
+
+        header.add(new HttpField("After", "value"));
+        assertThat(header.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "Test: one", "After: value"));
+
+        header.add(new HttpField("Test", "two"));
+        header.add(new HttpField("Test", "three"));
+        assertThat(header.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "Test: one", "After: value", "Test: two", "Test: three"));
+
+        header.computeField("Test", (n, f) -> new HttpField("TEST", "count=" + f.size()));
+        assertThat(header.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "TEST: count=3", "After: value"));
+
+        header.computeField("TEST", (n, f) -> null);
+        assertThat(header.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "After: value"));
+    }
 }
