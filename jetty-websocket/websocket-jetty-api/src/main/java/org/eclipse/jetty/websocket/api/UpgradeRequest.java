@@ -32,26 +32,6 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 public interface UpgradeRequest
 {
     /**
-     * Add WebSocket Extension Configuration(s) to Upgrade Request.
-     * <p>
-     * This is merely the list of requested Extensions to use, see {@link UpgradeResponse#getExtensions()} for what was
-     * negotiated
-     *
-     * @param configs the configuration(s) to add
-     */
-    void addExtensions(ExtensionConfig... configs);
-
-    /**
-     * Add WebSocket Extension Configuration(s) to request
-     * <p>
-     * This is merely the list of requested Extensions to use, see {@link UpgradeResponse#getExtensions()} for what was
-     * negotiated
-     *
-     * @param configs the configuration(s) to add
-     */
-    void addExtensions(String... configs);
-
-    /**
      * Get the list of Cookies on the Upgrade request
      *
      * @return the list of Cookies
@@ -169,15 +149,6 @@ public interface UpgradeRequest
     URI getRequestURI();
 
     /**
-     * Access the Servlet HTTP Session (if present)
-     * <p>
-     * Note: Never present on a Client UpgradeRequest.
-     *
-     * @return the Servlet HTTPSession on server side UpgradeRequests
-     */
-    Object getSession();
-
-    /**
      * Get the list of offered WebSocket sub-protocols.
      *
      * @return the list of offered sub-protocols
@@ -207,74 +178,4 @@ public interface UpgradeRequest
      * @return true if connection is secure.
      */
     boolean isSecure();
-
-    /**
-     * Set the list of Cookies on the request
-     *
-     * @param cookies the cookies to use
-     */
-    void setCookies(List<HttpCookie> cookies);
-
-    /**
-     * Set the list of WebSocket Extension configurations on the request.
-     *
-     * @param configs the list of extension configurations
-     */
-    void setExtensions(List<ExtensionConfig> configs);
-
-    /**
-     * Set a specific header with multi-value field
-     * <p>
-     * Overrides any previous value for this named header
-     *
-     * @param name the name of the header
-     * @param values the multi-value field
-     */
-    void setHeader(String name, List<String> values);
-
-    /**
-     * Set a specific header value
-     * <p>
-     * Overrides any previous value for this named header
-     *
-     * @param name the header to set
-     * @param value the value to set it to
-     */
-    void setHeader(String name, String value);
-
-    /**
-     * Sets multiple headers on the request.
-     * <p>
-     * Only sets those headers provided, does not remove
-     * headers that exist on request and are not provided in the
-     * parameter for this method.
-     * <p>
-     * Convenience method vs calling {@link #setHeader(String, List)} multiple times.
-     *
-     * @param headers the headers to set
-     */
-    void setHeaders(Map<String, List<String>> headers);
-
-    /**
-     * Set the Session associated with this request.
-     * <p>
-     * Typically used to associate the Servlet HttpSession object.
-     *
-     * @param session the session object to associate with this request
-     */
-    void setSession(Object session);
-
-    /**
-     * Set the offered WebSocket Sub-Protocol list.
-     *
-     * @param protocols the offered sub-protocol list
-     */
-    void setSubProtocols(List<String> protocols);
-
-    /**
-     * Set the offered WebSocket Sub-Protocol list.
-     *
-     * @param protocols the offered sub-protocol list
-     */
-    void setSubProtocols(String... protocols);
 }

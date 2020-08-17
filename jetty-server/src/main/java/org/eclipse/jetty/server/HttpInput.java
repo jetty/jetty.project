@@ -663,7 +663,8 @@ public class HttpInput extends ServletInputStream implements Runnable
             }
             catch (Throwable e)
             {
-                LOG.debug("Unable to consume all input", e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to consume all input", e);
                 _state = new ErrorState(e);
                 return false;
             }

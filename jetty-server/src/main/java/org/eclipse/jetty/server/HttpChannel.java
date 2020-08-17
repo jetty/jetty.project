@@ -808,7 +808,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         catch (IOException e)
         {
-            LOG.debug("Unable to send bad message response", e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to send bad message response", e);
         }
         finally
         {
@@ -997,7 +998,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             catch (Throwable x)
             {
-                LOG.debug("Failure invoking listener " + listener, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Failure invoking listener " + listener, x);
             }
         }
     }
@@ -1013,7 +1015,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             catch (Throwable x)
             {
-                LOG.debug("Failure invoking listener " + listener, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Failure invoking listener " + listener, x);
             }
         }
     }
@@ -1028,7 +1031,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             catch (Throwable x)
             {
-                LOG.debug("Failure invoking listener " + listener, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Failure invoking listener " + listener, x);
             }
         }
     }

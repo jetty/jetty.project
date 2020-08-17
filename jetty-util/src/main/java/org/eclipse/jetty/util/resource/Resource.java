@@ -30,6 +30,7 @@ import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.text.DateFormat;
 import java.util.ArrayList;
@@ -176,19 +177,8 @@ public abstract class Resource implements ResourceFactory, Closeable
                 !resource.startsWith("file:") &&
                 !resource.startsWith("jar:"))
             {
-                try
-                {
-                    // It's a file.
-                    if (resource.startsWith("./"))
-                        resource = resource.substring(2);
-                    File file = new File(resource).getCanonicalFile();
-                    return new PathResource(file);
-                }
-                catch (IOException e2)
-                {
-                    e2.addSuppressed(e);
-                    throw e2;
-                }
+                // It's likely a file/path reference.
+                return new PathResource(Paths.get(resource));
             }
             else
             {

@@ -23,14 +23,14 @@ import java.util.List;
 import java.util.Map;
 import javax.websocket.HandshakeResponse;
 
-import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeResponse;
 
 public class JsrHandshakeResponse implements HandshakeResponse
 {
-    private final ServletUpgradeResponse delegate;
+    private final ServerUpgradeResponse delegate;
     private Map<String, List<String>> headerMap;
 
-    public JsrHandshakeResponse(ServletUpgradeResponse resp)
+    public JsrHandshakeResponse(ServerUpgradeResponse resp)
     {
         this.delegate = resp;
         this.headerMap = new HashMap<>();

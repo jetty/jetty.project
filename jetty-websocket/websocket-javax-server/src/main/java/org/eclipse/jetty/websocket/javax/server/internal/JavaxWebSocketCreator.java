@@ -38,8 +38,8 @@ import org.eclipse.jetty.websocket.javax.common.ConfiguredEndpoint;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketContainer;
 import org.eclipse.jetty.websocket.javax.common.JavaxWebSocketExtension;
 import org.eclipse.jetty.websocket.javax.common.ServerEndpointConfigWrapper;
-import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeResponse;
+import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeResponse;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +62,7 @@ public class JavaxWebSocketCreator implements WebSocketCreator
     }
 
     @Override
-    public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+    public Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp)
     {
         final JsrHandshakeRequest jsrHandshakeRequest = new JsrHandshakeRequest(req);
         final JsrHandshakeResponse jsrHandshakeResponse = new JsrHandshakeResponse(resp);

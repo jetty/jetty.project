@@ -650,13 +650,15 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         {
             if (ex instanceof InterruptedException)
             {
-                LOG.debug("Accept Interrupted", ex);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Accept Interrupted", ex);
                 return true;
             }
 
             if (ex instanceof ClosedByInterruptException)
             {
-                LOG.debug("Accept Closed by Interrupt", ex);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Accept Closed by Interrupt", ex);
                 return false;
             }
 

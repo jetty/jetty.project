@@ -16,38 +16,26 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server.internal;
+package org.eclipse.jetty.proxy;
 
-import java.net.URI;
-import java.security.Principal;
+import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeRequest;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 
-public class JavaxServerUpgradeRequest implements UpgradeRequest
+public class EmptyServerHandler extends AbstractHandler
 {
-    private final ServerUpgradeRequest servletRequest;
-
-    public JavaxServerUpgradeRequest(ServerUpgradeRequest servletRequest)
+    @Override
+    public final void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        this.servletRequest = servletRequest;
+        jettyRequest.setHandled(true);
+        service(target, jettyRequest, request, response);
     }
 
-    @Override
-    public Principal getUserPrincipal()
+    protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        return servletRequest.getUserPrincipal();
-    }
-
-    @Override
-    public URI getRequestURI()
-    {
-        return servletRequest.getRequestURI();
-    }
-
-    @Override
-    public String getPathInContext()
-    {
-        return servletRequest.getPathInContext();
     }
 }

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.client.impl;
 
 import java.net.HttpCookie;
-import java.net.SocketAddress;
 import java.net.URI;
 import java.security.Principal;
 import java.util.Collections;
@@ -27,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.EndPoint;
@@ -34,7 +34,7 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -44,11 +44,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
 {
-    private final ClientUpgradeRequest delegate;
-    private SocketAddress localSocketAddress;
-    private SocketAddress remoteSocketAddress;
+    private final CoreClientUpgradeRequest delegate;
 
-    public DelegatedJettyClientUpgradeRequest(ClientUpgradeRequest delegate)
+    public DelegatedJettyClientUpgradeRequest(CoreClientUpgradeRequest delegate)
     {
         this.delegate = delegate;
     }
@@ -100,8 +98,6 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
 
     public void configure(EndPoint endpoint)
     {
-        this.localSocketAddress = endpoint.getLocalAddress();
-        this.remoteSocketAddress = endpoint.getRemoteAddress();
     }
 
     @Override
@@ -163,26 +159,7 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     @Override
     public boolean isSecure()
     {
-        // TODO: figure out how to obtain from HttpClient's HttpRequest
-        return false;
-    }
-
-    @Override
-    public void addExtensions(org.eclipse.jetty.websocket.api.extensions.ExtensionConfig... configs)
-    {
-        // TODO
-    }
-
-    @Override
-    public void addExtensions(String... configs)
-    {
-        // TODO
-    }
-
-    @Override
-    public Object getSession()
-    {
-        return null;
+        return HttpClient.isSchemeSecure(delegate.getScheme());
     }
 
     @Override
@@ -192,60 +169,12 @@ public class DelegatedJettyClientUpgradeRequest implements UpgradeRequest
     }
 
     @Override
-    public void setCookies(List<HttpCookie> cookies)
-    {
-        // TODO
-    }
-
-    @Override
     public List<ExtensionConfig> getExtensions()
     {
         List<String> rawExtensions = delegate.getHeaders().getValuesList(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
         if (rawExtensions == null || rawExtensions.isEmpty())
             return Collections.emptyList();
 
-        return rawExtensions.stream().map((parameterizedName) -> ExtensionConfig.parse(parameterizedName)).collect(Collectors.toList());
-    }
-
-    @Override
-    public void setExtensions(List<org.eclipse.jetty.websocket.api.extensions.ExtensionConfig> configs)
-    {
-        // TODO
-    }
-
-    @Override
-    public void setHeader(String name, List<String> values)
-    {
-        // TODO
-    }
-
-    @Override
-    public void setHeader(String name, String value)
-    {
-        // TODO
-    }
-
-    @Override
-    public void setHeaders(Map<String, List<String>> headers)
-    {
-        // TODO
-    }
-
-    @Override
-    public void setSession(Object session)
-    {
-        // TODO
-    }
-
-    @Override
-    public void setSubProtocols(List<String> protocols)
-    {
-        // TODO
-    }
-
-    @Override
-    public void setSubProtocols(String... protocols)
-    {
-        // TODO
+        return rawExtensions.stream().map(ExtensionConfig::parse).collect(Collectors.toList());
     }
 }
