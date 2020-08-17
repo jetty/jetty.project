@@ -999,7 +999,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Failure invoking listener " + listener, x);
+                    LOG.debug("Failure invoking listener {}", listener, x);
             }
         }
     }
@@ -1016,7 +1016,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Failure invoking listener " + listener, x);
+                    LOG.debug("Failure invoking listener {}", listener, x);
             }
         }
     }
@@ -1032,7 +1032,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Failure invoking listener " + listener, x);
+                    LOG.debug("Failure invoking listener {}", listener, x);
             }
         }
     }
