@@ -100,7 +100,8 @@ public class XmlConfiguration
             ArrayList.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class
         };
     private static final Iterable<ConfigurationProcessorFactory> __factoryLoader = ServiceLoader.load(ConfigurationProcessorFactory.class);
-    private static final Pool<ConfigurationParser> __parsers = new Pool<>(Runtime.getRuntime().availableProcessors(),1);
+    private static final Pool<ConfigurationParser> __parsers =
+        new Pool<>(Math.min(8, Runtime.getRuntime().availableProcessors()),1);
     public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) ->
     {
         // Favour methods with less parameters
