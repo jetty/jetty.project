@@ -64,14 +64,14 @@ public class IncludeExcludeConnectionStatistics extends ConnectionStatistics
     @Override
     public void onOpened(Connection connection)
     {
-        if (Boolean.TRUE.equals(_set.isIncludedAndNotExcluded(connection)))
+        if (_set.test(connection))
             super.onOpened(connection);
     }
 
     @Override
     public void onClosed(Connection connection)
     {
-        if (Boolean.TRUE.equals(_set.isIncludedAndNotExcluded(connection)))
+        if (_set.test(connection))
             super.onClosed(connection);
     }
 
