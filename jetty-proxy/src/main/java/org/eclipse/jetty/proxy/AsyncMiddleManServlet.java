@@ -48,7 +48,6 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
@@ -93,9 +92,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             return;
         }
 
-        final Request proxyRequest = getHttpClient().newRequest(rewrittenTarget)
-            .method(clientRequest.getMethod())
-            .version(HttpVersion.fromString(clientRequest.getProtocol()));
+        Request proxyRequest = newProxyRequest(clientRequest, rewrittenTarget);
 
         copyRequestHeaders(clientRequest, proxyRequest);
 
@@ -118,7 +115,6 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             {
                 // Must delay the call to request.getInputStream()
                 // that sends the 100 Continue to the client.
-                proxyRequest.attribute(CLIENT_REQUEST_ATTRIBUTE, clientRequest);
                 proxyRequest.attribute(CONTINUE_ACTION_ATTRIBUTE, (Runnable)() ->
                 {
                     try

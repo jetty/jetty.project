@@ -384,11 +384,9 @@ public class HttpField
         return _name.equalsIgnoreCase(field.getName());
     }
 
-    @Override
-    public String toString()
+    public boolean is(String name)
     {
-        String v = getValue();
-        return getName() + ": " + (v == null ? "" : v);
+        return _name.equalsIgnoreCase(name);
     }
 
     private int nameHashCode()
@@ -409,6 +407,13 @@ public class HttpField
             this.hash = h;
         }
         return h;
+    }
+
+    @Override
+    public String toString()
+    {
+        String v = getValue();
+        return getName() + ": " + (v == null ? "" : v);
     }
 
     public static class IntValueHttpField extends HttpField
