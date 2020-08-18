@@ -1394,7 +1394,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 }
                 catch (Throwable x)
                 {
-                    LOG.info("Exception while notifying listener " + listener, x);
+                    LOG.info("Exception while notifying listener {}", listener, x);
                 }
             }
         }
@@ -1412,7 +1412,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 }
                 catch (Throwable x)
                 {
-                    LOG.info("Exception while notifying listener " + listener, x);
+                    LOG.info("Exception while notifying listener {}", listener, x);
                 }
             }
         }

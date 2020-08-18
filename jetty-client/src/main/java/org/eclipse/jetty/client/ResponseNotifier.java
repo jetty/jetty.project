@@ -56,7 +56,7 @@ public class ResponseNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 
@@ -79,7 +79,7 @@ public class ResponseNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
             return false;
         }
     }
@@ -101,7 +101,7 @@ public class ResponseNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 
@@ -121,7 +121,7 @@ public class ResponseNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 
@@ -156,7 +156,7 @@ public class ResponseNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 
@@ -177,7 +177,7 @@ public class ResponseNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 
@@ -198,7 +198,7 @@ public class ResponseNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 
@@ -219,7 +219,7 @@ public class ResponseNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 

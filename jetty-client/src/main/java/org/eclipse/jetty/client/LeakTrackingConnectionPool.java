@@ -90,6 +90,6 @@ public class LeakTrackingConnectionPool extends DuplexConnectionPool
 
     protected void leaked(LeakDetector.LeakInfo leakInfo)
     {
-        LOG.info("Connection " + leakInfo.getResourceDescription() + " leaked at:", leakInfo.getStackFrames());
+        LOG.info("Connection {} leaked at:", leakInfo.getResourceDescription(), leakInfo.getStackFrames());
     }
 }

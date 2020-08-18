@@ -1165,7 +1165,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
             return null;
         }
     }
@@ -1178,7 +1178,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -1190,7 +1190,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -1202,7 +1202,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -1214,7 +1214,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -1226,7 +1226,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
             return true;
         }
     }
@@ -1239,7 +1239,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -1254,7 +1254,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
