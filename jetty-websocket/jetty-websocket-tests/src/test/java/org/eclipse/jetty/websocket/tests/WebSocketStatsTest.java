@@ -123,11 +123,10 @@ public class WebSocketStatsTest
         EventSocket socket = new EventSocket();
         Future<Session> connect = client.connect(socket, uri);
 
-        final long numMessages = 1;
+        final long numMessages = 1000;
         final String msgText = "hello world";
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
-            assertThat(statistics.getConnections(), is(1L));
             for (int i = 0; i < numMessages; i++)
             {
                 session.getRemote().sendString(msgText);
