@@ -179,12 +179,8 @@ public class CGI extends HttpServlet
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("CGI: ContextPath : " + req.getContextPath());
-            LOG.debug("CGI: ServletPath : " + req.getServletPath());
-            LOG.debug("CGI: PathInfo    : " + req.getPathInfo());
-            LOG.debug("CGI: _docRoot    : " + _docRoot);
-            LOG.debug("CGI: _path       : " + _path);
-            LOG.debug("CGI: _ignoreExitState: " + _ignoreExitState);
+            LOG.debug("CGI: ContextPath : {}, ServletPath : {}, PathInfo : {}, _docRoot : {}, _path : {}, _ignoreExitState : {}",
+                req.getContextPath(), req.getServletPath(), req.getPathInfo(), _docRoot, _path, _ignoreExitState);
         }
 
         // pathInContext may actually comprises scriptName/pathInfo...We will
@@ -238,8 +234,7 @@ public class CGI extends HttpServlet
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("CGI: script is " + command);
-            LOG.debug("CGI: pathInfo is " + pathInfo);
+            LOG.debug("CGI: script is {} pathInfo is {}", command, pathInfo);
         }
 
         String bodyFormEncoded = null;
@@ -350,8 +345,8 @@ public class CGI extends HttpServlet
         if (_cmdPrefix != null)
             execCmd = _cmdPrefix + " " + execCmd;
 
-        LOG.debug("Environment: " + env.getExportString());
-        LOG.debug("Command: " + execCmd);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Environment: {} Command: {}", env.getExportString(), execCmd);
 
         final Process p = Runtime.getRuntime().exec(execCmd, env.getEnvArray(), _docRoot);
 

@@ -763,7 +763,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
             return Collections.emptyMap();
         OriginInfo origin = md.getOriginInfo(name);
         if (LOG.isDebugEnabled())
-            LOG.debug("origin of " + name + " is " + origin);
+            LOG.debug("origin of {} is {}", name, origin);
         if (origin == null)
             return Collections.emptyMap();
         return Collections.singletonMap(_originAttribute, origin.toString() + ":" + (_count++));

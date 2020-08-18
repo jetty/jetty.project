@@ -304,14 +304,14 @@ public class CrossOriginFilter implements Filter
                 {
                     response.setHeader(TIMING_ALLOW_ORIGIN_HEADER, origin);
                 }
-                else
+                else if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("Cross-origin request to " + request.getRequestURI() + " with origin " + origin + " does not match allowed timing origins " + allowedTimingOrigins);
+                    LOG.debug("Cross-origin request to {} with origin {} does not match allowed timing origins {}", request.getRequestURI(), origin, allowedTimingOrigins);
                 }
             }
-            else
+            else if (LOG.isDebugEnabled())
             {
-                LOG.debug("Cross-origin request to " + request.getRequestURI() + " with origin " + origin + " does not match allowed origins " + allowedOrigins);
+                LOG.debug("Cross-origin request to {} with origin {} does not match allowed origins {}", request.getRequestURI(), origin, allowedOrigins);
             }
         }
 

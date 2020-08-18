@@ -77,7 +77,7 @@ public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFact
             catch (Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not initialize " + processor, x);
+                    LOG.debug("Could not initialize {}", processor, x);
                 failure.addSuppressed(x);
             }
         });

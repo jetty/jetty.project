@@ -159,7 +159,7 @@ public class HashLoginService extends AbstractLoginService
         if (_userStore == null)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: " + _config + " hotReload: " + hotReload);
+                LOG.debug("doStart: Starting new PropertyUserStore. PropertiesFile: {} hotReload: {}", _config, hotReload);
             PropertyUserStore propertyUserStore = new PropertyUserStore();
             propertyUserStore.setHotReload(hotReload);
             propertyUserStore.setConfig(_config);

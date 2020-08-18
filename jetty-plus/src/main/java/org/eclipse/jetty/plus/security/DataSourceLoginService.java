@@ -382,7 +382,7 @@ public class DataSourceLoginService extends AbstractLoginService
                             _userTableUserField + " varchar(100) not null unique," +
                             _userTablePasswordField + " varchar(20) not null, primary key(" + _userTableKey + "))");
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Created table " + _userTableName);
+                            LOG.debug("Created table {}", _userTableName);
                     }
                 }
 
@@ -400,7 +400,7 @@ public class DataSourceLoginService extends AbstractLoginService
                             _roleTableRoleField + " varchar(100) not null unique, primary key(" + _roleTableKey + "))";
                         stmt.executeUpdate(str);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Created table " + _roleTableName);
+                            LOG.debug("Created table {}", _roleTableName);
                     }
                 }
 
@@ -422,7 +422,7 @@ public class DataSourceLoginService extends AbstractLoginService
                             "primary key (" + _userRoleTableUserKey + ", " + _userRoleTableRoleKey + "))");
                         stmt.executeUpdate("create index indx_user_role on " + _userRoleTableName + "(" + _userRoleTableUserKey + ")");
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Created table " + _userRoleTableName + " and index");
+                            LOG.debug("Created table {} and index", _userRoleTableName);
                     }
                 }
                 connection.commit();

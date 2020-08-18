@@ -340,7 +340,8 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 if (paths.length() > 0)
                     paths.append(", ");
                 paths.append(f.toURI().toURL().toString());
-                LOG.debug("getPathsToRequiredBundles: bundle path=" + bs[0].getLocation() + " uri=" + f.toURI());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("getPathsToRequiredBundles: bundle path={} uri={}", bs[0].getLocation(), f.toURI());
             }
 
             return paths.toString();
@@ -355,7 +356,8 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 return;
 
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            LOG.debug("Context classloader = " + cl);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Context classloader = {}", cl);
             try
             {
 

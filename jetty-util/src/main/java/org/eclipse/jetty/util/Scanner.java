@@ -760,7 +760,7 @@ public class Scanner extends AbstractLifeCycle
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("scanned " + _scannables.keySet() + ": " + _notifications);
+                LOG.debug("scanned {}: {}", _scannables.keySet(), _notifications);
 
             // Process notifications
             // Only process notifications that are for stable files (ie same in old and current scan).

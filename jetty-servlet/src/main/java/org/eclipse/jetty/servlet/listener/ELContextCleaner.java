@@ -102,7 +102,7 @@ public class ELContextCleaner implements ServletContextListener
         {
             Class<?> clazz = itor.next();
             if (LOG.isDebugEnabled())
-                LOG.debug("Clazz: " + clazz + " loaded by " + clazz.getClassLoader());
+                LOG.debug("Clazz: {} loaded by {}", clazz, clazz.getClassLoader());
             if (Thread.currentThread().getContextClassLoader().equals(clazz.getClassLoader()))
             {
                 itor.remove();
@@ -112,7 +112,7 @@ public class ELContextCleaner implements ServletContextListener
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("not removed: " + "contextclassloader=" + Thread.currentThread().getContextClassLoader() + "clazz's classloader=" + clazz.getClassLoader());
+                    LOG.debug("not removed: contextclassloader={} clazz's classloader={}", Thread.currentThread().getContextClassLoader(), clazz.getClassLoader());
             }
         }
     }

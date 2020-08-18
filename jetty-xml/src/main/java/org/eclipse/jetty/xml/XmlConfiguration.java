@@ -566,7 +566,7 @@ public class XmlConfiguration
                 vClass[0] = value.getClass();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("XML " + (obj != null ? obj.toString() : oClass.getName()) + "." + name + "(" + value + ")");
+                LOG.debug("XML {}.{} ({})", (obj != null ? obj.toString() : oClass.getName()), name, value);
 
             MultiException me = new MultiException();
 
@@ -815,7 +815,7 @@ public class XmlConfiguration
             Object value = value(obj, node);
             map.put(name, value);
             if (LOG.isDebugEnabled())
-                LOG.debug("XML " + obj + ".put(" + name + "," + value + ")");
+                LOG.debug("XML {}.put({},{})", obj, name, value);
         }
 
         /**
@@ -838,7 +838,7 @@ public class XmlConfiguration
             String name = node.getAttribute("name");
             String id = node.getAttribute("id");
             if (LOG.isDebugEnabled())
-                LOG.debug("XML get " + name);
+                LOG.debug("XML get {}", name);
 
             try
             {
@@ -907,7 +907,7 @@ public class XmlConfiguration
                 throw new IllegalArgumentException(node.toString());
 
             if (LOG.isDebugEnabled())
-                LOG.debug("XML call " + name);
+                LOG.debug("XML call {}", name);
 
             try
             {
@@ -973,7 +973,7 @@ public class XmlConfiguration
             String clazz = aoeNode.getString("Class");
 
             if (LOG.isDebugEnabled())
-                LOG.debug("XML new " + clazz);
+                LOG.debug("XML new {}", clazz);
 
             Class<?> oClass = Loader.loadClass(clazz);
 

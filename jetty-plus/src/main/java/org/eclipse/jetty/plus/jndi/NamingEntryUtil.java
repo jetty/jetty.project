@@ -151,7 +151,7 @@ public class NamingEntryUtil
         catch (NameNotFoundException e)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("No entries of type " + clazz.getName() + " in context=" + context);
+                LOG.debug("No entries of type {} in context={}", clazz.getName(), context);
         }
 
         return list;

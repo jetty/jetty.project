@@ -76,7 +76,7 @@ public class PropertyFileLoginModule extends AbstractLoginModule
             PropertyUserStore prev = _propertyUserStores.putIfAbsent(_filename, propertyUserStore);
             if (prev == null)
             {
-                LOG.debug("setupPropertyUserStore: Starting new PropertyUserStore. PropertiesFile: " + _filename + " refreshInterval: " + _refreshInterval);
+                LOG.debug("setupPropertyUserStore: Starting new PropertyUserStore. PropertiesFile: {} refreshInterval: {}", _filename, _refreshInterval);
 
                 try
                 {
@@ -109,7 +109,8 @@ public class PropertyFileLoginModule extends AbstractLoginModule
         if (propertyUserStore == null)
             throw new IllegalStateException("PropertyUserStore should never be null here!");
 
-        LOG.debug("Checking PropertyUserStore " + _filename + " for " + userName);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Checking PropertyUserStore {} for {}", _filename, userName);
         UserIdentity userIdentity = propertyUserStore.getUserIdentity(userName);
         if (userIdentity == null)
             return null;
@@ -123,7 +124,8 @@ public class PropertyFileLoginModule extends AbstractLoginModule
             .collect(Collectors.toList());
 
         Credential credential = (Credential)userIdentity.getSubject().getPrivateCredentials().iterator().next();
-        LOG.debug("Found: " + userName + " in PropertyUserStore " + _filename);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Found: {} in PropertyUserStore {}", userName,  _filename);
         return new UserInfo(userName, credential, roles);
     }
 }

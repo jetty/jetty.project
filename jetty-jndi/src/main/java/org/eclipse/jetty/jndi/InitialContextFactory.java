@@ -80,7 +80,7 @@ public class InitialContextFactory implements javax.naming.spi.InitialContextFac
 
         Context ctx = new localContextRoot(env);
         if (LOG.isDebugEnabled())
-            LOG.debug("Created initial context delegate for local namespace:" + ctx);
+            LOG.debug("Created initial context delegate for local namespace:{}", ctx);
 
         return ctx;
     }

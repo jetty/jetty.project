@@ -232,7 +232,7 @@ public abstract class AbstractConnection implements Connection
             if (cause == null)
                 LOG.debug("onClose {}", this);
             else
-                LOG.debug("onClose " + this, cause);
+                LOG.debug("onClose {}", this, cause);
         }
         for (Listener listener : _listeners)
         {
@@ -248,7 +248,10 @@ public abstract class AbstractConnection implements Connection
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            if (LOG.isDebugEnabled())
+                LOG.info("Failure while notifying listener {}", listener, x);
+            else
+                LOG.info("Failure while notifying listener {} {}", listener, x.toString());
         }
     }
 

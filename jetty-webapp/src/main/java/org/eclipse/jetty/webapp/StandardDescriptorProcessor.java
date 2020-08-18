@@ -188,7 +188,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 unknownOrigin(origin);
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("ContextParam: " + name + "=" + value);
+            LOG.debug("ContextParam: {}={}", name, value);
     }
 
     public void visitDisplayName(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
@@ -391,7 +391,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (roleName != null && roleName.length() > 0 && roleLink != null && roleLink.length() > 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("link role " + roleName + " to " + roleLink + " for " + this);
+                    LOG.debug("link role {} to {} for {}", roleName, roleLink, this);
                 Origin origin = context.getMetaData().getOrigin(name + ".servlet.role-name." + roleName);
                 switch (origin)
                 {

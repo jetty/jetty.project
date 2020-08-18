@@ -226,7 +226,7 @@ public abstract class HttpSender
             return;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Request failure " + exchange.getRequest(), failure);
+            LOG.debug("Request failure {}", exchange.getRequest(), failure);
 
         // Mark atomically the request as completed, with respect
         // to concurrency between request success and request failure.

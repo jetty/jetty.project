@@ -81,7 +81,7 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("Binding: Configuring webapp context with global settings from: " + _jettyXml);
+                LOG.debug("Binding: Configuring webapp context with global settings from: {}", _jettyXml);
             }
 
             if (_jettyXml == null)

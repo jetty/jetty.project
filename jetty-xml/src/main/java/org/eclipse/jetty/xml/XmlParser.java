@@ -203,7 +203,7 @@ public class XmlParser
             reader.setErrorHandler(handler);
             reader.setEntityResolver(handler);
             if (LOG.isDebugEnabled())
-                LOG.debug("parsing: sid=" + source.getSystemId() + ",pid=" + source.getPublicId());
+                LOG.debug("parsing: sid={},pid={}", source.getSystemId(), source.getPublicId());
             _parser.parse(source, handler);
             if (handler._error != null)
                 throw handler._error;
@@ -224,7 +224,7 @@ public class XmlParser
     public Node parse(String url) throws IOException, SAXException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("parse: " + url);
+            LOG.debug("parse: {}", url);
         return parse(new InputSource(url));
     }
 
@@ -239,7 +239,7 @@ public class XmlParser
     public Node parse(File file) throws IOException, SAXException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("parse: " + file);
+            LOG.debug("parse: {}", file);
         return parse(new InputSource(Resource.toURL(file).toString()));
     }
 
@@ -259,7 +259,7 @@ public class XmlParser
     protected InputSource resolveEntity(String pid, String sid)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("resolveEntity(" + pid + ", " + sid + ")");
+            LOG.debug("resolveEntity({},{})", pid, sid);
 
         if (sid != null && sid.endsWith(".dtd"))
             _dtd = sid;
@@ -276,7 +276,7 @@ public class XmlParser
                 dtd = dtd.substring(dtd.lastIndexOf('/') + 1);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Can't exact match entity in redirect map, trying " + dtd);
+                LOG.debug("Can't exact match entity in redirect map, trying {}", dtd);
             entity = (URL)_redirectMap.get(dtd);
         }
 
@@ -286,7 +286,7 @@ public class XmlParser
             {
                 InputStream in = entity.openStream();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Redirected entity " + sid + " --> " + entity);
+                    LOG.debug("Redirected entity {}  --> {}", sid,  entity);
                 InputSource is = new InputSource(in);
                 is.setSystemId(sid);
                 return is;

@@ -639,7 +639,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             String classpath = ch.getClassPath();
             if (LOG.isDebugEnabled())
-                LOG.debug("classpath=" + classpath);
+                LOG.debug("classpath={}", classpath);
             if (classpath != null)
                 setInitParameter("classpath", classpath);
         }

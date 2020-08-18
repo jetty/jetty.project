@@ -311,7 +311,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("resource base = " + _resourceBase);
+            LOG.debug("resource base = {}", _resourceBase);
     }
 
     private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, boolean gzip)
@@ -435,7 +435,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Resource " + pathInContext + "=" + r);
+                LOG.debug("Resource {}={}", pathInContext, r);
         }
         catch (IOException e)
         {

@@ -70,7 +70,7 @@ public class JarFileResource extends JarResource
                     try
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Closing JarFile " + _jarFile.getName());
+                            LOG.debug("Closing JarFile {}", _jarFile.getName());
                         _jarFile.close();
                     }
                     catch (IOException ioe)

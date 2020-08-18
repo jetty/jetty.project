@@ -84,7 +84,7 @@ public class Injection
         try
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Looking for method for setter: " + setter + " with arg {}", _resourceClass);
+                LOG.debug("Looking for method for setter: {} with arg {}", setter, _resourceClass);
             tmpTarget = IntrospectionUtil.findMethod(clazz, setter, new Class[]{_resourceClass}, true, false);
             tmpParamClass = _resourceClass;
         }

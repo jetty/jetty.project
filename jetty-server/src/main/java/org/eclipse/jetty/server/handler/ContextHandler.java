@@ -1932,7 +1932,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (resource.isAlias())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Aliased resource: " + resource + "~=" + resource.getAlias());
+                LOG.debug("Aliased resource: {}~=", resource, resource.getAlias());
 
             // alias checks
             for (Iterator<AliasCheck> i = getAliasChecks().iterator(); i.hasNext(); )
@@ -1941,7 +1941,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (check.check(path, resource))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Aliased resource: " + resource + " approved by " + check);
+                        LOG.debug("Aliased resource: {} approved by {}", resource, check);
                     return true;
                 }
             }

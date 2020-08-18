@@ -1602,7 +1602,7 @@ public class HttpParser
     protected void badMessage(BadMessageException x)
     {
         if (debugEnabled)
-            LOG.debug("Parse exception: " + this + " for " + _handler, x);
+            LOG.debug("Parse exception: {} for {}", this, _handler, x);
         setState(State.CLOSE);
         if (_headerComplete)
             _handler.earlyEOF();

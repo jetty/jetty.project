@@ -61,7 +61,7 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
             throw new IllegalStateException("Database connection information not configured");
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Connecting using dbDriver=" + dbDriver + "+ dbUserName=" + dbUserName + ", dbPassword=" + dbUrl);
+            LOG.debug("Connecting using dbDriver={} dbUserName={}, dbPassword={}", dbDriver, dbUserName, dbUrl);
 
         return DriverManager.getConnection(dbUrl,
             dbUserName,

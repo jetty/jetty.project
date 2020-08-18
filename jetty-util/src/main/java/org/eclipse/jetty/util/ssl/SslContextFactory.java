@@ -314,7 +314,7 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
                             if (X509.isCertSign(x509C))
                             {
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("Skipping " + x509C);
+                                    LOG.debug("Skipping {}", x509C);
                                 continue;
                             }
                             X509 x509 = new X509(alias, x509C);

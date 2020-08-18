@@ -275,7 +275,7 @@ public class localContextRoot implements Context
     public Object lookup(Name name) throws NamingException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Looking up name=\"" + name + "\"");
+            LOG.debug("Looking up name=\"{}\\\"", name);
         Name cname = __root.toCanonicalName(name);
 
         if ((cname == null) || cname.isEmpty())
@@ -380,7 +380,7 @@ public class localContextRoot implements Context
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Checking for existing binding for name=" + cname + " for first element of name=" + cname.get(0));
+                LOG.debug("Checking for existing binding for name={} for first element of name=", cname, cname.get(0));
 
             getContext(cname).bind(cname.getSuffix(1), obj);
         }
@@ -417,7 +417,7 @@ public class localContextRoot implements Context
         {
             //walk down the subcontext hierarchy
             if (LOG.isDebugEnabled())
-                LOG.debug("Checking for existing binding for name=" + cname + " for first element of name=" + cname.get(0));
+                LOG.debug("Checking for existing binding for name={} for first element of name={}", cname, cname.get(0));
 
             getContext(cname).rebind(cname.getSuffix(1), obj);
         }
