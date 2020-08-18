@@ -20,6 +20,7 @@ package org.eclipse.jetty.client.http;
 
 import java.io.EOFException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.util.Callback;
 
 public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler
 {
+    private final LongAdder inMessages = new LongAdder();
     private final HttpParser parser;
     private RetainableByteBuffer networkBuffer;
     private boolean shutdown;
@@ -333,9 +335,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             return false;
 
         int status = exchange.getResponse().getStatus();
-
         if (status != HttpStatus.CONTINUE_100)
+        {
+            inMessages.increment();
             complete = true;
+        }
 
         return !responseSuccess(exchange);
     }
@@ -374,6 +378,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         if (responseFailure(failure))
             getHttpConnection().close(failure);
+    }
+
+    long getMessagesIn()
+    {
+        return inMessages.longValue();
     }
 
     @Override
