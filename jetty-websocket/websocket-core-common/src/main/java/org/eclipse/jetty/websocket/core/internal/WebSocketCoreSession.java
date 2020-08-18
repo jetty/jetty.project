@@ -529,7 +529,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
         catch (Throwable t)
         {
             if (LOG.isDebugEnabled())
-                LOG.warn("Invalid outgoing frame: " + frame, t);
+                LOG.warn("Invalid outgoing frame: {}", frame, t);
 
             callback.failed(t);
             return;

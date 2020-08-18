@@ -409,7 +409,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
             _stylesheet = Resource.newResource(stylesheet);
             if (!_stylesheet.exists())
             {
-                LOG.warn("unable to find custom stylesheet: " + stylesheet);
+                LOG.warn("unable to find custom stylesheet: {}", stylesheet);
                 _stylesheet = null;
             }
         }

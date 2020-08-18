@@ -914,7 +914,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 if (LOG.isDebugEnabled())
                     LOG.warn(msg, e2);
                 else
-                    LOG.warn(msg + ": {}", e2.toString());
+                    LOG.warn("{}: {}", msg, e2.toString());
                 throw new RuntimeIOException(msg, e2);
             }
         }
