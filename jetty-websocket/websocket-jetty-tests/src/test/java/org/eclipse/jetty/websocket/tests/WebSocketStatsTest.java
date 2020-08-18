@@ -125,7 +125,6 @@ public class WebSocketStatsTest
         final String msgText = "hello world";
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
-            assertThat(statistics.getConnections(), is(1L));
             for (int i = 0; i < numMessages; i++)
             {
                 session.getRemote().sendString(msgText);
