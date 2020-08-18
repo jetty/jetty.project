@@ -18,22 +18,22 @@
 
 package org.eclipse.jetty.websocket.common;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 
-public class SessionTracker extends AbstractLifeCycle implements WebSocketSessionListener, Graceful
+public class SessionTracker extends AbstractLifeCycle implements WebSocketSessionListener, Graceful, Dumpable
 {
     private final Set<Session> sessions = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private boolean isShutdown = false;
@@ -90,5 +90,17 @@ public class SessionTracker extends AbstractLifeCycle implements WebSocketSessio
     public boolean isShutdown()
     {
         return isShutdown;
+    }
+
+    @ManagedAttribute("Total number of active WebSocket Sessions")
+    public int getNumSessions()
+    {
+        return sessions.size();
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, sessions);
     }
 }
