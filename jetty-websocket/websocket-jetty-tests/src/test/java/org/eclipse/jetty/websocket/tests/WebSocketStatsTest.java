@@ -42,7 +42,6 @@ import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -80,13 +79,17 @@ public class WebSocketStatsTest
         server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        server.setHandler(contextHandler);
         contextHandler.setContextPath("/");
         JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
-            container.addMapping("/", EchoSocket.class));
-        server.setHandler(contextHandler);
+        {
+            container.setAutoFragment(false);
+            container.addMapping("/", EchoSocket.class);
+        });
 
         JettyWebSocketServletContainerInitializer.configure(contextHandler, null);
         client = new WebSocketClient();
+        client.setAutoFragment(false);
 
         // Setup JMX.
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
@@ -111,7 +114,6 @@ public class WebSocketStatsTest
         return headerBuffer.remaining() + frame.getPayloadLength();
     }
 
-    @Disabled("off by 2 some of the time for large num of messages")
     @Test
     public void echoStatsTest() throws Exception
     {
