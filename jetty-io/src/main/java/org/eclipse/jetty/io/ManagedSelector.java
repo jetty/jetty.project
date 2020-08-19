@@ -612,7 +612,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
                     if (LOG.isDebugEnabled())
                         LOG.warn("select() failure", x);
                     else
-                        LOG.warn(x.toString());
+                        LOG.warn("select() failure {}", x.toString());
                 }
             }
             return false;
@@ -866,9 +866,10 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         protected void failed(Throwable failure)
         {
             IO.close(channel);
-            LOG.warn("Could not accept {}: {}", channel, String.valueOf(failure));
             if (LOG.isDebugEnabled())
-                LOG.debug("", failure);
+                LOG.warn("Could not accept {}", channel, failure);
+            else
+                LOG.warn("Could not accept {}: {}", channel, String.valueOf(failure));
             _selectorManager.onAcceptFailed(channel, failure);
         }
 
