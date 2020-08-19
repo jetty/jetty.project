@@ -189,7 +189,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             _dispatchedStats.decrement();
             _dispatchedTimeStats.record(dispatched);
 
-            if (state.isSuspended())
+            if (state.isSuspended() || state.isAsyncStarted())
             {
                 if (state.isInitial())
                 {
