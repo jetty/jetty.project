@@ -66,6 +66,8 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final LongAdder _responses5xx = new LongAdder();
     private final LongAdder _responsesTotalBytes = new LongAdder();
 
+    private boolean waitForSuspendedRequestsOnShutdown = true;
+
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown()
     {
         @Override
@@ -98,13 +100,12 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
-            System.err.println("On Async Complete for " + event);
             HttpChannelState state = ((AsyncContextEvent)event).getHttpChannelState();
 
             Request request = state.getBaseRequest();
             final long elapsed = System.currentTimeMillis() - request.getTimeStamp();
 
-            long d = _requestStats.decrement();
+            long numRequests = _requestStats.decrement();
             _requestTimeStats.record(elapsed);
 
             updateResponse(request);
@@ -112,7 +113,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             _asyncWaitStats.decrement();
 
             // If we have no more dispatches, should we signal shutdown?
-            if (d == 0)
+            if (numRequests == 0 && waitForSuspendedRequestsOnShutdown)
             {
                 FutureCallback shutdown = _shutdown.get();
                 if (shutdown != null)
@@ -178,8 +179,8 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             final long now = System.currentTimeMillis();
             final long dispatched = now - start;
 
-            // TODO: make dispatchedStats optional metric for shutdown
-            _dispatchedStats.decrement();
+            long numRequests = -1;
+            long numDispatches = _dispatchedStats.decrement();
             _dispatchedTimeStats.record(dispatched);
 
             if (state.isInitial())
@@ -191,19 +192,20 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
                 }
                 else
                 {
-                    long d = _requestStats.decrement();
+                    numRequests = _requestStats.decrement();
                     _requestTimeStats.record(dispatched);
                     updateResponse(baseRequest);
-
-                    // If we have no more dispatches, should we signal shutdown?
-                    FutureCallback shutdown = _shutdown.get();
-                    if (shutdown != null)
-                    {
-                        response.flushBuffer();
-                        if (d == 0)
-                            shutdown.succeeded();
-                    }
                 }
+            }
+
+            FutureCallback shutdown = _shutdown.get();
+            if (shutdown != null)
+            {
+                response.flushBuffer();
+
+                // If we either have no more requests or dispatches, we can complete shutdown.
+                if (waitForSuspendedRequestsOnShutdown ? (numRequests == 0) : (numDispatches == 0))
+                    shutdown.succeeded();
             }
         }
     }
@@ -255,6 +257,16 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     {
         _shutdown.cancel();
         super.doStop();
+    }
+
+    /**
+     * Set whether the graceful shutdown should wait for all requests to complete (including suspended requests)
+     * or whether it should only wait for all the actively dispatched requests to complete.
+     * @param waitForSuspendedRequests true to wait for suspended requests on graceful shutdown.
+     */
+    public void waitForSuspendedRequestsOnShutdown(boolean waitForSuspendedRequests)
+    {
+        this.waitForSuspendedRequestsOnShutdown = waitForSuspendedRequests;
     }
 
     /**

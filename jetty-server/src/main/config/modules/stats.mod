@@ -15,3 +15,8 @@ etc/jetty-stats.xml
 
 [ini]
 jetty.webapp.addServerClasses+=,-org.eclipse.jetty.servlet.StatisticsServlet
+
+[ini-template]
+
+## If the Graceful shutdown should wait for suspended requests as well as dispatched ones.
+# jetty.statistics.waitForSuspendedRequestsOnShutdown=true

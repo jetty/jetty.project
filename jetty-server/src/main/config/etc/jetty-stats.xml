@@ -5,7 +5,11 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="insertHandler">
     <Arg>
-      <New id="StatsHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler"></New>
+      <New id="StatsHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler">
+        <Set name="waitForSuspendedRequestsOnShutdown">
+          <Property name="jetty.statistics.waitForSuspendedRequestsOnShutdown" default="true"/>
+        </Set>
+      </New>
     </Arg>
   </Call>
   <Call class="org.eclipse.jetty.server.ServerConnectionStatistics" name="addToAllConnectors">
