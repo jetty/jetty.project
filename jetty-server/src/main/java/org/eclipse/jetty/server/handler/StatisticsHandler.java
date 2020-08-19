@@ -20,7 +20,6 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import javax.servlet.AsyncEvent;
@@ -29,7 +28,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.AsyncContextEvent;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannelState;
@@ -59,6 +57,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
 
     private final LongAdder _asyncDispatches = new LongAdder();
     private final LongAdder _expires = new LongAdder();
+    private final LongAdder _errors = new LongAdder();
 
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
@@ -76,16 +75,8 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         }
     };
 
-    private final AtomicBoolean _wrapWarning = new AtomicBoolean();
-
     private final AsyncListener _onCompletion = new AsyncListener()
     {
-        @Override
-        public void onTimeout(AsyncEvent event) throws IOException
-        {
-            _expires.increment();
-        }
-
         @Override
         public void onStartAsync(AsyncEvent event) throws IOException
         {
@@ -93,13 +84,21 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         }
 
         @Override
+        public void onTimeout(AsyncEvent event) throws IOException
+        {
+            _expires.increment();
+        }
+
+        @Override
         public void onError(AsyncEvent event) throws IOException
         {
+            _errors.increment();
         }
 
         @Override
         public void onComplete(AsyncEvent event) throws IOException
         {
+            System.err.println("On Async Complete for " + event);
             HttpChannelState state = ((AsyncContextEvent)event).getHttpChannelState();
 
             Request request = state.getBaseRequest();
@@ -149,6 +148,10 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @Override
     public void handle(String path, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
+        Handler handler = getHandler();
+        if (handler == null || !isStarted() || isShutdown())
+            return;
+
         _dispatchedStats.increment();
 
         final long start;
@@ -168,51 +171,40 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
 
         try
         {
-            Handler handler = getHandler();
-            if (handler != null && !_shutdown.isShutdown() && isStarted())
-                handler.handle(path, baseRequest, request, response);
-            else
-            {
-                if (!baseRequest.isHandled())
-                    baseRequest.setHandled(true);
-                else if (_wrapWarning.compareAndSet(false, true))
-                    LOG.warn("Bad statistics configuration. Latencies will be incorrect in {}", this);
-                if (!baseRequest.getResponse().isCommitted())
-                    response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
-            }
+            handler.handle(path, baseRequest, request, response);
         }
         finally
         {
             final long now = System.currentTimeMillis();
             final long dispatched = now - start;
 
+            // TODO: make dispatchedStats optional metric for shutdown
             _dispatchedStats.decrement();
             _dispatchedTimeStats.record(dispatched);
 
-            if (state.isSuspended() || state.isAsyncStarted())
+            if (state.isInitial())
             {
-                if (state.isInitial())
+                if (state.isAsyncStarted())
                 {
                     state.addListener(_onCompletion);
                     _asyncWaitStats.increment();
                 }
-            }
-            else if (state.isInitial())
-            {
-                long d = _requestStats.decrement();
-                _requestTimeStats.record(dispatched);
-                updateResponse(baseRequest);
-
-                // If we have no more dispatches, should we signal shutdown?
-                FutureCallback shutdown = _shutdown.get();
-                if (shutdown != null)
+                else
                 {
-                    response.flushBuffer();
-                    if (d == 0)
-                        shutdown.succeeded();
+                    long d = _requestStats.decrement();
+                    _requestTimeStats.record(dispatched);
+                    updateResponse(baseRequest);
+
+                    // If we have no more dispatches, should we signal shutdown?
+                    FutureCallback shutdown = _shutdown.get();
+                    if (shutdown != null)
+                    {
+                        response.flushBuffer();
+                        if (d == 0)
+                            shutdown.succeeded();
+                    }
                 }
             }
-            // else onCompletion will handle it.
         }
     }
 
@@ -251,6 +243,8 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     @Override
     protected void doStart() throws Exception
     {
+        if (getHandler() == null)
+            throw new IllegalStateException("StatisticsHandler has no Wrapped Handler");
         _shutdown.cancel();
         super.doStart();
         statsReset();
@@ -465,6 +459,16 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     public int getExpires()
     {
         return _expires.intValue();
+    }
+
+    /**
+     * @return the number of async errors that occurred.
+     * @see #getAsyncDispatches()
+     */
+    @ManagedAttribute("number of async errors that occurred")
+    public int getErrors()
+    {
+        return _errors.intValue();
     }
 
     /**
