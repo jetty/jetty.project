@@ -305,7 +305,7 @@ public class GracefulStopTest
                         ).getBytes());
                         client2.getOutputStream().flush();
                         String response2 = IO.toString(client2.getInputStream());
-                        assertThat(response2, containsString(" 503 "));
+                        assertThat(response2, containsString(" 404 "));
 
                         now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                         Thread.sleep(Math.max(1, end - now));
@@ -330,8 +330,9 @@ public class GracefulStopTest
             assertThat(response, containsString(" 200 OK"));
             assertThat(response, containsString("read 10/10"));
 
-            assertThat(stats.getRequests(), is(2));
-            assertThat(stats.getResponses5xx(), is(1));
+            // The StatisticsHandler was shutdown when it received the second request so does not contribute to the stats.
+            assertThat(stats.getRequests(), is(1));
+            assertThat(stats.getResponses4xx(), is(0));
         }
     }
 
@@ -631,7 +632,7 @@ public class GracefulStopTest
 
         // Check new connections rejected!
         String unavailable = connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n");
-        assertThat(unavailable, containsString(" 503 Service Unavailable"));
+        assertThat(unavailable, containsString(" 404 Not Found"));
         assertThat(unavailable, Matchers.containsString("Connection: close"));
 
         // Check completed 200 has close
