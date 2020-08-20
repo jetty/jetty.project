@@ -16,19 +16,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server.examples;
+package org.eclipse.jetty.client;
 
-import javax.servlet.http.HttpSession;
-import javax.websocket.HandshakeResponse;
-import javax.websocket.server.HandshakeRequest;
-import javax.websocket.server.ServerEndpointConfig;
+import org.eclipse.jetty.client.api.Connection;
 
-public class GetHttpSessionConfigurator extends ServerEndpointConfig.Configurator
+public class ConnectionPoolHelper
 {
-    @Override
-    public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response)
+    public static Connection acquire(AbstractConnectionPool connectionPool, boolean create)
     {
-        HttpSession httpSession = (HttpSession)request.getHttpSession();
-        config.getUserProperties().put(HttpSession.class.getName(), httpSession);
+        return connectionPool.acquire(create);
+    }
+
+    public static void tryCreate(AbstractConnectionPool connectionPool, int pending)
+    {
+        connectionPool.tryCreate(pending);
     }
 }

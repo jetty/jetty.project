@@ -37,6 +37,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
@@ -276,11 +277,12 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         }
     }
 
-    private static class ProxyConnection implements Connection
+    private static class ProxyConnection implements Connection, Attachable
     {
         private final Destination destination;
         private final Connection connection;
         private final Promise<Connection> promise;
+        private Object attachment;
 
         private ProxyConnection(Destination destination, Connection connection, Promise<Connection> promise)
         {
@@ -312,6 +314,18 @@ public class HttpProxy extends ProxyConfiguration.Proxy
         public boolean isClosed()
         {
             return connection.isClosed();
+        }
+
+        @Override
+        public void setAttachment(Object obj)
+        {
+            this.attachment = obj;
+        }
+
+        @Override
+        public Object getAttachment()
+        {
+            return attachment;
         }
     }
 

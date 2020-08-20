@@ -35,15 +35,19 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.HttpCookieStore;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class HttpConnection implements IConnection
+public abstract class HttpConnection implements IConnection, Attachable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
 
+    private final AutoLock lock = new AutoLock();
     private final HttpDestination destination;
+    private Object attachment;
     private int idleTimeoutGuard;
     private long idleTimeoutStamp;
 
@@ -87,7 +91,7 @@ public abstract class HttpConnection implements IConnection
         // the request is associated to the channel and sent.
         // Use a counter to support multiplexed requests.
         boolean send;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             send = idleTimeoutGuard >= 0;
             if (send)
@@ -111,7 +115,7 @@ public abstract class HttpConnection implements IConnection
                 result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
             }
 
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 --idleTimeoutGuard;
                 idleTimeoutStamp = System.nanoTime();
@@ -250,7 +254,7 @@ public abstract class HttpConnection implements IConnection
 
     public boolean onIdleTimeout(long idleTimeout)
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             if (idleTimeoutGuard == 0)
             {
@@ -269,6 +273,18 @@ public abstract class HttpConnection implements IConnection
                 return false;
             }
         }
+    }
+
+    @Override
+    public void setAttachment(Object obj)
+    {
+        this.attachment = obj;
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        return attachment;
     }
 
     @Override

@@ -36,12 +36,12 @@ import org.eclipse.jetty.websocket.core.server.Negotiation;
 /**
  * Servlet Specific UpgradeResponse implementation.
  */
-public class ServletUpgradeResponse
+public class ServerUpgradeResponse
 {
     private final HttpServletResponse response;
     private final Negotiation negotiation;
 
-    public ServletUpgradeResponse(Negotiation negotiation)
+    public ServerUpgradeResponse(Negotiation negotiation)
     {
         this.negotiation = negotiation;
         this.response = negotiation.getResponse();

@@ -50,6 +50,7 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -246,6 +247,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
     private class ContentNotifier
     {
+        private final AutoLock lock = new AutoLock();
         private final Queue<DataInfo> queue = new ArrayDeque<>();
         private final HttpReceiverOverHTTP2 receiver;
         private DataInfo dataInfo;
@@ -269,7 +271,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
         private void enqueue(DataInfo dataInfo)
         {
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 queue.offer(dataInfo);
             }
@@ -285,7 +287,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                 return;
 
             // Process only if there is demand.
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 if (!resume && demand() <= 0)
                 {
@@ -309,7 +311,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                     }
                 }
 
-                synchronized (this)
+                try (AutoLock l = lock.lock())
                 {
                     dataInfo = queue.poll();
                     if (LOG.isDebugEnabled())
@@ -347,7 +349,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
 
         private boolean active(boolean resume)
         {
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 if (active)
                 {
@@ -380,7 +382,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
          */
         private boolean stall()
         {
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 if (resume)
                 {
@@ -400,7 +402,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         private void reset()
         {
             dataInfo = null;
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 queue.clear();
                 active = false;

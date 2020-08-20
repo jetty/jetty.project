@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -39,6 +40,7 @@ public class MessageOutputStream extends OutputStream
 {
     private static final Logger LOG = LoggerFactory.getLogger(MessageOutputStream.class);
 
+    private final AutoLock lock = new AutoLock();
     private final CoreSession coreSession;
     private final ByteBufferPool bufferPool;
     private final int bufferSize;
@@ -123,7 +125,7 @@ public class MessageOutputStream extends OutputStream
 
     private void flush(boolean fin) throws IOException
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             if (closed)
                 throw new IOException("Stream is closed");
@@ -157,7 +159,7 @@ public class MessageOutputStream extends OutputStream
 
     private void send(ByteBuffer data) throws IOException
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             if (closed)
                 throw new IOException("Stream is closed");
@@ -197,7 +199,7 @@ public class MessageOutputStream extends OutputStream
 
     public void setCallback(Callback callback)
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             this.callback = callback;
         }
@@ -206,26 +208,22 @@ public class MessageOutputStream extends OutputStream
     private void notifySuccess()
     {
         Callback callback;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             callback = this.callback;
         }
         if (callback != null)
-        {
             callback.succeeded();
-        }
     }
 
     private void notifyFailure(Throwable failure)
     {
         Callback callback;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             callback = this.callback;
         }
         if (callback != null)
-        {
             callback.failed(failure);
-        }
     }
 }

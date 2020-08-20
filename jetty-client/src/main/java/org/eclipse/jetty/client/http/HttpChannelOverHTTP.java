@@ -30,13 +30,16 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpChannelOverHTTP extends HttpChannel
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverHTTP.class);
+
     private final HttpConnectionOverHTTP connection;
     private final HttpSenderOverHTTP sender;
     private final HttpReceiverOverHTTP receiver;
-    private final LongAdder inMessages = new LongAdder();
     private final LongAdder outMessages = new LongAdder();
 
     public HttpChannelOverHTTP(HttpConnectionOverHTTP connection)
@@ -89,7 +92,6 @@ public class HttpChannelOverHTTP extends HttpChannel
 
     public void receive()
     {
-        inMessages.increment();
         receiver.receive();
     }
 
@@ -145,7 +147,7 @@ public class HttpChannelOverHTTP extends HttpChannel
 
     protected long getMessagesIn()
     {
-        return inMessages.longValue();
+        return receiver.getMessagesIn();
     }
 
     protected long getMessagesOut()

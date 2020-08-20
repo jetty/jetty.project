@@ -647,7 +647,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the max time, in milliseconds, a connection can take to connect to destinations
+     * @return the max time, in milliseconds, a connection can take to connect to destinations. Zero value means infinite timeout.
      */
     @ManagedAttribute("The timeout, in milliseconds, for connect() operations")
     public long getConnectTimeout()
@@ -656,7 +656,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param connectTimeout the max time, in milliseconds, a connection can take to connect to destinations
+     * @param connectTimeout the max time, in milliseconds, a connection can take to connect to destinations. Zero value means infinite timeout.
      * @see java.net.Socket#connect(SocketAddress, int)
      */
     public void setConnectTimeout(long connectTimeout)
@@ -1111,10 +1111,14 @@ public class HttpClient extends ContainerLifeCycle
         return encodingField;
     }
 
+    /**
+     * @param host the host to normalize
+     * @return the host itself
+     * @deprecated no replacement, do not use it
+     */
+    @Deprecated
     protected String normalizeHost(String host)
     {
-        if (host != null && host.startsWith("[") && host.endsWith("]"))
-            return host.substring(1, host.length() - 1);
         return host;
     }
 

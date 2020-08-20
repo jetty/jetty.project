@@ -22,13 +22,13 @@ import java.net.URI;
 import java.security.Principal;
 
 import org.eclipse.jetty.websocket.javax.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeRequest;
 
 public class JavaxServerUpgradeRequest implements UpgradeRequest
 {
-    private final ServletUpgradeRequest servletRequest;
+    private final ServerUpgradeRequest servletRequest;
 
-    public JavaxServerUpgradeRequest(ServletUpgradeRequest servletRequest)
+    public JavaxServerUpgradeRequest(ServerUpgradeRequest servletRequest)
     {
         this.servletRequest = servletRequest;
     }

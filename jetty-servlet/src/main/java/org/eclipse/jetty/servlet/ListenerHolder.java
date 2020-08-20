@@ -23,6 +23,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * ListenerHolder
@@ -105,17 +106,19 @@ public class ListenerHolder extends BaseHolder<EventListener>
     }
 
     @Override
-    protected synchronized EventListener createInstance() throws Exception
+    protected EventListener createInstance() throws Exception
     {
-
-        EventListener listener = super.createInstance();
-        if (listener == null)
+        try (AutoLock l = lock())
         {
-            ServletContext ctx = getServletContext();
-            if (ctx != null)
-                listener = ctx.createListener(getHeldClass());
+            EventListener listener = super.createInstance();
+            if (listener == null)
+            {
+                ServletContext ctx = getServletContext();
+                if (ctx != null)
+                    listener = ctx.createListener(getHeldClass());
+            }
+            return listener;
         }
-        return listener;
     }
 
     @Override

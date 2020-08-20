@@ -34,5 +34,5 @@ public interface WebSocketCreator
      * @param resp the response details
      * @return a websocket object to use, or null if no websocket should be created from this request.
      */
-    Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp);
+    Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp);
 }

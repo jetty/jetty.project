@@ -291,7 +291,7 @@ public class MimeTypes
     {
     }
 
-    public synchronized Map<String, String> getMimeMap()
+    public Map<String, String> getMimeMap()
     {
         return _mimeMap;
     }

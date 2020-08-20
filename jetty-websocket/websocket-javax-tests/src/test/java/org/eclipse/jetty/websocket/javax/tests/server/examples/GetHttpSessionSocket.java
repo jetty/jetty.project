@@ -16,30 +16,33 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server.examples;
+package org.eclipse.jetty.websocket.javax.tests.server.examples;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
+import javax.servlet.http.HttpSession;
+import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.util.IO;
-
-@ServerEndpoint("/echo")
-public class StreamingEchoSocket
+@ServerEndpoint(value = "/example", configurator = GetHttpSessionConfigurator.class)
+public class GetHttpSessionSocket
 {
-    @OnMessage
-    public void onMessage(Session session, Reader reader)
+    private Session wsSession;
+    @SuppressWarnings("unused")
+    private HttpSession httpSession;
+
+    @OnOpen
+    public void open(Session session, EndpointConfig config)
     {
-        try (Writer writer = session.getBasicRemote().getSendWriter())
-        {
-            IO.copy(reader, writer);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        this.wsSession = session;
+        this.httpSession = (HttpSession)config.getUserProperties().get(HttpSession.class.getName());
+    }
+
+    @OnMessage
+    public void echo(String msg) throws IOException
+    {
+        wsSession.getBasicRemote().sendText(msg);
     }
 }

@@ -25,13 +25,13 @@ import java.util.Map;
 import javax.websocket.server.HandshakeRequest;
 
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeRequest;
+import org.eclipse.jetty.websocket.util.server.internal.ServerUpgradeRequest;
 
 public class JsrHandshakeRequest implements HandshakeRequest
 {
-    private final ServletUpgradeRequest delegate;
+    private final ServerUpgradeRequest delegate;
 
-    public JsrHandshakeRequest(ServletUpgradeRequest req)
+    public JsrHandshakeRequest(ServerUpgradeRequest req)
     {
         this.delegate = req;
     }

@@ -16,18 +16,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server.examples;
+package org.eclipse.jetty.websocket.javax.tests.server.examples;
 
-import javax.websocket.OnMessage;
-import javax.websocket.server.ServerEndpoint;
+import javax.servlet.http.HttpSession;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.server.HandshakeRequest;
+import javax.websocket.server.ServerEndpointConfig;
 
-@ServerEndpoint(value = "/secured/socket", configurator = MyAuthedConfigurator.class)
-public class MyAuthedSocket
+public class GetHttpSessionConfigurator extends ServerEndpointConfig.Configurator
 {
-    @OnMessage
-    public String onMessage(String msg)
+    @Override
+    public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response)
     {
-        // echo the message back to the remote
-        return msg;
+        HttpSession httpSession = (HttpSession)request.getHttpSession();
+        config.getUserProperties().put(HttpSession.class.getName(), httpSession);
     }
 }

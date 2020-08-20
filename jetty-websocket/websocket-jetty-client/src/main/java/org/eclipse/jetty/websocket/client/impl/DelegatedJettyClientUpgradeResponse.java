@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.client.impl;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +35,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
  */
 public class DelegatedJettyClientUpgradeResponse implements UpgradeResponse
 {
-    private HttpResponse delegate;
+    private final HttpResponse delegate;
 
     public DelegatedJettyClientUpgradeResponse(HttpResponse response)
     {
@@ -80,48 +79,12 @@ public class DelegatedJettyClientUpgradeResponse implements UpgradeResponse
     }
 
     @Override
-    public void addHeader(String name, String value)
-    {
-
-    }
-
-    @Override
-    public void sendForbidden(String message) throws IOException
-    {
-
-    }
-
-    @Override
-    public void setAcceptedSubProtocol(String protocol)
-    {
-
-    }
-
-    @Override
     public List<ExtensionConfig> getExtensions()
     {
         List<String> rawExtensions = delegate.getHeaders().getValuesList(HttpHeader.SEC_WEBSOCKET_EXTENSIONS);
         if (rawExtensions == null || rawExtensions.isEmpty())
             return Collections.emptyList();
 
-        return rawExtensions.stream().map((parameterizedName) -> ExtensionConfig.parse(parameterizedName)).collect(Collectors.toList());
-    }
-
-    @Override
-    public void setExtensions(List<org.eclipse.jetty.websocket.api.extensions.ExtensionConfig> extensions)
-    {
-
-    }
-
-    @Override
-    public void setHeader(String name, String value)
-    {
-
-    }
-
-    @Override
-    public void setStatusCode(int statusCode)
-    {
-
+        return rawExtensions.stream().map(ExtensionConfig::parse).collect(Collectors.toList());
     }
 }

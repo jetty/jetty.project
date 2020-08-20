@@ -41,7 +41,11 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.internal.DelegatedServerUpgradeRequest;
+import org.eclipse.jetty.websocket.server.internal.DelegatedServerUpgradeResponse;
 import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
+import org.eclipse.jetty.websocket.util.ReflectUtils;
+import org.eclipse.jetty.websocket.util.server.WebSocketUpgradeFilter;
 import org.eclipse.jetty.websocket.util.server.internal.FrameHandlerFactory;
 import org.eclipse.jetty.websocket.util.server.internal.WebSocketMapping;
 import org.slf4j.Logger;
@@ -85,8 +89,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
 
     private static final Logger LOG = LoggerFactory.getLogger(JettyWebSocketServerContainer.class);
 
+    private final ServletContextHandler contextHandler;
     private final WebSocketMapping webSocketMapping;
-    private final WebSocketComponents webSocketComponents;
     private final FrameHandlerFactory frameHandlerFactory;
     private final Executor executor;
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
@@ -103,8 +107,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
      */
     JettyWebSocketServerContainer(ServletContextHandler contextHandler, WebSocketMapping webSocketMapping, WebSocketComponents webSocketComponents, Executor executor)
     {
+        this.contextHandler = contextHandler;
         this.webSocketMapping = webSocketMapping;
-        this.webSocketComponents = webSocketComponents;
         this.executor = executor;
 
         // Ensure there is a FrameHandlerFactory
@@ -118,6 +122,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         frameHandlerFactory = factory;
 
         addSessionListener(sessionTracker);
+        addBean(sessionTracker);
     }
 
     public void addMapping(String pathSpec, JettyWebSocketCreator creator)
@@ -126,9 +131,28 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         if (webSocketMapping.getMapping(ps) != null)
             throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
 
+        WebSocketUpgradeFilter.ensureFilter(contextHandler.getServletContext());
         webSocketMapping.addMapping(ps,
-            (req, resp) -> creator.createWebSocket(new JettyServerUpgradeRequest(req), new JettyServerUpgradeResponse(resp)),
+            (req, resp) -> creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp)),
             frameHandlerFactory, customizer);
+    }
+
+    public void addMapping(String pathSpec, final Class<?> endpointClass)
+    {
+        if (!ReflectUtils.isDefaultConstructable(endpointClass))
+            throw new IllegalArgumentException("Cannot access default constructor for the class: " + endpointClass.getName());
+
+        addMapping(pathSpec, (req, resp) ->
+        {
+            try
+            {
+                return endpointClass.getDeclaredConstructor().newInstance();
+            }
+            catch (Exception e)
+            {
+                throw new org.eclipse.jetty.websocket.api.WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
+            }
+        });
     }
 
     @Override

@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.javax.common;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
-import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.websocket.util.InvokerUtils;
@@ -43,7 +42,7 @@ public class DummyFrameHandlerFactory extends JavaxWebSocketFrameHandlerFactory
     {
         if (javax.websocket.Endpoint.class.isAssignableFrom(endpointClass))
         {
-            return createEndpointMetadata((Class<? extends Endpoint>)endpointClass, endpointConfig);
+            return createEndpointMetadata(endpointConfig);
         }
 
         if (endpointClass.getAnnotation(ClientEndpoint.class) == null)

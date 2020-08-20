@@ -52,10 +52,10 @@ public class WebInfConfiguration extends AbstractConfiguration
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
     {
-        //Make a temp directory for the webapp if one is not already set
+        // Make a temp directory for the webapp if one is not already set
         resolveTempDirectory(context);
 
-        //Extract webapp if necessary
+        // Extract webapp if necessary
         unpack(context);
     }
 

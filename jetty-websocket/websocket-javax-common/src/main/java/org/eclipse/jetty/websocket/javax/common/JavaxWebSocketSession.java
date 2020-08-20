@@ -93,6 +93,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
         }
 
         this.userProperties = endpointConfig.getUserProperties();
+        container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionCreated(this));
     }
 
     public CoreSession getCoreSession()
@@ -564,7 +565,7 @@ public class JavaxWebSocketSession implements javax.websocket.Session
     }
 
     @Override
-    public synchronized void removeMessageHandler(MessageHandler handler)
+    public void removeMessageHandler(MessageHandler handler)
     {
         frameHandler.removeMessageHandler(handler);
     }

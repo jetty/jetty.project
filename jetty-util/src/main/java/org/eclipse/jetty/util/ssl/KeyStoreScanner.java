@@ -27,8 +27,9 @@ import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The {@link KeyStoreScanner} is used to monitor the KeyStore file used by the {@link SslContextFactory}.
@@ -38,7 +39,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.DiscreteListener
 {
-    private static final Logger LOG = Log.getLogger(KeyStoreScanner.class);
+    private static final Logger LOG = LoggerFactory.getLogger(KeyStoreScanner.class);
 
     private final SslContextFactory sslContextFactory;
     private final File keystoreFile;
@@ -49,11 +50,22 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
         this.sslContextFactory = sslContextFactory;
         try
         {
-            keystoreFile = sslContextFactory.getKeyStoreResource().getFile();
-            if (keystoreFile == null || !keystoreFile.exists())
+            Resource keystoreResource = sslContextFactory.getKeyStoreResource();
+            File monitoredFile = keystoreResource.getFile();
+            if (monitoredFile == null || !monitoredFile.exists())
                 throw new IllegalArgumentException("keystore file does not exist");
-            if (keystoreFile.isDirectory())
+            if (monitoredFile.isDirectory())
                 throw new IllegalArgumentException("expected keystore file not directory");
+
+            if (keystoreResource.getAlias() != null)
+            {
+                // this resource has an alias, use the alias, as that's what's returned in the Scanner
+                monitoredFile = new File(keystoreResource.getAlias());
+            }
+
+            keystoreFile = monitoredFile;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Monitored Keystore File: {}", monitoredFile);
         }
         catch (IOException e)
         {
@@ -104,6 +116,16 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
             reload();
     }
 
+    @ManagedOperation(value = "Scan for changes in the SSL Keystore", impact = "ACTION")
+    public void scan()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("scanning");
+
+        _scanner.scan();
+        _scanner.scan();
+    }
+
     @ManagedOperation(value = "Reload the SSL Keystore", impact = "ACTION")
     public void reload()
     {
@@ -112,7 +134,8 @@ public class KeyStoreScanner extends ContainerLifeCycle implements Scanner.Discr
 
         try
         {
-            sslContextFactory.reload(scf -> {});
+            sslContextFactory.reload(scf ->
+            {});
         }
         catch (Throwable t)
         {

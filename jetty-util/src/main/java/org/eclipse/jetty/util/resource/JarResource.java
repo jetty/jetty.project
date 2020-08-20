@@ -34,12 +34,14 @@ import java.util.jar.Manifest;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JarResource extends URLResource
 {
     private static final Logger LOG = LoggerFactory.getLogger(JarResource.class);
+
     protected JarURLConnection _jarConnection;
 
     protected JarResource(URL url)
@@ -53,28 +55,34 @@ public class JarResource extends URLResource
     }
 
     @Override
-    public synchronized void close()
+    public void close()
     {
-        _jarConnection = null;
-        super.close();
+        try (AutoLock l = _lock.lock())
+        {
+            _jarConnection = null;
+            super.close();
+        }
     }
 
     @Override
-    protected synchronized boolean checkConnection()
+    protected boolean checkConnection()
     {
-        super.checkConnection();
-        try
+        try (AutoLock l = _lock.lock())
         {
-            if (_jarConnection != _connection)
-                newConnection();
-        }
-        catch (IOException e)
-        {
-            LOG.trace("IGNORED", e);
-            _jarConnection = null;
-        }
+            super.checkConnection();
+            try
+            {
+                if (_jarConnection != _connection)
+                    newConnection();
+            }
+            catch (IOException e)
+            {
+                LOG.trace("IGNORED", e);
+                _jarConnection = null;
+            }
 
-        return _jarConnection != null;
+            return _jarConnection != null;
+        }
     }
 
     /**

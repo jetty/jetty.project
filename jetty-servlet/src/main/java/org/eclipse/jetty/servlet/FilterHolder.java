@@ -34,6 +34,7 @@ import javax.servlet.ServletException;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +103,7 @@ public class FilterHolder extends Holder<Filter>
     @Override
     public void initialize() throws Exception
     {
-        synchronized (this)
+        try (AutoLock l = lock())
         {
             if (_filter != null)
                 return;
@@ -133,16 +134,19 @@ public class FilterHolder extends Holder<Filter>
     }
 
     @Override
-    protected synchronized Filter createInstance() throws Exception
+    protected Filter createInstance() throws Exception
     {
-        Filter filter = super.createInstance();
-        if (filter == null)
+        try (AutoLock l = lock())
         {
-            ServletContext context = getServletContext();
-            if (context != null)
-                filter = context.createFilter(getHeldClass());
+            Filter filter = super.createInstance();
+            if (filter == null)
+            {
+                ServletContext context = getServletContext();
+                if (context != null)
+                    filter = context.createFilter(getHeldClass());
+            }
+            return filter;
         }
-        return filter;
     }
 
     @Override
@@ -175,7 +179,7 @@ public class FilterHolder extends Holder<Filter>
         getServletHandler().destroyFilter(f);
     }
 
-    public synchronized void setFilter(Filter filter)
+    public void setFilter(Filter filter)
     {
         setInstance(filter);
     }

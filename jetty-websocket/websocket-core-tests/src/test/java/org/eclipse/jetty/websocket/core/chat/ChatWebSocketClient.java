@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.MessageHandler;
-import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +51,7 @@ public class ChatWebSocketClient
 
         URI wsUri = baseWebsocketUri.resolve("/chat");
         handler = MessageHandler.from(this::onText, null);
-        ClientUpgradeRequest request = ClientUpgradeRequest.from(client, wsUri, handler);
+        CoreClientUpgradeRequest request = CoreClientUpgradeRequest.from(client, wsUri, handler);
         request.setSubProtocols("chat");
         client.connect(request).get(5, TimeUnit.SECONDS);
         handler.sendText("[" + name + ": has joined the room]", Callback.NOOP, false);

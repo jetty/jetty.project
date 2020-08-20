@@ -150,12 +150,28 @@ public class DefaultServletRangesTest
         String boundary = body.substring(0, body.indexOf("\r\n"));
         assertResponseContains("206 Partial", response);
         assertResponseContains("Content-Type: multipart/byteranges; boundary=", response);
-        assertResponseContains("Content-Range: bytes 0-9/80", response);
-        assertResponseContains("Content-Range: bytes 20-29/80", response);
-        assertResponseContains("Content-Range: bytes 40-49/80", response);
-        assertResponseContains(DATA.substring(0, 10), response);
-        assertResponseContains(DATA.substring(20, 30), response);
-        assertResponseContains(DATA.substring(40, 50), response);
+
+        String section1 = boundary + "\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Content-Range: bytes 0-9/80\r\n" +
+            "\r\n" +
+            DATA.substring(0, 10) + "\r\n";
+        assertResponseContains(section1, response);
+
+        String section2 = boundary + "\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Content-Range: bytes 20-29/80\r\n" +
+            "\r\n" +
+            DATA.substring(20, 30) + "\r\n";
+        assertResponseContains(section2, response);
+
+        String section3 = boundary + "\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Content-Range: bytes 40-49/80\r\n" +
+            "\r\n" +
+            DATA.substring(40, 50) + "\r\n";
+        assertResponseContains(section3, response);
+
         assertTrue(body.endsWith(boundary + "--\r\n"));
     }
 

@@ -92,7 +92,7 @@ public class AsyncRequestLogWriter extends RequestLogWriter
     }
 
     @Override
-    protected synchronized void doStart() throws Exception
+    protected void doStart() throws Exception
     {
         super.doStart();
         _thread = new AsyncRequestLogWriter.WriterThread();

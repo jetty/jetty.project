@@ -19,13 +19,15 @@
 package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class HttpChannel
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
 
+    private final AutoLock _lock = new AutoLock();
     private final HttpDestination _destination;
     private final TimeoutCompleteListener _totalTimeout;
     private HttpExchange _exchange;
@@ -58,7 +60,7 @@ public abstract class HttpChannel
     {
         boolean result = false;
         boolean abort = true;
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             if (_exchange == null)
             {
@@ -85,7 +87,7 @@ public abstract class HttpChannel
     public boolean disassociate(HttpExchange exchange)
     {
         boolean result = false;
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             HttpExchange existing = _exchange;
             _exchange = null;
@@ -103,7 +105,7 @@ public abstract class HttpChannel
 
     public HttpExchange getHttpExchange()
     {
-        synchronized (this)
+        try (AutoLock l = _lock.lock())
         {
             return _exchange;
         }

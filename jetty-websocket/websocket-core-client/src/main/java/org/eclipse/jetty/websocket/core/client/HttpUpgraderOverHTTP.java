@@ -43,9 +43,9 @@ public class HttpUpgraderOverHTTP implements HttpUpgrader
     private static final PreEncodedHttpField WS_CONNECTION_FIELD = new PreEncodedHttpField(HttpHeader.CONNECTION, "Upgrade");
     private static final PreEncodedHttpField PRAGMA_NO_CACHE_FIELD = new PreEncodedHttpField(HttpHeader.PRAGMA, "no-cache");
     private static final PreEncodedHttpField CACHE_CONTROL_NO_CACHE_FIELD = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "no-cache");
-    private final ClientUpgradeRequest clientUpgradeRequest;
+    private final CoreClientUpgradeRequest clientUpgradeRequest;
 
-    public HttpUpgraderOverHTTP(ClientUpgradeRequest clientUpgradeRequest)
+    public HttpUpgraderOverHTTP(CoreClientUpgradeRequest clientUpgradeRequest)
     {
         this.clientUpgradeRequest = clientUpgradeRequest;
     }

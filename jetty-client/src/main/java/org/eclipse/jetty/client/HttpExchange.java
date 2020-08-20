@@ -23,6 +23,7 @@ import java.util.List;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +31,7 @@ public class HttpExchange
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpExchange.class);
 
+    private final AutoLock lock = new AutoLock();
     private final HttpDestination destination;
     private final HttpRequest request;
     private final List<Response.ResponseListener> listeners;
@@ -68,7 +70,7 @@ public class HttpExchange
 
     public Throwable getRequestFailure()
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             return requestFailure;
         }
@@ -86,7 +88,7 @@ public class HttpExchange
 
     public Throwable getResponseFailure()
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             return responseFailure;
         }
@@ -103,7 +105,7 @@ public class HttpExchange
     {
         boolean result = false;
         boolean abort = false;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             // Only associate if the exchange state is initial,
             // as the exchange could be already failed.
@@ -127,7 +129,7 @@ public class HttpExchange
     void disassociate(HttpChannel channel)
     {
         boolean abort = false;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             if (_channel != channel || requestState != State.TERMINATED || responseState != State.TERMINATED)
                 abort = true;
@@ -140,7 +142,7 @@ public class HttpExchange
 
     private HttpChannel getHttpChannel()
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             return _channel;
         }
@@ -148,7 +150,7 @@ public class HttpExchange
 
     public boolean requestComplete(Throwable failure)
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             return completeRequest(failure);
         }
@@ -167,7 +169,7 @@ public class HttpExchange
 
     public boolean responseComplete(Throwable failure)
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             return completeResponse(failure);
         }
@@ -187,7 +189,7 @@ public class HttpExchange
     public Result terminateRequest()
     {
         Result result = null;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             if (requestState == State.COMPLETED)
                 requestState = State.TERMINATED;
@@ -204,7 +206,7 @@ public class HttpExchange
     public Result terminateResponse()
     {
         Result result = null;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             if (responseState == State.COMPLETED)
                 responseState = State.TERMINATED;
@@ -224,7 +226,7 @@ public class HttpExchange
         // This will avoid that this exchange can be associated to a channel.
         boolean abortRequest;
         boolean abortResponse;
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             abortRequest = completeRequest(failure);
             abortResponse = completeResponse(failure);
@@ -283,7 +285,7 @@ public class HttpExchange
 
     public void resetResponse()
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             responseState = State.PENDING;
             responseFailure = null;
@@ -300,7 +302,7 @@ public class HttpExchange
     @Override
     public String toString()
     {
-        synchronized (this)
+        try (AutoLock l = lock.lock())
         {
             return String.format("%s@%x req=%s/%s@%h res=%s/%s@%h",
                 HttpExchange.class.getSimpleName(),

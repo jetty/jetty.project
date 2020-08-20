@@ -20,102 +20,97 @@ package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
-import org.eclipse.jetty.websocket.util.server.internal.ServletUpgradeResponse;
 
-public class JettyServerUpgradeResponse
+public interface JettyServerUpgradeResponse extends UpgradeResponse
 {
-    private ServletUpgradeResponse upgradeResponse;
+    /**
+     * Add a header value to the response.
+     *
+     * @param name the header name
+     * @param value the header value
+     */
+    void addHeader(String name, String value);
 
-    JettyServerUpgradeResponse(ServletUpgradeResponse response)
-    {
-        upgradeResponse = response;
-    }
+    /**
+     * Set a header
+     * <p>
+     * Overrides previous value of header (if set)
+     *
+     * @param name the header name
+     * @param value the header value
+     */
+    void setHeader(String name, String value);
 
-    public void addHeader(String name, String value)
-    {
-        upgradeResponse.addHeader(name, value);
-    }
+    /**
+     * Set a header
+     * <p>
+     * Overrides previous value of header (if set)
+     *
+     * @param name the header name
+     * @param values the header values
+     */
+    void setHeader(String name, List<String> values);
 
-    public void setHeader(String name, String value)
-    {
-        upgradeResponse.setHeader(name, value);
-    }
+    /**
+     * Issue a forbidden upgrade response.
+     * <p>
+     * This means that the websocket endpoint was valid, but the conditions to use a WebSocket resulted in a forbidden
+     * access.
+     * <p>
+     * Use this when the origin or authentication is invalid.
+     *
+     * @param message the short 1 line detail message about the forbidden response
+     * @throws IOException if unable to send the forbidden
+     */
+    void sendForbidden(String message) throws IOException;
 
-    public void setHeader(String name, List<String> values)
-    {
-        upgradeResponse.setHeader(name, values);
-    }
+    /**
+     * Sends an error response to the client using the specified status.
+     * @param statusCode the error status code
+     * @param message the descriptive message
+     * @throws IOException If an input or output exception occurs
+     * @throws IllegalStateException If the response was committed
+     */
+    void sendError(int statusCode, String message) throws IOException;
 
-    public String getAcceptedSubProtocol()
-    {
-        return upgradeResponse.getAcceptedSubProtocol();
-    }
+    /**
+     * Set the accepted WebSocket Protocol.
+     *
+     * @param protocol the protocol to list as accepted
+     */
+    void setAcceptedSubProtocol(String protocol);
 
-    public List<ExtensionConfig> getExtensions()
-    {
-        return upgradeResponse.getExtensions().stream().map(JettyExtensionConfig::new).collect(Collectors.toList());
-    }
+    /**
+     * Set the list of extensions that are approved for use with this websocket.
+     * <p>
+     * Notes:
+     * <ul>
+     * <li>Per the spec you cannot add extensions that have not been seen in the {@link UpgradeRequest}, just remove
+     * entries you don't want to use</li>
+     * <li>If this is unused, or a null is passed, then the list negotiation will follow default behavior and use the
+     * complete list of extensions that are
+     * available in this WebSocket server implementation.</li>
+     * </ul>
+     *
+     * @param extensions the list of extensions to use.
+     */
+    void setExtensions(List<ExtensionConfig> extensions);
 
-    public String getHeader(String name)
-    {
-        return upgradeResponse.getHeader(name);
-    }
+    /**
+     * Set the HTTP Response status code
+     *
+     * @param statusCode the status code
+     */
+    void setStatusCode(int statusCode);
 
-    public Set<String> getHeaderNames()
-    {
-        return upgradeResponse.getHeaderNames();
-    }
-
-    public Map<String, List<String>> getHeadersMap()
-    {
-        return upgradeResponse.getHeadersMap();
-    }
-
-    public List<String> getHeaders(String name)
-    {
-        return upgradeResponse.getHeaders(name);
-    }
-
-    public int getStatusCode()
-    {
-        return upgradeResponse.getStatusCode();
-    }
-
-    public boolean isCommitted()
-    {
-        return upgradeResponse.isCommitted();
-    }
-
-    public void sendError(int statusCode, String message) throws IOException
-    {
-        upgradeResponse.sendError(statusCode, message);
-    }
-
-    public void sendForbidden(String message) throws IOException
-    {
-        upgradeResponse.sendForbidden(message);
-    }
-
-    public void setAcceptedSubProtocol(String protocol)
-    {
-        upgradeResponse.setAcceptedSubProtocol(protocol);
-    }
-
-    public void setExtensions(List<ExtensionConfig> configs)
-    {
-        upgradeResponse.setExtensions(configs.stream()
-            .map(c -> new org.eclipse.jetty.websocket.core.ExtensionConfig(c.getName(), c.getParameters()))
-            .collect(Collectors.toList()));
-    }
-
-    public void setStatusCode(int statusCode)
-    {
-        upgradeResponse.setStatusCode(statusCode);
-    }
+    /**
+     * Returns a boolean indicating if the response has been committed.
+     * A committed response has already had its status code and headers written.
+     * @return a boolean indicating if the response has been committed.
+     */
+    boolean isCommitted();
 }

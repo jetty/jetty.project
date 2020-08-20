@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
@@ -89,6 +90,7 @@ import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -337,7 +339,7 @@ public class Request implements HttpServletRequest
         Map<String,String> cookies = new HashMap<>();
         Cookie[] existingCookies = getCookies();
         if (existingCookies != null)
-        {        
+        {
             for (Cookie c: getCookies())
             {
                 cookies.put(c.getName(), c.getValue());
@@ -371,7 +373,7 @@ public class Request implements HttpServletRequest
             }
             fields.add(new HttpField(HttpHeader.COOKIE, buff.toString()));
         }
-        
+
         PushBuilder builder = new PushBuilderImpl(this, fields, getMethod(), getQueryString(), id);
         builder.addHeader("referer", getRequestURL().toString());
 
@@ -794,14 +796,7 @@ public class Request implements HttpServletRequest
         if (context == null)
             return null;
 
-        // For some reason the spec requires the context path to be encoded (unlike getServletPath).
-        String contextPath = context.getContextHandler().getContextPathEncoded();
-
-        // For the root context, the spec requires that the empty string is returned instead of the leading '/'
-        // which is included in the pathInContext
-        if (URIUtil.SLASH.equals(contextPath))
-            return "";
-        return contextPath;
+        return context.getContextHandler().getRequestContextPath();
     }
 
     /** Get the path in the context.
@@ -979,11 +974,12 @@ public class Request implements HttpServletRequest
                 String name = InetAddress.getLocalHost().getHostAddress();
                 if (StringUtil.ALL_INTERFACES.equals(name))
                     return null;
-                return name;
+                return HostPort.normalizeHost(name);
             }
-            catch (java.net.UnknownHostException e)
+            catch (UnknownHostException e)
             {
                 LOG.trace("IGNORED", e);
+                return null;
             }
         }
 
@@ -991,9 +987,10 @@ public class Request implements HttpServletRequest
         if (local == null)
             return "";
         InetAddress address = local.getAddress();
-        if (address == null)
-            return local.getHostString();
-        return address.getHostAddress();
+        String result = address == null
+            ? local.getHostString()
+            : address.getHostAddress();
+        return HostPort.normalizeHost(result);
     }
 
     @Override
@@ -1003,7 +1000,7 @@ public class Request implements HttpServletRequest
         {
             InetSocketAddress local = _channel.getLocalAddress();
             if (local != null)
-                return local.getHostString();
+                return HostPort.normalizeHost(local.getHostString());
         }
 
         try
@@ -1011,9 +1008,9 @@ public class Request implements HttpServletRequest
             String name = InetAddress.getLocalHost().getHostName();
             if (StringUtil.ALL_INTERFACES.equals(name))
                 return null;
-            return name;
+            return HostPort.normalizeHost(name);
         }
-        catch (java.net.UnknownHostException e)
+        catch (UnknownHostException e)
         {
             LOG.trace("IGNORED", e);
         }
@@ -1198,15 +1195,17 @@ public class Request implements HttpServletRequest
         InetSocketAddress remote = _remote;
         if (remote == null)
             remote = _channel.getRemoteAddress();
-
         if (remote == null)
             return "";
 
         InetAddress address = remote.getAddress();
-        if (address == null)
-            return remote.getHostString();
-
-        return address.getHostAddress();
+        String result = address == null
+            ? remote.getHostString()
+            : address.getHostAddress();
+        // Add IPv6 brackets if necessary, to be consistent
+        // with cases where _remote has been built from other
+        // sources such as forward headers or PROXY protocol.
+        return HostPort.normalizeHost(result);
     }
 
     @Override
@@ -1215,7 +1214,10 @@ public class Request implements HttpServletRequest
         InetSocketAddress remote = _remote;
         if (remote == null)
             remote = _channel.getRemoteAddress();
-        return remote == null ? "" : remote.getHostString();
+        if (remote == null)
+            return "";
+        // We want the URI host, so add IPv6 brackets if necessary.
+        return HostPort.normalizeHost(remote.getHostString());
     }
 
     @Override
@@ -1321,14 +1323,14 @@ public class Request implements HttpServletRequest
         // Return host from connection
         String name = getLocalName();
         if (name != null)
-            return name;
+            return HostPort.normalizeHost(name);
 
         // Return the local host
         try
         {
-            return InetAddress.getLocalHost().getHostAddress();
+            return HostPort.normalizeHost(InetAddress.getLocalHost().getHostAddress());
         }
-        catch (java.net.UnknownHostException e)
+        catch (UnknownHostException e)
         {
             LOG.trace("IGNORED", e);
         }
@@ -1714,7 +1716,7 @@ public class Request implements HttpServletRequest
             // TODO this is not really right for CONNECT
             path = _uri.isAbsolute() ? "/" : null;
         else if (encoded.startsWith("/"))
-            path = (encoded.length() == 1) ? "/" : _uri.getDecodedPath();
+            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(_uri.getDecodedPath());
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
             path = encoded;
         else

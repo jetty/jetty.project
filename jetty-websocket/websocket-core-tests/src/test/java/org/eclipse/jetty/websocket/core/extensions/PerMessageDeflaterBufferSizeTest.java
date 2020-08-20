@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.TestFrameHandler;
 import org.eclipse.jetty.websocket.core.WebSocketServer;
-import org.eclipse.jetty.websocket.core.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 import org.eclipse.jetty.websocket.core.client.UpgradeListener;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.server.Negotiation;
@@ -103,7 +103,7 @@ public class PerMessageDeflaterBufferSizeTest
     {
         int deflateBufferSize = 6;
         TestFrameHandler clientHandler = new TestFrameHandler();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate; @deflate_buffer_size=" + deflateBufferSize);
 
         CompletableFuture<HttpFields> futureRequestHeaders = new CompletableFuture<>();
@@ -157,7 +157,7 @@ public class PerMessageDeflaterBufferSizeTest
     {
         int inflateBufferSize = 6;
         TestFrameHandler clientHandler = new TestFrameHandler();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate; @inflate_buffer_size=" + inflateBufferSize);
 
         CompletableFuture<HttpFields> futureRequestHeaders = new CompletableFuture<>();
@@ -212,7 +212,7 @@ public class PerMessageDeflaterBufferSizeTest
     {
         testNegotiator.deflateBufferSize = 6;
         TestFrameHandler clientHandler = new TestFrameHandler();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate");
 
         CompletableFuture<HttpFields> futureResponseHeaders = new CompletableFuture<>();
@@ -267,7 +267,7 @@ public class PerMessageDeflaterBufferSizeTest
     {
         testNegotiator.inflateBufferSize = 6;
         TestFrameHandler clientHandler = new TestFrameHandler();
-        ClientUpgradeRequest upgradeRequest = ClientUpgradeRequest.from(client, serverUri, clientHandler);
+        CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate");
 
         CompletableFuture<HttpFields> futureResponseHeaders = new CompletableFuture<>();

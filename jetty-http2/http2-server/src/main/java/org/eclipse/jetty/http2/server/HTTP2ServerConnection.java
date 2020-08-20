@@ -58,6 +58,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.thread.AutoLock;
 
 public class HTTP2ServerConnection extends HTTP2Connection
 {
@@ -84,7 +85,8 @@ public class HTTP2ServerConnection extends HTTP2Connection
                 return false;
         }
     }
-    
+
+    private final AutoLock lock = new AutoLock();
     private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
     private final List<Frame> upgradeFrames = new ArrayList<>();
     private final AtomicLong totalRequests = new AtomicLong();
@@ -287,7 +289,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
     {
         if (isRecycleHttpChannels())
         {
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 channels.offer(channel);
             }
@@ -298,7 +300,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
     {
         if (isRecycleHttpChannels())
         {
-            synchronized (this)
+            try (AutoLock l = lock.lock())
             {
                 return channels.poll();
             }

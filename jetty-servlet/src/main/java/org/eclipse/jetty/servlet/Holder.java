@@ -29,6 +29,7 @@ import javax.servlet.ServletContext;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,11 +99,14 @@ public abstract class Holder<T> extends BaseHolder<T>
     }
 
     @Override
-    protected synchronized void setInstance(T instance)
+    protected void setInstance(T instance)
     {
-        super.setInstance(instance);
-        if (getName() == null)
-            setName(String.format("%s@%x", instance.getClass().getName(), instance.hashCode()));
+        try (AutoLock l = lock())
+        {
+            super.setInstance(instance);
+            if (getName() == null)
+                setName(String.format("%s@%x", instance.getClass().getName(), instance.hashCode()));
+        }
     }
 
     public void destroyInstance(Object instance)
