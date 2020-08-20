@@ -65,7 +65,10 @@ public class CdiSpiDecorator implements Decorator
     public CdiSpiDecorator(ServletContextHandler context) throws UnsupportedOperationException
     {
         _context = context;
+        context.setAttribute(CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, MODE);
         ClassLoader classLoader = _context.getClassLoader();
+        if (classLoader == null)
+            classLoader = this.getClass().getClassLoader();
 
         try
         {
@@ -93,6 +96,35 @@ public class CdiSpiDecorator implements Decorator
     }
 
     /**
+     * Test if a class can be decorated.
+     * @implNote The default implementation calls {@link #isKnownUndecoratable(String) }
+     * on the class and all it's super classes.
+     * @param clazz The class to check
+     * @return True if the class and all it's super classes can be decorated
+     */
+    protected boolean isDecoratable(Class<?> clazz)
+    {
+        if (Object.class == clazz)
+            return true;
+        if (isKnownUndecoratable(clazz.getName()))
+            return false;
+        return isDecoratable(clazz.getSuperclass());
+    }
+
+    /**
+     * Test if a specific class name is known to not be decoratable.
+     * @implNote default implementation checks for well known classes that are used to
+     * setup CDI itself, and thus cannot themselves be decorated.
+     * @see #isDecoratable(Class)
+     * @param className The name of the class to check
+     * @return True if the class is known not to be decoratable
+     */
+    protected boolean isKnownUndecoratable(String className)
+    {
+        return "org.jboss.weld.environment.servlet.Listener".equals(className);
+    }
+
+    /**
      * Decorate an object.
      * <p>The signature of this method must match what is introspected for by the
      * Jetty DecoratingListener class.  It is invoked dynamically.</p>
@@ -108,7 +140,8 @@ public class CdiSpiDecorator implements Decorator
             if (LOG.isDebugEnabled())
                 LOG.debug("decorate {} in {}", o, _context);
 
-            _decorated.put(o, new Decorated(o));
+            if (isDecoratable(o.getClass()))
+                _decorated.put(o, new Decorated(o));
         }
         catch (Throwable th)
         {
