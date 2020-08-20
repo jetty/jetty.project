@@ -63,14 +63,14 @@ public class IndentBenchmark
     @BenchmarkMode(Mode.Throughput)
     public void testStringRepeatSmall(Blackhole blackhole)
     {
-        blackhole.consume(" " .repeat(SMALL));
+        blackhole.consume(" ".repeat(SMALL));
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void testStringRepeatLarge(Blackhole blackhole)
     {
-        blackhole.consume(" " .repeat(LARGE));
+        blackhole.consume(" ".repeat(LARGE));
     }
 
     public static void main(String[] args) throws RunnerException
