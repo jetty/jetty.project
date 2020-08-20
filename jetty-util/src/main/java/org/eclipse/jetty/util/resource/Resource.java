@@ -127,7 +127,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                 if (LOG.isDebugEnabled())
                     LOG.warn("Bad PathResource: {}", url, e);
                 else
-                    LOG.warn("Bad PathResource: {}", url, e.toString());
+                    LOG.warn("Bad PathResource: {} {}", url, e.toString());
                 return new BadResource(url, e.toString());
             }
         }

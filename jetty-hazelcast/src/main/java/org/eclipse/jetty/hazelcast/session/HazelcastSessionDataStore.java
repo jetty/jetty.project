@@ -244,7 +244,7 @@ public class HazelcastSessionDataStore
 
             if (exception.get() != null)
             {
-                LOG.warn("Error querying for expired sessions {}", exception.get());
+                LOG.warn("Error querying for expired sessions", exception.get());
                 return expiredSessionIds;
             }
 

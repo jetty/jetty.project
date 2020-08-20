@@ -269,7 +269,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     public boolean delete(String id) throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Remove:session {} for context ", id, _context);
+            LOG.debug("Remove:session {} for context {}", id, _context);
 
         /*
          * Check if the session exists and if it does remove the context

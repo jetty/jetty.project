@@ -1226,7 +1226,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             if (sm.isFromDefaultDescriptor())
                             {
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("{} in mapping {} from defaults descriptor is overridden by ", ps, sm, servletName);
+                                    LOG.debug("{} in mapping {} from defaults descriptor is overridden by {}", ps, sm, servletName);
                             }
                             else
                                 LOG.warn("Duplicate mapping from {} to {}", p, servletName);

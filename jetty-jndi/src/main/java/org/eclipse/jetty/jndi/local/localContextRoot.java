@@ -380,7 +380,7 @@ public class localContextRoot implements Context
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Checking for existing binding for name={} for first element of name=", cname, cname.get(0));
+                LOG.debug("Checking for existing binding for name={} for first element of name={}", cname, cname.get(0));
 
             getContext(cname).bind(cname.getSuffix(1), obj);
         }

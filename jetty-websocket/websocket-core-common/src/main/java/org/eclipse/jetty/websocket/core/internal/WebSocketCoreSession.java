@@ -327,7 +327,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     public void closeConnection(CloseStatus closeStatus, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("closeConnection() {} {} {}", closeStatus, this);
+            LOG.debug("closeConnection() {} {}", closeStatus, this);
 
         abort();
 

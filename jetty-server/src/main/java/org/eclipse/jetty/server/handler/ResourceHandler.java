@@ -143,7 +143,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     public Resource getResource(String path)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, _baseResource, path);
+            LOG.debug("{} getResource({})", _context == null ? _baseResource : _context, path);
 
         if (path == null || !path.startsWith("/"))
             return null;
