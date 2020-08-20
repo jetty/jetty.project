@@ -202,13 +202,18 @@ public class ResourceCollection extends Resource
             throw new IllegalArgumentException("CSV String is blank");
         }
 
-        List<Resource> res = new ArrayList<>();
-        for (Resource resource : Resource.fromList(csvResources, false))
+        List<Resource> resources = Resource.fromList(csvResources, false);
+        if (resources.isEmpty())
+        {
+            throw new IllegalArgumentException("CSV String contains no entries");
+        }
+        List<Resource> ret = new ArrayList<>();
+        for (Resource resource : resources)
         {
             assertResourceValid(resource);
-            res.add(resource);
+            ret.add(resource);
         }
-        setResources(res);
+        setResources(ret);
     }
 
     /**
