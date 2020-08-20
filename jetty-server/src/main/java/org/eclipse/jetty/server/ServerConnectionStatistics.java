@@ -18,17 +18,21 @@
 
 package org.eclipse.jetty.server;
 
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.ConnectionStatistics;
-import org.eclipse.jetty.util.component.Container;
 
+@Deprecated
 public class ServerConnectionStatistics extends ConnectionStatistics
 {
+    /**
+     * @param server the server to use to add {@link ConnectionStatistics} to all Connectors.
+     * @deprecated use {@link Server#addToAllConnectors(Connection.Listener)} instead.
+     */
     public static void addToAllConnectors(Server server)
     {
         for (Connector connector : server.getConnectors())
         {
-            if (connector instanceof Container)
-                connector.addBean(new ConnectionStatistics());
+            connector.addBean(new ConnectionStatistics());
         }
     }
 }

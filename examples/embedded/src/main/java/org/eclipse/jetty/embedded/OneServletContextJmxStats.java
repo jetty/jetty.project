@@ -20,9 +20,9 @@ package org.eclipse.jetty.embedded;
 
 import java.lang.management.ManagementFactory;
 
+import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnectionStatistics;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 
@@ -45,7 +45,7 @@ public class OneServletContextJmxStats
         context.addServlet(DefaultServlet.class, "/");
 
         // Add Connector Statistics tracking to all connectors
-        ServerConnectionStatistics.addToAllConnectors(server);
+        server.addToAllConnectors(new ConnectionStatistics());
         return server;
     }
 

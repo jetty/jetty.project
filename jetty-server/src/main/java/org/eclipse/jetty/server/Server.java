@@ -42,6 +42,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -224,8 +225,8 @@ public class Server extends HandlerWrapper implements Attributes
         if (connector.getServer() != this)
             throw new IllegalArgumentException("Connector " + connector +
                 " cannot be shared among server " + connector.getServer() + " and server " + this);
-        if (_connectors.add(connector))
-            addBean(connector);
+        _connectors.add(connector);
+        addBean(connector);
     }
 
     /**
@@ -263,6 +264,19 @@ public class Server extends HandlerWrapper implements Attributes
         _connectors.removeAll(Arrays.asList(oldConnectors));
         if (connectors != null)
             _connectors.addAll(Arrays.asList(connectors));
+    }
+
+    /**
+     * Add a {@link Connection.Listener} as a bean to all connectors on the server, this
+     * will register the listener with all connections accepted by the connectors.
+     * @param listener the listener to be added.
+     */
+    public void addToAllConnectors(Connection.Listener listener)
+    {
+        for (Connector connector : getConnectors())
+        {
+            connector.addBean(listener);
+        }
     }
 
     /**

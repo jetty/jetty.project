@@ -8,7 +8,9 @@
       <New id="StatsHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler"></New>
     </Arg>
   </Call>
-  <Call class="org.eclipse.jetty.server.ServerConnectionStatistics" name="addToAllConnectors">
-    <Arg><Ref refid="Server"/></Arg>
+  <Call name="addToAllConnectors">
+    <Arg>
+      <New class="org.eclipse.jetty.io.ConnectionStatistics"/>
+    </Arg>
   </Call>
 </Configure>
