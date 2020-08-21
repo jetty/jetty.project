@@ -32,7 +32,7 @@ public class StdErrAppender implements JettyAppender
      * Configuration keys specific to the StdErrAppender
      */
     static final String NAME_CONDENSE_KEY = "org.eclipse.jetty.logging.appender.NAME_CONDENSE";
-    static final String THREAD_PADDING_KEY = "org.eclipse.jetty.logging.appender.THREAD_PADDING";
+    static final String MESSAGE_ALIGN_KEY = "org.eclipse.jetty.logging.appender.MESSAGE_ALIGN";
     static final String MESSAGE_ESCAPE_KEY = "org.eclipse.jetty.logging.appender.MESSAGE_ESCAPE";
     static final String ZONEID_KEY = "org.eclipse.jetty.logging.appender.ZONE_ID";
     private static final String EOL = System.lineSeparator();
@@ -50,9 +50,9 @@ public class StdErrAppender implements JettyAppender
     private final boolean escapedMessages;
 
     /**
-     * The fixed size of the thread name to use for output
+     * The column to align the start of all messages to
      */
-    private final int threadPadding;
+    private final int messageAlignColumn;
 
     /**
      * The stream to write logging events to.
@@ -88,7 +88,7 @@ public class StdErrAppender implements JettyAppender
 
         this.condensedNames = config.getBoolean(NAME_CONDENSE_KEY, true);
         this.escapedMessages = config.getBoolean(MESSAGE_ESCAPE_KEY, true);
-        this.threadPadding = config.getInt(THREAD_PADDING_KEY, -1);
+        this.messageAlignColumn = config.getInt(MESSAGE_ALIGN_KEY, 0);
     }
 
     @Override
@@ -116,9 +116,9 @@ public class StdErrAppender implements JettyAppender
         return escapedMessages;
     }
 
-    public int getThreadPadding()
+    public int getMessageAlignColumn()
     {
-        return threadPadding;
+        return messageAlignColumn;
     }
 
     public PrintStream getStream()
@@ -154,11 +154,15 @@ public class StdErrAppender implements JettyAppender
 
         // Thread Name
         builder.append(':');
-        builder.append(threadName); // TODO: support TAG_PAD configuration
+        builder.append(threadName);
         builder.append(':');
 
         // Message
-        builder.append(' ');
+        int padAmount = messageAlignColumn - builder.length();
+        if (padAmount > 0)
+            builder.append(" ".repeat(padAmount));
+        else
+            builder.append(' ');
 
         FormattingTuple ft = MessageFormatter.arrayFormat(message, argumentArray);
         appendEscaped(builder, ft.getMessage());

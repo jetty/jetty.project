@@ -26,6 +26,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class InvokerUtils
 {
     public static class Arg
@@ -135,6 +138,7 @@ public class InvokerUtils
     }
 
     public static final ParamIdentifier PARAM_IDENTITY = new ParamIdentity();
+    private static final Logger LOG = LoggerFactory.getLogger(InvokerUtils.class);
 
     /**
      * Bind optional arguments to provided method handle
@@ -425,6 +429,8 @@ public class InvokerUtils
         {
             if (!throwOnFailure)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to obtain MethodHandle for " + method, e);
                 return null;
             }
 

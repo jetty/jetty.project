@@ -16,30 +16,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server.examples;
+package org.eclipse.jetty.websocket.javax.tests.server.examples;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
 import javax.websocket.OnMessage;
-import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.util.IO;
-
-@ServerEndpoint("/echo")
-public class StreamingEchoSocket
+@ServerEndpoint(value = "/secured/socket", configurator = MyAuthedConfigurator.class)
+public class MyAuthedSocket
 {
     @OnMessage
-    public void onMessage(Session session, Reader reader)
+    public String onMessage(String msg)
     {
-        try (Writer writer = session.getBasicRemote().getSendWriter())
-        {
-            IO.copy(reader, writer);
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        // echo the message back to the remote
+        return msg;
     }
 }

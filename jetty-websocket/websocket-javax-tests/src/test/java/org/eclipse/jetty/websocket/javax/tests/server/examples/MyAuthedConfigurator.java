@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.server.examples;
+package org.eclipse.jetty.websocket.javax.tests.server.examples;
 
 import java.security.Principal;
 import javax.websocket.HandshakeResponse;
