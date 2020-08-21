@@ -619,6 +619,14 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
+    public long getContentReceived()
+    {
+        synchronized (_inputQ)
+        {
+            return _contentArrived;
+        }
+    }
+
     /**
      * This method should be called to signal that an EOF has been detected before all the expected content arrived.
      * <p>
