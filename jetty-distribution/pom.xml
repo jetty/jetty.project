@@ -10,11 +10,14 @@
   <packaging>pom</packaging>
 
   <properties>
-    <assembly-directory>${basedir}/target/distribution</assembly-directory>
-    <home-directory>${basedir}/target/home</home-directory>
+    <assembly-directory>${project.build.directory}/distribution</assembly-directory>
+    <temp-home-directory>${project.build.directory}/home</temp-home-directory>
+    <home-directory>${assembly-directory}/jetty-home</home-directory>
+    <base-directory>${assembly-directory}/demo-base</base-directory>
   </properties>
 
   <build>
+
     <plugins>
       <!--
       Copies the additional distribution content over the unpacked jetty-home
@@ -64,9 +67,9 @@
                   <groupId>org.eclipse.jetty</groupId>
                   <artifactId>jetty-home</artifactId>
                   <version>${project.version}</version>
-                  <type>zip</type>
+                  <type>tar.gz</type>
                   <overWrite>true</overWrite>
-                  <outputDirectory>${home-directory}</outputDirectory>
+                  <outputDirectory>${temp-home-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
               <excludes>META-INF/**</excludes>
@@ -87,7 +90,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
+                  <outputDirectory>${base-directory}/webapps</outputDirectory>
                   <destFileName>test.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -97,7 +100,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
+                  <outputDirectory>${base-directory}/webapps</outputDirectory>
                   <destFileName>test-jaas.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -107,7 +110,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
+                  <outputDirectory>${base-directory}/webapps</outputDirectory>
                   <destFileName>test-jndi.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -117,7 +120,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
+                  <outputDirectory>${base-directory}/webapps</outputDirectory>
                   <destFileName>test-spec.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -127,7 +130,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
+                  <outputDirectory>${base-directory}/webapps</outputDirectory>
                   <destFileName>javadoc-proxy.war</destFileName>
                 </artifactItem>
                 <artifactItem>
@@ -137,7 +140,7 @@
                   <type>war</type>
                   <overWrite>true</overWrite>
                   <includes>**</includes>
-                  <outputDirectory>${assembly-directory}/demo-base/webapps</outputDirectory>
+                  <outputDirectory>${base-directory}/webapps</outputDirectory>
                   <destFileName>async-rest.war</destFileName>
                 </artifactItem>
               </artifactItems>
@@ -159,7 +162,7 @@
                   <classifier>config</classifier>
                   <type>jar</type>
                   <overWrite>true</overWrite>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
+                  <outputDirectory>${base-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
               <excludes>META-INF/**</excludes>
@@ -181,7 +184,7 @@
                   <classifier>config</classifier>
                   <type>jar</type>
                   <overWrite>true</overWrite>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
+                  <outputDirectory>${base-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
               <excludes>META-INF/**</excludes>
@@ -203,7 +206,7 @@
                   <classifier>config</classifier>
                   <type>jar</type>
                   <overWrite>true</overWrite>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
+                  <outputDirectory>${base-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
               <excludes>META-INF/**</excludes>
@@ -225,7 +228,7 @@
                   <classifier>config</classifier>
                   <type>jar</type>
                   <overWrite>true</overWrite>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
+                  <outputDirectory>${base-directory}</outputDirectory>
                 </artifactItem>
               </artifactItems>
               <excludes>META-INF/**</excludes>
@@ -246,7 +249,7 @@
                   <classifier>html</classifier>
                   <type>zip</type>
                   <overWrite>true</overWrite>
-                  <outputDirectory>${assembly-directory}/demo-base/webapps/doc</outputDirectory>
+                  <outputDirectory>${base-directory}/webapps/doc</outputDirectory>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -265,8 +268,15 @@
             </goals>
             <configuration>
               <tasks>
+                <copy todir="${home-directory}">
+                  <fileset dir="${temp-home-directory}/jetty-home-${project.version}/" />
+                </copy>
                 <copy todir="${assembly-directory}">
-                  <fileset dir="${home-directory}/jetty-home-${project.version}/" />
+                  <fileset dir="${home-directory}">
+                    <include name="NOTICE.txt" />
+                    <include name="LICENSE.txt" />
+                    <include name="VERSION.txt" />
+                  </fileset>
                 </copy>
               </tasks>
             </configuration>
@@ -279,38 +289,8 @@
             </goals>
             <configuration>
               <tasks>
-                <chmod dir="${assembly-directory}/bin" perm="755" includes="**/*.sh" />
+                <chmod dir="${home-directory}/bin" perm="755" includes="**/*.sh" />
               </tasks>
-            </configuration>
-          </execution>
-          <execution>
-            <id>removeKeystore</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <tasks>
-                <delete file="${assembly-directory}/etc/keystore.p12" />
-              </tasks>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-remote-resources-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>process</goal>
-            </goals>
-            <configuration>
-              <resourceBundles>
-                <resourceBundle>org.eclipse.jetty.toolchain:jetty-distribution-remote-resources:1.2</resourceBundle>
-              </resourceBundles>
-              <outputDirectory>${assembly-directory}</outputDirectory>
             </configuration>
           </execution>
         </executions>
@@ -320,24 +300,6 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <!--
-          Setup the jetty distribution as a jetty.home/jetty.base combo using start.ini configuration mechanism
-          -->
-          <execution>
-            <id>setup home</id>
-            <phase>package</phase>
-            <configuration>
-              <mainClass>org.eclipse.jetty.start.Main</mainClass>
-              <arguments>
-                <argument>jetty.home=${assembly-directory}</argument>
-                <argument>jetty.base=${assembly-directory}</argument>
-                <argument>--add-to-start=server,deploy,websocket,ext,resources,jsp,jstl,http</argument>
-              </arguments>
-            </configuration>
-            <goals>
-              <goal>java</goal>
-            </goals>
-          </execution>
-          <!--
           Setup the demo-base using the start.d configuration mechanism
           -->
           <execution>
@@ -346,8 +308,8 @@
             <configuration>
               <mainClass>org.eclipse.jetty.start.Main</mainClass>
               <arguments>
-                <argument>jetty.home=${assembly-directory}</argument>
-                <argument>jetty.base=${assembly-directory}/demo-base</argument>
+                <argument>jetty.home=${home-directory}</argument>
+                <argument>jetty.base=${base-directory}</argument>
                 <argument>--create-startd</argument>
                 <argument>--add-to-start=server,requestlog,deploy,websocket,ext,resources,client,annotations,jndi,servlets,jsp,jstl,http,https,demo</argument>
               </arguments>
@@ -405,28 +367,15 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-home</artifactId>
       <version>${project.version}</version>
-      <type>pom</type>
+      <type>tar.gz</type>
       <optional>true</optional>
     </dependency>
+    <!-- demo-base/webapps -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>test-jetty-webapp</artifactId>
       <type>war</type>
       <version>${project.version}</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>test-proxy-webapp</artifactId>
-      <type>war</type>
-      <version>${project.version}</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.example-async-rest</groupId>
-      <artifactId>example-async-rest-webapp</artifactId>
-      <version>${project.version}</version>
-      <type>war</type>
       <optional>true</optional>
     </dependency>
     <dependency>
@@ -450,6 +399,21 @@
       <type>war</type>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-proxy-webapp</artifactId>
+      <type>war</type>
+      <version>${project.version}</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.example-async-rest</groupId>
+      <artifactId>example-async-rest-webapp</artifactId>
+      <version>${project.version}</version>
+      <type>war</type>
+      <optional>true</optional>
+    </dependency>
+    <!-- documentation -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-documentation</artifactId>

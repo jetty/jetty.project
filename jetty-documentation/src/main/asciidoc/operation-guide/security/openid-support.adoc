@@ -39,7 +39,7 @@ To enable OpenID support, you first need to activate the `openid` module in your
 
 [source, screen, subs="{sub-order}"]
 ----
-java -jar {JETTY_HOME}/start.jar --add-to-start=openid
+$ java -jar $JETTY_HOME/start.jar --add-to-start=openid
 ----
 
 To configure OpenID Authentication with Jetty you will need to specify the OpenID Provider's issuer identifier (case sensitive URL using the `https` scheme) and the OAuth 2.0 Client ID and Client Secret.

@@ -33,8 +33,8 @@ Very little is mandatory and required, and most components are optional; you ena
 
 At its most basic, you configure Jetty from two elements:
 
-1.  A set of libraries and directories that make up the server classpath.
-2.  A set of Jetty XML configuration files (IoC style) that establish how to build the Jetty server and its components.
+1. A set of libraries and directories that make up the server classpath.
+2. A set of Jetty XML configuration files (IoC style) that establish how to build the Jetty server and its components.
 
 Instead of editing these directly, Jetty 9.1 introduced more options on how to configure Jetty (these are merely syntactic sugar that eventually resolve into the two basic configuration components).
 
@@ -60,9 +60,9 @@ When executed `start.jar` performs the following actions:
 ** Please see link:#start-vs-startd[Start.ini vs. Start.d] for more information on the difference between these.
 * Parses actual command line arguments used to execute `start.jar` itself.
 * Resolves any XML configuration files, modules, and libraries using base vs. home resolution steps:
-1.  Checks whether file exists as relative reference to `${jetty.base}.`
-2.  Checks whether file exists as relative reference to `${jetty.home}.`
-3.  Uses default behavior of `java.io.File` (Relative to `System.getProperty` ("user.dir") and then as absolute file system path).
+1. Checks whether file exists as relative reference to `${jetty.base}.`
+2. Checks whether file exists as relative reference to `${jetty.home}.`
+3. Uses default behavior of `java.io.File` (Relative to `System.getProperty` ("user.dir") and then as absolute file system path).
 * Loads any dependent modules (merges XXNK, library, and properties results with active command line).
 * Builds out server classpath.
 * Determines run mode as one of:
@@ -173,9 +173,9 @@ Doing this will uncomment the property in the associated .ini file and set it to
 Used to update a specified property or properties that exist in an existing .ini file.
 Jetty scans the command line, `${jetty.base}` and `${jetty.home}` for .ini files that have the specified property and update it accordingly.
 +
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-$ java -jar ../start.jar --update-ini jetty.http.port=8417
+[my-base]$ java -jar /path/to/jetty-home/start.jar --update-ini jetty.http.port=8417
 ConfigSource <command-line>
 ConfigSource ${jetty.base}
 INFO  : http            property updated jetty.http.port=8417

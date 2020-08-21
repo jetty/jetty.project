@@ -49,9 +49,9 @@ If neither of these options meets your needs, you can implement a custom request
 
 To enable the Request Log module for the entire server via the Jetty distribution, it first needs to be enabled on the command line:
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ----
-$ java -jar ../start.jar --add-to-start=requestlog
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=requestlog
 
 INFO: requestlog      initialised in ${jetty.base}/start.d/requestlog.ini
 MKDIR: ${jetty.base}/logs

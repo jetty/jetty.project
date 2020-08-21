@@ -66,13 +66,13 @@ public class LikeJettyXml
     public static Server createServer(int port, int securePort, boolean addDebugListener) throws Exception
     {
         // Path to as-built jetty-distribution directory
-        Path jettyHomeBuild = JettyDistribution.get();
+        Path jettyDistro = JettyDistribution.get();
 
         // Find jetty home and base directories
-        String homePath = System.getProperty("jetty.home", jettyHomeBuild.toString());
+        String homePath = System.getProperty("jetty.home", jettyDistro.resolve("jetty-home").toString());
         Path homeDir = Paths.get(homePath);
 
-        String basePath = System.getProperty("jetty.base", homeDir.resolve("demo-base").toString());
+        String basePath = System.getProperty("jetty.base", jettyDistro.resolve("demo-base").toString());
         Path baseDir = Paths.get(basePath);
 
         // Configure jetty.home and jetty.base system properties
@@ -181,7 +181,7 @@ public class LikeJettyXml
         rewrite.addRule(new ValidUrlRule());
 
         // === jetty-requestlog.xml ===
-        AsyncRequestLogWriter logWriter = new AsyncRequestLogWriter(jettyHome + "/logs/yyyy_mm_dd.request.log");
+        AsyncRequestLogWriter logWriter = new AsyncRequestLogWriter(jettyBase + "/logs/yyyy_mm_dd.request.log");
         logWriter.setFilenameDateFormat("yyyy_MM_dd");
         logWriter.setRetainDays(90);
         logWriter.setTimeZone("GMT");

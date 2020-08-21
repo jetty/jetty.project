@@ -26,9 +26,9 @@ When following the instructions given below, please also ensure that you make an
 
 The simplest way to enable support is to add the JMX-Remote support module to your `{$jetty.base}`.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[mybase]$ java /opt/jetty-dist/start.jar --add-to-start=jmx-remote, jmx
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=jmx-remote, jmx
 INFO: jmx-remote      initialised in ${jetty.base}/start.ini
 INFO: jmx             initialised in ${jetty.base}/start.ini
 ....

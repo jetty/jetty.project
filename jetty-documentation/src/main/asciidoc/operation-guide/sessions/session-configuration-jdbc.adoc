@@ -24,12 +24,12 @@
 
 When using the Jetty distribution, you will first need to enable the `session-store-jdbc` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ----
-$ java -jar ../start.jar --create-startd
+[my-base]$ java -jar /path/to/jetty-home/start.jar --create-startd
 INFO : Base directory was modified
 
-$ java -jar ../start.jar --add-to-start=session-store-jdbc
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=session-store-jdbc
 INFO  : server          transitively enabled, ini template available with --add-to-start=server
 INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
 INFO  : sessions/jdbc/datasource dynamic dependency of session-store-jdbc

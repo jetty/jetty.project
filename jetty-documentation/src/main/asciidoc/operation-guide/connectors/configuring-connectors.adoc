@@ -34,9 +34,9 @@ Additional settings, including construction your own constructor Jetty XML files
 Out of the box, Jetty provides several link:#startup-modules[modules] for enabling different types of connectors, from HTTP to HTTPS, HTTP/2, and others.
 If you startup Jetty with the `--list-modules=connector` command, you can see a list of all available connector modules:
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[mybase]$ java -jar $JETTY_HOME/start.jar --list-modules=connector
+[my-base]$ java -jar /path/to/jetty-home/start.jar --list-modules=connector
 
 Available Modules:
 ==================
@@ -276,9 +276,9 @@ jetty.http.port=5231
 
 Now when the server is started, HTTP connections will enter on port 5231:
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[mybase] java -jar ../start.jar
+[my-base]$ java -jar /path/to/jetty-home/start.jar
 2017-08-31 10:31:32.955:INFO::main: Logging initialized @366ms to org.eclipse.jetty.util.log.StdErrLog
 2017-08-31 10:31:33.109:INFO:oejs.Server:main: jetty-{VERSION}
 2017-08-31 10:31:33.146:INFO:oejs.AbstractConnector:main: Started ServerConnector@2ef9b8bc{HTTP/1.1,[http/1.1]}{0.0.0.0:5231}

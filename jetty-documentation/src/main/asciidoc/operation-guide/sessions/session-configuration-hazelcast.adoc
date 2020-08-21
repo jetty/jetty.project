@@ -24,13 +24,13 @@
 
 When using the Jetty distribution, you will first need to enable the `session-store-hazelcast-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ----
-$ java -jar ../start.jar --create-startd
+[my-base]$ java -jar /path/to/jetty-home/start.jar --create-startd
 MKDIR : ${jetty.base}/start.d
 INFO  : Base directory was modified
 
-$ java -jar ../start.jar --add-to-start=session-store-hazelcast-remote
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=session-store-hazelcast-remote
 
 ALERT: There are enabled module(s) with licenses.
 The following 1 module(s):
@@ -118,12 +118,12 @@ ____
 During testing, it can be helpful to run an in-process instance of Hazelcast.
 To enable this you will first need to enable the `session-store-hazelcast-embedded` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ----
-$ java -jar ../start.jar --create-startd
+[my-base]$ java -jar /path/to/jetty-home/start.jar --create-startd
 MKDIR : ${jetty.base}/start.d
 INFO  : Base directory was modified
-$ java -jar ../start.jar --add-to-start=session-store-hazelcast-embedded
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=session-store-hazelcast-embedded
 
 ALERT: There are enabled module(s) with licenses.
 The following 1 module(s):
