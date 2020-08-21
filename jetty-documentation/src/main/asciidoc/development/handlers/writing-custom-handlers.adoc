@@ -188,9 +188,9 @@ A custom handler can be injected using an injection based XML:
 </Configure>
 ----
 
-* The custom handler JAR should be available at /path/to/myjettybase/lib/ext/
-# The custom handler XML should be available at /path/to/myjettybase/etc/
-# The custom handler XML should be loaded into the jetty instance at the right point in the XML load order by declaring it to be used in a custom INI
+* The custom handler JAR should be available at `/path/to/myjettybase/lib/ext/`
+* The custom handler XML should be available at `/path/to/myjettybase/etc/`
+* The custom handler XML should be loaded into the jetty instance at the right point in the XML load order by declaring it to be used in a custom INI
 
 
 [[more-about-handlers]]
