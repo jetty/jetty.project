@@ -170,6 +170,11 @@ This is typically used to pass a request to a link:{JDURL}/org/eclipse/jetty/ser
 * link:{JDURL}/org/eclipse/jetty/server/handler/HandlerList.html[`HandlerList`] - A list of handlers that are called in turn until the request state is set as handled.
 * link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandlerCollection.html[`ContextHandlerCollection`] - A collection of Handlers, of which one is selected by best match for the context path.
 
+[[injecting-handlers]]
+==== Injecting Handlers
+
+A Handler may handle a request by:
+
 [[more-about-handlers]]
 ==== More About Handlers
 
