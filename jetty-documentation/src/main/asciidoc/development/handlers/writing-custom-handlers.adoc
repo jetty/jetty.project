@@ -174,7 +174,7 @@ This is typically used to pass a request to a link:{JDURL}/org/eclipse/jetty/ser
 ==== Injecting Handlers
 
 A custom handler can be injected using an injection based XML:
-[source, xml, subs="{sub-order}"]
+[source, xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
