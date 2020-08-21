@@ -557,11 +557,6 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
         }
     }
 
-    private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String literal)
-    {
-        return foldArguments(logHandle, dropArguments(dropArguments(append.bindTo(literal), 1, Request.class), 2, Response.class));
-    }
-
     @SuppressWarnings("unused")
     private static boolean modify(List<Integer> modifiers, Boolean negated, StringBuilder b, Request request, Response response)
     {
@@ -569,6 +564,11 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
             return !modifiers.contains(response.getStatus());
         else
             return modifiers.contains(response.getStatus());
+    }
+
+    private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, String literal)
+    {
+        return foldArguments(logHandle, dropArguments(dropArguments(append.bindTo(literal), 1, Request.class), 2, Response.class));
     }
 
     private MethodHandle updateLogHandle(MethodHandle logHandle, MethodHandle append, MethodHandles.Lookup lookup, String code, String arg, List<Integer> modifiers, boolean negated) throws NoSuchMethodException, IllegalAccessException
