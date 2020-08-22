@@ -18,22 +18,22 @@
 
 package org.eclipse.jetty.client;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Locker;
 
 @ManagedObject
 public class RoundRobinConnectionPool extends MultiplexConnectionPool
 {
     private static final Logger LOG = Log.getLogger(RoundRobinConnectionPool.class);
 
-    private final AtomicInteger offset = new AtomicInteger();
+    private final Locker lock = new Locker();
     private final Pool<Connection> pool;
+    private int offset;
 
     public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
     {
@@ -47,26 +47,32 @@ public class RoundRobinConnectionPool extends MultiplexConnectionPool
     }
 
     @Override
-    protected Connection activate()
+    protected Connection acquire(boolean create)
     {
-        int offset = this.offset.get();
-        Connection connection = activate(offset);
-        if (connection != null)
-            this.offset.getAndIncrement();
-        return connection;
+        // If there are queued requests and connections get
+        // closed due to idle timeout or overuse, we want to
+        // aggressively try to open new connections to replace
+        // those that were closed to process queued requests.
+        return super.acquire(true);
     }
 
-    private Connection activate(int offset)
+    @Override
+    protected Connection activate()
     {
-        Pool<Connection>.Entry entry = pool.acquireAt(Math.abs(offset % pool.getMaxEntries()));
-        if (LOG.isDebugEnabled())
-            LOG.debug("activated '{}'", entry);
-        if (entry != null)
+        Pool<Connection>.Entry entry;
+        try (Locker.Lock l = lock.lock())
         {
-            Connection connection = entry.getPooled();
-            acquired(connection);
-            return connection;
+            int index = Math.abs(offset % pool.getMaxEntries());
+            entry = pool.acquireAt(index);
+            if (LOG.isDebugEnabled())
+                LOG.debug("activated at index={} entry={}", index, entry);
+            if (entry != null)
+                ++offset;
         }
-        return null;
+        if (entry == null)
+            return null;
+        Connection connection = entry.getPooled();
+        acquired(connection);
+        return connection;
     }
 }
