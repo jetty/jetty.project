@@ -51,13 +51,6 @@ public class PoolTest
 
     @ParameterizedTest
     @MethodSource(value = "cacheSize")
-    public void testCache(int cacheSize)
-    {
-        System.err.println(cacheSize);
-    }
-
-    @ParameterizedTest
-    @MethodSource(value = "cacheSize")
     public void testAcquireRelease(int cacheSize)
     {
         Pool<String> pool = new Pool<>(1,cacheSize);
