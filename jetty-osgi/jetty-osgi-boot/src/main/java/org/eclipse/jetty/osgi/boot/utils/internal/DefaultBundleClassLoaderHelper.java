@@ -194,7 +194,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
 
             default:
             {
-                LOG.warn("No classloader found for bundle " + bundle.getSymbolicName());
+                LOG.warn("No classloader found for bundle {}", bundle.getSymbolicName());
                 return null;
             }
         }
@@ -253,7 +253,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
             }
         }
 
-        LOG.warn("No classloader for equinox platform for bundle " + bundle.getSymbolicName());
+        LOG.warn("No classloader for equinox platform for bundle {}", bundle.getSymbolicName());
         return null;
     }
 
@@ -376,7 +376,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
             }
         }
 
-        LOG.warn("No classloader for felix platform for bundle " + bundle.getSymbolicName());
+        LOG.warn("No classloader for felix platform for bundle {}", bundle.getSymbolicName());
         return null;
     }
 
@@ -427,7 +427,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
             }
         }
 
-        LOG.warn("No classloader for Concierge platform for bundle " + bundle.getSymbolicName());
+        LOG.warn("No classloader for Concierge platform for bundle {}", bundle.getSymbolicName());
         return null;
     }
 }

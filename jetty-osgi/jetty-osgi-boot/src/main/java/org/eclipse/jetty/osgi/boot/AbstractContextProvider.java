@@ -143,7 +143,8 @@ public abstract class AbstractContextProvider extends AbstractLifeCycle implemen
                 {
                     ClassLoader cl = Thread.currentThread().getContextClassLoader();
 
-                    LOG.debug("Context classloader = " + cl);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Context classloader = {}", cl);
                     try
                     {
                         Thread.currentThread().setContextClassLoader(classLoader);

@@ -545,7 +545,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         }
         if (methodName == null || methodName.equals(""))
         {
-            LOG.warn("No lifecycle-callback-method specified for class " + className);
+            LOG.warn("No lifecycle-callback-method specified for class {}", className);
             return;
         }
 
@@ -579,7 +579,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     }
                     catch (ClassNotFoundException e)
                     {
-                        LOG.warn("Couldn't load post-construct target class " + className);
+                        LOG.warn("Couldn't load post-construct target class {}", className);
                     }
                 }
                 break;
@@ -595,7 +595,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 catch (ClassNotFoundException e)
                 {
-                    LOG.warn("Couldn't load post-construct target class " + className);
+                    LOG.warn("Couldn't load post-construct target class {}", className);
                 }
                 break;
             }
@@ -623,7 +623,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         }
         if (methodName == null || methodName.equals(""))
         {
-            LOG.warn("No lifecycle-callback-method specified for pre-destroy class " + className);
+            LOG.warn("No lifecycle-callback-method specified for pre-destroy class {}", className);
             return;
         }
 
@@ -657,7 +657,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                     }
                     catch (ClassNotFoundException e)
                     {
-                        LOG.warn("Couldn't load pre-destroy target class " + className);
+                        LOG.warn("Couldn't load pre-destroy target class {}", className);
                     }
                 }
                 break;
@@ -673,7 +673,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 catch (ClassNotFoundException e)
                 {
-                    LOG.warn("Couldn't load pre-destroy target class " + className);
+                    LOG.warn("Couldn't load pre-destroy target class {}", className);
                 }
                 break;
             }
@@ -735,7 +735,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
             }
             catch (ClassNotFoundException e)
             {
-                LOG.warn("Couldn't load injection target class " + targetClassName);
+                LOG.warn("Couldn't load injection target class {}", targetClassName);
             }
         }
     }

@@ -139,7 +139,7 @@ public class CertificateValidator
             }
             catch (KeyStoreException kse)
             {
-                LOG.debug("Unable to validate alias:" + keyAlias, kse);
+                LOG.debug("Unable to validate alias: {}", keyAlias, kse);
                 throw new CertificateException("Unable to validate certificate" +
                     " for alias [" + keyAlias + "]: " + kse.getMessage(), kse);
             }

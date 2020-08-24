@@ -222,7 +222,7 @@ public class InfinispanSessionDataStore extends AbstractSessionDataStore
             {
                 expired.add(sessionId);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{}- Found expired sessionId=", _context.getWorkerName(), sessionId);
+                    LOG.debug("{}- Found expired sessionId={}", _context.getWorkerName(), sessionId);
             }
         }
 

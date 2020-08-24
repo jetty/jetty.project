@@ -119,7 +119,7 @@ public class CloseTrackingEndpoint extends WebSocketAdapter
     @Override
     public void onWebSocketBinary(byte[] payload, int offset, int len)
     {
-        LOG.debug("onWebSocketBinary({},offset,len)", payload, offset, len);
+        LOG.debug("onWebSocketBinary({},{},{})", payload, offset, len);
         binaryMessageQueue.offer(ByteBuffer.wrap(payload, offset, len));
     }
 

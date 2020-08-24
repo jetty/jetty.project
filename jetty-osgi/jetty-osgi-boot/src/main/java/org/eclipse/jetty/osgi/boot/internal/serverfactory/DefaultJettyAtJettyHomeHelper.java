@@ -116,7 +116,7 @@ public class DefaultJettyAtJettyHomeHelper
             jettyHomeDir = new File(jettyHomeSysProp);
             if (!jettyHomeDir.exists() || !jettyHomeDir.isDirectory())
             {
-                LOG.warn("Unable to locate the jetty.home folder " + jettyHomeSysProp);
+                LOG.warn("Unable to locate the jetty.home folder {}", jettyHomeSysProp);
                 return null;
             }
 
@@ -139,7 +139,7 @@ public class DefaultJettyAtJettyHomeHelper
             }
             if (jettyHomeBundle == null)
             {
-                LOG.warn("Unable to find the jetty.home.bundle named " + jettyHomeSysProp);
+                LOG.warn("Unable to find the jetty.home.bundle named {}", jettyHomeSysProp);
                 return null;
             }
         }
@@ -158,8 +158,7 @@ public class DefaultJettyAtJettyHomeHelper
         String base = (String)properties.get(OSGiServerConstants.JETTY_BASE);
         if (base == null)
             base = home;
-        LOG.info("JETTY.HOME=" + home);
-        LOG.info("JETTY.BASE=" + base);
+        LOG.info("JETTY.HOME={}  JETTY.BASE={}",  home, base);
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         try
         {

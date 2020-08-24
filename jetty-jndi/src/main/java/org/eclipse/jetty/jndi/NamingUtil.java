@@ -66,19 +66,19 @@ public class NamingUtil
             {
                 subCtx = (Context)subCtx.lookup(name.get(i));
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Subcontext " + name.get(i) + " already exists");
+                    LOG.debug("Subcontext {} already exists", name.get(i));
             }
             catch (NameNotFoundException e)
             {
                 subCtx = subCtx.createSubcontext(name.get(i));
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Subcontext " + name.get(i) + " created");
+                    LOG.debug("Subcontext {} created", name.get(i));
             }
         }
 
         subCtx.rebind(name.get(name.size() - 1), obj);
         if (LOG.isDebugEnabled())
-            LOG.debug("Bound object to " + name.get(name.size() - 1));
+            LOG.debug("Bound object to {}", name.get(name.size() - 1));
         return subCtx;
     }
 

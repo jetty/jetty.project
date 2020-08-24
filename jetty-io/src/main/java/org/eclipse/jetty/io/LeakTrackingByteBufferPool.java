@@ -156,6 +156,6 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
 
     protected void leaked(LeakDetector<ByteBuffer>.LeakInfo leakInfo)
     {
-        LOG.warn("ByteBuffer " + leakInfo.getResourceDescription() + " leaked at:", leakInfo.getStackFrames());
+        LOG.warn("ByteBuffer {} leaked at: {}", leakInfo.getResourceDescription(), leakInfo.getStackFrames());
     }
 }

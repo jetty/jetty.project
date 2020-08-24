@@ -188,7 +188,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 unknownOrigin(origin);
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("ContextParam: " + name + "=" + value);
+            LOG.debug("ContextParam: {}={}", name, value);
     }
 
     public void visitDisplayName(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
@@ -343,7 +343,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 }
                 catch (Exception e)
                 {
-                    LOG.warn("Cannot parse load-on-startup " + s + ". Please use integer");
+                    LOG.warn("Cannot parse load-on-startup {}. Please use integer", s);
                     LOG.trace("IGNORED", e);
                 }
             }
@@ -391,7 +391,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (roleName != null && roleName.length() > 0 && roleLink != null && roleLink.length() > 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("link role " + roleName + " to " + roleLink + " for " + this);
+                    LOG.debug("link role {} to {} for {}", roleName, roleLink, this);
                 Origin origin = context.getMetaData().getOrigin(name + ".servlet.role-name." + roleName);
                 switch (origin)
                 {
@@ -426,7 +426,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             }
             else
             {
-                LOG.warn("Ignored invalid security-role-ref element: " + "servlet-name=" + holder.getName() + ", " + securityRef);
+                LOG.warn("Ignored invalid security-role-ref element: servlet-name={}, {}", holder.getName(), securityRef);
             }
         }
 
@@ -1226,7 +1226,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                             if (sm.isFromDefaultDescriptor())
                             {
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("{} in mapping {} from defaults descriptor is overridden by ", ps, sm, servletName);
+                                    LOG.debug("{} in mapping {} from defaults descriptor is overridden by {}", ps, sm, servletName);
                             }
                             else
                                 LOG.warn("Duplicate mapping from {} to {}", p, servletName);
@@ -1492,7 +1492,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     scBase.setDataConstraint(Constraint.DC_CONFIDENTIAL);
                 else
                 {
-                    LOG.warn("Unknown user-data-constraint:" + guarantee);
+                    LOG.warn("Unknown user-data-constraint: {}", guarantee);
                     scBase.setDataConstraint(Constraint.DC_CONFIDENTIAL);
                 }
             }
@@ -1941,7 +1941,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
         catch (Exception e)
         {
-            LOG.warn("Could not instantiate listener " + className, e);
+            LOG.warn("Could not instantiate listener {}", className, e);
             return;
         }
     }

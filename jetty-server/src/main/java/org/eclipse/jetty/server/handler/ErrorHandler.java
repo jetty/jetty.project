@@ -334,7 +334,7 @@ public class ErrorHandler extends AbstractHandler
                 baseRequest.getResponse().resetContent();
                 if (!_disableStacks)
                 {
-                    LOG.info("Disabling showsStacks for " + this);
+                    LOG.info("Disabling showsStacks for {}", this);
                     _disableStacks = true;
                     continue;
                 }

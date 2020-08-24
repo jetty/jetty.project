@@ -153,7 +153,7 @@ public class BrowserSocket
             catch (IOException e)
             {
                 writeMessage("Unable to read resource: " + name);
-                LOG.warn("Unable to read resource: " + name, e);
+                LOG.warn("Unable to read resource: {}", name, e);
             }
             return;
         }

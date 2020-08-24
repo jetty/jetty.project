@@ -216,7 +216,7 @@ public class CrossOriginFilter implements Filter
 
         String chainPreflightConfig = config.getInitParameter(OLD_CHAIN_PREFLIGHT_PARAM);
         if (chainPreflightConfig != null)
-            LOG.warn("DEPRECATED CONFIGURATION: Use " + CHAIN_PREFLIGHT_PARAM + " instead of " + OLD_CHAIN_PREFLIGHT_PARAM);
+            LOG.warn("DEPRECATED CONFIGURATION: Use {} instead of {}", CHAIN_PREFLIGHT_PARAM, OLD_CHAIN_PREFLIGHT_PARAM);
         else
             chainPreflightConfig = config.getInitParameter(CHAIN_PREFLIGHT_PARAM);
         if (chainPreflightConfig == null)
@@ -304,14 +304,14 @@ public class CrossOriginFilter implements Filter
                 {
                     response.setHeader(TIMING_ALLOW_ORIGIN_HEADER, origin);
                 }
-                else
+                else if (LOG.isDebugEnabled())
                 {
-                    LOG.debug("Cross-origin request to " + request.getRequestURI() + " with origin " + origin + " does not match allowed timing origins " + allowedTimingOrigins);
+                    LOG.debug("Cross-origin request to {} with origin {} does not match allowed timing origins {}", request.getRequestURI(), origin, allowedTimingOrigins);
                 }
             }
-            else
+            else if (LOG.isDebugEnabled())
             {
-                LOG.debug("Cross-origin request to " + request.getRequestURI() + " with origin " + origin + " does not match allowed origins " + allowedOrigins);
+                LOG.debug("Cross-origin request to {} with origin {} does not match allowed origins {}", request.getRequestURI(), origin, allowedOrigins);
             }
         }
 

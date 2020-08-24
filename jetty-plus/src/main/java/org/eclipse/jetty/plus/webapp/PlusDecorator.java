@@ -73,7 +73,7 @@ public class PlusDecorator implements Decorator
             }
             catch (Exception e)
             {
-                LOG.warn("Destroying instance of " + o.getClass(), e);
+                LOG.warn("Destroying instance of {}", o.getClass(), e);
             }
         }
     }

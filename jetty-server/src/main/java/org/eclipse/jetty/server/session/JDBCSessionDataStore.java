@@ -755,7 +755,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
                 statement.executeUpdate();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Inserted session " + data);
+                    LOG.debug("Inserted session {}", data);
             }
         }
     }
@@ -789,7 +789,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 statement.executeUpdate();
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Updated session " + data);
+                    LOG.debug("Updated session {}", data);
             }
         }
     }
@@ -824,7 +824,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         long exp = result.getLong(_sessionTableSchema.getExpiryTimeColumn());
                         expiredSessionKeys.add(sessionId);
                         if (LOG.isDebugEnabled())
-                            LOG.debug(_context.getCanonicalContextPath() + "- Found expired sessionId=" + sessionId);
+                            LOG.debug("{}- Found expired sessionId={}",_context.getCanonicalContextPath(), sessionId);
                     }
                 }
             }
@@ -854,7 +854,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                         String vh = result.getString(_sessionTableSchema.getVirtualHostColumn());
                         expiredSessionKeys.add(sessionId);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("{}- Found expired sessionId=", _context.getWorkerName(), sessionId);
+                            LOG.debug("{}- Found expired sessionId={}", _context.getWorkerName(), sessionId);
                     }
                 }
             }

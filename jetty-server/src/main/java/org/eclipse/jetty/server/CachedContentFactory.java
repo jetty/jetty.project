@@ -561,7 +561,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 if (buffer2 == null)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Could not load indirect buffer from " + this);
+                        LOG.debug("Could not load indirect buffer from {}", this);
                     return null;
                 }
 
@@ -615,7 +615,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                     else
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Could not load " + this);
+                            LOG.debug("Could not load{}", this);
                     }
                 }
             }

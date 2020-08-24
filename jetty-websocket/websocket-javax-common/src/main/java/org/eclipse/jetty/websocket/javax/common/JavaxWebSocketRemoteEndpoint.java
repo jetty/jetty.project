@@ -219,7 +219,7 @@ public class JavaxWebSocketRemoteEndpoint implements javax.websocket.RemoteEndpo
         catch (Throwable t)
         {
             callback.failed(t);
-            LOG.warn("Unable to send Object " + data, t);
+            LOG.warn("Unable to send Object {}", data, t);
         }
     }
 

@@ -109,7 +109,7 @@ public class WebXmlConfiguration extends AbstractConfiguration
             if (web.exists())
                 return web;
             if (LOG.isDebugEnabled())
-                LOG.debug("No WEB-INF/web.xml in " + context.getWar() + ". Serving files and default/dynamic servlets only");
+                LOG.debug("No WEB-INF/web.xml in {}. Serving files and default/dynamic servlets only", context.getWar());
         }
         return null;
     }

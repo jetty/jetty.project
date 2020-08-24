@@ -172,7 +172,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
             return null;
         }
     }

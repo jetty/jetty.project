@@ -220,7 +220,7 @@ public abstract class Holder<T> extends BaseHolder<T>
         public void setDescription(String description)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(this + " is " + description);
+                LOG.debug("{} is {}", this, description);
         }
 
         @Override

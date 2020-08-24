@@ -128,7 +128,7 @@ public class FrameCaptureExtension extends AbstractExtension
         }
         catch (IOException e)
         {
-            LOG.warn("Unable to save frame: " + frame, e);
+            LOG.warn("Unable to save frame: {}", frame, e);
         }
         finally
         {

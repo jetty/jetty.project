@@ -31,7 +31,7 @@ public class CommonComponent extends AbstractLifeCycle
 
     public CommonComponent()
     {
-        LOG.info("Created " + this.getClass().getName());
+        LOG.info("Created {}", this.getClass().getName());
     }
 
     private String name = "i am common";

@@ -170,7 +170,7 @@ public class JavaxWebSocketCreator implements WebSocketCreator
         }
         catch (InstantiationException e)
         {
-            LOG.warn("Unable to create websocket: " + config.getEndpointClass().getName(), e);
+            LOG.warn("Unable to create websocket: {}", config.getEndpointClass().getName(), e);
             return null;
         }
     }

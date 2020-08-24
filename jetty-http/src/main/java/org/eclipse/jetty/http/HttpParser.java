@@ -524,7 +524,7 @@ public class HttpParser
             // count this white space as a header byte to avoid DOS
             if (_maxHeaderBytes > 0 && ++_headerBytes > _maxHeaderBytes)
             {
-                LOG.warn("padding is too large >" + _maxHeaderBytes);
+                LOG.warn("padding is too large >{}", _maxHeaderBytes);
                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
             }
         }
@@ -584,15 +584,15 @@ public class HttpParser
             {
                 if (_state == State.URI)
                 {
-                    LOG.warn("URI is too large >" + _maxHeaderBytes);
+                    LOG.warn("URI is too large >{}", _maxHeaderBytes);
                     throw new BadMessageException(HttpStatus.URI_TOO_LONG_414);
                 }
                 else
                 {
                     if (_requestHandler != null)
-                        LOG.warn("request is too large >" + _maxHeaderBytes);
+                        LOG.warn("request is too large >{}", _maxHeaderBytes);
                     else
-                        LOG.warn("response is too large >" + _maxHeaderBytes);
+                        LOG.warn("response is too large >{}", _maxHeaderBytes);
                     throw new BadMessageException(HttpStatus.REQUEST_HEADER_FIELDS_TOO_LARGE_431);
                 }
             }
@@ -702,7 +702,7 @@ public class HttpParser
 
                                     if (_maxHeaderBytes > 0 && ++_headerBytes > _maxHeaderBytes)
                                     {
-                                        LOG.warn("URI is too large >" + _maxHeaderBytes);
+                                        LOG.warn("URI is too large >{}", _maxHeaderBytes);
                                         throw new BadMessageException(HttpStatus.URI_TOO_LONG_414);
                                     }
                                     _uri.append(array, p - 1, len + 1);
@@ -1602,7 +1602,7 @@ public class HttpParser
     protected void badMessage(BadMessageException x)
     {
         if (debugEnabled)
-            LOG.debug("Parse exception: " + this + " for " + _handler, x);
+            LOG.debug("Parse exception: {} for {}", this, _handler, x);
         setState(State.CLOSE);
         if (_headerComplete)
             _handler.earlyEOF();

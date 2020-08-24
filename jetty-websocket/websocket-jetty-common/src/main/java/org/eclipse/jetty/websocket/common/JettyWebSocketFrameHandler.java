@@ -278,9 +278,10 @@ public class JettyWebSocketFrameHandler implements FrameHandler
                 errorHandle.invoke(cause);
             else
             {
-                log.warn("Unhandled Error: Endpoint " + endpointInstance.getClass().getName() + " : " + cause);
                 if (log.isDebugEnabled())
-                    log.debug("unhandled", cause);
+                    log.warn("Unhandled Error: Endpoint {}", endpointInstance.getClass().getName(), cause);
+                else
+                    log.warn("Unhandled Error: Endpoint {} : {}", endpointInstance.getClass().getName(), cause.toString());
             }
             callback.succeeded();
         }

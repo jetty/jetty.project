@@ -495,7 +495,7 @@ public abstract class WriteFlusher
 
                 case PENDING:
                     if (DEBUG)
-                        LOG.debug("failed: " + this, cause);
+                        LOG.debug("failed: {}", this, cause);
 
                     PendingState pending = (PendingState)current;
                     if (updateState(pending, new FailedState(cause)))
@@ -508,7 +508,7 @@ public abstract class WriteFlusher
                 case WRITING:
                 case COMPLETING:
                     if (DEBUG)
-                        LOG.debug("failed: " + this, cause);
+                        LOG.debug("failed: {}", this, cause);
                     if (updateState(current, new FailedState(cause)))
                         return true;
                     break;

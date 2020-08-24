@@ -496,7 +496,7 @@ public abstract class HttpReceiver
             return false;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Response failure " + exchange.getResponse(), failure);
+            LOG.debug("Response failure {}", exchange.getResponse(), failure);
 
         // Mark atomically the response as completed, with respect
         // to concurrency between response success and response failure.

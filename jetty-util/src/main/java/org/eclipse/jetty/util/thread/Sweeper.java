@@ -143,7 +143,7 @@ public class Sweeper extends AbstractLifeCycle implements Runnable
             }
             catch (Throwable x)
             {
-                LOG.info("Exception while sweeping " + sweepable, x);
+                LOG.info("Exception while sweeping {}", sweepable, x);
             }
         }
         activate();

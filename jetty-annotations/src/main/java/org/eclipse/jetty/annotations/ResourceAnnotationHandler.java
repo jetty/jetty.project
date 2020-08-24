@@ -111,14 +111,14 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             //JavaEE Spec 5.2.3: Field cannot be static
             if (Modifier.isStatic(field.getModifiers()))
             {
-                LOG.warn("Skipping Resource annotation on " + clazz.getName() + "." + field.getName() + ": cannot be static");
+                LOG.warn("Skipping Resource annotation on {}.{}: cannot be static", clazz.getName(), field.getName());
                 return;
             }
 
             //JavaEE Spec 5.2.3: Field cannot be final
             if (Modifier.isFinal(field.getModifiers()))
             {
-                LOG.warn("Skipping Resource annotation on " + clazz.getName() + "." + field.getName() + ": cannot be final");
+                LOG.warn("Skipping Resource annotation on {}.{}: cannot be final", clazz.getName(), field.getName());
                 return;
             }
 
@@ -179,7 +179,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                     //Check there is a JNDI entry for this annotation
                     if (bound)
                     {
-                        LOG.debug("Bound " + (mappedName == null ? name : mappedName) + " as " + name);
+                        LOG.debug("Bound {} as {}", (mappedName == null ? name : mappedName), name);
                         //   Make the Injection for it if the binding succeeded
                         injection = new Injection(clazz, field, type, name, mappedName);
                         injections.add(injection);
@@ -243,7 +243,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             //JavaEE Spec 5.2.3: Method cannot be static
             if (Modifier.isStatic(method.getModifiers()))
             {
-                LOG.warn("Skipping Resource annotation on " + clazz.getName() + "." + method.getName() + ": cannot be static");
+                LOG.warn("Skipping Resource annotation on {}.{}: cannot be static", clazz.getName(), method.getName());
                 return;
             }
 
@@ -251,19 +251,19 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
             // only 1 parameter
             if (!method.getName().startsWith("set"))
             {
-                LOG.warn("Skipping Resource annotation on " + clazz.getName() + "." + method.getName() + ": invalid java bean, does not start with 'set'");
+                LOG.warn("Skipping Resource annotation on {}.{}: invalid java bean, does not start with 'set'", clazz.getName(), method.getName());
                 return;
             }
 
             if (method.getParameterCount() != 1)
             {
-                LOG.warn("Skipping Resource annotation on " + clazz.getName() + "." + method.getName() + ": invalid java bean, not single argument to method");
+                LOG.warn("Skipping Resource annotation on {}.{}: invalid java bean, not single argument to method", clazz.getName(), method.getName());
                 return;
             }
 
             if (Void.TYPE != method.getReturnType())
             {
-                LOG.warn("Skipping Resource annotation on " + clazz.getName() + "." + method.getName() + ": invalid java bean, not void");
+                LOG.warn("Skipping Resource annotation on {}.{}: invalid java bean, not void", clazz.getName(), method.getName());
                 return;
             }
 
@@ -332,7 +332,7 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 
                     if (bound)
                     {
-                        LOG.debug("Bound " + (mappedName == null ? name : mappedName) + " as " + name);
+                        LOG.debug("Bound {} as {}", (mappedName == null ? name : mappedName), name);
                         //   Make the Injection for it
                         injection = new Injection(clazz, method, paramType, resourceType, name, mappedName);
                         injections.add(injection);

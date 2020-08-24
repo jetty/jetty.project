@@ -460,7 +460,7 @@ public class FrameFlusher extends IteratingCallback
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Exception while notifying success of callback " + callback, x);
+                LOG.debug("Exception while notifying success of callback {}", callback, x);
         }
     }
 
@@ -476,7 +476,7 @@ public class FrameFlusher extends IteratingCallback
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Exception while notifying failure of callback " + callback, x);
+                LOG.debug("Exception while notifying failure of callback {}", callback, x);
         }
     }
 
