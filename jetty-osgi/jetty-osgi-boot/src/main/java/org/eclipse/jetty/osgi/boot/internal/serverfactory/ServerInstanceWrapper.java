@@ -162,7 +162,7 @@ public class ServerInstanceWrapper
             }
             catch (Exception e)
             {
-                LOG.warn("Configuration error in " + jettyConfiguration);
+                LOG.warn("Configuration error in {}", jettyConfiguration);
                 throw e;
             }
         }
@@ -228,7 +228,7 @@ public class ServerInstanceWrapper
             ClassLoader libExtClassLoader = LibExtClassLoaderHelper.createLibExtClassLoader(null, sharedURLs, JettyBootstrapActivator.class.getClassLoader());
 
             if (LOG.isDebugEnabled())
-                LOG.debug("LibExtClassLoader = " + libExtClassLoader);
+                LOG.debug("LibExtClassLoader = {}", libExtClassLoader);
 
             Thread.currentThread().setContextClassLoader(libExtClassLoader);
 
@@ -264,7 +264,7 @@ public class ServerInstanceWrapper
                 _commonParentClassLoaderForWebapps = libExtClassLoader;
 
             if (LOG.isDebugEnabled())
-                LOG.debug("common classloader = " + _commonParentClassLoaderForWebapps);
+                LOG.debug("common classloader = {}", _commonParentClassLoaderForWebapps);
 
             server.start();
         }
@@ -433,7 +433,7 @@ public class ServerInstanceWrapper
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Unrecognized Jetty Shared Lib URL: " + url);
+                        LOG.debug("Unrecognized Jetty Shared Lib URL: {}", url);
                 }
             }
             catch (Throwable mfe)

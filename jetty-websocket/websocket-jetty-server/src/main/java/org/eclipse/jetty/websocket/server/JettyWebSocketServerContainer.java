@@ -184,7 +184,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             }
             catch (Throwable x)
             {
-                LOG.info("Exception while invoking listener " + listener, x);
+                LOG.info("Exception while invoking listener {}", listener, x);
             }
         }
     }

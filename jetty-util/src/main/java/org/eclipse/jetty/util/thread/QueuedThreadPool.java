@@ -267,7 +267,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 }
                 catch (Throwable t)
                 {
-                    LOG.warn("Unable to close job: " + job, t);
+                    LOG.warn("Unable to close job: {}", job, t);
                 }
             }
             else if (job != NOOP)

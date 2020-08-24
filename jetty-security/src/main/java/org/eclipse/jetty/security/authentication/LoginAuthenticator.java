@@ -138,7 +138,7 @@ public abstract class LoginAuthenticator implements Authenticator
                     }
                     else
                     {
-                        LOG.warn("Unable to renew session " + httpSession);
+                        LOG.warn("Unable to renew session {}", httpSession);
                     }
                     return httpSession;
                 }

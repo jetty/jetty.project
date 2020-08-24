@@ -163,6 +163,59 @@ Intellectual Property is a hallmark concern of the Eclipse Foundation so you are
 As much as we would like to accept a tremendous pull request, without the proper chain of events being completed our hands are tied.
 That being said, the steps are not particularly onerous and we are happy to work with you to get them accomplished.
 
+==== Logging Conventions
+
+When deciding when and what to log, bear in mind a few things:
+
+* never use `LOG.debug` without a preceding `if (LOG.isDebugEnabled())`
+* we don't want to pollute the log with very long stacktraces unless necessary
+* we don't want to routinely produce logging events in response to data sent by a user
+* we should not call more than one LOG method for a single event: otherwise log messages may be interleaved and more confusing
+* we should never LOG.warn and then throw that exception, as that will result in double handling
+* we should seldom LOG.debug and then throw as that will make debug verbose and add little information
+* when interacting with a request, or information received from a client:
+** no logging unless `isDebugEnabled`, in which case you output at `DEBUG` level eg:
+[source, java, subs="{sub-order}"]
+----
+  catch (Throwable t)
+  {
+     if (LOG.isDebugEnabled())
+       LOG.debug("Something happened {} {} {}",x, y, z, t);
+  }
+----
+
+* when calling into application code that throws an exception:
+** use `INFO` level, and use `isDebugEnabled` to cut down on the size of the logging of stack traces:
+[source, java, subs="{sub-order}"]
+----
+  catch (Throwable t)
+  {
+    if (LOG.isDebugEnabled())
+      LOG.info("Something happened {} {} {}", x, y, z, t);
+    else
+      LOG.info("Something happened {} {} {} {}", x, y, z, t.toString());
+  }
+----
+
+* when exceptions happen in jetty code:
+** mostly use `WARN` or `ERROR` level
+** if the exception is not entirely unexpected, can happen relatively frequently, or can potentially have a very long stack trace and you don't want to clutter up the log, you can use `isDebugEnabled` to cut down on the size of the logging of the stacktrace:
+[source, java, subs="{sub-order}"]
+----
+  catch (Throwable t)
+  {
+    if (LOG.isDebugEnabled())
+      LOG.warn("Something happened {} {} {}", x, y, z, t);
+    else
+      LOG.warn("Something happened {} {} {} {}", x, y, z, t.toString());
+  }
+----
+
+____
+[TIP]
+Be aware that `LOG.warn("Something happened", t)` is the same as `LOG.warn("Something happened {}", t)`, at least for the default jetty logging.
+In both cases, the full stacktrace is output. If you only want the log message, you need to do `LOG.warn("Something happened {}", t.toString())`.
+____
 
 [[cg-patches]]
 === Contributing Patches

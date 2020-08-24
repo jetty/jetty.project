@@ -237,7 +237,7 @@ public class Scanner extends AbstractLifeCycle
         @Override
         public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException
         {
-            LOG.warn("FileVisit failed: " + file, exc);
+            LOG.warn("FileVisit failed: {}", file, exc);
             return FileVisitResult.CONTINUE;
         }
 
@@ -346,7 +346,7 @@ public class Scanner extends AbstractLifeCycle
         }
         catch (Exception e)
         {
-            LOG.warn("Unable to add: " + dir, e);
+            LOG.warn("Unable to add: {}", dir, e);
         }
     }
     
@@ -760,7 +760,7 @@ public class Scanner extends AbstractLifeCycle
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("scanned " + _scannables.keySet() + ": " + _notifications);
+                LOG.debug("scanned {}: {}", _scannables.keySet(), _notifications);
 
             // Process notifications
             // Only process notifications that are for stable files (ie same in old and current scan).
@@ -805,7 +805,7 @@ public class Scanner extends AbstractLifeCycle
 
     private void warn(Object listener, String filename, Throwable th)
     {
-        LOG.warn(listener + " failed on '" + filename, th);
+        LOG.warn("{} failed on '{}'", listener, filename, th);
     }
 
     /**
@@ -908,7 +908,7 @@ public class Scanner extends AbstractLifeCycle
             }
             catch (Exception e)
             {
-                LOG.warn(listener + " failed on scan start for cycle " + cycle, e);
+                LOG.warn("{} failed on scan start for cycle {}", listener, cycle, e);
             }
         }
     }
@@ -929,7 +929,7 @@ public class Scanner extends AbstractLifeCycle
             }
             catch (Exception e)
             {
-                LOG.warn(listener + " failed on scan end for cycle " + cycle, e);
+                LOG.warn("{} failed on scan end for cycle {}", listener, cycle, e);
             }
         }
     }

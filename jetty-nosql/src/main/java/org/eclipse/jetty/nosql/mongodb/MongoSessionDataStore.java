@@ -554,7 +554,8 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             .add("sparse", false)
             .add("unique", true)
             .get());
-        LOG.debug("done ensure Mongodb indexes existing");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Done ensure Mongodb indexes existing");
         //TODO perhaps index on expiry time?
     }
 

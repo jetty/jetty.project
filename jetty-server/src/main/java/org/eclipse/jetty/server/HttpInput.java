@@ -671,7 +671,8 @@ public class HttpInput extends ServletInputStream implements Runnable
             }
             catch (Throwable e)
             {
-                LOG.debug("Unable to consume all input", e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to consume all input", e);
                 _state = new ErrorState(e);
                 return false;
             }
@@ -921,7 +922,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 if (LOG.isDebugEnabled())
                     LOG.warn(msg, e2);
                 else
-                    LOG.warn(msg + ": {}", e2.toString());
+                    LOG.warn("{}: {}", msg, e2.toString());
                 throw new RuntimeIOException(msg, e2);
             }
         }

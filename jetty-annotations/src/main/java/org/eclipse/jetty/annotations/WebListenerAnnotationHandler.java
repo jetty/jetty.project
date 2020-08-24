@@ -49,7 +49,7 @@ public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotation
     {
         if (annotationName == null || !"javax.servlet.annotation.WebListener".equals(annotationName))
             return;
-        LOG.warn("@WebListener is not applicable to fields: " + info.getClassInfo().getClassName() + "." + info.getFieldName());
+        LOG.warn("@WebListener is not applicable to fields: {}.{}", info.getClassInfo().getClassName(), info.getFieldName());
     }
 
     @Override
@@ -57,6 +57,6 @@ public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotation
     {
         if (annotationName == null || !"javax.servlet.annotation.WebListener".equals(annotationName))
             return;
-        LOG.warn("@WebListener is not applicable to methods: " + info.getClassInfo().getClassName() + "." + info.getMethodName() + " " + info.getSignature());
+        LOG.warn("@WebListener is not applicable to methods: {}.{} {}", info.getClassInfo().getClassName(), info.getMethodName(), info.getSignature());
     }
 }

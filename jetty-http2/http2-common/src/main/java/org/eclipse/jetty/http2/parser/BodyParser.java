@@ -109,7 +109,7 @@ public abstract class BodyParser
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -121,7 +121,7 @@ public abstract class BodyParser
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -133,7 +133,7 @@ public abstract class BodyParser
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -145,7 +145,7 @@ public abstract class BodyParser
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -157,7 +157,7 @@ public abstract class BodyParser
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -169,7 +169,7 @@ public abstract class BodyParser
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -181,7 +181,7 @@ public abstract class BodyParser
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -193,7 +193,7 @@ public abstract class BodyParser
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -205,7 +205,7 @@ public abstract class BodyParser
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -224,7 +224,7 @@ public abstract class BodyParser
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 
@@ -242,7 +242,7 @@ public abstract class BodyParser
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 

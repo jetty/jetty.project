@@ -396,7 +396,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
             _authenticator.setConfiguration(this);
         else if (_realmName != null)
         {
-            LOG.warn("No Authenticator for " + this);
+            LOG.warn("No Authenticator for {}", this);
             throw new IllegalStateException("No Authenticator");
         }
 
@@ -502,7 +502,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
             if (isAuthMandatory && authenticator == null)
             {
-                LOG.warn("No authenticator for: " + roleInfo);
+                LOG.warn("No authenticator for: {}", roleInfo);
                 if (!baseRequest.isHandled())
                 {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);

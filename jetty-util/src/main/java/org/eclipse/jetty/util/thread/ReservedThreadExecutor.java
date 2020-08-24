@@ -339,7 +339,7 @@ public class ReservedThreadExecutor extends AbstractLifeCycle implements TryExec
                 if (size >= _capacity)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} size {} > capacity", this, size, _capacity);
+                        LOG.debug("{} size {} > capacity {}", this, size, _capacity);
                     if (_starting)
                         _pending.decrementAndGet();
                     return;

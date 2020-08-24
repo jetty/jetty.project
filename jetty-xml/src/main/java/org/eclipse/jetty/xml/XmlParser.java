@@ -203,7 +203,7 @@ public class XmlParser
             reader.setErrorHandler(handler);
             reader.setEntityResolver(handler);
             if (LOG.isDebugEnabled())
-                LOG.debug("parsing: sid=" + source.getSystemId() + ",pid=" + source.getPublicId());
+                LOG.debug("parsing: sid={},pid={}", source.getSystemId(), source.getPublicId());
             _parser.parse(source, handler);
             if (handler._error != null)
                 throw handler._error;
@@ -224,7 +224,7 @@ public class XmlParser
     public Node parse(String url) throws IOException, SAXException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("parse: " + url);
+            LOG.debug("parse: {}", url);
         return parse(new InputSource(url));
     }
 
@@ -239,7 +239,7 @@ public class XmlParser
     public Node parse(File file) throws IOException, SAXException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("parse: " + file);
+            LOG.debug("parse: {}", file);
         return parse(new InputSource(Resource.toURL(file).toString()));
     }
 
@@ -259,7 +259,7 @@ public class XmlParser
     protected InputSource resolveEntity(String pid, String sid)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("resolveEntity(" + pid + ", " + sid + ")");
+            LOG.debug("resolveEntity({},{})", pid, sid);
 
         if (sid != null && sid.endsWith(".dtd"))
             _dtd = sid;
@@ -276,7 +276,7 @@ public class XmlParser
                 dtd = dtd.substring(dtd.lastIndexOf('/') + 1);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Can't exact match entity in redirect map, trying " + dtd);
+                LOG.debug("Can't exact match entity in redirect map, trying {}", dtd);
             entity = (URL)_redirectMap.get(dtd);
         }
 
@@ -286,7 +286,7 @@ public class XmlParser
             {
                 InputStream in = entity.openStream();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Redirected entity " + sid + " --> " + entity);
+                    LOG.debug("Redirected entity {}  --> {}", sid,  entity);
                 InputSource is = new InputSource(in);
                 is.setSystemId(sid);
                 return is;
@@ -432,8 +432,10 @@ public class XmlParser
         @Override
         public void warning(SAXParseException ex)
         {
-            LOG.debug("SAX Parse Issue", ex);
-            LOG.warn("WARNING@" + getLocationString(ex) + " : " + ex.toString());
+            if (LOG.isDebugEnabled())
+                LOG.warn("SAX Parse Issue", ex);
+            else
+                LOG.warn("SAX Parse Issue @{} : {}",getLocationString(ex), ex.toString());
         }
 
         @Override
@@ -442,16 +444,20 @@ public class XmlParser
             // Save error and continue to report other errors
             if (_error == null)
                 _error = ex;
-            LOG.debug("SAX Parse Issue", ex);
-            LOG.error("ERROR@" + getLocationString(ex) + " : " + ex.toString());
+            if (LOG.isDebugEnabled())
+                LOG.error("SAX Parse Issue", ex);
+            else
+                LOG.error("SAX Parse Issue @{} : {}",getLocationString(ex), ex.toString());
         }
 
         @Override
         public void fatalError(SAXParseException ex) throws SAXException
         {
             _error = ex;
-            LOG.debug("SAX Parse Issue", ex);
-            LOG.error("FATAL@" + getLocationString(ex) + " : " + ex.toString());
+            if (LOG.isDebugEnabled())
+                LOG.error("Fatal AX Parse Issue", ex);
+            else
+                LOG.error("Fatal SAX Parse Issue @{} : {}", getLocationString(ex), ex.toString());
             throw ex;
         }
 

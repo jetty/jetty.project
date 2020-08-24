@@ -157,8 +157,6 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
         rolesQuery = "select " + dbUserRoleTableRoleField + " from " + dbUserRoleTable + " where " + dbUserRoleTableUserField + "=?";
 
         if (LOG.isDebugEnabled())
-            LOG.debug("userQuery = " + userQuery);
-        if (LOG.isDebugEnabled())
-            LOG.debug("rolesQuery = " + rolesQuery);
+            LOG.debug("userQuery = {} rolesQuery = {}", userQuery, rolesQuery);
     }
 }

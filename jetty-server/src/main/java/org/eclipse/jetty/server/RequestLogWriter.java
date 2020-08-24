@@ -196,7 +196,7 @@ public class RequestLogWriter extends AbstractLifeCycle implements RequestLog.Wr
             {
                 _fileOut = new RolloverFileOutputStream(_filename, _append, _retainDays, TimeZone.getTimeZone(getTimeZone()), _filenameDateFormat, null);
                 _closeOut = true;
-                LOG.info("Opened " + getDatedFilename());
+                LOG.info("Opened {}", getDatedFilename());
             }
             else
             {

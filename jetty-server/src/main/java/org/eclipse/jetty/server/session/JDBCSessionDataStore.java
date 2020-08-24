@@ -757,7 +757,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
 
                 statement.executeUpdate();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Inserted session " + data);
+                    LOG.debug("Inserted session {}", data);
             }
         }
     }
@@ -791,7 +791,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
                 statement.executeUpdate();
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Updated session " + data);
+                    LOG.debug("Updated session {}", data);
             }
         }
     }

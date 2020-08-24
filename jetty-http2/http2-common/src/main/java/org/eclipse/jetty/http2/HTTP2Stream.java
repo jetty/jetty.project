@@ -708,7 +708,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             }
             catch (Throwable x)
             {
-                LOG.info("Failure while notifying listener " + listener, x);
+                LOG.info("Failure while notifying listener {}", listener, x);
             }
         }
     }
@@ -724,7 +724,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             }
             catch (Throwable x)
             {
-                LOG.info("Failure while notifying listener " + listener, x);
+                LOG.info("Failure while notifying listener {}", listener, x);
             }
         }
         else
@@ -744,7 +744,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             }
             catch (Throwable x)
             {
-                LOG.info("Failure while notifying listener " + listener, x);
+                LOG.info("Failure while notifying listener {}", listener, x);
                 callback.failed(x);
             }
         }
@@ -766,7 +766,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             }
             catch (Throwable x)
             {
-                LOG.info("Failure while notifying listener " + listener, x);
+                LOG.info("Failure while notifying listener {}", listener, x);
                 callback.failed(x);
             }
         }
@@ -787,7 +787,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
             return true;
         }
     }
@@ -803,7 +803,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             }
             catch (Throwable x)
             {
-                LOG.info("Failure while notifying listener " + listener, x);
+                LOG.info("Failure while notifying listener {}", listener, x);
                 callback.failed(x);
             }
         }
@@ -824,7 +824,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
         }
     }
 

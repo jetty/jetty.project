@@ -163,7 +163,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
         catch (IOException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Could not read from " + endPoint, x);
+                LOG.debug("Could not read from {}", endPoint, x);
             return -1;
         }
     }
@@ -441,7 +441,7 @@ public class HTTP2Connection extends AbstractConnection implements WriteFlusher.
             if (release() == 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Released retained " + this, failure);
+                    LOG.debug("Released retained {}", this, failure);
             }
         }
 

@@ -318,7 +318,7 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
             }
             catch (Throwable t)
             {
-                LOG.info("Exception while invoking listener " + listener, t);
+                LOG.info("Exception while invoking listener {}", listener, t);
             }
         }
     }

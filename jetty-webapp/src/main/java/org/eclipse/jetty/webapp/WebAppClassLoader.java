@@ -263,7 +263,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                     token = token.substring(0, token.length() - 1);
                     Resource resource = _context.newResource(token);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Glob Path resource=" + resource);
+                        LOG.debug("Glob Path resource={}", resource);
                     resource = _context.newResource(token);
                     addJars(resource);
                 }
@@ -272,7 +272,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
 
             Resource resource = _context.newResource(token);
             if (LOG.isDebugEnabled())
-                LOG.debug("Path resource=" + resource);
+                LOG.debug("Path resource={}", resource);
 
             if (resource.isDirectory() && resource instanceof ResourceCollection)
             {
@@ -294,7 +294,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Check file exists and is not nested jar: " + resource);
+                        LOG.debug("Check file exists and is not nested jar: {}", resource);
                     throw new IllegalArgumentException("File not resolvable or incompatible with URLClassloader: " + resource);
                 }
             }

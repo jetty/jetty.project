@@ -128,7 +128,7 @@ public class DigestAuthenticator extends LoginAuthenticator
             if (credentials != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Credentials: " + credentials);
+                    LOG.debug("Credentials: {}", credentials);
                 QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(credentials, "=, ", true, false);
                 final Digest digest = new Digest(request.getMethod());
                 String last = null;

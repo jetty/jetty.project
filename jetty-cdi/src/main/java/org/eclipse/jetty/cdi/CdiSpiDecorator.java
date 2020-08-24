@@ -112,7 +112,7 @@ public class CdiSpiDecorator implements Decorator
         }
         catch (Throwable th)
         {
-            LOG.warn("Unable to decorate " + o, th);
+            LOG.warn("Unable to decorate {}", o, th);
         }
         return o;
     }
@@ -134,7 +134,7 @@ public class CdiSpiDecorator implements Decorator
         }
         catch (Throwable th)
         {
-            LOG.warn("Unable to destroy " + o, th);
+            LOG.warn("Unable to destroy {}", o, th);
         }
     }
 

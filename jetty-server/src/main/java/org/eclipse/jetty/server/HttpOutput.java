@@ -1278,7 +1278,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
         catch (Throwable x)
         {
-            LOG.debug("Unable to access ReadableByteChannel for content {}", httpContent, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to access ReadableByteChannel for content {}", httpContent, x);
         }
         if (rbc != null)
         {
@@ -1294,7 +1295,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
         catch (Throwable x)
         {
-            LOG.debug("Unable to access InputStream for content {}", httpContent, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to access InputStream for content {}", httpContent, x);
         }
         if (in != null)
         {

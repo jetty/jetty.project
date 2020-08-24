@@ -286,7 +286,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             public void failed(Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not push " + request, x);
+                    LOG.debug("Could not push {}", request, x);
             }
         }, new Stream.Listener.Adapter()); // TODO: handle reset from the client ?
     }

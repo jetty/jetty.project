@@ -114,7 +114,7 @@ public class JavaxAutobahnClient
             }
             else
             {
-                LOG.info("Will run %d cases ...", caseNumbers.length);
+                LOG.info("Will run {} cases ...", caseNumbers.length);
                 for (int caseNum : caseNumbers)
                 {
                     client.runCaseByNumber(caseNum);

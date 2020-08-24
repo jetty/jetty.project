@@ -65,7 +65,7 @@ public class javaURLContextFactory implements ObjectFactory
         if (url instanceof String)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug(">>> resolution of url " + url + " requested");
+                LOG.debug(">>> resolution of url {} requested", url);
             Context rootctx = new javaRootURLContext(env);
             return rootctx.lookup((String)url);
         }

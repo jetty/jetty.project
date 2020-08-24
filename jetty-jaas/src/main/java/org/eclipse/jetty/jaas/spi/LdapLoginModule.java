@@ -289,12 +289,12 @@ public class LdapLoginModule extends AbstractLoginModule
             }
             catch (NamingException e)
             {
-                LOG.debug("no password available under attribute: " + _userPasswordAttribute);
+                LOG.debug("no password available under attribute: {}", _userPasswordAttribute);
             }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("user cred is: " + ldapCredential);
+            LOG.debug("user cred is: {}", ldapCredential);
 
         return ldapCredential;
     }
@@ -350,7 +350,7 @@ public class LdapLoginModule extends AbstractLoginModule
         NamingEnumeration<SearchResult> results = dirContext.search(_roleBaseDn, filter, filterArguments, ctls);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Found user roles?: " + results.hasMoreElements());
+            LOG.debug("Found user roles?: {}", results.hasMoreElements());
 
         while (results.hasMoreElements())
         {
@@ -501,7 +501,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
         String userDn = searchResult.getNameInNamespace();
 
-        LOG.info("Attempting authentication: " + userDn);
+        LOG.info("Attempting authentication: {}", userDn);
 
         Hashtable<Object, Object> environment = getEnvironment();
 
@@ -543,7 +543,7 @@ public class LdapLoginModule extends AbstractLoginModule
         String filter = "(&(objectClass={0})({1}={2}))";
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Searching for user " + username + " with filter: \'" + filter + "\'" + " from base dn: " + _userBaseDn);
+            LOG.debug("Searching for user {} with filter: \'{}\' from base dn: {}", username, filter, _userBaseDn);
 
         Object[] filterArguments = new Object[]{
             _userObjectClass,
@@ -571,7 +571,7 @@ public class LdapLoginModule extends AbstractLoginModule
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Found user?: " + results.hasMoreElements());
+            LOG.debug("Found user?: {}", results.hasMoreElements());
 
         if (!results.hasMoreElements())
             throw new FailedLoginException("User not found.");

@@ -84,7 +84,7 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
             }
             catch (Throwable x)
             {
-                LOG.info("Exception while invoking listener " + listener, x);
+                LOG.info("Exception while invoking listener {}", listener, x);
             }
         }
     }
@@ -101,7 +101,7 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
             }
             catch (Throwable x)
             {
-                LOG.info("Exception while invoking listener " + listener, x);
+                LOG.info("Exception while invoking listener {}", listener, x);
             }
         }
     }
@@ -117,7 +117,7 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
             }
             catch (Throwable x)
             {
-                LOG.info("Exception while invoking listener " + listener, x);
+                LOG.info("Exception while invoking listener {}", listener, x);
             }
         }
     }
@@ -132,7 +132,7 @@ public class NetworkTrafficSocketChannelEndPoint extends SocketChannelEndPoint
             }
             catch (Throwable x)
             {
-                LOG.info("Exception while invoking listener " + listener, x);
+                LOG.info("Exception while invoking listener {}", listener, x);
             }
         }
     }

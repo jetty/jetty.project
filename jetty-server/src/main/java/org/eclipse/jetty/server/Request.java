@@ -532,7 +532,8 @@ public class Request implements HttpServletRequest
                     catch (IOException e)
                     {
                         String msg = "Unable to extract content parameters";
-                        LOG.debug(msg, e);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug(msg, e);
                         throw new RuntimeIOException(msg, e);
                     }
                 }
@@ -572,7 +573,8 @@ public class Request implements HttpServletRequest
         catch (IOException e)
         {
             String msg = "Unable to extract form parameters";
-            LOG.debug(msg, e);
+            if (LOG.isDebugEnabled())
+                LOG.debug(msg, e);
             throw new RuntimeIOException(msg, e);
         }
     }

@@ -827,7 +827,7 @@ public class AnnotationParser
                     catch (Exception ex)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Error scanning file " + file, ex);
+                            LOG.debug("Error scanning file {}", file, ex);
                         me.add(new RuntimeException("Error scanning file " + file, ex));
                     }
                 }
@@ -998,7 +998,7 @@ public class AnnotationParser
         if (path.startsWith(".") || path.contains("/."))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Contains hidden dirs: " + path);
+                LOG.debug("Contains hidden dirs: {}", path);
             return false;
         }
 

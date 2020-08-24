@@ -184,7 +184,7 @@ public class AppLifeCycle extends Graph
         for (Binding binding : getBindings(node))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Calling " + binding.getClass().getName() + " for " + app);
+                LOG.debug("Calling {} for {}", binding.getClass().getName(), app);
             binding.processBinding(node, app);
         }
     }
