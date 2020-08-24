@@ -68,7 +68,7 @@ public class PushBuilderImpl implements PushBuilder
         _sessionId = sessionId;
         _fields.add(JETTY_PUSH);
         if (LOG.isDebugEnabled())
-            LOG.debug("PushBuilder({} {}?{} s={} c={})", _method, _request.getRequestURI(), _queryString, _sessionId);
+            LOG.debug("PushBuilder({} {}?{} s={})", _method, _request.getRequestURI(), _queryString, _sessionId);
     }
 
     @Override

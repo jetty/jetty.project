@@ -220,7 +220,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         if (acceptors < 0)
             acceptors = Math.max(1, Math.min(4, cores / 8));
         if (acceptors > cores)
-            LOG.warn("Acceptors should be <= availableProcessors: " + this);
+            LOG.warn("Acceptors should be <= availableProcessors: {} ", this);
         _acceptors = new Thread[acceptors];
     }
 
@@ -650,13 +650,15 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         {
             if (ex instanceof InterruptedException)
             {
-                LOG.debug("Accept Interrupted", ex);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Accept Interrupted", ex);
                 return true;
             }
 
             if (ex instanceof ClosedByInterruptException)
             {
-                LOG.debug("Accept Closed by Interrupt", ex);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Accept Closed by Interrupt", ex);
                 return false;
             }
 

@@ -96,7 +96,7 @@ public abstract class NamingEntry
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp/env");
         if (LOG.isDebugEnabled())
-            LOG.debug("Binding java:comp/env/" + localName + " to " + _objectNameString);
+            LOG.debug("Binding java:comp/env/{} to {}", localName, _objectNameString);
         NamingUtil.bind(env, localName, new LinkRef(_objectNameString));
     }
 
@@ -110,7 +110,7 @@ public abstract class NamingEntry
             InitialContext ic = new InitialContext();
             Context env = (Context)ic.lookup("java:comp/env");
             if (LOG.isDebugEnabled())
-                LOG.debug("Unbinding java:comp/env/" + getJndiName());
+                LOG.debug("Unbinding java:comp/env/{}", getJndiName());
             env.unbind(getJndiName());
         }
         catch (NamingException e)

@@ -140,7 +140,7 @@ public class JarResource extends URLResource
             return;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Extract " + this + " to " + directory);
+            LOG.debug("Extract {} to {}", this, directory);
 
         String urlString = this.getURI().toASCIIString().trim();
         int endOfJarUrl = urlString.indexOf("!/");
@@ -154,7 +154,7 @@ public class JarResource extends URLResource
         boolean subEntryIsDir = (subEntryName != null && subEntryName.endsWith("/") ? true : false);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Extracting entry = " + subEntryName + " from jar " + jarFileURL);
+            LOG.debug("Extracting entry = {} from jar {}", subEntryName, jarFileURL);
         URLConnection c = jarFileURL.openConnection();
         c.setUseCaches(false);
         try (InputStream is = c.getInputStream();
@@ -206,7 +206,7 @@ public class JarResource extends URLResource
                 if (!shouldExtract)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Skipping entry: " + entryName);
+                        LOG.debug("Skipping entry: {}", entryName);
                     continue;
                 }
 
@@ -215,7 +215,7 @@ public class JarResource extends URLResource
                 if (dotCheck == null)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Invalid entry: " + entryName);
+                        LOG.debug("Invalid entry: {}", entryName);
                     continue;
                 }
 

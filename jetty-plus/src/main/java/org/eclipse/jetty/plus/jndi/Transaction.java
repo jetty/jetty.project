@@ -75,7 +75,7 @@ public class Transaction extends NamingEntry
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp/env");
         if (LOG.isDebugEnabled())
-            LOG.debug("Binding java:comp/env" + getJndiName() + " to " + _objectNameString);
+            LOG.debug("Binding java:comp/env{} to {}", getJndiName(), _objectNameString);
         NamingUtil.bind(env, localName, new LinkRef(_objectNameString));
     }
 
@@ -89,7 +89,7 @@ public class Transaction extends NamingEntry
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp");
         if (LOG.isDebugEnabled())
-            LOG.debug("Binding java:comp/" + getJndiName() + " to " + _objectNameString);
+            LOG.debug("Binding java:comp/{} to {}", getJndiName(), _objectNameString);
         NamingUtil.bind(env, getJndiName(), new LinkRef(_objectNameString));
     }
 
@@ -104,7 +104,7 @@ public class Transaction extends NamingEntry
             InitialContext ic = new InitialContext();
             Context env = (Context)ic.lookup("java:comp");
             if (LOG.isDebugEnabled())
-                LOG.debug("Unbinding java:comp/" + getJndiName());
+                LOG.debug("Unbinding java:comp/{}", getJndiName());
             env.unbind(getJndiName());
         }
         catch (NamingException e)

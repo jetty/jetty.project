@@ -1609,12 +1609,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (contextPath.endsWith("/*"))
         {
-            LOG.warn(this + " contextPath ends with /*");
+            LOG.warn("{} contextPath ends with /*", this);
             contextPath = contextPath.substring(0, contextPath.length() - 2);
         }
         else if (contextPath.length() > 1 && contextPath.endsWith("/"))
         {
-            LOG.warn(this + " contextPath ends with /");
+            LOG.warn("{} contextPath ends with /", this);
             contextPath = contextPath.substring(0, contextPath.length() - 1);
         }
 
@@ -1696,8 +1696,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         catch (Exception e)
         {
-            LOG.warn(e.toString());
-            LOG.debug("Unable to set baseResource: {}", resourceBase, e);
+            if (LOG.isDebugEnabled())
+                LOG.warn("Unable to set baseResource: {}", resourceBase, e);
+            else
+                LOG.warn(e.toString());
             throw new IllegalArgumentException(resourceBase);
         }
     }
@@ -1927,7 +1929,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (resource.isAlias())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Aliased resource: " + resource + "~=" + resource.getAlias());
+                LOG.debug("Aliased resource: {}~={}", resource, resource.getAlias());
 
             // alias checks
             for (Iterator<AliasCheck> i = getAliasChecks().iterator(); i.hasNext(); )
@@ -1936,7 +1938,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 if (check.check(path, resource))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Aliased resource: " + resource + " approved by " + check);
+                        LOG.debug("Aliased resource: {} approved by {}", resource, check);
                     return true;
                 }
             }

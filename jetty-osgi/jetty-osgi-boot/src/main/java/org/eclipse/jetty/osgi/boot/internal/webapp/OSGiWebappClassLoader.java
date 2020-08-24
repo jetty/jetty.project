@@ -216,7 +216,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
             }
             else
             {
-                LOG.info("Did not add " + path + " to the classloader of the webapp " + getContext());
+                LOG.info("Did not add {} to the classloader of the webapp {}", path, getContext());
             }
         }
     }

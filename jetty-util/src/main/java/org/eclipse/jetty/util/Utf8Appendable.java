@@ -327,8 +327,11 @@ public abstract class Utf8Appendable
                 throw new RuntimeException(e);
             }
             Throwable th = new NotUtf8Exception("incomplete UTF8 sequence");
-            LOG.warn(th.toString());
-            LOG.debug("Unable to get replacement string", th);
+            if (LOG.isDebugEnabled())
+                LOG.warn("Unable to get replacement string", th);
+            else
+                LOG.warn("Unable to get replacement string {}", th.toString());
+
         }
         return _appendable.toString();
     }

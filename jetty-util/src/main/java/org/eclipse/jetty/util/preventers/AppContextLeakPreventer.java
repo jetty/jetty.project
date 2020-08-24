@@ -35,7 +35,7 @@ public class AppContextLeakPreventer extends AbstractLeakPreventer
     public void prevent(ClassLoader loader)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Pinning classloader for AppContext.getContext() with " + loader);
+            LOG.debug("Pinning classloader for AppContext.getContext() with{} ", loader);
         ImageIO.getUseCache();
     }
 }

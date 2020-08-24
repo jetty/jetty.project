@@ -208,7 +208,7 @@ public class ProxyServletLoadTest
 
                     if (response.getStatus() != 200)
                     {
-                        LOG.warn("Got response <{}>, expecting <{}> iteration=", response.getStatus(), 200, iterations);
+                        LOG.warn("Got response <{}>, expecting <{}> iteration={}", response.getStatus(), 200, iterations);
                         // allow all ClientLoops to finish
                         success.set(false);
                     }
@@ -221,7 +221,7 @@ public class ProxyServletLoadTest
             }
             catch (Throwable x)
             {
-                LOG.warn("Error processing request " + iterations, x);
+                LOG.warn("Error processing request {}", iterations, x);
                 success.set(false);
             }
             finally

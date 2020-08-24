@@ -140,7 +140,7 @@ public class JDBCLoginService extends AbstractLoginService
             _userName == null || _userName.equals("") ||
             _password == null)
         {
-            LOG.warn("UserRealm " + getName() + " has not been properly configured");
+            LOG.warn("UserRealm {} has not been properly configured", getName());
         }
 
         _userSql = "select " + _userTableKey + "," + _userTablePasswordField + " from " + userTable + " where " + userTableUserField + " = ?";
@@ -180,13 +180,9 @@ public class JDBCLoginService extends AbstractLoginService
             Class.forName(_jdbcDriver);
             _con = DriverManager.getConnection(_url, _userName, _password);
         }
-        catch (SQLException e)
+        catch (Exception e)
         {
-            LOG.warn("UserRealm " + getName() + " could not connect to database; will try later", e);
-        }
-        catch (ClassNotFoundException e)
-        {
-            LOG.warn("UserRealm " + getName() + " could not connect to database; will try later", e);
+            LOG.warn("UserRealm {} could not connect to database; will try later", getName(), e);
         }
     }
 
@@ -218,7 +214,7 @@ public class JDBCLoginService extends AbstractLoginService
         }
         catch (SQLException e)
         {
-            LOG.warn("UserRealm " + getName() + " could not load user information from database", e);
+            LOG.warn("UserRealm {} could not load user information from database", getName(), e);
             closeConnection();
         }
 
@@ -255,7 +251,7 @@ public class JDBCLoginService extends AbstractLoginService
         }
         catch (SQLException e)
         {
-            LOG.warn("UserRealm " + getName() + " could not load user information from database", e);
+            LOG.warn("UserRealm {} could not load user information from database", getName(), e);
             closeConnection();
         }
 

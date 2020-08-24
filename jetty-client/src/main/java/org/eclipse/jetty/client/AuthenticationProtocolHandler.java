@@ -137,7 +137,7 @@ public abstract class AuthenticationProtocolHandler implements ProtocolHandler
             if (result.getResponseFailure() != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Authentication challenge failed {}", result.getFailure());
+                    LOG.debug("Authentication challenge failed", result.getFailure());
                 forwardFailureComplete(request, result.getRequestFailure(), response, result.getResponseFailure());
                 return;
             }

@@ -135,7 +135,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Could not relativize " + path);
+                LOG.debug("Could not relativize {}", path);
             return path;
         }
     }

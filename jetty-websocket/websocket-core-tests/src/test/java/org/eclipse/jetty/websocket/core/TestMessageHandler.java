@@ -61,7 +61,7 @@ public class TestMessageHandler extends MessageHandler
     public void onError(Throwable cause, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onError {}", cause);
+            LOG.debug("onError", cause);
         super.onError(cause, callback);
         error = cause;
         errorLatch.countDown();

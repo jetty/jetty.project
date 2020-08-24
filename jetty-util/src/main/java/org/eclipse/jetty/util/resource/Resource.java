@@ -124,8 +124,10 @@ public abstract class Resource implements ResourceFactory, Closeable
             }
             catch (Exception e)
             {
-                LOG.warn(e.toString());
-                LOG.debug("Bad PathResource: " + url, e);
+                if (LOG.isDebugEnabled())
+                    LOG.warn("Bad PathResource: {}", url, e);
+                else
+                    LOG.warn("Bad PathResource: {} {}", url, e.toString());
                 return new BadResource(url, e.toString());
             }
         }
@@ -180,7 +182,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             }
             else
             {
-                LOG.warn("Bad Resource: " + resource);
+                LOG.warn("Bad Resource: {}", resource);
                 throw e;
             }
         }

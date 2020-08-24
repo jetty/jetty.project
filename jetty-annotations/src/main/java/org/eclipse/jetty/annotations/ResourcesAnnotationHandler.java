@@ -45,7 +45,7 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
             Resource[] resArray = resources.value();
             if (resArray == null || resArray.length == 0)
             {
-                LOG.warn("Skipping empty or incorrect Resources annotation on " + clazz.getName());
+                LOG.warn("Skipping empty or incorrect Resources annotation on {}", clazz.getName());
                 return;
             }
 
@@ -63,7 +63,8 @@ public class ResourcesAnnotationHandler extends AbstractIntrospectableAnnotation
 
                     if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context, name, mappedName))
                         if (!org.eclipse.jetty.plus.jndi.NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName))
-                            LOG.warn("Skipping Resources(Resource) annotation on " + clazz.getName() + " for name " + name + ": No resource bound at " + (mappedName == null ? name : mappedName));
+                            LOG.warn("Skipping Resources(Resource) annotation on {} for name {}: no resource bound at {}",
+                                    clazz.getName(), name, (mappedName == null ? name : mappedName));
                 }
                 catch (NamingException e)
                 {

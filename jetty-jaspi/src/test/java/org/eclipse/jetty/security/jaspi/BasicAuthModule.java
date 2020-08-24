@@ -77,7 +77,7 @@ public class BasicAuthModule extends BaseAuthModule
             if (credentials != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Credentials: " + credentials);
+                    LOG.debug("Credentials: {}", credentials);
                 if (login(clientSubject, credentials, Constraint.__BASIC_AUTH, messageInfo))
                 {
                     return AuthStatus.SUCCESS;

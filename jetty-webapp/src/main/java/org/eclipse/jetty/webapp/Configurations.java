@@ -86,7 +86,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
                         if (!configuration.isAvailable())
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Configuration unavailable: " + configuration);
+                                LOG.debug("Configuration unavailable: {}", configuration);
                             __unavailable.add(configuration);
                             return;
                         }
@@ -128,7 +128,7 @@ public class Configurations extends AbstractList<Configuration> implements Dumpa
                     if (!configuration.isAvailable())
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.warn("Configuration unavailable: " + configuration);
+                            LOG.warn("Configuration unavailable: {}", configuration);
                         __unavailable.add(configuration);
                         continue;
                     }

@@ -194,7 +194,7 @@ public abstract class JakartaWebSocketContainer extends ContainerLifeCycle imple
             }
             catch (Throwable x)
             {
-                LOG.info("Exception while invoking listener " + listener, x);
+                LOG.info("Exception while invoking listener {}", listener, x);
             }
         }
     }

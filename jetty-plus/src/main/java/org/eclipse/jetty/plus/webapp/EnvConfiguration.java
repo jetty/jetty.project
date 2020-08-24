@@ -87,7 +87,7 @@ public class EnvConfiguration extends AbstractConfiguration
     public void configure(WebAppContext context) throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Created java:comp/env for webapp " + context.getContextPath());
+            LOG.debug("Created java:comp/env for webapp {}", context.getContextPath());
 
         //check to see if an explicit file has been set, if not,
         //look in WEB-INF/jetty-env.xml
@@ -219,7 +219,7 @@ public class EnvConfiguration extends AbstractConfiguration
         }
         catch (NamingException e)
         {
-            LOG.debug("Error unbinding jndi entries scoped to webapp " + context, e);
+            LOG.debug("Error unbinding jndi entries scoped to webapp {}", context, e);
         }
     }
 

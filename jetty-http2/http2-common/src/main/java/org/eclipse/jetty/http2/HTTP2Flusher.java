@@ -218,7 +218,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 catch (HpackException.StreamException failure)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Failure generating " + entry, failure);
+                        LOG.debug("Failure generating {}", entry, failure);
                     entry.failed(failure);
                     pending.remove();
                 }
@@ -226,7 +226,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                 {
                     // Failure to generate the entry is catastrophic.
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Failure generating " + entry, failure);
+                        LOG.debug("Failure generating {}", entry, failure);
                     failed(failure);
                     return Action.SUCCEEDED;
                 }

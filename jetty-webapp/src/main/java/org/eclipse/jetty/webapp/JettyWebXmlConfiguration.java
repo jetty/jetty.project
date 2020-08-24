@@ -54,7 +54,8 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        LOG.debug("Configuring web-jetty.xml");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Configuring web-jetty.xml");
 
         Resource webInf = context.getWebInf();
         // handle any WEB-INF descriptors
@@ -70,7 +71,7 @@ public class JettyWebXmlConfiguration extends AbstractConfiguration
             if (jetty.exists())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Configure: " + jetty);
+                    LOG.debug("Configure: {}", jetty);
 
                 Object xmlAttr = context.getAttribute(XML_CONFIGURATION);
                 context.removeAttribute(XML_CONFIGURATION);

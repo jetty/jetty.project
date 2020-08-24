@@ -612,7 +612,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
                         if (c.isAnnotation())
                         {
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Registering annotation handler for " + c.getName());
+                                LOG.debug("Registering annotation handler for {}", c.getName());
                             _containerInitializerAnnotationHandlers.add(new ContainerInitializerAnnotationHandler(initializer, c));
                         }
                     }
@@ -621,14 +621,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
                 {
                     initializer = new ContainerInitializer(service, null);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("No classes in HandlesTypes on initializer " + service.getClass());
+                        LOG.debug("No classes in HandlesTypes on initializer {}", service.getClass());
                 }
             }
             else
             {
                 initializer = new ContainerInitializer(service, null);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("No HandlesTypes annotation on initializer " + service.getClass());
+                    LOG.debug("No HandlesTypes annotation on initializer {}", service.getClass());
             }
 
             initializers.add(initializer);

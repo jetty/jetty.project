@@ -97,7 +97,7 @@ public class JDK9ServerALPNProcessor implements ALPNProcessor.Server, SslHandsha
         public void handshakeFailed(Event event, Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("TLS handshake failed " + alpnConnection, failure);
+                LOG.debug("TLS handshake failed {}", alpnConnection, failure);
         }
     }
 }

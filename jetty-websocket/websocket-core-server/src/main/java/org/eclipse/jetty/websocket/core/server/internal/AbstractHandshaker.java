@@ -182,7 +182,7 @@ public abstract class AbstractHandshaker implements Handshaker
         if (!negotiation.validateHeaders())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded: no upgrade header or connection upgrade", negotiation.getBaseRequest());
+                LOG.debug("not upgraded: no upgrade header or connection upgrade {}", negotiation.getBaseRequest());
             return false;
         }
 

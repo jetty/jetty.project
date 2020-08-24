@@ -246,7 +246,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         configureTempDirectory(tmpDir, context);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Set temp dir " + tmpDir);
+            LOG.debug("Set temp dir {}", tmpDir);
         context.setTempDirectory(tmpDir);
     }
 
@@ -293,12 +293,13 @@ public class WebInfConfiguration extends AbstractConfiguration
             // Accept aliases for WAR files
             if (webApp.isAlias())
             {
-                LOG.debug(webApp + " anti-aliased to " + webApp.getAlias());
+                if (LOG.isDebugEnabled())
+                LOG.debug("{} anti-aliased to {}", webApp, webApp.getAlias());
                 webApp = context.newResource(webApp.getAlias());
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Try webapp=" + webApp + ", exists=" + webApp.exists() + ", directory=" + webApp.isDirectory() + " file=" + (webApp.getFile()));
+                LOG.debug("Try webapp={} exists={} directory={} file={}", webApp, webApp.exists(), webApp.isDirectory(), webApp.getFile());
 
             // Track the original web_app Resource, as this could be a PathResource.
             // Later steps force the Resource to be a JarFileResource, which introduces
@@ -348,7 +349,8 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (webApp.getFile() != null && webApp.getFile().isDirectory())
                 {
                     // Copy directory
-                    LOG.debug("Copy " + webApp + " to " + extractedWebAppDir);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Copy {} to  {}", webApp, extractedWebAppDir);
                     webApp.copyTo(extractedWebAppDir);
                 }
                 else
@@ -362,7 +364,8 @@ public class WebInfConfiguration extends AbstractConfiguration
                         //it hasn't been extracted before so extract it
                         extractionLock.createNewFile();
                         extractedWebAppDir.mkdir();
-                        LOG.debug("Extract " + webApp + " to " + extractedWebAppDir);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
                         Resource jarWebApp = JarResource.newJarResource(webApp);
                         jarWebApp.copyTo(extractedWebAppDir);
                         extractionLock.delete();
@@ -376,7 +379,8 @@ public class WebInfConfiguration extends AbstractConfiguration
                             extractionLock.createNewFile();
                             IO.delete(extractedWebAppDir);
                             extractedWebAppDir.mkdir();
-                            LOG.debug("Extract " + webApp + " to " + extractedWebAppDir);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Extract {} to {}", webApp, extractedWebAppDir);
                             Resource jarWebApp = JarResource.newJarResource(webApp);
                             jarWebApp.copyTo(extractedWebAppDir);
                             extractionLock.delete();
@@ -389,14 +393,14 @@ public class WebInfConfiguration extends AbstractConfiguration
             // Now do we have something usable?
             if (!webApp.exists() || !webApp.isDirectory())
             {
-                LOG.warn("Web application not found " + war);
+                LOG.warn("Web application not found {}", war);
                 throw new java.io.FileNotFoundException(war);
             }
 
             context.setBaseResource(webApp);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("webapp=" + webApp);
+                LOG.debug("webapp={}", webApp);
         }
 
         // Do we need to extract WEB-INF/lib?
@@ -419,7 +423,8 @@ public class WebInfConfiguration extends AbstractConfiguration
                     IO.delete(webInfLibDir);
                 webInfLibDir.mkdir();
 
-                LOG.debug("Copying WEB-INF/lib " + webInfLib + " to " + webInfLibDir);
+                if (LOG.isDebugEnabled())
+                LOG.debug("Copying WEB-INF/lib {} to {}", webInfLib, webInfLibDir);
                 webInfLib.copyTo(webInfLibDir);
             }
 
@@ -430,7 +435,8 @@ public class WebInfConfiguration extends AbstractConfiguration
                 if (webInfClassesDir.exists())
                     IO.delete(webInfClassesDir);
                 webInfClassesDir.mkdir();
-                LOG.debug("Copying WEB-INF/classes from " + webInfClasses + " to " + webInfClassesDir.getAbsolutePath());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Copying WEB-INF/classes from {} to {}", webInfClasses, webInfClassesDir.getAbsolutePath());
                 webInfClasses.copyTo(webInfClassesDir);
             }
 
@@ -439,7 +445,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             ResourceCollection rc = new ResourceCollection(webInf, webApp);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("context.resourcebase = " + rc);
+                LOG.debug("context.resourcebase={}", rc);
 
             context.setBaseResource(rc);
         }
@@ -517,9 +523,8 @@ public class WebInfConfiguration extends AbstractConfiguration
         catch (Exception e)
         {
             if (LOG.isDebugEnabled())
-            {
                 LOG.debug("Can't get resource base name", e);
-            }
+
             canonicalName.append("-"); // empty resourceBaseName segment
         }
 

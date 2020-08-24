@@ -524,7 +524,7 @@ public class DeploymentManager extends ContainerLifeCycle
         }
         catch (Throwable t)
         {
-            LOG.warn("Unable to reach node goal: " + nodeName, t);
+            LOG.warn("Unable to reach node goal: {}", nodeName, t);
             
             // migrate to FAILED node
             Node failed = _lifecycle.getNodeByName(AppLifeCycle.FAILED);

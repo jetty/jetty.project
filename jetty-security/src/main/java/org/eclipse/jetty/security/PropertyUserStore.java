@@ -269,7 +269,7 @@ public class PropertyUserStore extends UserStore implements PathWatcher.Listener
         _firstLoad = false;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Loaded " + this + " from " + _configPath);
+            LOG.debug("Loaded {} from {}", this,  _configPath);
     }
 
     /**

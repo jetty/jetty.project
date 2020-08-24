@@ -131,7 +131,7 @@ public class StatisticsServlet extends HttpServlet
         }
         catch (UnknownHostException e)
         {
-            LOG.warn("Warning: attempt to access statistics servlet from " + address, e);
+            LOG.warn("Warning: attempt to access statistics servlet from {}", address, e);
             return false;
         }
     }

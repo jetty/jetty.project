@@ -68,7 +68,7 @@ public class HttpContentRangeWriter
                 }
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Skipping non-SeekableByteChannel option " + channel + " from content " + content);
+                    LOG.debug("Skipping non-SeekableByteChannel option {} from content {}", channel, content);
                 channel.close();
             }
         }

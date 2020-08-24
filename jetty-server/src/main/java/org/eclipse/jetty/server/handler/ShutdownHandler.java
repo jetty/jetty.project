@@ -112,7 +112,7 @@ public class ShutdownHandler extends HandlerWrapper
             HttpURLConnection connection = (HttpURLConnection)url.openConnection();
             connection.setRequestMethod("POST");
             connection.getResponseCode();
-            LOG.info("Shutting down " + url + ": " + connection.getResponseCode() + " " + connection.getResponseMessage());
+            LOG.info("Shutting down {}: {} {}", url, connection.getResponseCode(), connection.getResponseMessage());
         }
         catch (SocketException e)
         {
@@ -168,18 +168,18 @@ public class ShutdownHandler extends HandlerWrapper
         }
         if (!hasCorrectSecurityToken(request))
         {
-            LOG.warn("Unauthorized tokenless shutdown attempt from " + request.getRemoteAddr());
+            LOG.warn("Unauthorized tokenless shutdown attempt from {}", request.getRemoteAddr());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
         if (!requestFromLocalhost(baseRequest))
         {
-            LOG.warn("Unauthorized non-loopback shutdown attempt from " + request.getRemoteAddr());
+            LOG.warn("Unauthorized non-loopback shutdown attempt from {}", request.getRemoteAddr());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
-        LOG.info("Shutting down by request from " + request.getRemoteAddr());
+        LOG.info("Shutting down by request from {}", request.getRemoteAddr());
         doShutdown(baseRequest, response);
     }
 

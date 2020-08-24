@@ -212,7 +212,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
             }
             catch (Throwable x)
             {
-                LOG.info("Exception while invoking listener " + listener, x);
+                LOG.info("Exception while invoking listener {}", listener, x);
             }
         }
     }

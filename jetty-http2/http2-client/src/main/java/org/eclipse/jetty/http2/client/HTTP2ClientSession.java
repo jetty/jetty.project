@@ -154,7 +154,7 @@ public class HTTP2ClientSession extends HTTP2Session
         }
         catch (Throwable x)
         {
-            LOG.info("Failure while notifying listener " + listener, x);
+            LOG.info("Failure while notifying listener {}", listener, x);
             return null;
         }
     }

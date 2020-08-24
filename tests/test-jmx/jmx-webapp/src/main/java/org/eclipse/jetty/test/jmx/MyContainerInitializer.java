@@ -35,7 +35,7 @@ public class MyContainerInitializer implements ServletContainerInitializer
     {
         // Directly annotated with @ManagedObject
         CommonComponent common = new CommonComponent();
-        LOG.info("Initializing " + common.getClass().getName());
+        LOG.info("Initializing {}", common.getClass().getName());
         ctx.setAttribute("org.eclipse.jetty.test.jmx.common", common);
 
         // Indirectly managed via a MBean

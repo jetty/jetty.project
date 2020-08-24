@@ -62,7 +62,7 @@ public class RequestNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 
@@ -92,7 +92,7 @@ public class RequestNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 
@@ -122,7 +122,7 @@ public class RequestNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 
@@ -152,7 +152,7 @@ public class RequestNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 
@@ -194,7 +194,7 @@ public class RequestNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 
@@ -224,7 +224,7 @@ public class RequestNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 
@@ -254,7 +254,7 @@ public class RequestNotifier
         }
         catch (Throwable x)
         {
-            LOG.info("Exception while notifying listener " + listener, x);
+            LOG.info("Exception while notifying listener {}", listener, x);
         }
     }
 }

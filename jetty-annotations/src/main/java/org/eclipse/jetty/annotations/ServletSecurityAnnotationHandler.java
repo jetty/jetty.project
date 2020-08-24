@@ -83,7 +83,7 @@ public class ServletSecurityAnnotationHandler extends AbstractIntrospectableAnno
 
         if (constraintsExist(servletMappings, constraintMappings))
         {
-            LOG.warn("Constraints already defined for " + clazz.getName() + ", skipping ServletSecurity annotation");
+            LOG.warn("Constraints already defined for {}, skipping ServletSecurity annotation", clazz.getName());
             return;
         }
 

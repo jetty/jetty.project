@@ -269,7 +269,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     public boolean delete(String id) throws Exception
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Remove:session {} for context ", id, _context);
+            LOG.debug("Remove:session {} for context {}", id, _context);
 
         /*
          * Check if the session exists and if it does remove the context
@@ -407,7 +407,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             {
                 String id = (String)session.get(__ID);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} Mongo found old expired session {}", _context, id + " exp=" + session.get(__EXPIRY));
+                    LOG.debug("{} Mongo found old expired session {} exp={}", _context, id, session.get(__EXPIRY));
                 expiredSessions.add(id);
             }
         }

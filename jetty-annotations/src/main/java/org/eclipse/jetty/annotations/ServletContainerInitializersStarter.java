@@ -55,7 +55,7 @@ public class ServletContainerInitializersStarter extends AbstractLifeCycle imple
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Calling ServletContainerInitializer " + i.getTarget().getClass().getName());
+                    LOG.debug("Calling ServletContainerInitializer {}", i.getTarget().getClass().getName());
                 i.callStartup(_context);
             }
             catch (Exception e)

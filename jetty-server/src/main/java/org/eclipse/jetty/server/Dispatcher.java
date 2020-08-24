@@ -202,7 +202,7 @@ public class Dispatcher implements RequestDispatcher
                         }
                         else
                         {
-                            LOG.warn("Ignoring Original Bad Request Query String: " + old_uri, e);
+                            LOG.warn("Ignoring Original Bad Request Query String: {}", old_uri, e);
                         }
                     }
                 }

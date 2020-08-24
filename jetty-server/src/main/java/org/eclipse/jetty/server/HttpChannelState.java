@@ -735,7 +735,7 @@ public class HttpChannelState
         try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("asyncError " + toStringLocked(), failure);
+                LOG.debug("asyncError {}", toStringLocked(), failure);
 
             if (_state == State.WAITING && _requestState == RequestState.ASYNC)
             {
@@ -766,7 +766,7 @@ public class HttpChannelState
         try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("thrownException " + getStatusStringLocked(), th);
+                LOG.debug("thrownException {}", getStatusStringLocked(), th);
 
             // This can only be called from within the handle loop
             if (_state != State.HANDLING)
@@ -801,7 +801,7 @@ public class HttpChannelState
                     break;
 
                 default:
-                    LOG.warn("unhandled in state " + _requestState, new IllegalStateException(th));
+                    LOG.warn("unhandled in state {}", _requestState, new IllegalStateException(th));
                     return;
             }
         }
@@ -837,7 +837,7 @@ public class HttpChannelState
             }
             else if (_requestState != RequestState.COMPLETE)
             {
-                LOG.warn("unhandled in state " + _requestState, new IllegalStateException(th));
+                LOG.warn("unhandled in state {}", _requestState, new IllegalStateException(th));
             }
         }
     }

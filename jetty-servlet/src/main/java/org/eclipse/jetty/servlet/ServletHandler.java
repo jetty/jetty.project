@@ -1413,11 +1413,8 @@ public class ServletHandler extends ScopedHandler
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("filterNameMap=" + _filterNameMap);
-                LOG.debug("pathFilters=" + _filterPathMappings);
-                LOG.debug("servletFilterMap=" + _filterNameMappings);
-                LOG.debug("servletPathMap=" + _servletPathMap);
-                LOG.debug("servletNameMap=" + _servletNameMap);
+                LOG.debug("filterNameMap={} pathFilters={} servletFilterMap={} servletPathMap={} servletNameMap={}",
+                    _filterNameMap, _filterPathMappings, _filterNameMappings, _servletPathMap, _servletNameMap);
             }
 
             try
@@ -1608,7 +1605,7 @@ public class ServletHandler extends ScopedHandler
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("call servlet " + _servletHolder);
+                    LOG.debug("call servlet {}", _servletHolder);
                 _servletHolder.handle(baseRequest, request, response);
             }
         }
@@ -1643,14 +1640,14 @@ public class ServletHandler extends ScopedHandler
             throws IOException, ServletException
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("doFilter " + _filter);
+                LOG.debug("doFilter {}", _filter);
 
             // pass to next filter
             if (_filter < _chain.size())
             {
                 FilterHolder holder = _chain.get(_filter++);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("call filter " + holder);
+                    LOG.debug("call filter {}", holder);
                 Filter filter = holder.getFilter();
 
                 //if the request already does not support async, then the setting for the filter

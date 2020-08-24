@@ -218,7 +218,7 @@ public class JakartaWebSocketRemoteEndpoint implements jakarta.websocket.RemoteE
         catch (Throwable t)
         {
             callback.failed(t);
-            LOG.warn("Unable to send Object " + data, t);
+            LOG.warn("Unable to send Object {}", data, t);
         }
     }
 
