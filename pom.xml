@@ -1127,7 +1127,7 @@
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
-        <version>0.24</version>
+        <version>0.34</version>
       </dependency>
       <dependency>
         <groupId>org.apache.derby</groupId>
