@@ -26,36 +26,32 @@ It is easily configured with Jetty 9.
 ==== Weld Setup
 
 The easiest way to configure weld is within the Jetty distribution itself.
-This can be accomplished either by enabling one of the
-startup link:#startup-modules[modules] described in link:#framework-cdi[CDI Framework]:
+This can be accomplished either by enabling one of the startup link:#startup-modules[modules] described in link:#framework-cdi[CDI Framework]:
 
- * the `cdi-decorate` module is the preferred Weld integration. The activation
-of this module by Weld can be confirmed by the following Weld log:
+ * the `cdi-decorate` module is the preferred Weld integration.
+   The activation of this module by Weld can be confirmed by the following Weld log:
 [source, screen, subs="{sub-order}"]
 ....
 INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters.
 ....
- * the `cdi-spi` module works with Weld, but may restrict some non standard features.The activation
-of this module by Weld can be confirmed by the following Weld log:
+ * the `cdi-spi` module works with Weld, but may restrict some non standard features.
+   The activation of this module by Weld can be confirmed by the following Weld log:
 [source, screen, subs="{sub-order}"]
 ....
 INFO: WELD-ENV-001213: Jetty CDI SPI support detected, CDI injection will be available in Listeners, Servlets and Filters.
 ....
- * the deprecated `cdi2` module works with Weld prior to 3.1.2.Final. The activation
-of this module by Weld can be confirmed by the following Weld log:
+ * the deprecated `cdi2` module works with Weld prior to 3.1.2.Final.
+   The activation of this module by Weld can be confirmed by the following Weld log:
 [source, screen, subs="{sub-order}"]
 ....
 INFO: WELD-ENV-001201: Jetty 7.2+ detected, CDI injection will be available in Servlets and Filters. Injection into Listeners is not supported.
 ....
 
-
 To activate the preferred `cdi-decorate` module use:
-
 -------------------------
 cd $JETTY_BASE
 java -jar $JETTY_HOME/start.jar --add-to-start=cdi-decorate
 -------------------------
-
 
 ____
 [TIP]
@@ -71,12 +67,10 @@ When starting embedded Jetty programmatically from the `main` method it is neces
 
  * enable Weld by registering either its `Listener` or `ServletContainerInitializer`
 
-
 ===== Using a `ServletContextHandler`
 
-Embedded usage often uses a `ServletContextHandler` which is the base class of `WebappContext` and
-lacks the features of "web.xml" configuration and must be configured directly.  The examples in this section
-based on a server and context set up as follows:
+Embedded usage often uses a `ServletContextHandler` which is the base class of `WebappContext` and lacks the features of "web.xml" configuration and must be configured directly.
+The examples in this section based on a server and context set up as follows:
 
 [source.JAVA, java]
 ----
@@ -123,13 +117,11 @@ The best way to initialize both Jetty Weld integration is to use their respectiv
         context.addBean(new ServletContextHandler.Initializer(context,
             new CdiServletContainerInitializer()));
 ----
-This code uses the `ServletContextHandler.Initializer` utility class added in Jetty-9.4.30. Prior
-to that the same effect can  be achieved with a custom implementation of
-`ServletContextHandler.ServletContainerInitializerCaller`.
+This code uses the `ServletContextHandler.Initializer` utility class added in Jetty-9.4.30.
+Prior to that the same effect can be achieved with a custom implementation of `ServletContextHandler.ServletContainerInitializerCaller`.
 
 ====== Initialize Weld with Listeners
-Jetty Weld integration can also be initialized by directly adding the listeners
-required:
+Jetty Weld integration can also be initialized by directly adding the listeners required:
 [source.JAVA, java]
 ----
     import org.eclipse.jetty.cdi.CdiDecoratingListener;
@@ -140,28 +132,25 @@ required:
 ----
 
 ====== Other Weld initializations
-When running embedded without a context classloader, it is not actually required
-to initialize Jetty at all.  If just Weld is initialized then it will disover the
-Jetty APIs and use the deprecated integration:
+When running embedded without a context classloader, it is not actually required to initialize Jetty at all.
+If just Weld is initialized then it will disover the Jetty APIs and use the deprecated integration:
 [source.JAVA, java]
 ----
     import org.jboss.weld.environment.servlet.Listener;
     // ...
         context.addEventListener(new Listener());
 ----
-However, this results in only a partially functional integration and the
-following warning:
+However, this results in only a partially functional integration and the following warning:
 ----
 INFO: WELD-ENV-001201: Jetty 7.2+ detected, CDI injection will be available in Servlets and Filters. Injection into Listeners is not supported.
 ----
 
-Jetty can also be initialized by adding the `org.eclipse.jetty.webapp.DecoratingListener` listener instead
-of the `org.eclipse.jetty.cdi.CdiDecoratingListener`.  However, this introduces a needless
-dependency on `jetty-webapp` and is not the preferred method.
+Jetty can also be initialized by adding the `org.eclipse.jetty.webapp.DecoratingListener` listener instead of the `org.eclipse.jetty.cdi.CdiDecoratingListener`.
+However, this introduces a needless dependency on `jetty-webapp` and is not the preferred method.
 
 ====== Initialize Weld with `WebappContext`
-Some embedded usage still makes use of the `WebappContext` class for the convention-over-configuration
-benefits.   The methods described for `ServletContextHandler` will work for `WebappContext`:
+Some embedded usage still makes use of the `WebappContext` class for the convention-over-configuration benefits.
+The methods described for `ServletContextHandler` will work for `WebappContext`:
 
 [source.JAVA, java]
 ----
