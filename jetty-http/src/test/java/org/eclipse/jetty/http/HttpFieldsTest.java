@@ -922,4 +922,25 @@ public class HttpFieldsTest
         fields.computeField("TEST", (n, f) -> null);
         assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Before: value", "After: value"));
     }
+
+    @Test
+    public void testEnsureValue()
+    {
+        HttpFields.Mutable fields = HttpFields.build();
+        assertThat(fields.size(), is(0));
+
+        fields.ensure(HttpHeader.ETAG, "one");
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("ETag: one"));
+
+        fields.ensure(HttpHeader.ETAG, "one");
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("ETag: one"));
+
+        fields.add(new HttpField(HttpHeader.ETAG, "two"));
+        fields.ensure(HttpHeader.ETAG, "one");
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("ETag: one, two"));
+
+        fields.add(new HttpField(HttpHeader.ETAG, "three"));
+        fields.ensure(HttpHeader.ETAG, "four");
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("ETag: one, two, three, four"));
+    }
 }

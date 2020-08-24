@@ -1,8 +1,8 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Enable GzipHandler for dynamic gzip compression
-for the entire server.
+Enable GzipHandler for dynamic gzip compression for the entire server.
+If MSIE prior to version 7 are to be handled, also enable the msie module.
 
 [tags]
 handler
@@ -23,9 +23,6 @@ etc/jetty-gzip.xml
 ## Gzip compression level (-1 for default)
 # jetty.gzip.compressionLevel=-1
 
-## User agents for which gzip is disabled
-# jetty.gzip.excludedUserAgent=.*MSIE.6\.0.*
-
 ## Inflate request buffer size, or 0 for no request inflation
 # jetty.gzip.inflateBufferSize=0
 
@@ -33,7 +30,7 @@ etc/jetty-gzip.xml
 # jetty.gzip.deflaterPoolCapacity=-1
 
 ## Comma separated list of included methods
-# jetty.gzip.includedMethodList=GET
+# jetty.gzip.includedMethodList=GET,POST
 
 ## Comma separated list of excluded methods
 # jetty.gzip.excludedMethodList=

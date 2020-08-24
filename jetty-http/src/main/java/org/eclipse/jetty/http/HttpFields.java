@@ -738,6 +738,38 @@ public interface HttpFields extends Iterable<HttpField>
             return this;
         }
 
+        /** Ensure that a multivalue CSV field contains the value
+         * @param header The header to check
+         * @param value The value that it must contain.
+         */
+        public void ensure(HttpHeader header, String value)
+        {
+            computeField(header, (h,l) ->
+            {
+                if (l == null || l.isEmpty())
+                    return new HttpField(h, value);
+
+                if (l.size() == 1)
+                {
+                    HttpField f = l.get(0);
+                    return f.contains(value) ? f : new HttpField(h, f.getValue() + ", " + value);
+                }
+                StringBuilder v = new StringBuilder();
+                boolean hasIt = false;
+                for (HttpField f : l)
+                {
+                    if (v.length() > 0)
+                        v.append(", ");
+                    v.append(f.getValue());
+                    if (f.contains(value))
+                        hasIt = true;
+                }
+                if (!hasIt)
+                    v.append(", ").append(value);
+                return new HttpField(h, v.toString());
+            });
+        }
+
         @Override
         public boolean equals(Object o)
         {

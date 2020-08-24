@@ -18,13 +18,6 @@
         <Set name="inflateBufferSize" property="jetty.gzip.inflateBufferSize"/>
         <Set name="deflaterPoolCapacity" property="jetty.gzip.deflaterPoolCapacity"/>
         <Set name="syncFlush" property="jetty.gzip.syncFlush"/>
-
-        <Set name="excludedAgentPatterns">
-          <Array type="String">
-            <Item><Property name="jetty.gzip.excludedUserAgent" default=".*MSIE.6\.0.*"/></Item>
-          </Array>
-        </Set>
-
         <Set name="includedMethodList" property="jetty.gzip.includedMethodList"/>
         <Set name="excludedMethodList" property="jetty.gzip.excludedMethodList"/>
 

@@ -22,22 +22,27 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.Trie;
 
 /**
- * MSIE (Microsoft Internet Explorer) SSL Rule.
- * Disable keep alive for SSL from IE5 or IE6 on Windows 2000.
- * @deprecated use MsieRule
+ * Special handling for MSIE (Microsoft Internet Explorer).
+ * <ul>
+ *     <li>Disable keep alive for SSL from IE5 or IE6 on Windows 2000</li>
+ *     <li>Disable encodings for IE<=6</li>
+ * </ul>
  */
-@Deprecated
-public class MsieSslRule extends Rule
+public class MsieRule extends MsieSslRule
 {
     private static final int IEv5 = '5';
     private static final int IEv6 = '6';
     private static Trie<Boolean> __IE6_BadOS = new ArrayTernaryTrie<>();
+    private static HttpField CONNECTION_CLOSE = new HttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
 
     {
         __IE6_BadOS.put("NT 5.01", Boolean.TRUE);
@@ -49,7 +54,7 @@ public class MsieSslRule extends Rule
         __IE6_BadOS.put("CE", Boolean.TRUE);
     }
 
-    public MsieSslRule()
+    public MsieRule()
     {
         _handling = false;
         _terminating = false;
@@ -58,40 +63,49 @@ public class MsieSslRule extends Rule
     @Override
     public String matchAndApply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        if (request.isSecure())
+        Request baseRequest = Request.getBaseRequest(request);
+        if (baseRequest == null)
+            return null;
+        String userAgent = baseRequest.getHttpFields().get(HttpHeader.USER_AGENT);
+
+        int msie = userAgent.indexOf("MSIE");
+        if (msie >= 0)
         {
-            String userAgent = request.getHeader(HttpHeader.USER_AGENT.asString());
+            int version = (userAgent.length() - msie > 5) ? userAgent.charAt(msie + 5) : IEv5;
 
-            if (userAgent != null)
+            if (version <= IEv6)
             {
-                int msie = userAgent.indexOf("MSIE");
-                if (msie > 0 && userAgent.length() - msie > 5)
+                HttpFields.Mutable fields = HttpFields.build(baseRequest.getHttpFields());
+
+                // Don't gzip responses for IE<=6
+                fields.remove(HttpHeader.ACCEPT_ENCODING);
+
+                // IE<=6 can't do persistent SSL
+                if (request.isSecure())
                 {
-                    // Get Internet Explorer Version
-                    int ieVersion = userAgent.charAt(msie + 5);
-
-                    if (ieVersion <= IEv5)
-                    {
-                        response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
-                        return target;
-                    }
-
-                    if (ieVersion == IEv6)
+                    boolean badOs = false;
+                    if (version == IEv6)
                     {
                         int windows = userAgent.indexOf("Windows", msie + 5);
                         if (windows > 0)
                         {
                             int end = userAgent.indexOf(')', windows + 8);
-                            if (end < 0 || __IE6_BadOS.get(userAgent, windows + 8, end - windows - 8) != null)
-                            {
-                                response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
-                                return target;
-                            }
+                            badOs = (end < 0 || __IE6_BadOS.get(userAgent, windows + 8, end - windows - 8) != null);
                         }
                     }
+
+                    if (version <= IEv5 || badOs)
+                    {
+                        fields.remove(HttpHeader.KEEP_ALIVE);
+                        fields.ensure(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+                        response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+                    }
                 }
+                baseRequest.setHttpFields(fields);
+                return target;
             }
         }
         return null;
     }
+
 }

@@ -101,7 +101,6 @@ public class GzipHandlerTest
         _server.addConnector(_connector);
 
         GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.setExcludedAgentPatterns();
         gzipHandler.setMinGzipSize(16);
         gzipHandler.setInflateBufferSize(4096);
 
@@ -174,7 +173,7 @@ public class GzipHandlerTest
         }
 
         @Override
-        protected void doDelete(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+        protected void doDelete(HttpServletRequest req, HttpServletResponse response) throws IOException
         {
             String ifm = req.getHeader("If-Match");
             if (ifm != null && ifm.equals(__contentETag))

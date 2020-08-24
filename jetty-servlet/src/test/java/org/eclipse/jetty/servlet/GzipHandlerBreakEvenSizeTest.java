@@ -59,7 +59,6 @@ public class GzipHandlerBreakEvenSizeTest
         server.addConnector(connector);
 
         GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.setExcludedAgentPatterns();
         gzipHandler.setMinGzipSize(0);
 
         ServletContextHandler context = new ServletContextHandler(gzipHandler, "/");
