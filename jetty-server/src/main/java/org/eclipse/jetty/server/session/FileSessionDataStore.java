@@ -214,10 +214,10 @@ public class FileSessionDataStore extends AbstractSessionDataStore
      * that expired at or before the time limit.
      */
     protected void sweepDisk(long time)
-    {
+    {        
         // iterate over the files in the store dir and check expiry times
         if (LOG.isDebugEnabled())
-            LOG.debug("Sweeping {} for old session files", _storeDir);
+            LOG.debug("Sweeping {} for old session files at {}", _storeDir, time);
         try
         {
             Files.walk(_storeDir.toPath(), 1, FileVisitOption.FOLLOW_LINKS)
