@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.tests;
 
+import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
@@ -26,9 +27,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.io.IncludeExcludeConnectionStatistics;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -41,8 +42,8 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.NativeWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,50 +54,46 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebSocketStatsTest
 {
-    public static class MyWebSocketServlet extends WebSocketServlet
-    {
-        @Override
-        public void configure(WebSocketServletFactory factory)
-        {
-            factory.setCreator((req, resp) -> new EchoSocket());
-        }
-    }
-
+    private final CountDownLatch wsConnectionClosed = new CountDownLatch(1);
     private Server server;
     private ServerConnector connector;
     private WebSocketClient client;
-    private ConnectionStatistics statistics;
-    private CountDownLatch wsUpgradeComplete = new CountDownLatch(1);
-    private CountDownLatch wsConnectionClosed = new CountDownLatch(1);
+    private IncludeExcludeConnectionStatistics statistics;
 
     @BeforeEach
     public void start() throws Exception
     {
-        statistics = new ConnectionStatistics()
+        statistics = new IncludeExcludeConnectionStatistics();
+        statistics.include(AbstractWebSocketConnection.class);
+
+        Connection.Listener.Adapter wsCloseListener = new Connection.Listener.Adapter()
         {
             @Override
             public void onClosed(Connection connection)
             {
-                super.onClosed(connection);
-
                 if (connection instanceof AbstractWebSocketConnection)
                     wsConnectionClosed.countDown();
-                else if (connection instanceof HttpConnection)
-                    wsUpgradeComplete.countDown();
             }
         };
 
         server = new Server();
         connector = new ServerConnector(server);
         connector.addBean(statistics);
+        connector.addBean(wsCloseListener);
         server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
         contextHandler.setContextPath("/");
-        contextHandler.addServlet(MyWebSocketServlet.class, "/testPath");
+        NativeWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
+            container.addMapping("/", EchoSocket.class));
+        WebSocketUpgradeFilter.configure(contextHandler);
         server.setHandler(contextHandler);
 
         client = new WebSocketClient();
+
+        // Setup JMX.
+        MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        server.addBean(mbeanContainer);
 
         server.start();
         client.start();
@@ -105,8 +102,8 @@ public class WebSocketStatsTest
     @AfterEach
     public void stop() throws Exception
     {
-        client.stop();
         server.stop();
+        client.stop();
     }
 
     long getFrameByteSize(WebSocketFrame frame)
@@ -122,22 +119,14 @@ public class WebSocketStatsTest
     @Test
     public void echoStatsTest() throws Exception
     {
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/testPath");
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/");
         EventSocket socket = new EventSocket();
         Future<Session> connect = client.connect(socket, uri);
 
-        final long numMessages = 10000;
+        final long numMessages = 1000;
         final String msgText = "hello world";
-
-        long upgradeSentBytes;
-        long upgradeReceivedBytes;
-
         try (Session session = connect.get(5, TimeUnit.SECONDS))
         {
-            wsUpgradeComplete.await(5, TimeUnit.SECONDS);
-            upgradeSentBytes = statistics.getSentBytes();
-            upgradeReceivedBytes = statistics.getReceivedBytes();
-
             for (int i = 0; i < numMessages; i++)
             {
                 session.getRemote().sendString(msgText);
@@ -150,18 +139,18 @@ public class WebSocketStatsTest
         assertThat(statistics.getConnectionsMax(), is(1L));
         assertThat(statistics.getConnections(), is(0L));
 
-        assertThat(statistics.getSentMessages(), is(numMessages + 2L));
-        assertThat(statistics.getReceivedMessages(), is(numMessages + 2L));
+        // Sent and received all of the echo messages + 1 for the close frame.
+        assertThat(statistics.getSentMessages(), is(numMessages + 1L));
+        assertThat(statistics.getReceivedMessages(), is(numMessages + 1L));
 
         WebSocketFrame textFrame = new TextFrame().setPayload(msgText);
         WebSocketFrame closeFrame = new CloseInfo(socket.closeCode, socket.closeReason).asFrame();
-
         final long textFrameSize = getFrameByteSize(textFrame);
         final long closeFrameSize = getFrameByteSize(closeFrame);
         final int maskSize = 4; // We use 4 byte mask for client frames
 
-        final long expectedSent = upgradeSentBytes + numMessages * textFrameSize + closeFrameSize;
-        final long expectedReceived = upgradeReceivedBytes + numMessages * (textFrameSize + maskSize) + closeFrameSize + maskSize;
+        final long expectedSent =  numMessages * textFrameSize + closeFrameSize;
+        final long expectedReceived =  numMessages * (textFrameSize + maskSize) + (closeFrameSize + maskSize);
 
         assertThat("stats.sendBytes", statistics.getSentBytes(), is(expectedSent));
         assertThat("stats.receivedBytes", statistics.getReceivedBytes(), is(expectedReceived));

@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -59,6 +60,12 @@ public class SessionTracker extends AbstractLifeCycle implements WebSocketSessio
             LifeCycle.stop(session);
         }
         super.doStop();
+    }
+
+    @ManagedAttribute("Total number of active WebSocket Sessions")
+    public int getNumSessions()
+    {
+        return sessions.size();
     }
 
     @Override
