@@ -1137,7 +1137,7 @@
       <dependency>
         <groupId>org.apache.derby</groupId>
         <artifactId>derbytools</artifactId>
-        <version>10.14.2.0</version>
+        <version>10.15.2.0</version>
       </dependency>
       <!-- avoid depending on a range dependency from a transitive dependency -->
       <dependency>
