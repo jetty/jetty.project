@@ -70,7 +70,6 @@ import org.slf4j.LoggerFactory;
 public class DeploymentManager extends ContainerLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(DeploymentManager.class);
-    private MultiException onStartupErrors;
 
     /**
      * Represents a single tracked app within the deployment manager.
@@ -127,6 +126,7 @@ public class DeploymentManager extends ContainerLifeCycle
     }
 
     private final AutoLock _lock = new AutoLock();
+    private MultiException _onStartupErrors;
     private final List<AppProvider> _providers = new ArrayList<AppProvider>();
     private final AppLifeCycle _lifecycle = new AppLifeCycle();
     private final Queue<AppEntry> _apps = new ConcurrentLinkedQueue<AppEntry>();
@@ -251,9 +251,10 @@ public class DeploymentManager extends ContainerLifeCycle
             startAppProvider(provider);
         }
 
-        if (onStartupErrors != null)
+        try (AutoLock l = _lock.lock())
         {
-            onStartupErrors.ifExceptionThrow();
+            if (_onStartupErrors != null)
+                _onStartupErrors.ifExceptionThrow();
         }
 
         super.doStart();
@@ -546,6 +547,17 @@ public class DeploymentManager extends ContainerLifeCycle
         }
     }
 
+    private void addOnStartupError(Throwable cause)
+    {
+        try (AutoLock l = _lock.lock())
+        {
+            if (_onStartupErrors == null)
+                _onStartupErrors = new MultiException();
+            
+            _onStartupErrors.add(cause);
+        }
+    }
+
     /**
      * Move an {@link App} through the {@link AppLifeCycle} to the desired {@link Node}, executing each lifecycle step
      * in the process to reach the desired state.
@@ -562,16 +574,6 @@ public class DeploymentManager extends ContainerLifeCycle
             throw new IllegalStateException("App not being tracked by Deployment Manager: " + appId);
         }
         requestAppGoal(appentry, nodeName);
-    }
-
-    private void addOnStartupError(Throwable cause)
-    {
-        try (AutoLock l = _lock.lock())
-        {
-            if (onStartupErrors == null)
-                onStartupErrors = new MultiException();
-            onStartupErrors.add(cause);
-        }
     }
 
     /**
