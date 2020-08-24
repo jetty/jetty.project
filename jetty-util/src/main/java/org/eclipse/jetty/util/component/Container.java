@@ -25,7 +25,6 @@ import java.util.Collection;
  */
 public interface Container
 {
-
     /**
      * Add a bean.  If the bean is-a {@link Listener}, then also do an implicit {@link #addEventListener(Listener)}.
      *
@@ -35,7 +34,8 @@ public interface Container
     boolean addBean(Object o);
 
     /**
-     * @return the list of beans known to this aggregate
+     * @return the collection of beans known to this aggregate, in the order they were added.
+     * @implSpec  The return type is ordered and should be a {@link java.util.List}
      * @see #getBean(Class)
      */
     Collection<Object> getBeans();
@@ -43,7 +43,8 @@ public interface Container
     /**
      * @param clazz the class of the beans
      * @param <T> the Bean type
-     * @return a list of beans of the given class (or subclass)
+     * @return a list of beans of the given class (or subclass), in the order they were added.
+     * @implSpec The return type is ordered and should be a {@link java.util.List}
      * @see #getBeans()
      * @see #getContainedBeans(Class)
      */
@@ -52,7 +53,7 @@ public interface Container
     /**
      * @param clazz the class of the bean
      * @param <T> the Bean type
-     * @return the first bean of a specific class (or subclass), or null if no such bean exist
+     * @return the first bean (in order added) of a specific class (or subclass), or null if no such bean exist
      */
     <T> T getBean(Class<T> clazz);
 
@@ -138,7 +139,9 @@ public interface Container
     /**
      * @param clazz the class of the beans
      * @param <T> the Bean type
-     * @return the list of beans of the given class from the entire Container hierarchy
+     * @return the list of beans of the given class from the entire Container hierarchy. The order is primarily depth first
+     *         and secondarily added order.
+     * @implSpec The return type is ordered and should be a {@link java.util.List}
      */
     <T> Collection<T> getContainedBeans(Class<T> clazz);
 }
