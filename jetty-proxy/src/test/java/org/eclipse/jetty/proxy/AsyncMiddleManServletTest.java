@@ -78,6 +78,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.OS;
 
@@ -978,6 +979,7 @@ public class AsyncMiddleManServletTest
         assertArrayEquals(data, response.getContent());
     }
 
+    @Disabled("See issue #3974")
     @Test
     public void testAfterContentTransformerOverflowingToDisk() throws Exception
     {
