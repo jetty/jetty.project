@@ -19,9 +19,6 @@
 [[maven-and-jetty]]
 == Maven and Jetty
 
-This chapter explains how to use Jetty with Maven and the Jetty Maven plugin.
-
 include::jetty-maven-helloworld.adoc[]
 include::jetty-maven-plugin.adoc[]
-include::jetty-maven-scanning.adoc[]
 include::jetty-jspc-maven-plugin.adoc[]

@@ -17,7 +17,7 @@
 //
 
 [[jetty-maven-plugin]]
-=== Configuring the Jetty Maven Plugin
+=== Using the Jetty Maven Plugin
 
 The Jetty Maven plugin is useful for rapid development and testing.
 It can optionally periodically scan your project for changes and automatically redeploy the webapp if any are found.
