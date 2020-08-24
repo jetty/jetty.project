@@ -362,7 +362,12 @@ public class Pool<T> implements AutoCloseable, Dumpable
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + " size=" + sharedList.size() + " closed=" + closed + " entries=" + sharedList;
+        return String.format("%s@%x[size=%d closed=%s entries=%s]",
+            getClass().getSimpleName(),
+            hashCode(),
+            sharedList.size(),
+            closed,
+            sharedList);
     }
 
     public class Entry
@@ -544,11 +549,13 @@ public class Pool<T> implements AutoCloseable, Dumpable
         public String toString()
         {
             long encoded = state.get();
-            return String.format("%s@%x{usage=%d,multiplex=%d,pooled=%s}",
+            return String.format("%s@%x{usage=%d/%d,multiplex=%d/%d,pooled=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 AtomicBiInteger.getHi(encoded),
+                getMaxUsageCount(),
                 AtomicBiInteger.getLo(encoded),
+                getMaxMultiplex(),
                 pooled);
         }
     }

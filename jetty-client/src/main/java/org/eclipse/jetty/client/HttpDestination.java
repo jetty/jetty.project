@@ -370,7 +370,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
             {
                 // Aggressively send other queued requests
                 // in case connections are multiplexed.
-                return getHttpExchanges().size() > 0 ? ProcessResult.CONTINUE : ProcessResult.FINISH;
+                return getQueuedRequestCount() > 0 ? ProcessResult.CONTINUE : ProcessResult.FINISH;
             }
 
             if (LOG.isDebugEnabled())
@@ -427,7 +427,7 @@ public abstract class HttpDestination extends ContainerLifeCycle implements Dest
         {
             if (connectionPool.isActive(connection))
             {
-                // trigger the next request after releasing the connection
+                // Trigger the next request after releasing the connection.
                 if (connectionPool.release(connection))
                     send(false);
                 else
