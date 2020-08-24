@@ -558,6 +558,7 @@ public class GracefulStopTest
     public void testCommittedResponsesAreClosed() throws Exception
     {
         Server server = new Server();
+        server.setDumpAfterStart(true);
 
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);

@@ -66,7 +66,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final LongAdder _responses5xx = new LongAdder();
     private final LongAdder _responsesTotalBytes = new LongAdder();
 
-    private boolean waitForSuspendedRequestsOnShutdown = true;
+    private boolean asyncGraceful = true;
 
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown()
     {
@@ -113,7 +113,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             _asyncWaitStats.decrement();
 
             // If we have no more dispatches, should we signal shutdown?
-            if (numRequests == 0 && waitForSuspendedRequestsOnShutdown)
+            if (numRequests == 0 && asyncGraceful)
             {
                 FutureCallback shutdown = _shutdown.get();
                 if (shutdown != null)
@@ -204,7 +204,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
                 response.flushBuffer();
 
                 // If we either have no more requests or dispatches, we can complete shutdown.
-                if (waitForSuspendedRequestsOnShutdown ? (numRequests == 0) : (numDispatches == 0))
+                if (asyncGraceful ? (numRequests == 0) : (numDispatches == 0))
                     shutdown.succeeded();
             }
         }
@@ -260,13 +260,14 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     }
 
     /**
-     * Set whether the graceful shutdown should wait for all requests to complete (including suspended requests)
-     * or whether it should only wait for all the actively dispatched requests to complete.
-     * @param waitForSuspendedRequests true to wait for suspended requests on graceful shutdown.
+     * Set whether the graceful shutdown should wait for all requests to complete including
+     * async requests which are not currently dispatched, or whether it should only wait for all the
+     * actively dispatched requests to complete.
+     * @param asyncGraceful true to wait for async requests on graceful shutdown.
      */
-    public void waitForSuspendedRequestsOnShutdown(boolean waitForSuspendedRequests)
+    public void setAsyncGraceful(boolean asyncGraceful)
     {
-        this.waitForSuspendedRequestsOnShutdown = waitForSuspendedRequests;
+        this.asyncGraceful = asyncGraceful;
     }
 
     /**

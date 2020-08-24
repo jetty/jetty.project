@@ -431,7 +431,7 @@ public class StatisticsHandlerTest
         CyclicBarrier barrier = new CyclicBarrier(3);
         final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
         final CountDownLatch dispatched = new CountDownLatch(1);
-        _statsHandler.waitForSuspendedRequestsOnShutdown(true);
+        _statsHandler.setAsyncGraceful(true);
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
@@ -487,7 +487,7 @@ public class StatisticsHandlerTest
         CyclicBarrier barrier = new CyclicBarrier(3);
         final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
         final CountDownLatch dispatched = new CountDownLatch(1);
-        _statsHandler.waitForSuspendedRequestsOnShutdown(false);
+        _statsHandler.setAsyncGraceful(false);
         _statsHandler.setHandler(new AbstractHandler()
         {
             @Override
