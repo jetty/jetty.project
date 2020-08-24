@@ -19,8 +19,9 @@
 package org.eclipse.jetty.http.client;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -56,7 +57,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
     {
         init(transport);
         AtomicBoolean record = new AtomicBoolean();
-        List<Integer> remotePorts = new ArrayList<>();
+        List<Integer> remotePorts = new CopyOnWriteArrayList<>();
         scenario.start(new EmptyServerHandler()
         {
             @Override
@@ -115,8 +116,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         int maxConnections = 3;
         int count = maxConnections * maxMultiplex;
 
-        AtomicBoolean record = new AtomicBoolean();
-        List<Integer> remotePorts = new ArrayList<>();
+        List<Integer> remotePorts = new CopyOnWriteArrayList<>();
         AtomicReference<CountDownLatch> requestLatch = new AtomicReference<>();
         CountDownLatch serverLatch = new CountDownLatch(count);
         CyclicBarrier barrier = new CyclicBarrier(count + 1);
@@ -127,13 +127,10 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             {
                 try
                 {
-                    if (record.get())
-                    {
-                        remotePorts.add(request.getRemotePort());
-                        requestLatch.get().countDown();
-                        serverLatch.countDown();
-                        barrier.await();
-                    }
+                    remotePorts.add(request.getRemotePort());
+                    requestLatch.get().countDown();
+                    serverLatch.countDown();
+                    barrier.await();
                 }
                 catch (Exception x)
                 {
@@ -144,17 +141,9 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
 
         scenario.client.getTransport().setConnectionPoolFactory(destination -> new RoundRobinConnectionPool(destination, maxConnections, destination, maxMultiplex));
 
-        // Prime the connections, so that they are all opened
-        // before we actually test the round robin behavior.
-        for (int i = 0; i < maxConnections; ++i)
-        {
-            ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-        }
+        // Do not prime the connections, to see if the behavior is
+        // correct even if the connections are not pre-created.
 
-        record.set(true);
         CountDownLatch clientLatch = new CountDownLatch(count);
         AtomicInteger requests = new AtomicInteger();
         for (int i = 0; i < count; ++i)

@@ -70,8 +70,8 @@ import org.slf4j.LoggerFactory;
 public class AnnotationParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(AnnotationParser.class);
-    protected static int ASM_OPCODE_VERSION = Opcodes.ASM7; //compatibility of api
-    protected static String ASM_OPCODE_VERSION_STR = "ASM7";
+    protected static int ASM_OPCODE_VERSION = Opcodes.ASM8; //compatibility of api
+    protected static String ASM_OPCODE_VERSION_STR = "ASM8";
 
     /**
      * Map of classnames scanned and the first location from which scan occurred
@@ -120,6 +120,11 @@ public class AnnotationParser
                     case 7:
                     {
                         asmVersion = Opcodes.ASM7;
+                        break;
+                    }
+                    case 8:
+                    {
+                        asmVersion = Opcodes.ASM8;
                         break;
                     }
                     default:
