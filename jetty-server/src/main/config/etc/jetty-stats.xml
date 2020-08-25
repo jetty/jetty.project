@@ -6,9 +6,7 @@
   <Call name="insertHandler">
     <Arg>
       <New id="StatsHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler">
-        <Set name="asyncGraceful">
-          <Property name="jetty.statistics.asyncGraceful" default="true"/>
-        </Set>
+        <Set name="asyncGraceful"><Property name="jetty.statistics.asyncGraceful" default="true"/></Set>
       </New>
     </Arg>
   </Call>

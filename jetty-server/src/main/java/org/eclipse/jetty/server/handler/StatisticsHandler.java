@@ -28,6 +28,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.AsyncContextEvent;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannelState;
@@ -151,7 +152,11 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     {
         Handler handler = getHandler();
         if (handler == null || !isStarted() || isShutdown())
+        {
+            if (!baseRequest.getResponse().isCommitted())
+                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
             return;
+        }
 
         _dispatchedStats.increment();
 

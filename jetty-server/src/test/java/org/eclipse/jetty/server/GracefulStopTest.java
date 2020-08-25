@@ -305,7 +305,7 @@ public class GracefulStopTest
                         ).getBytes());
                         client2.getOutputStream().flush();
                         String response2 = IO.toString(client2.getInputStream());
-                        assertThat(response2, containsString(" 404 "));
+                        assertThat(response2, containsString(" 503 "));
 
                         now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
                         Thread.sleep(Math.max(1, end - now));
@@ -558,7 +558,6 @@ public class GracefulStopTest
     public void testCommittedResponsesAreClosed() throws Exception
     {
         Server server = new Server();
-        server.setDumpAfterStart(true);
 
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
@@ -633,7 +632,7 @@ public class GracefulStopTest
 
         // Check new connections rejected!
         String unavailable = connector.getResponse("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n");
-        assertThat(unavailable, containsString(" 404 Not Found"));
+        assertThat(unavailable, containsString(" 503 Service Unavailable"));
         assertThat(unavailable, Matchers.containsString("Connection: close"));
 
         // Check completed 200 has close
