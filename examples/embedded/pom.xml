@@ -51,11 +51,6 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-cdi</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>javax-websocket-server-impl</artifactId>
       <version>${project.version}</version>
@@ -158,13 +153,6 @@
       <type>tar.gz</type>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.jboss.weld.servlet</groupId>
-      <artifactId>weld-servlet-core</artifactId>
-      <version>${weld.version}</version>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
   <build>
