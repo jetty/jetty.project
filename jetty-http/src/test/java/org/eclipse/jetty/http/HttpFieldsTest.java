@@ -946,7 +946,6 @@ public class HttpFieldsTest
         assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three, four"));
     }
 
-
     @Test
     public void testEnsureMultiValue()
     {
