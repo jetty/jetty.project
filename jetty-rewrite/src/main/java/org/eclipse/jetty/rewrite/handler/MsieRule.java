@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.Trie;
  * Special handling for MSIE (Microsoft Internet Explorer).
  * <ul>
  *     <li>Disable keep alive for SSL from IE5 or IE6 on Windows 2000</li>
- *     <li>Disable encodings for IE<=6</li>
+ *     <li>Disable encodings for IE&lt;=6</li>
  * </ul>
  */
 public class MsieRule extends Rule
