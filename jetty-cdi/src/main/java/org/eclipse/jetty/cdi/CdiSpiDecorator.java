@@ -97,7 +97,7 @@ public class CdiSpiDecorator implements Decorator
 
     /**
      * Test if a class can be decorated.
-     * @implNote The default implementation calls {@link #isKnownUndecoratable(String) }
+     * The default implementation calls {@link #isKnownUndecoratable(String) }
      * on the class and all it's super classes.
      * @param clazz The class to check
      * @return True if the class and all it's super classes can be decorated
@@ -113,7 +113,7 @@ public class CdiSpiDecorator implements Decorator
 
     /**
      * Test if a specific class name is known to not be decoratable.
-     * @implNote default implementation checks for well known classes that are used to
+     * The default implementation checks for well known classes that are used to
      * setup CDI itself, and thus cannot themselves be decorated.
      * @see #isDecoratable(Class)
      * @param className The name of the class to check
