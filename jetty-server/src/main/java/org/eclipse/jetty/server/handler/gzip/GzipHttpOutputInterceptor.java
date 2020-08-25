@@ -189,12 +189,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         {
             // We are varying the response due to accept encoding header.
             if (_vary != null)
-            {
-                if (fields.contains(HttpHeader.VARY))
-                    fields.addCSV(HttpHeader.VARY, _vary.getValues());
-                else
-                    fields.add(_vary);
-            }
+                fields.ensure(_vary);
 
             long contentLength = response.getContentLength();
             if (contentLength < 0 && complete)
@@ -248,27 +243,6 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         {
             switch (_state.get())
             {
-                case NOT_COMPRESSING:
-                    return;
-
-                case MIGHT_COMPRESS:
-                    if (_state.compareAndSet(GZState.MIGHT_COMPRESS, GZState.NOT_COMPRESSING))
-                        return;
-                    break;
-
-                default:
-                    throw new IllegalStateException(_state.get().toString());
-            }
-        }
-    }
-
-    public void noCompressionIfPossible()
-    {
-        while (true)
-        {
-            switch (_state.get())
-            {
-                case COMPRESSING:
                 case NOT_COMPRESSING:
                     return;
 

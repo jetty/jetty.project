@@ -41,6 +41,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -924,23 +925,47 @@ public class HttpFieldsTest
     }
 
     @Test
-    public void testEnsureValue()
+    public void testEnsureSingleValue()
     {
         HttpFields.Mutable fields = HttpFields.build();
         assertThat(fields.size(), is(0));
 
-        fields.ensure(HttpHeader.ETAG, "one");
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("ETag: one"));
+        fields.ensure(new PreEncodedHttpField(HttpHeader.VARY, "one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one"));
+        assertThat(fields.getField(0), instanceOf(PreEncodedHttpField.class));
 
-        fields.ensure(HttpHeader.ETAG, "one");
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("ETag: one"));
+        fields.ensure(new HttpField(HttpHeader.VARY, "one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one"));
 
-        fields.add(new HttpField(HttpHeader.ETAG, "two"));
-        fields.ensure(HttpHeader.ETAG, "one");
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("ETag: one, two"));
+        fields.add(new HttpField(HttpHeader.VARY, "two"));
+        fields.ensure(new HttpField("Vary", "two"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two"));
 
-        fields.add(new HttpField(HttpHeader.ETAG, "three"));
-        fields.ensure(HttpHeader.ETAG, "four");
-        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("ETag: one, two, three, four"));
+        fields.add(new HttpField(HttpHeader.VARY, "three"));
+        fields.ensure(new HttpField("Vary", "four"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three, four"));
+    }
+
+
+    @Test
+    public void testEnsureMultiValue()
+    {
+        HttpFields.Mutable fields = HttpFields.build();
+        assertThat(fields.size(), is(0));
+
+        fields.ensure(new PreEncodedHttpField(HttpHeader.VARY, "one, two"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two"));
+        assertThat(fields.getField(0), instanceOf(PreEncodedHttpField.class));
+
+        fields.ensure(new HttpField(HttpHeader.VARY, "two, one"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two"));
+
+        fields.add(new HttpField(HttpHeader.VARY, "three"));
+        fields.ensure(new HttpField("Vary", "one, three"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three"));
+
+        fields.add(new HttpField(HttpHeader.VARY, "four"));
+        fields.ensure(new HttpField("Vary", "three, \"four\", five"));
+        assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Vary: one, two, three, four, five"));
     }
 }

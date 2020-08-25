@@ -738,36 +738,119 @@ public interface HttpFields extends Iterable<HttpField>
             return this;
         }
 
-        /** Ensure that a multivalue CSV field contains the value
-         * @param header The header to check
-         * @param value The value that it must contain.
+        /** Ensure that specific HttpField exists when the field may not exist or may
+         * exist and be multi valued.
+         * @param field The header to ensure is contained.  The field is used
+         *              directly if possible so {@link PreEncodedHttpField}s can be
+         *              passed.  If the value needs to be merged with existing values,
+         *              then a new field is created.
          */
-        public void ensure(HttpHeader header, String value)
+        public void ensure(HttpField field)
         {
-            computeField(header, (h,l) ->
+            if (field.getValue().indexOf(',') < 0)
             {
-                if (l == null || l.isEmpty())
-                    return new HttpField(h, value);
+                if (field.getHeader() != null)
+                    computeField(field.getHeader(), (h, l) -> computeEnsure(field, l));
+                else
+                    computeField(field.getName(), (h, l) -> computeEnsure(field, l));
+            }
+            else
+            {
+                if (field.getHeader() != null)
+                    computeField(field.getHeader(), (h, l) -> computeEnsure(field, field.getValues(), l));
+                else
+                    computeField(field.getName(), (h, l) -> computeEnsure(field, field.getValues(), l));
+            }
+        }
 
-                if (l.size() == 1)
+        private static HttpField computeEnsure(HttpField field, List<HttpField> l)
+        {
+            if (l == null || l.isEmpty())
+                return field;
+
+            String value = field.getValue();
+            if (l.size() == 1)
+            {
+                HttpField f = l.get(0);
+                return f.contains(value)
+                    ? f
+                    : new HttpField(field.getHeader(), field.getName(), f.getValue() + ", " + value);
+            }
+
+            StringBuilder v = new StringBuilder();
+            boolean hasIt = false;
+            for (HttpField f : l)
+            {
+                if (v.length() > 0)
+                    v.append(", ");
+                v.append(f.getValue());
+                if (f.contains(value))
+                    hasIt = true;
+            }
+            if (!hasIt)
+                v.append(", ").append(value);
+            return new HttpField(field.getHeader(), field.getName(), v.toString());
+        }
+
+        private static HttpField computeEnsure(HttpField field, String[] values, List<HttpField> l)
+        {
+            if (l == null || l.isEmpty())
+                return field;
+
+            if (l.size() == 1)
+            {
+                HttpField f = l.get(0);
+                int needed = values.length;
+                for (int i = 0; i < values.length; i++)
                 {
-                    HttpField f = l.get(0);
-                    return f.contains(value) ? f : new HttpField(h, f.getValue() + ", " + value);
+                    if (f.contains(values[i]))
+                    {
+                        needed--;
+                        values[i] = null;
+                    }
                 }
-                StringBuilder v = new StringBuilder();
-                boolean hasIt = false;
-                for (HttpField f : l)
+
+                if (needed == 0)
+                    return f;
+                if (needed == values.length)
+                    new HttpField(field.getHeader(), field.getName(), f.getValue() + ", " + field.getValue());
+                StringBuilder v = new StringBuilder(f.getValue());
+                for (String value : values)
                 {
-                    if (v.length() > 0)
-                        v.append(", ");
-                    v.append(f.getValue());
-                    if (f.contains(value))
-                        hasIt = true;
+                    if (value != null)
+                        v.append(", ").append(value);
                 }
-                if (!hasIt)
-                    v.append(", ").append(value);
-                return new HttpField(h, v.toString());
-            });
+                return new HttpField(field.getHeader(), field.getName(), v.toString());
+            }
+
+            StringBuilder v = new StringBuilder();
+            int needed = values.length;
+            for (HttpField f : l)
+            {
+                if (v.length() > 0)
+                    v.append(", ");
+                v.append(f.getValue());
+                for (int i = 0; i < values.length; i++)
+                {
+                    if (values[i] != null && f.contains(values[i]))
+                    {
+                        needed--;
+                        values[i] = null;
+                    }
+                }
+            }
+
+            if (needed == values.length)
+                v.append(", ").append(field.getValue());
+            else if (needed > 0)
+            {
+                for (String value : values)
+                {
+                    if (value != null)
+                        v.append(", ").append(value);
+                }
+            }
+            return new HttpField(field.getHeader(), field.getName(), v.toString());
         }
 
         @Override

@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.Trie;
@@ -37,13 +38,15 @@ import org.eclipse.jetty.util.Trie;
  *     <li>Disable encodings for IE<=6</li>
  * </ul>
  */
-public class MsieRule extends MsieSslRule
+public class MsieRule extends Rule
 {
     private static final int IEv5 = '5';
     private static final int IEv6 = '6';
-    private static Trie<Boolean> __IE6_BadOS = new ArrayTernaryTrie<>();
-    private static HttpField CONNECTION_CLOSE = new HttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+    private static final Trie<Boolean> __IE6_BadOS = new ArrayTernaryTrie<>();
+    private static final HttpField CONNECTION_CLOSE = new HttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
+    public static final HttpField VARY_USER_AGENT = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.USER_AGENT.asString());
 
+    static
     {
         __IE6_BadOS.put("NT 5.01", Boolean.TRUE);
         __IE6_BadOS.put("NT 5.0", Boolean.TRUE);
@@ -66,7 +69,13 @@ public class MsieRule extends MsieSslRule
         Request baseRequest = Request.getBaseRequest(request);
         if (baseRequest == null)
             return null;
-        String userAgent = baseRequest.getHttpFields().get(HttpHeader.USER_AGENT);
+
+        HttpFields.Mutable reqFields = HttpFields.build(baseRequest.getHttpFields());
+        HttpFields.Mutable resFields = baseRequest.getResponse().getHttpFields();
+        String userAgent = reqFields.get(HttpHeader.USER_AGENT);
+        boolean acceptEncodings = reqFields.contains(HttpHeader.ACCEPT_ENCODING);
+        if (acceptEncodings)
+            resFields.ensure(VARY_USER_AGENT);
 
         int msie = userAgent.indexOf("MSIE");
         if (msie >= 0)
@@ -75,10 +84,9 @@ public class MsieRule extends MsieSslRule
 
             if (version <= IEv6)
             {
-                HttpFields.Mutable fields = HttpFields.build(baseRequest.getHttpFields());
-
                 // Don't gzip responses for IE<=6
-                fields.remove(HttpHeader.ACCEPT_ENCODING);
+                if (acceptEncodings)
+                    reqFields.remove(HttpHeader.ACCEPT_ENCODING);
 
                 // IE<=6 can't do persistent SSL
                 if (request.isSecure())
@@ -96,12 +104,13 @@ public class MsieRule extends MsieSslRule
 
                     if (version <= IEv5 || badOs)
                     {
-                        fields.remove(HttpHeader.KEEP_ALIVE);
-                        fields.ensure(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+                        reqFields.remove(HttpHeader.KEEP_ALIVE);
+                        reqFields.ensure(CONNECTION_CLOSE);
+                        resFields.ensure(CONNECTION_CLOSE);
                         response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
                     }
                 }
-                baseRequest.setHttpFields(fields);
+                baseRequest.setHttpFields(reqFields);
                 return target;
             }
         }

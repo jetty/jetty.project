@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -225,11 +226,14 @@ public class MsieRuleTest extends AbstractRuleTestCase
             .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)")
             .add(HttpHeader.ACCEPT_ENCODING, "gzip"));
 
+        _response.addHeader("Vary", "Something");
+
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
         assertEquals(_request.getRequestURI(), result);
         assertThat(_request.getHttpFields().stream().map(HttpField::toString).collect(Collectors.toList()),
             contains("Cookie: set=already", "User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)"));
+        assertThat(_response.getHeader("Vary"), is("Something, User-Agent"));
     }
 
     @Test
@@ -238,6 +242,7 @@ public class MsieRuleTest extends AbstractRuleTestCase
         _request.setHttpFields(HttpFields.build(_request.getHttpFields())
             .add("User-Agent", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)")
             .add(HttpHeader.ACCEPT_ENCODING, "gzip"));
+        _response.addHeader("Vary", "Something");
 
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -247,6 +252,8 @@ public class MsieRuleTest extends AbstractRuleTestCase
                 "Cookie: set=already",
                 "User-Agent: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)",
                 "Accept-Encoding: gzip"));
+
+        assertThat(_response.getHeader("Vary"), is("Something, User-Agent"));
     }
 
     @Test
