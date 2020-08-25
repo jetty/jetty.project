@@ -167,16 +167,6 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         }
     }
 
-    void onStreamClosed(IStream stream, HttpChannelOverHTTP2 channel)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} closed for {}", stream, channel);
-        channel.setStream(null);
-        // Only non-push channels are released.
-        if (stream.isLocal())
-            getHttpDestination().release(this);
-    }
-
     @Override
     public boolean onIdleTimeout(long idleTimeout)
     {
@@ -239,9 +229,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         if (!isClosed())
             return false;
-        if (sweeps.incrementAndGet() < 4)
-            return false;
-        return true;
+        return sweeps.incrementAndGet() >= 4;
     }
 
     @Override

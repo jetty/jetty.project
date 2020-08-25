@@ -110,12 +110,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     @Override
     public void release()
     {
+        setStream(null);
         connection.release(this);
-    }
-
-    void onStreamClosed(IStream stream)
-    {
-        connection.onStreamClosed(stream, this);
+        getHttpDestination().release(getHttpConnection());
     }
 
     @Override
@@ -214,13 +211,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         {
             HTTP2Channel.Client channel = (HTTP2Channel.Client)((IStream)stream).getAttachment();
             channel.onFailure(failure, callback);
-        }
-
-        @Override
-        public void onClosed(Stream stream)
-        {
-            // TODO: needs to call HTTP2Channel?
-            receiver.onClosed(stream);
         }
     }
 }
