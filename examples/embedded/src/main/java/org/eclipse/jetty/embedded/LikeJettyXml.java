@@ -180,7 +180,7 @@ public class LikeJettyXml
         StatisticsHandler stats = new StatisticsHandler();
         stats.setHandler(server.getHandler());
         server.setHandler(stats);
-        server.addToAllConnectors(new ConnectionStatistics());
+        server.addBeanToAllConnectors(new ConnectionStatistics());
 
         // === Rewrite Handler
         RewriteHandler rewrite = new RewriteHandler();

@@ -267,15 +267,16 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /**
-     * Add a {@link Connection.Listener} as a bean to all connectors on the server, this
-     * will register the listener with all connections accepted by the connectors.
-     * @param listener the listener to be added.
+     * Add a bean to all connectors on the server.
+     * If the bean is an instance of {@link Connection.Listener} it will also be
+     * registered as a listener on all connections accepted by the connectors.
+     * @param bean the bean to be added.
      */
-    public void addToAllConnectors(Connection.Listener listener)
+    public void addBeanToAllConnectors(Object bean)
     {
         for (Connector connector : getConnectors())
         {
-            connector.addBean(listener);
+            connector.addBean(bean);
         }
     }
 

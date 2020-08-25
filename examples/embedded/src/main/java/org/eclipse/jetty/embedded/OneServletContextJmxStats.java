@@ -45,7 +45,7 @@ public class OneServletContextJmxStats
         context.addServlet(DefaultServlet.class, "/");
 
         // Add Connector Statistics tracking to all connectors
-        server.addToAllConnectors(new ConnectionStatistics());
+        server.addBeanToAllConnectors(new ConnectionStatistics());
         return server;
     }
 
