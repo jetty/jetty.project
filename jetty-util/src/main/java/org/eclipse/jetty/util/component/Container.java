@@ -35,7 +35,6 @@ public interface Container
 
     /**
      * @return the collection of beans known to this aggregate, in the order they were added.
-     * @apiNote   The return type is ordered and should be a {@link java.util.List}
      * @see #getBean(Class)
      */
     Collection<Object> getBeans();
@@ -44,7 +43,6 @@ public interface Container
      * @param clazz the class of the beans
      * @param <T> the Bean type
      * @return a list of beans of the given class (or subclass), in the order they were added.
-     * @apiNote The return type is ordered and should be a {@link java.util.List}
      * @see #getBeans()
      * @see #getContainedBeans(Class)
      */
@@ -141,7 +139,6 @@ public interface Container
      * @param <T> the Bean type
      * @return the list of beans of the given class from the entire Container hierarchy. The order is primarily depth first
      *         and secondarily added order.
-     * @apiNote The return type is ordered and should be a {@link java.util.List}
      */
     <T> Collection<T> getContainedBeans(Class<T> clazz);
 }
