@@ -46,6 +46,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private RetainableByteBuffer networkBuffer;
     private boolean shutdown;
     private boolean complete;
+    private boolean unsolicited;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
     {
@@ -264,6 +265,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public boolean startResponse(HttpVersion version, int status, String reason)
     {
         HttpExchange exchange = getHttpExchange();
+        unsolicited = exchange == null;
         if (exchange == null)
             return false;
 
@@ -279,7 +281,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public void parsedHeader(HttpField field)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
+        unsolicited |= exchange == null;
+        if (unsolicited)
             return;
 
         responseHeader(exchange, field);
@@ -289,7 +292,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public boolean headerComplete()
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
+        unsolicited |= exchange == null;
+        if (unsolicited)
             return false;
 
         return !responseHeaders(exchange);
@@ -299,7 +303,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public boolean content(ByteBuffer buffer)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
+        unsolicited |= exchange == null;
+        if (unsolicited)
             return false;
 
         RetainableByteBuffer networkBuffer = this.networkBuffer;
@@ -321,7 +326,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public void parsedTrailer(HttpField trailer)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
+        unsolicited |= exchange == null;
+        if (unsolicited)
             return;
 
         exchange.getResponse().trailer(trailer);
@@ -331,8 +337,12 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public boolean messageComplete()
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
+        if (exchange == null || unsolicited)
+        {
+            // We received an unsolicited response from the server.
+            getHttpConnection().close();
             return false;
+        }
 
         int status = exchange.getResponse().getStatus();
         if (status != HttpStatus.CONTINUE_100)
@@ -349,7 +359,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         HttpExchange exchange = getHttpExchange();
         HttpConnectionOverHTTP connection = getHttpConnection();
-        if (exchange == null)
+        if (exchange == null || unsolicited)
             connection.close();
         else
             failAndClose(new EOFException(String.valueOf(connection)));
@@ -359,7 +369,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public void badMessage(BadMessageException failure)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange != null)
+        if (exchange == null || unsolicited)
+        {
+            getHttpConnection().close();
+        }
+        else
         {
             HttpResponse response = exchange.getResponse();
             response.status(failure.getCode()).reason(failure.getReason());
