@@ -185,7 +185,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
         catch (Throwable x)
         {
-            _log.info("Exception while transforming " + transformer, x);
+            _log.info("Exception while transforming {} ", transformer, x);
             throw x;
         }
     }
