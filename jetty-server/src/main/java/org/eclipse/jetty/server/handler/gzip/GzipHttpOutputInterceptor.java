@@ -189,7 +189,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         {
             // We are varying the response due to accept encoding header.
             if (_vary != null)
-                fields.ensure(_vary);
+                fields.ensureField(_vary);
 
             long contentLength = response.getContentLength();
             if (contentLength < 0 && complete)

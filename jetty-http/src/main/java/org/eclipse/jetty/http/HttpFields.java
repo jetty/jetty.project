@@ -739,13 +739,14 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         /** Ensure that specific HttpField exists when the field may not exist or may
-         * exist and be multi valued.
+         * exist and be multi valued.  Multiple existing fields are merged into a
+         * single field.
          * @param field The header to ensure is contained.  The field is used
          *              directly if possible so {@link PreEncodedHttpField}s can be
          *              passed.  If the value needs to be merged with existing values,
          *              then a new field is created.
          */
-        public void ensure(HttpField field)
+        public void ensureField(HttpField field)
         {
             // Is the field value multi valued?
             if (field.getValue().indexOf(',') < 0)

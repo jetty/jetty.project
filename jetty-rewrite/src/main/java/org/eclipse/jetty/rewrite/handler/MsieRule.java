@@ -44,7 +44,7 @@ public class MsieRule extends Rule
     private static final int IEv6 = '6';
     private static final Trie<Boolean> __IE6_BadOS = new ArrayTernaryTrie<>();
     private static final HttpField CONNECTION_CLOSE = new HttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-    public static final HttpField VARY_USER_AGENT = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.USER_AGENT.asString());
+    private static final HttpField VARY_USER_AGENT = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.USER_AGENT.asString());
 
     static
     {
@@ -75,7 +75,7 @@ public class MsieRule extends Rule
         String userAgent = reqFields.get(HttpHeader.USER_AGENT);
         boolean acceptEncodings = reqFields.contains(HttpHeader.ACCEPT_ENCODING);
         if (acceptEncodings)
-            resFields.ensure(VARY_USER_AGENT);
+            resFields.ensureField(VARY_USER_AGENT);
 
         int msie = userAgent.indexOf("MSIE");
         if (msie >= 0)
@@ -105,8 +105,8 @@ public class MsieRule extends Rule
                     if (version <= IEv5 || badOs)
                     {
                         reqFields.remove(HttpHeader.KEEP_ALIVE);
-                        reqFields.ensure(CONNECTION_CLOSE);
-                        resFields.ensure(CONNECTION_CLOSE);
+                        reqFields.ensureField(CONNECTION_CLOSE);
+                        resFields.ensureField(CONNECTION_CLOSE);
                         response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
                     }
                 }
@@ -116,5 +116,4 @@ public class MsieRule extends Rule
         }
         return null;
     }
-
 }
