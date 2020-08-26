@@ -25,7 +25,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.URIUtil;
  */
 public class ResourceCollection extends Resource
 {
-    private Resource[] _resources;
+    private List<Resource> _resources;
 
     /**
      * Instantiates an empty resource collection.
@@ -51,7 +51,7 @@ public class ResourceCollection extends Resource
      */
     public ResourceCollection()
     {
-        _resources = new Resource[0];
+        _resources = new ArrayList<>();
     }
 
     /**
@@ -61,7 +61,7 @@ public class ResourceCollection extends Resource
      */
     public ResourceCollection(Resource... resources)
     {
-        List<Resource> list = new ArrayList<>();
+        _resources = new ArrayList<>();
         for (Resource r : resources)
         {
             if (r == null)
@@ -70,15 +70,25 @@ public class ResourceCollection extends Resource
             }
             if (r instanceof ResourceCollection)
             {
-                Collections.addAll(list, ((ResourceCollection)r).getResources());
+                _resources.addAll(((ResourceCollection)r).getResources());
             }
             else
             {
                 assertResourceValid(r);
-                list.add(r);
+                _resources.add(r);
             }
         }
-        _resources = list.toArray(new Resource[0]);
+    }
+
+    /**
+     * Instantiates a new resource collection.
+     *
+     * @param resources the resources to be added to collection
+     */
+    public ResourceCollection(Collection<Resource> resources)
+    {
+        _resources = new ArrayList<>();
+        _resources.addAll(resources);
     }
 
     /**
@@ -88,13 +98,12 @@ public class ResourceCollection extends Resource
      */
     public ResourceCollection(String[] resources)
     {
+        _resources = new ArrayList<>();
+
         if (resources == null || resources.length == 0)
         {
-            _resources = null;
             return;
         }
-
-        ArrayList<Resource> res = new ArrayList<>();
 
         try
         {
@@ -106,16 +115,13 @@ public class ResourceCollection extends Resource
                 }
                 Resource resource = Resource.newResource(strResource);
                 assertResourceValid(resource);
-                res.add(resource);
+                _resources.add(resource);
             }
 
-            if (res.isEmpty())
+            if (_resources.isEmpty())
             {
-                _resources = null;
-                return;
+                throw new IllegalArgumentException("resources cannot be empty or null");
             }
-
-            _resources = res.toArray(new Resource[0]);
         }
         catch (RuntimeException e)
         {
@@ -141,9 +147,9 @@ public class ResourceCollection extends Resource
     /**
      * Retrieves the resource collection's resources.
      *
-     * @return the resource array
+     * @return the resource collection
      */
-    public Resource[] getResources()
+    public List<Resource> getResources()
     {
         return _resources;
     }
@@ -155,13 +161,13 @@ public class ResourceCollection extends Resource
      */
     public void setResources(List<Resource> res)
     {
+        _resources = new ArrayList<>();
         if (res.isEmpty())
         {
-            _resources = null;
             return;
         }
 
-        _resources = res.toArray(new Resource[0]);
+        _resources.addAll(res);
     }
 
     /**
@@ -235,53 +241,46 @@ public class ResourceCollection extends Resource
             return this;
         }
 
-        Resource resource = null;
-        ArrayList<Resource> resources = null;
-        int i = 0;
-        for (; i < _resources.length; i++)
+        // Attempt a simple (single) Resource lookup that exists
+        for (Resource res : _resources)
         {
-            resource = _resources[i].addPath(path);
-            if (resource.exists())
+            Resource fileResource = res.addPath(path);
+            if (fileResource.exists())
             {
-                if (resource.isDirectory())
+                if (!fileResource.isDirectory())
                 {
-                    break;
+                    return fileResource;
                 }
-                return resource;
             }
         }
 
-        for (i++; i < _resources.length; i++)
+        // Create a list of potential resource for directories of this collection
+        ArrayList<Resource> potentialResources = null;
+        for (Resource res : _resources)
         {
-            Resource r = _resources[i].addPath(path);
+            Resource r = res.addPath(path);
             if (r.exists() && r.isDirectory())
             {
-                if (resources == null)
+                if (potentialResources == null)
                 {
-                    resources = new ArrayList<>();
+                    potentialResources = new ArrayList<>();
                 }
 
-                if (resource != null)
-                {
-                    resources.add(resource);
-                    resource = null;
-                }
-
-                resources.add(r);
+                potentialResources.add(r);
             }
         }
 
-        if (resource != null)
+        if (potentialResources == null || potentialResources.isEmpty())
         {
-            return resource;
+            throw new MalformedURLException("path does not result in Resource: " + path);
         }
 
-        if (resources != null)
+        if (potentialResources.size() == 1)
         {
-            return new ResourceCollection(resources.toArray(new Resource[0]));
+            return potentialResources.get(0);
         }
 
-        throw new MalformedURLException("path does not result in Resource: " + path);
+        return new ResourceCollection(potentialResources);
     }
 
     @Override
@@ -421,9 +420,8 @@ public class ResourceCollection extends Resource
         {
             Collections.addAll(set, r.list());
         }
-        String[] result = set.toArray(new String[0]);
-        Arrays.sort(result);
-        return result;
+
+        return (String[])set.stream().sorted().toArray();
     }
 
     @Override
@@ -449,9 +447,10 @@ public class ResourceCollection extends Resource
     {
         assertResourcesSet();
 
-        for (int r = _resources.length; r-- > 0; )
+        // Copy in reverse order
+        for (int r = _resources.size(); r-- > 0; )
         {
-            _resources[r].copyTo(destination);
+            _resources.get(r).copyTo(destination);
         }
     }
 
@@ -461,12 +460,12 @@ public class ResourceCollection extends Resource
     @Override
     public String toString()
     {
-        if (_resources == null || _resources.length == 0)
+        if (_resources.isEmpty())
         {
             return "[]";
         }
 
-        return String.valueOf(Arrays.asList(_resources));
+        return String.valueOf(_resources);
     }
 
     @Override
@@ -478,7 +477,7 @@ public class ResourceCollection extends Resource
 
     private void assertResourcesSet()
     {
-        if (_resources == null || _resources.length == 0)
+        if (_resources == null || _resources.isEmpty())
         {
             throw new IllegalStateException("*resources* not set.");
         }

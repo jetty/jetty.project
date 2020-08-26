@@ -18,9 +18,10 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -74,11 +76,11 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
             {
             }
         });
-        _resourceService.setGzipEquivalentFileExtensions(new ArrayList<>(Collections.singletonList(".svgz")));
+        _resourceService.setGzipEquivalentFileExtensions(new ArrayList<>(Arrays.asList(new String[]{".svgz"})));
     }
 
     @Override
-    public String getWelcomeFile(String pathInContext)
+    public String getWelcomeFile(String pathInContext) throws IOException
     {
         if (_welcomes == null)
             return null;
@@ -86,18 +88,9 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         for (int i = 0; i < _welcomes.length; i++)
         {
             String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
-            try
-            {
-                Resource welcome = getResource(welcomeInContext);
-                if (welcome.exists())
-                    return welcomeInContext;
-            }
-            catch (IOException e)
-            {
-                // this happens on a critical failure of Resource
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Failed to resolve welcome file: {}", welcomeInContext);
-            }
+            Resource welcome = getResource(welcomeInContext);
+            if (welcome.exists())
+                return welcomeInContext;
         }
         // not found
         return null;
@@ -154,37 +147,46 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         if (LOG.isDebugEnabled())
             LOG.debug("{} getResource({}): baseResource:{}", _context == null ? _baseResource : _context, path, _baseResource);
 
-        if (path != null && path.startsWith("/"))
+        if (StringUtil.isBlank(path))
         {
-            Resource r = null;
+            throw new IllegalArgumentException("Path is blank");
+        }
 
-            if (_baseResource != null)
+        if (!path.startsWith("/"))
+        {
+            throw new IllegalArgumentException("Path reference invalid: " + path);
+        }
+
+        Resource r = null;
+
+        if (_baseResource != null)
+        {
+            path = URIUtil.canonicalPath(path);
+            r = _baseResource.addPath(path);
+
+            if (r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
             {
-                path = URIUtil.canonicalPath(path);
-                r = _baseResource.addPath(path);
-
-                if (r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Rejected alias resource={} alias={}", r, r.getAlias());
-                    throw new IOException("Rejected (see debug logs)");
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Rejected alias resource={} alias={}", r, r.getAlias());
+                throw new IllegalStateException("Rejected alias reference: " + path);
             }
-            else if (_context != null)
-            {
-                r = _context.getResource(path);
-                if (r != null)
-                    return r;
-            }
-
-            if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
-                r = getStylesheet();
-
+        }
+        else if (_context != null)
+        {
+            r = _context.getResource(path);
             if (r != null)
                 return r;
         }
 
-        throw new IOException("Unable to find Resource for " + path);
+        if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
+            r = getStylesheet();
+
+        if (r == null)
+        {
+            throw new FileNotFoundException("Resource: " + path);
+        }
+
+        return r;
     }
 
     /**

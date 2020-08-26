@@ -36,7 +36,7 @@ public interface ResourceFactory
      * </p>
      *
      * @param path The path to the resource
-     * @return The resource
+     * @return The resource, that might not actually exist (yet).
      * @throws IOException if unable to create Resource
      */
     Resource getResource(String path) throws IOException;

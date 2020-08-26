@@ -152,7 +152,7 @@ public class ResourceCollectionTest
         assertThrows(IllegalStateException.class, () -> coll.setResources(new Resource[]{null, null, null}));
 
         // Ensure not modified.
-        assertThat(coll.getResources().length, is(1));
+        assertThat(coll.getResources().size(), is(1));
     }
 
     private void assertThrowIllegalStateException(ResourceCollection coll)

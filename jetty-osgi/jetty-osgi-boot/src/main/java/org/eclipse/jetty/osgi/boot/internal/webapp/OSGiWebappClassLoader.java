@@ -20,7 +20,6 @@ package org.eclipse.jetty.osgi.boot.internal.webapp;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -264,6 +263,4 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
         }
         return true;
     }
-
-    private static Field _contextField;
 }
