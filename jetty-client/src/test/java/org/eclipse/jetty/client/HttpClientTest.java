@@ -1820,6 +1820,65 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         assertArrayEquals(bytes, baos.toByteArray());
     }
 
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testUnsolicitedResponseBytesFromServer(Scenario scenario) throws Exception
+    {
+        String response = "" +
+            "HTTP/1.1 408 Request Timeout\r\n" +
+            "Content-Length: 0\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
+        testUnsolicitedBytesFromServer(scenario, response);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testUnsolicitedInvalidBytesFromServer(Scenario scenario) throws Exception
+    {
+        String response = "ABCDEF";
+        testUnsolicitedBytesFromServer(scenario, response);
+    }
+
+    private void testUnsolicitedBytesFromServer(Scenario scenario, String bytesFromServer) throws Exception
+    {
+        try (ServerSocket server = new ServerSocket(0))
+        {
+            startClient(scenario, clientConnector ->
+            {
+                clientConnector.setSelectors(1);
+                HttpClientTransportOverHTTP transport = new HttpClientTransportOverHTTP(clientConnector);
+                transport.setConnectionPoolFactory(destination ->
+                {
+                    ConnectionPool connectionPool = new DuplexConnectionPool(destination, 1, destination);
+                    connectionPool.preCreateConnections(1);
+                    return connectionPool;
+                });
+                return transport;
+            }, null);
+
+            String host = "localhost";
+            int port = server.getLocalPort();
+
+            // Resolve the destination which will pre-create a connection.
+            HttpDestination destination = client.resolveDestination(new Origin("http", host, port));
+
+            // Accept the connection and send an unsolicited 408.
+            try (Socket socket = server.accept())
+            {
+                OutputStream output = socket.getOutputStream();
+                output.write(bytesFromServer.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+            }
+
+            // Give some time to the client to process the response.
+            Thread.sleep(1000);
+
+            AbstractConnectionPool pool = (AbstractConnectionPool)destination.getConnectionPool();
+            assertEquals(0, pool.getConnectionCount());
+        }
+    }
+
     private void assertCopyRequest(Request original)
     {
         Request copy = client.copyRequest((HttpRequest)original, original.getURI());
