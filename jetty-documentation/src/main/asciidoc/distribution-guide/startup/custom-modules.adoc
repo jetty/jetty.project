@@ -56,7 +56,7 @@ When using the `--list-modules` command, modules will be groups by the first tag
 Modules can also be listed specifically by these tags using `--list-modules=<tag name>` on the command line.
 Ini Variables - `[ini]`::
 The `[ini]` section is used to add or change server parameters at startup.
-The `[ini]` section can also include a the path of a file or several files which should be made available to the server only.
+The `[ini]` section can also include a the path of a file or several files which should be made available to the _server_ only.
 This is helpful when you want to control what jars are available to deployed webapps.
 Jetty INI Template - `[ini-template]`::
 Each module can optionally declare a startup ini template that is used to insert/append/inject sample configuration elements into the `start.ini` or `start.d/*.ini` files when using the `--add-to-start=<name>` command line argument in `start.jar`.
@@ -68,7 +68,7 @@ Ensure Directory Exists;;
 If you add a pathname that ends in `"/"` (slash), such as `"webapps/"`, then that directory will be created if it does not yet exist in `${jetty.base}/<pathname>` (eg: `"webapps/"` will result in `${jetty.base}/webapps/` being created).
 Download File;;
 There is a special syntax to allow you to download a file into a specific location if it doesn't exist yet: `<url>:<pathname>`.
-Currently, the `<url>` must be a `http://` scheme URL (please link:#bugs[let us know] if you need more schemes supported).
+Currently, the `<url>` must be a `http://` scheme URL.
 The `<pathname>` portion follows the link:#base-vs-home-resolution[Jetty Base and Jetty Home path resolution rules].
 Example: `http://repo.corp.com/maven/corp-security-policy-1.0.jar:lib/corp-security-policy.jar`
 This will check for the existence of `lib/corp-security-policy.jar`, and if it doesn't exist, it will download the jar file from `http://repo.corp.com/maven/corp-security-policy-1.0.jar`
@@ -215,7 +215,7 @@ INFO  : Base directory was modified
 ----
 
 ==== Dependencies
-When dependent modules are enabled, they are done so transitively by default.
+When dependent modules are enabled, they are done so *transitively* by default.
 This means that any `ini` files for dependent modules are not created in the `${JETTY_BASE}/start.d` directory (or added to `${JETTY_BASE}/start.ini`) and are as such not configurable.
 
 For Jetty to create/add the `ini-template` parameters to `start.d` or `start.ini` the associated module must be enabled explicitly.

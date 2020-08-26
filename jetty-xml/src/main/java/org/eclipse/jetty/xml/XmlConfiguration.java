@@ -58,6 +58,7 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
@@ -102,7 +103,8 @@ public class XmlConfiguration
     private static final List<ConfigurationProcessorFactory> PROCESSOR_FACTORIES = TypeUtil.serviceProviderStream(ServiceLoader.load(ConfigurationProcessorFactory.class))
         .flatMap(p -> Stream.of(p.get()))
         .collect(Collectors.toList());
-    private static final XmlParser PARSER = initParser();
+    private static final Pool<ConfigurationParser> __parsers =
+        new Pool<>(Math.min(8, Runtime.getRuntime().availableProcessors()),1);
     public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) ->
     {
         // Favour methods with less parameters
@@ -146,43 +148,6 @@ public class XmlConfiguration
 
         return compare;
     };
-
-    private static XmlParser initParser()
-    {
-        XmlParser parser = new XmlParser();
-
-        Class<?> klass = XmlConfiguration.class;
-        URL config60 = klass.getResource("configure_6_0.dtd");
-        URL config76 = klass.getResource("configure_7_6.dtd");
-        URL config90 = klass.getResource("configure_9_0.dtd");
-        URL config93 = klass.getResource("configure_9_3.dtd");
-        URL config100 = klass.getResource("configure_10_0.dtd");
-
-        parser.redirectEntity("configure.dtd", config93);
-        parser.redirectEntity("configure_1_0.dtd", config60);
-        parser.redirectEntity("configure_1_1.dtd", config60);
-        parser.redirectEntity("configure_1_2.dtd", config60);
-        parser.redirectEntity("configure_1_3.dtd", config60);
-        parser.redirectEntity("configure_6_0.dtd", config60);
-        parser.redirectEntity("configure_7_6.dtd", config76);
-        parser.redirectEntity("configure_9_0.dtd", config90);
-        parser.redirectEntity("configure_9_3.dtd", config93);
-        parser.redirectEntity("configure_10_0.dtd", config100);
-
-        parser.redirectEntity("http://jetty.mortbay.org/configure.dtd", config93);
-        parser.redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd", config93);
-        parser.redirectEntity("http://jetty.eclipse.org/configure.dtd", config93);
-        parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd", config93);
-        parser.redirectEntity("https://www.eclipse.org/jetty/configure.dtd", config93);
-        parser.redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd", config93);
-        parser.redirectEntity("https://www.eclipse.org/jetty/configure_9_3.dtd", config93);
-        parser.redirectEntity("https://www.eclipse.org/jetty/configure_10_0.dtd", config100);
-
-        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", config100);
-        parser.redirectEntity("-//Jetty//Configure//EN", config100);
-
-        return parser;
-    }
 
     /**
      * Set the standard IDs and properties expected in a jetty XML file:
@@ -241,6 +206,14 @@ public class XmlConfiguration
     private final String _dtd;
     private ConfigurationProcessor _processor;
 
+    ConfigurationParser getParser()
+    {
+        Pool<ConfigurationParser>.Entry entry = __parsers.acquire(ConfigurationParser::new);
+        if (entry == null)
+            return new ConfigurationParser(null);
+        return entry.getPooled();
+    }
+
     /**
      * Reads and parses the XML configuration file.
      *
@@ -250,14 +223,11 @@ public class XmlConfiguration
      */
     public XmlConfiguration(Resource resource) throws SAXException, IOException
     {
-        try (AutoLock l = PARSER.lock())
+        try (ConfigurationParser parser = getParser(); InputStream inputStream = resource.getInputStream())
         {
             _location = resource;
-            try (InputStream inputStream = resource.getInputStream())
-            {
-                setConfig(PARSER.parse(inputStream));
-            }
-            _dtd = PARSER.getDTD();
+            setConfig(parser.parse(inputStream));
+            _dtd = parser.getDTD();
         }
     }
 
@@ -1869,6 +1839,53 @@ public class XmlConfiguration
         {
             LOG.warn("Unable to execute XmlConfiguration", e);
             throw e;
+        }
+    }
+
+    private static class ConfigurationParser extends XmlParser implements AutoCloseable
+    {
+        private final Pool<ConfigurationParser>.Entry _entry;
+
+        private ConfigurationParser(Pool<ConfigurationParser>.Entry entry)
+        {
+            _entry = entry;
+
+            Class<?> klass = XmlConfiguration.class;
+            URL config60 = klass.getResource("configure_6_0.dtd");
+            URL config76 = klass.getResource("configure_7_6.dtd");
+            URL config90 = klass.getResource("configure_9_0.dtd");
+            URL config93 = klass.getResource("configure_9_3.dtd");
+            URL config100 = klass.getResource("configure_10_0.dtd");
+
+            redirectEntity("configure.dtd", config93);
+            redirectEntity("configure_1_0.dtd", config60);
+            redirectEntity("configure_1_1.dtd", config60);
+            redirectEntity("configure_1_2.dtd", config60);
+            redirectEntity("configure_1_3.dtd", config60);
+            redirectEntity("configure_6_0.dtd", config60);
+            redirectEntity("configure_7_6.dtd", config76);
+            redirectEntity("configure_9_0.dtd", config90);
+            redirectEntity("configure_9_3.dtd", config93);
+            redirectEntity("configure_10_0.dtd", config100);
+
+            redirectEntity("http://jetty.mortbay.org/configure.dtd", config93);
+            redirectEntity("http://jetty.mortbay.org/configure_9_3.dtd", config93);
+            redirectEntity("http://jetty.eclipse.org/configure.dtd", config93);
+            redirectEntity("http://www.eclipse.org/jetty/configure.dtd", config93);
+            redirectEntity("https://www.eclipse.org/jetty/configure.dtd", config93);
+            redirectEntity("http://www.eclipse.org/jetty/configure_9_3.dtd", config93);
+            redirectEntity("https://www.eclipse.org/jetty/configure_9_3.dtd", config93);
+            redirectEntity("https://www.eclipse.org/jetty/configure_10_0.dtd", config100);
+
+            redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", config100);
+            redirectEntity("-//Jetty//Configure//EN", config100);
+        }
+
+        @Override
+        public void close()
+        {
+            if (_entry != null)
+                __parsers.release(_entry);
         }
     }
 }
