@@ -173,7 +173,9 @@ This is typically used to pass a request to a link:{JDURL}/org/eclipse/jetty/ser
 [[injecting-handlers]]
 ==== Injecting Handlers
 
-A custom handler can be injected using an injection based XML:
+The `Handler` needs to be added to the server classpath as described in xref:startup-classpath[].
+Then it can be added to the server, either by overriding some existing XML configuration files such as `jetty.xml` as shown below, or by defining a custom module as described in xref:custom-modules[].
+
 [source, xml]
 ----
 <?xml version="1.0"?>
@@ -186,10 +188,6 @@ A custom handler can be injected using an injection based XML:
     </Call>
 </Configure>
 ----
-
-* The custom handler JAR should be available at `/path/to/myjettybase/lib/ext/`
-* The custom handler XML should be available at `/path/to/myjettybase/etc/`
-* The custom handler XML should be loaded into the jetty instance at the right point in the XML load order by declaring it to be used in a custom INI
 
 [[more-about-handlers]]
 ==== More About Handlers
