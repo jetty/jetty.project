@@ -25,6 +25,8 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.net.ssl.SNIMatcher;
@@ -84,6 +86,11 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         if (aliases == null || aliases.length == 0)
             return null;
 
+        // Apply the alias mapping, keeping the alias order.
+        Map<String, String> aliasMap = new LinkedHashMap<>();
+        Arrays.stream(aliases)
+            .forEach(alias -> aliasMap.put(_sslContextFactory.getAliasMapper().apply(alias), alias));
+
         // Find our SNIMatcher.  There should only be one and it always matches (always returns true
         // from AliasSNIMatcher.matches), but it will capture the SNI Host if one was presented.
         String host = matchers == null ? null :  matchers.stream()
@@ -96,33 +103,38 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         try
         {
             // Filter the certificates by alias.
-            Collection<X509> certificates = Arrays.stream(aliases)
+            Collection<X509> certificates = aliasMap.keySet().stream()
                 .map(_sslContextFactory::getX509)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-            // delegate the decision to accept to the sniSelector
+            // Delegate the decision to accept to the sniSelector.
             SniSelector sniSelector = _sslContextFactory.getSNISelector();
             if (sniSelector == null)
                 sniSelector = _sslContextFactory;
             String alias = sniSelector.sniSelect(keyType, issuers, session, host, certificates);
 
-            // Check selected alias
+            // Check the selected alias.
             if (alias != null && alias != SniSelector.DELEGATE)
             {
                 // Make sure we got back an alias from the acceptable aliases.
                 X509 x509 = _sslContextFactory.getX509(alias);
-                if (!Arrays.asList(aliases).contains(alias) || x509 == null)
+                if (!aliasMap.containsKey(alias) || x509 == null)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Invalid X509 match for SNI {}: {}", host, alias);
                     return null;
                 }
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Matched SNI {} with X509 {} from {}", host, x509, Arrays.asList(aliases));
                 if (session != null)
                     session.putValue(SNI_X509, x509);
+
+                // Convert the selected alias back to the original
+                // value before the alias mapping performed above.
+                alias = aliasMap.get(alias);
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Matched SNI {} with alias {}, certificate {} from aliases {}", host, alias, x509, aliasMap.keySet());
             }
             return alias;
         }
@@ -141,10 +153,11 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         String alias = (socket == null)
             ? chooseServerAlias(keyType, issuers, Collections.emptyList(), null)
             : chooseServerAlias(keyType, issuers, sslSocket.getSSLParameters().getSNIMatchers(), sslSocket.getHandshakeSession());
-        if (alias == SniSelector.DELEGATE)
+        boolean delegate = alias == SniSelector.DELEGATE;
+        if (delegate)
             alias = _delegate.chooseServerAlias(keyType, issuers, socket);
         if (LOG.isDebugEnabled())
-            LOG.debug("Chose alias {}/{} on {}", alias, keyType, socket);
+            LOG.debug("Chose {} alias {}/{} on {}", delegate ? "delegate" : "explicit", alias, keyType, socket);
         return alias;
     }
 
@@ -154,10 +167,11 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         String alias = (engine == null)
             ? chooseServerAlias(keyType, issuers, Collections.emptyList(), null)
             : chooseServerAlias(keyType, issuers, engine.getSSLParameters().getSNIMatchers(), engine.getHandshakeSession());
-        if (alias == SniSelector.DELEGATE)
+        boolean delegate = alias == SniSelector.DELEGATE;
+        if (delegate)
             alias = _delegate.chooseEngineServerAlias(keyType, issuers, engine);
         if (LOG.isDebugEnabled())
-            LOG.debug("Chose alias {}/{} on {}", alias, keyType, engine);
+            LOG.debug("Chose {} alias {}/{} on {}", delegate ? "delegate" : "explicit", alias, keyType, engine);
         return alias;
     }
 

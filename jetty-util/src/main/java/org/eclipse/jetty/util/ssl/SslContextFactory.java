@@ -54,6 +54,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.CertPathTrustManagerParameters;
@@ -2206,6 +2207,7 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
     {
         private boolean _sniRequired;
         private SniX509ExtendedKeyManager.SniSelector _sniSelector;
+        private UnaryOperator<String> _aliasMapper = UnaryOperator.identity();
 
         public Server()
         {
@@ -2315,6 +2317,38 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
         protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
         {
             return new SniX509ExtendedKeyManager(keyManager, this);
+        }
+
+        /**
+         * @return the function that transforms the alias
+         * @see #setAliasMapper(UnaryOperator)
+         */
+        public UnaryOperator<String> getAliasMapper()
+        {
+            return _aliasMapper;
+        }
+
+        /**
+         * <p>Sets a function that transforms the alias into a possibly different alias,
+         * invoked when the SNI logic must choose the alias to pick the right certificate.</p>
+         * <p>This function is required when using the
+         * {@link #setKeyManagerFactoryAlgorithm(String) PKIX KeyManagerFactory algorithm}
+         * which suffers from bug https://bugs.openjdk.java.net/browse/JDK-8246262,
+         * where aliases are returned by the OpenJDK implementation to the application
+         * in the form {@code N.0.alias} where {@code N} is an always increasing number.
+         * Such mangled aliases won't match the aliases in the keystore, so that for
+         * example SNI matching will always fail.</p>
+         * <p>Other implementations such as BouncyCastle have been reported to mangle
+         * the alias in a different way, namely {@code 0.alias.N}.</p>
+         * <p>This function allows to "unmangle" the alias from the implementation
+         * specific mangling back to just {@code alias} so that SNI matching will work
+         * again.</p>
+         *
+         * @param aliasMapper the function that transforms the alias
+         */
+        public void setAliasMapper(UnaryOperator<String> aliasMapper)
+        {
+            _aliasMapper = Objects.requireNonNull(aliasMapper);
         }
     }
 
