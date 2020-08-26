@@ -22,6 +22,9 @@
         <configuration>
           <mainClass>org.eclipse.jetty.http2.server.H2SpecServer</mainClass>
           <skip>${skipTests}</skip>
+          <excludeSpecs>
+            <excludeSpec>3.5 - Sends invalid connection preface</excludeSpec>
+          </excludeSpecs>
         </configuration>
         <executions>
           <execution>
