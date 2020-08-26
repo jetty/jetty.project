@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
  * Adding an instance of this class as with {@link AbstractConnector#addBean(Object)}
  * will register the listener with all connections accepted by that connector.
  *
- * @deprecated use {@link ServerConnectionStatistics} instead.
+ * @deprecated use {@link org.eclipse.jetty.io.ConnectionStatistics} instead.
  */
 @Deprecated
 @ManagedObject("Connector Statistics")
