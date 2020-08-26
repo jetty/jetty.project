@@ -57,6 +57,14 @@ import org.eclipse.jetty.util.ManifestUtils;
 public class StartArgs
 {
     public static final String VERSION;
+    public static final Set<String> ALL_PARTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+        "java",
+        "opts",
+        "path",
+        "main",
+        "args")));
+    public static final Set<String> ARG_PARTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+        "args")));
 
     static
     {
@@ -219,12 +227,13 @@ public class StartArgs
     private boolean listConfig = false;
     private boolean version = false;
     private boolean dryRun = false;
+    private final Set<String> dryRunParts = new HashSet<>();
     private boolean jpms = false;
     private boolean createStartd = false;
     private boolean updateIni = false;
     private String mavenBaseUri;
 
-    private boolean exec = false;
+    private Boolean exec = null; // Tri state as --no-exec overrules --exec
     private String execProperties;
     private boolean approveAllLicenses = false;
 
@@ -559,7 +568,8 @@ public class StartArgs
 
             for (String jvmArg : module.getJvmArgs())
             {
-                exec = true;
+                if (exec != Boolean.FALSE)
+                    exec = true; // TODO is this necessary as --jpms turns on exec anyway
                 jvmArgs.add(jvmArg);
             }
 
@@ -675,8 +685,11 @@ public class StartArgs
         return jvmArgs;
     }
 
-    public CommandLineBuilder getMainArgs(boolean addJavaInit) throws IOException
+    public CommandLineBuilder getMainArgs(Set<String> parts) throws IOException
     {
+        if (parts.isEmpty())
+            parts = ALL_PARTS;
+
         CommandLineBuilder cmd = new CommandLineBuilder();
 
         // Special Stop/Shutdown properties
@@ -684,10 +697,11 @@ public class StartArgs
         ensureSystemPropertySet("STOP.KEY");
         ensureSystemPropertySet("STOP.WAIT");
 
-        if (addJavaInit)
-        {
+        if (parts.contains("java"))
             cmd.addRawArg(CommandLineBuilder.findJavaBin());
 
+        if (parts.contains("opts"))
+        {
             cmd.addRawArg("-Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir"));
             cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
             cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
@@ -702,6 +716,7 @@ public class StartArgs
 
                     Prop p = processSystemProperty(key, value, null);
                     cmd.addRawArg("-D" + p.key + "=" + getProperties().expand(p.value));
+
                 }
                 else
                 {
@@ -715,7 +730,10 @@ public class StartArgs
                 String value = System.getProperty(propKey);
                 cmd.addEqualsArg("-D" + propKey, value);
             }
+        }
 
+        if (parts.contains("path"))
+        {
             if (isJPMS())
             {
                 Map<Boolean, List<File>> dirsAndFiles = StreamSupport.stream(classpath.spliterator(), false)
@@ -764,52 +782,58 @@ public class StartArgs
                     cmd.addRawArg("--add-reads");
                     cmd.addRawArg(entry.getKey() + "=" + String.join(",", entry.getValue()));
                 }
-
-                cmd.addRawArg("--module");
-                cmd.addRawArg(getMainClassname());
             }
             else
             {
                 cmd.addRawArg("-cp");
                 cmd.addRawArg(classpath.toString());
-                cmd.addRawArg(getMainClassname());
             }
+        }
+
+        if (parts.contains("main"))
+        {
+            if (isJPMS())
+                cmd.addRawArg("--module");
+            cmd.addRawArg(getMainClassname());
         }
 
         // pass properties as args or as a file
-        if (dryRun && execProperties == null)
+        if (parts.contains("args"))
         {
-            for (Prop p : properties)
+            if (dryRun && execProperties == null)
             {
-                cmd.addRawArg(CommandLineBuilder.quote(p.key) + "=" + CommandLineBuilder.quote(p.value));
+                for (Prop p : properties)
+                {
+                    cmd.addRawArg(CommandLineBuilder.quote(p.key) + "=" + CommandLineBuilder.quote(p.value));
+                }
             }
-        }
-        else if (properties.size() > 0)
-        {
-            Path propPath;
-            if (execProperties == null)
+            else if (properties.size() > 0)
             {
-                propPath = Files.createTempFile("start_", ".properties");
-                propPath.toFile().deleteOnExit();
-            }
-            else
-                propPath = new File(execProperties).toPath();
+                Path propPath;
+                if (execProperties == null)
+                {
+                    propPath = Files.createTempFile("start_", ".properties");
+                    propPath.toFile().deleteOnExit();
+                }
+                else
+                    propPath = new File(execProperties).toPath();
 
-            try (OutputStream out = Files.newOutputStream(propPath))
+                try (OutputStream out = Files.newOutputStream(propPath))
+                {
+                    properties.store(out, "start.jar properties");
+                }
+                cmd.addRawArg(propPath.toAbsolutePath().toString());
+            }
+
+            for (Path xml : xmls)
             {
-                properties.store(out, "start.jar properties");
+                cmd.addRawArg(xml.toAbsolutePath().toString());
             }
-            cmd.addRawArg(propPath.toAbsolutePath().toString());
-        }
 
-        for (Path xml : xmls)
-        {
-            cmd.addRawArg(xml.toAbsolutePath().toString());
-        }
-
-        for (Path propertyFile : propertyFiles)
-        {
-            cmd.addRawArg(propertyFile.toAbsolutePath().toString());
+            for (Path propertyFile : propertyFiles)
+            {
+                cmd.addRawArg(propertyFile.toAbsolutePath().toString());
+            }
         }
 
         return cmd;
@@ -935,9 +959,14 @@ public class StartArgs
         return dryRun;
     }
 
+    public Set<String> getDryRunParts()
+    {
+        return dryRunParts;
+    }
+
     public boolean isExec()
     {
-        return exec;
+        return exec == Boolean.TRUE;
     }
 
     public boolean isLicenseCheckRequired()
@@ -1141,7 +1170,8 @@ public class StartArgs
         {
             jpms = true;
             // Need to fork because we cannot use JDK 9 Module APIs.
-            exec = true;
+            if (exec != Boolean.FALSE)
+                exec = true;
             return;
         }
 
@@ -1152,10 +1182,33 @@ public class StartArgs
             return;
         }
 
+        if (arg.startsWith("--dry-run="))
+        {
+            int colon = arg.indexOf('=');
+            for (String part : arg.substring(colon + 1).split(","))
+            {
+                if (!ALL_PARTS.contains(part))
+                    throw new UsageException(UsageException.ERR_BAD_ARG, "Unrecognized --dry-run=\"%s\" in %s", part, source);
+
+                dryRunParts.add(part);
+            }
+            dryRun = true;
+            run = false;
+            return;
+        }
+
         // Enable forked execution of Jetty server
         if ("--exec".equals(arg))
         {
-            exec = true;
+            if (exec != Boolean.FALSE)
+                exec = true;
+            return;
+        }
+
+        // Enable forked execution of Jetty server
+        if ("--no-exec".equals(arg))
+        {
+            exec = false;
             return;
         }
 

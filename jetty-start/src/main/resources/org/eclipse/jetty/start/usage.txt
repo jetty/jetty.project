@@ -30,10 +30,27 @@ Command Line Options:
                    then exit. This may be used to generate command lines
                    when the start.ini includes -X or -D arguments.
 
+  --dry-run=parts  Print specific parts of the command line. The parts
+                   are a comma separated list of
+                     o  "java" - the JVM to run
+                     o  "opts" - the JVM options (eg -D and -X flags)
+                     o  "path" - the JVM class path or JPMS modules options
+                     o  "main" - the main class to run
+                     o  "args" - the arguments passed to the main class
+                   It is possible to manually run jetty without execution with:
+
+                     java $(java -jar start.jar --dry-run=opts) -jar start.jar --no-exec
+
   --exec           Run the generated command line (see --dry-run) in
                    a sub process. This can be used when start.ini
                    contains -X or -D arguments, but creates an extra
                    JVM instance.
+
+  --no-exec        Overrule any --exec options to force no exec.  If
+                   any JVM options exist they need to be passed directly
+                   to the JVM (see --dry-run:opts) like:
+
+                     java $(java -jar start.jar --dry-run=opts) -jar start.jar --no-exec
                    
   --exec-properties=<filename>
                    Assign a fixed name to the file used to transfer 
@@ -58,7 +75,6 @@ Debug and Start Logging:
                    output will be sent.  This is useful for capturing startup
                    issues where the jetty specific logger has not yet kicked
                    in due to startup configuration errors.
-
 
 Module Management:
 ------------------
