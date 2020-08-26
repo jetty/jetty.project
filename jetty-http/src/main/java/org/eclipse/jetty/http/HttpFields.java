@@ -747,8 +747,10 @@ public interface HttpFields extends Iterable<HttpField>
          */
         public void ensure(HttpField field)
         {
+            // Is the field value multi valued?
             if (field.getValue().indexOf(',') < 0)
             {
+                // Call Single valued computeEnsure with either String header name or enum HttpHeader
                 if (field.getHeader() != null)
                     computeField(field.getHeader(), (h, l) -> computeEnsure(field, l));
                 else
@@ -756,6 +758,7 @@ public interface HttpFields extends Iterable<HttpField>
             }
             else
             {
+                // call multi valued computeEnsure with either String header name or enum HttpHeader
                 if (field.getHeader() != null)
                     computeField(field.getHeader(), (h, l) -> computeEnsure(field, field.getValues(), l));
                 else
@@ -763,94 +766,128 @@ public interface HttpFields extends Iterable<HttpField>
             }
         }
 
-        private static HttpField computeEnsure(HttpField field, List<HttpField> l)
+        /**
+         * Compute ensure field with a single value
+         * @param ensure The field to ensure exists
+         * @param fields The list of existing fields with the same header
+         */
+        private static HttpField computeEnsure(HttpField ensure, List<HttpField> fields)
         {
-            if (l == null || l.isEmpty())
-                return field;
+            // If no existing fields return the ensure field
+            if (fields == null || fields.isEmpty())
+                return ensure;
 
-            String value = field.getValue();
-            if (l.size() == 1)
+            String ensureValue = ensure.getValue();
+
+            // Handle a single existing field
+            if (fields.size() == 1)
             {
-                HttpField f = l.get(0);
-                return f.contains(value)
+                // If the existing field contains the ensure value, return it, else append values.
+                HttpField f = fields.get(0);
+                return f.contains(ensureValue)
                     ? f
-                    : new HttpField(field.getHeader(), field.getName(), f.getValue() + ", " + value);
+                    : new HttpField(ensure.getHeader(), ensure.getName(), f.getValue() + ", " + ensureValue);
             }
 
+            // Handle multiple existing fields
             StringBuilder v = new StringBuilder();
-            boolean hasIt = false;
-            for (HttpField f : l)
+            for (HttpField f : fields)
             {
+                // Always append multiple fields into a single field value
                 if (v.length() > 0)
                     v.append(", ");
                 v.append(f.getValue());
-                if (f.contains(value))
-                    hasIt = true;
+
+                // check if the ensure value is already contained
+                if (ensureValue != null && f.contains(ensureValue))
+                    ensureValue = null;
             }
-            if (!hasIt)
-                v.append(", ").append(value);
-            return new HttpField(field.getHeader(), field.getName(), v.toString());
+
+            // If the ensure value was not contained append it
+            if (ensureValue != null)
+                v.append(", ").append(ensureValue);
+
+            return new HttpField(ensure.getHeader(), ensure.getName(), v.toString());
         }
 
-        private static HttpField computeEnsure(HttpField field, String[] values, List<HttpField> l)
+        /**
+         * Compute ensure field with a multiple values
+         * @param ensure The field to ensure exists
+         * @param values The QuotedCSV parsed field values.
+         * @param fields The list of existing fields with the same header
+         */
+        private static HttpField computeEnsure(HttpField ensure, String[] values, List<HttpField> fields)
         {
-            if (l == null || l.isEmpty())
-                return field;
+            // If no existing fields return the ensure field
+            if (fields == null || fields.isEmpty())
+                return ensure;
 
-            if (l.size() == 1)
+            // Handle a single existing field
+            if (fields.size() == 1)
             {
-                HttpField f = l.get(0);
-                int needed = values.length;
+                HttpField f = fields.get(0);
+                // check which ensured values are already contained
+                int ensured = values.length;
                 for (int i = 0; i < values.length; i++)
                 {
                     if (f.contains(values[i]))
                     {
-                        needed--;
+                        ensured--;
                         values[i] = null;
                     }
                 }
 
-                if (needed == 0)
+                // if all ensured values contained return the existing field
+                if (ensured == 0)
                     return f;
-                if (needed == values.length)
-                    new HttpField(field.getHeader(), field.getName(), f.getValue() + ", " + field.getValue());
+                // else if no ensured values contained append the entire ensured valued
+                if (ensured == values.length)
+                    return new HttpField(ensure.getHeader(), ensure.getName(),
+                        f.getValue() + ", " + ensure.getValue());
+                // else append just the ensured values that are not contained
                 StringBuilder v = new StringBuilder(f.getValue());
                 for (String value : values)
                 {
                     if (value != null)
                         v.append(", ").append(value);
                 }
-                return new HttpField(field.getHeader(), field.getName(), v.toString());
+                return new HttpField(ensure.getHeader(), ensure.getName(), v.toString());
             }
 
+            // Handle a multiple existing field
             StringBuilder v = new StringBuilder();
-            int needed = values.length;
-            for (HttpField f : l)
+            int ensured = values.length;
+            for (HttpField f : fields)
             {
+                // Always append multiple fields into a single field value
                 if (v.length() > 0)
                     v.append(", ");
                 v.append(f.getValue());
+
+                // null out ensured values that are included
                 for (int i = 0; i < values.length; i++)
                 {
                     if (values[i] != null && f.contains(values[i]))
                     {
-                        needed--;
+                        ensured--;
                         values[i] = null;
                     }
                 }
             }
 
-            if (needed == values.length)
-                v.append(", ").append(field.getValue());
-            else if (needed > 0)
+            // if no ensured values exist append them all
+            if (ensured == values.length)
+                v.append(", ").append(ensure.getValue());
+            // else if some ensured values are missing, append them
+            else if (ensured > 0)
             {
                 for (String value : values)
-                {
                     if (value != null)
                         v.append(", ").append(value);
-                }
             }
-            return new HttpField(field.getHeader(), field.getName(), v.toString());
+
+            // return a merged header with missing ensured values added
+            return new HttpField(ensure.getHeader(), ensure.getName(), v.toString());
         }
 
         @Override

@@ -200,7 +200,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
-     * @return The VARY field to use .
+     * @return The VARY field to use.
      */
     public HttpField getVary()
     {
