@@ -267,7 +267,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
-        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding, User-Agent"));
+        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding"));
 
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);
@@ -328,7 +328,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
         assertThat("Response[ETag]", response.get("ETag"), startsWith("W/"));
         assertThat("Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP._etag));
-        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding, User-Agent"));
+        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding"));
 
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);
@@ -387,7 +387,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
-        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding, User-Agent"));
+        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding"));
 
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);
@@ -511,7 +511,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), not(containsString("gzip")));
-        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding, User-Agent"));
+        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding"));
 
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);
@@ -568,7 +568,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
-        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding, User-Agent"));
+        assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding"));
 
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);
@@ -751,240 +751,6 @@ public class GzipDefaultServletTest extends AbstractGzipTest
     }
 
     @Test
-    public void testUserAgentExclusionNoUAProvided() throws Exception
-    {
-        GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.addIncludedMimeTypes("text/plain");
-        gzipHandler.setExcludedAgentPatterns("bar", "foo");
-
-        server = new Server();
-        LocalConnector localConnector = new LocalConnector(server);
-        server.addConnector(localConnector);
-
-        Path contextDir = workDir.resolve("context");
-        FS.ensureDirExists(contextDir);
-
-        ServletContextHandler servletContextHandler = new ServletContextHandler();
-        servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(new PathResource(contextDir));
-        ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
-        servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
-
-        server.setHandler(servletContextHandler);
-
-        // Prepare Server File
-        int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
-        Path file = createFile(contextDir, "file.txt", fileSize);
-        String expectedSha1Sum = Sha1Sum.calculate(file);
-
-        server.start();
-
-        // Setup request
-        HttpTester.Request request = HttpTester.newRequest();
-        request.setMethod("GET");
-        request.setVersion(HttpVersion.HTTP_1_1);
-        request.setHeader("Host", "tester");
-        request.setHeader("Connection", "close");
-        request.setHeader("Accept-Encoding", "gzip");
-        // INTENTIONALLY NOT SET - request.setHeader("User-Agent", "foo");
-        request.setURI("/context/file.txt");
-
-        // Issue request
-        ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
-
-        // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
-
-        // Response Content-Encoding check
-        assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
-        assertThat("Response[Vary]", response.get("Vary"), is("Accept-Encoding, User-Agent"));
-
-        // Response Content checks
-        UncompressedMetadata metadata = parseResponseContent(response);
-        assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(fileSize));
-        assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
-    }
-
-    @Test
-    public void testUserAgentExclusionUAMatch() throws Exception
-    {
-        GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.addIncludedMimeTypes("text/plain");
-        gzipHandler.setExcludedAgentPatterns("bar", "foo");
-
-        server = new Server();
-        LocalConnector localConnector = new LocalConnector(server);
-        server.addConnector(localConnector);
-
-        Path contextDir = workDir.resolve("context");
-        FS.ensureDirExists(contextDir);
-
-        ServletContextHandler servletContextHandler = new ServletContextHandler();
-        servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(new PathResource(contextDir));
-        ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
-        servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
-
-        server.setHandler(servletContextHandler);
-
-        // Prepare Server File
-        int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
-        Path file = createFile(contextDir, "file.txt", fileSize);
-        String expectedSha1Sum = Sha1Sum.calculate(file);
-
-        server.start();
-
-        // Setup request
-        HttpTester.Request request = HttpTester.newRequest();
-        request.setMethod("GET");
-        request.setVersion(HttpVersion.HTTP_1_1);
-        request.setHeader("Host", "tester");
-        request.setHeader("Connection", "close");
-        request.setHeader("Accept-Encoding", "gzip");
-        request.setHeader("User-Agent", "foo");
-        request.setURI("/context/file.txt");
-
-        // Issue request
-        ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
-
-        // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
-
-        // Response Content-Encoding check
-        assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), not(containsString("gzip")));
-        assertThat("Response[Vary]", response.get("Vary"), is("Accept-Encoding, User-Agent"));
-
-        // Response Content checks
-        UncompressedMetadata metadata = parseResponseContent(response);
-        assertThat("Response Content Length", metadata.contentLength, is(fileSize));
-        assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(fileSize));
-        assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
-    }
-
-    @Test
-    public void testUserAgentExclusionDefault() throws Exception
-    {
-        GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.addIncludedMimeTypes("text/plain");
-
-        server = new Server();
-        LocalConnector localConnector = new LocalConnector(server);
-        server.addConnector(localConnector);
-
-        Path contextDir = workDir.resolve("context");
-        FS.ensureDirExists(contextDir);
-
-        ServletContextHandler servletContextHandler = new ServletContextHandler();
-        servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(new PathResource(contextDir));
-        ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
-        servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
-
-        server.setHandler(servletContextHandler);
-
-        // Prepare Server File
-        int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
-        Path file = createFile(contextDir, "file.txt", fileSize);
-        String expectedSha1Sum = Sha1Sum.calculate(file);
-
-        server.start();
-
-        // Setup request
-        HttpTester.Request request = HttpTester.newRequest();
-        request.setMethod("GET");
-        request.setVersion(HttpVersion.HTTP_1_1);
-        request.setHeader("Host", "tester");
-        request.setHeader("Connection", "close");
-        request.setHeader("Accept-Encoding", "gzip");
-        request.setHeader("User-Agent", "Some MSIE 6.0 user-agent");
-        request.setURI("/context/file.txt");
-
-        // Issue request
-        ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
-
-        // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
-
-        // Response Content-Encoding check
-        assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), not(containsString("gzip")));
-        assertThat("Response[Vary]", response.get("Vary"), is("Accept-Encoding, User-Agent"));
-
-        // Response Content checks
-        UncompressedMetadata metadata = parseResponseContent(response);
-        assertThat("Response Content Length", metadata.contentLength, is(fileSize));
-        assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(fileSize));
-        assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
-    }
-
-    @Test
-    public void testUserAgentExclusionByExcludedAgentPatterns() throws Exception
-    {
-        GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.addIncludedMimeTypes("text/plain");
-        gzipHandler.setExcludedAgentPatterns("bar", "fo.*");
-
-        server = new Server();
-        LocalConnector localConnector = new LocalConnector(server);
-        server.addConnector(localConnector);
-
-        Path contextDir = workDir.resolve("context");
-        FS.ensureDirExists(contextDir);
-
-        ServletContextHandler servletContextHandler = new ServletContextHandler();
-        servletContextHandler.setContextPath("/context");
-        servletContextHandler.setBaseResource(new PathResource(contextDir));
-        ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
-        servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
-
-        server.setHandler(servletContextHandler);
-
-        // Prepare Server File
-        int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
-        Path file = createFile(contextDir, "file.txt", fileSize);
-        String expectedSha1Sum = Sha1Sum.calculate(file);
-
-        server.start();
-
-        // Setup request
-        HttpTester.Request request = HttpTester.newRequest();
-        request.setMethod("GET");
-        request.setVersion(HttpVersion.HTTP_1_1);
-        request.setHeader("Host", "tester");
-        request.setHeader("Connection", "close");
-        request.setHeader("Accept-Encoding", "gzip");
-        request.setHeader("User-Agent", "foo");
-        request.setURI("/context/file.txt");
-
-        // Issue request
-        ByteBuffer rawResponse = localConnector.getResponse(request.generate(), 5, TimeUnit.SECONDS);
-
-        // Parse response
-        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
-
-        assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
-
-        // Response Content-Encoding check
-        assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), not(containsString("gzip")));
-        assertThat("Response[Vary]", response.get("Vary"), is("Accept-Encoding, User-Agent"));
-
-        // Response Content checks
-        UncompressedMetadata metadata = parseResponseContent(response);
-        assertThat("Response Content Length", metadata.contentLength, is(fileSize));
-        assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is(fileSize));
-        assertThat("(Uncompressed) Content Hash", metadata.uncompressedSha1Sum, is(expectedSha1Sum));
-    }
-
-    @Test
     public void testExcludePaths() throws Exception
     {
         GzipHandler gzipHandler = new GzipHandler();
@@ -1090,7 +856,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
 
             assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
-            assertThat("Response[Vary]", response.get("Vary"), is("Accept-Encoding, User-Agent"));
+            assertThat("Response[Vary]", response.get("Vary"), is("Accept-Encoding"));
 
             UncompressedMetadata metadata = parseResponseContent(response);
             assertThat("(Uncompressed) Content Length", metadata.uncompressedSize, is((int)Files.size(fileGood)));

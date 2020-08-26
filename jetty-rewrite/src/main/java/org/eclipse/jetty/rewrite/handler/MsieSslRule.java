@@ -30,7 +30,9 @@ import org.eclipse.jetty.util.Trie;
 /**
  * MSIE (Microsoft Internet Explorer) SSL Rule.
  * Disable keep alive for SSL from IE5 or IE6 on Windows 2000.
+ * @deprecated use MsieRule
  */
+@Deprecated
 public class MsieSslRule extends Rule
 {
     private static final int IEv5 = '5';

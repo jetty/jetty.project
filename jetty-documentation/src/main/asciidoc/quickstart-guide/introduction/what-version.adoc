@@ -19,9 +19,9 @@
 [[what-jetty-version]]
 === What Version Do I Use?
 
-Jetty 9 is the most recent version of Jetty and has a great many improvements over previous versions.
-This documentation which focuses on Jetty 9.
-While many people continue to use older versions of Jetty, we generally recommend using Jetty 9 as it represents the version of Jetty that we will actively maintain and improve over the next few years.
+Jetty 10 and 11 are the most recent versions of Jetty and has a great many improvements over previous versions.
+This documentation which focuses on Jetty 10.
+While many people continue to use older versions of Jetty, we generally recommend using Jetty 10 or 11 (more on the differences later) as they represent the version of Jetty that we will actively maintain and improve over the next few years.
 
 _____
 [IMPORTANT]
@@ -33,7 +33,7 @@ _____
 [width="100%",cols="12%,9%,15%,6%,21%,10%,6%,21%",options="header",]
 |=======================================================================
 |Version |Year |Home |Min JVM |Protocols |Servlet |JSP |Status
-|11  |2020- |Eclipse |11 ^(2)^ |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI, *JakartaEE Namespace*^(1)^ |4.0.2 |2.3 |*UNSTABLE / Alpha*
+|11  |2020- |Eclipse |11 ^(2)^ |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI, *JakartaEE Namespace*^(1)^ |4.0.2 |2.3 |*UNSTABLE / Beta*
 |10  |2019- |Eclipse |11 ^(2)^ |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI |4.0.2 |2.3 |*UNSTABLE / Beta*
 |9.4 |2016- |Eclipse |1.8 |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI |3.1 |2.3 |Stable
 |9.3 |2015- |Eclipse |1.8 ^(3)^ |HTTP/1.1 (RFC 7230), HTTP/2 (RFC 7540), WebSocket (RFC 6455, JSR 356), FastCGI |3.1 |2.3 |Deprecated

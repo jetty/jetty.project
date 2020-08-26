@@ -46,7 +46,6 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
     public static Logger LOG = LoggerFactory.getLogger(GzipHttpOutputInterceptor.class);
     private static final byte[] GZIP_HEADER = new byte[]{(byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0};
 
-    public static final HttpField VARY_ACCEPT_ENCODING_USER_AGENT = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING + ", " + HttpHeader.USER_AGENT);
     public static final HttpField VARY_ACCEPT_ENCODING = new PreEncodedHttpField(HttpHeader.VARY, HttpHeader.ACCEPT_ENCODING.asString());
 
     private enum GZState
@@ -69,7 +68,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 
     public GzipHttpOutputInterceptor(GzipFactory factory, HttpChannel channel, HttpOutput.Interceptor next, boolean syncFlush)
     {
-        this(factory, VARY_ACCEPT_ENCODING_USER_AGENT, channel.getHttpConfiguration().getOutputBufferSize(), channel, next, syncFlush);
+        this(factory, VARY_ACCEPT_ENCODING, channel.getHttpConfiguration().getOutputBufferSize(), channel, next, syncFlush);
     }
 
     public GzipHttpOutputInterceptor(GzipFactory factory, HttpField vary, HttpChannel channel, HttpOutput.Interceptor next, boolean syncFlush)
@@ -190,12 +189,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         {
             // We are varying the response due to accept encoding header.
             if (_vary != null)
-            {
-                if (fields.contains(HttpHeader.VARY))
-                    fields.addCSV(HttpHeader.VARY, _vary.getValues());
-                else
-                    fields.add(_vary);
-            }
+                fields.ensureField(_vary);
 
             long contentLength = response.getContentLength();
             if (contentLength < 0 && complete)
@@ -249,27 +243,6 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         {
             switch (_state.get())
             {
-                case NOT_COMPRESSING:
-                    return;
-
-                case MIGHT_COMPRESS:
-                    if (_state.compareAndSet(GZState.MIGHT_COMPRESS, GZState.NOT_COMPRESSING))
-                        return;
-                    break;
-
-                default:
-                    throw new IllegalStateException(_state.get().toString());
-            }
-        }
-    }
-
-    public void noCompressionIfPossible()
-    {
-        while (true)
-        {
-            switch (_state.get())
-            {
-                case COMPRESSING:
                 case NOT_COMPRESSING:
                     return;
 

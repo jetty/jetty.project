@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -179,5 +181,57 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             if (transport != Transport.UNIX_SOCKET && i > 0)
                 assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testMultiplexWithMaxUsage(Transport transport) throws Exception
+    {
+        init(transport);
+
+        int multiplex = 1;
+        if (scenario.transport.isHttp2Based())
+            multiplex = 2;
+        int maxMultiplex = multiplex;
+
+        int maxUsage = 2;
+        int maxConnections = 2;
+        int count = maxConnections * maxMultiplex * maxUsage;
+
+        List<Integer> remotePorts = new CopyOnWriteArrayList<>();
+        scenario.start(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                remotePorts.add(request.getRemotePort());
+            }
+        });
+        scenario.client.getTransport().setConnectionPoolFactory(destination ->
+        {
+            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination, maxMultiplex);
+            pool.setMaxUsageCount(maxUsage);
+            return pool;
+        });
+
+        CountDownLatch clientLatch = new CountDownLatch(count);
+        for (int i = 0; i < count; ++i)
+        {
+            scenario.client.newRequest(scenario.newURI())
+                .path("/" + i)
+                .timeout(5, TimeUnit.SECONDS)
+                .send(result ->
+                {
+                    if (result.getResponse().getStatus() == HttpStatus.OK_200)
+                        clientLatch.countDown();
+                });
+        }
+        assertTrue(clientLatch.await(count, TimeUnit.SECONDS));
+        assertEquals(count, remotePorts.size());
+
+        Map<Integer, Long> results = remotePorts.stream()
+            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        assertEquals(count / maxUsage, results.size(), remotePorts.toString());
+        assertEquals(1, results.values().stream().distinct().count(), remotePorts.toString());
     }
 }

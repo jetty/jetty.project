@@ -43,7 +43,6 @@ import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.IncludeExclude;
-import org.eclipse.jetty.util.RegexSet;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.slf4j.Logger;
@@ -167,11 +166,10 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private int _inflateBufferSize = -1;
     private EnumSet<DispatcherType> _dispatchers = EnumSet.of(DispatcherType.REQUEST);
     // non-static, as other GzipHandler instances may have different configurations
-    private final IncludeExclude<String> _agentPatterns = new IncludeExclude<>(RegexSet.class);
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
     private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
-    private HttpField _vary;
+    private HttpField _vary = GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING;
 
     /**
      * Instantiates a new GzipHandler.
@@ -179,6 +177,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public GzipHandler()
     {
         _methods.include(HttpMethod.GET.asString());
+        _methods.include(HttpMethod.POST.asString());
         for (String type : MimeTypes.getKnownMimeTypes())
         {
             if ("image/svg+xml".equals(type))
@@ -198,19 +197,29 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} mime types {}", this, _mimeTypes);
-
-        _agentPatterns.exclude(".*MSIE 6.0.*");
     }
 
     /**
-     * Add excluded to the User-Agent filtering.
-     *
-     * @param patterns Regular expressions matching user agents to exclude
-     * @see #addIncludedAgentPatterns(String...)
+     * @return The VARY field to use.
      */
-    public void addExcludedAgentPatterns(String... patterns)
+    public HttpField getVary()
     {
-        _agentPatterns.exclude(patterns);
+        return _vary;
+    }
+
+    /**
+     * @param vary The VARY field to use. It if is not an instance of {@link PreEncodedHttpField},
+     *             then it will be converted to one.
+     */
+    public void setVary(HttpField vary)
+    {
+        if (isRunning())
+            throw new IllegalStateException(getState());
+
+        if (vary == null || (vary instanceof PreEncodedHttpField))
+            _vary = vary;
+        else
+            _vary = new PreEncodedHttpField(vary.getHeader(), vary.getName(), vary.getValue());
     }
 
     /**
@@ -313,17 +322,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
-     * Adds included User-Agents for filtering.
-     *
-     * @param patterns Regular expressions matching user agents to include
-     * @see #addExcludedAgentPatterns(String...)
-     */
-    public void addIncludedAgentPatterns(String... patterns)
-    {
-        _agentPatterns.include(patterns);
-    }
-
-    /**
      * Adds included HTTP Methods (eg: POST, PATCH, DELETE) for filtering.
      *
      * @param methods The HTTP methods to include in compression.
@@ -413,20 +411,12 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     protected void doStart() throws Exception
     {
         _deflaterPool = newDeflaterPool(poolCapacity);
-        _vary = (_agentPatterns.size() > 0) ? GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING_USER_AGENT : GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING;
         super.doStart();
     }
 
     @Override
     public Deflater getDeflater(Request request, long contentLength)
     {
-        String ua = request.getHttpFields().get(HttpHeader.USER_AGENT);
-        if (ua != null && !isAgentGzipable(ua))
-        {
-            LOG.debug("{} excluded user agent {}", this, request);
-            return null;
-        }
-
         if (contentLength >= 0 && contentLength < _minGzipSize)
         {
             LOG.debug("{} excluded minGzipSize {}", this, request);
@@ -444,18 +434,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
-     * Get the current filter list of excluded User-Agent patterns
-     *
-     * @return the filter list of excluded User-Agent patterns
-     * @see #getIncludedAgentPatterns()
-     */
-    public String[] getExcludedAgentPatterns()
-    {
-        Set<String> excluded = _agentPatterns.getExcluded();
-        return excluded.toArray(new String[excluded.size()]);
-    }
-
-    /**
      * Get the current filter list of excluded HTTP methods
      *
      * @return the filter list of excluded HTTP methods
@@ -464,7 +442,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getExcludedMethods()
     {
         Set<String> excluded = _methods.getExcluded();
-        return excluded.toArray(new String[excluded.size()]);
+        return excluded.toArray(new String[0]);
     }
 
     /**
@@ -476,7 +454,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getExcludedMimeTypes()
     {
         Set<String> excluded = _mimeTypes.getExcluded();
-        return excluded.toArray(new String[excluded.size()]);
+        return excluded.toArray(new String[0]);
     }
 
     /**
@@ -488,19 +466,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getExcludedPaths()
     {
         Set<String> excluded = _paths.getExcluded();
-        return excluded.toArray(new String[excluded.size()]);
-    }
-
-    /**
-     * Get the current filter list of included User-Agent patterns
-     *
-     * @return the filter list of included User-Agent patterns
-     * @see #getExcludedAgentPatterns()
-     */
-    public String[] getIncludedAgentPatterns()
-    {
-        Set<String> includes = _agentPatterns.getIncluded();
-        return includes.toArray(new String[includes.size()]);
+        return excluded.toArray(new String[0]);
     }
 
     /**
@@ -512,7 +478,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getIncludedMethods()
     {
         Set<String> includes = _methods.getIncluded();
-        return includes.toArray(new String[includes.size()]);
+        return includes.toArray(new String[0]);
     }
 
     /**
@@ -524,7 +490,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getIncludedMimeTypes()
     {
         Set<String> includes = _mimeTypes.getIncluded();
-        return includes.toArray(new String[includes.size()]);
+        return includes.toArray(new String[0]);
     }
 
     /**
@@ -536,7 +502,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String[] getIncludedPaths()
     {
         Set<String> includes = _paths.getIncluded();
-        return includes.toArray(new String[includes.size()]);
+        return includes.toArray(new String[0]);
     }
 
     /**
@@ -736,20 +702,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
-     * Test if the provided User-Agent is allowed based on the User-Agent filters.
-     *
-     * @param ua the user agent
-     * @return whether compressing is allowed for the given user agent
-     */
-    protected boolean isAgentGzipable(String ua)
-    {
-        if (ua == null)
-            return false;
-
-        return _agentPatterns.test(ua);
-    }
-
-    /**
      * Test if the provided MIME type is allowed based on the MIME type filters.
      *
      * @param mimetype the MIME type to test
@@ -779,21 +731,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public void recycle(Deflater deflater)
     {
         _deflaterPool.release(deflater);
-    }
-
-    /**
-     * if(isStarted())
-     * throw new IllegalStateException(getState());
-     *
-     * Set the excluded filter list of User-Agent patterns (replacing any previously set)
-     *
-     * @param patterns Regular expressions list matching user agents to exclude
-     * @see #setIncludedAgentPatterns(String...)
-     */
-    public void setExcludedAgentPatterns(String... patterns)
-    {
-        _agentPatterns.getExcluded().clear();
-        addExcludedAgentPatterns(patterns);
     }
 
     /**
@@ -832,18 +769,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         _paths.getExcluded().clear();
         _paths.exclude(pathspecs);
-    }
-
-    /**
-     * Set the included filter list of User-Agent patterns (replacing any previously set)
-     *
-     * @param patterns Regular expressions matching user agents to include
-     * @see #setExcludedAgentPatterns(String...)
-     */
-    public void setIncludedAgentPatterns(String... patterns)
-    {
-        _agentPatterns.getIncluded().clear();
-        addIncludedAgentPatterns(patterns);
     }
 
     /**

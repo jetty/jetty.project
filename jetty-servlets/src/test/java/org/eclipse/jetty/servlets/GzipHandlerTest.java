@@ -59,7 +59,6 @@ public class GzipHandlerTest extends AbstractGzipTest
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setMinGzipSize(32);
         gzipHandler.addIncludedMimeTypes("text/plain");
-        gzipHandler.setExcludedAgentPatterns();
 
         server = new Server();
         LocalConnector localConnector = new LocalConnector(server);

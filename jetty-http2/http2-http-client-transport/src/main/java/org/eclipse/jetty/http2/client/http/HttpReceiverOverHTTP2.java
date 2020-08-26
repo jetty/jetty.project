@@ -235,11 +235,6 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
         callback.succeeded();
     }
 
-    void onClosed(Stream stream)
-    {
-        getHttpChannel().onStreamClosed((IStream)stream);
-    }
-
     private void notifyContent(HttpExchange exchange, DataFrame frame, Callback callback)
     {
         contentNotifier.offer(exchange, frame, callback);

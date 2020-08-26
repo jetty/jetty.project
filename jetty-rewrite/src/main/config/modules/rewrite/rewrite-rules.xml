@@ -2,14 +2,6 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 <Configure id="Rewrite" class="org.eclipse.jetty.rewrite.handler.RuleContainer">
 
-  <!-- Add rule to protect against IE ssl bug 
-  <Call name="addRule">
-    <Arg>
-      <New class="org.eclipse.jetty.rewrite.handler.MsieSslRule"/>
-    </Arg>
-  </Call>
-  -->
-
   <!-- protect favicon handling
   <Call name="addRule">
     <Arg>
@@ -98,6 +90,14 @@
          <Set name="code">400</Set>
          <Set name="message">ResponsePatternRule Demo</Set>
       </New>
+    </Arg>
+  </Call>
+  -->
+
+  <!-- Add rule to protect against IE ssl bug (see msie module and rewrite-msie.xml)
+  <Call name="addRule">
+    <Arg>
+      <New class="org.eclipse.jetty.rewrite.handler.MsieRule"/>
     </Arg>
   </Call>
   -->
