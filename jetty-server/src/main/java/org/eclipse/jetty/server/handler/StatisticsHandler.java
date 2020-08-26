@@ -67,7 +67,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final LongAdder _responses5xx = new LongAdder();
     private final LongAdder _responsesTotalBytes = new LongAdder();
 
-    private boolean asyncGraceful = true;
+    private boolean _gracefulShutdownWaitsForRequests = true;
 
     private final Graceful.Shutdown _shutdown = new Graceful.Shutdown()
     {
@@ -81,25 +81,25 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final AsyncListener _onCompletion = new AsyncListener()
     {
         @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
+        public void onStartAsync(AsyncEvent event)
         {
             event.getAsyncContext().addListener(this);
         }
 
         @Override
-        public void onTimeout(AsyncEvent event) throws IOException
+        public void onTimeout(AsyncEvent event)
         {
             _expires.increment();
         }
 
         @Override
-        public void onError(AsyncEvent event) throws IOException
+        public void onError(AsyncEvent event)
         {
             _errors.increment();
         }
 
         @Override
-        public void onComplete(AsyncEvent event) throws IOException
+        public void onComplete(AsyncEvent event)
         {
             HttpChannelState state = ((AsyncContextEvent)event).getHttpChannelState();
 
@@ -113,8 +113,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
 
             _asyncWaitStats.decrement();
 
-            // If we have no more dispatches, should we signal shutdown?
-            if (numRequests == 0 && asyncGraceful)
+            if (numRequests == 0 && _gracefulShutdownWaitsForRequests)
             {
                 FutureCallback shutdown = _shutdown.get();
                 if (shutdown != null)
@@ -207,9 +206,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             if (shutdown != null)
             {
                 response.flushBuffer();
-
-                // If we either have no more requests or dispatches, we can complete shutdown.
-                if (asyncGraceful ? (numRequests == 0) : (numDispatches == 0))
+                if (_gracefulShutdownWaitsForRequests ? (numRequests == 0) : (numDispatches == 0))
                     shutdown.succeeded();
             }
         }
@@ -268,11 +265,23 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
      * Set whether the graceful shutdown should wait for all requests to complete including
      * async requests which are not currently dispatched, or whether it should only wait for all the
      * actively dispatched requests to complete.
-     * @param asyncGraceful true to wait for async requests on graceful shutdown.
+     * @param gracefulShutdownWaitsForRequests true to wait for async requests on graceful shutdown.
      */
-    public void setAsyncGraceful(boolean asyncGraceful)
+    public void setGracefulShutdownWaitsForRequests(boolean gracefulShutdownWaitsForRequests)
     {
-        this.asyncGraceful = asyncGraceful;
+        _gracefulShutdownWaitsForRequests = gracefulShutdownWaitsForRequests;
+    }
+
+    /**
+     * @return whether the graceful shutdown will wait for all requests to complete including
+     * async requests which are not currently dispatched, or whether it will only wait for all the
+     * actively dispatched requests to complete.
+     * @see #getAsyncDispatches()
+     */
+    @ManagedAttribute("if graceful shutdown will wait for all requests")
+    public boolean getGracefulShutdownWaitsForRequests()
+    {
+        return _gracefulShutdownWaitsForRequests;
     }
 
     /**
