@@ -23,15 +23,15 @@ Eclipse Jetty is an open-source project providing an HTTP server, HTTP client, a
 
 The Jetty documentation is broken up in to four parts:
 
-* The link:{QUICKGUIDE}[Quick Start Guide] emphasizes beginning to use Jetty.
+* The link:{GSTARTEDGUIDE}[Getting Started Guide] emphasizes beginning to use Jetty.
 It provides information about what Jetty is and where you can download it, and where to find Jetty in repositories like Central Maven.
 It also provides a Quick Start guide on how to get Jetty up and running as well as an overview of how and what to configure in Jetty.
 
-* The link:{DISTGUIDE}[Distribution Guide] details configuring Jetty as a distributed package at a more granular level.
+* The link:{OPGUIDE}[Operation Guide] details configuring Jetty as a distributed package at a more granular level.
 From server startup to session management, logging, HTTP/2 support and Jetty optimization, these chapters will help administrators get the most out of their distributed Jetty server instances.
 This section also covers configuring many of the most common servlet container features such as JNDI and JMX.
 
-* Aimed at advanced users of Jetty, the link:{EMBEDGUIDE}[Embedded Guide] focuses on Jetty development.
+* Aimed at advanced users of Jetty, the link:{PROGGUIDE}[Programming Guide] focuses on Jetty development.
 A large portion of this section is focused on using Jetty as an embedded server in existing applications.
 It contains several examples and how-to guides for making the most out of the Jetty framework.
 This section also includes a guide on using the Jetty Maven plugin as well as information on debugging Jetty.
