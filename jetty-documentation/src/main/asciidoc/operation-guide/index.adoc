@@ -16,19 +16,19 @@
 // ========================================================================
 //
 
-:doctitle: Eclipse Jetty: Distribution Guide
+:doctitle: Eclipse Jetty: Operation Guide
 :author: Jetty Developers
 :email: jetty-dev@eclipse.org
 :revnumber: 1.0
 :revdate: {TIMESTAMP}
 :toc: left
-:toc-title: Distribution Guide
+:toc-title: Operation Guide
 :toc-style:
 
 :header-style: eclipse-thin
 :breadcrumb-style: eclipse-thin
 :footer-style: default
-:breadcrumb: Home:../index.html | Distribution Guide:./index.html
+:breadcrumb: Home:../index.html | Operation Guide:./index.html
 
 // docinfo lets you pull in shared content and/or influence via render type
 //:docinfodir: {DOCINFODIR}/documentation
