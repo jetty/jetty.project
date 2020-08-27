@@ -45,7 +45,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     private static final Logger LOG = Log.getLogger(JettyAnnotatedEventDriver.class);
     private final JettyAnnotatedMetadata events;
     private boolean hasCloseBeenCalled = false;
-    private BatchMode batchMode;
+    private final BatchMode batchMode;
 
     public JettyAnnotatedEventDriver(WebSocketPolicy policy, Object websocket, JettyAnnotatedMetadata events)
     {
@@ -82,20 +82,14 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     @Override
     public void onBinaryFrame(ByteBuffer buffer, boolean fin) throws IOException
     {
-        if (events.onBinary == null)
-        {
-            // not interested in binary events
-            if (activeMessage == null)
-            {
-                activeMessage = NullMessage.INSTANCE;
-            }
-
-            return;
-        }
-
         if (activeMessage == null)
         {
-            if (events.onBinary.isStreaming())
+            if (events.onBinary == null)
+            {
+                // not interested in binary events
+                activeMessage = NullMessage.INSTANCE;
+            }
+            else if (events.onBinary.isStreaming())
             {
                 final MessageInputStream inputStream = new MessageInputStream(session);
                 activeMessage = inputStream;
@@ -199,19 +193,14 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     @Override
     public void onTextFrame(ByteBuffer buffer, boolean fin) throws IOException
     {
-        if (events.onText == null)
-        {
-            // not interested in text events
-            if (activeMessage == null)
-            {
-                activeMessage = NullMessage.INSTANCE;
-            }
-            return;
-        }
-
         if (activeMessage == null)
         {
-            if (events.onText.isStreaming())
+            if (events.onText == null)
+            {
+                // not interested in text events
+                activeMessage = NullMessage.INSTANCE;
+            }
+            else if (events.onText.isStreaming())
             {
                 MessageInputStream inputStream = new MessageInputStream(session);
                 activeMessage = new MessageReader(inputStream);
