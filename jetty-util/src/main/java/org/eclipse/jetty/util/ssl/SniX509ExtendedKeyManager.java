@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.SSLEngine;
@@ -51,6 +52,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
 
     private final X509ExtendedKeyManager _delegate;
     private final SslContextFactory.Server _sslContextFactory;
+    private UnaryOperator<String> _aliasMapper = UnaryOperator.identity();
 
     /**
      * @deprecated not supported, you must have a {@link SslContextFactory.Server} for this to work.
@@ -65,6 +67,38 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     {
         _delegate = keyManager;
         _sslContextFactory = Objects.requireNonNull(sslContextFactory, "SslContextFactory.Server must be provided");
+    }
+
+    /**
+     * @return the function that transforms the alias
+     * @see #setAliasMapper(UnaryOperator)
+     */
+    public UnaryOperator<String> getAliasMapper()
+    {
+        return _aliasMapper;
+    }
+
+    /**
+     * <p>Sets a function that transforms the alias into a possibly different alias,
+     * invoked when the SNI logic must choose the alias to pick the right certificate.</p>
+     * <p>This function is required when using the
+     * {@link SslContextFactory.Server#setKeyManagerFactoryAlgorithm(String) PKIX KeyManagerFactory algorithm}
+     * which suffers from bug https://bugs.openjdk.java.net/browse/JDK-8246262,
+     * where aliases are returned by the OpenJDK implementation to the application
+     * in the form {@code N.0.alias} where {@code N} is an always increasing number.
+     * Such mangled aliases won't match the aliases in the keystore, so that for
+     * example SNI matching will always fail.</p>
+     * <p>Other implementations such as BouncyCastle have been reported to mangle
+     * the alias in a different way, namely {@code 0.alias.N}.</p>
+     * <p>This function allows to "unmangle" the alias from the implementation
+     * specific mangling back to just {@code alias} so that SNI matching will work
+     * again.</p>
+     *
+     * @param aliasMapper the function that transforms the alias
+     */
+    public void setAliasMapper(UnaryOperator<String> aliasMapper)
+    {
+        _aliasMapper = Objects.requireNonNull(aliasMapper);
     }
 
     @Override
@@ -82,14 +116,14 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     protected String chooseServerAlias(String keyType, Principal[] issuers, Collection<SNIMatcher> matchers, SSLSession session)
     {
         // Look for the aliases that are suitable for the keyType and issuers.
-        String[] aliases = _delegate.getServerAliases(keyType, issuers);
-        if (aliases == null || aliases.length == 0)
+        String[] mangledAliases = _delegate.getServerAliases(keyType, issuers);
+        if (mangledAliases == null || mangledAliases.length == 0)
             return null;
 
         // Apply the alias mapping, keeping the alias order.
         Map<String, String> aliasMap = new LinkedHashMap<>();
-        Arrays.stream(aliases)
-            .forEach(alias -> aliasMap.put(_sslContextFactory.getAliasMapper().apply(alias), alias));
+        Arrays.stream(mangledAliases)
+            .forEach(alias -> aliasMap.put(getAliasMapper().apply(alias), alias));
 
         // Find our SNIMatcher.  There should only be one and it always matches (always returns true
         // from AliasSNIMatcher.matches), but it will capture the SNI Host if one was presented.
@@ -115,28 +149,28 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
             String alias = sniSelector.sniSelect(keyType, issuers, session, host, certificates);
 
             // Check the selected alias.
-            if (alias != null && alias != SniSelector.DELEGATE)
+            if (alias == null || alias == SniSelector.DELEGATE)
+                return alias;
+
+            // Make sure we got back an alias from the acceptable aliases.
+            X509 x509 = _sslContextFactory.getX509(alias);
+            if (!aliasMap.containsKey(alias) || x509 == null)
             {
-                // Make sure we got back an alias from the acceptable aliases.
-                X509 x509 = _sslContextFactory.getX509(alias);
-                if (!aliasMap.containsKey(alias) || x509 == null)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Invalid X509 match for SNI {}: {}", host, alias);
-                    return null;
-                }
-
-                if (session != null)
-                    session.putValue(SNI_X509, x509);
-
-                // Convert the selected alias back to the original
-                // value before the alias mapping performed above.
-                alias = aliasMap.get(alias);
-
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Matched SNI {} with alias {}, certificate {} from aliases {}", host, alias, x509, aliasMap.keySet());
+                    LOG.debug("Invalid X509 match for SNI {}: {}", host, alias);
+                return null;
             }
-            return alias;
+
+            if (session != null)
+                session.putValue(SNI_X509, x509);
+
+            // Convert the selected alias back to the original
+            // value before the alias mapping performed above.
+            String mangledAlias = aliasMap.get(alias);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Matched SNI {} with alias {}, certificate {} from aliases {}", host, mangledAlias, x509, aliasMap.keySet());
+            return mangledAlias;
         }
         catch (Throwable x)
         {

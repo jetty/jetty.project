@@ -39,6 +39,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.X509ExtendedKeyManager;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -381,20 +382,28 @@ public class SslContextFactoryTest
     @Test
     public void testSNIWithPKIX() throws Exception
     {
-        SslContextFactory.Server serverTLS = new SslContextFactory.Server();
+        SslContextFactory.Server serverTLS = new SslContextFactory.Server()
+        {
+            @Override
+            protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
+            {
+                SniX509ExtendedKeyManager result = new SniX509ExtendedKeyManager(keyManager, this);
+                result.setAliasMapper(alias ->
+                {
+                    // Workaround for https://bugs.openjdk.java.net/browse/JDK-8246262.
+                    Matcher matcher = Pattern.compile(".*\\..*\\.(.*)").matcher(alias);
+                    if (matcher.matches())
+                        return matcher.group(1);
+                    return alias;
+                });
+                return result;
+            }
+        };
         // This test requires a SNI keystore so that the X509ExtendedKeyManager is wrapped.
         serverTLS.setKeyStoreResource(Resource.newSystemResource("keystore_sni.p12"));
         serverTLS.setKeyStorePassword("storepwd");
         serverTLS.setKeyManagerPassword("keypwd");
         serverTLS.setKeyManagerFactoryAlgorithm("PKIX");
-        serverTLS.setAliasMapper(alias ->
-        {
-            // Workaround for https://bugs.openjdk.java.net/browse/JDK-8246262.
-            Matcher matcher = Pattern.compile(".*\\..*\\.(.*)").matcher(alias);
-            if (matcher.matches())
-                return matcher.group(1);
-            return alias;
-        });
         // Don't pick a default certificate if SNI does not match.
         serverTLS.setSniRequired(true);
         serverTLS.start();
