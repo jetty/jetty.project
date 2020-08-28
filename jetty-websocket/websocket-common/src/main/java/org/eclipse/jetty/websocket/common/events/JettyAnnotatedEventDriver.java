@@ -92,7 +92,8 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("onBinaryFrame({}, {}) - events.onBinary={}", BufferUtil.toDetailString(buffer), fin, events.onBinary);
+            LOG.debug("onBinaryFrame({}, {}) - events.onBinary={}, activeMessage={}",
+                BufferUtil.toDetailString(buffer), fin, events.onBinary, activeMessage);
         }
 
         if (events.onBinary == null)
@@ -254,7 +255,8 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("onTextFrame({}, {}) - events.onText={}", BufferUtil.toDetailString(buffer), fin, events.onText);
+            LOG.debug("onTextFrame({}, {}) - events.onText={}, activeMessage={}",
+                BufferUtil.toDetailString(buffer), fin, events.onText, activeMessage);
         }
 
         if (events.onText == null)
@@ -303,10 +305,8 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            if (message == null)
-                LOG.debug("onTextMessage(<null>) - events.onText={}", events.onText);
-            else
-                LOG.debug("onTextMessage([{}] \"{}\") - events.onText={}", message.length(), TextUtil.maxStringLength(60, message), events.onText);
+            LOG.debug("onTextMessage([{}] \"{}\") - events.onText={}",
+                message.length(), TextUtil.maxStringLength(60, message), events.onText);
         }
 
         if (events.onText != null)

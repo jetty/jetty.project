@@ -73,11 +73,12 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("onBinaryFrame({}, {}) - webSocketListener:{}, webSocketPartialListener:{}, listener:{}",
+            LOG.debug("onBinaryFrame({}, {}) - webSocketListener={}, webSocketPartialListener={}, listener={}, activeMessage={}",
                 BufferUtil.toDetailString(buffer), fin,
                 (listener instanceof WebSocketListener),
                 (listener instanceof WebSocketPartialListener),
-                listener.getClass().getName());
+                listener.getClass().getName(),
+                activeMessage);
         }
 
         if (listener instanceof WebSocketListener)
@@ -116,7 +117,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("onBinaryMessage([{}]) - webSocketListener:{}, listener:{}",
+            LOG.debug("onBinaryMessage([{}]) - webSocketListener={}, listener={}",
                 data.length,
                 (listener instanceof WebSocketListener),
                 this.listener.getClass().getName());
@@ -143,7 +144,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("onClose({},{}) - listener:{}", statusCode, reason, this.listener.getClass().getName());
+            LOG.debug("onClose({},{}) - listener={}", statusCode, reason, this.listener.getClass().getName());
         }
         listener.onWebSocketClose(statusCode, reason);
     }
@@ -153,7 +154,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("onConnect({}) - listener:{}", session, this.listener.getClass().getName());
+            LOG.debug("onConnect({}) - listener={}", session, this.listener.getClass().getName());
         }
         listener.onWebSocketConnect(session);
     }
@@ -163,7 +164,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("onError({}) - listener:{}", cause.getClass().getName(), this.listener.getClass().getName());
+            LOG.debug("onError({}) - listener={}", cause.getClass().getName(), this.listener.getClass().getName());
         }
         listener.onWebSocketError(cause);
     }
@@ -173,7 +174,7 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("onFrame({}) - frameListener:{}, pingPongListener:{}, listener:{}",
+            LOG.debug("onFrame({}) - frameListener={}, pingPongListener={}, listener={}",
                 frame,
                 (listener instanceof WebSocketFrameListener),
                 (listener instanceof WebSocketPingPongListener),
@@ -215,12 +216,13 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("onTextFrame({}, {}) - webSocketListener:{}, webSocketPartialListener:{}, listener:{}",
+            LOG.debug("onTextFrame({}, {}) - webSocketListener={}, webSocketPartialListener={}, listener={}, activeMessage={}",
                 BufferUtil.toDetailString(buffer),
                 fin,
                 (listener instanceof WebSocketListener),
                 (listener instanceof WebSocketPartialListener),
-                listener.getClass().getName());
+                listener.getClass().getName(),
+                activeMessage);
         }
 
         if (listener instanceof WebSocketListener)
@@ -282,12 +284,9 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            String msgDetail = message == null
-                ? "<null>"
-                : String.format("[%d] \"%s\"", message.length(), TextUtil.maxStringLength(60, message));
-
-            LOG.debug("onTextMessage({}) - webSocketListener:{} listener:{}",
-                msgDetail,
+            LOG.debug("onTextMessage([{}] \"{}\") - webSocketListener={}, listener={}",
+                message.length(),
+                TextUtil.maxStringLength(60, message),
                 (listener instanceof WebSocketListener),
                 listener.getClass().getName());
         }
@@ -302,11 +301,12 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("onContinuationFrame({}, {}) - webSocketListener:{}, webSocketPartialListener:{}, listener:{}",
+            LOG.debug("onContinuationFrame({}, {}) - webSocketListener={}, webSocketPartialListener={}, listener={}, activeMessage={}",
                 BufferUtil.toDetailString(buffer), fin,
                 (listener instanceof WebSocketListener),
                 (listener instanceof WebSocketPartialListener),
-                listener.getClass().getName());
+                listener.getClass().getName(),
+                activeMessage);
         }
 
         if (listener instanceof WebSocketPartialListener)
