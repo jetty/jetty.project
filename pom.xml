@@ -24,7 +24,7 @@
     <logback.version>1.3.0-alpha5</logback.version>
     <spring-version>5.1.1.RELEASE</spring-version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <servlet.api.version>5.0.0</servlet.api.version>
+    <servlet.api.version>5.0.1-SNAPSHOT</servlet.api.version>
     <!-- change version in jetty-websocket/websocket-jakarta-server/src/main/config/modules/websocket-jakarta.mod -->
     <websocket.api.version>2.0.0</websocket.api.version>
     <jsp.version>10.0.0-M5</jsp.version>
