@@ -677,7 +677,7 @@ public class ResourceService
             else if (written || !(out instanceof HttpOutput))
             {
                 // write normally
-                putHeaders(response, content, written ? -1 : 0);
+                putHeaders(response, content, content_length);
                 ByteBuffer buffer = content.getIndirectBuffer();
                 if (buffer != null)
                     BufferUtil.writeTo(buffer, out);
