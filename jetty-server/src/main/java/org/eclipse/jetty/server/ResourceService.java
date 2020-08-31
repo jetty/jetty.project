@@ -578,7 +578,7 @@ public class ResourceService
             {
                 //Get jetty's Response impl
                 String mdlm = content.getLastModifiedValue();
-                if (mdlm != null && ifms.equals(mdlm))
+                if (ifms.equals(mdlm))
                 {
                     sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
                     return false;
@@ -764,7 +764,7 @@ public class ResourceService
             //  content-length header
             //
             putHeaders(response, content, Response.NO_CONTENT_LENGTH);
-            String mimetype = (content == null ? null : content.getContentTypeValue());
+            String mimetype = content.getContentTypeValue();
             if (mimetype == null)
                 LOG.warn("Unknown mimetype for " + request.getRequestURI());
             MultiPartOutputStream multi = new MultiPartOutputStream(out);
