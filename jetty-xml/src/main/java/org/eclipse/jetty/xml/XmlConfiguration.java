@@ -378,7 +378,7 @@ public class XmlConfiguration
     public Object configure(Object obj) throws Exception
     {
         if (_objects != null)
-            throw new IllegalStateException();
+            throw new IllegalStateException("XmlConfiguration constructed for start lifecycle");
         return _processor.configure(obj);
     }
 
@@ -394,7 +394,7 @@ public class XmlConfiguration
     public Object configure() throws Exception
     {
         if (_objects != null)
-            throw new IllegalStateException();
+            throw new IllegalStateException("XmlConfiguration constructed for start lifecycle");
         if (LOG.isDebugEnabled())
             LOG.debug("Configure {}", _location);
         return _processor.configure();
@@ -1856,6 +1856,9 @@ public class XmlConfiguration
     // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
     public void init(String[] args) throws Exception
     {
+        if (_objects == null)
+            throw new IllegalStateException("XmlConfiguration not constructed for start lifecycle");
+
         try
         {
             AccessController.doPrivileged((PrivilegedExceptionAction<Void>)() ->
@@ -1915,7 +1918,7 @@ public class XmlConfiguration
     public void start() throws Exception
     {
         if (_objects == null)
-            throw new IllegalStateException();
+            throw new IllegalStateException("XmlConfiguration not constructed for start lifecycle");
 
         // For all objects created by XmlConfigurations, start them if they are lifecycles.
         for (Object obj : _objects)
@@ -1934,9 +1937,9 @@ public class XmlConfiguration
     public void stop() throws Exception
     {
         if (_objects == null)
-            throw new IllegalStateException();
+            throw new IllegalStateException("XmlConfiguration not constructed for start lifecycle");
 
-        // For all objects created by XmlConfigurations, start them if they are lifecycles.
+        // For all objects created by XmlConfigurations, stop them if they are lifecycles.
         for (Object obj : _objects)
         {
             if (obj instanceof LifeCycle)
@@ -1952,7 +1955,7 @@ public class XmlConfiguration
     public void destroy()
     {
         if (_objects == null)
-            throw new IllegalStateException();
+            throw new IllegalStateException("XmlConfiguration not constructed for start lifecycle");
 
         // For all objects created by XmlConfigurations, start them if they are lifecycles.
         for (Object obj : _objects)
