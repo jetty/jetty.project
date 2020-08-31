@@ -578,7 +578,7 @@ public class ResourceService
             {
                 //Get jetty's Response impl
                 String mdlm = content.getLastModifiedValue();
-                if (mdlm != null && ifms.equals(mdlm))
+                if (ifms.equals(mdlm))
                 {
                     sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
                     return false;
@@ -679,10 +679,10 @@ public class ResourceService
                 putHeaders(response, content, content_length);
             }
             // else if we can't do a bypass write because of wrapping
-            else if (written || !(out instanceof HttpOutput))
+            else if (written)
             {
                 // write normally
-                putHeaders(response, content, written ? -1 : 0);
+                putHeaders(response, content, -1);
                 ByteBuffer buffer = content.getIndirectBuffer();
                 if (buffer != null)
                     BufferUtil.writeTo(buffer, out);
@@ -769,7 +769,7 @@ public class ResourceService
             //  content-length header
             //
             putHeaders(response, content, -1);
-            String mimetype = (content == null ? null : content.getContentTypeValue());
+            String mimetype = content.getContentTypeValue();
             if (mimetype == null)
                 LOG.warn("Unknown mimetype for " + request.getRequestURI());
             MultiPartOutputStream multi = new MultiPartOutputStream(out);
