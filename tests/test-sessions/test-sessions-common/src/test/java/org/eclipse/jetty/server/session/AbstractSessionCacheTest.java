@@ -64,7 +64,7 @@ public abstract class AbstractSessionCacheTest
         }
 
         @Override
-        public boolean exists(String id) throws Exception
+        public boolean doExists(String id) throws Exception
         {
             return _data != null;
         }
@@ -92,9 +92,20 @@ public abstract class AbstractSessionCacheTest
         }
 
         @Override
-        public Set<String> doGetExpired(Set<String> candidates)
+        public Set<String> doCheckExpired(Set<String> candidates, long time)
         {
             return null;
+        }
+
+        @Override
+        public Set<String> doGetExpired(long before)
+        {
+            return null;
+        }
+
+        @Override
+        public void doCleanOrphans(long timeLimit)
+        {
         }
     }
 

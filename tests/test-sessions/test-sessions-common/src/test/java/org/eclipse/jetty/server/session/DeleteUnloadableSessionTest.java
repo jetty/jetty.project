@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +63,7 @@ public class DeleteUnloadableSessionTest
         }
 
         @Override
-        public boolean exists(String id)
+        public boolean doExists(String id)
         {
             return o != null;
         }
@@ -92,10 +93,23 @@ public class DeleteUnloadableSessionTest
         }
 
         @Override
-        public Set<String> doGetExpired(Set<String> candidates)
+        public Set<String> doCheckExpired(Set<String> candidates, long timeLimit)
         {
-            return null;
+            return Collections.emptySet();
         }
+
+        @Override
+        public Set<String> doGetExpired(long timeLimit)
+        {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public void doCleanOrphans(long timeLimit)
+        {
+           //noop
+        }
+        
     }
 
     public static class DelSessionDataStoreFactory extends AbstractSessionDataStoreFactory

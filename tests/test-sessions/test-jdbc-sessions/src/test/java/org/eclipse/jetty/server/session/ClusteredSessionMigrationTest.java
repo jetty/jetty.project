@@ -49,7 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Testcontainers(disabledWithoutDocker = true)
 public class ClusteredSessionMigrationTest extends AbstractTestBase
 {
-
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {

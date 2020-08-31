@@ -50,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 public class AttributeNameTest
 {
-
     @BeforeAll
     public static void beforeClass() throws Exception
     {

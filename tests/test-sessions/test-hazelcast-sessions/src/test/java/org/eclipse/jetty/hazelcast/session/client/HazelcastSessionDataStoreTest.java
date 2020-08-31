@@ -39,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
-
     HazelcastTestHelper _testHelper;
 
     @Override
@@ -80,48 +79,26 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
 
     @Test
     @Override
-    public void testGetExpiredDifferentNode() throws Exception
+    public void testStoreSession() throws Exception
     {
-        //This test will not work for hazelcast because we can't enable
-        //HazelcastSessionDataStore.setScavengeZombieSessions, as it's
-        //too difficult to get the required classes onto the embedded
-        //hazelcast instance: these classes are required  to handle 
-        //the serialization/deserialization that hazelcast performs when querying
-        //to find zombie sessions.
+       /*
+        * This test does not work with hazelcast, because it uses session attributes
+        * that are classes that are only on the webapp's classloader. Unfortunately
+        * it seems impossible to get hazelcast to use the thread context classloader
+        * when deserializing sessions: it is only using the System classloader.
+        */
     }
 
     @Test
     @Override
-    public void testGetExpiredPersistedAndExpiredOnly() throws Exception
-    {
-        //This test will not work for hazelcast because we can't enable
-        //HazelcastSessionDataStore.setScavengeZombieSessions, as it's
-        //too difficult to get the required classes onto the embedded
-        //hazelcast instance: these classes are required  to handle 
-        //the serialization/deserialization that hazelcast performs when querying
-        //to find zombie sessions.
-    }
-
-    @Override
-    public void testStoreSession() throws Exception
-    {
-        //This test will not work for hazelcast because we can't enable
-        //HazelcastSessionDataStore.setScavengeZombieSessions, as it's
-        //too difficult to get the required classes onto the embedded
-        //hazelcast instance: these classes are required  to handle 
-        //the serialization/deserialization that hazelcast performs when querying
-        //to find zombie sessions.
-    }
-
-    @Override
     public void testStoreObjectAttributes() throws Exception
     {
-        //This test will not work for hazelcast because we can't enable
-        //HazelcastSessionDataStore.setScavengeZombieSessions, as it's
-        //too difficult to get the required classes onto the embedded
-        //hazelcast instance: these classes are required  to handle
-        //the serialization/deserialization that hazelcast performs when querying
-        //to find zombie sessions.
+        /*
+         * This test does not work with hazelcast, because it uses session attributes
+         * that are classes that are only on the webapp's classloader. Unfortunately
+         * it seems impossible to get hazelcast to use the thread context classloader
+         * when deserializing sessions: it is only using the System classloader.
+         */
     }
 
     /**
@@ -143,7 +120,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
 
         // persist a session
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("222", 100, now, now - 1, -1);
+        SessionData data = store.newSessionData("fff", 100, now, now - 1, -1);
         data.setLastNode(sessionContext.getWorkerName());
         persistSession(data);
 
@@ -154,7 +131,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
         // test that loading it fails
         try
         {
-            store.load("222");
+            store.load("fff");
             fail("Session should be unreadable");
         }
         catch (UnreadableSessionDataException e)

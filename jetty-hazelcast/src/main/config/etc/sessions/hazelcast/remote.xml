@@ -16,8 +16,8 @@
         <Set name="hazelcastInstanceName">
           <Property name="jetty.session.hazelcast.hazelcastInstanceName" default="JETTY_DISTRIBUTED_SESSION_INSTANCE" />
         </Set>
-        <Set name="scavengeZombies">
-          <Property name="jetty.session.hazelcast.scavengeZombies" default="false" />
+        <Set name="useQueries">
+          <Property name="jetty.session.hazelcast.useQueries" default="false" />
         </Set>
         <Set name="gracePeriodSec">
           <Property name="jetty.session.gracePeriod.seconds" default="3600" />

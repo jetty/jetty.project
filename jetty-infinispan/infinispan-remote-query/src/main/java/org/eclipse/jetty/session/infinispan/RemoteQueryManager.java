@@ -18,15 +18,19 @@
 
 package org.eclipse.jetty.session.infinispan;
 
-import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
-import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.server.session.SessionContext;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * RemoteQueryManager
@@ -35,33 +39,75 @@ import org.infinispan.query.dsl.QueryFactory;
  */
 public class RemoteQueryManager implements QueryManager
 {
-    private RemoteCache<String, SessionData> _cache;
+    private static final Logger LOG = LoggerFactory.getLogger(RemoteQueryManager.class);
+    private RemoteCache<String, InfinispanSessionData> _cache;
 
-    public RemoteQueryManager(RemoteCache<String, SessionData> cache)
+    public RemoteQueryManager(RemoteCache<String, InfinispanSessionData> cache)
     {
         _cache = cache;
     }
 
     @Override
-    public Set<String> queryExpiredSessions(long time)
+    public Set<String> queryExpiredSessions(SessionContext sessionContext, long time)
     {
-        // TODO can the QueryFactory be created only once
+        Objects.requireNonNull(sessionContext);
         QueryFactory qf = Search.getQueryFactory(_cache);
-        Query q = qf.from(InfinispanSessionData.class).select("id").having("expiry").lte(time).build();
+        Query q = qf.from(InfinispanSessionData.class)
+            .select("id")
+            .having("contextPath").eq(sessionContext.getCanonicalContextPath())
+            .and()
+            .having("expiry").lte(time)
+            .and()
+            .having("expiry").gt(0)
+            .build();
 
         List<Object[]> list = q.list();
-        Set<String> ids = new HashSet<>();
-        for (Object[] sl : list)
-        {
-            ids.add((String)sl[0]);
-        }
-
+        Set<String> ids = list.stream().map(a -> (String)a[0]).collect(toSet());
         return ids;
     }
 
     @Override
-    public Set<String> queryExpiredSessions()
+    public void deleteOrphanSessions(long time)
     {
-        return queryExpiredSessions(System.currentTimeMillis());
+        QueryFactory qf = Search.getQueryFactory(_cache);
+        Query q = qf.from(InfinispanSessionData.class)
+            .select("id", "contextPath", "vhost")
+            .having("expiry").lte(time)
+            .and()
+            .having("expiry").gt(0)
+            .build();
+        List<Object[]> list = q.list();
+        list.stream().forEach(a ->
+        {
+            String key = InfinispanKeyBuilder.build((String)a[1], (String)a[2], (String)a[0]);
+            try
+            {
+                _cache.remove(key);
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Error deleting {}", key, e);
+            }
+        });  
+    }
+
+    @Override
+    public boolean exists(SessionContext sessionContext, String id)
+    {
+        Objects.requireNonNull(sessionContext);
+        QueryFactory qf = Search.getQueryFactory(_cache);
+        Query q = qf.from(InfinispanSessionData.class)
+            .select("id")
+            .having("id").eq(id)
+            .and()
+            .having("contextPath").eq(sessionContext.getCanonicalContextPath())
+            .and()
+            .having("expiry").gt(System.currentTimeMillis())
+            .or()
+            .having("expiry").lte(0)
+            .build();
+
+        List<Object[]> list = q.list();
+        return !list.isEmpty();
     }
 }

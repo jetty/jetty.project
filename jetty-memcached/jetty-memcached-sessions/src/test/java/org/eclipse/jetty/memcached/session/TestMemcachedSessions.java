@@ -64,7 +64,6 @@ public class TestMemcachedSessions
             else if ("get".equals(arg))
             {
                 s = req.getSession(false);
-                System.err.println("GET: s=" + s);
             }
             else if ("del".equals(arg))
             {

@@ -49,7 +49,6 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public abstract class AbstractClusteredInvalidationSessionTest extends AbstractTestBase
 {
-
     @Test
     public void testInvalidation() throws Exception
     {

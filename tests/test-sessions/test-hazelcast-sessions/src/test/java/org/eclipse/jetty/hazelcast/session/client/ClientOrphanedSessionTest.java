@@ -27,7 +27,6 @@ import org.junit.jupiter.api.BeforeEach;
 public class ClientOrphanedSessionTest
     extends AbstractClusteredOrphanedSessionTest
 {
-
     HazelcastTestHelper _testHelper;
 
     @Override

@@ -18,9 +18,14 @@
 
 package org.eclipse.jetty.session.infinispan;
 
-import org.infinispan.commons.api.BasicCache;
-
-public interface QueryManagerFactory
+/**
+ *
+ *
+ */
+public class InfinispanKeyBuilder
 {
-    public QueryManager getQueryManager(BasicCache<String, InfinispanSessionData> cache);
+    public static String build(String contextPath, String vhost, String id)
+    {
+        return contextPath + "_" + vhost + "_" + id;
+    }
 }

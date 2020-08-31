@@ -41,26 +41,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class FileTestHelper
 {
-    static int __workers = 0;
-    static File _tmpDir;
+    File _tmpDir;
 
-    public static void setup()
+    public  FileTestHelper()
         throws Exception
     {
 
-        _tmpDir = File.createTempFile("file", null);
+        _tmpDir = File.createTempFile("file", "test");
         _tmpDir.delete();
         _tmpDir.mkdirs();
         _tmpDir.deleteOnExit();
     }
 
-    public static void teardown()
+    public void teardown()
     {
         IO.delete(_tmpDir);
         _tmpDir = null;
     }
 
-    public static void assertStoreDirEmpty(boolean isEmpty)
+    public void assertStoreDirEmpty(boolean isEmpty)
     {
         assertNotNull(_tmpDir);
         assertTrue(_tmpDir.exists());
@@ -77,7 +76,7 @@ public class FileTestHelper
         }
     }
 
-    public static File getFile(String sessionId)
+    public File getFile(String sessionId)
     {
         assertNotNull(_tmpDir);
         assertTrue(_tmpDir.exists());
@@ -98,7 +97,7 @@ public class FileTestHelper
         return null;
     }
 
-    public static void assertSessionExists(String sessionId, boolean exists)
+    public void assertSessionExists(String sessionId, boolean exists)
     {
         assertNotNull(_tmpDir);
         assertTrue(_tmpDir.exists());
@@ -121,7 +120,7 @@ public class FileTestHelper
             assertFalse(found);
     }
 
-    public static void assertFileExists(String filename, boolean exists)
+    public void assertFileExists(String filename, boolean exists)
     {
         assertNotNull(_tmpDir);
         assertTrue(_tmpDir.exists());
@@ -132,7 +131,7 @@ public class FileTestHelper
             assertFalse(file.exists());
     }
 
-    public static void createFile(String filename)
+    public void createFile(String filename)
         throws IOException
     {
         assertNotNull(_tmpDir);
@@ -143,7 +142,7 @@ public class FileTestHelper
         file.createNewFile();
     }
 
-    public static void createFile(String id, String contextPath, String vhost,
+    public void createFile(String id, String contextPath, String vhost,
                                   String lastNode, long created, long accessed,
                                   long lastAccessed, long maxIdle, long expiry,
                                   long cookieSet, Map<String, Object> attributes)
@@ -174,7 +173,7 @@ public class FileTestHelper
         }
     }
 
-    public static boolean checkSessionPersisted(SessionData data)
+    public boolean checkSessionPersisted(SessionData data)
         throws Exception
     {
         String filename = "" + data.getExpiry() + "_" + data.getContextPath() + "_" + data.getVhost() + "_" + data.getId();
@@ -224,7 +223,7 @@ public class FileTestHelper
         return true;
     }
 
-    public static void deleteFile(String sessionId)
+    public void deleteFile(String sessionId)
     {
         assertNotNull(_tmpDir);
         assertTrue(_tmpDir.exists());
@@ -247,7 +246,7 @@ public class FileTestHelper
         }
     }
 
-    public static FileSessionDataStoreFactory newSessionDataStoreFactory()
+    public FileSessionDataStoreFactory newSessionDataStoreFactory()
     {
         FileSessionDataStoreFactory storeFactory = new FileSessionDataStoreFactory();
         storeFactory.setStoreDir(_tmpDir);

@@ -29,7 +29,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
 {
-
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {

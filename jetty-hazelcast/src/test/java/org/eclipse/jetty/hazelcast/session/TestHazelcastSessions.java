@@ -65,7 +65,6 @@ public class TestHazelcastSessions
             else if ("get".equals(arg))
             {
                 s = req.getSession(false);
-                System.err.println("GET: s=" + s + ",id=" + (s != null ? s.getId() : ""));
             }
             else if ("del".equals(arg))
             {

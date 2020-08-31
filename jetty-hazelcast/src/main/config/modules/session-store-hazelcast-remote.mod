@@ -13,8 +13,7 @@ session-store
 sessions
 
 [files]
-maven://com.hazelcast/hazelcast/3.12.6|lib/hazelcast/hazelcast-3.12.6.jar
-maven://com.hazelcast/hazelcast-client/3.12.6|lib/hazelcast/hazelcast-client-3.12.6.jar
+maven://com.hazelcast/hazelcast/4.0.1|lib/hazelcast/hazelcast-4.0.1.jar
 
 [xml]
 etc/sessions/hazelcast/remote.xml
@@ -33,7 +32,7 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 jetty.session.hazelcast.mapName=jetty-distributed-session-map
 jetty.session.hazelcast.hazelcastInstanceName=JETTY_DISTRIBUTED_SESSION_INSTANCE
 jetty.session.hazelcast.onlyClient=true
-jetty.session.hazelcast.scavengeZombies=false
+jetty.session.hazelcast.useQueries=false
 jetty.session.gracePeriod.seconds=3600
 jetty.session.savePeriod.seconds=0
 #jetty.session.hazelcast.configurationLocation
