@@ -469,9 +469,12 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
         }
         catch (Throwable t)
         {
-            LOG.warn(t.toString());
-            BufferUtil.clear(networkBuffer.getBuffer());
-            releaseNetworkBuffer();
+            LOG.warn("Error during fillAndParse()", t);
+            if (networkBuffer != null)
+            {
+                BufferUtil.clear(networkBuffer.getBuffer());
+                releaseNetworkBuffer();
+            }
             coreSession.processConnectionError(t, Callback.NOOP);
         }
     }
