@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,6 +60,7 @@ public abstract class AbstractSessionDataStoreTest
      */
     public static final long ANCIENT_TIMESTAMP = 100L;
     public static final long RECENT_TIMESTAMP = System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(3 * GRACE_PERIOD_SEC);
+    protected static File extraClasses;
 
     protected URLClassLoader _contextClassLoader = new URLClassLoader(new URL[]{}, Thread.currentThread().getContextClassLoader());
 
@@ -72,6 +74,33 @@ public abstract class AbstractSessionDataStoreTest
 
     public abstract boolean checkSessionPersisted(SessionData data) throws Exception;
 
+    @BeforeAll
+    public static void beforeAll()
+        throws Exception
+    {
+        InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("Foo.clazz");
+        extraClasses = new File(MavenTestingUtils.getTargetDir(), "extraClasses");
+        extraClasses.mkdirs();
+        File fooclass = new File(extraClasses, "Foo.class");
+        IO.copy(is, new FileOutputStream(fooclass));
+        is.close();
+
+        is = Thread.currentThread().getContextClassLoader().getResourceAsStream("Proxyable.clazz");
+        File proxyableClass = new File(extraClasses, "Proxyable.class");
+        IO.copy(is, new FileOutputStream(proxyableClass));
+        is.close();
+
+        is = Thread.currentThread().getContextClassLoader().getResourceAsStream("ProxyableInvocationHandler.clazz");
+        File pihClass = new File(extraClasses, "ProxyableInvocationHandler.class");
+        IO.copy(is, new FileOutputStream(pihClass));
+        is.close();
+
+        is = Thread.currentThread().getContextClassLoader().getResourceAsStream("ProxyableFactory.clazz");
+        File factoryClass = new File(extraClasses, "ProxyableFactory.class");
+        IO.copy(is, new FileOutputStream(factoryClass));
+        is.close();
+    }
+
     /**
      * Test that the store can persist a session. The session uses an attribute
      * class that is only known to the webapp classloader. This tests that
@@ -81,16 +110,7 @@ public abstract class AbstractSessionDataStoreTest
     public void testStoreSession() throws Exception
     {
         //Use a class that would only be known to the webapp classloader
-        InputStream foostream = Thread.currentThread().getContextClassLoader().getResourceAsStream("Foo.clazz");
-        File foodir = new File(MavenTestingUtils.getTargetDir(), "foo");
-        foodir.mkdirs();
-        File fooclass = new File(foodir, "Foo.class");
-        IO.copy(foostream, new FileOutputStream(fooclass));
-
-        assertTrue(fooclass.exists());
-        assertTrue(fooclass.length() != 0);
-
-        URL[] foodirUrls = new URL[]{foodir.toURI().toURL()};
+        URL[] foodirUrls = new URL[]{extraClasses.toURI().toURL()};
         _contextClassLoader = new URLClassLoader(foodirUrls, Thread.currentThread().getContextClassLoader());
 
         //create the SessionDataStore
@@ -115,7 +135,7 @@ public abstract class AbstractSessionDataStoreTest
             Class fooclazz = Class.forName("Foo", true, _contextClassLoader);
             //create a session
             long now = System.currentTimeMillis();
-            data = store.newSessionData("1234", 100, now, now - 1, -1);//never expires
+            data = store.newSessionData("aaa1", 100, now, now - 1, -1);//never expires
             data.setLastNode(sessionContext.getWorkerName());
 
             //Make an attribute that uses the class only known to the webapp classloader
@@ -139,7 +159,7 @@ public abstract class AbstractSessionDataStoreTest
             {
                 try
                 {
-                    store.store("1234", finalData);
+                    store.store("aaa1", finalData);
                 }
                 catch (Exception e)
                 {
@@ -175,7 +195,7 @@ public abstract class AbstractSessionDataStoreTest
 
         //create a session
         final long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("1234", 100, 200, 199, -1);//never expires
+        SessionData data = store.newSessionData("aaa2", 100, 200, 199, -1);//never expires
         data.setAttribute("a", "b");
         data.setLastNode(sessionContext.getWorkerName());
         data.setLastSaved(400); //make it look like it was previously saved by the store
@@ -188,7 +208,7 @@ public abstract class AbstractSessionDataStoreTest
         data.setAccessed(now);
         data.setMaxInactiveMs(TimeUnit.MINUTES.toMillis(2));
         data.setAttribute("a", "c");
-        store.store("1234", data);
+        store.store("aaa2", data);
 
         assertTrue(checkSessionPersisted(data));
     }
@@ -200,34 +220,8 @@ public abstract class AbstractSessionDataStoreTest
     @Test
     public void testStoreObjectAttributes() throws Exception
     {
-
         //Use classes that would only be known to the webapp classloader
-        InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("Proxyable.clazz");
-        File proxyabledir = new File(MavenTestingUtils.getTargetDir(), "proxyable");
-        proxyabledir.mkdirs();
-        File proxyableClass = new File(proxyabledir, "Proxyable.class");
-        IO.copy(is, new FileOutputStream(proxyableClass));
-        is.close();
-
-        assertTrue(proxyableClass.exists());
-        assertTrue(proxyableClass.length() != 0);
-
-        is = Thread.currentThread().getContextClassLoader().getResourceAsStream("ProxyableInvocationHandler.clazz");
-        File pihClass = new File(proxyabledir, "ProxyableInvocationHandler.class");
-        IO.copy(is, new FileOutputStream(pihClass));
-        is.close();
-
-        is = Thread.currentThread().getContextClassLoader().getResourceAsStream("ProxyableFactory.clazz");
-        File factoryClass = new File(proxyabledir, "ProxyableFactory.class");
-        IO.copy(is, new FileOutputStream(factoryClass));
-        is.close();
-
-        is = Thread.currentThread().getContextClassLoader().getResourceAsStream("Foo.clazz");
-        File fooClass = new File(proxyabledir, "Foo.class");
-        IO.copy(is, new FileOutputStream(fooClass));
-        is.close();
-
-        URL[] proxyabledirUrls = new URL[]{proxyabledir.toURI().toURL()};
+        URL[] proxyabledirUrls = new URL[]{extraClasses.toURI().toURL()};
         _contextClassLoader = new URLClassLoader(proxyabledirUrls, Thread.currentThread().getContextClassLoader());
 
         //create the SessionDataStore 
@@ -253,7 +247,7 @@ public abstract class AbstractSessionDataStoreTest
             Class factoryclazz = Class.forName("ProxyableFactory", true, _contextClassLoader);
             //create a session
             long now = System.currentTimeMillis();
-            data = store.newSessionData("1234", 100, now, now - 1, -1);//never expires
+            data = store.newSessionData("aaa3", 100, now, now - 1, -1);//never expires
             data.setLastNode(sessionContext.getWorkerName());
             Method m = factoryclazz.getMethod("newProxyable", ClassLoader.class);
             Object proxy = m.invoke(null, _contextClassLoader);
@@ -288,7 +282,7 @@ public abstract class AbstractSessionDataStoreTest
             {
                 try
                 {
-                    store.store("1234", finalData);
+                    store.store("aaa3", finalData);
                 }
                 catch (Exception e)
                 {
@@ -300,7 +294,7 @@ public abstract class AbstractSessionDataStoreTest
         Thread t = new Thread(r, "saver");
         t.start();
         t.join(TimeUnit.SECONDS.toMillis(10));
-
+        
         //check that the store contains all of the session data
         assertTrue(checkSessionPersisted(data));
     }
@@ -322,16 +316,16 @@ public abstract class AbstractSessionDataStoreTest
 
         //persist a session that is not expired
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("1234", 100, now, now - 1, -1);//never expires
+        SessionData data = store.newSessionData("aaa4", 100, now, now - 1, -1);//never expires
         data.setLastNode(sessionContext.getWorkerName());
         persistSession(data);
 
         store.start();
 
         //test that we can retrieve it
-        SessionData loaded = store.load("1234");
+        SessionData loaded = store.load("aaa4");
         assertNotNull(loaded);
-        assertEquals("1234", loaded.getId());
+        assertEquals("aaa4", loaded.getId());
         assertEquals(100, loaded.getCreated());
         assertEquals(now, loaded.getAccessed());
         assertEquals(now - 1, loaded.getLastAccessed());
@@ -355,7 +349,7 @@ public abstract class AbstractSessionDataStoreTest
 
         //persist a session that is expired
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("678", 100, now - 20, now - 30, 10);//10 sec max idle
+        SessionData data = store.newSessionData("aaa5", 100, now - 20, now - 30, 10);//10 sec max idle
         data.setLastNode(sessionContext.getWorkerName());
         data.setExpiry(RECENT_TIMESTAMP); //make it expired recently
         persistSession(data);
@@ -363,9 +357,9 @@ public abstract class AbstractSessionDataStoreTest
         store.start();
 
         //test we can retrieve it
-        SessionData loaded = store.load("678");
+        SessionData loaded = store.load("aaa5");
         assertNotNull(loaded);
-        assertEquals("678", loaded.getId());
+        assertEquals("aaa5", loaded.getId());
         assertEquals(100, loaded.getCreated());
         assertEquals(now - 20, loaded.getAccessed());
         assertEquals(now - 30, loaded.getLastAccessed());
@@ -448,13 +442,13 @@ public abstract class AbstractSessionDataStoreTest
         
         //persist a session that has no attributes
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("222", 100, now, now - 1, -1);
+        SessionData data = store.newSessionData("aaa6", 100, now, now - 1, -1);
         data.setLastNode(sessionContext.getWorkerName());
         //persistSession(data);
-        store.store("222", data);
+        store.store("aaa6", data);
 
         //test that we can retrieve it
-        SessionData savedSession = store.load("222");
+        SessionData savedSession = store.load("aaa6");
         assertEquals(0, savedSession.getAllAttributes().size());
     }
     
@@ -475,21 +469,21 @@ public abstract class AbstractSessionDataStoreTest
         
         //persist a session that has attributes
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("222", 100, now, now - 1, -1);
+        SessionData data = store.newSessionData("aaa7", 100, now, now - 1, -1);
         data.setAttribute("foo", "bar");
         data.setLastNode(sessionContext.getWorkerName());
-        store.store("222", data);
+        store.store("aaa7", data);
 
         //test that we can retrieve it
-        SessionData savedSession = store.load("222");
+        SessionData savedSession = store.load("aaa7");
         assertEquals("bar", savedSession.getAttribute("foo"));
         
         //now modify so there are no attributes
         savedSession.setAttribute("foo", null);
-        store.store("222", savedSession);
+        store.store("aaa7", savedSession);
         
         //check its still readable
-        savedSession = store.load("222");
+        savedSession = store.load("aaa7");
         assertEquals(0, savedSession.getAllAttributes().size());
     }
     
@@ -510,14 +504,14 @@ public abstract class AbstractSessionDataStoreTest
 
         //persist a session that is not expired
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("1234", 100, now, now - 1, -1);
+        SessionData data = store.newSessionData("aaa8", 100, now, now - 1, -1);
         data.setLastNode(sessionContext.getWorkerName());
         persistSession(data);
 
         store.start();
 
         //delete the session via the store
-        store.delete("1234");
+        store.delete("aaa8");
 
         //check the session is no longer exists
         assertFalse(checkSessionExists(data));
@@ -560,22 +554,22 @@ public abstract class AbstractSessionDataStoreTest
         store.initialize(sessionContext);
 
         //persist a session that is expired
-        SessionData data = store.newSessionData("1234", 100, 101, 101, 10);
+        SessionData data = store.newSessionData("aaa9", 100, 101, 101, 10);
         data.setLastNode(sessionContext.getWorkerName());
         data.setExpiry(RECENT_TIMESTAMP); //make it expired recently so FileSessionDataStore doesn't eliminate it on startup
         persistSession(data);
 
         //persist another session that is expired
-        SessionData data2 = store.newSessionData("5678", 100, 100, 101, 30);
+        SessionData data2 = store.newSessionData("aaa10", 100, 100, 101, 30);
         data2.setLastNode(sessionContext.getWorkerName());
         data2.setExpiry(RECENT_TIMESTAMP); //make it expired recently so FileSessionDataStore doesn't eliminate it on startup
         persistSession(data2);
 
         store.start();
 
-        Set<String> candidates = new HashSet<>(Arrays.asList(new String[]{"1234", "5678"}));
+        Set<String> candidates = new HashSet<>(Arrays.asList(new String[]{"aaa9", "aaa10"}));
         Set<String> expiredIds = store.getExpired(candidates);
-        assertThat(expiredIds, containsInAnyOrder("1234", "5678"));
+        assertThat(expiredIds, containsInAnyOrder("aaa9", "aaa10"));
     }
 
     /**
@@ -596,18 +590,18 @@ public abstract class AbstractSessionDataStoreTest
 
         long now = System.currentTimeMillis();
         //persist a session that is not expired
-        SessionData data = store.newSessionData("1234", 100, now, now - 1, TimeUnit.MINUTES.toMillis(60));
+        SessionData data = store.newSessionData("aaa11", 100, now, now - 1, TimeUnit.MINUTES.toMillis(60));
         data.setLastNode(sessionContext.getWorkerName());
         persistSession(data);
 
         //persist another session that is not expired
-        SessionData data2 = store.newSessionData("5678", 100, now, now - 1, TimeUnit.MINUTES.toMillis(60));
+        SessionData data2 = store.newSessionData("aaa12", 100, now, now - 1, TimeUnit.MINUTES.toMillis(60));
         data2.setLastNode(sessionContext.getWorkerName());
         persistSession(data2);
 
         store.start();
 
-        Set<String> candidates = new HashSet<>(Arrays.asList(new String[]{"1234", "5678"}));
+        Set<String> candidates = new HashSet<>(Arrays.asList(new String[]{"aaa11", "aaa12"}));
         Set<String> expiredIds = store.getExpired(candidates);
         assertEquals(0, expiredIds.size());
     }
@@ -629,9 +623,9 @@ public abstract class AbstractSessionDataStoreTest
         store.initialize(sessionContext);
         store.start();
 
-        Set<String> candidates = new HashSet<>(Arrays.asList(new String[]{"1234", "5678"}));
+        Set<String> candidates = new HashSet<>(Arrays.asList(new String[]{"a", "b"}));
         Set<String> expiredIds = store.getExpired(candidates);
-        assertThat(expiredIds, containsInAnyOrder("1234", "5678"));
+        assertThat(expiredIds, containsInAnyOrder("a", "b"));
     }
 
     /**
@@ -652,13 +646,13 @@ public abstract class AbstractSessionDataStoreTest
         store.initialize(sessionContext);
 
         //persist a session that is expired
-        SessionData data = store.newSessionData("1234", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
+        SessionData data = store.newSessionData("aaa13", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
         data.setLastNode(sessionContext.getWorkerName());
         data.setExpiry(RECENT_TIMESTAMP); //must be recently expired, or FileSessionDataStore will eliminate it on startup
         persistSession(data);
 
         //persist another session that is expired
-        SessionData data2 = store.newSessionData("5678", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
+        SessionData data2 = store.newSessionData("aaa14", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
         data2.setLastNode(sessionContext.getWorkerName());
         data2.setExpiry(RECENT_TIMESTAMP); //must be recently expired, or FileSessionDataStore will eliminate it on startup
         persistSession(data2);
@@ -667,7 +661,7 @@ public abstract class AbstractSessionDataStoreTest
 
         Set<String> candidates = new HashSet<>();
         Set<String> expiredIds = store.getExpired(candidates);
-        assertThat(expiredIds, containsInAnyOrder("1234", "5678"));
+        assertThat(expiredIds, containsInAnyOrder("aaa13", "aaa14"));
     }
 
     /**
@@ -688,7 +682,7 @@ public abstract class AbstractSessionDataStoreTest
         store.initialize(sessionContext);
 
         //persist a session that is expired for a different node
-        SessionData data = store.newSessionData("1234", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
+        SessionData data = store.newSessionData("aaa15", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
         data.setLastNode("other");
         data.setExpiry(RECENT_TIMESTAMP); //must be recently expired, or FileSessionDataStore will eliminate it on startup
         persistSession(data);
@@ -697,7 +691,104 @@ public abstract class AbstractSessionDataStoreTest
 
         Set<String> candidates = new HashSet<>();
         Set<String> expiredIds = store.getExpired(candidates);
-        assertThat(expiredIds, containsInAnyOrder("1234"));
+        assertThat(expiredIds, containsInAnyOrder("aaa15"));
+    }
+    
+    @Test
+    public void testCleanOrphans() throws Exception
+    {
+        //create the SessionDataStore
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/test");
+        SessionDataStoreFactory factory = createSessionDataStoreFactory();
+        ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
+        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        store.initialize(sessionContext);
+
+        long now = System.currentTimeMillis();
+        
+        //persist a long ago expired session for our context
+        SessionData oldSession = store.newSessionData("001", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
+        oldSession.setExpiry(200);
+        oldSession.setLastNode("me");
+        persistSession(oldSession);
+        assertTrue(checkSessionExists(oldSession));
+        
+        //persist a recently expired session for our context
+        SessionData expiredSession = store.newSessionData("002", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
+        expiredSession.setExpiry(RECENT_TIMESTAMP);
+        expiredSession.setLastNode("me");
+        persistSession(expiredSession);
+        assertTrue(checkSessionExists(expiredSession));
+
+        //persist a non expired session for our context
+        SessionData unexpiredSession = store.newSessionData("003", 100, now + 10, now + 5, TimeUnit.MINUTES.toMillis(60));
+        unexpiredSession.setExpiry(now + TimeUnit.MINUTES.toMillis(10));
+        unexpiredSession.setLastNode("me");
+        persistSession(unexpiredSession);
+        assertTrue(checkSessionExists(unexpiredSession));
+
+        //persist an immortal session for our context
+        SessionData immortalSession = store.newSessionData("004", 100, now + 10, now + 5, TimeUnit.MINUTES.toMillis(60));
+        immortalSession.setExpiry(0);
+        immortalSession.setLastNode("me");
+        persistSession(immortalSession);
+        assertTrue(checkSessionExists(immortalSession));
+        
+        //create sessions for a different context
+        //persist a long ago expired session for a different context
+        SessionData oldForeignSession = store.newSessionData("005", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
+        oldForeignSession.setContextPath("_other");
+        oldForeignSession.setExpiry(200);
+        oldForeignSession.setLastNode("me");
+        persistSession(oldForeignSession);
+        assertTrue(checkSessionExists(oldForeignSession));
+        
+        //persist a recently expired session for our context
+        SessionData expiredForeignSession = store.newSessionData("006", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
+        expiredForeignSession.setContextPath("_other");
+        expiredForeignSession.setExpiry(RECENT_TIMESTAMP);
+        expiredForeignSession.setLastNode("me");
+        persistSession(expiredForeignSession);
+        assertTrue(checkSessionExists(expiredForeignSession));
+        
+        //persist a non expired session for our context
+        SessionData unexpiredForeignSession = store.newSessionData("007", 100, now + 10, now + 5, TimeUnit.MINUTES.toMillis(60));
+        unexpiredForeignSession.setContextPath("_other");
+        unexpiredForeignSession.setExpiry(now + TimeUnit.MINUTES.toMillis(10));
+        unexpiredForeignSession.setLastNode("me");
+        persistSession(unexpiredForeignSession);
+        assertTrue(checkSessionExists(unexpiredForeignSession));
+        
+        //persist an immortal session for our context
+        SessionData immortalForeignSession = store.newSessionData("008", 100, now + 10, now + 5, TimeUnit.MINUTES.toMillis(60));
+        immortalForeignSession.setContextPath("_other");
+        immortalForeignSession.setExpiry(0);
+        immortalForeignSession.setLastNode("me");
+        persistSession(immortalForeignSession);
+        assertTrue(checkSessionExists(immortalForeignSession));
+        
+        store.start();
+        
+        ((AbstractSessionDataStore)store).cleanOrphans(now - TimeUnit.SECONDS.toMillis(10 * GRACE_PERIOD_SEC));
+
+        //old session should be gone
+        assertFalse(checkSessionExists(oldSession));
+        //recently expired session should still be there
+        assertTrue(checkSessionExists(expiredSession));
+        //unexpired session should still be there
+        assertTrue(checkSessionExists(unexpiredSession));
+        //immortal session should still exist
+        assertTrue(checkSessionExists(immortalSession));
+        //old foreign session should be gone
+        assertFalse(checkSessionExists(oldSession));
+        //recently expired foreign session should still be there
+        assertTrue(checkSessionExists(expiredSession));
+        //unexpired foreign session should still be there
+        assertTrue(checkSessionExists(unexpiredSession));
+        //immortal foreign session should still exist
+        assertTrue(checkSessionExists(immortalSession));
     }
 
     /**
@@ -717,13 +808,13 @@ public abstract class AbstractSessionDataStoreTest
 
         long now = System.currentTimeMillis();
         //persist a session that is not expired
-        SessionData data = store.newSessionData("1234", 100, now, now - 1, TimeUnit.MINUTES.toMillis(60));
+        SessionData data = store.newSessionData("aaa16", 100, now, now - 1, TimeUnit.MINUTES.toMillis(60));
         data.setLastNode(sessionContext.getWorkerName());
         persistSession(data);
 
         store.start();
 
-        assertTrue(store.exists("1234"));
+        assertTrue(store.exists("aaa16"));
     }
 
     /**
@@ -742,14 +833,14 @@ public abstract class AbstractSessionDataStoreTest
         store.initialize(sessionContext);
 
         //persist a session that is expired
-        SessionData data = store.newSessionData("1234", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
+        SessionData data = store.newSessionData("aaa17", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
         data.setLastNode(sessionContext.getWorkerName());
         data.setExpiry(RECENT_TIMESTAMP);
         persistSession(data);
 
         store.start();
 
-        assertFalse(store.exists("1234"));
+        assertFalse(store.exists("aaa17"));
     }
 
     /**
@@ -785,7 +876,7 @@ public abstract class AbstractSessionDataStoreTest
         store.initialize(sessionContext);
 
         //persist a session for a different context
-        SessionData data = store.newSessionData("1234", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
+        SessionData data = store.newSessionData("aaa18", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
         data.setContextPath("_other");
         data.setLastNode(sessionContext.getWorkerName());
         persistSession(data);
@@ -793,7 +884,7 @@ public abstract class AbstractSessionDataStoreTest
         store.start();
 
         //check that session does not exist for this context
-        assertFalse(store.exists("1234"));
+        assertFalse(store.exists("aaa18"));
     }
 
     /**
@@ -817,7 +908,7 @@ public abstract class AbstractSessionDataStoreTest
         long now = System.currentTimeMillis();
 
         //persist a session that is not expired, and has been saved before
-        SessionData data = store.newSessionData("1234", 100, now - 10, now - 20, TimeUnit.MINUTES.toMillis(60));
+        SessionData data = store.newSessionData("aaa19", 100, now - 10, now - 20, TimeUnit.MINUTES.toMillis(60));
         data.setLastNode(sessionContext.getWorkerName());
         data.setLastSaved(now - 100);
         persistSession(data);
@@ -827,7 +918,7 @@ public abstract class AbstractSessionDataStoreTest
         data.setAccessed(now - 1);
 
         //test that a save does not change the stored data
-        store.store("1234", data);
+        store.store("aaa19", data);
 
         //reset the times for a check
         data.setLastAccessed(now - 20);
@@ -856,10 +947,10 @@ public abstract class AbstractSessionDataStoreTest
 
         long now = System.currentTimeMillis();
         //create a session that is not expired, and has never been saved before
-        SessionData data = store.newSessionData("1234", 100, now - 10, now - 20, TimeUnit.MINUTES.toMillis(60));
+        SessionData data = store.newSessionData("aaa20", 100, now - 10, now - 20, TimeUnit.MINUTES.toMillis(60));
         data.setLastNode(sessionContext.getWorkerName());
 
-        store.store("1234", data);
+        store.store("aaa20", data);
 
         checkSessionPersisted(data);
     }
@@ -885,7 +976,7 @@ public abstract class AbstractSessionDataStoreTest
 
         //persist a session that is not expired
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("1234", 100, now - 10, now - 20, TimeUnit.MINUTES.toMillis(60));
+        SessionData data = store.newSessionData("aaa21", 100, now - 10, now - 20, TimeUnit.MINUTES.toMillis(60));
         data.setLastNode(sessionContext.getWorkerName());
         data.setLastSaved(now - 100);
         data.setAttribute("wibble", "wobble");
@@ -896,7 +987,7 @@ public abstract class AbstractSessionDataStoreTest
         data.setLastAccessed(now - 5);
         data.setAccessed(now - 1);
 
-        store.store("1234", data);
+        store.store("aaa21", data);
 
         checkSessionPersisted(data);
     }

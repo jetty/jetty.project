@@ -28,7 +28,6 @@ import org.junit.jupiter.api.BeforeAll;
  */
 public class InvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {
-
     public static GCloudSessionTestSupport __testSupport;
 
     @BeforeAll

@@ -27,22 +27,24 @@ import org.junit.jupiter.api.Test;
  */
 public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
+    FileTestHelper _helper;
+    
     @BeforeEach
     public void before() throws Exception
     {
-        FileTestHelper.setup();
+        _helper = new FileTestHelper();
     }
 
     @AfterEach
     public void after()
     {
-        FileTestHelper.teardown();
+        _helper.teardown();
     }
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return FileTestHelper.newSessionDataStoreFactory();
+        return _helper.newSessionDataStoreFactory();
     }
 
     @Test

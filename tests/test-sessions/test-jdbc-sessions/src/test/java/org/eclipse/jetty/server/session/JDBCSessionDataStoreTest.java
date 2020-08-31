@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.session;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
@@ -28,7 +29,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
-
     @BeforeEach
     public void setUp() throws Exception
     {
@@ -61,6 +61,12 @@ public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
             data.getCreated(), data.getAccessed(), data.getLastAccessed(),
             data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(),
             data.getLastSaved());
+    }
+    
+    @Test
+    public void testCleanOrphans() throws Exception
+    {
+        super.testCleanOrphans();
     }
 
     @Override

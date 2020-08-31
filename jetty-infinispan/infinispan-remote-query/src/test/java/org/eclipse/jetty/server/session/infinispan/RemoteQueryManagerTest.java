@@ -26,6 +26,8 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.QueryManager;
@@ -63,9 +65,14 @@ public class RemoteQueryManagerTest
     private static final Logger INFINISPAN_LOG =
         LoggerFactory.getLogger("org.eclipse.jetty.server.session.infinispan.infinispanLogs");
 
+    private static final Random r = new Random();
+    private static final int NUM_SESSIONS = 10;
+    private static final int MAX_EXPIRY_TIME = 1000;
+    private static final String NODE_ID = "w0";
+    private static int count;
     private String host;
     private int port;
-
+    
     GenericContainer infinispan =
         new GenericContainer(System.getProperty("infinispan.docker.image.name", "jboss/infinispan-server") +
                                  ":" + System.getProperty("infinispan.docker.image.version", "9.4.8.Final"))
@@ -130,42 +137,61 @@ public class RemoteQueryManagerTest
             remoteCacheManager.getCache("___protobuf_metadata").put("session.proto", content);
         }
 
-        RemoteCache<String, SessionData> cache = remoteCacheManager.getCache(DEFAULT_CACHE_NAME);
-
-        //put some sessions into the remote cache
-        int numSessions = 10;
-        long currentTime = 500;
-        int maxExpiryTime = 1000;
-        Set<String> expiredSessions = new HashSet<>();
-        Random r = new Random();
-
-        for (int i = 0; i < numSessions; i++)
+        RemoteCache<String, InfinispanSessionData> cache = remoteCacheManager.getCache(DEFAULT_CACHE_NAME);   
+        
+        //put some sessions into the cache for "foo" context
+        ContextHandler fooHandler = new ContextHandler();
+        fooHandler.setContextPath("/foo");
+        SessionContext fooSessionContext = new SessionContext(NODE_ID, fooHandler.getServletContext());
+        Set<SessionData> fooSessions = createSessions(cache, fooSessionContext);
+ 
+        //put some sessions into the cache for "bar" context
+        ContextHandler barHandler = new ContextHandler();
+        barHandler.setContextPath("/bar");
+        SessionContext barSessionContext = new SessionContext(NODE_ID, barHandler.getServletContext());
+        Set<SessionData> barSessions = createSessions(cache, barSessionContext);
+        
+        int time = 500;
+        
+        //run the query for "foo" context
+        checkResults(cache, fooSessionContext, time, fooSessions);
+        
+        //run the query for the "bar" context
+        checkResults(cache, barSessionContext, time, barSessions);
+    }
+    
+    private Set<SessionData> createSessions(RemoteCache<String, InfinispanSessionData> cache, SessionContext sessionContext)
+    {
+        Set<SessionData> sessions = new HashSet<>();
+        
+        for (int i = 0; i < NUM_SESSIONS; i++)
         {
-            String id = "sd" + i;
             //create new sessiondata with random expiry time
-            long expiryTime = r.nextInt(maxExpiryTime);
-            InfinispanSessionData sd = new InfinispanSessionData(id, "", "", 0, 0, 0, 0);
-            sd.setLastNode("lastNode");
+            long expiryTime = r.nextInt(MAX_EXPIRY_TIME);
+            String id = "sd" + count;
+            count++;
+            InfinispanSessionData sd = new InfinispanSessionData(id, sessionContext.getCanonicalContextPath(), sessionContext.getVhost(), 0, 0, 0, 0);
+            sd.setLastNode(sessionContext.getWorkerName());
             sd.setExpiry(expiryTime);
-
-            //if this entry has expired add it to expiry list
-            if (expiryTime <= currentTime)
-                expiredSessions.add(id);
-
+            sessions.add(sd);
             //add to cache
             cache.put(id, sd);
-            assertNotNull(cache.get(id));
         }
-
-        //run the query
+        return sessions;
+    }
+    
+    private void checkResults(RemoteCache<String, InfinispanSessionData> cache, SessionContext sessionContext, int time, Set<SessionData> sessions)
+    {
         QueryManager qm = new RemoteQueryManager(cache);
-        Set<String> queryResult = qm.queryExpiredSessions(currentTime);
+        Set<String> queryResult = qm.queryExpiredSessions(sessionContext, time);
 
-        // Check that the result is correct
-        assertEquals(expiredSessions.size(), queryResult.size());
-        for (String s : expiredSessions)
+        for (SessionData s : sessions)
         {
-            assertTrue(queryResult.contains(s));
+            if (s.getExpiry() > 0 && s.getExpiry() <= time)
+            {
+                assertTrue(queryResult.remove(s.getId()));
+            }
         }
+        assertTrue(queryResult.isEmpty()); //check we got them all
     }
 }

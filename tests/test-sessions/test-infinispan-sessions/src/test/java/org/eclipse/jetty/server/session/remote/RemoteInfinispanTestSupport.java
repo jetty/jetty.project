@@ -54,7 +54,7 @@ public class RemoteInfinispanTestSupport
 {
     private static final Logger LOG = LoggerFactory.getLogger(RemoteInfinispanTestSupport.class);
     public static final String DEFAULT_CACHE_NAME = "session_test_cache";
-    public RemoteCache<String, SessionData> _cache;
+    public RemoteCache<String, InfinispanSessionData> _cache;
     private String _name;
     public static RemoteCacheManager _manager;
     private static final Logger INFINISPAN_LOG =
@@ -88,7 +88,7 @@ public class RemoteInfinispanTestSupport
             LOG.info("Infinispan container started for {}:{} - {}ms", host, port,
                      System.currentTimeMillis() - start);
             SearchMapping mapping = new SearchMapping();
-            mapping.entity(SessionData.class).indexed().providedId()
+            mapping.entity(InfinispanSessionData.class).indexed().providedId()
                 .property("expiry", ElementType.METHOD).field();
 
             Properties properties = new Properties();
@@ -154,7 +154,7 @@ public class RemoteInfinispanTestSupport
         _name = cacheName;
     }
 
-    public RemoteCache<String, SessionData> getCache()
+    public RemoteCache<String, InfinispanSessionData> getCache()
     {
         return _cache;
     }
@@ -169,18 +169,18 @@ public class RemoteInfinispanTestSupport
         _cache.clear();
     }
 
-    public void createSession(SessionData data)
+    public void createSession(InfinispanSessionData data)
         throws Exception
     {
         _cache.put(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId(), data);
     }
 
-    public void createUnreadableSession(SessionData data)
+    public void createUnreadableSession(InfinispanSessionData data)
     {
 
     }
 
-    public boolean checkSessionExists(SessionData data)
+    public boolean checkSessionExists(InfinispanSessionData data)
         throws Exception
     {
         return (_cache.get(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId()) != null);

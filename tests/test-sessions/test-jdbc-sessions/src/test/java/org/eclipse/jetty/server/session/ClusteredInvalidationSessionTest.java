@@ -27,7 +27,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 public class ClusteredInvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {
-
     @AfterEach
     public void tearDown() throws Exception
     {

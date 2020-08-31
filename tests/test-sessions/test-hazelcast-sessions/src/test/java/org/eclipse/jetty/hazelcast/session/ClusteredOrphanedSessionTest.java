@@ -29,7 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 public class ClusteredOrphanedSessionTest
     extends AbstractClusteredOrphanedSessionTest
 {
-
     HazelcastSessionDataStoreFactory factory;
 
     HazelcastTestHelper _testHelper;

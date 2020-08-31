@@ -19,15 +19,19 @@
 package org.eclipse.jetty.hazelcast.session;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import com.hazelcast.core.IMap;
-import com.hazelcast.query.EntryObject;
+import com.hazelcast.config.IndexConfig;
+import com.hazelcast.config.IndexType;
+import com.hazelcast.map.IMap;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.PredicateBuilder;
+import com.hazelcast.query.PredicateBuilder.EntryObject;
+import com.hazelcast.query.Predicates;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
@@ -41,8 +45,7 @@ import org.slf4j.LoggerFactory;
  * Session data stored in Hazelcast
  */
 @ManagedObject
-public class HazelcastSessionDataStore
-    extends AbstractSessionDataStore
+public class HazelcastSessionDataStore extends AbstractSessionDataStore
     implements SessionDataStore
 {
 
@@ -50,7 +53,7 @@ public class HazelcastSessionDataStore
 
     private IMap<String, SessionData> sessionDataMap;
 
-    private boolean _scavengeZombies;
+    private boolean _useQueries;
 
     public HazelcastSessionDataStore()
     {
@@ -58,9 +61,9 @@ public class HazelcastSessionDataStore
 
     /**
      * Control whether or not to execute queries to find
-     * "zombie" sessions - ie sessions that are no longer
-     * actively referenced by any jetty instance and should
-     * be expired.
+     * expired sessions - ie sessions for this context 
+     * that are no longer actively referenced by any jetty 
+     * instance and should be expired.
      *
      * If you use this feature, be aware that if your session
      * stores any attributes that use classes from within your
@@ -68,18 +71,18 @@ public class HazelcastSessionDataStore
      * those classes are available to all of your hazelcast
      * instances, whether embedded or remote.
      *
-     * @param scavengeZombies true means unreferenced sessions
+     * @param useQueries true means unreferenced sessions
      * will be actively sought and expired. False means that they
      * will remain in hazelcast until some other mechanism removes them.
      */
-    public void setScavengeZombieSessions(boolean scavengeZombies)
+    public void setUseQueries(boolean useQueries)
     {
-        _scavengeZombies = scavengeZombies;
+        _useQueries = useQueries;
     }
 
-    public boolean isScavengeZombies()
+    public boolean isUseQueries()
     {
-        return _scavengeZombies;
+        return _useQueries;
     }
 
     @Override
@@ -127,8 +130,8 @@ public class HazelcastSessionDataStore
         throws Exception
     {
         super.initialize(context);
-        if (isScavengeZombies())
-            sessionDataMap.addIndex("expiry", true);
+        if (isUseQueries())
+            sessionDataMap.addIndex(new IndexConfig(IndexType.SORTED, "expiry"));
     }
 
     @Override
@@ -143,15 +146,80 @@ public class HazelcastSessionDataStore
     {
         return true;
     }
+    
+    @Override
+    public void doCleanOrphans(long timeLimit)
+    {
+        if (!isUseQueries())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Hazelcast useQueries=false, cannot clean orphaned sessions");
+            return;
+        }
+
+        EntryObject eo = Predicates.newPredicateBuilder().getEntryObject();
+        @SuppressWarnings("unchecked")
+        Predicate<String, SessionData> predicate = eo.get("expiry").greaterThan(0)
+            .and(eo.get("expiry").lessEqual(timeLimit));
+        sessionDataMap.removeAll(predicate);
+    }
 
     @Override
-    public Set<String> doGetExpired(Set<String> candidates)
+    public Set<String> doGetExpired(long time)
     {
-        long now = System.currentTimeMillis();
+        if (!isUseQueries())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Hazelcast useQueries=false, cannot search for expired sessions");
+            return Collections.emptySet();
+        }
 
+        //Now find other sessions for our context in hazelcast that have expired
+        final AtomicReference<Set<String>> reference = new AtomicReference<>();
+        final AtomicReference<Exception> exception = new AtomicReference<>();
+
+        _context.run(() ->
+        {
+            try
+            {
+                Set<String> ids = new HashSet<>();
+                EntryObject eo = Predicates.newPredicateBuilder().getEntryObject();
+                Predicate<String, SessionData> predicate = eo.get("expiry").greaterThan(0)
+                    .and(eo.get("expiry").lessEqual(time))
+                    .and(eo.get("contextPath").equal(_context.getCanonicalContextPath()));
+                Collection<SessionData> results = sessionDataMap.values(predicate);
+                if (results != null)
+                {
+                    for (SessionData sd : results)
+                    {
+                        ids.add(sd.getId());
+                    }
+                }
+                reference.set(ids);
+            }
+            catch (Exception e)
+            {
+                exception.set(e);
+            }
+        });
+
+        if (exception.get() != null)
+        {
+            LOG.warn("Error querying for expired sessions {}", exception.get());
+            return Collections.emptySet();
+        }
+
+        if (reference.get() == null)
+            return Collections.emptySet();
+           
+        return reference.get();
+    }
+    
+    @Override
+    public Set<String> doCheckExpired(Set<String> candidates, long time)
+    {
         Set<String> expiredSessionIds = candidates.stream().filter(candidate ->
         {
-
             if (LOG.isDebugEnabled())
                 LOG.debug("Checking expiry for candidate {}", candidate);
 
@@ -173,34 +241,13 @@ public class HazelcastSessionDataStore
                     if (_context.getWorkerName().equals(sd.getLastNode()))
                     {
                         //we are its manager, add it to the expired set if it is expired now
-                        if ((sd.getExpiry() > 0) && sd.getExpiry() <= now)
+                        if ((sd.getExpiry() > 0) && sd.getExpiry() <= time)
                         {
                             if (LOG.isDebugEnabled())
                             {
                                 LOG.debug("Session {} managed by {} is expired", candidate, _context.getWorkerName());
                             }
                             return true;
-                        }
-                    }
-                    else
-                    {
-                        //if we are not the session's manager, only expire it iff:
-                        // this is our first expiryCheck and the session expired a long time ago
-                        //or
-                        //the session expired at least one graceperiod ago
-                        if (_lastExpiryCheckTime <= 0)
-                        {
-                            if ((sd.getExpiry() > 0) && sd.getExpiry() < (now - (1000L * (3 * _gracePeriodSec))))
-                            {
-                                return true;
-                            }
-                        }
-                        else
-                        {
-                            if ((sd.getExpiry() > 0) && sd.getExpiry() < (now - (1000L * _gracePeriodSec)))
-                            {
-                                return true;
-                            }
                         }
                     }
                 }
@@ -213,56 +260,15 @@ public class HazelcastSessionDataStore
             return false;
         }).collect(Collectors.toSet());
 
-        if (isScavengeZombies())
-        {
-            //Now find other sessions in hazelcast that have expired
-            final AtomicReference<Set<String>> reference = new AtomicReference<>();
-            final AtomicReference<Exception> exception = new AtomicReference<>();
-
-            _context.run(() ->
-            {
-                try
-                {
-                    Set<String> ids = new HashSet<>();
-                    EntryObject eo = new PredicateBuilder().getEntryObject();
-                    Predicate<?, ?> predicate = eo.get("expiry").greaterThan(0).and(eo.get("expiry").lessEqual(now));
-                    Collection<SessionData> results = sessionDataMap.values(predicate);
-                    if (results != null)
-                    {
-                        for (SessionData sd : results)
-                        {
-                            ids.add(sd.getId());
-                        }
-                    }
-                    reference.set(ids);
-                }
-                catch (Exception e)
-                {
-                    exception.set(e);
-                }
-            });
-
-            if (exception.get() != null)
-            {
-                LOG.warn("Error querying for expired sessions", exception.get());
-                return expiredSessionIds;
-            }
-
-            if (reference.get() != null)
-            {
-                expiredSessionIds.addAll(reference.get());
-            }
-        }
-
         return expiredSessionIds;
     }
 
     @Override
-    public boolean exists(String id)
+    public boolean doExists(String id)
         throws Exception
     {
         //TODO find way to do query without pulling in whole session data
-        SessionData sd = load(id);
+        SessionData sd = doLoad(id);
         if (sd == null)
             return false;
 

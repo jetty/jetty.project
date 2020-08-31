@@ -277,7 +277,6 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
          */
         BasicDBObject mongoKey = new BasicDBObject(__ID, id);
 
-        //DBObject sessionDocument = _dbSessions.findOne(mongoKey,_version1);
         DBObject sessionDocument = _dbSessions.findOne(new BasicDBObject(__ID, id));
 
         if (sessionDocument != null)
@@ -320,7 +319,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
     @Override
-    public boolean exists(String id) throws Exception
+    public boolean doExists(String id) throws Exception
     {
         DBObject fields = new BasicDBObject();
         fields.put(__EXPIRY, 1);
@@ -351,18 +350,16 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
     @Override
-    public Set<String> doGetExpired(Set<String> candidates)
+    public Set<String> doCheckExpired(Set<String> candidates, long time)
     {
-        long now = System.currentTimeMillis();
-        long upperBound = now;
         Set<String> expiredSessions = new HashSet<>();
 
         //firstly ask mongo to verify if these candidate ids have expired - all of
         //these candidates will be for our node
         BasicDBObject query = new BasicDBObject();
         query.append(__ID, new BasicDBObject("$in", candidates));
-        query.append(__EXPIRY, new BasicDBObject("$gt", 0).append("$lt", upperBound));
-
+        query.append(__EXPIRY, new BasicDBObject("$gt", 0).append("$lte", time));
+        
         DBCursor verifiedExpiredSessions = null;
         try
         {
@@ -380,46 +377,11 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             if (verifiedExpiredSessions != null)
                 verifiedExpiredSessions.close();
         }
+        
 
-        //now ask mongo to find sessions last managed by any nodes that expired a while ago 
-        //if this is our first expiry check, make sure that we only grab really old sessions
-        if (_lastExpiryCheckTime <= 0)
-            upperBound = (now - (3 * (1000L * _gracePeriodSec)));
-        else
-            upperBound = _lastExpiryCheckTime - (1000L * _gracePeriodSec);
-
-        query = new BasicDBObject();
-        BasicDBObject gt = new BasicDBObject(__EXPIRY, new BasicDBObject("$gt", 0));
-        BasicDBObject lt = new BasicDBObject(__EXPIRY, new BasicDBObject("$lt", upperBound));
-        BasicDBList list = new BasicDBList();
-        list.add(gt);
-        list.add(lt);
-        query.append("$and", list);
-
-        DBCursor oldExpiredSessions = null;
-        try
-        {
-            BasicDBObject bo = new BasicDBObject(__ID, 1);
-            bo.append(__EXPIRY, 1);
-
-            oldExpiredSessions = _dbSessions.find(query, bo);
-            for (DBObject session : oldExpiredSessions)
-            {
-                String id = (String)session.get(__ID);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} Mongo found old expired session {} exp={}", _context, id, session.get(__EXPIRY));
-                expiredSessions.add(id);
-            }
-        }
-        finally
-        {
-            if (oldExpiredSessions != null)
-                oldExpiredSessions.close();
-        }
-
-        //check through sessions that were candidates, but not found as expired.
+        //check through sessions that were candidates, but not found as expired. 
         //they may no longer be persisted, in which case they are treated as expired.
-        for (String c : candidates)
+        for (String c:candidates)
         {
             if (!expiredSessions.contains(c))
             {
@@ -437,6 +399,59 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         return expiredSessions;
     }
 
+    @Override
+    public Set<String> doGetExpired(long timeLimit)
+    {
+        // now ask mongo to find sessions for this context, last managed by any
+        // node, that expired before timeLimit
+        Set<String> expiredSessions = new HashSet<>();
+
+        BasicDBObject query = new BasicDBObject();
+        BasicDBObject gt = new BasicDBObject(__EXPIRY, new BasicDBObject("$gt", 0));
+        BasicDBObject lt = new BasicDBObject(__EXPIRY, new BasicDBObject("$lte", timeLimit));
+        BasicDBList list = new BasicDBList();
+        list.add(gt);
+        list.add(lt);
+        query.append("$and", list);
+
+        DBCursor oldExpiredSessions = null;
+        try
+        {
+            BasicDBObject bo = new BasicDBObject(__ID, 1);
+            bo.append(__EXPIRY, 1);
+
+            oldExpiredSessions = _dbSessions.find(query, bo);
+            for (DBObject session : oldExpiredSessions)
+            {
+                String id = (String)session.get(__ID);
+                
+                //TODO we should verify if there is a session for my context, not any context
+                expiredSessions.add(id);
+            }
+        }
+        finally
+        {
+            if (oldExpiredSessions != null)
+                oldExpiredSessions.close();
+        }
+
+        return expiredSessions;
+    }
+
+    @Override
+    public void doCleanOrphans(long timeLimit)
+    {
+        //Delete all session documents where the expiry time (which is always the most
+        //up-to-date expiry of all contexts sharing that session id) has already past as
+        //at the timeLimit.
+        BasicDBObject query = new BasicDBObject();
+        query.append(__EXPIRY, new BasicDBObject("$gt", 0).append("$lte", timeLimit));
+        _dbSessions.remove(query, WriteConcern.SAFE);
+    }
+
+    /**
+     * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
+     */
     public void initialize(SessionContext context) throws Exception
     {
         if (isStarted())
@@ -539,7 +554,8 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             .add("sparse", false)
             .add("unique", true)
             .get());
-        LOG.debug("done ensure Mongodb indexes existing");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Done ensure Mongodb indexes existing");
         //TODO perhaps index on expiry time?
     }
 

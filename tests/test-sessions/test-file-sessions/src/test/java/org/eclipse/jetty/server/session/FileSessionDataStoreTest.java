@@ -20,42 +20,44 @@ package org.eclipse.jetty.server.session;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 /**
  * FileSessionDataStoreTest
  */
 public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
+    private FileTestHelper _helper;
+    
     @BeforeEach
     public void before() throws Exception
     {
-        FileTestHelper.setup();
+        _helper = new FileTestHelper();
     }
 
     @AfterEach
     public void after()
     {
-        FileTestHelper.teardown();
+        _helper.teardown();
+        _helper = null;
     }
 
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        return FileTestHelper.newSessionDataStoreFactory();
+        return _helper.newSessionDataStoreFactory();
     }
 
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        FileTestHelper.createFile(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
+        _helper.createFile(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
             data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), data.getAllAttributes());
     }
 
     @Override
     public void persistUnreadableSession(SessionData data) throws Exception
     {
-        FileTestHelper.createFile(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
+        _helper.createFile(data.getId(), data.getContextPath(), data.getVhost(), data.getLastNode(), data.getCreated(),
             data.getAccessed(), data.getLastAccessed(), data.getMaxInactiveMs(), data.getExpiry(), data.getCookieSet(), null);
     }
 
@@ -66,7 +68,7 @@ public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            return (FileTestHelper.getFile(data.getId()) != null);
+            return (_helper.getFile(data.getId()) != null);
         }
         finally
         {
@@ -81,7 +83,7 @@ public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
         Thread.currentThread().setContextClassLoader(_contextClassLoader);
         try
         {
-            return FileTestHelper.checkSessionPersisted(data);
+            return _helper.checkSessionPersisted(data);
         }
         catch (Throwable e)
         {
@@ -92,12 +94,5 @@ public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
         {
             Thread.currentThread().setContextClassLoader(old);
         }
-    }
-
-    @Override
-    @Test
-    public void testStoreSession() throws Exception
-    {
-        super.testStoreSession();
     }
 }

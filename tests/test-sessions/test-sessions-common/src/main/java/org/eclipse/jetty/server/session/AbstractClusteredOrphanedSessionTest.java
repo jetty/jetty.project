@@ -45,7 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  */
 public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestBase
 {
-
     /**
      * @throws Exception on test failure
      */

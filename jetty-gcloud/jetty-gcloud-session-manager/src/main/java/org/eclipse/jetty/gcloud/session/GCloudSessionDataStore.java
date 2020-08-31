@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.cloud.datastore.Blob;
 import com.google.cloud.datastore.BlobValue;
@@ -65,12 +66,10 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     protected int _maxResults = DEFAULT_MAX_QUERY_RESULTS;
     protected int _maxRetries = DEFAULT_MAX_RETRIES;
     protected int _backoff = DEFAULT_BACKOFF_MS;
-
     protected boolean _dsProvided = false;
     protected boolean _indexesPresent = false;
     protected EntityDataModel _model;
     protected boolean _modelProvided;
-
     private String _namespace;
 
     /**
@@ -92,7 +91,6 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         public static final String MAXINACTIVE = "maxInactive";
         public static final String ATTRIBUTES = "attributes";
         public static final String LASTSAVED = "lastSaved";
-
         public static final String KIND = "GCloudSession";
         protected String _kind = KIND;
         protected String _id = ID;
@@ -351,18 +349,24 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     {
         String _id;
         String _lastNode;
+        String _contextPath;
+        String _vhost;
         long _expiry;
 
         /**
          * @param id session id
          * @param lastNode last node id to manage the session
          * @param expiry timestamp of expiry
+         * @param contextPath  context path for session
+         * @param vhost vhost of context for session
          */
-        public ExpiryInfo(String id, String lastNode, long expiry)
+        public ExpiryInfo(String id, String lastNode, long expiry, String contextPath, String vhost)
         {
             _id = id;
             _lastNode = lastNode;
             _expiry = expiry;
+            _contextPath = contextPath;
+            _vhost = vhost;
         }
 
         /**
@@ -387,6 +391,26 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         public long getExpiry()
         {
             return _expiry;
+        }
+        
+        public String getContextPath()
+        {
+            return _contextPath;
+        }
+
+        public void setContextPath(String contextPath)
+        {
+            _contextPath = contextPath;
+        }
+
+        public String getVhost()
+        {
+            return _vhost;
+        }
+
+        public void setVhost(String vhost)
+        {
+            _vhost = vhost;
         }
     }
 
@@ -527,56 +551,34 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
-    public Set<String> doGetExpired(Set<String> candidates)
+    public Set<String> doCheckExpired(Set<String> candidates, long time)
     {
-        long now = System.currentTimeMillis();
         Set<String> expired = new HashSet<String>();
 
         try
-        {
+        {    
             Set<ExpiryInfo> info = null;
             if (_indexesPresent)
-                info = queryExpiryByIndex();
+                info = queryExpiryByIndex(time);
             else
-                info = queryExpiryByEntity();
+                info = queryExpiryByEntity(time);
 
             for (ExpiryInfo item : info)
             {
-                if (StringUtil.isBlank(item.getLastNode()))
-                {
-                    expired.add(item.getId()); //nobody managing it
-                }
-                else
-                {
-                    if (_context.getWorkerName().equals(item.getLastNode()))
-                    {
-                        expired.add(item.getId()); //we're managing it, we can expire it
-                    }
-                    else
-                    {
-                        if (_lastExpiryCheckTime <= 0)
-                        {
-                            //our first check, just look for sessions that we managed by another node that
-                            //expired at least 3 graceperiods ago
-                            if (item.getExpiry() < (now - (1000L * (3 * _gracePeriodSec))))
-                                expired.add(item.getId());
-                        }
-                        else
-                        {
-                            //another node was last managing it, only expire it if it expired a graceperiod ago
-                            if (item.getExpiry() < (now - (1000L * _gracePeriodSec)))
-                                expired.add(item.getId());
-                        }
-                    }
-                }
-            }
+                if (StringUtil.isBlank(item.getLastNode()) || !(_context.getWorkerName().equals(item.getLastNode())))
+                    continue; //we're not its manager so skip it
+                
+                if (StringUtil.isBlank(item.getContextPath()) || !(_context.getCanonicalContextPath().equals(item.getContextPath())))
+                    continue; // session is not for this context
+                expired.add(item.getId());
+            }   
 
             //reconcile against ids that the SessionCache thinks are expired
             Set<String> tmp = new HashSet<String>(candidates);
             tmp.removeAll(expired);
             if (!tmp.isEmpty())
             {
-                //sessionstore thinks these are expired, but they are either no
+                //sessioncache thinks these are expired, but they are either no
                 //longer in the db or not expired in the db, or we exceeded the
                 //number of records retrieved by the expiry query, so check them
                 //individually
@@ -600,12 +602,69 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
             }
 
             return expired;
+            
         }
         catch (Exception e)
         {
             LOG.warn("Unable to get expired", e);
             return expired; //return what we got
+        } 
+    }
+    
+    @Override
+    public Set<String> doGetExpired(long time)
+    {
+        // Get sessions managed by any node that expired at or before the given
+        // time limit
+        Set<String> expired = new HashSet<String>();
+        try
+        {    
+            Set<ExpiryInfo> info = null;
+            if (_indexesPresent)
+                info = queryExpiryByIndex(time);
+            else
+                info = queryExpiryByEntity(time);
+
+            for (ExpiryInfo item:info)
+            {
+                expired.add(item.getId());
+            }
+            return expired;
+        }     
+        catch (Exception e)
+        {
+            LOG.warn("Error querying expired sessions", e);
+            return expired; //return what we got
+        }   
+    }
+
+    @Override
+    public void doCleanOrphans(long timeLimit)
+    {
+        // Gcloud datastore does not support DELETE statements with query params.
+        // Therefore need to do a query, and then a separate operation to delete keys 
+        //returned.
+        try
+        {    
+            Set<ExpiryInfo> info = null;
+            if (_indexesPresent)
+                info = queryExpiryByIndex(timeLimit);
+            else
+                info = queryExpiryByEntity(timeLimit);
+
+            //iterate over each of the returned infos,
+            //make a key for each, then do the delete
+            Set<Key> keys = info.stream().map(i ->
+            {
+                return makeKey(i.getId(), i.getContextPath(), i.getVhost());
+            }).collect(Collectors.toSet());
+            
+            _datastore.delete(keys.toArray(new Key[keys.size()]));
         }
+        catch (Exception e)
+        {
+            LOG.warn("Error deleting orphaned sessions", e);
+        }   
     }
 
     /**
@@ -618,12 +677,25 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      */
     protected Set<ExpiryInfo> queryExpiryByEntity() throws Exception
     {
-        Set<ExpiryInfo> info = new HashSet<>();
+        return queryExpiryByEntity(System.currentTimeMillis());
+    }
 
+    /**
+     * A less efficient query to find sessions whose expiry time is before the
+     * given timeLimit.
+     * 
+     * @param timeLimit time since the epoch
+     * 
+     * @return set of ExpiryInfo representing the id,lastNode and expiry time
+     * @throws Exception
+     */
+    protected Set<ExpiryInfo> queryExpiryByEntity(long timeLimit) throws Exception
+    {
+        Set<ExpiryInfo> infos = new HashSet<>();
         //get up to maxResult number of sessions that have expired
         Query<Entity> query = Query.newEntityQueryBuilder()
             .setKind(_model.getKind())
-            .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), System.currentTimeMillis())))
+            .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), timeLimit)))
             .setLimit(_maxResults)
             .build();
 
@@ -636,15 +708,21 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         }
         else
             results = _datastore.run(query);
+        
         while (results.hasNext())
         {
             Entity entity = results.next();
-            info.add(new ExpiryInfo(entity.getString(_model.getId()), entity.getString(_model.getLastNode()), entity.getLong(_model.getExpiry())));
+            ExpiryInfo info = new ExpiryInfo(entity.getString(_model.getId()),
+                                             entity.getString(_model.getLastNode()), 
+                                             entity.getLong(_model.getExpiry()),
+                                             entity.getString(_model.getContextPath()),
+                                             entity.getString(_model.getVhost()));
+            
+            infos.add(info);
         }
-
-        return info;
+        return infos;
     }
-
+    
     /**
      * An efficient query to find sessions whose expiry time has passed:
      * uses a projection query, which requires indexes to be uploaded.
@@ -654,12 +732,24 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      */
     protected Set<ExpiryInfo> queryExpiryByIndex() throws Exception
     {
-        long now = System.currentTimeMillis();
-        Set<ExpiryInfo> info = new HashSet<>();
+        return queryExpiryByIndex(System.currentTimeMillis());       
+    }
+
+    /**
+     * An efficient query to find sessions whose expiry time is before the given timeLimit:
+     * uses a projection query, which requires indexes to be uploaded.
+     * 
+     * @param timeLimit the upper limit of expiry time to check
+     * @return  id,lastnode and expiry time of sessions that have expired
+     * @throws Exception
+     */
+    protected Set<ExpiryInfo>  queryExpiryByIndex(long timeLimit) throws Exception
+    {
+        Set<ExpiryInfo> infos = new HashSet<>();
         Query<ProjectionEntity> query = Query.newProjectionEntityQueryBuilder()
             .setKind(_model.getKind())
-            .setProjection(_model.getId(), _model.getLastNode(), _model.getExpiry())
-            .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), now)))
+            .setProjection(_model.getId(), _model.getLastNode(), _model.getExpiry(), _model.getContextPath(), _model.getVhost())
+            .setFilter(CompositeFilter.and(PropertyFilter.gt(_model.getExpiry(), 0), PropertyFilter.le(_model.getExpiry(), timeLimit)))
             .setLimit(_maxResults)
             .build();
 
@@ -677,14 +767,19 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
         while (presults.hasNext())
         {
             ProjectionEntity pe = presults.next();
-            info.add(new ExpiryInfo(pe.getString(_model.getId()), pe.getString(_model.getLastNode()), pe.getLong(_model.getExpiry())));
+            ExpiryInfo info = new ExpiryInfo(pe.getString(_model.getId()),
+                                             pe.getString(_model.getLastNode()), 
+                                             pe.getLong(_model.getExpiry()),
+                                             pe.getString(_model.getContextPath()),
+                                             pe.getString(_model.getVhost()));
+            infos.add(info);
         }
 
-        return info;
+        return infos; 
     }
-
+   
     @Override
-    public boolean exists(String id) throws Exception
+    public boolean doExists(String id) throws Exception
     {
         if (_indexesPresent)
         {
@@ -819,7 +914,12 @@ public class GCloudSessionDataStore extends AbstractSessionDataStore
      */
     protected Key makeKey(String id, SessionContext context)
     {
-        String key = context.getCanonicalContextPath() + "_" + context.getVhost() + "_" + id;
+        return makeKey(id, context.getCanonicalContextPath(), context.getVhost());
+    }
+    
+    protected Key makeKey(String id, String canonicalContextPath, String canonicalVHost)
+    {
+        String key = canonicalContextPath + "_" + canonicalVHost + "_" + id;
         return _keyFactory.newKey(key);
     }
 

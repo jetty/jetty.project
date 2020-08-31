@@ -147,6 +147,7 @@ public class SessionData implements Serializable
                 boolean isServerClassLoader = in.readBoolean(); //use server or webapp classloader to load
                 if (LOG.isDebugEnabled())
                     LOG.debug("Deserialize {} isServerLoader={} serverLoader={} tccl={}", name, isServerClassLoader, serverLoader, contextLoader);
+                
                 Object value = ((ClassLoadingObjectInputStream)in).readObject(isServerClassLoader ? serverLoader : contextLoader);
                 data._attributes.put(name, value);
             }

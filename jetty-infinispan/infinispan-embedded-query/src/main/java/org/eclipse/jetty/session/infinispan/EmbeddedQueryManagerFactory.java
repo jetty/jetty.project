@@ -26,11 +26,11 @@ public class EmbeddedQueryManagerFactory implements QueryManagerFactory
 {
 
     @Override
-    public QueryManager getQueryManager(BasicCache<String, SessionData> cache)
+    public QueryManager getQueryManager(BasicCache<String, InfinispanSessionData> cache)
     {
         if (!(cache instanceof Cache))
             throw new IllegalArgumentException("Argument was not of type Cache");
 
-        return new EmbeddedQueryManager((Cache<String, SessionData>)cache);
+        return new EmbeddedQueryManager((Cache<String, InfinispanSessionData>)cache);
     }
 }

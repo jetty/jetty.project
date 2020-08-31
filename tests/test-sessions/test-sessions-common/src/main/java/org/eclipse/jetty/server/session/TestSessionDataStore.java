@@ -54,7 +54,7 @@ public class TestSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
-    public boolean exists(String id) throws Exception
+    public boolean doExists(String id) throws Exception
     {
         return _map.containsKey(id);
     }
@@ -84,7 +84,7 @@ public class TestSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
-    public Set<String> doGetExpired(Set<String> candidates)
+    public Set<String> doCheckExpired(Set<String> candidates, long time)
     {
         HashSet<String> set = new HashSet<>();
         long now = System.currentTimeMillis();
@@ -95,5 +95,24 @@ public class TestSessionDataStore extends AbstractSessionDataStore
                 set.add(d.getId());
         }
         return set;
+    }
+
+    @Override
+    public Set<String> doGetExpired(long timeLimit)
+    {
+        Set<String> set =  new HashSet<>();
+        
+        for (SessionData d:_map.values())
+        {
+            if (d.getExpiry() > 0 && d.getExpiry() <= timeLimit)
+                set.add(d.getId());
+        }
+        return set;
+    }
+
+    @Override
+    public void doCleanOrphans(long timeLimit)
+    {
+        //noop
     }
 }

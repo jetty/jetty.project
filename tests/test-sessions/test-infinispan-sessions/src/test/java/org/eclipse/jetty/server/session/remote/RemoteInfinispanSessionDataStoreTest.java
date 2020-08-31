@@ -78,7 +78,7 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        __testSupport.createSession(data);
+        __testSupport.createSession((InfinispanSessionData)data);
     }
 
     @Override
@@ -90,7 +90,7 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
     {
-        return __testSupport.checkSessionExists(data);
+        return __testSupport.checkSessionExists((InfinispanSessionData)data);
     }
 
     @Override
@@ -126,7 +126,7 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
 
         //persist a session
         long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("222", 100, now, now - 1, -1);
+        InfinispanSessionData data = (InfinispanSessionData)store.newSessionData("222", 100, now, now - 1, -1);
         data.setLastNode(sessionContext.getWorkerName());
         persistSession(data);
 
