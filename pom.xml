@@ -979,6 +979,11 @@
         <version>${websocket.api.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-schemas</artifactId>
+        <version>5.2-SNAPSHOT</version>
+      </dependency>
+      <dependency>
         <groupId>jakarta.annotation</groupId>
         <artifactId>jakarta.annotation-api</artifactId>
         <version>${annotation-api.version}</version>
