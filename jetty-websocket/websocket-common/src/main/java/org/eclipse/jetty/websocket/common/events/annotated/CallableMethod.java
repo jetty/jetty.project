@@ -139,6 +139,9 @@ public class CallableMethod
     @Override
     public String toString()
     {
-        return String.format("%s[%s]", this.getClass().getSimpleName(), method.toGenericString());
+        return String.format("%s[pojo=%s,method=%s]",
+            this.getClass().getSimpleName(),
+            pojo.getName(),
+            method.toGenericString());
     }
 }
