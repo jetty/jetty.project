@@ -673,16 +673,11 @@ public class ResourceService
                 // write without headers
                 content.getResource().writeTo(out, 0, content_length);
             }
-            // we are working with a HEAD request
-            else if (isHead(request) && content_length > 0)
-            {
-                putHeaders(response, content, content_length);
-            }
             // else if we can't do a bypass write because of wrapping
-            else if (written || !(out instanceof HttpOutput))
+            else if (written)
             {
                 // write normally
-                putHeaders(response, content, written ? -1 : 0);
+                putHeaders(response, content, Response.NO_CONTENT_LENGTH);
                 ByteBuffer buffer = content.getIndirectBuffer();
                 if (buffer != null)
                     BufferUtil.writeTo(buffer, out);
@@ -693,7 +688,7 @@ public class ResourceService
             else
             {
                 // write the headers
-                putHeaders(response, content, 0);
+                putHeaders(response, content, Response.USE_KNOWN_CONTENT_LENGTH);
 
                 // write the content asynchronously if supported
                 if (request.isAsyncSupported() && content.getContentLengthValue() > response.getBufferSize())
@@ -741,7 +736,7 @@ public class ResourceService
             //  if there are no satisfiable ranges, send 416 response
             if (ranges == null || ranges.size() == 0)
             {
-                putHeaders(response, content, 0);
+                putHeaders(response, content, Response.USE_KNOWN_CONTENT_LENGTH);
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     InclusiveByteRange.to416HeaderRangeString(content_length));
                 sendStatus(response, HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE, null);
@@ -768,7 +763,7 @@ public class ResourceService
             //  216 response which does not require an overall
             //  content-length header
             //
-            putHeaders(response, content, -1);
+            putHeaders(response, content, Response.NO_CONTENT_LENGTH);
             String mimetype = (content == null ? null : content.getContentTypeValue());
             if (mimetype == null)
                 LOG.warn("Unknown mimetype for " + request.getRequestURI());
@@ -849,11 +844,6 @@ public class ResourceService
             if (_cacheControl != null)
                 response.setHeader(_cacheControl.getName(), _cacheControl.getValue());
         }
-    }
-
-    private boolean isHead(HttpServletRequest request)
-    {
-        return "HEAD".equalsIgnoreCase(request.getMethod());
     }
 
     public interface WelcomeFactory
