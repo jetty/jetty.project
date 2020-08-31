@@ -673,11 +673,16 @@ public class ResourceService
                 // write without headers
                 content.getResource().writeTo(out, 0, content_length);
             }
+            // we are working with a HEAD request
+            else if (isHead(request) && content_length > 0)
+            {
+                putHeaders(response, content, content_length);
+            }
             // else if we can't do a bypass write because of wrapping
             else if (written || !(out instanceof HttpOutput))
             {
                 // write normally
-                putHeaders(response, content, content_length);
+                putHeaders(response, content, written ? -1 : 0);
                 ByteBuffer buffer = content.getIndirectBuffer();
                 if (buffer != null)
                     BufferUtil.writeTo(buffer, out);
@@ -844,6 +849,11 @@ public class ResourceService
             if (_cacheControl != null)
                 response.setHeader(_cacheControl.getName(), _cacheControl.getValue());
         }
+    }
+
+    private boolean isHead(HttpServletRequest request)
+    {
+        return "HEAD".equalsIgnoreCase(request.getMethod());
     }
 
     public interface WelcomeFactory
