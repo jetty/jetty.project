@@ -46,6 +46,10 @@ import org.eclipse.jetty.util.thread.Locker;
  * then a brute force iteration is done over all entries. The available
  * strategies are:
  * <dl>
+ *     <dt>{@link Pool.ThreadLocalStrategy}</dt>
+ *     <dd>This strategy is a threadlocal strategy that remembers
+ *     a single entry previously used by the current thread.
+ *     </dd>
  *     <dt>{@link Pool.ThreadLocalCacheStrategy}</dt>
  *     <dd>This strategy is a threadlocal caching mechanism that remembers
  *     up to N entries previously used by the current thread.
@@ -93,13 +97,16 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * Construct a Pool with the specified thread-local cache size.
      *
      * @param maxEntries the maximum amount of entries that the pool will accept.
-     * @param cacheSize the thread-local cache size. A value greater than 0 will
-     *                  initialize the pool strategy with a {@link ThreadLocalCacheStrategy},
+     * @param cacheSize the thread-local cache size. A value of 1 will use the
+     *                  {@link ThreadLocalStrategy}, a value greater than 1 will
+     *                  use a {@link ThreadLocalCacheStrategy},
      *                  otherwise a {@link NullStrategy} will be used.
      */
     public Pool(int maxEntries, int cacheSize)
     {
-        this(maxEntries, cacheSize > 0 ? new ThreadLocalCacheStrategy<>(cacheSize) : null);
+        this(maxEntries, cacheSize < 0 ? null : cacheSize == 1
+            ? new ThreadLocalStrategy<>()
+            : new ThreadLocalCacheStrategy<>(cacheSize));
     }
 
     /**
@@ -189,6 +196,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
             Entry entry = new Entry();
             entries.add(entry);
+            strategy.released(entries, entry, true);
             return entry;
         }
     }
@@ -584,6 +592,8 @@ public class Pool<T> implements AutoCloseable, Dumpable
         Pool<T>.Entry acquire(List<Pool<T>.Entry> entries);
 
         /**
+         * Notification an entry has been release.  The notification comes after the entry
+         * has been put back in the pool and it may already have been reacquired before or during this call.
          * @param entries The list of entries known to the pool. This may be concurrently modified.
          * @param entry The entry to be release
          * @param reusable true if the entry is reusable and will be put back in the pool.
@@ -599,6 +609,32 @@ public class Pool<T> implements AutoCloseable, Dumpable
         public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
         {
             return null;
+        }
+    }
+
+    public static class ThreadLocalStrategy<T> implements Strategy<T>
+    {
+        private final ThreadLocal<Pool<T>.Entry> last;
+
+        ThreadLocalStrategy()
+        {
+            last = new ThreadLocal<>();
+        }
+
+        @Override
+        public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
+        {
+            Pool<T>.Entry entry = last.get();
+            if (entry != null && entry.tryAcquire())
+                return entry;
+            return null;
+        }
+
+        @Override
+        public void released(List<Pool<T>.Entry> entries, Pool<T>.Entry entry, boolean reusable)
+        {
+            if (reusable)
+                last.set(entry);
         }
     }
 

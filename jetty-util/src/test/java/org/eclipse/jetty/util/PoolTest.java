@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -31,10 +32,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -334,24 +336,31 @@ public class PoolTest
     @MethodSource(value = "cacheSize")
     public void testMaxMultiplex(int cacheSize)
     {
-        Pool<String> pool = new Pool<>(2, cacheSize);
+        Pool<AtomicInteger> pool = new Pool<>(2, cacheSize);
         pool.setMaxMultiplex(3);
-        pool.reserve(-1).enable("aaa", false);
-        pool.reserve(-1).enable("bbb", false);
 
-        Pool<String>.Entry e1 = pool.acquire();
-        Pool<String>.Entry e2 = pool.acquire();
-        Pool<String>.Entry e3 = pool.acquire();
-        Pool<String>.Entry e4 = pool.acquire();
-        assertThat(e1.getPooled(), equalTo("aaa"));
-        assertThat(e1, sameInstance(e2));
-        assertThat(e1, sameInstance(e3));
-        assertThat(e4.getPooled(), equalTo("bbb"));
-        assertThat(pool.release(e1), is(true));
-        Pool<String>.Entry e5 = pool.acquire();
-        assertThat(e2, sameInstance(e5));
-        Pool<String>.Entry e6 = pool.acquire();
-        assertThat(e4, sameInstance(e6));
+        AtomicInteger a = new AtomicInteger();
+        AtomicInteger b = new AtomicInteger();
+        pool.reserve(-1).enable(a, false);
+        pool.reserve(-1).enable(b, false);
+
+        pool.acquire().getPooled().incrementAndGet();
+        pool.acquire().getPooled().incrementAndGet();
+        pool.acquire().getPooled().incrementAndGet();
+        pool.acquire().getPooled().incrementAndGet();
+
+        assertThat(a.get(), greaterThan(0));
+        assertThat(a.get(), lessThanOrEqualTo(3));
+        assertThat(b.get(), greaterThan(0));
+        assertThat(b.get(), lessThanOrEqualTo(3));
+
+        pool.acquire().getPooled().incrementAndGet();
+        pool.acquire().getPooled().incrementAndGet();
+
+        assertThat(a.get(), is(3));
+        assertThat(b.get(), is(3));
+
+        assertNull(pool.acquire());
     }
 
     @ParameterizedTest
