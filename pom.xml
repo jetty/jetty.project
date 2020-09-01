@@ -31,7 +31,7 @@
     <hazelcast.version>4.0.1</hazelcast.version>
     <conscrypt.version>2.4.0</conscrypt.version>
     <asm.version>8.0.1</asm.version>
-    <jmh.version>1.21</jmh.version>
+    <jmh.version>1.25.1</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.4.0</tycho-version>
     <junit.version>5.6.2</junit.version>
