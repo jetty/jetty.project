@@ -39,16 +39,28 @@ import org.eclipse.jetty.util.thread.Locker;
 
 /**
  * A fast pool of objects, with optional support for
- * multiplexing, max usage count and thread-local caching.
+ * multiplexing, max usage count and optimal strategies such as thread-local caching.
  * <p>
- * The thread-local caching mechanism is about remembering up to N previously
- * used entries into a thread-local single-threaded collection.
- * When that collection is not empty, its entries are removed one by one
- * during acquisition until an entry that can be acquired is found.
- * This can greatly speed up acquisition when both the acquisition and the
- * release of the entries is done on the same thread as this avoids iterating
- * the global, thread-safe collection of entries.
- * </p>
+ * When acquiring an entry in the pool, this class will first call any
+ * strategy passed in the constructor.  If the strategy cannot acquire an entry
+ * then a brute force iteration is done over all entries. The available
+ * strategies are:
+ * <dl>
+ *     <dt>{@link Pool.ThreadLocalCacheStrategy}</dt>
+ *     <dd>This strategy is a threadlocal caching mechanism that remembers
+ *     up to N entries previously used by the current thread.
+ *     </dd>
+ *     <dt>{@link Pool.RoundRobinStrategy}</dt>
+ *     <dd>Entries are tried in sequence so that all entries in the pool are
+ *     used one after the other. If the next entry cannot be acquired, entries
+ *     in the next slot are tried.</dd>
+ *     <dt>{@link Pool.RandomStrategy}</dt>
+ *     <dd>A random entry is tried</dd>
+ *     <dt>{@link Pool.LeastRecentlyUsedStrategy}</dt>
+ *     <dd>The least recently used entries are tried until one can be acquired</dd>
+ *     <dt>{@link Pool.NullStrategy}</dt>
+ *     <dd>No strategy is used and the pool is iterated to acquire an entry</dd>
+ * </dl>
  * <p>
  * When the method {@link #close()} is called, all {@link Closeable}s in the pool
  * are also closed.
@@ -81,7 +93,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * Construct a Pool with the specified thread-local cache size.
      *
      * @param maxEntries the maximum amount of entries that the pool will accept.
-     * @param cacheSize the thread-local cache size. A value less than 1 means the cache is disabled.
+     * @param cacheSize the thread-local cache size. A value greater than 0 will
+     *                  initialize the pool strategy with a {@link ThreadLocalCacheStrategy},
+     *                  otherwise a {@link NullStrategy} will be used.
      */
     public Pool(int maxEntries, int cacheSize)
     {
@@ -558,10 +572,22 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
+    /** A pluggable strategy to optimize pool acquisition
+     * @param <T> The type of the items in the pool
+     */
     public interface Strategy<T>
     {
+        /** Acquire an entry
+         * @param entries The list of entries known to the pool. This may be concurrently modified.
+         * @return An acquired entry or null if none can be acquired by this strategy
+         */
         Pool<T>.Entry acquire(List<Pool<T>.Entry> entries);
 
+        /**
+         * @param entries The list of entries known to the pool. This may be concurrently modified.
+         * @param entry The entry to be release
+         * @param reusable true if the entry is reusable and will be put back in the pool.
+         */
         default void released(List<Pool<T>.Entry> entries, Pool<T>.Entry entry, boolean reusable)
         {
         }
