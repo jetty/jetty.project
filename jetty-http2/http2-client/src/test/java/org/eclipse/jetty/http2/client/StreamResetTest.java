@@ -27,6 +27,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -63,6 +64,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -198,14 +200,15 @@ public class StreamResetTest extends AbstractTest
                     {
                         // Simulate that there is pending data to send.
                         IStream stream = (IStream)s;
-                        stream.getSession().frames(stream, new Callback()
+                        List<Frame> frames = Collections.singletonList(new DataFrame(s.getId(), ByteBuffer.allocate(16), true));
+                        stream.getSession().frames(stream, frames, new Callback()
                         {
                             @Override
                             public void failed(Throwable x)
                             {
                                 serverResetLatch.countDown();
                             }
-                        }, new DataFrame(s.getId(), ByteBuffer.allocate(16), true));
+                        });
                     }
                 };
             }

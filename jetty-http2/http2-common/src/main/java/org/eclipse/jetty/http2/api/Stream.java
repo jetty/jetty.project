@@ -18,10 +18,16 @@
 
 package org.eclipse.jetty.http2.api;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.frames.StreamFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 
@@ -51,10 +57,22 @@ public interface Stream
     Session getSession();
 
     /**
-     * <p>Sends the given HEADERS {@code frame} representing an HTTP response.</p>
+     * <p>Sends the given list of frames.</p>
+     * <p>Typically used to send an HTTP response along with content and possibly trailers.</p>
+     *
+     * @param frameList the list of frames to send
+     * @param callback the callback that gets notified when the frames have been sent
+     */
+    void send(Stream.FrameList frameList, Callback callback);
+
+    /**
+     * <p>Sends the given HEADERS {@code frame}.</p>
+     * <p>Typically used to send an HTTP response with no content and no trailers,
+     * or to send the HTTP response trailers.</p>
      *
      * @param frame the HEADERS frame to send
      * @param callback the callback that gets notified when the frame has been sent
+     * @see #send(FrameList, Callback)
      */
     void headers(HeadersFrame frame, Callback callback);
 
@@ -296,6 +314,64 @@ public interface Stream
             {
                 return true;
             }
+        }
+    }
+
+    /**
+     * <p>An ordered list of frames belonging to the same stream.</p>
+     */
+    public static class FrameList
+    {
+        private final List<StreamFrame> frames;
+
+        /**
+         * <p>Creates a frame list of just the given HEADERS frame.</p>
+         *
+         * @param headers the HEADERS frame
+         */
+        public FrameList(HeadersFrame headers)
+        {
+            Objects.requireNonNull(headers);
+            this.frames = Collections.singletonList(headers);
+        }
+
+        /**
+         * <p>Creates a frame list of the given frames.</p>
+         *
+         * @param headers the HEADERS frame for the headers
+         * @param data the DATA frame for the content, or null if there is no content
+         * @param trailers the HEADERS frame for the trailers, or null if there are no trailers
+         */
+        public FrameList(HeadersFrame headers, DataFrame data, HeadersFrame trailers)
+        {
+            Objects.requireNonNull(headers);
+            this.frames = new ArrayList<>(3);
+            int streamId = headers.getStreamId();
+            if (data != null && data.getStreamId() != streamId)
+                throw new IllegalArgumentException("Invalid stream ID for DATA frame " + data);
+            if (trailers != null && trailers.getStreamId() != streamId)
+                throw new IllegalArgumentException("Invalid stream ID for HEADERS frame " + trailers);
+            this.frames.add(headers);
+            if (data != null)
+                this.frames.add(data);
+            if (trailers != null)
+                this.frames.add(trailers);
+        }
+
+        /**
+         * @return the stream ID of the frames in this list
+         */
+        public int getStreamId()
+        {
+            return frames.get(0).getStreamId();
+        }
+
+        /**
+         * @return a List of non-null frames
+         */
+        public List<StreamFrame> getFrames()
+        {
+            return frames;
         }
     }
 }

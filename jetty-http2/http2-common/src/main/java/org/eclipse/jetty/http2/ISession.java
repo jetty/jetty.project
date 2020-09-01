@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -48,17 +49,15 @@ public interface ISession extends Session
 
     /**
      * <p>Enqueues the given frames to be written to the connection.</p>
-     *
      * @param stream the stream the frames belong to
-     * @param callback the callback that gets notified when the frames have been sent
-     * @param frame the first frame to enqueue
      * @param frames additional frames to enqueue
+     * @param callback the callback that gets notified when the frames have been sent
      */
-    void frames(IStream stream, Callback callback, Frame frame, Frame... frames);
+    void frames(IStream stream, List<? extends Frame> frames, Callback callback);
 
     /**
      * <p>Enqueues the given PUSH_PROMISE frame to be written to the connection.</p>
-     * <p>Differently from {@link #frames(IStream, Callback, Frame, Frame...)}, this method
+     * <p>Differently from {@link #frames(IStream, List, Callback)}, this method
      * generates atomically the stream id for the pushed stream.</p>
      *
      * @param stream the stream associated to the pushed stream

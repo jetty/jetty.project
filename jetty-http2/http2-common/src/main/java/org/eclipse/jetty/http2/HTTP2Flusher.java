@@ -113,6 +113,25 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         return false;
     }
 
+    public boolean append(List<Entry> list)
+    {
+        Throwable closed;
+        synchronized (this)
+        {
+            closed = terminated;
+            if (closed == null)
+            {
+                list.forEach(entries::offer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Appended {}, entries={}", list, entries.size());
+            }
+        }
+        if (closed == null)
+            return true;
+        list.forEach(entry -> closed(entry, closed));
+        return false;
+    }
+
     private int getWindowQueueSize()
     {
         synchronized (this)
@@ -413,6 +432,11 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
         protected abstract boolean generate(ByteBufferPool.Lease lease) throws HpackException;
 
         public abstract long onFlushed(long bytes) throws IOException;
+
+        boolean hasHighPriority()
+        {
+            return false;
+        }
 
         @Override
         public void failed(Throwable x)

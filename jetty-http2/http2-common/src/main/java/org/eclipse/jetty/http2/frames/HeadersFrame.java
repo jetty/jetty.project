@@ -20,9 +20,8 @@ package org.eclipse.jetty.http2.frames;
 
 import org.eclipse.jetty.http.MetaData;
 
-public class HeadersFrame extends Frame
+public class HeadersFrame extends StreamFrame
 {
-    private final int streamId;
     private final MetaData metaData;
     private final PriorityFrame priority;
     private final boolean endStream;
@@ -53,16 +52,10 @@ public class HeadersFrame extends Frame
      */
     public HeadersFrame(int streamId, MetaData metaData, PriorityFrame priority, boolean endStream)
     {
-        super(FrameType.HEADERS);
-        this.streamId = streamId;
+        super(FrameType.HEADERS, streamId);
         this.metaData = metaData;
         this.priority = priority;
         this.endStream = endStream;
-    }
-
-    public int getStreamId()
-    {
-        return streamId;
     }
 
     public MetaData getMetaData()
@@ -81,9 +74,17 @@ public class HeadersFrame extends Frame
     }
 
     @Override
+    public HeadersFrame withStreamId(int streamId)
+    {
+        PriorityFrame priority = getPriority();
+        priority = priority == null ? null : priority.withStreamId(streamId);
+        return new HeadersFrame(streamId, getMetaData(), priority, isEndStream());
+    }
+
+    @Override
     public String toString()
     {
-        return String.format("%s#%d{end=%b}%s", super.toString(), streamId, endStream,
+        return String.format("%s#%d{end=%b}%s", super.toString(), getStreamId(), endStream,
             priority == null ? "" : String.format("+%s", priority));
     }
 }
