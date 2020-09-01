@@ -42,6 +42,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -194,9 +195,9 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             multiplex = 2;
         int maxMultiplex = multiplex;
 
-        int maxUsage = 2;
-        int maxConnections = 2;
-        int count = maxConnections * maxMultiplex * maxUsage;
+        int maxUsage = 3;
+        int maxConnections = 4;
+        int count = 2 * maxConnections * maxMultiplex * maxUsage;
 
         List<Integer> remotePorts = new CopyOnWriteArrayList<>();
         scenario.start(new EmptyServerHandler()
@@ -229,9 +230,14 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         assertTrue(clientLatch.await(count, TimeUnit.SECONDS));
         assertEquals(count, remotePorts.size());
 
+        // Maps {remote_port -> number_of_times_port_was_used}.
         Map<Integer, Long> results = remotePorts.stream()
             .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-        assertEquals(count / maxUsage, results.size(), remotePorts.toString());
-        assertEquals(1, results.values().stream().distinct().count(), remotePorts.toString());
+        // RoundRobinConnectionPool may open more connections than expected.
+        // For example with maxUsage=2, requests could be sent to these ports:
+        // [p1, p2, p3 | p1, p2, p3 | p4, p4, p5 | p6, p5, p7]
+        // Opening p5 and p6 was delayed, so the opening of p7 was triggered
+        // to replace p4 while p5 and p6 were busy sending their requests.
+        assertThat(remotePorts.toString(), count / maxUsage, lessThanOrEqualTo(results.size()));
     }
 }
