@@ -681,7 +681,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
         @Override
         public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
         {
-            int i = nextIndex(entries.size());
+            int size = entries.size();
+            if (size == 0)
+                return null;
+            int i = nextIndex(size);
             try
             {
                 Pool<T>.Entry entry = entries.get(i);

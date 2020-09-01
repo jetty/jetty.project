@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -35,8 +36,10 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -599,6 +602,67 @@ public class PoolTest
         assertThat(pool.size(), is(1));
         assertThat(pool.getReservedCount(), is(0));
         assertThat(pool.getInUseCount(), is(1));
+    }
 
+    @Test
+    public void testRoundRobinStrategy()
+    {
+        Pool<AtomicInteger> pool = new Pool<>(4, new Pool.RoundRobinStrategy<>());
+
+        Pool<AtomicInteger>.Entry e1 = pool.acquire(e -> new AtomicInteger());
+        Pool<AtomicInteger>.Entry e2 = pool.acquire(e -> new AtomicInteger());
+        Pool<AtomicInteger>.Entry e3 = pool.acquire(e -> new AtomicInteger());
+        Pool<AtomicInteger>.Entry e4 = pool.acquire(e -> new AtomicInteger());
+        assertNull(pool.acquire(e -> new AtomicInteger()));
+
+        pool.release(e1);
+        pool.release(e2);
+        pool.release(e3);
+        pool.release(e4);
+
+        Pool<AtomicInteger>.Entry last = null;
+        for (int i = 0; i < 8; i++)
+        {
+            Pool<AtomicInteger>.Entry e = pool.acquire();
+            if (last != null)
+                assertThat(e, not(sameInstance(last)));
+            e.getPooled().incrementAndGet();
+            pool.release(e);
+            last = e;
+        }
+
+        assertThat(e1.getPooled().get(), is(2));
+        assertThat(e2.getPooled().get(), is(2));
+        assertThat(e3.getPooled().get(), is(2));
+        assertThat(e4.getPooled().get(), is(2));
+    }
+
+    @Test
+    public void testRandomStrategy()
+    {
+        Pool<AtomicInteger> pool = new Pool<>(4, new Pool.RandomStrategy<>());
+
+        Pool<AtomicInteger>.Entry e1 = pool.acquire(e -> new AtomicInteger());
+        Pool<AtomicInteger>.Entry e2 = pool.acquire(e -> new AtomicInteger());
+        Pool<AtomicInteger>.Entry e3 = pool.acquire(e -> new AtomicInteger());
+        Pool<AtomicInteger>.Entry e4 = pool.acquire(e -> new AtomicInteger());
+        assertNull(pool.acquire(e -> new AtomicInteger()));
+
+        pool.release(e1);
+        pool.release(e2);
+        pool.release(e3);
+        pool.release(e4);
+
+        for (int i = 0; i < 400; i++)
+        {
+            Pool<AtomicInteger>.Entry e = pool.acquire();
+            e.getPooled().incrementAndGet();
+            pool.release(e);
+        }
+
+        assertThat(e1.getPooled().get(), greaterThan(10));
+        assertThat(e2.getPooled().get(), greaterThan(10));
+        assertThat(e3.getPooled().get(), greaterThan(10));
+        assertThat(e4.getPooled().get(), greaterThan(10));
     }
 }
