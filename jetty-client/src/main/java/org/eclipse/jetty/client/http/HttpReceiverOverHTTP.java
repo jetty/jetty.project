@@ -235,7 +235,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
             if (complete)
             {
-                if (getHttpExchange().getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
+                HttpExchange httpExchange = getHttpExchange();
+                if (httpExchange != null && httpExchange.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
                     return true;
 
                 if (LOG.isDebugEnabled())
