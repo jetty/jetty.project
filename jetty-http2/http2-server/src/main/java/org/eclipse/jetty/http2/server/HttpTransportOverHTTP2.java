@@ -148,7 +148,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                         else
                         {
                             dataFrame = new DataFrame(stream.getId(), content, false);
-                            trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_2, trailers), null, true);
+                            trailersFrame = new HeadersFrame(stream.getId(), new MetaData(HttpVersion.HTTP_2, trailers), null, true);
                         }
                     }
                     else
@@ -168,7 +168,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                         else
                         {
                             headersFrame = new HeadersFrame(stream.getId(), info, null, false);
-                            trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_2, trailers), null, true);
+                            trailersFrame = new HeadersFrame(stream.getId(), new MetaData(HttpVersion.HTTP_2, trailers), null, true);
                         }
                     }
                     else
