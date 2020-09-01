@@ -21,6 +21,7 @@ package org.eclipse.jetty.http.client;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
@@ -72,17 +73,21 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         });
 
         int maxConnections = 3;
-        scenario.client.getTransport().setConnectionPoolFactory(destination -> new RoundRobinConnectionPool(destination, maxConnections, destination));
-
-        // Prime the connections, so that they are all opened
-        // before we actually test the round robin behavior.
-        for (int i = 0; i < maxConnections; ++i)
+        CompletableFuture<Void> setup = new CompletableFuture<>();
+        scenario.client.getTransport().setConnectionPoolFactory(destination ->
         {
-            ContentResponse response = scenario.client.newRequest(scenario.newURI())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-        }
+            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination);
+            pool.preCreateConnections(maxConnections).handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
+            return pool;
+        });
+
+        // Send one request to trigger destination creation
+        // and connection pool pre-creation of connections,
+        // so we can test reliably the round-robin behavior.
+        scenario.client.newRequest(scenario.newURI())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        setup.get(5, TimeUnit.SECONDS);
 
         record.set(true);
         int requests = 2 * maxConnections - 1;
@@ -119,6 +124,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         int maxConnections = 3;
         int count = maxConnections * maxMultiplex;
 
+        AtomicBoolean record = new AtomicBoolean();
         List<Integer> remotePorts = new CopyOnWriteArrayList<>();
         AtomicReference<CountDownLatch> requestLatch = new AtomicReference<>();
         CountDownLatch serverLatch = new CountDownLatch(count);
@@ -130,10 +136,13 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             {
                 try
                 {
-                    remotePorts.add(request.getRemotePort());
-                    requestLatch.get().countDown();
-                    serverLatch.countDown();
-                    barrier.await();
+                    if (record.get())
+                    {
+                        remotePorts.add(request.getRemotePort());
+                        requestLatch.get().countDown();
+                        serverLatch.countDown();
+                        barrier.await();
+                    }
                 }
                 catch (Exception x)
                 {
@@ -142,11 +151,23 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             }
         });
 
-        scenario.client.getTransport().setConnectionPoolFactory(destination -> new RoundRobinConnectionPool(destination, maxConnections, destination, maxMultiplex));
+        CompletableFuture<Void> setup = new CompletableFuture<>();
+        scenario.client.getTransport().setConnectionPoolFactory(destination ->
+        {
+            RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination);
+            pool.preCreateConnections(maxConnections).handle((r, x) -> x != null ? setup.completeExceptionally(x) : setup.complete(null));
+            return pool;
+        });
 
-        // Do not prime the connections, to see if the behavior is
-        // correct even if the connections are not pre-created.
+        // Send one request to trigger destination creation
+        // and connection pool pre-creation of connections,
+        // so we can test reliably the round-robin behavior.
+        scenario.client.newRequest(scenario.newURI())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+        setup.get(5, TimeUnit.SECONDS);
 
+        record.set(true);
         CountDownLatch clientLatch = new CountDownLatch(count);
         AtomicInteger requests = new AtomicInteger();
         for (int i = 0; i < count; ++i)
@@ -172,7 +193,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         barrier.await();
 
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
-        assertThat(remotePorts.size(), Matchers.equalTo(count));
+        assertThat(remotePorts.toString(), remotePorts.size(), Matchers.equalTo(count));
         for (int i = 0; i < count; ++i)
         {
             int base = i % maxConnections;

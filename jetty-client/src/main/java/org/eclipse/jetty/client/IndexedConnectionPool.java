@@ -42,9 +42,9 @@ public abstract class IndexedConnectionPool extends MultiplexConnectionPool
 
     private final Pool<Connection> pool;
 
-    public IndexedConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester, int maxMultiplex)
+    public IndexedConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
-        super(destination, maxConnections, cache, requester, maxMultiplex);
+        super(destination, maxConnections, false, requester, maxMultiplex);
         pool = destination.getBean(Pool.class);
     }
 

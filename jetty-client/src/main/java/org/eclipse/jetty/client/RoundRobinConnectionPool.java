@@ -39,6 +39,11 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  * achieve in a real environment.
  * This class will just attempt a best-effort to provide the connections in a sequential order,
  * but most likely the order will be quasi-random.</p>
+ * <p>Applications using this class should {@link #preCreateConnections(int) pre-create}
+ * the connections to ensure that they are already opened when the application starts to requests
+ * them, otherwise the first connection that is opened may be used multiple times before the others
+ * are opened, resulting in a behavior that is more random-like than more round-robin-like (and
+ * that confirms that round-robin behavior is almost impossible to achieve).</p>
  *
  * @see RandomConnectionPool
  */
@@ -54,7 +59,7 @@ public class RoundRobinConnectionPool extends IndexedConnectionPool
 
     public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
-        super(destination, maxConnections, false, requester, maxMultiplex);
+        super(destination, maxConnections, requester, maxMultiplex);
         // If there are queued requests and connections get
         // closed due to idle timeout or overuse, we want to
         // aggressively try to open new connections to replace
@@ -65,6 +70,6 @@ public class RoundRobinConnectionPool extends IndexedConnectionPool
     @Override
     protected int getIndex(int maxConnections)
     {
-        return Math.abs(offset.getAndIncrement() % maxConnections);
+        return offset.getAndUpdate(v -> ++v == maxConnections ? 0 : v);
     }
 }

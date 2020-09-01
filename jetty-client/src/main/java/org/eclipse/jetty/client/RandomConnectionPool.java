@@ -30,9 +30,9 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject
 public class RandomConnectionPool extends IndexedConnectionPool
 {
-    public RandomConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester, int maxMultiplex)
+    public RandomConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
-        super(destination, maxConnections, cache, requester, maxMultiplex);
+        super(destination, maxConnections, requester, maxMultiplex);
     }
 
     @Override
