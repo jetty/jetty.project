@@ -417,7 +417,7 @@ public class DistributionTests extends AbstractDistributionTest
         "",
         "--jpms",
     })
-    @DisabledOnJre(JRE.JAVA_14) // TODO: Waiting on JDK14 bug at https://bugs.openjdk.java.net/browse/JDK-8244090.
+    @DisabledOnJre({JRE.JAVA_14, JRE.JAVA_15}) // TODO: Waiting for bug https://bugs.openjdk.java.net/browse/JDK-8244090.
     public void testSimpleWebAppWithWebsocket(String arg) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
