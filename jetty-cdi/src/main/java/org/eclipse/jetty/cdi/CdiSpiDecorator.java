@@ -102,7 +102,7 @@ public class CdiSpiDecorator implements Decorator
 
     /**
      * Test if a class can be decorated.
-     * The default implementation checks the set from  {@link #getUndecoratedClasses()}
+     * The default implementation checks the set from  {@link #getUndecoratable()}
      * on the class and all it's super classes.
      * @param clazz The class to check
      * @return True if the class and all it's super classes can be decorated
@@ -111,7 +111,7 @@ public class CdiSpiDecorator implements Decorator
     {
         if (Object.class == clazz)
             return true;
-        if (getUndecoratedClasses().contains(clazz.getName()))
+        if (getUndecoratable().contains(clazz.getName()))
             return false;
         return isDecoratable(clazz.getSuperclass());
     }
@@ -122,28 +122,28 @@ public class CdiSpiDecorator implements Decorator
      * @return The modifiable set of class names that will not be decorated (ie {@link #isDecoratable(Class)} will return false.
      * @see #isDecoratable(Class)
      */
-    public Set<String> getUndecoratedClasses()
+    public Set<String> getUndecoratable()
     {
         return _undecorated;
     }
 
     /**
-     * @param undecorated The set of class names that will not be decorated.
+     * @param classnames The set of class names that will not be decorated.
      * @see #isDecoratable(Class)
      */
-    public void setUndecoratedClasses(Set<String> undecorated)
+    public void setUndecoratable(Set<String> classnames)
     {
         _undecorated.clear();
-        if (undecorated != null)
-            _undecorated.addAll(undecorated);
+        if (classnames != null)
+            _undecorated.addAll(classnames);
     }
 
     /**
-     * @param undecorated A class name that will be added to the undecoratable classes set.
-     * @see #getUndecoratedClasses()
+     * @param classname A class name that will be added to the undecoratable classes set.
+     * @see #getUndecoratable()
      * @see #isDecoratable(Class)
      */
-    public void addUndecoratedClass(String... undecorated)
+    public void addUndecoratable(String... classname)
     {
         _undecorated.addAll(Arrays.asList());
     }
