@@ -94,7 +94,7 @@ public class DeploymentTest
     }
 
     @Test
-    @DisabledOnJre(JRE.JAVA_14) // TODO: Waiting on JDK14 bug at https://bugs.openjdk.java.net/browse/JDK-8244090.
+    @DisabledOnJre({JRE.JAVA_14, JRE.JAVA_15}) // TODO: Waiting for bug https://bugs.openjdk.java.net/browse/JDK-8244090.
     public void testDifferentWebAppsWithSameClassInSignature() throws Exception
     {
         WSServer.WebApp app1 = server.createWebApp("test1");
