@@ -19,10 +19,12 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -45,6 +47,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StatisticsHandlerTest
@@ -361,6 +364,173 @@ public class StatisticsHandlerTest
         assertThat(_statsHandler.getDispatchedTimeTotal(), greaterThanOrEqualTo(dispatchTime * 2 * 3 / 4));
         assertTrue(_statsHandler.getDispatchedTimeMean() + dispatchTime <= _statsHandler.getDispatchedTimeTotal());
         assertTrue(_statsHandler.getDispatchedTimeMax() + dispatchTime <= _statsHandler.getDispatchedTimeTotal());
+    }
+
+    @Test
+    public void asyncDispatchTest() throws Exception
+    {
+        final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
+        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        _statsHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
+            {
+                request.setHandled(true);
+                try
+                {
+                    if (asyncHolder.get() == null)
+                    {
+                        barrier[0].await();
+                        barrier[1].await();
+                        AsyncContext asyncContext = request.startAsync();
+                        asyncHolder.set(asyncContext);
+                        asyncContext.dispatch();
+                    }
+                    else
+                    {
+                        barrier[2].await();
+                        barrier[3].await();
+                    }
+                }
+                catch (Exception x)
+                {
+                    throw new ServletException(x);
+                }
+            }
+        });
+        _server.start();
+
+        String request = "GET / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "\r\n";
+        _connector.executeRequest(request);
+
+        // Before we have started async we have one active request.
+        barrier[0].await();
+        assertEquals(1, _statistics.getConnections());
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatchedActive());
+        barrier[1].await();
+
+        // After we are async the same request should still be active even though we have async dispatched.
+        barrier[2].await();
+        assertEquals(1, _statistics.getConnections());
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        assertEquals(2, _statsHandler.getDispatched());
+        assertEquals(1, _statsHandler.getDispatchedActive());
+        barrier[3].await();
+    }
+
+    @Test
+    public void waitForSuspendedRequestTest() throws Exception
+    {
+        CyclicBarrier barrier = new CyclicBarrier(3);
+        final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
+        final CountDownLatch dispatched = new CountDownLatch(1);
+        _statsHandler.setGracefulShutdownWaitsForRequests(true);
+        _statsHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
+            {
+                request.setHandled(true);
+
+                try
+                {
+                    if (path.contains("async"))
+                    {
+                        asyncHolder.set(request.startAsync());
+                        barrier.await();
+                    }
+                    else
+                    {
+                        barrier.await();
+                        dispatched.await();
+                    }
+                }
+                catch (Exception e)
+                {
+                    throw new ServletException(e);
+                }
+            }
+        });
+        _server.start();
+
+        // One request to block while dispatched other will go async.
+        _connector.executeRequest("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        _connector.executeRequest("GET /async HTTP/1.1\r\nHost: localhost\r\n\r\n");
+
+        // Ensure the requests have been dispatched and async started.
+        barrier.await();
+        AsyncContext asyncContext = Objects.requireNonNull(asyncHolder.get());
+
+        // Shutdown should timeout as there are two active requests.
+        Future<Void> shutdown = _statsHandler.shutdown();
+        assertThrows(TimeoutException.class, () -> shutdown.get(1, TimeUnit.SECONDS));
+
+        // When the dispatched thread exits we should still be waiting on the async request.
+        dispatched.countDown();
+        assertThrows(TimeoutException.class, () -> shutdown.get(1, TimeUnit.SECONDS));
+
+        // Shutdown should complete only now the AsyncContext is completed.
+        asyncContext.complete();
+        shutdown.get(5, TimeUnit.MILLISECONDS);
+    }
+
+    @Test
+    public void doNotWaitForSuspendedRequestTest() throws Exception
+    {
+        CyclicBarrier barrier = new CyclicBarrier(3);
+        final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
+        final CountDownLatch dispatched = new CountDownLatch(1);
+        _statsHandler.setGracefulShutdownWaitsForRequests(false);
+        _statsHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
+            {
+                request.setHandled(true);
+
+                try
+                {
+                    if (path.contains("async"))
+                    {
+                        asyncHolder.set(request.startAsync());
+                        barrier.await();
+                    }
+                    else
+                    {
+                        barrier.await();
+                        dispatched.await();
+                    }
+                }
+                catch (Exception e)
+                {
+                    throw new ServletException(e);
+                }
+            }
+        });
+        _server.start();
+
+        // One request to block while dispatched other will go async.
+        _connector.executeRequest("GET / HTTP/1.1\r\nHost: localhost\r\n\r\n");
+        _connector.executeRequest("GET /async HTTP/1.1\r\nHost: localhost\r\n\r\n");
+
+        // Ensure the requests have been dispatched and async started.
+        barrier.await();
+        assertNotNull(asyncHolder.get());
+
+        // Shutdown should timeout as there is a request dispatched.
+        Future<Void> shutdown = _statsHandler.shutdown();
+        assertThrows(TimeoutException.class, () -> shutdown.get(1, TimeUnit.SECONDS));
+
+        // When the dispatched thread exits we should shutdown even though we have a waiting async request.
+        dispatched.countDown();
+        shutdown.get(5, TimeUnit.MILLISECONDS);
     }
 
     @Test
