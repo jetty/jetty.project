@@ -114,6 +114,6 @@ necessary:
 
  * and/or enable a CDI frame integration.
 
-However, depending on the exact configuration of the embedded server, either or both steps may not be required as Servlet Container Initializers may be discovered.
+However, depending on the exact configuration of the embedded server, either or both steps may not be required as `ServletContainerInitializer`s may be discovered.
 
-The details for embedding CDI will be explain in the Embedded Jetty with Weld section, but can be adapted to other CDI frameworks.
+The details for embedding CDI is explained in the link:#weld-embedded[Embedded Jetty with Weld] section, which can also be adapted to other CDI frameworks.

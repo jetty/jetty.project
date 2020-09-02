@@ -21,8 +21,12 @@ package org.eclipse.jetty.cdi;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.Decorator;
@@ -61,6 +65,7 @@ public class CdiSpiDecorator implements Decorator
     private final MethodHandle _inject;
     private final MethodHandle _dispose;
     private final MethodHandle _release;
+    private final Set<String> _undecorated = new HashSet<>(Collections.singletonList("org.jboss.weld.environment.servlet.Listener"));
 
     public CdiSpiDecorator(ServletContextHandler context) throws UnsupportedOperationException
     {
@@ -97,7 +102,7 @@ public class CdiSpiDecorator implements Decorator
 
     /**
      * Test if a class can be decorated.
-     * The default implementation calls {@link #isKnownUndecoratable(String) }
+     * The default implementation checks the set from  {@link #getUndecoratedClasses()}
      * on the class and all it's super classes.
      * @param clazz The class to check
      * @return True if the class and all it's super classes can be decorated
@@ -106,22 +111,41 @@ public class CdiSpiDecorator implements Decorator
     {
         if (Object.class == clazz)
             return true;
-        if (isKnownUndecoratable(clazz.getName()))
+        if (getUndecoratedClasses().contains(clazz.getName()))
             return false;
         return isDecoratable(clazz.getSuperclass());
     }
 
     /**
-     * Test if a specific class name is known to not be decoratable.
-     * The default implementation checks for well known classes that are used to
-     * setup CDI itself, and thus cannot themselves be decorated.
+     * Get the set of classes that will not be decorated. The default set includes the listener from Weld that will itself
+     * setup decoration.
+     * @return The modifiable set of class names that will not be decorated (ie {@link #isDecoratable(Class)} will return false.
      * @see #isDecoratable(Class)
-     * @param className The name of the class to check
-     * @return True if the class is known not to be decoratable
      */
-    protected boolean isKnownUndecoratable(String className)
+    public Set<String> getUndecoratedClasses()
     {
-        return "org.jboss.weld.environment.servlet.Listener".equals(className);
+        return _undecorated;
+    }
+
+    /**
+     * @param undecorated The set of class names that will not be decorated.
+     * @see #isDecoratable(Class)
+     */
+    public void setUndecoratedClasses(Set<String> undecorated)
+    {
+        _undecorated.clear();
+        if (undecorated != null)
+            _undecorated.addAll(undecorated);
+    }
+
+    /**
+     * @param undecorated A class name that will be added to the undecoratable classes set.
+     * @see #getUndecoratedClasses()
+     * @see #isDecoratable(Class)
+     */
+    public void addUndecoratedClass(String... undecorated)
+    {
+        _undecorated.addAll(Arrays.asList());
     }
 
     /**

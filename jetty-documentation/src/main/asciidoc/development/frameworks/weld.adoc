@@ -59,7 +59,7 @@ For use with the jetty-maven-plugin, the best idea is to make the org.jboss.weld
 ____
 
 [[weld-embedded]]
-==== Embedded Jetty
+==== Weld with Embedded Jetty
 
 When starting embedded Jetty programmatically from the `main` method it is necessary to:
 
