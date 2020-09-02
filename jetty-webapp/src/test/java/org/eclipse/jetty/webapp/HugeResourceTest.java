@@ -256,6 +256,11 @@ public class HugeResourceTest
         request.send(responseListener);
         Response response = responseListener.get(5, TimeUnit.SECONDS);
 
+        try (InputStream in = responseListener.getInputStream())
+        {
+            assertThat(in.read(), is(-1));
+        }
+
         assertThat("HTTP Response Code", response.getStatus(), is(200));
         // dumpResponse(response);
 
