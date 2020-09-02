@@ -47,27 +47,25 @@ import org.eclipse.jetty.util.thread.Locker;
  * <dl>
  *     <dt>{@link SearchStrategy}</dt>
  *     <dd>This strategy iterates over all entries trying to acquire.
- *     This strategy will acquire if their is an available entry.
  *     </dd>
- *     <dt>{@link Pool.DualStrategy}</dt>
+ *     <dt>{@link CacheStrategy}</dt>
  *     <dd>This strategy combines two other strategies and is typically
- *     used to combine a strategy like {@link ThreadLocalStrategy} with
+ *     used to combine a strategy like {@link ThreadLocalCache} with
  *     {@link SearchStrategy}.
- *     </dd>
- *     <dt>{@link Pool.ThreadLocalStrategy}</dt>
- *     <dd>This strategy is a threadlocal strategy that remembers
- *     a single entry previously used by the current thread.
- *     </dd>
- *     <dt>{@link Pool.ThreadLocalCacheStrategy}</dt>
- *     <dd>This strategy is a threadlocal caching mechanism that remembers
- *     up to N entries previously used by the current thread.
  *     </dd>
  *     <dt>{@link Pool.RoundRobinStrategy}</dt>
  *     <dd>Entries are tried in sequence so that all entries in the pool are
  *     used one after the other. If the next entry cannot be acquired, entries
  *     in the next slot are tried.
- *     This strategy will acquire if their is an available entry. </dd>
- *     <dt>{@link Pool.RandomStrategy}</dt>
+ *     <dt>{@link ThreadLocalCache}</dt>
+ *     <dd>This strategy is a threadlocal strategy that remembers
+ *     a single entry previously used by the current thread.
+ *     </dd>
+ *     <dt>{@link ThreadLocalListCache}</dt>
+ *     <dd>This strategy is a threadlocal caching mechanism that remembers
+ *     up to N entries previously used by the current thread.
+ *     </dd>
+ *     <dt>{@link RandomCache}</dt>
  *     <dd>A random entry is tried</dd>
  *     <dt>{@link Pool.LeastRecentlyUsedStrategy}</dt>
  *     <dd>The least recently used entries are tried until one can be acquired</dd>
@@ -105,15 +103,15 @@ public class Pool<T> implements AutoCloseable, Dumpable
      *
      * @param maxEntries the maximum amount of entries that the pool will accept.
      * @param cacheSize the thread-local cache size. A value of 1 will use the
-     *                  {@link ThreadLocalStrategy} and {@link SearchStrategy},
-     *                  a value greater than 1 will use a {@link ThreadLocalCacheStrategy}
+     *                  {@link ThreadLocalCache} and {@link SearchStrategy},
+     *                  a value greater than 1 will use a {@link ThreadLocalListCache}
      *                  and {@link SearchStrategy},
      *                  otherwise just a {@link SearchStrategy} will be used.
      */
     public Pool(int maxEntries, int cacheSize)
     {
-        this(maxEntries, cacheSize < 0 ? null : new DualStrategy<>(
-            cacheSize == 1 ? new ThreadLocalStrategy<>() : new ThreadLocalCacheStrategy<>(cacheSize),
+        this(maxEntries, cacheSize < 0 ? null : new CacheStrategy<>(
+            cacheSize == 1 ? new ThreadLocalCache<>() : new ThreadLocalListCache<>(cacheSize),
             new SearchStrategy<>()));
     }
 
@@ -580,7 +578,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     /** A pluggable strategy to optimize pool acquisition
      * @param <T> The type of the items in the pool
      */
-    public interface Strategy<T>
+    public interface Cache<T>
     {
         /** Acquire an entry
          * @param entries The list of entries known to the pool. This may be concurrently modified.
@@ -600,31 +598,35 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
-    public static class DualStrategy<T> implements Strategy<T>
+    public interface Strategy<T> extends Cache<T>
     {
-        final Strategy<T> planA;
-        final Strategy<T> planB;
+    }
 
-        public DualStrategy(Strategy<T> planA, Strategy<T> planB)
+    public static class CacheStrategy<T> implements Strategy<T>
+    {
+        final Cache<T> cache;
+        final Strategy<T> strategy;
+
+        public CacheStrategy(Cache<T> cache, Strategy<T> planB)
         {
-            Objects.requireNonNull(planA);
+            Objects.requireNonNull(cache);
             Objects.requireNonNull(planB);
-            this.planA = planA;
-            this.planB = planB;
+            this.cache = cache;
+            this.strategy = planB;
         }
 
         @Override
         public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
         {
-            Pool<T>.Entry entry = planA.acquire(entries);
-            return entry == null ? planB.acquire(entries) : entry;
+            Pool<T>.Entry entry = cache.acquire(entries);
+            return entry == null ? strategy.acquire(entries) : entry;
         }
 
         @Override
         public void released(List<Pool<T>.Entry> entries, Pool<T>.Entry entry, boolean reusable)
         {
-            planA.released(entries, entry, reusable);
-            planB.released(entries, entry, reusable);
+            cache.released(entries, entry, reusable);
+            strategy.released(entries, entry, reusable);
         }
     }
 
@@ -642,11 +644,11 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
-    public static class ThreadLocalStrategy<T> implements Strategy<T>
+    public static class ThreadLocalCache<T> implements Cache<T>
     {
         private final ThreadLocal<Pool<T>.Entry> last;
 
-        ThreadLocalStrategy()
+        ThreadLocalCache()
         {
             last = new ThreadLocal<>();
         }
@@ -668,12 +670,12 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
-    public static class ThreadLocalCacheStrategy<T> implements Strategy<T>
+    public static class ThreadLocalListCache<T> implements Cache<T>
     {
         private final ThreadLocal<List<Pool<T>.Entry>> cache;
         private final int cacheSize;
 
-        ThreadLocalCacheStrategy(int size)
+        ThreadLocalListCache(int size)
         {
             this.cacheSize = size;
             this.cache = ThreadLocal.withInitial(() -> new ArrayList<>(cacheSize));
@@ -704,10 +706,8 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
-    private abstract static class IndexStrategy<T> implements Strategy<T>
+    private abstract static class IndexedCached<T> implements Cache<T>
     {
-        AtomicInteger index = new AtomicInteger();
-
         @Override
         public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
         {
@@ -732,7 +732,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         protected abstract int nextIndex(int size);
     }
 
-    public static class RandomStrategy<T> extends IndexStrategy<T>
+    public static class RandomCache<T> extends IndexedCached<T>
     {
         @Override
         protected int nextIndex(int size)
@@ -741,7 +741,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
-    public static class RoundRobinStrategy<T> extends IndexStrategy<T>
+    public static class RoundRobinCache<T> extends IndexedCached<T>
     {
         AtomicInteger index = new AtomicInteger();
 
@@ -750,7 +750,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
         {
             return index.getAndUpdate(c -> Math.max(0, c + 1)) % size;
         }
+    }
 
+    public static class RoundRobinStrategy<T> extends RoundRobinCache<T> implements Strategy<T>
+    {
         @Override
         public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
         {
