@@ -61,7 +61,6 @@ import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
-import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -203,7 +202,6 @@ public class XmlConfiguration
     private final Resource _location;
     private final String _dtd;
     private ConfigurationProcessor _processor;
-    private final List<Object> _objects;
 
     ConfigurationParser getParser()
     {
@@ -211,17 +209,6 @@ public class XmlConfiguration
         if (entry == null)
             return new ConfigurationParser(null);
         return entry.getPooled();
-    }
-
-    /**
-     * Constructor for use with the Apache Commons Daemon lifecycle methods.
-     * A XmlConfiguration constructed in this way cannot be used for any other purpose.
-     */
-    public XmlConfiguration()
-    {
-        _objects = new ArrayList<>();
-        _location = null;
-        _dtd = null;
     }
 
     /**
@@ -238,7 +225,6 @@ public class XmlConfiguration
             _location = resource;
             setConfig(parser.parse(inputStream));
             _dtd = parser.getDTD();
-            _objects = null;
         }
     }
 
@@ -277,7 +263,6 @@ public class XmlConfiguration
             _location = null;
             setConfig(parser.parse(source));
             _dtd = parser.getDTD();
-            _objects = null;
         }
     }
 
@@ -298,7 +283,6 @@ public class XmlConfiguration
             _location = null;
             setConfig(parser.parse(source));
             _dtd = parser.getDTD();
-            _objects = null;
         }
     }
 
@@ -377,8 +361,6 @@ public class XmlConfiguration
      */
     public Object configure(Object obj) throws Exception
     {
-        if (_objects != null)
-            throw new IllegalStateException("XmlConfiguration constructed for start lifecycle");
         return _processor.configure(obj);
     }
 
@@ -393,8 +375,6 @@ public class XmlConfiguration
      */
     public Object configure() throws Exception
     {
-        if (_objects != null)
-            throw new IllegalStateException("XmlConfiguration constructed for start lifecycle");
         if (LOG.isDebugEnabled())
             LOG.debug("Configure {}", _location);
         return _processor.configure();
@@ -1853,12 +1833,25 @@ public class XmlConfiguration
         return values;
     }
 
-    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
-    public void init(String[] args) throws Exception
+    /**
+     * Runs the XML configurations as a main application.
+     * The command line is used to obtain properties files (must be named '*.properties') and XmlConfiguration files.
+     * <p>
+     * Any property file on the command line is added to a combined Property instance that is passed to each configuration file via
+     * {@link XmlConfiguration#getProperties()}.
+     * <p>
+     * Each configuration file on the command line is used to create a new XmlConfiguration instance and the
+     * {@link XmlConfiguration#configure()} method is used to create the configured object.
+     * If the resulting object is an instance of {@link LifeCycle}, then it is started.
+     * <p>
+     * Any IDs created in a configuration are passed to the next configuration file on the command line using {@link #getIdMap()}.
+     * This allows objects with IDs created in one config file to be referenced in subsequent config files on the command line.
+     *
+     * @param args array of property and xml configuration filenames or {@link Resource}s.
+     * @throws Exception if the XML configurations cannot be run
+     */
+    public static void main(final String... args) throws Exception
     {
-        if (_objects == null)
-            throw new IllegalStateException("XmlConfiguration not constructed for start lifecycle");
-
         try
         {
             AccessController.doPrivileged((PrivilegedExceptionAction<Void>)() ->
@@ -1880,6 +1873,7 @@ public class XmlConfiguration
 
                 // For all arguments, parse XMLs
                 XmlConfiguration last = null;
+                List<Object> objects = new ArrayList<>(args.length);
                 for (String arg : args)
                 {
                     if (!arg.toLowerCase(Locale.ENGLISH).endsWith(".properties") && (arg.indexOf('=') < 0))
@@ -1898,9 +1892,20 @@ public class XmlConfiguration
                         }
 
                         Object obj = configuration.configure();
-                        if (obj != null && !_objects.contains(obj))
-                            _objects.add(obj);
+                        if (obj != null && !objects.contains(obj))
+                            objects.add(obj);
                         last = configuration;
+                    }
+                }
+
+                // For all objects created by XmlConfigurations, start them if they are lifecycles.
+                for (Object obj : objects)
+                {
+                    if (obj instanceof LifeCycle)
+                    {
+                        LifeCycle lc = (LifeCycle)obj;
+                        if (!lc.isRunning())
+                            lc.start();
                     }
                 }
 
@@ -1912,82 +1917,6 @@ public class XmlConfiguration
             LOG.warn(e);
             throw e;
         }
-    }
-
-    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
-    public void start() throws Exception
-    {
-        if (_objects == null)
-            throw new IllegalStateException("XmlConfiguration not constructed for start lifecycle");
-
-        // For all objects created by XmlConfigurations, start them if they are lifecycles.
-        for (Object obj : _objects)
-        {
-            if (obj instanceof LifeCycle)
-            {
-                LifeCycle lc = (LifeCycle)obj;
-                if (!lc.isRunning())
-                    lc.start();
-            }
-        }
-
-    }
-
-    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
-    public void stop() throws Exception
-    {
-        if (_objects == null)
-            throw new IllegalStateException("XmlConfiguration not constructed for start lifecycle");
-
-        // For all objects created by XmlConfigurations, stop them if they are lifecycles.
-        for (Object obj : _objects)
-        {
-            if (obj instanceof LifeCycle)
-            {
-                LifeCycle lc = (LifeCycle)obj;
-                if (lc.isRunning())
-                    lc.stop();
-            }
-        }
-    }
-
-    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
-    public void destroy()
-    {
-        if (_objects == null)
-            throw new IllegalStateException("XmlConfiguration not constructed for start lifecycle");
-
-        // For all objects created by XmlConfigurations, start them if they are lifecycles.
-        for (Object obj : _objects)
-        {
-            if (obj instanceof Destroyable)
-                ((Destroyable)obj).destroy();
-        }
-        _objects.clear();
-    }
-
-    /**
-     * Runs the XML configurations as a main application.
-     * The command line is used to obtain properties files (must be named '*.properties') and XmlConfiguration files.
-     * <p>
-     * Any property file on the command line is added to a combined Property instance that is passed to each configuration file via
-     * {@link XmlConfiguration#getProperties()}.
-     * <p>
-     * Each configuration file on the command line is used to create a new XmlConfiguration instance and the
-     * {@link XmlConfiguration#configure()} method is used to create the configured object.
-     * If the resulting object is an instance of {@link LifeCycle}, then it is started.
-     * <p>
-     * Any IDs created in a configuration are passed to the next configuration file on the command line using {@link #getIdMap()}.
-     * This allows objects with IDs created in one config file to be referenced in subsequent config files on the command line.
-     *
-     * @param args array of property and xml configuration filenames or {@link Resource}s.
-     * @throws Exception if the XML configurations cannot be run
-     */
-    public static void main(final String... args) throws Exception
-    {
-        XmlConfiguration xmlConfig = new XmlConfiguration();
-        xmlConfig.init(args);
-        xmlConfig.start();
     }
 
     private static class ConfigurationParser extends XmlParser implements AutoCloseable

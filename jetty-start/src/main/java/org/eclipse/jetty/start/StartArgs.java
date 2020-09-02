@@ -233,7 +233,7 @@ public class StartArgs
     private boolean updateIni = false;
     private String mavenBaseUri;
 
-    private Boolean exec = null; // Tri state as --no-exec overrules --exec
+    private boolean exec = false;
     private String execProperties;
     private boolean approveAllLicenses = false;
 
@@ -568,8 +568,7 @@ public class StartArgs
 
             for (String jvmArg : module.getJvmArgs())
             {
-                if (exec != Boolean.FALSE)
-                    exec = true; // TODO is this necessary as --jpms turns on exec anyway
+                exec = true;
                 jvmArgs.add(jvmArg);
             }
 
@@ -966,7 +965,7 @@ public class StartArgs
 
     public boolean isExec()
     {
-        return exec == Boolean.TRUE;
+        return exec;
     }
 
     public boolean isLicenseCheckRequired()
@@ -1170,8 +1169,7 @@ public class StartArgs
         {
             jpms = true;
             // Need to fork because we cannot use JDK 9 Module APIs.
-            if (exec != Boolean.FALSE)
-                exec = true;
+            exec = true;
             return;
         }
 
@@ -1200,15 +1198,7 @@ public class StartArgs
         // Enable forked execution of Jetty server
         if ("--exec".equals(arg))
         {
-            if (exec != Boolean.FALSE)
-                exec = true;
-            return;
-        }
-
-        // Enable forked execution of Jetty server
-        if ("--no-exec".equals(arg))
-        {
-            exec = false;
+            exec = true;
             return;
         }
 
