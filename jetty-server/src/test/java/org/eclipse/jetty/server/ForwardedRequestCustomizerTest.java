@@ -497,7 +497,21 @@ public class ForwardedRequestCustomizerTest
                     .requestURL("http://fw.example.com:4333/")
                     .remoteAddr("8.5.4.3").remotePort(2222)
             ),
-
+            Arguments.of(new Request("X-Forwarded-* ( Multiple Ports )")
+                    .headers(
+                        "GET / HTTP/1.1",
+                        "Host: myhost:10001",
+                        "X-Forwarded-For: 127.0.0.1:8888,127.0.0.2:9999",
+                        "X-Forwarded-Port: 10002",
+                        "X-Forwarded-Proto: https",
+                        "X-Forwarded-Host: sub1.example.com:10003",
+                        "X-Forwarded-Server: sub2.example.com"
+                    ),
+                new Expectations()
+                    .scheme("https").serverName("sub1.example.com").serverPort(10002) // Jetty 9.4.18 serverPort is 10003
+                    .requestURL("https://sub.example.com:10002/")
+                    .remoteAddr("127.0.0.1").remotePort(8888)
+            ),
             // =================================================================
             // Mixed Behavior
             Arguments.of(new Request("RFC7239 mixed with X-Forwarded-* headers")
