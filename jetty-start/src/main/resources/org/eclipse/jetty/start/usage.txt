@@ -28,7 +28,30 @@ Command Line Options:
 
   --dry-run        Print the command line that the start.jar generates,
                    then exit. This may be used to generate command lines
-                   when the start.ini includes -X or -D arguments.
+                   when the start.ini includes -X or -D arguments:
+
+                     java -jar start.jar --dry-run > jetty.sh
+                     . jetty.sh
+
+  --dry-run=parts  Print specific parts of the command line. The parts
+                   are a comma separated list of
+                     o  "java" - the JVM to run
+                     o  "opts" - the JVM options (eg -D and -X flags)
+                     o  "path" - the JVM class path or JPMS modules options
+                     o  "main" - the main class to run
+                     o  "args" - the arguments passed to the main class
+
+                   It is possible to decompose the start command:
+
+                     OPTS=$(java -jar start.jar --dry-run=opts,path)
+                     MAIN=$(java -jar start.jar --dry-run=main)
+                     ARGS=$(java -jar start.jar --dry-run=args)
+                     java $OPTS -Dextra=opt $MAIN $ARGS extra=arg
+
+                   Alternatively to create an args file for java:
+
+                     java -jar start.jar --dry-run=opts,path,main,args > /tmp/args
+                     java @/tmp/args
 
   --exec           Run the generated command line (see --dry-run) in
                    a sub process. This can be used when start.ini
@@ -58,7 +81,6 @@ Debug and Start Logging:
                    output will be sent.  This is useful for capturing startup
                    issues where the jetty specific logger has not yet kicked
                    in due to startup configuration errors.
-
 
 Module Management:
 ------------------
