@@ -981,7 +981,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-schemas</artifactId>
-        <version>5.2-SNAPSHOT</version>
+        <version>5.2</version>
       </dependency>
       <dependency>
         <groupId>jakarta.annotation</groupId>
