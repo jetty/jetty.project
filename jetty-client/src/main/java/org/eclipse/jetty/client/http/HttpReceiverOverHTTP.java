@@ -141,6 +141,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             BufferUtil.flipToFlush(upgradeBuffer, 0);
             return upgradeBuffer;
         }
+        releaseNetworkBuffer();
         return null;
     }
 
@@ -160,12 +161,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     return;
                 }
 
-                // Connection may be closed or upgraded in a parser callback.
-                boolean upgraded = connection != endPoint.getConnection();
-                if (connection.isClosed() || upgraded)
+                // Connection may be closed in a parser callback.
+                if (connection.isClosed())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} {}", upgraded ? "Upgraded" : "Closed", connection);
+                        LOG.debug("Closed {}", connection);
                     releaseNetworkBuffer();
                     return;
                 }
@@ -235,6 +235,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
             if (complete)
             {
+                HttpExchange httpExchange = getHttpExchange();
+                if (httpExchange != null && httpExchange.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
+                    return true;
+
                 if (LOG.isDebugEnabled())
                     LOG.debug("Discarding unexpected content after response: {}", networkBuffer);
                 networkBuffer.clear();
