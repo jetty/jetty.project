@@ -464,16 +464,24 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
     }
 
     @Override
-    protected void doTrace(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    protected void doHead(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
     {
-        resp.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+        doGet(request, response);
     }
 
     @Override
-    protected void doOptions(HttpServletRequest req, HttpServletResponse resp)
+    protected void doTrace(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException
     {
-        resp.setHeader("Allow", "GET,HEAD,POST,OPTIONS");
+        response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+    }
+
+    @Override
+    protected void doOptions(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException
+    {
+        response.setHeader("Allow", "GET,HEAD,POST,OPTIONS");
     }
 
     @Override
