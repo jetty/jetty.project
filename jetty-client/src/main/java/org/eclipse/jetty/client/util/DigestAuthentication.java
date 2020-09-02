@@ -22,9 +22,11 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -46,10 +48,11 @@ import org.eclipse.jetty.util.TypeUtil;
  */
 public class DigestAuthentication extends AbstractAuthentication
 {
+    private final Random random;
     private final String user;
     private final String password;
 
-    /**
+    /** Construct a DigestAuthentication with a {@link SecureRandom} nonce.
      * @param uri the URI to match for the authentication
      * @param realm the realm to match for the authentication
      * @param user the user that wants to authenticate
@@ -57,7 +60,21 @@ public class DigestAuthentication extends AbstractAuthentication
      */
     public DigestAuthentication(URI uri, String realm, String user, String password)
     {
+        this(uri, realm, user, password, new SecureRandom());
+    }
+
+    /**
+     * @param uri the URI to match for the authentication
+     * @param realm the realm to match for the authentication
+     * @param user the user that wants to authenticate
+     * @param password the password of the user
+     * @param random the Random generator to use for nonces.
+     */
+    public DigestAuthentication(URI uri, String realm, String user, String password, Random random)
+    {
         super(uri, realm);
+        Objects.requireNonNull(random);
+        this.random = random;
         this.user = user;
         this.password = password;
     }
@@ -216,7 +233,6 @@ public class DigestAuthentication extends AbstractAuthentication
 
         private String newClientNonce()
         {
-            Random random = new Random();
             byte[] bytes = new byte[8];
             random.nextBytes(bytes);
             return toHexString(bytes);

@@ -632,7 +632,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
             boolean added = _trie.put(s, v);
             while (!added && _growby > 0)
             {
-                ArrayTernaryTrie<V> bigger = new ArrayTernaryTrie<>(_trie._key.length + _growby);
+                ArrayTernaryTrie<V> bigger = new ArrayTernaryTrie<>(_trie.isCaseInsensitive(), _trie._key.length + _growby);
                 for (Map.Entry<String, V> entry : _trie.entrySet())
                 {
                     bigger.put(entry.getKey(), entry.getValue());

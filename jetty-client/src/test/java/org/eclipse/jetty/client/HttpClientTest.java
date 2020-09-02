@@ -79,7 +79,6 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.Net;
@@ -190,7 +189,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.getOutputStream().write(data);
                 baseRequest.setHandled(true);
@@ -215,7 +214,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.setCharacterEncoding("UTF-8");
                 ServletOutputStream output = response.getOutputStream();
@@ -248,7 +247,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.setCharacterEncoding("UTF-8");
                 ServletOutputStream output = response.getOutputStream();
@@ -287,7 +286,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 String value = request.getParameter(paramName);
@@ -320,7 +319,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 String value = request.getParameter(paramName);
@@ -354,7 +353,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 consume(request.getInputStream(), true);
@@ -386,7 +385,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 consume(request.getInputStream(), true);
@@ -417,7 +416,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 consume(request.getInputStream(), true);
@@ -500,7 +499,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 if (target.endsWith("/one"))
                     baseRequest.getHttpChannel().getEndPoint().close();
@@ -620,7 +619,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Echo back
                 IO.copy(request.getInputStream(), response.getOutputStream());
@@ -714,7 +713,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
             {
                 try
                 {
@@ -773,7 +772,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 response.setHeader(headerName, "X");
@@ -831,7 +830,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 response.getOutputStream().write(new byte[length]);
@@ -936,7 +935,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 ArrayList<String> userAgents = Collections.list(request.getHeaders("User-Agent"));
@@ -970,7 +969,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 ArrayList<String> userAgents = Collections.list(request.getHeaders("User-Agent"));
@@ -1179,7 +1178,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 response.getOutputStream().write(content);
@@ -1221,7 +1220,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 assertEquals(host, request.getServerName());
@@ -1243,10 +1242,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Send the headers at this point, then write the content
-                byte[] content = "TEST".getBytes("UTF-8");
+                byte[] content = "TEST".getBytes(StandardCharsets.UTF_8);
                 response.setContentLength(content.length);
                 response.flushBuffer();
                 response.getOutputStream().write(content);
@@ -1271,7 +1270,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 // Send the headers at this point, then write the content
                 response.flushBuffer();
@@ -1329,7 +1328,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 request.startAsync();
@@ -1603,11 +1602,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 ContentResponse response = listener.get(5, TimeUnit.SECONDS);
                 assertEquals(200, response.getStatus());
 
-                // Because the tunnel was successful, this connection will be
-                // upgraded to an SslConnection, so it will not be fill interested.
-                // This test doesn't upgrade, so it needs to restore the fill interest.
-                ((AbstractConnection)connection).fillInterested();
-
                 // Test that I can send another request on the same connection.
                 request = client.newRequest(host, port);
                 listener = new FutureResponseListener(request);
@@ -1629,29 +1623,32 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    public void testIPv6Host(Scenario scenario) throws Exception
+    public void testIPv6HostWithHTTP10(Scenario scenario) throws Exception
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                baseRequest.setHandled(true);
                 response.setContentType("text/plain");
-                response.getOutputStream().print(request.getHeader("Host"));
+                response.getOutputStream().print(request.getServerName());
             }
         });
 
         URI uri = URI.create(scenario.getScheme() + "://[::1]:" + connector.getLocalPort() + "/path");
         ContentResponse response = client.newRequest(uri)
             .method(HttpMethod.PUT)
+            .version(HttpVersion.HTTP_1_0)
+            .onRequestBegin(r -> r.getHeaders().remove(HttpHeader.HOST))
             .timeout(5, TimeUnit.SECONDS)
             .send();
 
         assertNotNull(response);
         assertEquals(200, response.getStatus());
-        assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1), Matchers.startsWith("[::1]:"));
+        String content = response.getContentAsString();
+        assertThat(content, Matchers.startsWith("["));
+        assertThat(content, Matchers.endsWith(":1]"));
     }
 
     @ParameterizedTest
@@ -1800,7 +1797,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new AbstractHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 ServletOutputStream output = response.getOutputStream();
@@ -1840,6 +1837,61 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertArrayEquals(bytes, baos.toByteArray());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testUnsolicitedResponseBytesFromServer(Scenario scenario) throws Exception
+    {
+        String response = "" +
+            "HTTP/1.1 408 Request Timeout\r\n" +
+            "Content-Length: 0\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
+        testUnsolicitedBytesFromServer(scenario, response);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testUnsolicitedInvalidBytesFromServer(Scenario scenario) throws Exception
+    {
+        String response = "ABCDEF";
+        testUnsolicitedBytesFromServer(scenario, response);
+    }
+
+    private void testUnsolicitedBytesFromServer(Scenario scenario, String bytesFromServer) throws Exception
+    {
+        try (ServerSocket server = new ServerSocket(0))
+        {
+            HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
+            transport.setConnectionPoolFactory(destination ->
+            {
+                ConnectionPool connectionPool = new DuplexConnectionPool(destination, 1, destination);
+                connectionPool.preCreateConnections(1);
+                return connectionPool;
+            });
+            startClient(scenario, transport, null);
+
+            String host = "localhost";
+            int port = server.getLocalPort();
+
+            // Resolve the destination which will pre-create a connection.
+            HttpDestination destination = client.resolveDestination(new Origin("http", host, port));
+
+            // Accept the connection and send an unsolicited 408.
+            try (Socket socket = server.accept())
+            {
+                OutputStream output = socket.getOutputStream();
+                output.write(bytesFromServer.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+            }
+
+            // Give some time to the client to process the response.
+            Thread.sleep(1000);
+
+            AbstractConnectionPool pool = (AbstractConnectionPool)destination.getConnectionPool();
+            assertEquals(0, pool.getConnectionCount());
+        }
     }
 
     private void assertCopyRequest(Request original)

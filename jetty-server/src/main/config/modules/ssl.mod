@@ -1,4 +1,4 @@
-DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
 Enables a TLS(SSL) Connector on the server.
@@ -38,10 +38,25 @@ basehome:modules/ssl/keystore|etc/keystore
 # jetty.ssl.selectors=-1
 
 ## ServerSocketChannel backlog (0 picks platform default)
-# jetty.ssl.acceptorQueueSize=0
+# jetty.ssl.acceptQueueSize=0
 
 ## Thread priority delta to give to acceptor threads
 # jetty.ssl.acceptorPriorityDelta=0
+
+## The requested maximum length of the queue of incoming connections.
+# jetty.ssl.acceptQueueSize=0
+
+## Enable/disable the SO_REUSEADDR socket option.
+# jetty.ssl.reuseAddress=true
+
+## Enable/disable TCP_NODELAY on accepted sockets.
+# jetty.ssl.acceptedTcpNoDelay=true
+
+## The SO_RCVBUF option to set on accepted sockets. A value of -1 indicates that it is left to its default value.
+# jetty.ssl.acceptedReceiveBufferSize=-1
+
+## The SO_SNDBUF option to set on accepted sockets. A value of -1 indicates that it is left to its default value.
+# jetty.ssl.acceptedSendBufferSize=-1
 
 ## Connect Timeout in milliseconds
 # jetty.ssl.connectTimeout=15000

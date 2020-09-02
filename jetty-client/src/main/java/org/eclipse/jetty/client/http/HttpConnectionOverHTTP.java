@@ -34,12 +34,13 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
-public class HttpConnectionOverHTTP extends AbstractConnection implements Connection, org.eclipse.jetty.io.Connection.UpgradeFrom, Sweeper.Sweepable
+public class HttpConnectionOverHTTP extends AbstractConnection implements Connection, org.eclipse.jetty.io.Connection.UpgradeFrom, Sweeper.Sweepable, Attachable
 {
     private static final Logger LOG = Log.getLogger(HttpConnectionOverHTTP.class);
 
@@ -136,6 +137,18 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     }
 
     @Override
+    public void setAttachment(Object obj)
+    {
+        delegate.setAttachment(obj);
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        return delegate.getAttachment();
+    }
+
+    @Override
     public boolean onIdleExpired()
     {
         long idleTimeout = getEndPoint().getIdleTimeout();
@@ -180,7 +193,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     {
         if (closed.compareAndSet(false, true))
         {
-            getHttpDestination().close(this);
+            getHttpDestination().remove(this);
             abort(failure);
             channel.destroy();
             getEndPoint().shutdownOutput();

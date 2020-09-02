@@ -35,7 +35,6 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -119,16 +118,6 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         }
     }
 
-    void onStreamClosed(IStream stream, HttpChannelOverHTTP2 channel)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} closed for {}", stream, channel);
-        channel.setStream(null);
-        // Only non-push channels are released.
-        if (stream.isLocal())
-            getHttpDestination().release(this);
-    }
-
     @Override
     public boolean onIdleTimeout(long idleTimeout)
     {
@@ -148,7 +137,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     {
         if (closed.compareAndSet(false, true))
         {
-            getHttpDestination().close(this);
+            getHttpDestination().remove(this);
 
             abort(failure);
 

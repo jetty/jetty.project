@@ -330,8 +330,9 @@ public class GracefulStopTest
             assertThat(response, containsString(" 200 OK"));
             assertThat(response, containsString("read 10/10"));
 
-            assertThat(stats.getRequests(), is(2));
-            assertThat(stats.getResponses5xx(), is(1));
+            // The StatisticsHandler was shutdown when it received the second request so does not contribute to the stats.
+            assertThat(stats.getRequests(), is(1));
+            assertThat(stats.getResponses4xx(), is(0));
         }
     }
 

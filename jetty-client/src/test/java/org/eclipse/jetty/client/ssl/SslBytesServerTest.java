@@ -67,6 +67,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -88,8 +89,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.condition.OS.LINUX;
 import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
-// This whole test is very specific to how TLS < 1.3 works.
-@EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
+// Other JREs have slight differences in how TLS work
+// and this test expects a very specific TLS behavior.
+@EnabledOnJre({JRE.JAVA_8, JRE.JAVA_11})
 public class SslBytesServerTest extends SslBytesTest
 {
     private final AtomicInteger sslFills = new AtomicInteger();
@@ -108,9 +110,9 @@ public class SslBytesServerTest extends SslBytesTest
     @BeforeEach
     public void init() throws Exception
     {
-
-        threadPool = Executors.newCachedThreadPool();
-        server = new Server();
+        QueuedThreadPool serverThreads = new QueuedThreadPool();
+        serverThreads.setName("server");
+        server = new Server(serverThreads);
 
         sslFills.set(0);
         sslFlushes.set(0);
@@ -119,6 +121,8 @@ public class SslBytesServerTest extends SslBytesTest
 
         File keyStore = MavenTestingUtils.getTestResourceFile("keystore.p12");
         sslContextFactory = new SslContextFactory.Server();
+        // This whole test is very specific to how TLS < 1.3 works.
+        sslContextFactory.setIncludeProtocols("TLSv1.2");
         sslContextFactory.setKeyStorePath(keyStore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
 
@@ -238,6 +242,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         sslContext = sslContextFactory.getSslContext();
 
+        threadPool = Executors.newCachedThreadPool();
         proxy = new SimpleProxy(threadPool, "localhost", serverPort);
         proxy.start();
         logger.info("proxy:{} <==> server:{}", proxy.getPort(), serverPort);
@@ -1124,6 +1129,66 @@ public class SslBytesServerTest extends SslBytesTest
         assertThat(sslFills.get(), Matchers.lessThan(40));
         assertThat(sslFlushes.get(), Matchers.lessThan(40));
         assertThat(httpParses.get(), Matchers.lessThan(50));
+
+        client.close();
+    }
+
+    @Test
+    public void testRequestResponseServerIdleTimeoutClientResets() throws Exception
+    {
+        SSLSocket client = newClient();
+
+        SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
+        client.startHandshake();
+        assertTrue(automaticProxyFlow.stop(5, TimeUnit.SECONDS));
+
+        Future<Object> request = threadPool.submit(() ->
+        {
+            OutputStream clientOutput = client.getOutputStream();
+            clientOutput.write((
+                "GET / HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "\r\n").getBytes(StandardCharsets.UTF_8));
+            clientOutput.flush();
+            return null;
+        });
+
+        // Application data
+        TLSRecord record = proxy.readFromClient();
+        proxy.flushToServer(record);
+        assertNull(request.get(5, TimeUnit.SECONDS));
+
+        // Application data
+        record = proxy.readFromServer();
+        assertEquals(TLSRecord.Type.APPLICATION, record.getType());
+        proxy.flushToClient(record);
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), StandardCharsets.UTF_8));
+        String line = reader.readLine();
+        assertNotNull(line);
+        assertTrue(line.startsWith("HTTP/1.1 200 "));
+        while ((line = reader.readLine()) != null)
+        {
+            if (line.trim().length() == 0)
+                break;
+        }
+
+        // Wait for the server idle timeout.
+        Thread.sleep(idleTimeout);
+
+        // We expect that the server sends the TLS Alert.
+        record = proxy.readFromServer();
+        assertNotNull(record);
+        assertEquals(TLSRecord.Type.ALERT, record.getType());
+
+        // Send a RST to the server.
+        proxy.sendRSTToServer();
+
+        // Wait for the RST to be processed by the server.
+        Thread.sleep(1000);
+
+        // The server EndPoint must be closed.
+        assertFalse(serverEndPoint.get().isOpen());
 
         client.close();
     }

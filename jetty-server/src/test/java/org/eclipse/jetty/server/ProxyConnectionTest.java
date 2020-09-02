@@ -109,8 +109,8 @@ public class ProxyConnectionTest
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInfo=/path"));
-        assertThat(response, Matchers.containsString("remote=eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee:65535"));
-        assertThat(response, Matchers.containsString("local=ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff:65535"));
+        assertThat(response, Matchers.containsString("remote=[eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee]:65535"));
+        assertThat(response, Matchers.containsString("local=[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:65535"));
     }
 
     @ParameterizedTest
@@ -147,8 +147,41 @@ public class ProxyConnectionTest
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInfo=/path"));
-        assertThat(response, Matchers.containsString("local=eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee:8080"));
-        assertThat(response, Matchers.containsString("remote=ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff:12345"));
+        assertThat(response, Matchers.containsString("local=[eeee:eeee:eeee:eeee:eeee:eeee:eeee:eeee]:8080"));
+        assertThat(response, Matchers.containsString("remote=[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]:12345"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("requestProcessors")
+    public void testLocalV2(RequestProcessor p) throws Exception
+    {
+        String proxy =
+            // Preamble
+            "0D0A0D0A000D0A515549540A" +
+
+                // V2, LOCAL
+                "20" +
+
+                // 0x1 : AF_INET    0x1 : STREAM.
+                "11" +
+
+                // Address length is 16.
+                "0010" +
+
+                // gibberish
+                "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+            ;
+        String http = "GET /path HTTP/1.1\n" +
+            "Host: server:80\n" +
+            "Connection: close\n" +
+            "\n";
+
+        String response = p.sendRequestWaitingForResponse(TypeUtil.fromHexString(proxy), http.getBytes(StandardCharsets.US_ASCII));
+
+        assertThat(response, Matchers.containsString("HTTP/1.1 200"));
+        assertThat(response, Matchers.containsString("pathInfo=/path"));
+        assertThat(response, Matchers.containsString("local=0.0.0.0:0"));
+        assertThat(response, Matchers.containsString("remote=0.0.0.0:0"));
     }
 
     @ParameterizedTest

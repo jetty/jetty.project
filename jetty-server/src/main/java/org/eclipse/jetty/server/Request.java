@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
@@ -83,6 +84,7 @@ import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -644,7 +646,7 @@ public class Request implements HttpServletRequest
     public Attributes getAttributes()
     {
         if (_attributes == null)
-            _attributes = new AttributesMap();
+            _attributes = new ServletAttributes();
         return _attributes;
     }
 
@@ -984,11 +986,12 @@ public class Request implements HttpServletRequest
                 String name = InetAddress.getLocalHost().getHostAddress();
                 if (StringUtil.ALL_INTERFACES.equals(name))
                     return null;
-                return name;
+                return HostPort.normalizeHost(name);
             }
-            catch (java.net.UnknownHostException e)
+            catch (UnknownHostException e)
             {
                 LOG.ignore(e);
+                return null;
             }
         }
 
@@ -996,9 +999,10 @@ public class Request implements HttpServletRequest
         if (local == null)
             return "";
         InetAddress address = local.getAddress();
-        if (address == null)
-            return local.getHostString();
-        return address.getHostAddress();
+        String result = address == null
+            ? local.getHostString()
+            : address.getHostAddress();
+        return HostPort.normalizeHost(result);
     }
 
     /*
@@ -1011,7 +1015,7 @@ public class Request implements HttpServletRequest
         {
             InetSocketAddress local = _channel.getLocalAddress();
             if (local != null)
-                return local.getHostString();
+                return HostPort.normalizeHost(local.getHostString());
         }
 
         try
@@ -1019,9 +1023,9 @@ public class Request implements HttpServletRequest
             String name = InetAddress.getLocalHost().getHostName();
             if (StringUtil.ALL_INTERFACES.equals(name))
                 return null;
-            return name;
+            return HostPort.normalizeHost(name);
         }
-        catch (java.net.UnknownHostException e)
+        catch (UnknownHostException e)
         {
             LOG.ignore(e);
         }
@@ -1236,15 +1240,17 @@ public class Request implements HttpServletRequest
         InetSocketAddress remote = _remote;
         if (remote == null)
             remote = _channel.getRemoteAddress();
-
         if (remote == null)
             return "";
 
         InetAddress address = remote.getAddress();
-        if (address == null)
-            return remote.getHostString();
-
-        return address.getHostAddress();
+        String result = address == null
+            ? remote.getHostString()
+            : address.getHostAddress();
+        // Add IPv6 brackets if necessary, to be consistent
+        // with cases where _remote has been built from other
+        // sources such as forward headers or PROXY protocol.
+        return HostPort.normalizeHost(result);
     }
 
     /*
@@ -1256,7 +1262,10 @@ public class Request implements HttpServletRequest
         InetSocketAddress remote = _remote;
         if (remote == null)
             remote = _channel.getRemoteAddress();
-        return remote == null ? "" : remote.getHostString();
+        if (remote == null)
+            return "";
+        // We want the URI host, so add IPv6 brackets if necessary.
+        return HostPort.normalizeHost(remote.getHostString());
     }
 
     /*
@@ -1411,14 +1420,14 @@ public class Request implements HttpServletRequest
         // Return host from connection
         String name = getLocalName();
         if (name != null)
-            return name;
+            return HostPort.normalizeHost(name);
 
         // Return the local host
         try
         {
-            return InetAddress.getLocalHost().getHostAddress();
+            return HostPort.normalizeHost(InetAddress.getLocalHost().getHostAddress());
         }
-        catch (java.net.UnknownHostException e)
+        catch (UnknownHostException e)
         {
             LOG.ignore(e);
         }
@@ -1805,7 +1814,7 @@ public class Request implements HttpServletRequest
         }
         else if (encoded.startsWith("/"))
         {
-            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(URIUtil.decodePath(encoded));
+            path = (encoded.length() == 1) ? "/" : URIUtil.canonicalPath(uri.getDecodedPath());
         }
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
         {
@@ -1870,7 +1879,7 @@ public class Request implements HttpServletRequest
         _attributes = Attributes.unwrap(_attributes);
         if (_attributes != null)
         {
-            if (AttributesMap.class.equals(_attributes.getClass()))
+            if (ServletAttributes.class.equals(_attributes.getClass()))
                 _attributes.clearAttributes();
             else
                 _attributes = null;
@@ -1953,7 +1962,7 @@ public class Request implements HttpServletRequest
             LOG.warn("Deprecated: org.eclipse.jetty.server.sendContent");
 
         if (_attributes == null)
-            _attributes = new AttributesMap();
+            _attributes = new ServletAttributes();
         _attributes.setAttribute(name, value);
 
         if (!_requestAttributeListeners.isEmpty())
@@ -1974,6 +1983,56 @@ public class Request implements HttpServletRequest
     public void setAttributes(Attributes attributes)
     {
         _attributes = attributes;
+    }
+
+    public void setAsyncAttributes()
+    {
+        // Return if we have been async dispatched before.
+        if (getAttribute(AsyncContext.ASYNC_REQUEST_URI) != null)
+            return;
+
+        String requestURI;
+        String contextPath;
+        String servletPath;
+        String pathInfo;
+        String queryString;
+
+        // Have we been forwarded before?
+        requestURI = (String)getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
+        if (requestURI != null)
+        {
+            contextPath = (String)getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH);
+            servletPath = (String)getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH);
+            pathInfo = (String)getAttribute(RequestDispatcher.FORWARD_PATH_INFO);
+            queryString = (String)getAttribute(RequestDispatcher.FORWARD_QUERY_STRING);
+        }
+        else
+        {
+            requestURI = getRequestURI();
+            contextPath = getContextPath();
+            servletPath = getServletPath();
+            pathInfo = getPathInfo();
+            queryString = getQueryString();
+        }
+
+        // Unwrap the _attributes to get the base attributes instance.
+        Attributes baseAttributes;
+        if (_attributes == null)
+            _attributes = baseAttributes = new ServletAttributes();
+        else
+            baseAttributes = Attributes.unwrap(_attributes);
+
+        if (baseAttributes instanceof ServletAttributes)
+        {
+            // Set the AsyncAttributes on the ServletAttributes.
+            ServletAttributes servletAttributes = (ServletAttributes)baseAttributes;
+            servletAttributes.setAsyncAttributes(requestURI, contextPath, servletPath, pathInfo, queryString);
+        }
+        else
+        {
+            // If ServletAttributes has been replaced just set them on the top level Attributes.
+            AsyncAttributes.applyAsyncAttributes(_attributes, requestURI, contextPath, servletPath, pathInfo, queryString);
+        }
     }
 
     /**

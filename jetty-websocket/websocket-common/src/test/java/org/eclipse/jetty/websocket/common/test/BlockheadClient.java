@@ -44,7 +44,6 @@ public class BlockheadClient extends HttpClient implements WebSocketContainerSco
 
     public BlockheadClient()
     {
-        super(null);
         setName("Blockhead-CLIENT");
         this.extensionFactory = new WebSocketExtensionFactory(this);
     }

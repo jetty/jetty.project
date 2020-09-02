@@ -395,12 +395,15 @@ public class HpackContext
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("HdrTbl[%x] evictAll", HpackContext.this.hashCode()));
-            _fieldMap.clear();
-            _nameMap.clear();
-            _offset = 0;
-            _size = 0;
-            _dynamicTableSizeInBytes = 0;
-            Arrays.fill(_entries, null);
+            if (size() > 0)
+            {
+                _fieldMap.clear();
+                _nameMap.clear();
+                _offset = 0;
+                _size = 0;
+                _dynamicTableSizeInBytes = 0;
+                Arrays.fill(_entries, null);
+            }
         }
     }
 

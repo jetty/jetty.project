@@ -95,7 +95,7 @@ public class HttpRequest implements Request
         this.client = client;
         this.conversation = conversation;
         scheme = uri.getScheme();
-        host = client.normalizeHost(uri.getHost());
+        host = uri.getHost();
         port = HttpClient.normalizePort(scheme, uri.getPort());
         path = uri.getRawPath();
         query = uri.getRawQuery();

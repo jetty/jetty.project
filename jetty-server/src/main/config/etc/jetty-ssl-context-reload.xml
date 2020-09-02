@@ -1,0 +1,12 @@
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addBean">
+    <Arg>
+      <New id="keyStoreScanner" class="org.eclipse.jetty.util.ssl.KeyStoreScanner">
+        <Arg><Ref refid="sslContextFactory"/></Arg>
+        <Set name="scanInterval"><Property name="jetty.sslContext.reload.scanInterval" default="1"/></Set>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

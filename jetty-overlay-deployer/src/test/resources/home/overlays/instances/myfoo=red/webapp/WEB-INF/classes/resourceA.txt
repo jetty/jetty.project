@@ -1,1 +1,0 @@
-instance myfoo=red WEB-INF classes

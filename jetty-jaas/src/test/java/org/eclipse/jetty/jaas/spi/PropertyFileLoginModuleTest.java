@@ -20,7 +20,6 @@ package org.eclipse.jetty.jaas.spi;
 
 import java.io.File;
 import java.util.HashMap;
-
 import javax.security.auth.Subject;
 
 import org.eclipse.jetty.jaas.callback.DefaultCallbackHandler;

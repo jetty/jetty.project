@@ -25,7 +25,6 @@ import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -99,12 +98,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     @Override
     public void release()
     {
+        setStream(null);
         connection.release(this);
-    }
-
-    void onStreamClosed(IStream stream)
-    {
-        connection.onStreamClosed(stream, this);
+        getHttpDestination().release(getHttpConnection());
     }
 
     @Override

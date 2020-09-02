@@ -221,6 +221,7 @@ Next we need to make the Unix System aware that we have a new Jetty Service that
 # cp /opt/jetty/jetty-distribution-{VERSION}/bin/jetty.sh /etc/init.d/jetty
 # echo "JETTY_HOME=/opt/jetty/jetty-distribution-{VERSION}" > /etc/default/jetty
 # echo "JETTY_BASE=/opt/web/mybase" >> /etc/default/jetty
+# echo "JETTY_USER=jetty" >> /etc/default/jetty
 # echo "TMPDIR=/opt/jetty/temp" >> /etc/default/jetty
 ....
 

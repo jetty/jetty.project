@@ -26,4 +26,6 @@ import javax.websocket.EndpointConfig;
 public interface Configurable
 {
     void init(EndpointConfig config);
+
+    void destroy();
 }

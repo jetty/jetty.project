@@ -280,27 +280,31 @@ public class Response implements HttpServletResponse
 
     @Override
     public void addCookie(Cookie cookie)
-    {
-        if (StringUtil.isBlank(cookie.getName()))
-            throw new IllegalArgumentException("Cookie.name cannot be blank/null");
+    { 
+        //Servlet Spec 9.3 Include method: cannot set a cookie if handling an include
+        if (isMutable())
+        {
+            if (StringUtil.isBlank(cookie.getName()))
+                throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
-        String comment = cookie.getComment();
-        // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
-        boolean httpOnly = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
-        SameSite sameSite = HttpCookie.getSameSiteFromComment(comment);
-        comment = HttpCookie.getCommentWithoutAttributes(comment);
+            String comment = cookie.getComment();
+            // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
+            boolean httpOnly = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
+            SameSite sameSite = HttpCookie.getSameSiteFromComment(comment);
+            comment = HttpCookie.getCommentWithoutAttributes(comment);
 
-        addCookie(new HttpCookie(
-            cookie.getName(),
-            cookie.getValue(),
-            cookie.getDomain(),
-            cookie.getPath(),
-            (long)cookie.getMaxAge(),
-            httpOnly,
-            cookie.getSecure(),
-            comment,
-            cookie.getVersion(),
-            sameSite));
+            addCookie(new HttpCookie(
+                cookie.getName(),
+                cookie.getValue(),
+                cookie.getDomain(),
+                cookie.getPath(),
+                (long)cookie.getMaxAge(),
+                httpOnly,
+                cookie.getSecure(),
+                comment,
+                cookie.getVersion(),
+                sameSite));
+        }
     }
 
     @Override
@@ -502,7 +506,9 @@ public class Response implements HttpServletResponse
 
         if (!URIUtil.hasScheme(location))
         {
-            StringBuilder buf = _channel.getRequest().getRootURL();
+            StringBuilder buf = _channel.getHttpConfiguration().isRelativeRedirectAllowed()
+                ? new StringBuilder()
+                : _channel.getRequest().getRootURL();
             if (location.startsWith("/"))
             {
                 // absolute in context

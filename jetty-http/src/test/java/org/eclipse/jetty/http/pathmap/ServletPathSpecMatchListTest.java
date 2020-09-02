@@ -82,7 +82,7 @@ public class ServletPathSpecMatchListTest
         {
             if (delim)
                 actual.append(", ");
-            actual.append(res.getPathSpec().pathSpec).append('=').append(res.getResource());
+            actual.append(res.getPathSpec().getDeclaration()).append('=').append(res.getResource());
             delim = true;
         }
         actual.append(']');

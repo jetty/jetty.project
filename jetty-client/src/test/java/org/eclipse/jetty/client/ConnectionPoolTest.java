@@ -19,7 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -27,11 +27,11 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.BytesContentProvider;
@@ -43,51 +43,59 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.SocketAddressResolver;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled // Disabled by @gregw on issue #2540 - commit 621b946b10884e7308eacca241dcf8b5d6f6cff2
 public class ConnectionPoolTest
 {
     private Server server;
     private ServerConnector connector;
     private HttpClient client;
 
-    public static Stream<Arguments> pools()
+    public static Stream<ConnectionPoolFactory> pools()
     {
-        List<Object[]> pools = new ArrayList<>();
-        pools.add(new Object[]{
-            DuplexConnectionPool.class,
-            (ConnectionPool.Factory)
-                destination -> new DuplexConnectionPool(destination, 8, destination)
-        });
-        pools.add(new Object[]{
-            RoundRobinConnectionPool.class,
-            (ConnectionPool.Factory)
-                destination -> new RoundRobinConnectionPool(destination, 8, destination)
-        });
-        return pools.stream().map(Arguments::of);
+        return Stream.concat(poolsNoRoundRobin(),
+            Stream.of(new ConnectionPoolFactory("round-robin", destination -> new RoundRobinConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination))));
     }
 
-    private void start(final ConnectionPool.Factory factory, Handler handler) throws Exception
+    public static Stream<ConnectionPoolFactory> poolsNoRoundRobin()
+    {
+        return Stream.of(
+            new ConnectionPoolFactory("duplex", destination -> new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination)),
+            new ConnectionPoolFactory("multiplex", destination -> new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1))
+        );
+    }
+
+    private void start(ConnectionPool.Factory factory, Handler handler) throws Exception
+    {
+        startServer(handler);
+        startClient(factory);
+    }
+
+    private void startClient(ConnectionPool.Factory factory) throws Exception
+    {
+        HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
+        transport.setConnectionPoolFactory(factory);
+        client = new HttpClient(transport, null);
+        client.start();
+    }
+
+    private void startServer(Handler handler) throws Exception
     {
         server = new Server();
         connector = new ServerConnector(server);
         server.addConnector(connector);
         server.setHandler(handler);
-
-        HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
-        transport.setConnectionPoolFactory(factory);
         server.start();
-
-        client = new HttpClient(transport, null);
-        client.start();
     }
 
     @AfterEach
@@ -111,14 +119,14 @@ public class ConnectionPoolTest
         }
     }
 
-    @ParameterizedTest(name = "[{index}] {0}")
+    @ParameterizedTest
     @MethodSource("pools")
-    public void test(Class<? extends ConnectionPool> connectionPoolClass, ConnectionPool.Factory factory) throws Exception
+    public void test(ConnectionPoolFactory factory) throws Exception
     {
-        start(factory, new EmptyServerHandler()
+        start(factory.factory, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 switch (HttpMethod.fromString(request.getMethod()))
                 {
@@ -231,6 +239,205 @@ public class ConnectionPoolTest
         catch (Throwable x)
         {
             failures.add(x);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("pools")
+    public void testQueuedRequestsDontOpenTooManyConnections(ConnectionPoolFactory factory) throws Exception
+    {
+        startServer(new EmptyServerHandler());
+
+        HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
+        transport.setConnectionPoolFactory(factory.factory);
+        client = new HttpClient(transport, null);
+        long delay = 1000;
+        client.setSocketAddressResolver(new SocketAddressResolver.Sync()
+        {
+            @Override
+            public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
+            {
+                client.getExecutor().execute(() ->
+                {
+                    try
+                    {
+                        Thread.sleep(delay);
+                        super.resolve(host, port, promise);
+                    }
+                    catch (InterruptedException x)
+                    {
+                        promise.failed(x);
+                    }
+                });
+            }
+        });
+        client.start();
+
+        CountDownLatch latch = new CountDownLatch(2);
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/one")
+            .send(result ->
+            {
+                if (result.isSucceeded())
+                    latch.countDown();
+            });
+        Thread.sleep(delay / 2);
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/two")
+            .send(result ->
+            {
+                if (result.isSucceeded())
+                    latch.countDown();
+            });
+
+        assertTrue(latch.await(2 * delay, TimeUnit.MILLISECONDS));
+        List<Destination> destinations = client.getDestinations();
+        assertEquals(1, destinations.size());
+        HttpDestination destination = (HttpDestination)destinations.get(0);
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
+        assertEquals(2, connectionPool.getConnectionCount());
+    }
+
+    @ParameterizedTest
+    @MethodSource("poolsNoRoundRobin")
+    public void testConcurrentRequestsDontOpenTooManyConnections(ConnectionPoolFactory factory) throws Exception
+    {
+        // Round robin connection pool does open a few more
+        // connections than expected, exclude it from this test.
+
+        startServer(new EmptyServerHandler());
+
+        int count = 500;
+        QueuedThreadPool clientThreads = new QueuedThreadPool(2 * count);
+        clientThreads.setName("client");
+        HttpClientTransport transport = new HttpClientTransportOverHTTP(1);
+        transport.setConnectionPoolFactory(factory.factory);
+        client = new HttpClient(transport, null);
+        client.setExecutor(clientThreads);
+        client.setMaxConnectionsPerDestination(2 * count);
+        client.setSocketAddressResolver(new SocketAddressResolver.Sync()
+        {
+            @Override
+            public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
+            {
+                client.getExecutor().execute(() ->
+                {
+                    try
+                    {
+                        Thread.sleep(100);
+                        super.resolve(host, port, promise);
+                    }
+                    catch (InterruptedException x)
+                    {
+                        promise.failed(x);
+                    }
+                });
+            }
+        });
+        client.start();
+
+        CountDownLatch latch = new CountDownLatch(count);
+        for (int i = 0; i < count; ++i)
+        {
+            clientThreads.execute(() -> client.newRequest("localhost", connector.getLocalPort())
+                .send(result ->
+                {
+                    if (result.isSucceeded())
+                        latch.countDown();
+                }));
+        }
+
+        assertTrue(latch.await(count, TimeUnit.SECONDS));
+        List<Destination> destinations = client.getDestinations();
+        assertEquals(1, destinations.size());
+        HttpDestination destination = (HttpDestination)destinations.get(0);
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
+        assertThat(connectionPool.getConnectionCount(), Matchers.lessThanOrEqualTo(count));
+    }
+
+    @ParameterizedTest
+    @MethodSource("pools")
+    public void testConnectionMaxUsage(ConnectionPoolFactory factory) throws Exception
+    {
+        startServer(new EmptyServerHandler());
+
+        int maxUsageCount = 2;
+        startClient(destination ->
+        {
+            AbstractConnectionPool connectionPool = (AbstractConnectionPool)factory.factory.newConnectionPool(destination);
+            connectionPool.setMaxUsageCount(maxUsageCount);
+            return connectionPool;
+        });
+        client.setMaxConnectionsPerDestination(1);
+
+        // Send first request, we are within the max usage count.
+        ContentResponse response1 = client.newRequest("localhost", connector.getLocalPort()).send();
+        assertEquals(HttpStatus.OK_200, response1.getStatus());
+
+        HttpDestination destination = (HttpDestination)client.getDestinations().get(0);
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
+
+        assertEquals(0, connectionPool.getActiveConnectionCount());
+        assertEquals(1, connectionPool.getIdleConnectionCount());
+        assertEquals(1, connectionPool.getConnectionCount());
+
+        // Send second request, max usage count will be reached,
+        // the only connection must be closed.
+        ContentResponse response2 = client.newRequest("localhost", connector.getLocalPort()).send();
+        assertEquals(HttpStatus.OK_200, response2.getStatus());
+
+        assertEquals(0, connectionPool.getActiveConnectionCount());
+        assertEquals(0, connectionPool.getIdleConnectionCount());
+        assertEquals(0, connectionPool.getConnectionCount());
+    }
+
+    @ParameterizedTest
+    @MethodSource("pools")
+    public void testIdleTimeoutNoRequests(ConnectionPoolFactory factory) throws Exception
+    {
+        startServer(new EmptyServerHandler());
+        startClient(destination ->
+        {
+            try
+            {
+                ConnectionPool connectionPool = factory.factory.newConnectionPool(destination);
+                connectionPool.preCreateConnections(1).get();
+                return connectionPool;
+            }
+            catch (Exception x)
+            {
+                throw new RuntimeException(x);
+            }
+        });
+        long idleTimeout = 1000;
+        client.setIdleTimeout(idleTimeout);
+
+        // Trigger the creation of a destination, that will create the connection pool.
+        HttpDestination destination = client.resolveDestination(new Origin("http", "localhost", connector.getLocalPort()));
+        AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
+        assertEquals(1, connectionPool.getConnectionCount());
+
+        // Wait for the pre-created connections to idle timeout.
+        Thread.sleep(idleTimeout + idleTimeout / 2);
+
+        assertEquals(0, connectionPool.getConnectionCount());
+    }
+
+    private static class ConnectionPoolFactory
+    {
+        private final String name;
+        private final ConnectionPool.Factory factory;
+
+        private ConnectionPoolFactory(String name, ConnectionPool.Factory factory)
+        {
+            this.name = name;
+            this.factory = factory;
+        }
+
+        @Override
+        public String toString()
+        {
+            return name;
         }
     }
 }

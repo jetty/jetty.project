@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.http.HttpServletRequest;
@@ -418,6 +417,18 @@ public class ContextHandlerTest
         assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
         assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo/bar'"));
 
+        // If we make foobar unavailable, then requests will be handled by 503
+        foobar.setAvailable(false);
+        assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString(" 503 "));
+
+        // If we make foobar available, then requests will be handled normally
+        foobar.setAvailable(true);
+        assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo/bar'"));
+
         // If we stop foobar, then requests will be handled by foo
         foobar.stop();
         assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
@@ -448,7 +459,7 @@ public class ContextHandlerTest
         assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
         assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo/bar'"));
     }
-    
+
     @Test
     public void testContextInitializationDestruction() throws Exception
     {
@@ -859,12 +870,12 @@ public class ContextHandlerTest
             writer.println("ctx='" + request.getContextPath() + "'");
         }
     }
-    
+
     private static class TestServletContextListener implements ServletContextListener
     {
         public int initialized = 0;
         public int destroyed = 0;
-        
+
         @Override
         public void contextInitialized(ServletContextEvent sce)
         {

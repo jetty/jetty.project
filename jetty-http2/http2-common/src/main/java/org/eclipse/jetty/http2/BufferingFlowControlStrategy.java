@@ -112,7 +112,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                 session.updateRecvWindow(level);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Data consumed, {} bytes, updated session recv window by {}/{} for {}", length, level, maxLevel, session);
-                session.frames(null, Callback.NOOP, new WindowUpdateFrame(0, level), Frame.EMPTY_ARRAY);
+                sendWindowUpdate(null, session, new WindowUpdateFrame(0, level));
             }
             else
             {
@@ -146,7 +146,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                         stream.updateRecvWindow(level);
                         if (LOG.isDebugEnabled())
                             LOG.debug("Data consumed, {} bytes, updated stream recv window by {}/{} for {}", length, level, maxLevel, stream);
-                        session.frames(stream, Callback.NOOP, new WindowUpdateFrame(stream.getId(), level), Frame.EMPTY_ARRAY);
+                        sendWindowUpdate(stream, session, new WindowUpdateFrame(stream.getId(), level));
                     }
                     else
                     {
@@ -156,6 +156,11 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                 }
             }
         }
+    }
+
+    protected void sendWindowUpdate(IStream stream, ISession session, WindowUpdateFrame frame)
+    {
+        session.frames(stream, Callback.NOOP, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override

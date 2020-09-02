@@ -21,7 +21,9 @@ package org.eclipse.jetty.http.pathmap;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -187,4 +189,17 @@ public class ServletPathSpecTest
 
         assertEquals(null, spec.getPathInfo("/downloads/distribution.tar.gz"), "Spec.pathInfo");
     }
+
+    @Test
+    public void testEquals()
+    {
+        assertThat(new ServletPathSpec("*.gz"), equalTo(new ServletPathSpec("*.gz")));
+        assertThat(new ServletPathSpec("/foo"), equalTo(new ServletPathSpec("/foo")));
+        assertThat(new ServletPathSpec("/foo/bar"), equalTo(new ServletPathSpec("/foo/bar")));
+        assertThat(new ServletPathSpec("*.gz"), not(equalTo(new ServletPathSpec("*.do"))));
+        assertThat(new ServletPathSpec("/foo"), not(equalTo(new ServletPathSpec("/bar"))));
+        assertThat(new ServletPathSpec("/bar/foo"), not(equalTo(new ServletPathSpec("/foo/bar"))));
+        assertThat(new ServletPathSpec("/foo"), not(equalTo(new RegexPathSpec("/foo"))));
+    }
+
 }

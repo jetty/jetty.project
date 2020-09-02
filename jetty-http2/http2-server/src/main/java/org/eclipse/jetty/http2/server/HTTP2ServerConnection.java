@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -41,7 +40,6 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
-import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
@@ -58,7 +56,6 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.TypeUtil;
 
 public class HTTP2ServerConnection extends HTTP2Connection implements Connection.UpgradeTo
@@ -214,13 +211,17 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     public void onStreamFailure(IStream stream, Throwable failure, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Processing failure on {}: {}", stream, failure);
+            LOG.debug("Processing stream failure on {}", stream, failure);
         HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttachment();
         if (channel != null)
         {
             Runnable task = channel.onFailure(failure, callback);
             if (task != null)
+            {
+                // We must dispatch to another thread because the task
+                // may call application code that performs blocking I/O.
                 offerTask(task, true);
+            }
         }
         else
         {
@@ -245,22 +246,10 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
 
     public void onSessionFailure(Throwable failure, Callback callback)
     {
-        ISession session = getSession();
         if (LOG.isDebugEnabled())
-            LOG.debug("Processing failure on {}: {}", session, failure);
-        Collection<Stream> streams = session.getStreams();
-        if (streams.isEmpty())
-        {
-            callback.succeeded();
-        }
-        else
-        {
-            CountingCallback counter = new CountingCallback(callback, streams.size());
-            for (Stream stream : streams)
-            {
-                onStreamFailure((IStream)stream, failure, counter);
-            }
-        }
+            LOG.debug("Processing session failure on {}", getSession(), failure);
+        // All the streams have already been failed, just succeed the callback.
+        callback.succeeded();
     }
 
     public void push(Connector connector, IStream stream, MetaData.Request request)

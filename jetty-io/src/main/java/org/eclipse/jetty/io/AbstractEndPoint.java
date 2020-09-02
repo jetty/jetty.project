@@ -434,11 +434,13 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         oldConnection.onClose();
         oldConnection.getEndPoint().setConnection(newConnection);
 
-        if (newConnection instanceof Connection.UpgradeTo)
-            ((Connection.UpgradeTo)newConnection).onUpgradeTo(buffer);
-        else if (BufferUtil.hasContent(buffer))
-            throw new IllegalStateException("Cannot upgrade: " + newConnection + " does not implement " + Connection.UpgradeTo.class.getName());
-
+        if (BufferUtil.hasContent(buffer))
+        {
+            if (newConnection instanceof Connection.UpgradeTo)
+                ((Connection.UpgradeTo)newConnection).onUpgradeTo(buffer);
+            else
+                throw new IllegalStateException("Cannot upgrade: " + newConnection + " does not implement " + Connection.UpgradeTo.class.getName());
+        }
         newConnection.onOpen();
     }
 
@@ -458,11 +460,11 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
             name = c.getSimpleName();
         }
 
-        return String.format("%s@%h{%s<->%s,%s,fill=%s,flush=%s,to=%d/%d}",
+        return String.format("%s@%h{l=%s,r=%s,%s,fill=%s,flush=%s,to=%d/%d}",
             name,
             this,
-            getRemoteAddress(),
             getLocalAddress(),
+            getRemoteAddress(),
             _state.get(),
             _fillInterest.toStateString(),
             _writeFlusher.toStateString(),

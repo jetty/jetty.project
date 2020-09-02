@@ -817,13 +817,16 @@ public class HttpChannelState
         // check the actions of the listeners
         synchronized (this)
         {
-            // If we are still async and nobody has called sendError
             if (_requestState == RequestState.ASYNC && !_sendError)
-                // Then the listeners did not invoke API methods
-                // and the container must provide a default error dispatch.
+            {
+                // The listeners did not invoke API methods and the
+                // container must provide a default error dispatch.
                 sendError(th);
-            else
+            }
+            else if (_requestState != RequestState.COMPLETE)
+            {
                 LOG.warn("unhandled in state " + _requestState, new IllegalStateException(th));
+            }
         }
     }
 
@@ -940,7 +943,7 @@ public class HttpChannelState
         }
     }
 
-    protected void completed()
+    protected void completed(Throwable failure)
     {
         final List<AsyncListener> aListeners;
         final AsyncContextEvent event;
@@ -973,7 +976,7 @@ public class HttpChannelState
         }
 
         // release any aggregate buffer from a closing flush
-        _channel.getResponse().getHttpOutput().completed();
+        _channel.getResponse().getHttpOutput().completed(failure);
 
         if (event != null)
         {

@@ -175,7 +175,7 @@ public class ResourceCollectionTest
     }
 
     @Test
-    public void testMutlipleSources1() throws Exception
+    public void testMultipleSources1() throws Exception
     {
         ResourceCollection rc1 = new ResourceCollection(new String[]{
             "src/test/resources/org/eclipse/jetty/util/resource/one/",

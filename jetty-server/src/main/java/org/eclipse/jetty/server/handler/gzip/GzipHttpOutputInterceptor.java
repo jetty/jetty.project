@@ -229,7 +229,15 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             LOG.debug("{} compressing {}", this, _deflater);
             _state.set(GZState.COMPRESSING);
 
-            gzip(content, complete, callback);
+            if (BufferUtil.isEmpty(content))
+            {
+                // We are committing, but have no content to compress, so flush empty buffer to write headers.
+                _interceptor.write(BufferUtil.EMPTY_BUFFER, complete, callback);
+            }
+            else
+            {
+                gzip(content, complete, callback);
+            }
         }
         else
             callback.failed(new WritePendingException());
@@ -412,7 +420,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         @Override
         public String toString()
         {
-            return String.format("%s[content=%s last=%b copy=%s buffer=%s deflate=%s",
+            return String.format("%s[content=%s last=%b copy=%s buffer=%s deflate=%s %s]",
                 super.toString(),
                 BufferUtil.toDetailString(_content),
                 _last,

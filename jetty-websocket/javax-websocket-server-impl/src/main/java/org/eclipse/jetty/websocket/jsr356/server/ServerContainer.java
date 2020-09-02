@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
+import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 import org.eclipse.jetty.websocket.jsr356.ClientContainer;
 import org.eclipse.jetty.websocket.jsr356.JsrSessionFactory;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
@@ -117,25 +118,64 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         return new EndpointInstance(endpoint, cec, metadata);
     }
 
+    private void validateEndpointConfig(ServerEndpointConfig config) throws DeploymentException
+    {
+        if (config == null)
+        {
+            throw new DeploymentException("Unable to deploy null ServerEndpointConfig");
+        }
+
+        ServerEndpointConfig.Configurator configurator = config.getConfigurator();
+        if (configurator == null)
+        {
+            throw new DeploymentException("Unable to deploy with null ServerEndpointConfig.Configurator");
+        }
+
+        Class<?> endpointClass = config.getEndpointClass();
+        if (endpointClass == null)
+        {
+            throw new DeploymentException("Unable to deploy null endpoint class from ServerEndpointConfig: " + config.getClass().getName());
+        }
+
+        if (configurator.getClass() == ContainerDefaultConfigurator.class)
+        {
+            if (!ReflectUtils.isDefaultConstructable(endpointClass))
+            {
+                throw new DeploymentException("Cannot access default constructor for the class: " + endpointClass.getName());
+            }
+        }
+    }
+
     @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
+        if (endpointClass == null)
+        {
+            throw new DeploymentException("Unable to deploy null endpoint class");
+        }
+
         if (isStarted() || isStarting())
         {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("addEndpoint({})", endpointClass);
+            }
+
             ServerEndpointMetadata metadata = getServerEndpointMetadata(endpointClass, null);
+            validateEndpointConfig(metadata.getConfig());
             addEndpoint(metadata);
         }
         else
         {
             if (deferredEndpointClasses == null)
             {
-                deferredEndpointClasses = new ArrayList<Class<?>>();
+                deferredEndpointClasses = new ArrayList<>();
             }
             deferredEndpointClasses.add(endpointClass);
         }
     }
 
-    private void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
+    private void addEndpoint(ServerEndpointMetadata metadata)
     {
         JsrCreator creator = new JsrCreator(this, metadata, this.configuration.getFactory().getExtensionFactory());
         this.configuration.addMapping("uri-template|" + metadata.getPath(), creator);
@@ -144,12 +184,14 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void addEndpoint(ServerEndpointConfig config) throws DeploymentException
     {
+        validateEndpointConfig(config);
         if (isStarted() || isStarting())
         {
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), config.getEndpointClass());
             }
+
             ServerEndpointMetadata metadata = getServerEndpointMetadata(config.getEndpointClass(), config);
             addEndpoint(metadata);
         }
@@ -157,7 +199,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         {
             if (deferredEndpointConfigs == null)
             {
-                deferredEndpointConfigs = new ArrayList<ServerEndpointConfig>();
+                deferredEndpointConfigs = new ArrayList<>();
             }
             deferredEndpointConfigs.add(config);
         }
@@ -191,35 +233,43 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 
     public ServerEndpointMetadata getServerEndpointMetadata(final Class<?> endpoint, final ServerEndpointConfig config) throws DeploymentException
     {
-        ServerEndpointMetadata metadata = null;
+        try
+        {
+            ServerEndpointMetadata metadata;
+            ServerEndpoint anno = endpoint.getAnnotation(ServerEndpoint.class);
+            if (anno != null)
+            {
+                // Annotated takes precedence here
+                AnnotatedServerEndpointMetadata ametadata = new AnnotatedServerEndpointMetadata(this, endpoint, config);
+                AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(ametadata);
+                metadata = ametadata;
+                scanner.scan();
+            }
+            else if (Endpoint.class.isAssignableFrom(endpoint))
+            {
+                // extends Endpoint
+                @SuppressWarnings("unchecked")
+                Class<? extends Endpoint> eendpoint = (Class<? extends Endpoint>)endpoint;
+                metadata = new SimpleServerEndpointMetadata(eendpoint, config);
+            }
+            else
+            {
+                String err = "Not a recognized websocket [" + endpoint.getName() +
+                    "] does not extend @" + ServerEndpoint.class.getName() +
+                    " or extend from " + Endpoint.class.getName();
+                throw new DeploymentException(err);
+            }
 
-        ServerEndpoint anno = endpoint.getAnnotation(ServerEndpoint.class);
-        if (anno != null)
-        {
-            // Annotated takes precedence here
-            AnnotatedServerEndpointMetadata ametadata = new AnnotatedServerEndpointMetadata(this, endpoint, config);
-            AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(ametadata);
-            metadata = ametadata;
-            scanner.scan();
+            return metadata;
         }
-        else if (Endpoint.class.isAssignableFrom(endpoint))
+        catch (DeploymentException e)
         {
-            // extends Endpoint
-            @SuppressWarnings("unchecked")
-            Class<? extends Endpoint> eendpoint = (Class<? extends Endpoint>)endpoint;
-            metadata = new SimpleServerEndpointMetadata(eendpoint, config);
+            throw e;
         }
-        else
+        catch (Throwable t)
         {
-            StringBuilder err = new StringBuilder();
-            err.append("Not a recognized websocket [");
-            err.append(endpoint.getName());
-            err.append("] does not extend @").append(ServerEndpoint.class.getName());
-            err.append(" or extend from ").append(Endpoint.class.getName());
-            throw new DeploymentException("Unable to identify as valid Endpoint: " + endpoint);
+            throw new DeploymentException(t.getMessage(), t);
         }
-
-        return metadata;
     }
 
     @Override

@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.29-SNAPSHOT</version>
+  <version>9.4.32-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -17,22 +17,22 @@
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.4</build-support.version>
-    <checkstyle.version>8.20</checkstyle.version>
-    <slf4j.version>1.7.25</slf4j.version>
+    <checkstyle.version>8.29</checkstyle.version>
+    <slf4j.version>1.7.30</slf4j.version>
     <log4j2.version>2.11.2</log4j2.version>
     <disruptor.version>3.4.2</disruptor.version>
     <logback.version>1.2.3</logback.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <alpn.api.version>1.1.3.v20160715</alpn.api.version>
-    <jsp.version>8.5.49</jsp.version>
+    <jsp.version>8.5.54</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <conscrypt.version>2.4.0</conscrypt.version>
-    <asm.version>7.2</asm.version>
+    <asm.version>7.3.1</asm.version>
     <jmh.version>1.21</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
     <tycho-version>1.4.0</tycho-version>
-    <junit.version>5.5.1</junit.version>
+    <junit.version>5.6.2</junit.version>
     <maven.version>3.6.0</maven.version>
     <maven.resolver.version>1.3.1</maven.resolver.version>
     <javax.servlet.api.version>3.1.0</javax.servlet.api.version>
@@ -44,25 +44,26 @@
     <jpms-module-name>${bundle-symbolic-name}</jpms-module-name>
 
     <!-- some maven plugins versions -->
-    <maven.surefire.version>3.0.0-M4</maven.surefire.version>
+    <maven.surefire.version>3.0.0-M5</maven.surefire.version>
     <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.1.1</maven.dependency.plugin.version>
-    <maven.resources.plugin.version>3.1.0</maven.resources.plugin.version>
-    <maven.source.plugin.version>3.0.1</maven.source.plugin.version>
-    <maven.war.plugin.version>3.2.2</maven.war.plugin.version>
+    <maven.dependency.plugin.version>3.1.2</maven.dependency.plugin.version>
+    <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
+    <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
+    <maven.war.plugin.version>3.3.1</maven.war.plugin.version>
     <maven.plugin-tools.version>3.5.2</maven.plugin-tools.version>
-    <maven.install.plugin.version>2.5.2</maven.install.plugin.version>
-    <maven.deploy.plugin.version>2.8.2</maven.deploy.plugin.version>
+    <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
+    <maven.deploy.plugin.version>3.0.0-M1</maven.deploy.plugin.version>
 
     <!-- testing -->
     <it.debug>false</it.debug>
-    <jetty.test.version>5.3</jetty.test.version>
+    <jetty.test.version>5.4</jetty.test.version>
     <spring-boot.version>2.1.1.RELEASE</spring-boot.version>
     <jsr250-api.version>1.0</jsr250-api.version>
     <javax.annotation-api>1.3</javax.annotation-api>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
     <settingsPath>src/it/settings.xml</settingsPath>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
+    <testcontainers.version>1.14.3</testcontainers.version>
   </properties>
 
   <licenses>
@@ -135,9 +136,6 @@
     <module>jetty-home</module>
     <module>jetty-bom</module>
     <module>jetty-documentation</module>
-    <!-- modules that need fixed and added back, or simply dropped and not maintained -->
-    <!-- <module>jetty-rhttp</module> -->
-    <!-- <module>jetty-overlay-deployer</module> -->
   </modules>
 
   <build>
@@ -310,6 +308,7 @@
         </executions>
       </plugin>
       <!-- The source maven plugin creates the source bundle and adds manifest -->
+      <!-- if removing this we need to add it back in eclipse-release profile -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
@@ -317,22 +316,10 @@
         <executions>
           <execution>
             <id>attach-sources</id>
-            <phase>process-classes</phase>
+            <phase>package</phase>
             <goals>
-              <goal>jar</goal>
+              <goal>jar-no-fork</goal>
             </goals>
-            <configuration>
-              <archive>
-                <manifestEntries>
-                  <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
-                  <Bundle-Name>${project.name}</Bundle-Name>
-                  <Bundle-SymbolicName>${bundle-symbolic-name}.source</Bundle-SymbolicName>
-                  <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
-                  <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
-                  <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
-                </manifestEntries>
-              </archive>
-            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -656,6 +643,18 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
           <version>${maven.source.plugin.version}</version>
+          <configuration>
+            <archive>
+              <manifestEntries>
+                <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
+                <Bundle-Name>${project.name}</Bundle-Name>
+                <Bundle-SymbolicName>${bundle-symbolic-name}.source</Bundle-SymbolicName>
+                <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
+                <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
+                <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
+              </manifestEntries>
+            </archive>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -664,7 +663,7 @@
           <configuration>
             <rerunFailingTestsCount>${surefire.rerunFailingTestsCount}</rerunFailingTestsCount>
             <forkedProcessTimeoutInSeconds>3600</forkedProcessTimeoutInSeconds>
-            <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
+            <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx2g -Xms2g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
             <forkCount>1</forkCount>
             <reuseForks>true</reuseForks> <!-- to work around crash at https://github.com/junit-team/junit5/issues/801 -->
@@ -1080,6 +1079,16 @@
         <artifactId>junit-jupiter</artifactId>
         <version>${junit.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>${testcontainers.version}</version>
+      </dependency>
       <!-- Old Deps -->
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -1329,18 +1338,6 @@
             <configuration>
               <updateReleaseInfo>true</updateReleaseInfo>
             </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>attach-sources</id>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-              </execution>
-            </executions>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>

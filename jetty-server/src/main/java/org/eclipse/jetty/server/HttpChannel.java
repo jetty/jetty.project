@@ -432,8 +432,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 abort(x);
                             else
                             {
-                                _response.resetContent();
-                                sendResponseAndComplete();
+                                try
+                                {
+                                    _response.resetContent();
+                                    sendResponseAndComplete();
+                                }
+                                catch (Throwable t)
+                                {
+                                    if (x != t)
+                                        x.addSuppressed(t);
+                                    abort(x);
+                                }
                             }
                         }
                         finally
@@ -509,7 +518,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         // TODO that is done.
 
                         // Set a close callback on the HttpOutput to make it an async callback
-                        _response.completeOutput(Callback.from(_state::completed));
+                        _response.completeOutput(Callback.from(() -> _state.completed(null), _state::completed));
 
                         break;
                     }
@@ -624,7 +633,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _request.setHandled(true);
             _state.completing();
-            sendResponse(null, _response.getHttpOutput().getBuffer(), true, Callback.from(_state::completed));
+            sendResponse(null, _response.getHttpOutput().getBuffer(), true, Callback.from(() -> _state.completed(null), _state::completed));
         }
         catch (Throwable x)
         {
@@ -1212,7 +1221,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     @Override
                     public void succeeded()
                     {
-                        _response.getHttpOutput().completed();
+                        _response.getHttpOutput().completed(null);
                         super.failed(x);
                     }
 

@@ -214,7 +214,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public void accept(SelectableChannel channel, Object attachment)
     {
-        final ManagedSelector selector = chooseSelector();
+        ManagedSelector selector = chooseSelector();
         selector.submit(selector.new Accept(channel, attachment));
     }
 
@@ -229,7 +229,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
      */
     public Closeable acceptor(SelectableChannel server)
     {
-        final ManagedSelector selector = chooseSelector();
+        ManagedSelector selector = chooseSelector();
         ManagedSelector.Acceptor acceptor = selector.new Acceptor(server);
         selector.submit(acceptor);
         return acceptor;

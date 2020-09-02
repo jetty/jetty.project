@@ -39,8 +39,8 @@ import org.eclipse.jetty.util.StringUtil;
 /**
  * Inspired by nginx's try_files functionality.
  * <p>
- * This filter accepts the <code>files</code> init-param as a list of space-separated
- * file URIs. The special token <code>$path</code> represents the current request URL's
+ * This filter accepts the {@code files} init-param as a list of space-separated
+ * file URIs. The special token {@code $path} represents the current request URL's
  * path (the portion after the context path).
  * <p>
  * Typical example of how this filter can be configured is the following:
@@ -50,14 +50,14 @@ import org.eclipse.jetty.util.StringUtil;
  *     &lt;filter-class&gt;org.eclipse.jetty.fcgi.server.proxy.TryFilesFilter&lt;/filter-class&gt;
  *     &lt;init-param&gt;
  *         &lt;param-name&gt;files&lt;/param-name&gt;
- *         &lt;param-value&gt;maintenance.html $path index.php?p=$path&lt;/param-value&gt;
+ *         &lt;param-value&gt;/maintenance.html $path /index.php?p=$path&lt;/param-value&gt;
  *     &lt;/init-param&gt;
  * &lt;/filter&gt;
  * </pre>
- * For a request such as <code>/context/path/to/resource.ext</code>, this filter will
- * try to serve the <code>/maintenance.html</code> file if it finds it; failing that,
- * it will try to serve the <code>/path/to/resource.ext</code> file if it finds it;
- * failing that it will forward the request to <code>index.php?p=/path/to/resource.ext</code>.
+ * For a request such as {@code /context/path/to/resource.ext}, this filter will
+ * try to serve the {@code /maintenance.html} file if it finds it; failing that,
+ * it will try to serve the {@code /path/to/resource.ext} file if it finds it;
+ * failing that it will forward the request to {@code /index.php?p=/path/to/resource.ext}.
  * The last file URI specified in the list is therefore the "fallback" to which the request
  * is forwarded to in case no previous files can be found.
  * <p>

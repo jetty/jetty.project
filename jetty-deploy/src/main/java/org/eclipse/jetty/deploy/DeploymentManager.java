@@ -49,6 +49,8 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.thread.Locker;
+import org.eclipse.jetty.util.thread.Locker.Lock;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
@@ -69,7 +71,6 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 public class DeploymentManager extends ContainerLifeCycle
 {
     private static final Logger LOG = Log.getLogger(DeploymentManager.class);
-    private MultiException onStartupErrors;
 
     /**
      * Represents a single tracked app within the deployment manager.
@@ -124,7 +125,9 @@ public class DeploymentManager extends ContainerLifeCycle
             this.stateTimestamps.put(node, Long.valueOf(System.currentTimeMillis()));
         }
     }
-
+    
+    private MultiException _onStartupErrors;
+    private Locker _errorLocker = new Locker();
     private final List<AppProvider> _providers = new ArrayList<AppProvider>();
     private final AppLifeCycle _lifecycle = new AppLifeCycle();
     private final Queue<AppEntry> _apps = new ConcurrentLinkedQueue<AppEntry>();
@@ -249,9 +252,10 @@ public class DeploymentManager extends ContainerLifeCycle
             startAppProvider(provider);
         }
 
-        if (onStartupErrors != null)
+        try (Lock lock = _errorLocker.lock())
         {
-            onStartupErrors.ifExceptionThrow();
+            if (_onStartupErrors != null)
+                _onStartupErrors.ifExceptionThrow();
         }
 
         super.doStart();
@@ -538,13 +542,15 @@ public class DeploymentManager extends ContainerLifeCycle
         }
     }
 
-    private synchronized void addOnStartupError(Throwable cause)
+    private void addOnStartupError(Throwable cause)
     {
-        if (onStartupErrors == null)
+        try (Lock lock = _errorLocker.lock())
         {
-            onStartupErrors = new MultiException();
+            if (_onStartupErrors == null)
+                _onStartupErrors = new MultiException();
+            
+            _onStartupErrors.add(cause);
         }
-        onStartupErrors.add(cause);
     }
 
     /**

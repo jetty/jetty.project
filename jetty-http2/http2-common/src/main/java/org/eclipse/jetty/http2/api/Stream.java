@@ -227,8 +227,24 @@ public interface Stream
          * @param stream the stream
          * @param error the error code
          * @param reason the error reason, or null
+         * @param failure the failure
          * @param callback the callback to complete when the failure has been handled
          */
+        default void onFailure(Stream stream, int error, String reason, Throwable failure, Callback callback)
+        {
+            onFailure(stream, error, reason, callback);
+        }
+
+        /**
+         * <p>Callback method invoked when the stream failed.</p>
+         *
+         * @param stream the stream
+         * @param error the error code
+         * @param reason the error reason, or null
+         * @param callback the callback to complete when the failure has been handled
+         * @deprecated use {@link #onFailure(Stream, int, String, Throwable, Callback)} instead
+         */
+        @Deprecated
         default void onFailure(Stream stream, int error, String reason, Callback callback)
         {
             callback.succeeded();

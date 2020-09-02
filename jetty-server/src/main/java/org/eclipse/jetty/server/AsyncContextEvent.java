@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -32,7 +31,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
 {
     private final Context _context;
     private final AsyncContextState _asyncContext;
-    private volatile HttpChannelState _state;
+    private final HttpChannelState _state;
     private ServletContext _dispatchContext;
     private String _dispatchPath;
     private volatile Scheduler.Task _timeoutTask;
@@ -45,31 +44,9 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         _asyncContext = asyncContext;
         _state = state;
 
-        // If we haven't been async dispatched before
-        if (baseRequest.getAttribute(AsyncContext.ASYNC_REQUEST_URI) == null)
-        {
-            // We are setting these attributes during startAsync, when the spec implies that
-            // they are only available after a call to AsyncContext.dispatch(...);
-
-            // have we been forwarded before?
-            String uri = (String)baseRequest.getAttribute(RequestDispatcher.FORWARD_REQUEST_URI);
-            if (uri != null)
-            {
-                baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI, uri);
-                baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, baseRequest.getAttribute(RequestDispatcher.FORWARD_CONTEXT_PATH));
-                baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, baseRequest.getAttribute(RequestDispatcher.FORWARD_SERVLET_PATH));
-                baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO, baseRequest.getAttribute(RequestDispatcher.FORWARD_PATH_INFO));
-                baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING, baseRequest.getAttribute(RequestDispatcher.FORWARD_QUERY_STRING));
-            }
-            else
-            {
-                baseRequest.setAttribute(AsyncContext.ASYNC_REQUEST_URI, baseRequest.getRequestURI());
-                baseRequest.setAttribute(AsyncContext.ASYNC_CONTEXT_PATH, baseRequest.getContextPath());
-                baseRequest.setAttribute(AsyncContext.ASYNC_SERVLET_PATH, baseRequest.getServletPath());
-                baseRequest.setAttribute(AsyncContext.ASYNC_PATH_INFO, baseRequest.getPathInfo());
-                baseRequest.setAttribute(AsyncContext.ASYNC_QUERY_STRING, baseRequest.getQueryString());
-            }
-        }
+        // We are setting these attributes during startAsync, when the spec implies that
+        // they are only available after a call to AsyncContext.dispatch(...);
+        baseRequest.setAsyncAttributes();
     }
 
     public ServletContext getSuspendedContext()

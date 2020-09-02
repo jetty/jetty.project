@@ -662,15 +662,13 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
                 baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(), _inflateBufferSize));
 
-                for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext(); )
+                baseRequest.getHttpFields().computeField(HttpHeader.CONTENT_LENGTH, (header, fields) ->
                 {
-                    HttpField field = i.next();
-                    if (field.getHeader() == HttpHeader.CONTENT_LENGTH)
-                    {
-                        i.set(new HttpField("X-Content-Length", field.getValue()));
-                        break;
-                    }
-                }
+                    if (fields == null)
+                        return null;
+                    String length = fields.stream().map(HttpField::getValue).findAny().orElse("0");
+                    return new HttpField("X-Content-Length", length);
+                });
             }
         }
 

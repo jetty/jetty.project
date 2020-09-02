@@ -33,12 +33,15 @@ public class UnixSocketEndPoint extends ChannelEndPoint
 {
     private static final Logger LOG = Log.getLogger(UnixSocketEndPoint.class);
 
-    private final UnixSocketChannel _channel;
-
     public UnixSocketEndPoint(UnixSocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler)
     {
         super(channel, selector, key, scheduler);
-        _channel = channel;
+    }
+
+    @Override
+    public UnixSocketChannel getChannel()
+    {
+        return (UnixSocketChannel)super.getChannel();
     }
 
     @Override
@@ -56,11 +59,9 @@ public class UnixSocketEndPoint extends ChannelEndPoint
     @Override
     protected void doShutdownOutput()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("oshut {}", this);
         try
         {
-            _channel.shutdownOutput();
+            getChannel().shutdownOutput();
             super.doShutdownOutput();
         }
         catch (IOException e)

@@ -1131,6 +1131,9 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
         synchronized (this)
         {
+            if (_factory == null)
+                throw new IllegalStateException("SslContextFactory reload failed");
+
             return _factory._context;
         }
     }
@@ -1247,14 +1250,13 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
                 }
 
                 // Is SNI needed to select a certificate?
-                if (!_certWilds.isEmpty() || _certHosts.size() > 1 || (_certHosts.size() == 1 && _aliasX509.size() > 1))
+                boolean sniRequired = (this instanceof Server) && ((Server)this).isSniRequired();
+                if (sniRequired || !_certWilds.isEmpty() || _certHosts.size() > 1 || (_certHosts.size() == 1 && _aliasX509.size() > 1))
                 {
                     for (int idx = 0; idx < managers.length; idx++)
                     {
                         if (managers[idx] instanceof X509ExtendedKeyManager)
-                        {
                             managers[idx] = newSniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
-                        }
                     }
                 }
             }
@@ -1533,6 +1535,9 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
         synchronized (this)
         {
+            if (_factory == null)
+                throw new IllegalStateException("SslContextFactory reload failed");
+
             return _factory._keyStore;
         }
     }
@@ -1554,6 +1559,9 @@ public class SslContextFactory extends AbstractLifeCycle implements Dumpable
 
         synchronized (this)
         {
+            if (_factory == null)
+                throw new IllegalStateException("SslContextFactory reload failed");
+
             return _factory._trustStore;
         }
     }

@@ -70,7 +70,10 @@ public interface Request
      * @param host the URI host of this request, such as "127.0.0.1" or "google.com"
      * @return this request object
      */
-    Request host(String host);
+    default Request host(String host)
+    {
+        return this;
+    }
 
     /**
      * @return the URI port of this request such as 80 or 443
@@ -78,11 +81,13 @@ public interface Request
     int getPort();
 
     /**
-     *
      * @param port the URI port of this request such as 80 or 443
      * @return this request object
      */
-    Request port(int port);
+    default Request port(int port)
+    {
+        return this;
+    }
 
     /**
      * @return the method of this request, such as GET or POST, as a String

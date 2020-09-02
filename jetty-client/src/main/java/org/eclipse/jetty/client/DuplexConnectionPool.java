@@ -18,304 +18,33 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-
-import org.eclipse.jetty.client.api.Connection;
-import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.Sweeper;
 
 @ManagedObject
-public class DuplexConnectionPool extends AbstractConnectionPool implements Sweeper.Sweepable
+public class DuplexConnectionPool extends AbstractConnectionPool
 {
-    private static final Logger LOG = Log.getLogger(DuplexConnectionPool.class);
-
-    private final ReentrantLock lock = new ReentrantLock();
-    private final Deque<Connection> idleConnections;
-    private final Set<Connection> activeConnections;
-
-    public DuplexConnectionPool(Destination destination, int maxConnections, Callback requester)
+    public DuplexConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
     {
-        super(destination, maxConnections, requester);
-        this.idleConnections = new ArrayDeque<>(maxConnections);
-        this.activeConnections = new HashSet<>(maxConnections);
+        this(destination, maxConnections, true, requester);
     }
 
-    protected void lock()
+    public DuplexConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester)
     {
-        lock.lock();
-    }
-
-    protected void unlock()
-    {
-        lock.unlock();
-    }
-
-    @ManagedAttribute(value = "The number of idle connections", readonly = true)
-    public int getIdleConnectionCount()
-    {
-        lock();
-        try
-        {
-            return idleConnections.size();
-        }
-        finally
-        {
-            unlock();
-        }
-    }
-
-    @ManagedAttribute(value = "The number of active connections", readonly = true)
-    public int getActiveConnectionCount()
-    {
-        lock();
-        try
-        {
-            return activeConnections.size();
-        }
-        finally
-        {
-            unlock();
-        }
-    }
-
-    public Queue<Connection> getIdleConnections()
-    {
-        return idleConnections;
-    }
-
-    public Collection<Connection> getActiveConnections()
-    {
-        return activeConnections;
+        super(destination, maxConnections, cache, requester);
     }
 
     @Override
-    public boolean isActive(Connection connection)
+    @ManagedAttribute(value = "The maximum amount of times a connection is used before it gets closed")
+    public int getMaxUsageCount()
     {
-        lock();
-        try
-        {
-            return activeConnections.contains(connection);
-        }
-        finally
-        {
-            unlock();
-        }
+        return super.getMaxUsageCount();
     }
 
     @Override
-    protected void onCreated(Connection connection)
+    public void setMaxUsageCount(int maxUsageCount)
     {
-        lock();
-        try
-        {
-            // Use "cold" new connections as last.
-            idleConnections.offer(connection);
-        }
-        finally
-        {
-            unlock();
-        }
-
-        idle(connection, false);
-    }
-
-    @Override
-    protected Connection activate()
-    {
-        Connection connection;
-        lock();
-        try
-        {
-            connection = idleConnections.poll();
-            if (connection == null)
-                return null;
-            activeConnections.add(connection);
-        }
-        finally
-        {
-            unlock();
-        }
-
-        return active(connection);
-    }
-
-    @Override
-    public boolean release(Connection connection)
-    {
-        boolean closed = isClosed();
-        lock();
-        try
-        {
-            if (!activeConnections.remove(connection))
-                return false;
-
-            if (!closed)
-            {
-                // Make sure we use "hot" connections first.
-                deactivate(connection);
-            }
-        }
-        finally
-        {
-            unlock();
-        }
-
-        released(connection);
-        return idle(connection, closed);
-    }
-
-    protected boolean deactivate(Connection connection)
-    {
-        return idleConnections.offerFirst(connection);
-    }
-
-    @Override
-    public boolean remove(Connection connection)
-    {
-        return remove(connection, false);
-    }
-
-    protected boolean remove(Connection connection, boolean force)
-    {
-        boolean activeRemoved;
-        boolean idleRemoved;
-        lock();
-        try
-        {
-            activeRemoved = activeConnections.remove(connection);
-            idleRemoved = idleConnections.remove(connection);
-        }
-        finally
-        {
-            unlock();
-        }
-
-        if (activeRemoved || force)
-            released(connection);
-        boolean removed = activeRemoved || idleRemoved || force;
-        if (removed)
-            removed(connection);
-        return removed;
-    }
-
-    @Override
-    public void close()
-    {
-        super.close();
-
-        List<Connection> connections = new ArrayList<>();
-        lock();
-        try
-        {
-            connections.addAll(idleConnections);
-            idleConnections.clear();
-            connections.addAll(activeConnections);
-            activeConnections.clear();
-        }
-        finally
-        {
-            unlock();
-        }
-
-        close(connections);
-    }
-
-    @Override
-    public void dump(Appendable out, String indent) throws IOException
-    {
-        DumpableCollection active;
-        DumpableCollection idle;
-        lock();
-        try
-        {
-            active = new DumpableCollection("active", new ArrayList<>(activeConnections));
-            idle = new DumpableCollection("idle", new ArrayList<>(idleConnections));
-        }
-        finally
-        {
-            unlock();
-        }
-        dump(out, indent, active, idle);
-    }
-
-    protected void dump(Appendable out, String indent, Object... items) throws IOException
-    {
-        Dumpable.dumpObjects(out, indent, this, items);
-    }
-
-    @Override
-    public boolean sweep()
-    {
-        List<Connection> toSweep;
-        lock();
-        try
-        {
-            toSweep = activeConnections.stream()
-                .filter(connection -> connection instanceof Sweeper.Sweepable)
-                .collect(Collectors.toList());
-        }
-        finally
-        {
-            unlock();
-        }
-
-        for (Connection connection : toSweep)
-        {
-            if (((Sweeper.Sweepable)connection).sweep())
-            {
-                boolean removed = remove(connection, true);
-                LOG.warn("Connection swept: {}{}{} from active connections{}{}",
-                    connection,
-                    System.lineSeparator(),
-                    removed ? "Removed" : "Not removed",
-                    System.lineSeparator(),
-                    dump());
-            }
-        }
-
-        return false;
-    }
-
-    @Override
-    public String toString()
-    {
-        int activeSize;
-        int idleSize;
-        lock();
-        try
-        {
-            activeSize = activeConnections.size();
-            idleSize = idleConnections.size();
-        }
-        finally
-        {
-            unlock();
-        }
-
-        return String.format("%s@%x[c=%d/%d/%d,a=%d,i=%d]",
-            getClass().getSimpleName(),
-            hashCode(),
-            getPendingConnectionCount(),
-            getConnectionCount(),
-            getMaxConnectionCount(),
-            activeSize,
-            idleSize);
+        super.setMaxUsageCount(maxUsageCount);
     }
 }

@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -89,6 +88,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -813,7 +813,7 @@ public class ResponseTest
             };
 
         int[] ports = new int[]{8080, 80};
-        String[] hosts = new String[]{null, "myhost", "192.168.0.1", "0::1"};
+        String[] hosts = new String[]{null, "myhost", "192.168.0.1", "[0::1]"};
         for (int port : ports)
         {
             for (String host : hosts)
@@ -850,7 +850,82 @@ public class ResponseTest
                     String location = response.getHeader("Location");
 
                     String expected = tests[i][1]
-                        .replace("@HOST@", host == null ? request.getLocalAddr() : (host.contains(":") ? ("[" + host + "]") : host))
+                        .replace("@HOST@", host == null ? request.getLocalAddr() : host)
+                        .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
+                    assertEquals(expected, location, "test-" + i + " " + host + ":" + port);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testSendRedirectRelative()
+        throws Exception
+    {
+        String[][] tests = {
+            // No cookie
+            {
+                "http://myhost:8888/other/location;jsessionid=12345?name=value",
+                "http://myhost:8888/other/location;jsessionid=12345?name=value"
+            },
+            {"/other/location;jsessionid=12345?name=value", "/other/location;jsessionid=12345?name=value"},
+            {"./location;jsessionid=12345?name=value", "/path/location;jsessionid=12345?name=value"},
+
+            // From cookie
+            {"/other/location", "/other/location"},
+            {"/other/l%20cation", "/other/l%20cation"},
+            {"location", "/path/location"},
+            {"./location", "/path/location"},
+            {"../location", "/location"},
+            {"/other/l%20cation", "/other/l%20cation"},
+            {"l%20cation", "/path/l%20cation"},
+            {"./l%20cation", "/path/l%20cation"},
+            {"../l%20cation", "/l%20cation"},
+            {"../locati%C3%abn", "/locati%C3%abn"},
+            {"../other%2fplace", "/other%2fplace"},
+            {"http://somehost.com/other/location", "http://somehost.com/other/location"},
+            };
+
+        int[] ports = new int[]{8080, 80};
+        String[] hosts = new String[]{null, "myhost", "192.168.0.1", "[0::1]"};
+        for (int port : ports)
+        {
+            for (String host : hosts)
+            {
+                for (int i = 0; i < tests.length; i++)
+                {
+                    // System.err.printf("%s %d %s%n",host,port,tests[i][0]);
+
+                    Response response = getResponse();
+                    Request request = response.getHttpChannel().getRequest();
+                    request.getHttpChannel().getHttpConfiguration().setRelativeRedirectAllowed(true);
+
+                    request.setScheme("http");
+                    if (host != null)
+                        request.setAuthority(host, port);
+                    request.setURIPathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
+                    request.setContextPath("/path");
+                    request.setRequestedSessionId("12345");
+                    request.setRequestedSessionIdFromCookie(i > 2);
+                    SessionHandler handler = new SessionHandler();
+
+                    NullSessionDataStore ds = new NullSessionDataStore();
+                    DefaultSessionCache ss = new DefaultSessionCache(handler);
+                    handler.setSessionCache(ss);
+                    ss.setSessionDataStore(ds);
+                    DefaultSessionIdManager idMgr = new DefaultSessionIdManager(_server);
+                    idMgr.setWorkerName(null);
+                    handler.setSessionIdManager(idMgr);
+                    request.setSessionHandler(handler);
+                    request.setSession(new TestSession(handler, "12345"));
+                    handler.setCheckingRemoteSessionIdEncoding(false);
+
+                    response.sendRedirect(tests[i][0]);
+
+                    String location = response.getHeader("Location");
+
+                    String expected = tests[i][1]
+                        .replace("@HOST@", host == null ? request.getLocalAddr() : host)
                         .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
                     assertEquals(expected, location, "test-" + i + " " + host + ":" + port);
                 }
@@ -966,7 +1041,24 @@ public class ResponseTest
 
         assertEquals("name=value; Path=/path; Domain=domain; Secure; HttpOnly", set);
     }
-    
+
+    @Test
+    public void testAddCookieInInclude() throws Exception
+    {
+        Response response = getResponse();
+        response.include();
+
+        Cookie cookie = new Cookie("naughty", "value");
+        cookie.setDomain("domain");
+        cookie.setPath("/path");
+        cookie.setSecure(true);
+        cookie.setComment("comment__HTTP_ONLY__");
+
+        response.addCookie(cookie);
+
+        assertNull(response.getHttpFields().get("Set-Cookie"));
+    }
+
     @Test
     public void testAddCookieSameSiteDefault() throws Exception
     {
@@ -983,12 +1075,12 @@ public class ResponseTest
         response.addCookie(cookie);
         String set = response.getHttpFields().get("Set-Cookie");
         assertEquals("name=value; Path=/path; Domain=domain; Secure; HttpOnly; SameSite=Strict", set);
-        
+
         response.getHttpFields().remove("Set-Cookie");
-        
+
         //test bad default samesite value
         context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "FooBar");
-        
+
         assertThrows(IllegalStateException.class,
             () -> response.addCookie(cookie));
     }
@@ -1063,7 +1155,7 @@ public class ResponseTest
 
         response.setContentType("some/type");
         response.setContentLength(3);
-        response.setHeader(HttpHeader.EXPIRES,"never");
+        response.setHeader(HttpHeader.EXPIRES, "never");
 
         response.setHeader("SomeHeader", "SomeValue");
 
@@ -1131,7 +1223,7 @@ public class ResponseTest
         List<String> actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat("HttpCookie order", actual, hasItems(expected));
     }
-    
+
     @Test
     public void testReplaceHttpCookieSameSite()
     {
@@ -1173,7 +1265,7 @@ public class ResponseTest
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
         assertThat(actual, hasItems(new String[]{"Foo=replaced; Path=/path; Domain=Bah"}));
     }
-    
+
     @Test
     public void testReplaceParsedHttpCookieSiteDefault()
     {
@@ -1181,7 +1273,7 @@ public class ResponseTest
         TestServletContextHandler context = new TestServletContextHandler();
         context.setAttribute(HttpCookie.SAME_SITE_DEFAULT_ATTRIBUTE, "LAX");
         _channel.getRequest().setContext(context.getServletContext());
-        
+
         response.addHeader(HttpHeader.SET_COOKIE.asString(), "Foo=123456");
         response.replaceCookie(new HttpCookie("Foo", "value"));
         String set = response.getHttpFields().get("Set-Cookie");
@@ -1215,7 +1307,7 @@ public class ResponseTest
             super(handler, new SessionData(id, "", "0.0.0.0", 0, 0, 0, 300));
         }
     }
-    
+
     private static class TestServletContextHandler extends ContextHandler
     {
         private class Context extends ContextHandler.Context
@@ -1237,7 +1329,7 @@ public class ResponseTest
             @Override
             public void setAttribute(String name, Object object)
             {
-                _attributes.put(name,object);
+                _attributes.put(name, object);
             }
 
             @Override

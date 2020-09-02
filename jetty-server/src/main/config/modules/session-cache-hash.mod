@@ -1,4 +1,4 @@
-DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
 Enable first level session cache. If this module is not enabled, sessions will
@@ -23,3 +23,4 @@ etc/sessions/session-cache-hash.xml
 #jetty.session.saveOnCreate=false
 #jetty.session.removeUnloadableSessions=false
 #jetty.session.flushOnResponseCommit=false
+#jetty.session.invalidateOnShutdown=false

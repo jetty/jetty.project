@@ -99,6 +99,12 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * a dirty session will be flushed to the session store.
      */
     protected boolean _flushOnResponseCommit;
+    
+    /**
+     * If true, when the server shuts down, all sessions in the
+     * cache will be invalidated before being removed.
+     */
+    protected boolean _invalidateOnShutdown;
 
     /**
      * Create a new Session object from pre-existing session data
@@ -479,7 +485,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         {
             //only write the session out at this point if the attributes changed. If only
             //the lastAccess/expiry time changed defer the write until the last request exits
-            if (session.getSessionData().isDirty() && _flushOnResponseCommit)
+            if (session.isValid() && session.getSessionData().isDirty() && _flushOnResponseCommit)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Flush session {} on response commit", session);
@@ -813,6 +819,18 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     public void setSaveOnInactiveEviction(boolean saveOnEvict)
     {
         _saveOnInactiveEviction = saveOnEvict;
+    }
+
+    @Override
+    public void setInvalidateOnShutdown(boolean invalidateOnShutdown)
+    {
+        _invalidateOnShutdown = invalidateOnShutdown;
+    }
+
+    @Override
+    public boolean isInvalidateOnShutdown()
+    {
+        return _invalidateOnShutdown;
     }
 
     /**

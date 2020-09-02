@@ -55,14 +55,23 @@ public class NullSessionCacheFactory extends AbstractSessionCacheFactory
         if (LOG.isDebugEnabled())
             LOG.debug("Ignoring eviction policy setting for NullSessionCaches");
     }
+    
+    @Override
+    public boolean isInvalidateOnShutdown()
+    {
+        return false; //meaningless for NullSessionCache
+    }
 
     @Override
-    public SessionCache getSessionCache(SessionHandler handler)
+    public void setInvalidateOnShutdown(boolean invalidateOnShutdown)
     {
-        NullSessionCache cache = new NullSessionCache(handler);
-        cache.setSaveOnCreate(isSaveOnCreate());
-        cache.setRemoveUnloadableSessions(isRemoveUnloadableSessions());
-        cache.setFlushOnResponseCommit(isFlushOnResponseCommit());
-        return cache;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Ignoring invalidateOnShutdown setting for NullSessionCaches");
+    }
+
+    @Override
+    public SessionCache newSessionCache(SessionHandler handler)
+    {
+        return new NullSessionCache(handler);
     }
 }

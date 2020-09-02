@@ -31,8 +31,11 @@ import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,9 +45,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class JdbcTestHelper
 {
-    public static final String DRIVER_CLASS = "org.apache.derby.jdbc.EmbeddedDriver";
-    public static final String DEFAULT_CONNECTION_URL = "jdbc:derby:memory:sessions;create=true";
-    public static final String DEFAULT_SHUTDOWN_URL = "jdbc:derby:memory:sessions;drop=true";
+    private static final Logger LOG = LoggerFactory.getLogger(JdbcTestHelper.class);
+    private static final Logger MARIADB_LOG = LoggerFactory.getLogger("org.eclipse.jetty.server.session.MariaDbLogs");
+
+    public static String DRIVER_CLASS;
+    public static String DEFAULT_CONNECTION_URL;
+
     public static final int STALE_INTERVAL = 1;
 
     public static final String EXPIRY_COL = "extime";
@@ -60,28 +66,60 @@ public class JdbcTestHelper
     public static final String COOKIE_COL = "cooktime";
     public static final String CREATE_COL = "ctime";
 
+    static MariaDBContainer MARIAD_DB;
+
+    static final String MARIA_DB_USER = "beer";
+    static final String MARIA_DB_PASSWORD = "pacific_ale";
+
     static
     {
-        System.setProperty("derby.system.home", MavenTestingUtils.getTargetFile("test-derby").getAbsolutePath());
+        try
+        {
+            long start = System.currentTimeMillis();
+            MARIAD_DB =
+                new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
+                    .withUsername(MARIA_DB_USER)
+                    .withPassword(MARIA_DB_PASSWORD)
+                    .withDatabaseName("sessions");
+            MARIAD_DB.withLogConsumer(new Slf4jLogConsumer(MARIADB_LOG)).start();
+            String containerIpAddress =  MARIAD_DB.getContainerIpAddress();
+            int mariadbPort = MARIAD_DB.getMappedPort(3306);
+            DEFAULT_CONNECTION_URL = MARIAD_DB.getJdbcUrl();
+            DRIVER_CLASS = MARIAD_DB.getDriverClassName();
+            LOG.info("Mariadb container started for {}:{} - {}ms", containerIpAddress, mariadbPort,
+                     System.currentTimeMillis() - start);
+            DEFAULT_CONNECTION_URL = DEFAULT_CONNECTION_URL + "?user=" + MARIA_DB_USER +
+                "&password=" + MARIA_DB_PASSWORD;
+            LOG.info("DEFAULT_CONNECTION_URL: {}", DEFAULT_CONNECTION_URL);
+        }
+        catch (Exception e)
+        {
+            LOG.error(e.getMessage(), e);
+            throw new RuntimeException(e.getMessage(), e);
+        }
     }
 
     public static void shutdown(String connectionUrl)
         throws Exception
     {
-        if (connectionUrl == null)
-            connectionUrl = DEFAULT_SHUTDOWN_URL;
+        try (Connection connection = getConnection())
+        {
+            connection.prepareStatement("truncate table " + TABLE).executeUpdate();
+        }
+    }
 
-        try
-        {
-            DriverManager.getConnection(connectionUrl);
-        }
-        catch (SQLException expected)
-        {
-            if (!"08006".equals(expected.getSQLState()))
-            {
-                throw expected;
-            }
-        }
+    public static DatabaseAdaptor buildDatabaseAdaptor()
+    {
+        DatabaseAdaptor da = new DatabaseAdaptor();
+        da.setDriverInfo(DRIVER_CLASS, DEFAULT_CONNECTION_URL);
+        return da;
+    }
+
+    public static Connection getConnection()
+        throws Exception
+    {
+        Class.forName(DRIVER_CLASS);
+        return DriverManager.getConnection(DEFAULT_CONNECTION_URL);
     }
 
     /**
@@ -89,9 +127,7 @@ public class JdbcTestHelper
      */
     public static SessionDataStoreFactory newSessionDataStoreFactory()
     {
-        DatabaseAdaptor da = new DatabaseAdaptor();
-        da.setDriverInfo(DRIVER_CLASS, DEFAULT_CONNECTION_URL);
-        return newSessionDataStoreFactory(da);
+        return newSessionDataStoreFactory(buildDatabaseAdaptor());
     }
 
     public static SessionDataStoreFactory newSessionDataStoreFactory(DatabaseAdaptor da)
@@ -123,8 +159,7 @@ public class JdbcTestHelper
 
     public static void prepareTables() throws SQLException
     {
-        DatabaseAdaptor da = new DatabaseAdaptor();
-        da.setDriverInfo(DRIVER_CLASS, DEFAULT_CONNECTION_URL);
+        DatabaseAdaptor da = buildDatabaseAdaptor();
         JDBCSessionDataStore.SessionTableSchema sessionTableSchema = newSessionTableSchema();
         sessionTableSchema.setDatabaseAdaptor(da);
 
@@ -163,11 +198,8 @@ public class JdbcTestHelper
     public static boolean existsInSessionTable(String id, boolean verbose)
         throws Exception
     {
-        Class.forName(DRIVER_CLASS);
-        Connection con = null;
-        try
+        try (Connection con = getConnection())
         {
-            con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
             PreparedStatement statement = con.prepareStatement("select * from " +
                 TABLE +
                 " where " + ID_COL + " = ?");
@@ -186,21 +218,15 @@ public class JdbcTestHelper
             else
                 return result.next();
         }
-        finally
-        {
-            if (con != null)
-                con.close();
-        }
     }
 
     @SuppressWarnings("unchecked")
     public static boolean checkSessionPersisted(SessionData data)
         throws Exception
     {
-        Class.forName(DRIVER_CLASS);
         PreparedStatement statement = null;
         ResultSet result = null;
-        try (Connection con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);)
+        try (Connection con = getConnection())
         {
             statement = con.prepareStatement("select * from " + TABLE +
                     " where " + ID_COL + " = ? and " + CONTEXT_COL +
@@ -264,9 +290,7 @@ public class JdbcTestHelper
     
     public static void insertSession(SessionData data) throws Exception
     {
-
-        Class.forName(DRIVER_CLASS);
-        try (Connection con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);)
+        try (Connection con = getConnection())
         {
             PreparedStatement statement = con.prepareStatement("insert into " + TABLE +
                 " (" + ID_COL + ", " + CONTEXT_COL + ", virtualHost, " + LAST_NODE_COL +
@@ -310,8 +334,7 @@ public class JdbcTestHelper
                                      long cookieSet, long lastSaved)
         throws Exception
     {
-        Class.forName(DRIVER_CLASS);
-        try (Connection con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);)
+        try (Connection con = getConnection())
         {
             PreparedStatement statement = con.prepareStatement("insert into " + TABLE +
                 " (" + ID_COL + ", " + CONTEXT_COL + ", virtualHost, " + LAST_NODE_COL +
@@ -343,12 +366,9 @@ public class JdbcTestHelper
     public static Set<String> getSessionIds()
         throws Exception
     {
-        HashSet<String> ids = new HashSet<String>();
-        Class.forName(DRIVER_CLASS);
-        Connection con = null;
-        try
+        HashSet<String> ids = new HashSet<>();
+        try (Connection con = getConnection())
         {
-            con = DriverManager.getConnection(DEFAULT_CONNECTION_URL);
             PreparedStatement statement = con.prepareStatement("select " + ID_COL + " from " + TABLE);
             ResultSet result = statement.executeQuery();
             while (result.next())
@@ -356,11 +376,6 @@ public class JdbcTestHelper
                 ids.add(result.getString(1));
             }
             return ids;
-        }
-        finally
-        {
-            if (con != null)
-                con.close();
         }
     }
 }

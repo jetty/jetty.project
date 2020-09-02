@@ -23,7 +23,9 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -280,5 +282,16 @@ public class UriTemplatePathSpecTest
         assertThat("Spec.pathParams", mapped, notNullValue());
         assertThat("Spec.pathParams.size", mapped.size(), is(1));
         assertEquals("a", mapped.get("var1"), "Spec.pathParams[var1]");
+    }
+
+    @Test
+    public void testEquals()
+    {
+        assertThat(new UriTemplatePathSpec("/{var1}"), equalTo(new UriTemplatePathSpec("/{var1}")));
+        assertThat(new UriTemplatePathSpec("/{var1}"), equalTo(new UriTemplatePathSpec("/{var2}")));
+        assertThat(new UriTemplatePathSpec("/{var1}/{var2}"), equalTo(new UriTemplatePathSpec("/{var2}/{var1}")));
+        assertThat(new UriTemplatePathSpec("/{var1}"), not(equalTo(new UriTemplatePathSpec("/{var1}/{var2}"))));
+        assertThat(new UriTemplatePathSpec("/a/b/c"), not(equalTo(new UriTemplatePathSpec("/a/{var}/c"))));
+        assertThat(new UriTemplatePathSpec("/foo"), not(equalTo(new ServletPathSpec("/foo"))));
     }
 }

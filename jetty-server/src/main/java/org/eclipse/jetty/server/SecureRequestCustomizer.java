@@ -283,10 +283,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         request.setAttributes(new SslAttributes(request, sslSession, request.getAttributes()));
     }
 
-    private X509Certificate[] getCertChain(Request request, SSLSession sslSession)
+    private X509Certificate[] getCertChain(Connector connector, SSLSession sslSession)
     {
         // The in-use SslContextFactory should be present in the Connector's SslConnectionFactory
-        Connector connector = request.getHttpChannel().getConnector();
         SslConnectionFactory sslConnectionFactory = connector.getConnectionFactory(SslConnectionFactory.class);
         if (sslConnectionFactory != null)
         {
@@ -320,61 +319,131 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         private final Request _request;
         private final SSLSession _session;
 
+        private X509Certificate[] _certs;
+        private String _cipherSuite;
+        private Integer _keySize;
+        private String _sessionId;
+        private String _sessionAttribute;
+
         public SslAttributes(Request request, SSLSession sslSession, Attributes attributes)
         {
             super(attributes);
             this._request = request;
             this._session = sslSession;
+
+            try
+            {
+                _certs = getSslSessionData().getCerts();
+                _cipherSuite = _session.getCipherSuite();
+                _keySize = getSslSessionData().getKeySize();
+                _sessionId = getSslSessionData().getIdStr();
+                _sessionAttribute = getSslSessionAttribute();
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Unable to get secure details ", e);
+            }
         }
 
         @Override
         public Object getAttribute(String name)
         {
-            Object value = _attributes.getAttribute(name);
-            if (value != null)
-                return value;
-            try
+            switch (name)
             {
-                switch (name)
-                {
-                    case JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE:
-                        return SecureRequestCustomizer.this.getCertChain(_request, _session);
-
-                    case JAVAX_SERVLET_REQUEST_CIPHER_SUITE:
-                        return _session.getCipherSuite();
-
-                    case JAVAX_SERVLET_REQUEST_KEY_SIZE:
-                        return SslContextFactory.deduceKeyLength(_session.getCipherSuite());
-
-                    case JAVAX_SERVLET_REQUEST_SSL_SESSION_ID:
-                        return TypeUtil.toHexString(_session.getId());
-
-                    default:
-                        String sessionAttribute = getSslSessionAttribute();
-                        if (!StringUtil.isEmpty(sessionAttribute) && sessionAttribute.equals(name))
-                            return _session;
-                }
+                case JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE:
+                    return _certs;
+                case JAVAX_SERVLET_REQUEST_CIPHER_SUITE:
+                    return _cipherSuite;
+                case JAVAX_SERVLET_REQUEST_KEY_SIZE:
+                    return _keySize;
+                case JAVAX_SERVLET_REQUEST_SSL_SESSION_ID:
+                    return _sessionId;
+                default:
+                    if (!StringUtil.isEmpty(_sessionAttribute) && _sessionAttribute.equals(name))
+                        return _session;
             }
-            catch (Exception e)
+
+            return _attributes.getAttribute(name);
+        }
+
+        /**
+         * Get data belonging to the {@link SSLSession}.
+         *
+         * @return the SslSessionData
+         */
+        private SslSessionData getSslSessionData()
+        {
+            String key = SslSessionData.class.getName();
+            SslSessionData sslSessionData = (SslSessionData)_session.getValue(key);
+            if (sslSessionData == null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Unable to get secure details ", e);
+                String cipherSuite = _session.getCipherSuite();
+                int keySize = SslContextFactory.deduceKeyLength(cipherSuite);
+
+                X509Certificate[] certs = getCertChain(_request.getHttpChannel().getConnector(), _session);
+
+                byte[] bytes = _session.getId();
+                String idStr = TypeUtil.toHexString(bytes);
+
+                sslSessionData = new SslSessionData(keySize, certs, idStr);
+                _session.putValue(key, sslSessionData);
             }
-            return null;
+            return sslSessionData;
         }
 
         @Override
         public Set<String> getAttributeNameSet()
         {
             Set<String> names = new HashSet<>(_attributes.getAttributeNameSet());
-            names.add(JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE);
-            names.add(JAVAX_SERVLET_REQUEST_CIPHER_SUITE);
-            names.add(JAVAX_SERVLET_REQUEST_KEY_SIZE);
-            names.add(JAVAX_SERVLET_REQUEST_SSL_SESSION_ID);
-            String sessionAttribute = getSslSessionAttribute();
-            if (!StringUtil.isEmpty(sessionAttribute))
-                names.add(sessionAttribute);
+            names.remove(JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE);
+            names.remove(JAVAX_SERVLET_REQUEST_CIPHER_SUITE);
+            names.remove(JAVAX_SERVLET_REQUEST_KEY_SIZE);
+            names.remove(JAVAX_SERVLET_REQUEST_SSL_SESSION_ID);
+
+            if (_certs != null)
+                names.add(JAVAX_SERVLET_REQUEST_X_509_CERTIFICATE);
+            if (_cipherSuite != null)
+                names.add(JAVAX_SERVLET_REQUEST_CIPHER_SUITE);
+            if (_keySize != null)
+                names.add(JAVAX_SERVLET_REQUEST_KEY_SIZE);
+            if (_sessionId != null)
+                names.add(JAVAX_SERVLET_REQUEST_SSL_SESSION_ID);
+            if (!StringUtil.isEmpty(_sessionAttribute))
+                names.add(_sessionAttribute);
+
             return names;
+        }
+    }
+
+    /**
+     * Simple bundle of data that is cached in the SSLSession.
+     */
+    private static class SslSessionData
+    {
+        private final Integer _keySize;
+        private final X509Certificate[] _certs;
+        private final String _idStr;
+
+        private SslSessionData(Integer keySize, X509Certificate[] certs, String idStr)
+        {
+            this._keySize = keySize;
+            this._certs = certs;
+            this._idStr = idStr;
+        }
+
+        private Integer getKeySize()
+        {
+            return _keySize;
+        }
+
+        private X509Certificate[] getCerts()
+        {
+            return _certs;
+        }
+
+        private String getIdStr()
+        {
+            return _idStr;
         }
     }
 }

@@ -50,7 +50,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
 
     public AnnotationParser(int javaPlatform)
     {
-        super(javaPlatform, Opcodes.ASM7);
+        super(javaPlatform);
     }
 
     /**
@@ -60,7 +60,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
      * @return the resource for the bundle
      * @throws Exception if unable to create the resource reference
      */
-    protected Resource indexBundle(Bundle bundle) throws Exception
+    public Resource indexBundle(Bundle bundle) throws Exception
     {
         File bundleFile = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
         Resource resource = Resource.newResource(bundleFile.toURI());
@@ -114,7 +114,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
         }
     }
 
-    protected void parse(Set<? extends Handler> handlers, Bundle bundle)
+    public void parse(Set<? extends Handler> handlers, Bundle bundle)
         throws Exception
     {
         URI uri = _bundleToUri.get(bundle);
@@ -211,10 +211,17 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
                 //or the bundle classpath wasn't simply ".", so skip it
                 continue;
             }
+
+            if (!isValidClassFileName(name))
+            {
+                continue; //eg skip module-info.class 
+            }
+            
             //transform into a classname to pass to the resolver
             String shortName = StringUtil.replace(name, '/', '.').substring(0, name.length() - 6);
 
             addParsedClass(shortName, getResource(bundle));
+
             try (InputStream classInputStream = classUrl.openStream())
             {
                 scanClass(handlers, getResource(bundle), classInputStream);

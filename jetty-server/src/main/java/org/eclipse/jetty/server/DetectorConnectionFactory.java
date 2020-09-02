@@ -153,18 +153,25 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
         }
 
         @Override
-        public void onUpgradeTo(ByteBuffer prefilled)
+        public void onUpgradeTo(ByteBuffer buffer)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Detector {} copying prefilled buffer {}", getProtocol(), BufferUtil.toDetailString(prefilled));
-            if (BufferUtil.hasContent(prefilled))
-                BufferUtil.append(_buffer, prefilled);
+                LOG.debug("Detector {} copying unconsumed buffer {}", getProtocol(), BufferUtil.toDetailString(buffer));
+            BufferUtil.append(_buffer, buffer);
         }
 
         @Override
         public ByteBuffer onUpgradeFrom()
         {
-            return _buffer;
+            if (_buffer.hasRemaining())
+            {
+                ByteBuffer unconsumed = ByteBuffer.allocateDirect(_buffer.remaining());
+                unconsumed.put(_buffer);
+                unconsumed.flip();
+                _connector.getByteBufferPool().release(_buffer);
+                return unconsumed;
+            }
+            return null;
         }
 
         @Override

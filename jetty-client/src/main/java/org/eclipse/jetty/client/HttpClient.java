@@ -163,7 +163,7 @@ public class HttpClient extends ContainerLifeCycle
      */
     public HttpClient()
     {
-        this(null);
+        this(new HttpClientTransportOverHTTP(), null);
     }
 
     /**
@@ -176,6 +176,18 @@ public class HttpClient extends ContainerLifeCycle
     public HttpClient(SslContextFactory sslContextFactory)
     {
         this(new HttpClientTransportOverHTTP(), sslContextFactory);
+    }
+
+    /**
+     * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
+     * (that is, requests with the "http" scheme only, and not "https").
+     *
+     * @param transport the {@link HttpClientTransport}
+     * @see #HttpClient(HttpClientTransport, SslContextFactory)  to perform requests to TLS destinations.
+     */
+    public HttpClient(HttpClientTransport transport)
+    {
+        this(transport, null);
     }
 
     public HttpClient(HttpClientTransport transport, SslContextFactory sslContextFactory)
@@ -678,7 +690,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the max time, in milliseconds, a connection can take to connect to destinations
+     * @return the max time, in milliseconds, a connection can take to connect to destinations. Zero value means infinite timeout.
      */
     @ManagedAttribute("The timeout, in milliseconds, for connect() operations")
     public long getConnectTimeout()
@@ -687,7 +699,7 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param connectTimeout the max time, in milliseconds, a connection can take to connect to destinations
+     * @param connectTimeout the max time, in milliseconds, a connection can take to connect to destinations. Zero value means infinite timeout.
      * @see java.net.Socket#connect(SocketAddress, int)
      */
     public void setConnectTimeout(long connectTimeout)
@@ -1143,10 +1155,14 @@ public class HttpClient extends ContainerLifeCycle
         return encodingField;
     }
 
+    /**
+     * @param host the host to normalize
+     * @return the host itself
+     * @deprecated no replacement, do not use it
+     */
+    @Deprecated
     protected String normalizeHost(String host)
     {
-        if (host != null && host.matches("\\[.*\\]"))
-            return host.substring(1, host.length() - 1);
         return host;
     }
 

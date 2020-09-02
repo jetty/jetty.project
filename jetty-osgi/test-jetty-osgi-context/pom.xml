@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>9.4.29-SNAPSHOT</version>
+    <version>9.4.32-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-osgi-context</artifactId>
@@ -67,7 +67,7 @@
             of the packages it uses; no need to reflect some tight dependency determined at
             compilation time. -->
             <_nouses>true</_nouses>
-            <DynamicImport-Package>org.eclipse.jetty.*;version="[9.1,10.0)"</DynamicImport-Package>
+            <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;==;${parsedVersion.osgiVersion}),$(version;+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
           </instructions>
         </configuration>
       </plugin>

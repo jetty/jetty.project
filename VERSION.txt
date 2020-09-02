@@ -1,4 +1,77 @@
-jetty-9.4.29-SNAPSHOT
+jetty-9.4.32-SNAPSHOT
+
+jetty-9.4.31.v20200723 - 23 July 2020
+ + 1100 JSR356 Encoder#init is not called when created on demand
+ + 4736 Update Import-Package version start ranges
+ + 4890 JettyClient behavior when SETTINGS_HEADER_TABLE_SIZE is set to 0 in
+   SETTINGS Frame.
+ + 4904 WebsocketClient creates more connections than needed
+ + 4965 WINDOW_UPDATE for locally failed stream should not close the HTTP/2
+   session
+ + 4967 Possible buffer corruption in HTTP/2 session failures
+ + 4971 Simplify Connection.upgradeFrom()/upgradeTo()
+ + 4976 HttpClient async content throws NPE in DEBUG log
+ + 4981 Incorrect example for TryFilesFilter API docs
+ + 4985 Fix NPE related to use of Attributes.Wrapper getAttributeNameSet()
+ + 4989 Prevent parsing of module-info.class in OSGi bundles
+ + 5000 NPE from Server.dump of FilterMapping
+ + 5013 Bundle-ClassPath and lib place on WEB-INF/lib make classpath duplicate
+ + 5018 WebSocketClient connect / upgrade timeout not configurable
+ + 5019 Automatically hot-reload SSL certificates if keystore file changed
+ + 5020 LifeCycle.Listener not called for Filter/Servlet/Listener lifecycle
+   events
+ + 5025 dispatcher.include() with welcome files lead to stack overflow error
+ + 5053 CWE-331 in DigestAuthentication class
+ + 5057 `javax.servlet.include.context_path` attribute on root context. should
+   be empty string, but is `"/"`
+ + 5064 NotSerializableException for OpenIdConfiguration
+ + 5069 HttpClientTimeoutTests can occasionally fail due to unreachable network
+
+jetty-9.4.30.v20200611 - 11 June 2020
+ + 4776 Incorrect path matching for WebSocket using PathMappings
+ + 4826 Upgrade to Apache Jasper 8.5.54
+ + 4855 occasional h2spec failures on jenkins
+ + 4873 Server.join not working when used with ExecutorThreadPool
+ + 4885 setCookie() must not change the headers in a response during an include
+ + 4890 JettyClient behavior when SETTINGS_HEADER_TABLE_SIZE is set to 0 in
+   SETTINGS Frame.
+ + 4894 JDBCSessionDataStore fails to create multiple JettySessions for server
+   with multiple databases
+ + 4903 Give better errors for non public Websocket Endpoints
+ + 4904 WebsocketClient creates more connections than needed
+ + 4913 DirectoryNotEmptyException when using mvn jetty:run-distro
+ + 4920 Restore ability to delete sessions on stop
+ + 4921 Quickstart run improperly runs dynamically added context initializers
+ + 4923 SecureRequestCustomizer.SslAttributes does not cache cert chain like
+   before
+ + 4929 HttpClient: HttpCookieStore.Empty prevents sending cookies
+ + 4936 Response header overflow leads to buffer corruptions
+
+jetty-9.4.29.v20200521 - 21 May 2020
+ + 2188 Lock contention creating HTTP/2 streams
+ + 4235 communicate the reason of failure to the OpenID error page
+ + 4695 HttpChannel recycling in h2
+ + 4764 HTTP2 Jetty Server does not send back content-length
+ + 4778 Enforcing SNI when there are only non-wildcards certificates
+ + 4787 Make org.eclipse.jetty.client.HttpRequest's host name writable
+ + 4789 org.eclipse.jetty.util.thread.ShutdownThread should use an appropriate
+   name to identify itself in Thread dump
+ + 4798 Better handling of fatal Selector failures
+ + 4814 Allow a ConnectionFactory (eg SslConnectionFactory) to automatically
+   add a Customizer
+ + 4820 Jetty OSGi DefaultJettyAtJettyHomeHelper refers to non-existent config
+   file
+ + 4824 WebSocket server outgoing message queue memory growth
+ + 4828 NIO ByteBuffer corruption in embedded Jetty server
+ + 4835 GzipHandler and GzipHttpOutputInterceptor do not flush response when
+   body is empty
+ + 4860 org.eclipse.jetty.server.HttpChannel busyloop on HttpFields
+   NullPointerException
+ + 4861 Combine `AttributesMap` and `Attributes.Wrapper`
+ + 4868 Update to asm 7.3.1
+ + 4892 Non-blocking JSON parser
+ + 4895 AbstractSessionCache.setFlushOnResponseCommit(true) can write an
+   invalid session to the backing store
 
 jetty-9.4.28.v20200408 - 08 April 2020
  + 847 Setting async timeout on WebSocketClient does not seem to timeout writes
@@ -8,7 +81,7 @@ jetty-9.4.28.v20200408 - 08 April 2020
  + 4529 ErrorHandler showing servlet info, can not be disabled unless
    overriding most of its functionality
  + 4542 servlet context root mapping incorrect
- + 4619 Inconsistent library versions notice.
+ + 4619 Inconsistent library versions notice
  + 4620 Using console-capture with StdErrLog results in empty log file
  + 4621 jetty-jaspi in jetty-all uber aggregate artifact requires
    javax.security.auth.message.AuthException which cannot be included

@@ -176,6 +176,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                     @Override
                     public void onSettings(Session session, SettingsFrame frame)
                     {
+                        super.onSettings(session, frame);
                         // Send another request to simulate a request being
                         // sent concurrently with connection establishment.
                         // Sending this request will trigger the creation of
@@ -200,7 +201,6 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                                     }
                                 });
                         }
-                        super.onSettings(session, frame);
                     }
                 }, promise, context);
             }

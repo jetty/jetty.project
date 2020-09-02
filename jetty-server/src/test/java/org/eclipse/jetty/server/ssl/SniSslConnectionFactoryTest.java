@@ -302,6 +302,29 @@ public class SniSslConnectionFactoryTest
     }
 
     @Test
+    public void testWrongSNIRejectedConnectionWithNonSNIKeystore() throws Exception
+    {
+        start(ssl ->
+        {
+            // Keystore has only one certificate, but we want to enforce SNI.
+            ssl.setKeyStorePath("src/test/resources/keystore");
+            ssl.setSniRequired(true);
+        });
+
+        // Wrong SNI host.
+        assertThrows(SSLHandshakeException.class, () -> getResponse("wrong.com", "wrong.com", null));
+
+        // No SNI host.
+        assertThrows(SSLHandshakeException.class, () -> getResponse(null, "wrong.com", null));
+
+        // Good SNI host.
+        HttpTester.Response response = HttpTester.parseResponse(getResponse("jetty.eclipse.org", "jetty.eclipse.org", null));
+
+        assertNotNull(response);
+        assertThat(response.getStatus(), is(200));
+    }
+
+    @Test
     public void testSameConnectionRequestsForManyDomains() throws Exception
     {
         start("src/test/resources/keystore_sni.p12");

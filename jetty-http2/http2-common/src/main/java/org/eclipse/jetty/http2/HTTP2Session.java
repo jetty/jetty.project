@@ -232,7 +232,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void onData(final DataFrame frame, Callback callback)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Received {}", frame);
+            LOG.debug("Received {} on {}", frame, this);
 
         int streamId = frame.getStreamId();
         IStream stream = getStream(streamId);
@@ -252,17 +252,25 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         else
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Stream #{} not found", streamId);
+                LOG.debug("Stream #{} not found on {}", streamId, this);
             // We must enlarge the session flow control window,
             // otherwise other requests will be stalled.
             flowControl.onDataConsumed(this, null, flowControlLength);
-            boolean local = (streamId & 1) == (localStreamIds.get() & 1);
-            boolean closed = local ? isLocalStreamClosed(streamId) : isRemoteStreamClosed(streamId);
-            if (closed)
+            if (isStreamClosed(streamId))
                 reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), callback);
             else
                 onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_data_frame", callback);
         }
+    }
+
+    private boolean isStreamClosed(int streamId)
+    {
+        return isLocalStream(streamId) ? isLocalStreamClosed(streamId) : isRemoteStreamClosed(streamId);
+    }
+
+    private boolean isLocalStream(int streamId)
+    {
+        return (streamId & 1) == (localStreamIds.get() & 1);
     }
 
     protected boolean isLocalStreamClosed(int streamId)
@@ -282,14 +290,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void onPriority(PriorityFrame frame)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Received {}", frame);
+            LOG.debug("Received {} on {}", frame, this);
     }
 
     @Override
     public void onReset(ResetFrame frame)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Received {}", frame);
+            LOG.debug("Received {} on {}", frame, this);
 
         int streamId = frame.getStreamId();
         IStream stream = getStream(streamId);
@@ -303,7 +311,13 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
     }
 
-    protected abstract void onResetForUnknownStream(ResetFrame frame);
+    protected void onResetForUnknownStream(ResetFrame frame)
+    {
+        if (isStreamClosed(frame.getStreamId()))
+            notifyReset(this, frame);
+        else
+            onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_rst_stream_frame");
+    }
 
     @Override
     public void onSettings(SettingsFrame frame)
@@ -315,7 +329,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void onSettings(SettingsFrame frame, boolean reply)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Received {}", frame);
+            LOG.debug("Received {} on {}", frame, this);
 
         if (frame.isReply())
             return;
@@ -391,7 +405,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void onPing(PingFrame frame)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Received {}", frame);
+            LOG.debug("Received {} on {}", frame, this);
 
         if (frame.isReply())
         {
@@ -425,7 +439,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void onGoAway(final GoAwayFrame frame)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Received {}", frame);
+            LOG.debug("Received {} on {}", frame, this);
 
         while (true)
         {
@@ -439,7 +453,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         // We received a GO_AWAY, so try to write
                         // what's in the queue and then disconnect.
                         closeFrame = frame;
-                        notifyClose(this, frame, new DisconnectCallback());
+                        onClose(frame, new DisconnectCallback());
                         return;
                     }
                     break;
@@ -458,7 +472,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void onWindowUpdate(WindowUpdateFrame frame)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Received {}", frame);
+            LOG.debug("Received {} on {}", frame, this);
 
         int streamId = frame.getStreamId();
         int windowDelta = frame.getWindowDelta();
@@ -480,7 +494,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             }
             else
             {
-                if (!isRemoteStreamClosed(streamId))
+                if (!isStreamClosed(streamId))
                     onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_window_update_frame");
             }
         }
@@ -498,9 +512,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     public void onStreamFailure(int streamId, int error, String reason)
     {
         Callback callback = new ResetCallback(streamId, error, Callback.NOOP);
+        Throwable failure = toFailure(error, reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Stream #{} failure {}", streamId, this, failure);
+        onStreamFailure(streamId, error, reason, failure, callback);
+    }
+
+    private void onStreamFailure(int streamId, int error, String reason, Throwable failure, Callback callback)
+    {
         IStream stream = getStream(streamId);
         if (stream != null)
-            stream.process(new FailureFrame(error, reason), callback);
+            stream.process(new FailureFrame(error, reason, failure), callback);
         else
             callback.succeeded();
     }
@@ -513,7 +535,51 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected void onConnectionFailure(int error, String reason, Callback callback)
     {
-        notifyFailure(this, new IOException(String.format("%d/%s", error, reason)), new CloseCallback(error, reason, callback));
+        Throwable failure = toFailure(error, reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Session failure {}", this, failure);
+        onFailure(error, reason, failure, new CloseCallback(error, reason, callback));
+    }
+
+    protected void abort(Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Session abort {}", this, failure);
+        onFailure(ErrorCode.NO_ERROR.code, null, failure, new TerminateCallback(failure));
+    }
+
+    private void onFailure(int error, String reason, Throwable failure, Callback callback)
+    {
+        Collection<Stream> streams = getStreams();
+        int count = streams.size();
+        Callback countCallback = new CountingCallback(callback, count + 1);
+        for (Stream stream : streams)
+        {
+            onStreamFailure(stream.getId(), error, reason, failure, countCallback);
+        }
+        notifyFailure(this, failure, countCallback);
+    }
+
+    private void onClose(GoAwayFrame frame, Callback callback)
+    {
+        int error = frame.getError();
+        String reason = frame.tryConvertPayload();
+        Throwable failure = toFailure(error, reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Session close {}", this, failure);
+        Collection<Stream> streams = getStreams();
+        int count = streams.size();
+        Callback countCallback = new CountingCallback(callback, count + 1);
+        for (Stream stream : streams)
+        {
+            onStreamFailure(stream.getId(), error, reason, failure, countCallback);
+        }
+        notifyClose(this, frame, countCallback);
+    }
+
+    private Throwable toFailure(int error, String reason)
+    {
+        return new IOException(String.format("%s/%s", ErrorCode.toString(error, null), reason));
     }
 
     @Override
@@ -663,7 +729,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private void frame(HTTP2Flusher.Entry entry, boolean flush)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {}", flush ? "Sending" : "Queueing", entry.frame);
+            LOG.debug("{} {} on {}", flush ? "Sending" : "Queueing", entry.frame, this);
         // Ping frames are prepended to process them as soon as possible.
         boolean queued = entry.frame.getType() == FrameType.PING ? flusher.prepend(entry) : flusher.append(entry);
         if (queued && flush)
@@ -764,7 +830,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             onStreamClosed(stream);
             flowControl.onStreamDestroyed(stream);
             if (LOG.isDebugEnabled())
-                LOG.debug("Removed {} {}", stream.isLocal() ? "local" : "remote", stream);
+                LOG.debug("Removed {} {} from {}", stream.isLocal() ? "local" : "remote", stream, this);
         }
     }
 
@@ -996,11 +1062,6 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                 }
             }
         }
-    }
-
-    protected void abort(Throwable failure)
-    {
-        notifyFailure(this, failure, new TerminateCallback(failure));
     }
 
     public boolean isDisconnected()

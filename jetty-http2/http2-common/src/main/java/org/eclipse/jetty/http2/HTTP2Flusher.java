@@ -21,6 +21,8 @@ package org.eclipse.jetty.http2;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -47,7 +49,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     private final Queue<WindowEntry> windows = new ArrayDeque<>();
     private final Deque<Entry> entries = new ArrayDeque<>();
     private final Queue<Entry> pendingEntries = new ArrayDeque<>();
-    private final Set<Entry> processedEntries = new HashSet<>();
+    private final Collection<Entry> processedEntries = new ArrayList<>();
     private final HTTP2Session session;
     private final ByteBufferPool.Lease lease;
     private Throwable terminated;
@@ -192,7 +194,10 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
                         progress = true;
 
-                        processedEntries.add(entry);
+                        // We use ArrayList contains() + add() instead of HashSet add()
+                        // because that is faster for collections of size up to 250 entries.
+                        if (!processedEntries.contains(entry))
+                            processedEntries.add(entry);
 
                         if (entry.getDataBytesRemaining() == 0)
                             pending.remove();
@@ -420,12 +425,21 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
             super.failed(x);
         }
 
+        /**
+         * @return whether the entry is stale and must not be processed
+         */
         private boolean isStale()
         {
-            return !isProtocol() && stream != null && stream.isReset();
+            // If it is a protocol frame, process it.
+            if (isProtocolFrame(frame))
+                return false;
+            // It's an application frame; is the stream gone already?
+            if (stream == null)
+                return true;
+            return stream.isResetOrFailed();
         }
 
-        private boolean isProtocol()
+        private boolean isProtocolFrame(Frame frame)
         {
             switch (frame.getType())
             {

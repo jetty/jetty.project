@@ -200,7 +200,8 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         if (configuration == null)
         {
             // no configuration, cannot operate
-            LOG.debug("WebSocketUpgradeFilter is not operational - missing " + NativeWebSocketConfiguration.class.getName());
+            if (LOG.isDebugEnabled())
+                LOG.debug("WebSocketUpgradeFilter is not operational - missing " + NativeWebSocketConfiguration.class.getName());
             chain.doFilter(request, response);
             return;
         }
@@ -210,7 +211,8 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         if (factory == null)
         {
             // no factory, cannot operate
-            LOG.debug("WebSocketUpgradeFilter is not operational - no WebSocketServletFactory configured");
+            if (LOG.isDebugEnabled())
+                LOG.debug("WebSocketUpgradeFilter is not operational - no WebSocketServletFactory configured");
             chain.doFilter(request, response);
             return;
         }

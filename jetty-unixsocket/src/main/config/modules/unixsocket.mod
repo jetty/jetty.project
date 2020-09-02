@@ -1,4 +1,4 @@
-DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
+# DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
 Enables a Unix Domain Socket Connector that can receive
@@ -56,4 +56,4 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 # jetty.unixsocket.selectors=-1
 
 ## ServerSocketChannel backlog (0 picks platform default)
-# jetty.unixsocket.acceptorQueueSize=0
+# jetty.unixsocket.acceptQueueSize=0

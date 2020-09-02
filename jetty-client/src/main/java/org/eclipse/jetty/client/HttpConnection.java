@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
@@ -34,15 +35,17 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public abstract class HttpConnection implements Connection
+public abstract class HttpConnection implements Connection, Attachable
 {
     private static final Logger LOG = Log.getLogger(HttpConnection.class);
 
     private final HttpDestination destination;
+    private Object attachment;
     private int idleTimeoutGuard;
     private long idleTimeoutStamp;
 
@@ -103,12 +106,14 @@ public abstract class HttpConnection implements Connection
             request.path(path);
         }
 
-        URI uri = request.getURI();
-
-        if (proxy instanceof HttpProxy && !HttpClient.isSchemeSecure(request.getScheme()) && uri != null)
+        if (proxy instanceof HttpProxy && !HttpClient.isSchemeSecure(request.getScheme()))
         {
-            path = uri.toString();
-            request.path(path);
+            URI uri = request.getURI();
+            if (uri != null)
+            {
+                path = uri.toString();
+                request.path(path);
+            }
         }
 
         // If we are HTTP 1.1, add the Host header
@@ -146,20 +151,20 @@ public abstract class HttpConnection implements Connection
         }
 
         // Cookies
+        StringBuilder cookies = convertCookies(request.getCookies(), null);
         CookieStore cookieStore = getHttpClient().getCookieStore();
-        if (cookieStore != null)
+        if (cookieStore != null && cookieStore.getClass() != HttpCookieStore.Empty.class)
         {
-            StringBuilder cookies = null;
+            URI uri = request.getURI();
             if (uri != null)
-                cookies = convertCookies(HttpCookieStore.matchPath(uri, cookieStore.get(uri)), null);
-            cookies = convertCookies(request.getCookies(), cookies);
-            if (cookies != null)
-                request.header(HttpHeader.COOKIE.asString(), cookies.toString());
+                cookies = convertCookies(HttpCookieStore.matchPath(uri, cookieStore.get(uri)), cookies);
         }
+        if (cookies != null)
+            request.header(HttpHeader.COOKIE.asString(), cookies.toString());
 
         // Authentication
-        applyAuthentication(request, proxy != null ? proxy.getURI() : null);
-        applyAuthentication(request, uri);
+        applyProxyAuthentication(request, proxy);
+        applyRequestAuthentication(request);
     }
 
     private StringBuilder convertCookies(List<HttpCookie> cookies, StringBuilder builder)
@@ -175,11 +180,26 @@ public abstract class HttpConnection implements Connection
         return builder;
     }
 
-    private void applyAuthentication(Request request, URI uri)
+    private void applyRequestAuthentication(Request request)
     {
-        if (uri != null)
+        AuthenticationStore authenticationStore = getHttpClient().getAuthenticationStore();
+        if (authenticationStore.hasAuthenticationResults())
         {
-            Authentication.Result result = getHttpClient().getAuthenticationStore().findAuthenticationResult(uri);
+            URI uri = request.getURI();
+            if (uri != null)
+            {
+                Authentication.Result result = authenticationStore.findAuthenticationResult(uri);
+                if (result != null)
+                    result.apply(request);
+            }
+        }
+    }
+
+    private void applyProxyAuthentication(Request request, ProxyConfiguration.Proxy proxy)
+    {
+        if (proxy != null)
+        {
+            Authentication.Result result = getHttpClient().getAuthenticationStore().findAuthenticationResult(proxy.getURI());
             if (result != null)
                 result.apply(request);
         }
@@ -209,6 +229,8 @@ public abstract class HttpConnection implements Connection
             }
             else
             {
+                // Association may fail, for example if the application
+                // aborted the request, so we must release the channel.
                 channel.release();
                 result = new SendFailure(new HttpRequestException("Could not associate request to connection", request), false);
             }
@@ -223,6 +245,8 @@ public abstract class HttpConnection implements Connection
         }
         else
         {
+            // This connection has been timed out by another thread
+            // that will take care of removing it from the pool.
             return new SendFailure(new TimeoutException(), true);
         }
     }
@@ -248,6 +272,18 @@ public abstract class HttpConnection implements Connection
                 return false;
             }
         }
+    }
+
+    @Override
+    public void setAttachment(Object obj)
+    {
+        this.attachment = obj;
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        return attachment;
     }
 
     @Override

@@ -40,7 +40,7 @@ public class HttpField
         if (_header != null && name == null)
             _name = _header.asString();
         else
-            _name = Objects.requireNonNull(name);
+            _name = Objects.requireNonNull(name, "name");
         _value = value;
     }
 
@@ -290,6 +290,11 @@ public class HttpField
         if (_header != null && _header == field.getHeader())
             return true;
         return _name.equalsIgnoreCase(field.getName());
+    }
+
+    public boolean is(String name)
+    {
+        return _name.equalsIgnoreCase(name);
     }
 
     private int nameHashCode()
