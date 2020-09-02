@@ -41,11 +41,19 @@ import org.eclipse.jetty.util.thread.Locker;
  * A fast pool of objects, with optional support for
  * multiplexing, max usage count and optimal strategies such as thread-local caching.
  * <p>
- * When acquiring an entry in the pool, this class will first call any
- * strategy passed in the constructor.  If the strategy cannot acquire an entry
- * then a brute force iteration is done over all entries. The available
+ * When acquiring an entry in the pool, this class will call a
+ * strategy passed or created in the constructor.  The available
  * strategies are:
  * <dl>
+ *     <dt>{@link SearchStrategy}</dt>
+ *     <dd>This strategy iterates over all entries trying to acquire.
+ *     This strategy will acquire if their is an available entry.
+ *     </dd>
+ *     <dt>{@link Pool.DualStrategy}</dt>
+ *     <dd>This strategy combines two other strategies and is typically
+ *     used to combine a strategy like {@link ThreadLocalStrategy} with
+ *     {@link SearchStrategy}.
+ *     </dd>
  *     <dt>{@link Pool.ThreadLocalStrategy}</dt>
  *     <dd>This strategy is a threadlocal strategy that remembers
  *     a single entry previously used by the current thread.
@@ -57,13 +65,12 @@ import org.eclipse.jetty.util.thread.Locker;
  *     <dt>{@link Pool.RoundRobinStrategy}</dt>
  *     <dd>Entries are tried in sequence so that all entries in the pool are
  *     used one after the other. If the next entry cannot be acquired, entries
- *     in the next slot are tried.</dd>
+ *     in the next slot are tried.
+ *     This strategy will acquire if their is an available entry. </dd>
  *     <dt>{@link Pool.RandomStrategy}</dt>
  *     <dd>A random entry is tried</dd>
  *     <dt>{@link Pool.LeastRecentlyUsedStrategy}</dt>
  *     <dd>The least recently used entries are tried until one can be acquired</dd>
- *     <dt>{@link Pool.NullStrategy}</dt>
- *     <dd>No strategy is used and the pool is iterated to acquire an entry</dd>
  * </dl>
  * <p>
  * When the method {@link #close()} is called, all {@link Closeable}s in the pool
@@ -98,15 +105,16 @@ public class Pool<T> implements AutoCloseable, Dumpable
      *
      * @param maxEntries the maximum amount of entries that the pool will accept.
      * @param cacheSize the thread-local cache size. A value of 1 will use the
-     *                  {@link ThreadLocalStrategy}, a value greater than 1 will
-     *                  use a {@link ThreadLocalCacheStrategy},
-     *                  otherwise a {@link NullStrategy} will be used.
+     *                  {@link ThreadLocalStrategy} and {@link SearchStrategy},
+     *                  a value greater than 1 will use a {@link ThreadLocalCacheStrategy}
+     *                  and {@link SearchStrategy},
+     *                  otherwise just a {@link SearchStrategy} will be used.
      */
     public Pool(int maxEntries, int cacheSize)
     {
-        this(maxEntries, cacheSize < 0 ? null : cacheSize == 1
-            ? new ThreadLocalStrategy<>()
-            : new ThreadLocalCacheStrategy<>(cacheSize));
+        this(maxEntries, cacheSize < 0 ? null : new DualStrategy<>(
+            cacheSize == 1 ? new ThreadLocalStrategy<>() : new ThreadLocalCacheStrategy<>(cacheSize),
+            new SearchStrategy<>()));
     }
 
     /**
@@ -117,7 +125,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     public Pool(int maxEntries, Strategy<T> strategy)
     {
         this.maxEntries = maxEntries;
-        this.strategy = strategy == null ? new NullStrategy<>() : strategy;
+        this.strategy = strategy == null ? new SearchStrategy<>() : strategy;
     }
 
     public int getReservedCount()
@@ -207,6 +215,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * @param idx the index of the entry to acquire.
      * @return the specified entry or null if there is none at the specified index or if it is not available.
      */
+    @Deprecated
     public Entry acquireAt(int idx)
     {
         if (closed)
@@ -235,19 +244,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     {
         if (closed)
             return null;
-
-        // first check the strategy
-        Entry entry = strategy.acquire(entries);
-        if (entry != null)
-            return entry;
-
-        // then iterate the shared list
-        for (Entry e : entries)
-        {
-            if (e.tryAcquire())
-                return e;
-        }
-        return null;
+        return strategy.acquire(entries);
     }
 
     /**
@@ -603,11 +600,44 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
-    public static class NullStrategy<T> implements Strategy<T>
+    public static class DualStrategy<T> implements Strategy<T>
+    {
+        final Strategy<T> planA;
+        final Strategy<T> planB;
+
+        public DualStrategy(Strategy<T> planA, Strategy<T> planB)
+        {
+            Objects.requireNonNull(planA);
+            Objects.requireNonNull(planB);
+            this.planA = planA;
+            this.planB = planB;
+        }
+
+        @Override
+        public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
+        {
+            Pool<T>.Entry entry = planA.acquire(entries);
+            return entry == null ? planB.acquire(entries) : entry;
+        }
+
+        @Override
+        public void released(List<Pool<T>.Entry> entries, Pool<T>.Entry entry, boolean reusable)
+        {
+            planA.released(entries, entry, reusable);
+            planB.released(entries, entry, reusable);
+        }
+    }
+
+    public static class SearchStrategy<T> implements Strategy<T>
     {
         @Override
         public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
         {
+            for (Pool<T>.Entry e : entries)
+            {
+                if (e.tryAcquire())
+                    return e;
+            }
             return null;
         }
     }
