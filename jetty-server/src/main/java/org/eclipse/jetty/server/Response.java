@@ -70,6 +70,8 @@ public class Response implements HttpServletResponse
 {
     private static final int __MIN_BUFFER_SIZE = 1;
     private static final HttpField __EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
+    public static final int NO_CONTENT_LENGTH = -1;
+    public static final int USE_KNOWN_CONTENT_LENGTH = -2;
 
     public enum OutputType
     {
@@ -1339,12 +1341,12 @@ public class Response implements HttpServletResponse
         if (lm != null)
             _fields.put(lm);
 
-        if (contentLength == 0)
+        if (contentLength == USE_KNOWN_CONTENT_LENGTH)
         {
             _fields.put(content.getContentLength());
             _contentLength = content.getContentLengthValue();
         }
-        else if (contentLength > 0)
+        else if (contentLength > NO_CONTENT_LENGTH)
         {
             _fields.putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
             _contentLength = contentLength;
@@ -1387,9 +1389,9 @@ public class Response implements HttpServletResponse
         if (lml >= 0)
             response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(), lml);
 
-        if (contentLength == 0)
+        if (contentLength == USE_KNOWN_CONTENT_LENGTH)
             contentLength = content.getContentLengthValue();
-        if (contentLength >= 0)
+        if (contentLength > NO_CONTENT_LENGTH)
         {
             if (contentLength < Integer.MAX_VALUE)
                 response.setContentLength((int)contentLength);

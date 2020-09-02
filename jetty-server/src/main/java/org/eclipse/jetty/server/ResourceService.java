@@ -578,7 +578,7 @@ public class ResourceService
             {
                 //Get jetty's Response impl
                 String mdlm = content.getLastModifiedValue();
-                if (mdlm != null && ifms.equals(mdlm))
+                if (ifms.equals(mdlm))
                 {
                     sendStatus(response, HttpServletResponse.SC_NOT_MODIFIED, content::getETagValue);
                     return false;
@@ -676,17 +676,17 @@ public class ResourceService
                 writeContent(content, out, 0, content_length);
             }
             // else if we can't do a bypass write because of wrapping
-            else if (written || !(out instanceof HttpOutput))
+            else if (written)
             {
                 // write normally
-                putHeaders(response, content, written ? -1 : 0);
+                putHeaders(response, content, Response.NO_CONTENT_LENGTH);
                 writeContent(content, out, 0, content_length);
             }
             // else do a bypass write
             else
             {
                 // write the headers
-                putHeaders(response, content, 0);
+                putHeaders(response, content, Response.USE_KNOWN_CONTENT_LENGTH);
 
                 // write the content asynchronously if supported
                 if (request.isAsyncSupported() && content.getContentLengthValue() > response.getBufferSize())
@@ -735,7 +735,7 @@ public class ResourceService
             //  if there are no satisfiable ranges, send 416 response
             if (ranges == null || ranges.size() == 0)
             {
-                putHeaders(response, content, 0);
+                putHeaders(response, content, Response.USE_KNOWN_CONTENT_LENGTH);
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                     InclusiveByteRange.to416HeaderRangeString(content_length));
                 sendStatus(response, HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE, null);
@@ -762,8 +762,8 @@ public class ResourceService
             //  216 response which does not require an overall
             //  content-length header
             //
-            putHeaders(response, content, -1);
-            String mimetype = (content == null ? null : content.getContentTypeValue());
+            putHeaders(response, content, Response.NO_CONTENT_LENGTH);
+            String mimetype = content.getContentTypeValue();
             if (mimetype == null)
                 LOG.warn("Unknown mimetype for {}", request.getRequestURI());
             response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
