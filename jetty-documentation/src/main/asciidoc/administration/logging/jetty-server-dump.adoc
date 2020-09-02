@@ -19,9 +19,7 @@
 [[jetty-server-dump]]
 === Jetty Server Dump
 
-The dump feature in Jetty provides a good snapshot of the status of the threadpool, select sets, classloaders, and so forth. 
-To get maximum detail from the dump, you need to `setDetailDump(true)` on any `QueuedThreadPools` you are using. 
-You can do this by a direct call if you are embedding Jetty, or by using properties for standalone Jetty.
+The dump feature in Jetty provides a snapshot of the bean containment tree of the main Jetty components together with a summary of their configuration. This includes threadpool, connectors,  contexts, webapplications, servlets and so forth.
 
 [[configuring-dump-feature]]
 ==== Configuring the Jetty Server Dump
@@ -45,7 +43,9 @@ java -jar $JETTY_HOME/start.jar jetty.server.dumpAfterStart=true jetty.server.du
 [[extra-threadpool-info]]
 ==== Extra ThreadPool Information
 
-You can get additional detail from the `QueuedThreadPool` if `setDetailedDump(true)` is called on the thread pool instance.
+To get maximum detail from the `QueuedThreadPool` in the dump, you need to `setDetailDump(true)` on any instances of `QueuedThreadPool` you are using.
+This extra detail in the detailed dump consists of full stack traces for every running thread, and a list of queued jobs waiting to be run.
+
 For embedded usage this can be used by calling the setters directly.
 ```java
 threadPool.setDetailedDump(true);
@@ -66,16 +66,16 @@ The Server MBean has a `dump()` method, which dumps everything, plus a `dumpStdE
 [[examing-jetty-distro-dump]]
 ==== Explanation of the Dump Key
 
-- +- bean is a java POJO that is contained by the parent object as a bean added with the addBean method.
-- += managed is a bean that is also a LifeCycle that is started and stopped with the parent object.
-- +~ unmanaged is a bean that is also a LifeCycle that is started and stopped with the parent object. It is typically shared with other objects (hence its children are not dumped)
-- +? auto is a bean that has been added to an unstarted parent. If it is a LifeCycle that is not started when the parent is started, then it is started and becomes a managed bean, otherwise it becomes either unmanaged or just a bean
-- +: iterable is an object that is contained within an iterable field of the parent (eg a list, set etc.)
-- +] array is an object that is contained within an array field of the parent
-- +@ map' is an object that is contained within an map field of the parent +> undefined` is an object that is contained within the parent by an undefined relationship
+- `+- bean` is a java POJO that is contained by the parent object as a bean added with the addBean method.
+- `+= managed` is a bean that is also a LifeCycle that is started and stopped with the parent object.
+- `+~ unmanaged` is a bean that is also a LifeCycle that is started and stopped with the parent object. It is typically shared with other objects (hence its children are not dumped).
+- `+? auto` is a bean that has been added to an unstarted parent. If it is a LifeCycle that is not started when the parent is started, then it is started and becomes a managed bean, otherwise it becomes either unmanaged or just a bean.
+- `+: iterable` is an object that is contained within an iterable field of the parent (eg a list, set etc).
+- `+] array` is an object that is contained within an array field of the parent.
+- `+@ map` is an object that is contained within an map field of the parent.
+- `+> undefined` is an object that is contained within the parent by an undefined relationship.
 
-
-==== Examining a Jetty Distribution Dump
+==== Jetty Server Dump Example
 
 This is a dump of the OneServletContext embedded example with extra threadpool information:
 
