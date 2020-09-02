@@ -48,24 +48,24 @@ import org.eclipse.jetty.util.thread.Locker;
  *     <dt>{@link SearchStrategy}</dt>
  *     <dd>This strategy iterates over all entries trying to acquire.
  *     </dd>
- *     <dt>{@link CacheStrategy}</dt>
+ *     <dt>{@link CompositeStrategy}</dt>
  *     <dd>This strategy combines two other strategies and is typically
- *     used to combine a strategy like {@link ThreadLocalCache} with
+ *     used to combine a strategy like {@link ThreadLocalStrategy} with
  *     {@link SearchStrategy}.
  *     </dd>
- *     <dt>{@link Pool.RoundRobinStrategy}</dt>
+ *     <dt>{@link RoundRobinStrategy}</dt>
  *     <dd>Entries are tried in sequence so that all entries in the pool are
  *     used one after the other. If the next entry cannot be acquired, entries
  *     in the next slot are tried.
- *     <dt>{@link ThreadLocalCache}</dt>
+ *     <dt>{@link ThreadLocalStrategy}</dt>
  *     <dd>This strategy is a threadlocal strategy that remembers
  *     a single entry previously used by the current thread.
  *     </dd>
- *     <dt>{@link ThreadLocalListCache}</dt>
+ *     <dt>{@link ThreadLocalListStrategy}</dt>
  *     <dd>This strategy is a threadlocal caching mechanism that remembers
  *     up to N entries previously used by the current thread.
  *     </dd>
- *     <dt>{@link RandomCache}</dt>
+ *     <dt>{@link RandomStrategy}</dt>
  *     <dd>A random entry is tried</dd>
  *     <dt>{@link Pool.LeastRecentlyUsedStrategy}</dt>
  *     <dd>The least recently used entries are tried until one can be acquired</dd>
@@ -103,15 +103,15 @@ public class Pool<T> implements AutoCloseable, Dumpable
      *
      * @param maxEntries the maximum amount of entries that the pool will accept.
      * @param cacheSize the thread-local cache size. A value of 1 will use the
-     *                  {@link ThreadLocalCache} and {@link SearchStrategy},
-     *                  a value greater than 1 will use a {@link ThreadLocalListCache}
+     *                  {@link ThreadLocalStrategy} and {@link SearchStrategy},
+     *                  a value greater than 1 will use a {@link ThreadLocalListStrategy}
      *                  and {@link SearchStrategy},
      *                  otherwise just a {@link SearchStrategy} will be used.
      */
     public Pool(int maxEntries, int cacheSize)
     {
-        this(maxEntries, cacheSize < 0 ? null : new CacheStrategy<>(
-            cacheSize == 1 ? new ThreadLocalCache<>() : new ThreadLocalListCache<>(cacheSize),
+        this(maxEntries, cacheSize < 0 ? null : new CompositeStrategy<>(
+            cacheSize == 1 ? new ThreadLocalStrategy<>() : new ThreadLocalListStrategy<>(cacheSize),
             new SearchStrategy<>()));
     }
 
@@ -201,8 +201,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
             pending.incrementAndGet();
 
             Entry entry = new Entry();
-            entries.add(entry);
-            strategy.released(entries, entry, true);
+            strategy.reserve(entries, entry);
             return entry;
         }
     }
@@ -298,12 +297,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         if (closed)
             return false;
 
-        // first mark it as unused
-        boolean reusable = entry.tryRelease();
-
-        // then cache the released entry
-        strategy.released(entries, entry, reusable);
-        return reusable;
+        return strategy.release(entries, entry);
     }
 
     /**
@@ -317,21 +311,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         if (closed)
             return false;
 
-        if (!entry.tryRemove())
-        {
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Attempt to remove an object from the pool that is still in use: {}", entry);
-            return false;
-        }
-
-        boolean removed = entries.remove(entry);
-        if (!removed)
-        {
-            if (LOGGER.isDebugEnabled())
-                LOGGER.debug("Attempt to remove an object from the pool that does not exist: {}", entry);
-        }
-
-        return removed;
+        return strategy.remove(entries, entry);
     }
 
     public boolean isClosed()
@@ -515,6 +495,13 @@ public class Pool<T> implements AutoCloseable, Dumpable
             return !(overUsed && newMultiplexingCount == 0);
         }
 
+        public boolean isOverUsed()
+        {
+            int currentMaxUsageCount = maxUsageCount;
+            int usageCount = state.getHi();
+            return currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount;
+        }
+
         /**
          * Try to mark the entry as removed.
          * @return true if the entry has to be removed from the containing pool, false otherwise.
@@ -578,7 +565,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     /** A pluggable strategy to optimize pool acquisition
      * @param <T> The type of the items in the pool
      */
-    public interface Cache<T>
+    public interface Strategy<T>
     {
         /** Acquire an entry
          * @param entries The list of entries known to the pool. This may be concurrently modified.
@@ -590,43 +577,71 @@ public class Pool<T> implements AutoCloseable, Dumpable
          * Notification an entry has been release.  The notification comes after the entry
          * has been put back in the pool and it may already have been reacquired before or during this call.
          * @param entries The list of entries known to the pool. This may be concurrently modified.
-         * @param entry The entry to be release
-         * @param reusable true if the entry is reusable and will be put back in the pool.
+         * @param entry The entry to be released
          */
-        default void released(List<Pool<T>.Entry> entries, Pool<T>.Entry entry, boolean reusable)
+        default boolean release(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
         {
+            return entry.tryRelease();
+        }
+
+        default void reserve(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
+        {
+            entries.add(entry);
+        }
+
+        default boolean remove(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
+        {
+            if (!entry.tryRemove())
+            {
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("Attempt to remove an object from the pool that is still in use: {}", entry);
+                return false;
+            }
+
+            boolean removed = entries.remove(entry);
+            if (!removed)
+            {
+                if (LOGGER.isDebugEnabled())
+                    LOGGER.debug("Attempt to remove an object from the pool that does not exist: {}", entry);
+            }
+            return removed;
         }
     }
-
-    public interface Strategy<T> extends Cache<T>
+    
+    public static class CompositeStrategy<T> implements Strategy<T>
     {
-    }
+        final Strategy<T> planA;
+        final Strategy<T> planB;
 
-    public static class CacheStrategy<T> implements Strategy<T>
-    {
-        final Cache<T> cache;
-        final Strategy<T> strategy;
-
-        public CacheStrategy(Cache<T> cache, Strategy<T> planB)
+        public CompositeStrategy(Strategy<T> planA, Strategy<T> planB)
         {
-            Objects.requireNonNull(cache);
+            Objects.requireNonNull(planA);
             Objects.requireNonNull(planB);
-            this.cache = cache;
-            this.strategy = planB;
+            this.planA = planA;
+            this.planB = planB;
         }
 
         @Override
         public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
         {
-            Pool<T>.Entry entry = cache.acquire(entries);
-            return entry == null ? strategy.acquire(entries) : entry;
+            Pool<T>.Entry entry = planA.acquire(entries);
+            return entry == null ? planB.acquire(entries) : entry;
         }
 
         @Override
-        public void released(List<Pool<T>.Entry> entries, Pool<T>.Entry entry, boolean reusable)
+        public boolean release(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
         {
-            cache.released(entries, entry, reusable);
-            strategy.released(entries, entry, reusable);
+            if (planA.release(entries, entry))
+                return true;
+            if (entry.isOverUsed())
+                return false;
+            return planB.release(entries, entry);
+        }
+
+        @Override
+        public boolean remove(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
+        {
+            return planA.remove(entries, entry) || planB.remove(entries, entry);
         }
     }
 
@@ -644,11 +659,11 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
-    public static class ThreadLocalCache<T> implements Cache<T>
+    public static class ThreadLocalStrategy<T> implements Strategy<T>
     {
         private final ThreadLocal<Pool<T>.Entry> last;
 
-        ThreadLocalCache()
+        ThreadLocalStrategy()
         {
             last = new ThreadLocal<>();
         }
@@ -663,19 +678,23 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         @Override
-        public void released(List<Pool<T>.Entry> entries, Pool<T>.Entry entry, boolean reusable)
+        public boolean release(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
         {
-            if (reusable)
+            if (entry.tryRelease())
+            {
                 last.set(entry);
+                return true;
+            }
+            return false;
         }
     }
 
-    public static class ThreadLocalListCache<T> implements Cache<T>
+    public static class ThreadLocalListStrategy<T> implements Strategy<T>
     {
         private final ThreadLocal<List<Pool<T>.Entry>> cache;
         private final int cacheSize;
 
-        ThreadLocalListCache(int size)
+        ThreadLocalListStrategy(int size)
         {
             this.cacheSize = size;
             this.cache = ThreadLocal.withInitial(() -> new ArrayList<>(cacheSize));
@@ -695,18 +714,20 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         @Override
-        public void released(List<Pool<T>.Entry> entries, Pool<T>.Entry entry, boolean reusable)
+        public boolean release(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
         {
-            if (reusable)
+            if (entry.tryRelease())
             {
                 List<Pool<T>.Entry> cachedList = cache.get();
                 if (cachedList.size() < cacheSize)
                     cachedList.add(entry);
+                return true;
             }
+            return false;
         }
     }
 
-    private abstract static class IndexedCached<T> implements Cache<T>
+    private abstract static class IndexedCached<T> implements Strategy<T>
     {
         @Override
         public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
@@ -732,7 +753,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         protected abstract int nextIndex(int size);
     }
 
-    public static class RandomCache<T> extends IndexedCached<T>
+    public static class RandomStrategy<T> extends IndexedCached<T>
     {
         @Override
         protected int nextIndex(int size)
@@ -741,7 +762,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
-    public static class RoundRobinCache<T> extends IndexedCached<T>
+    public static class RoundRobinStrategy<T> extends IndexedCached<T>
     {
         AtomicInteger index = new AtomicInteger();
 
@@ -750,10 +771,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         {
             return index.getAndUpdate(c -> Math.max(0, c + 1)) % size;
         }
-    }
 
-    public static class RoundRobinStrategy<T> extends RoundRobinCache<T> implements Strategy<T>
-    {
         @Override
         public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
         {
@@ -786,10 +804,14 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         @Override
-        public void released(List<Pool<T>.Entry> entries, Pool<T>.Entry entry, boolean reusable)
+        public boolean release(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
         {
-            if (reusable)
+            if (entry.tryRelease())
+            {
                 lru.add(entry);
+                return true;
+            }
+            return false;
         }
     }
 }

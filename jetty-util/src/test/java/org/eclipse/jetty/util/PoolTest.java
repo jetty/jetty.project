@@ -640,7 +640,7 @@ public class PoolTest
     @Test
     public void testRandomStrategy()
     {
-        Pool<AtomicInteger> pool = new Pool<>(4, new Pool.CacheStrategy<>(new Pool.RandomCache<>(), new Pool.SearchStrategy<>()));
+        Pool<AtomicInteger> pool = new Pool<>(4, new Pool.CompositeStrategy<>(new Pool.RandomStrategy<>(), new Pool.SearchStrategy<>()));
 
         Pool<AtomicInteger>.Entry e1 = pool.acquire(e -> new AtomicInteger());
         Pool<AtomicInteger>.Entry e2 = pool.acquire(e -> new AtomicInteger());
