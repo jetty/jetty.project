@@ -751,7 +751,9 @@ public class SessionHandler extends ScopedHandler
         try
         {
             _sessionCache.add(id, session);
-            Request.getBaseRequest(request).enterSession(session);
+            Request baseRequest = Request.getBaseRequest(request);
+            baseRequest.setSession(session);
+            baseRequest.enterSession(session);
             _sessionsCreatedStats.increment();
 
             if (request != null && request.isSecure())
