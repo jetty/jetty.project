@@ -451,14 +451,12 @@ public class CreationTest
         @Override
         public void sessionCreated(HttpSessionEvent se)
         {
-            System.err.println("Session created");
             currentRequest.get().getSession(true);
         }
 
         @Override
         public void sessionDestroyed(HttpSessionEvent se)
         {
-            System.err.println("Session destroyed");
         }
 
     }
