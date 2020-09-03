@@ -170,6 +170,25 @@ This is typically used to pass a request to a link:{JDURL}/org/eclipse/jetty/ser
 * link:{JDURL}/org/eclipse/jetty/server/handler/HandlerList.html[`HandlerList`] - A list of handlers that are called in turn until the request state is set as handled.
 * link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandlerCollection.html[`ContextHandlerCollection`] - A collection of Handlers, of which one is selected by best match for the context path.
 
+[[injecting-handlers]]
+==== Injecting Handlers
+
+The `Handler` needs to be added to the server classpath as described in xref:startup-classpath[].
+Then it can be added to the server, either by overriding some existing XML configuration files such as `jetty.xml` as shown below, or by defining a custom module as described in xref:custom-modules[].
+
+[source, xml]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+    <Call name="setHandler">
+        <Arg>
+            <New id="myCustomJettyHandler" class="com.my.handler.CustomJettyHandler" />
+        </Arg>
+    </Call>
+</Configure>
+----
+
 [[more-about-handlers]]
 ==== More About Handlers
 
