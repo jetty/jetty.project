@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritePendingException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -313,7 +314,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
             callback = from(callback, numOutgoingFrames::decrementAndGet);
             if (outgoingFrames > maxNumOutgoingFrames)
             {
-                callback.writeFailed(new IOException("Exceeded max outgoing frames: " + outgoingFrames + ">" + maxNumOutgoingFrames));
+                callback.writeFailed(new WritePendingException());
                 return;
             }
         }
