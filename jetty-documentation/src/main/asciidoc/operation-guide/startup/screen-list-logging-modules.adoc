@@ -16,9 +16,9 @@
 // ========================================================================
 //
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[mybase]$ java -jar $JETTY_HOME/start.jar --list-modules=logging,-internal
+[my-base]$ java -jar /path/to/jetty-home/start.jar --list-modules=logging,-internal
 
 Available Modules:
 ==================

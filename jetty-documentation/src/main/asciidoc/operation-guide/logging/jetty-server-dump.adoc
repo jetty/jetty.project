@@ -19,7 +19,7 @@
 [[jetty-server-dump]]
 === Jetty Server Dump
 
-The dump feature in Jetty provides a snapshot of the bean containment tree of the main Jetty components together with a summary of their configuration. This includes threadpool, connectors,  contexts, webapplications, servlets and so forth.
+The dump feature in Jetty provides a snapshot of the bean containment tree of the main Jetty components together with a summary of their configuration.This includes threadpool, connectors, contexts, webapplications, servlets and so forth.
 
 [[configuring-dump-feature]]
 ==== Configuring the Jetty Server Dump
@@ -33,8 +33,8 @@ jetty.server.dumpBeforeStop=true
 
 The server dump can be temporarily enabled by supplying either of these properties as command line arguments,
 or they can be enabled via the `server.ini` file (see xref:quick-start-configure[]).
-```
-java -jar $JETTY_HOME/start.jar jetty.server.dumpAfterStart=true jetty.server.dumpBeforeStop=true
+``` shell
+$ java -jar $JETTY_HOME/start.jar jetty.server.dumpAfterStart=true jetty.server.dumpBeforeStop=true
 ```
 
 [[extra-threadpool-info]]

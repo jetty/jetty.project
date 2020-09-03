@@ -23,7 +23,7 @@ This is accomplished by configuring Jetty for logging to `Logback`, which uses h
 
 A convenient replacement `logging` module has been created to bootstrap the `${jetty.base}` directory for logging with logback.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
 [mybase]$ mkdir modules
 [mybase]$ cd modules
@@ -34,7 +34,7 @@ A convenient replacement `logging` module has been created to bootstrap the `${j
 100   742  100   742    0     0   2196      0 --:--:-- --:--:-- --:--:--  2201
 [modules]$ cd ..
 
-[mybase]$ java -jar /opt/jetty-dist/start.jar --add-to-start=logging
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=logging
 INFO: logging         initialised in ${jetty.base}/start.ini (appended)
 MKDIR: ${jetty.base}/logs
 DOWNLOAD: https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.6.6/slf4j-api-1.6.6.jar to lib/logging/slf4j-api-1.6.6.jar
@@ -43,19 +43,19 @@ DOWNLOAD: https://repo1.maven.org/maven2/ch/qos/logback/logback-classic/1.0.7/lo
 DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/logback/logback.xml to resources/logback.xml
 DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/logback/jetty-logging.properties to resources/jetty-logging.properties
 
-[mybase]$ java -jar /opt/jetty-dist/start.jar
+[my-base]$ java -jar /path/to/jetty-home/start.jar
 ....
 
 The replacement `logging.mod` performs a number of tasks.
 
-.  `mybase` is a `${jetty.base}` directory.
-.  The jetty-distribution is unpacked (and untouched) into `/opt/jetty-dist/` and becomes the `${jetty.home}` directory for this demonstration.
-.  The `curl` command downloads the replacement `logging.mod` and puts it into the `${jetty.base}/modules/` directory for use by `mybase` only.
-.  The `start.jar --add-to-start=logging` command performs a number of steps to make the logging module available to the `${jetty.base}` configuration.
-..  The `--module=logging` command is added to the `${jetty.base}/start.ini` configuration.
-..  Required `${jetty.base}` directories are created: `${jetty.base}/logs` and `${jetty.base}/resources`.
-..  Required libraries are downloaded (if not present already) to the `${jetty.base}/lib/logging/` directory: slf4j-api, logback-core, and logback-classic.
-..  Required configuration files are downloaded (if not present already) to the `${jetty.base}/lib/resources/` directory.: `jetty-logging.properties`, and `logback.xml`.
+. `mybase` is a `${jetty.base}` directory.
+. The jetty-distribution is unpacked (and untouched) into `/opt/jetty-dist/` and becomes the `${jetty.home}` directory for this demonstration.
+. The `curl` command downloads the replacement `logging.mod` and puts it into the `${jetty.base}/modules/` directory for use by `mybase` only.
+. The `start.jar --add-to-start=logging` command performs a number of steps to make the logging module available to the `${jetty.base}` configuration.
+.. The `--module=logging` command is added to the `${jetty.base}/start.ini` configuration.
+.. Required `${jetty.base}` directories are created: `${jetty.base}/logs` and `${jetty.base}/resources`.
+.. Required libraries are downloaded (if not present already) to the `${jetty.base}/lib/logging/` directory: slf4j-api, logback-core, and logback-classic.
+.. Required configuration files are downloaded (if not present already) to the `${jetty.base}/lib/resources/` directory.: `jetty-logging.properties`, and `logback.xml`.
 
 At this point the Jetty `mybase` is configured so that the Jetty server itself will log using Logback, using the Logback configuration found in `mybase/resources/logback.xml`
 

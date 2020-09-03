@@ -66,12 +66,12 @@ To enable communication using the GCloud Emulator:
 When using the Jetty distribution, you will first need to enable the `session-store-gcloud` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ----
-$ java -jar ../start.jar --create-startd
+[my-base]$ java -jar /path/to/jetty-home/start.jar --create-startd
 INFO : Base directory was modified
 
-$ java -jar ../start.jar --add-to-start=session-store-gcloud
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=session-store-gcloud
 
 ALERT: There are enabled module(s) with licenses.
 The following 2 module(s):
@@ -191,9 +191,9 @@ It does *not*, however, configure a SLF4J implementation for the users.
 As such, you will also need to enable one of the SLF4J implementation modules listed.
 In this example, we will enable the `slf4j-simple-impl` module to provide a SLF4J implementation.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ----
-$ java -jar ../start.jar --add-to-start=slf4j-simple-impl
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=slf4j-simple-impl
 INFO  : slf4j-simple-impl initialized in ${jetty.base}/start.d/slf4j-simple-impl.ini
 INFO  : resources       transitively enabled
 DOWNLD: https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/1.7.21/slf4j-simple-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-simple-1.7.21.jar

@@ -16,9 +16,9 @@
 // ========================================================================
 //
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[mybase]$ java -jar $JETTY_HOME/start.jar --add-to-start=http,webapp,deploy
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=http,webapp,deploy
 INFO  : webapp          initialized in ${jetty.base}/start.ini
 INFO  : server          transitively enabled, ini template available with --add-to-start=server
 INFO  : security        transitively enabled

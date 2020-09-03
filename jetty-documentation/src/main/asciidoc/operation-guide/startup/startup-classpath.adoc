@@ -22,25 +22,25 @@
 Jetty Server Classpath is determined by a combination of factors.
 
 The java.class.path System Property::
-  If you start Jetty with a JVM specified classpath, then Jetty will use the java.class.path System Property to populate the initial classpath.
+If you start Jetty with a JVM specified classpath, then Jetty will use the java.class.path System Property to populate the initial classpath.
 Module specified Libraries::
-  The module system declares various libraries that are required for that module to operate.
-  These module defined libraries are added to the Jetty Server classpath when any module is activated with library declarations.
+The module system declares various libraries that are required for that module to operate.
+These module defined libraries are added to the Jetty Server classpath when any module is activated with library declarations.
 Command Line Libraries::
-  The command line option `--lib=<path>` can be used as a final means to add arbitrary entries to the Jetty Server classpath.
+The command line option `--lib=<path>` can be used as a final means to add arbitrary entries to the Jetty Server classpath.
 
 Of special note, there are 2 structural modules defined to ease some of this for you.
 
 --module=ext::
-  The `ext` module will enable the `lib/ext/*.jar` logic.
-  +
-  If this module is activated, then all jar files found in the lib/ext/ paths will be automatically added to the Jetty Server Classpath.
+The `ext` module will enable the `lib/ext/*.jar` logic.
+ +
+If this module is activated, then all jar files found in the lib/ext/ paths will be automatically added to the Jetty Server Classpath.
 --module=resources::
-  The `resources` module will add the `resources/` directory the classpath.
-  +
-  If you have 3rd party libraries that lookup resources from the classpath, put your files in here.
-  +
-  Logging libraries often have classpath lookup of their configuration files (eg: `log4j.properties`, `log4j.xml`, `logging.properties`, and `logback.xml`), so this would be the ideal setup for this sort of configuration demand.
+The `resources` module will add the `resources/` directory the classpath.
+ +
+If you have 3rd party libraries that lookup resources from the classpath, put your files in here.
+ +
+Logging libraries often have classpath lookup of their configuration files (eg: `log4j.properties`, `log4j.xml`, `logging.properties`, and `logback.xml`), so this would be the ideal setup for this sort of configuration demand.
 
 ____
 [NOTE]
@@ -55,9 +55,9 @@ The `--list-classpath` command line option is used as such.
 
 (Demonstrated with the link:#demo-base[demo-base from the Jetty Distribution])
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[demo-base]$ java -jar $JETTY_HOME/start.jar --list-classpath
+[my-base]$ java -jar /path/to/jetty-home/start.jar --list-classpath
 
 Jetty Server Classpath:
 -----------------------

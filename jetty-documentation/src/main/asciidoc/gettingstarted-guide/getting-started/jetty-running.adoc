@@ -58,10 +58,10 @@ Within the standard Jetty distribution there is the `demo-base` directory.
 This is a fully-functioning Jetty Base (more on that later) complete with numerous web applications demonstrating different Jetty functionality.
 Additionally, the `demo-base` demonstrates the recommended way to run a Jetty base in a directory separate from `$JETTY_HOME`:
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ----
 $ cd demo-base/
-$ java -jar ../start.jar
+[my-base]$ java -jar /path/to/jetty-home/start.jar
 2017-09-20 16:23:03.563:INFO::main: Logging initialized @429ms to org.eclipse.jetty.util.log.StdErrLog
 2017-09-20 16:23:03.802:WARN::main: demo test-realm is deployed. DO NOT USE IN PRODUCTION!
 2017-09-20 16:23:03.804:INFO:oejs.Server:main: {VERSION}
@@ -123,5 +123,5 @@ You can see the configuration of the `demo-base` by using the following commands
 The  `--list-modules` command will return a complete list of available and enabled modules for the server.
 It will also display the location of the modules, how and in what order they are implemented, dependent modules, and associated jar files.
 
-The `--list-config` command displays a trove of  information about the server including the Java and Jetty environments, the configuration order, any JVM arguments or System Properties set, general server properties, a full listing of the Jetty server class path, and active Jetty XML files.
+The `--list-config` command displays a trove of information about the server including the Java and Jetty environments, the configuration order, any JVM arguments or System Properties set, general server properties, a full listing of the Jetty server class path, and active Jetty XML files.
 

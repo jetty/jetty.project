@@ -26,9 +26,9 @@ Please note that enabling these modules provides typical and basic functionality
 
 Enabling these frameworks in the Jetty distribution is as easy as activating any other module, by adding `--add-to-start=<module name>` to the start command for your server, such as:
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar ../start.jar --add-to-start=logging-jetty
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=logging-jetty
 INFO  : logging-jetty   initialized in ${jetty.base}/start.d/logging-jetty.ini
 INFO  : resources       transitively enabled
 MKDIR : ${jetty.base}/resources
@@ -83,9 +83,9 @@ Jetty uses the SLF4J api as a binding to provide logging information to addition
 It can also be used on it's own to provide simple server logging.
 To enable the SLF4J framework, you need to activate the `logging-slf4j` module.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar ../start.jar --add-to-start=logging-slf4j
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=logging-slf4j
 
 ALERT: There are enabled module(s) with licenses.
 The following 1 module(s):
@@ -132,9 +132,9 @@ As you probably noticed, the system gives an `ERROR` when trying to enable the `
 The `logging-slf4j` module itself provides the SLF4J api, but as SLF4J is often used as a binding for other logging frameworks does not by default provide an implementation.
 To enable the simple SLF4J implementation, we will also need to activate the `slf4j-simple-impl` module.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar ../start.jar --add-to-start=slf4j-simple-impl
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=slf4j-simple-impl
 INFO  : slf4j-simple-impl initialized in ${jetty.base}/start.d/slf4j-simple-impl.ini
 INFO  : resources       transitively enabled
 DOWNLD: https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/1.7.21/slf4j-simple-1.7.21.jar to ${jetty.base}/lib/slf4j/slf4j-simple-1.7.21.jar
@@ -165,9 +165,9 @@ It is possible to have the Jetty Server logging configured so that Log4j or Log4
 This is accomplished by configuring Jetty for logging to http://logging.apache.org/log4j/[Apache Log4j] via http://slf4j.org/manual.html[Slf4j] and the http://slf4j.org/manual.html#swapping[Slf4j binding layer for Log4j].
 Implementation of Log4j can be done by enabling the `logging-log4j` module.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar ../start.jar --add-to-start=logging-log4j
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=logging-log4j
 
 ALERT: There are enabled module(s) with licenses.
 The following 2 module(s):
@@ -234,9 +234,9 @@ A standard Log4j configuration file is located in `${jetty.base}/resources/log4j
 
 Or, to set up Log4j2, enable the `logging-log4j2` module.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar ../start.jar --add-to-start=logging-log4j2
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=logging-log4j2
 
 ALERT: There are enabled module(s) with licenses.
 The following 2 module(s):
@@ -311,9 +311,9 @@ This is accomplished by configuring Jetty for logging to `Logback`, which uses h
 
 To set up Jetty logging via Logback, enable the `logging-logback` module.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar ../start.jar --add-to-start=logging-logback
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=logging-logback
 
 ALERT: There are enabled module(s) with licenses.
 The following 2 module(s):
@@ -394,9 +394,9 @@ It is possible to have the Jetty Server logging configured so that `java.util.lo
 
 This example demonstrates how to configuring Jetty for logging to `java.util.logging` via http://slf4j.org/manual.html[SLF4J] as a binding layer.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar ../start.jar --add-to-start=logging-jul
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=logging-jul
 
 ALERT: There are enabled module(s) with licenses.
 The following 1 module(s):
@@ -459,9 +459,9 @@ By default, enabling the above modules will output log information to the consol
 Included in the distribution is the `console-capture` module, which can be used in lieu of additional configuration to the selected logging module to capture this output to a `logs` directory in your `${jetty.base}`.
 To enable this functionality, activate the `console-capture` module.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar ../start.jar --add-to-start=console-capture
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=console-capture
 INFO  : console-capture initialized in ${jetty.base}/start.d/console-capture.ini
 MKDIR : ${jetty.base}/logs
 INFO  : Base directory was modified
@@ -475,9 +475,9 @@ INFO  : Base directory was modified
 
 As an example, here is the output from Logback before using the `console-capture` module:
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar ../start.jar
+[my-base]$ java -jar /path/to/jetty-home/start.jar
 419  [main] INFO  org.eclipse.jetty.util.log - Logging initialized @508ms to org.eclipse.jetty.util.log.Slf4jLog
 540  [main] INFO  org.eclipse.jetty.server.Server - jetty-{VERSION}
 575  [main] INFO  o.e.jetty.server.AbstractConnector - Started ServerConnector@3c0ecd4b{HTTP/1.1,[http/1.1]}{0.0.0.0:8080}
@@ -486,9 +486,9 @@ As an example, here is the output from Logback before using the `console-capture
 
 After enabling `console-capture`, the output is as follows, which displays the location the log is being saved to:
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar ../start.jar
+[my-base]$ java -jar /path/to/jetty-home/start.jar
 151  [main] INFO  org.eclipse.jetty.util.log - Logging initialized @238ms to org.eclipse.jetty.util.log.Slf4jLog
 196  [main] INFO  org.eclipse.jetty.util.log - Console stderr/stdout captured to /installs/jetty-distribution/mybase/logs/2016_10_21.jetty.log
 ....
