@@ -31,7 +31,7 @@ There are conceptually two layers that compose the Jetty client libraries:
 [[pg-client-io-arch-network]]
 ==== Client Libraries Network Layer
 
-The Jetty client libraries use the common I/O design described in link:#eg-arch-io[this section].
+The Jetty client libraries use the common I/O design described in xref:pg-arch-io[this section].
 The main client-side component is the link:{JDURL}/org/eclipse/jetty/io/ClientConnector.html[`ClientConnector`].
 
 The `ClientConnector` primarily wraps the link:{JDURL}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`] and aggregates other four components:
@@ -88,7 +88,7 @@ Please refer to the `ClientConnector` link:{JDURL}/org/eclipse/jetty/io/ClientCo
 
 The protocol layer builds on top of the network layer to generate the bytes to be written to the network and to parse the bytes read from the network.
 
-Recall from link:#eg-arch-io-connection[this section] that Jetty uses the `Connection` abstraction to produce and interpret the network bytes.
+Recall from xref:pg-arch-io-connection[this section] that Jetty uses the `Connection` abstraction to produce and interpret the network bytes.
 
 On the client side, a `ClientConnectionFactory` implementation is the component that creates `Connection` instances based on the protocol that the client wants to "speak" with the server.
 

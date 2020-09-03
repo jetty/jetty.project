@@ -67,3 +67,11 @@ include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=tlsAppVa
 ----
 
 Please refer to the `SslContextFactory.Client` link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.Client.html[javadocs] for the complete list of configurable parameters.
+
+[[pg-client-http-configuration-tls-truststore]]
+==== HttpClient TLS TrustStore Configuration
+TODO
+
+[[pg-client-http-configuration-tls-client-certs]]
+==== HttpClient TLS Client Certificates Configuration
+TODO

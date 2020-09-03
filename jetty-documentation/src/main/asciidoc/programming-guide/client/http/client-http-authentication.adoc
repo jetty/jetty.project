@@ -79,3 +79,7 @@ include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=requestPr
 ----
 
 See also the xref:pg-client-http-proxy-authentication[proxy authentication section] for further information about how authentication works with HTTP proxies.
+
+[[pg-client-http-authentication-spnego]]
+=== HttpClient SPNEGO Authentication Support
+TODO
