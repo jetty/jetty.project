@@ -1,0 +1,189 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//  ========================================================================
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+[[jetty-server-dump]]
+=== Jetty Server Dump
+
+The dump feature in Jetty provides a snapshot of the bean containment tree of the main Jetty components together with a summary of their configuration. This includes threadpool, connectors,  contexts, webapplications, servlets and so forth.
+
+[[configuring-dump-feature]]
+==== Configuring the Jetty Server Dump
+
+You can request that Jetty do a dump immediately after starting and just before stopping by calling the appropriate setters on the `Server` instance.
+For embedded usage this can be used by calling the setters directly.
+```java
+server.setDumpAfterStart(true);
+server.setDumpBeforeStop(true);
+```
+
+Standalone Jetty uses two properties to control this behaviour which are referenced in `jetty.xml` to call these setters.
+These properties are `jetty.server.dumpAfterStart` and `jetty.server.dumpBeforeStop`.
+
+These can be temporarily enabled by supplying these properties as command line arguments,
+or they can be enabled via the `server.ini` file (see xref:quick-start-configure[]).
+```
+java -jar $JETTY_HOME/start.jar jetty.server.dumpAfterStart=true jetty.server.dumpBeforeStop=true
+```
+
+[[extra-threadpool-info]]
+==== Extra ThreadPool Information
+
+To get maximum detail from the `QueuedThreadPool` in the dump, you need to `setDetailDump(true)` on any instances of `QueuedThreadPool` you are using.
+This extra detail in the detailed dump consists of full stack traces for every running thread, and a list of queued jobs waiting to be run.
+
+For embedded usage this can be used by calling the setters directly.
+```java
+threadPool.setDetailedDump(true);
+```
+
+For standalone jetty you can enable the `threadpool` module and configure the `jetty.threadPool.detailedDump` property.
+See xref:startup-modules[] for information on how to enable a module.
+This same property can also be set via the command line the same as the server dump property.
+
+[[dump-tool-via-jmx]]
+==== Using the Dump Feature via JMX
+
+The `dump` method is on the Server instance and many of its nested components (Handlers, Connectors, and so forth). 
+Dumps may be obtained by calling these methods either in code or via JMX (see xref:using-jmx[]).
+
+The Server MBean has a `dump()` method, which dumps everything, plus a `dumpStdErr()` operation that dumps to StdErr rather than replying to JConsole.
+
+[[examing-jetty-distro-dump]]
+==== Explanation of the Dump Key
+
+- `+- bean` is a java POJO that is contained by the parent object as a bean added with the addBean method.
+- `+= managed` is a bean that is also a LifeCycle that is started and stopped with the parent object.
+- `+~ unmanaged` is a bean that is also a LifeCycle that is started and stopped with the parent object. It is typically shared with other objects (hence its children are not dumped).
+- `+? auto` is a bean that has been added to an unstarted parent. If it is a LifeCycle that is not started when the parent is started, then it is started and becomes a managed bean, otherwise it becomes either unmanaged or just a bean.
+- `+: iterable` is an object that is contained within an iterable field of the parent (eg a list, set etc).
+- `+] array` is an object that is contained within an array field of the parent.
+- `+@ map` is an object that is contained within an map field of the parent.
+- `+> undefined` is an object that is contained within the parent by an undefined relationship.
+
+==== Jetty Server Dump Example
+
+This is a dump of the OneServletContext embedded example with extra threadpool information:
+
+....
+Server@59906517{STARTED}[9.4.32-SNAPSHOT] - STARTED
++= QueuedThreadPool[qtp1740189450]@67b92f0a{STARTED,8<=8<=200,i=5,r=4,q=0}[ReservedThreadExecutor@77e4c80f{s=0/4,p=0}] - STARTED
+|  += ReservedThreadExecutor@77e4c80f{s=0/4,p=0} - STARTED
+|  +> threads size=8
+|  |  +> 12 qtp1740189450-12 SELECTING  RUNNABLE 5
+|  |  +> 14 qtp1740189450-14-acceptor-0@4c78251c-ServerConnector@76707e36{HTTP/1.1, (http/1.1)}{0.0.0.0:8080} ACCEPTING  RUNNABLE 3
+|  |  +> 16 qtp1740189450-16 IDLE  TIMED_WAITING 5
+|  |  +> 18 qtp1740189450-18 IDLE  TIMED_WAITING 5
+|  |  +> 15 qtp1740189450-15 SELECTING  RUNNABLE 5
+|  |  +> 19 qtp1740189450-19 IDLE  TIMED_WAITING 5
+|  |  +> 17 qtp1740189450-17 IDLE  TIMED_WAITING 5
+|  |  +> 13 qtp1740189450-13 IDLE  TIMED_WAITING 5
+|  +> jobs size=0
++= ServerConnector@76707e36{HTTP/1.1, (http/1.1)}{0.0.0.0:8080} - STARTED
+|  +~ Server@59906517{STARTED}[9.4.32-SNAPSHOT] - STARTED
+|  +~ QueuedThreadPool[qtp1740189450]@67b92f0a{STARTED,8<=8<=200,i=5,r=4,q=0}[ReservedThreadExecutor@77e4c80f{s=0/4,p=0}] - STARTED
+|  += ScheduledExecutorScheduler@7fe8ea47{STARTED} - STARTED
+|  +- org.eclipse.jetty.io.ArrayByteBufferPool@226a82c4
+|  += HttpConnectionFactory@711f39f9[HTTP/1.1] - STARTED
+|  |  +- HttpConfiguration@731f8236{32768/8192,8192/8192,https://:0,[]}
+|  |     +> customizers size=0
+|  |     +> formEncodedMethods size=2
+|  |     |  +> POST
+|  |     |  +> PUT
+|  |     +> outputBufferSize=32768
+|  |     +> outputAggregationSize=8192
+|  |     +> requestHeaderSize=8192
+|  |     +> responseHeaderSize=8192
+|  |     +> headerCacheSize=1024
+|  |     +> secureScheme=https
+|  |     +> securePort=0
+|  |     +> idleTimeout=-1
+|  |     +> blockingTimeout=-1
+|  |     +> sendDateHeader=true
+|  |     +> sendServerVersion=true
+|  |     +> sendXPoweredBy=false
+|  |     +> delayDispatchUntilContent=true
+|  |     +> persistentConnectionsEnabled=true
+|  |     +> maxErrorDispatches=10
+|  |     +> minRequestDataRate=0
+|  |     +> minResponseDataRate=0
+|  |     +> cookieCompliance=RFC6265
+|  |     +> setRequestCookieCompliance=RFC6265
+|  |     +> notifyRemoteAsyncErrors=true
+|  |     +> relativeRedirectAllowed=false
+|  += SelectorManager@ServerConnector@76707e36{HTTP/1.1, (http/1.1)}{0.0.0.0:8080} - STARTED
+|  |  += ManagedSelector@564718df{STARTED} id=0 keys=0 selected=0 updates=0 - STARTED
+|  |  |  += EatWhatYouKill@51b7e5df/SelectorProducer@18a70f16/PRODUCING/p=false/QueuedThreadPool[qtp1740189450]@67b92f0a{STARTED,8<=8<=200,i=5,r=4,q=0}[ReservedThreadExecutor@77e4c80f{s=0/4,p=0}][pc=0,pic=0,pec=0,epc=0]@2020-08-26T08:51:02.711784+10:00 - STARTED
+|  |  |  |  +- SelectorProducer@18a70f16
+|  |  |  |  +~ QueuedThreadPool[qtp1740189450]@67b92f0a{STARTED,8<=8<=200,i=5,r=4,q=0}[ReservedThreadExecutor@77e4c80f{s=0/4,p=0}] - STARTED
+|  |  |  +> updates @ 2020-08-26T08:51:02.705944+10:00 size=0
+|  |  |  +> keys @ 2020-08-26T08:51:02.706914+10:00 size=0
+|  |  += ManagedSelector@62e136d3{STARTED} id=1 keys=0 selected=0 updates=0 - STARTED
+|  |     += EatWhatYouKill@c8e4bb0/SelectorProducer@6279cee3/PRODUCING/p=false/QueuedThreadPool[qtp1740189450]@67b92f0a{STARTED,8<=8<=200,i=5,r=4,q=0}[ReservedThreadExecutor@77e4c80f{s=0/4,p=0}][pc=0,pic=0,pec=0,epc=0]@2020-08-26T08:51:02.717119+10:00 - STARTED
+|  |     |  +- SelectorProducer@6279cee3
+|  |     |  +~ QueuedThreadPool[qtp1740189450]@67b92f0a{STARTED,8<=8<=200,i=5,r=4,q=0}[ReservedThreadExecutor@77e4c80f{s=0/4,p=0}] - STARTED
+|  |     +> updates @ 2020-08-26T08:51:02.715887+10:00 size=0
+|  |     +> keys @ 2020-08-26T08:51:02.716158+10:00 size=0
+|  +- sun.nio.ch.ServerSocketChannelImpl[/0:0:0:0:0:0:0:0:8080]
+|  +- qtp1740189450-14-acceptor-0@4c78251c-ServerConnector@76707e36{HTTP/1.1, (http/1.1)}{0.0.0.0:8080}
++= AttributeContainerMap@4206a205{size=0} - STARTED
++= o.e.j.s.ServletContextHandler@4ba2ca36{/,file:///tmp/,AVAILABLE} - STARTED
+|  += org.eclipse.jetty.server.session.SessionHandler2007331442==dftMaxIdleSec=-1 - STARTED
+|  |  += ServletHandler@29ba4338{STARTED} - STARTED
+|  |  |  +> listeners ServletHandler@29ba4338{STARTED} size=2
+|  |  |  |  +> ListenerHolder@57175e74{STARTED}: org.eclipse.jetty.embedded.OneServletContext$InitListener - STARTED
+|  |  |  |  +> ListenerHolder@7bb58ca3{STARTED}: org.eclipse.jetty.embedded.OneServletContext$RequestListener - STARTED
+|  |  |  +> filters ServletHandler@29ba4338{STARTED} size=2
+|  |  |  |  +> org.eclipse.jetty.embedded.OneServletContext$TestFilter-29b5cd00@29b5cd00==org.eclipse.jetty.embedded.OneServletContext$TestFilter,inst=true,async=true - STARTED
+|  |  |  |  |  +> org.eclipse.jetty.embedded.OneServletContext$TestFilter@c540f5a
+|  |  |  |  +> org.eclipse.jetty.embedded.OneServletContext$TestFilter-7113b13f@7113b13f==org.eclipse.jetty.embedded.OneServletContext$TestFilter,inst=true,async=true - STARTED
+|  |  |  |     +> org.eclipse.jetty.embedded.OneServletContext$TestFilter@770c2e6b
+|  |  |  +> filterMappings ServletHandler@29ba4338{STARTED} size=2
+|  |  |  |  +> [/test/*]/[]/[REQUEST]=>org.eclipse.jetty.embedded.OneServletContext$TestFilter-29b5cd00
+|  |  |  |  +> [*.test]/[]/[REQUEST, ASYNC]=>org.eclipse.jetty.embedded.OneServletContext$TestFilter-7113b13f
+|  |  |  +> servlets ServletHandler@29ba4338{STARTED} size=3
+|  |  |  |  +> org.eclipse.jetty.embedded.HelloServlet-6b57696f@99887e98==org.eclipse.jetty.embedded.HelloServlet,jsp=null,order=-1,inst=false,async=true - STARTED
+|  |  |  |  |  +> class org.eclipse.jetty.embedded.HelloServlet
+|  |  |  |  +> debug@5b09653==org.eclipse.jetty.embedded.DumpServlet,jsp=null,order=-1,inst=false,async=true - STARTED
+|  |  |  |  |  +> class org.eclipse.jetty.embedded.DumpServlet
+|  |  |  |  +> org.eclipse.jetty.servlet.DefaultServlet-38bc8ab5@f1bd2681==org.eclipse.jetty.servlet.DefaultServlet,jsp=null,order=-1,inst=false,async=true - STARTED
+|  |  |  |     +> class org.eclipse.jetty.servlet.DefaultServlet
+|  |  |  +> servletMappings ServletHandler@29ba4338{STARTED} size=4
+|  |  |     +> [/hello/*]=>org.eclipse.jetty.embedded.HelloServlet-6b57696f
+|  |  |     +> [/dump/*]=>debug
+|  |  |     +> [*.dump]=>debug
+|  |  |     +> [/]=>org.eclipse.jetty.servlet.DefaultServlet-38bc8ab5
+|  |  += org.eclipse.jetty.server.session.DefaultSessionCache@6328d34a[evict=-1,removeUnloadable=false,saveOnCreate=false,saveOnInactiveEvict=false] - STARTED
+|  |  |  += org.eclipse.jetty.server.session.NullSessionDataStore@145eaa29[passivating=false,graceSec=3600] - STARTED
+|  |  +~ DefaultSessionIdManager@15bb6bea{STARTED}[worker=node0] - STARTED
+|  +> No ClassLoader
+|  +> eventListeners o.e.j.s.ServletContextHandler@4ba2ca36{/,file:///tmp/,AVAILABLE} size=2
+|  |  +> org.eclipse.jetty.embedded.OneServletContext$InitListener@8b96fde
+|  |  +> org.eclipse.jetty.embedded.OneServletContext$RequestListener@2d2e5f00
+|  +> handler attributes o.e.j.s.ServletContextHandler@4ba2ca36{/,file:///tmp/,AVAILABLE} size=1
+|  |  +> org.eclipse.jetty.server.Executor=QueuedThreadPool[qtp1740189450]@67b92f0a{STARTED,8<=8<=200,i=5,r=4,q=0}[ReservedThreadExecutor@77e4c80f{s=0/4,p=0}]
+|  +> context attributes o.e.j.s.ServletContextHandler@4ba2ca36{/,file:///tmp/,AVAILABLE} size=2
+|  |  +> org.eclipse.jetty.util.DecoratedObjectFactory=org.eclipse.jetty.util.DecoratedObjectFactory[decorators=1]
+|  |  +> X-Init=true
+|  +> initparams o.e.j.s.ServletContextHandler@4ba2ca36{/,file:///tmp/,AVAILABLE} size=0
++= ErrorHandler@2ea6137{STARTED} - STARTED
++= DefaultSessionIdManager@15bb6bea{STARTED}[worker=node0] - STARTED
+|  += HouseKeeper@3439f68d{STARTED}[interval=660000, ownscheduler=true] - STARTED
++> jdk.internal.loader.ClassLoaders$AppClassLoader@2c13da15
+   +> jdk.internal.loader.ClassLoaders$PlatformClassLoader@41ee392b
+key: +- bean, += managed, +~ unmanaged, +? auto, +: iterable, +] array, +@ map, +> undefined
+....
