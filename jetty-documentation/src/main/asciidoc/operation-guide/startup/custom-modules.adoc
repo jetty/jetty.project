@@ -163,9 +163,9 @@ lib/acme/ACMECustom.jar
 
 Activating this module will activate all the dependent modules, create any required directories and copy in any required files:
 
-[source, screen]
+[source,screen]
 ----
-java -jar ../start.jar --add-to-start=acme
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=acme
 
 ALERT: There are enabled module(s) with licenses.
 The following 1 module(s):
@@ -222,9 +222,9 @@ For Jetty to create/add the `ini-template` parameters to `start.d` or `start.ini
 
 For example, if I activate the `http` module, it will be enabled, and the `server` module will be enabled transitively:
 
-[source, screen]
+[source,screen]
 ----
-$ java -jar ../start.jar --add-to-start=http
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=http
 INFO  : server          transitively enabled, ini template available with --add-to-start=server
 INFO  : http            initialized in ${jetty.base}/start.d/http.ini
 INFO  : Base directory was modified
@@ -233,9 +233,9 @@ INFO  : Base directory was modified
 You'll notice that Jetty informs you of what modules were enabled, and where there associated ini files are located (when applicable).
 It also tells the user what command they would need to run to enable any missing or desired ini files for the selected modules, in this case `--add-to-start=server`.
 
-[source, screen]
+[source,screen]
 ----
-$ java -jar ../start.jar --add-to-start=server
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=server
 INFO  : server          initialized in ${jetty.base}/start.d/server.ini
 INFO  : Base directory was modified
 ----

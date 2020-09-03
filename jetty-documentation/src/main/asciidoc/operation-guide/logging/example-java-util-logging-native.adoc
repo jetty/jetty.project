@@ -33,7 +33,7 @@ ____
 
 A convenient replacement `logging` module has been created to bootstrap your `${jetty.base}` directory for logging with `java.util.logging`.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
 [mybase]$ mkdir modules
 [mybase]$ cd modules
@@ -44,7 +44,7 @@ A convenient replacement `logging` module has been created to bootstrap your `${
 100   623  100   623    0     0   1879      0 --:--:-- --:--:-- --:--:--  1876
 [modules]$ cd ..
 
-[mybase]$ java -jar /opt/jetty-dist/start.jar --add-to-start=logging
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=logging
 INFO: logging         initialised in ${jetty.base}/start.ini (appended)
 MKDIR: ${jetty.base}/logs
 DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master/java.util.logging-native/jetty-logging.xml to etc/jetty-logging.xml
@@ -53,21 +53,21 @@ DOWNLOAD: https://raw.githubusercontent.com/jetty-project/logging-modules/master
 INFO: resources       initialised transitively
 INFO: resources       enabled in     ${jetty.base}/${jetty.base}
 
-[mybase]$ java -jar /opt/jetty-dist/start.jar
+[my-base]$ java -jar /path/to/jetty-home/start.jar
 ....
 
 The replacement `logging.mod` performs a number of tasks.
 
-.  `mybase` is a `${jetty.base}` directory.
-.  The jetty-distribution is unpacked (and untouched) into `/opt/jetty-dist/` and becomes the `${jetty.home}` directory for this demonstration.
-.  The `curl` command downloads the replacement `logging.mod` and puts it into the `${jetty.base}/modules/` directory for use by `mybase` only.
-.  The `start.jar --add-to-start=logging` command performs a number of steps to make the logging module available to the `${jetty.base}`
+. `mybase` is a `${jetty.base}` directory.
+. The jetty-distribution is unpacked (and untouched) into `/opt/jetty-dist/` and becomes the `${jetty.home}` directory for this demonstration.
+. The `curl` command downloads the replacement `logging.mod` and puts it into the `${jetty.base}/modules/` directory for use by `mybase` only.
+. The `start.jar --add-to-start=logging` command performs a number of steps to make the logging module available to the `${jetty.base}`
 configuration.
-..  The `--module=logging` command is added to the `${jetty.base}/start.ini` configuration.
-..  Required `${jetty.base}` directories are created: `${jetty.base}/logs` and `${jetty.base}/resources`.
-..  Required configuration files are downloaded (if not present already): `jetty-logging.properties`, and `logging.properties`
+.. The `--module=logging` command is added to the `${jetty.base}/start.ini` configuration.
+.. Required `${jetty.base}` directories are created: `${jetty.base}/logs` and `${jetty.base}/resources`.
+.. Required configuration files are downloaded (if not present already): `jetty-logging.properties`, and `logging.properties`
 * The configuration files are put in the `${jetty.base}/resources/` directory.
-..  Required `java.util.logging` initialization commands are downloaded (if not present already): `jetty-logging.xml`.
+.. Required `java.util.logging` initialization commands are downloaded (if not present already): `jetty-logging.xml`.
 * The xml file is put in the `${jetty.base}/etc/` directory.
 
 At this point the Jetty `mybase` is configured so that the Jetty server itself will log using `java.util.logging`, using the `java.util.logging` configuration found in `mybase/resources/logging.properties`.

@@ -51,19 +51,19 @@ It also includes a detailed explanation of how modules work.
 This example assumes you have the jetty-distribution unpacked in `/home/user/jetty-distribution-{VERSION}`.
 It also assumes you are using `start.ini` to configure your server features.
 
-1.  Create a base directory anywhere.
+1. Create a base directory anywhere.
 +
 [source, screen, subs="{sub-order}"]
 ....
 [/home/user]$ mkdir my-base
 [/home/user]$ cd my-base
 ....
-2.  Add the modules for SSL, HTTP, and webapp deployment.
+2. Add the modules for SSL, HTTP, and webapp deployment.
 Adding modules in this way will append the associated module properties to the `${jetty.base}/start.ini` file.
 +
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar --add-to-start=http,https,deploy
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=http,https,deploy
 
 ssl             initialised in ${jetty.base}/start.ini (appended)
 ssl             enabled in     ${jetty.base}/start.ini
@@ -78,7 +78,7 @@ deploy          enabled in     ${jetty.base}/start.ini
 MKDIR: ${jetty.base}/webapps
 server          enabled in     ${jetty.base}/start.ini
 ....
-3.  Look at your directory.
+3. Look at your directory.
 +
 [source, screen, subs="{sub-order}"]
 ....
@@ -90,36 +90,36 @@ drwxrwxr-x   2 user group 4096 Oct  8 06:55 etc/
 -rw-rw-r--   1 user group  815 Oct  8 06:55 start.ini
 drwxrwxr-x   2 user group 4096 Oct  8 06:55 webapps/
 ....
-4.  Copy your WAR files into webapps.
+4. Copy your WAR files into webapps.
 +
 [source, screen, subs="{sub-order}"]
 ....
 [my-base]$ ls -la
 [my-base]$ cp ~/code/project/target/gadget.war webapps/
 ....
-5.  Copy your keystore into place.
+5. Copy your keystore into place.
 +
 [source, screen, subs="{sub-order}"]
 ....
 [my-base]$ cp ~/code/project/keystore etc/keystore
 ....
-6.  Edit the `start.ini` to configure your SSL settings.
+6. Edit the `start.ini` to configure your SSL settings.
 +
 [source, screen, subs="{sub-order}"]
 ....
 [my-base]$ cat start.ini
 ....
-7.  Initialize module ssl.
+7. Initialize module ssl.
 +
 ....
 --module=ssl
 ....
-8.  Define the port to use for secure redirection.
+8. Define the port to use for secure redirection.
 +
 ....
 jetty.secure.port=8443
 ....
-9.  Set up a demonstration keystore and truststore.
+9. Set up a demonstration keystore and truststore.
 +
 ....
 jetty.keystore=etc/keystore
@@ -158,9 +158,9 @@ http.timeout=30000
 
 Look at the configuration you have at this point.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar --list-config
+[my-base]$ java -jar /path/to/jetty-home/start.jar --list-config
 
 Java Environment:
 -----------------
@@ -230,9 +230,9 @@ Jetty Active XMLs:
 
 Now start Jetty.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar
+[my-base]$ java -jar /path/to/jetty-home/start.jar
 2013-10-08 07:06:55.837:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-08 07:06:55.853:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1
 2013-10-08 07:06:55.872:INFO:oejs.ServerConnector:main: Started ServerConnector@72974691{HTTP/1.1}{0.0.0.0:8080}
@@ -258,9 +258,9 @@ Notice that you have `--module=<name>` here and there; you have wrapped up the g
 
 You can see the list of modules:
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar --list-modules
+[my-base]$ java -jar /path/to/jetty-home/start.jar --list-modules
 
 Jetty All Available Modules:
 ----------------------------
@@ -475,12 +475,12 @@ For more information on the `start.jar` in 9.1, see xref:start-jar[].
 [[summary-configuring-SSL-Jetty]]
 ==== Summary of Configuring SSL
 
-1.  Download and unpack Jetty into `/home/user/jetty-distribution-{VERSION}`.
-2.  Go to your base directory and just use the distribution, no editing.
+1. Download and unpack Jetty into `/home/user/jetty-distribution-{VERSION}`.
+2. Go to your base directory and just use the distribution, no editing.
 +
 [source, screen, subs="{sub-order}"]
 ....
-[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar
+[my-base]$ java -jar /path/to/jetty-home/start.jar
 ....
 * The Jetty distribution provides, out of the box, the XML configuration files, in this case `jetty-http.xml` and `jetty-ssl.xml`.
 These can be found in the `${jetty.home}/etc/` directory.
@@ -488,7 +488,7 @@ These can be found in the `${jetty.home}/etc/` directory.
 You can now set the values using simple properties, either on the command line, or within the `${jetty.base}/start.ini`.
 * When you activate the module for HTTP or HTTPs, Jetty automatically adds the appropriate libraries and XML to start Jetty.
 Unless you have a highly custom setup (such as listening on two different ports, using SSL on each, each with its own keystore and configuration), there is no need to muck around in XML files.
-3.  Use modules to configure HTTPS:
+3. Use modules to configure HTTPS:
 * http -> server
 * https -> ssl -> server
 +
@@ -516,5 +516,5 @@ The modules you have enabled determine that subset.
 
 [source, screen, subs="{sub-order}"]
 ....
-[my-base]$ java -jar ~/jetty-distribution-{VERSION}/start.jar --list-config
+[my-base]$ java -jar /path/to/jetty-home/start.jar --list-config
 ....

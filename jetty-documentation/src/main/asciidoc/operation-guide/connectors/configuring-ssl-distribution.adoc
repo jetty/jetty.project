@@ -63,10 +63,10 @@ jetty.sslContext.keyStorePassword::
 
 Enabling Conscrypt SSL is just as easy as default SSL - enable both the `conscrypt` and `ssl` link:#startup-modules[modules]:
 
-[source, plain, subs="{sub-order}"]
+[source,plain,subs="{sub-order}"]
 ----
-$ cd ${JETTY_HOME}
-$ java -jar ../start.jar --add-to-start=ssl,conscrypt
+$ cd ${JETTY_BASE}
+$ java -jar /path/to/jetty-home/start.jar --add-to-start=ssl,conscrypt
 
 ALERT: There are enabled module(s) with licenses.
 The following 1 module(s):

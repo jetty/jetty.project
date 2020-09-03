@@ -24,11 +24,11 @@ In addition to easy management of multiple server instances, is allows for quick
 There should always only be *one* Jetty Home (per version of Jetty), but there can be multiple Jetty Base directories that reference it.
 
 Jetty Base::
-  * Also known as the `${jetty.base}` property.
-  * This is the location for your configurations and customizations to the Jetty distribution.
+* Also known as the `${jetty.base}` property.
+* This is the location for your configurations and customizations to the Jetty distribution.
 Jetty Home::
-  * Also known as the `${jetty.home}` property.
-  * This is the location for the Jetty distribution binaries, default XML IoC configurations, and default module definitions.
+* Also known as the `${jetty.home}` property.
+* This is the location for the Jetty distribution binaries, default XML IoC configurations, and default module definitions.
 
 ____
 [IMPORTANT]
@@ -42,11 +42,11 @@ Potential configuration is resolved from these 2 directory locations.
 When Jetty starts up in processes configuration from them as follows:
 
 Check Jetty Base First::
-  If the referenced configuration exists, relative to the defined Jetty base, it is used.
+If the referenced configuration exists, relative to the defined Jetty base, it is used.
 Check Jetty Home Second::
-  If the referenced configuration exists, relative to the defined Jetty home, it is used.
+If the referenced configuration exists, relative to the defined Jetty home, it is used.
 Use java.io.File(String pathname) Logic::
-  Lastly, use the reference as a `java.io.File(String pathname)` reference, following the default resolution rules outlined by that constructor. In brief, the reference will be used as-is, be it relative (to current working directory, aka $\{user.dir}) or absolute path, or even network reference (such as on Windows and use of UNC paths).
+Lastly, use the reference as a `java.io.File(String pathname)` reference, following the default resolution rules outlined by that constructor.In brief, the reference will be used as-is, be it relative (to current working directory, aka $\{user.dir}) or absolute path, or even network reference (such as on Windows and use of UNC paths).
 
 For more details on how startup with start.jar works, see link:#executing-startjar[Using start.jar: Executing]
 
@@ -79,7 +79,7 @@ drwxrwxr-x  2 user group   4096 Oct  8 06:54 start.d/
 drwxrwxr-x  2 user group   4096 Oct  8 06:54 webapps/
 
 [jetty-distribution-{VERSION}]$ cd demo-base
-[demo-base]$ java -jar $JETTY_HOME/start.jar
+[my-base]$ java -jar /path/to/jetty-home/start.jar
 
 2013-10-16 09:08:47.800:WARN::main: demo test-realm is deployed. DO NOT USE IN PRODUCTION!
 2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
@@ -90,9 +90,9 @@ drwxrwxr-x  2 user group   4096 Oct  8 06:54 webapps/
 
 If you want to see what the Jetty base looks like without executing Jetty, you can simply list the configuration by using the `--list-config` command.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[demo-base]$ java -jar $JETTY_HOME/start.jar --list-config
+[my-base]$ java -jar /path/to/jetty-home/start.jar --list-config
 
 Java Environment:
 -----------------
@@ -308,13 +308,13 @@ the `start.jar` in your `{$jetty.home}` remotely.
 
 The following demonstrates this by allowing default discovery of `${jetty.home}` via locating the `start.jar`, and using the `user.dir` System Property for `${jetty.base}`.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
 [jetty-distribution-{VERSION}]$ pwd
 /home/user/jetty-distribution-{VERSION}
 
 [jetty-distribution-{VERSION}]$ cd /home/user/my-base
-[my-base]$ java -jar /home/user/jetty-distribution-{VERSION}/start.jar
+[my-base]$ java -jar /path/to/jetty-home/start.jar
 
 2013-10-16 09:08:47.802:INFO:oejs.Server:main: jetty-{VERSION}
 2013-10-16 09:08:47.817:INFO:oejdp.ScanningAppProvider:main: Deployment monitor [file:/home/user/my-base/webapps/] at interval 1

@@ -70,11 +70,11 @@ As an alternative to a single `start.ini` file you can opt to house modules in a
 Modules activated when a `start.d` directory exists will be stored as a single file per module.
 Below is an example of a fresh `${jetty.base}` that will create a `start.d` directory and activate several modules.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
 [jetty.home]$ mkdir mybase
 [jetty.home]$ cd mybase/
-[mybase]$ java -jar ../start.jar --create-startd
+[my-base]$ java -jar /path/to/jetty-home/start.jar --create-startd
 INFO : Base directory was modified
 [mybase]$ ls -all
 total 0
@@ -82,7 +82,7 @@ drwxr-xr-x   3 staff  staff  102 Aug 29 15:16 .
 drwxr-xr-x@ 26 staff  staff  884 Aug 29 15:16 ..
 drwxr-xr-x   6 staff  staff  204 Aug 29 15:19 start.d
 
-[mybase]$ java -jar ../start.jar --add-to-start=server,client,webapp,websocket
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=server,client,webapp,websocket
 INFO : webapp          initialised in ${jetty.base}/start.d/webapp.ini
 INFO : server          initialised in ${jetty.base}/start.d/server.ini
 INFO : websocket       initialised in ${jetty.base}/start.d/websocket.ini
@@ -106,23 +106,23 @@ If you have an existing `start.ini` file but would like to use the `start.d` str
 Doing this will create the `start.d` directory and copy your existing `start.ini` file in to it.
 Any new modules added to the server will have their own `<module name>.ini` file created in the `start.d` directory.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
-[mybase]$ java -jar ../start.jar --add-to-start=server,client,webapp,websocket
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=server,client,webapp,websocket
 INFO : webapp          initialised in ${jetty.base}/start.ini
 INFO : server          initialised in ${jetty.base}/start.ini
 INFO : websocket       initialised in ${jetty.base}/start.ini
 INFO : client          initialised in ${jetty.base}/start.ini
 INFO : Base directory was modified
 
-[mybase]$ java -jar ../start.jar --create-startd
+[my-base]$ java -jar /path/to/jetty-home/start.jar --create-startd
 INFO : Base directory was modified
 [mybase]$ tree
 .
 └── start.d
     └── start.ini
 
-[mybase]$ java -jar ../start.jar --add-to-start=ssl
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=ssl
 INFO : ssl             initialised in ${jetty.base}/start.d/ssl.ini
 INFO : Base directory was modified
 [mybase]$ tree

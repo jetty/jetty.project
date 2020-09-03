@@ -147,7 +147,7 @@ First is the most straightforward, simply add it to your command line when start
 
 [source, screen, subs="{sub-order}"]
 ----
-java -jar ../start.jar -Djava.io.tmpdir=/path/to/desired/directory
+[my-base]$ java -jar /path/to/jetty-home/start.jar -Djava.io.tmpdir=/path/to/desired/directory
 ----
 
 Alternately, this can be defined in a link:#startup-modules[module.]

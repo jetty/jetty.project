@@ -47,7 +47,7 @@ A convenient replacement `logging` module has been created to bootstrap your `${
 
 [mybase]$ jar -xf jetty-webapp-logging-9.4.27-config.jar
 
-[mybase]$ java -jar /opt/jetty-hom/start.jar --create-startd --add-to-start=centralized-webapp-logging
+[my-base]$ java -jar /path/to/jetty-home/start.jar --create-startd --add-to-start=centralized-webapp-logging
 
 ALERT: There are enabled module(s) with licenses.
 The following 2 module(s):

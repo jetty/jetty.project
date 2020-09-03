@@ -245,8 +245,11 @@ public class DistributionTester
 
     private void init() throws Exception
     {
+        if (config.jettyDistro == null)
+            config.jettyDistro = resolveDistribution(config.jettyVersion);
+
         if (config.jettyHome == null)
-            config.jettyHome = resolveDistribution(config.jettyVersion);
+            config.jettyHome = config.jettyDistro.resolve("jetty-home");
 
         if (config.jettyBase == null)
         {
@@ -257,7 +260,7 @@ public class DistributionTester
         else
         {
             if (!config.jettyBase.isAbsolute())
-                config.jettyBase = config.jettyHome.resolve(config.jettyBase);
+                config.jettyBase = config.jettyDistro.resolve(config.jettyBase);
         }
     }
 
@@ -370,6 +373,7 @@ public class DistributionTester
 
     private static class Config
     {
+        private Path jettyDistro;
         private Path jettyBase;
         private Path jettyHome;
         private String jettyVersion;
@@ -380,9 +384,10 @@ public class DistributionTester
         @Override
         public String toString()
         {
-            return String.format("%s@%x{jettyBase=%s, jettyHome=%s, jettyVersion=%s, mavenLocalRepository=%s, mavenRemoteRepositories=%s}",
+            return String.format("%s@%x{jettyDistro=%s, jettyBase=%s, jettyHome=%s, jettyVersion=%s, mavenLocalRepository=%s, mavenRemoteRepositories=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
+                jettyDistro,
                 jettyBase,
                 jettyHome,
                 jettyVersion,

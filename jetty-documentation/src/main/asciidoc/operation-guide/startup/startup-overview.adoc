@@ -23,49 +23,49 @@ The `start.jar` bootstrap manages the startup of standalone Jetty.
 It is responsible for:
 
 Building the classpath::
-  The `start.jar` bootstrap builds a classpath for all the required Jetty features and their dependencies.
-  It builds the classpath using  either the `--lib` option to `start.jar` to add an individual  classpath entry, or with the `--module` option that includes all the  libs and their dependencies for a module (a named Jetty feature).
+The `start.jar` bootstrap builds a classpath for all the required Jetty features and their dependencies.
+It builds the classpath using either the `--lib` option to `start.jar` to add an individual classpath entry, or with the `--module` option that includes all the libs and their dependencies for a module (a named Jetty feature).
 Instantiating the Server Components::
-  The server and its components are instantiated using either Jetty IoC XML or Spring.
-  The Jetty server is a collection of POJOs for the server, connectors, session managers and others.
-  These are instantiated, injected, and wired up together in XML files, commonly one per module/feature, that are passed as arguments to `start.jar`.
+The server and its components are instantiated using either Jetty IoC XML or Spring.
+The Jetty server is a collection of POJOs for the server, connectors, session managers and others.
+These are instantiated, injected, and wired up together in XML files, commonly one per module/feature, that are passed as arguments to `start.jar`.
 Resolving Server Filesystem Locations::
-  The `start.jar` mechanism resolves canonical locations for the `${jetty.home}` and the `${jetty.base}` directories.
-  The `${jetty.home}` directory is the location of the standard distribution of Jetty.
-  The `${jetty.base}` directory is the location of the local server customization and configurations.
-  +
-  If you want to modify the Jetty distribution, base and home can be the same directory.
-  Separating the base and home directories allows the distribution to remain unmodified, with all customizations in the base directory, and thus simplifies subsequent server version upgrades.
+The `start.jar` mechanism resolves canonical locations for the `${jetty.home}` and the `${jetty.base}` directories.
+The `${jetty.home}` directory is the location of the standard distribution of Jetty.
+The `${jetty.base}` directory is the location of the local server customization and configurations.
+ +
+If you want to modify the Jetty distribution, base and home can be the same directory.
+Separating the base and home directories allows the distribution to remain unmodified, with all customizations in the base directory, and thus simplifies subsequent server version upgrades.
 Parameterizing the Server Configuration::
-  XML files primarily determine the server configuration.
-  Many of these files are parameterized to allow simple injection of host names, ports, passwords and more.
-  The `start.jar` mechanism allows you to set parameters on the command line or in properties files.
+XML files primarily determine the server configuration.
+Many of these files are parameterized to allow simple injection of host names, ports, passwords and more.
+The `start.jar` mechanism allows you to set parameters on the command line or in properties files.
 
 To achieve these start up mechanisms, the `start.jar` uses:
 
 Command line arguments::
-  You can configure the entire server with command line arguments that specify libraries, properties and XML files.
-  However in practice the   INI and modules mechanisms (below) reduce the verbosity of the command line.
+You can configure the entire server with command line arguments that specify libraries, properties and XML files.
+However in practice the INI and modules mechanisms (below) reduce the verbosity of the command line.
 INI files::
-  The `start.jar` mechanism uses the contents of the `${jetty.base}/start.ini` and `${jetty.base}/start.d/*.ini` files with each line equivalent to a `start.jar` command line argument.
-  This means that either a global `start.ini` file or multiple `start.d/feature.ini` files control the configuration of the server.
+The `start.jar` mechanism uses the contents of the `${jetty.base}/start.ini` and `${jetty.base}/start.d/*.ini` files with each line equivalent to a `start.jar` command line argument.
+This means that either a global `start.ini` file or multiple `start.d/feature.ini` files control the configuration of the server.
 [NOTE]
 --
 It is important to chose *either* `${jetty.base}/start.ini` or `${jetty.base}/start.d/*.ini` to manage configuration.
 Using both is not recommended and can lead to issues with your server.
 --
 Modules::
-  Instead of explicitly listing all the libraries, properties and XML files for a feature, the `start.jar` mechanism allows you to create  modules.
-  A module is defined in a `modules/*.mod` file, including the libraries, dependencies, XML, and template INI files for a Jetty feature.
-  Thus you can use a single `--module=name` command line option as the equivalent of specifying  `--lib=location`, `feature.xml` or `name=value` arguments for a feature and all its dependencies.
-  Modules also use their dependencies to control the ordering of libraries and XML files.
-  There are several module files included with the Jetty distribution that cover the most common server features, such as HTTP, HTTPS, SSL, Logging, Annotations...etc.
-  These module files should *only* be edited if you are making structural changes to the way the feature will perform.
-  For more information, refer to the section on link:#startup-modules[managing startup modules] later in this chapter.
+Instead of explicitly listing all the libraries, properties and XML files for a feature, the `start.jar` mechanism allows you to create modules.
+A module is defined in a `modules/*.mod` file, including the libraries, dependencies, XML, and template INI files for a Jetty feature.
+Thus you can use a single `--module=name` command line option as the equivalent of specifying  `--lib=location`, `feature.xml` or `name=value` arguments for a feature and all its dependencies.
+Modules also use their dependencies to control the ordering of libraries and XML files.
+There are several module files included with the Jetty distribution that cover the most common server features, such as HTTP, HTTPS, SSL, Logging, Annotations...etc.
+These module files should *only* be edited if you are making structural changes to the way the feature will perform.
+For more information, refer to the section on link:#startup-modules[managing startup modules] later in this chapter.
 XML Files::
-  XML files in either Jetty IoC or Spring format instantiate the actual POJO components of the server.
-  This includes all major components such as connectors, keystores, session managers, and data sources.
-  Typically there are one or more XML files per module, and these are  defined and activated in the corresponding module.
+XML files in either Jetty IoC or Spring format instantiate the actual POJO components of the server.
+This includes all major components such as connectors, keystores, session managers, and data sources.
+Typically there are one or more XML files per module, and these are defined and activated in the corresponding module.
 
 ==== Startup Example
 
@@ -207,7 +207,7 @@ The Java command line sets up the classpath with the core Jetty jars and the ser
 
 You can further simplify the startup of this server by using the INI template defined by the modules to create a `start.ini` file with the command:
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ....
 [user]$ cd jetty-distribution-{VERSION}
 [jetty-distribution-{VERSION}]$ mkdir example-base
@@ -217,7 +217,7 @@ total 8
 drwxrwxr-x  2 user webgroup 4096 Oct  4 11:49 ./
 drwxrwxr-x 12 user webgroup 4096 Oct  4 11:49 ../
 
-[example-base]$ java -jar $JETTY_HOME/start.jar --add-to-start=http
+[my-base]$ java -jar /path/to/jetty-home/start.jar --add-to-start=http
 
 WARNING: http            initialised in ${jetty.base}/start.ini (appended)
 WARNING: http            enabled in     ${jetty.base}/start.ini
@@ -235,5 +235,5 @@ Once complete, you can edit the `start.ini` file to modify any parameters and yo
 
 [source, screen, subs="{sub-order}"]
 ....
-[example-base]$ java -jar $JETTY_HOME/start.jar
+[my-base]$ java -jar /path/to/jetty-home/start.jar
 ....

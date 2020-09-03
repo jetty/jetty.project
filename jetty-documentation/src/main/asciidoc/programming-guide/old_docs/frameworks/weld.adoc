@@ -36,8 +36,8 @@ Since Jetty 9.4.20 and Weld 3.1.2.Final, the Weld/Jetty integration uses the jet
 To activate this module in Jetty the `cdi-decorate` module needs activated on the command line, which can be done as follows:
 
 -------------------------
-cd $JETTY_BASE
-java -jar $JETTY_HOME/start.jar --add-to-start=cdi-decorate
+$ cd $JETTY_BASE
+$ java -jar $JETTY_HOME/start.jar --add-to-start=cdi-decorate
 -------------------------
 
 ====== Jetty `cdi2` Module
@@ -46,8 +46,8 @@ For versions prior to Jetty 9.4.20 and Weld 3.1.2, the Weld/Jetty integration re
 This can be done using the deprecated `cdi2` module either by activating the `cdi2` module:
 
 -------------------------
-cd $JETTY_BASE
-java -jar $JETTY_HOME/start.jar --add-to-start=cdi2
+$ cd $JETTY_BASE
+$ java -jar $JETTY_HOME/start.jar --add-to-start=cdi2
 -------------------------
 
 

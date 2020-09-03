@@ -754,7 +754,7 @@ When using the `SslContextFactory`, the correct certificate is automatically sel
 
 New cipher suites are always being developed to stay ahead of attacks.
 It's only a matter of time before the best of suites is exploited though, and making sure your server is up-to-date in this regard is paramount for any implementation.
-As an example, to avoid the BEAST attack it is necessary to configure a specific set of cipher suites. This can either be done via link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setIncludeCipherSuites(java.lang.String...)[SslContext.setIncludeCipherSuites(java.lang.String...)] or vialink:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setExcludeCipherSuites(java.lang.String...)[SslContext.setExcludeCipherSuites(java.lang.String...)].
+As an example, to avoid the BEAST attack it is necessary to configure a specific set of cipher suites.This can either be done via link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setIncludeCipherSuites(java.lang.String...)[SslContext.setIncludeCipherSuites(java.lang.String...)] or vialink:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.html#setExcludeCipherSuites(java.lang.String...)[SslContext.setExcludeCipherSuites(java.lang.String...)].
 
 It's crucial that you use the _exact_ names of the cipher suites as used/known by the JDK.
 You can get them by obtaining an instance of SSLEngine and call `getSupportedCipherSuites()`.
@@ -905,9 +905,9 @@ You can also dump the server when shutting down the server instance by adding `j
 
 Specifically, you will want to look for the `SslConnectionFactory` portion of the dump.
 
-[source, screen, subs="{sub-order}"]
+[source,screen,subs="{sub-order}"]
 ----
-[my-base]$ java -jar ${JETTY_HOME}/start.jar jetty.server.dumpAfterStart=true
+[my-base]$ java -jar /path/to/jetty-home/start.jar jetty.server.dumpAfterStart=true
 
 ...
 |   += SslConnectionFactory@18be83e4{SSL->http/1.1} - STARTED

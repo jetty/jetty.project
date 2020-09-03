@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * <ul>
  * <li>The <code>jetty.home</code> system property</li>
  * <li>The <code>JETTY_HOME</code> environment variable</li>
- * <li>The working directory hierarchy with subdirectory <code>jetty-distribution/target/home</code></li>
+ * <li>The working directory hierarchy with subdirectory <code>jetty-distribution/target/distribution</code></li>
  * </ul>
  */
 public class JettyDistribution
@@ -41,14 +41,23 @@ public class JettyDistribution
 
     static
     {
-        Path distro = asJettyDistribution(System.getProperty("jetty.home"));
-        if (LOG.isDebugEnabled())
-            LOG.debug("JettyDistribution(prop(jetty.home)) = {}", distro);
-        if (distro == null)
+        Path jettyHome = asDirectory(System.getProperty("jetty.home"));
+        LOG.debug("JettyDistribution(prop(jetty.home)) = {}", jettyHome);
+        if (jettyHome == null)
         {
-            distro = asJettyDistribution(System.getenv().get("JETTY_HOME"));
-            if (LOG.isDebugEnabled())
-                LOG.debug("JettyDistribution(env(JETTY_HOME)) = {}", distro);
+            jettyHome = asDirectory(System.getenv().get("JETTY_HOME"));
+            LOG.debug("JettyDistribution(env(JETTY_HOME)) = {}", jettyHome);
+        }
+
+        Path distro = null;
+
+        if (jettyHome != null)
+        {
+            Path parent = jettyHome.getParent();
+            if (hasDemoBase(parent))
+            {
+                distro = parent;
+            }
         }
 
         if (distro == null)
@@ -56,11 +65,16 @@ public class JettyDistribution
             try
             {
                 Path working = Paths.get(System.getProperty("user.dir"));
-                if (LOG.isDebugEnabled())
-                    LOG.debug("JettyDistribution(prop(user.dir)) = {}", working);
-                while (distro == null && working != null)
+                Path dir = null;
+                LOG.debug("JettyDistribution(prop(user.dir)) = {}", working);
+                while (dir == null && working != null)
                 {
-                    distro = asJettyDistribution(working.resolve("jetty-distribution/target/distribution").toString());
+                    dir = asDirectory(working.resolve("jetty-distribution/target/distribution").toString());
+                    if (dir != null && hasDemoBase(dir))
+                    {
+                        distro = dir;
+                    }
+                    // try one parent up
                     working = working.getParent();
                 }
                 if (LOG.isDebugEnabled())
@@ -84,47 +98,41 @@ public class JettyDistribution
         DISTRIBUTION = distro;
     }
 
-    private static Path asJettyDistribution(String jettyHome)
+    private static boolean hasDemoBase(Path path)
+    {
+        Path demoBase = path.resolve("demo-base");
+        return Files.exists(demoBase) && Files.isDirectory(demoBase);
+    }
+
+    private static Path asDirectory(String path)
     {
         try
         {
-            if (jettyHome == null)
+            if (path == null)
             {
                 return null;
             }
 
-            if (StringUtil.isBlank(jettyHome))
+            if (StringUtil.isBlank(path))
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("asJettyDistribution {} is blank", jettyHome);
+                LOG.debug("asDirectory {} is blank", path);
                 return null;
             }
 
-            Path dir = Paths.get(jettyHome);
+            Path dir = Paths.get(path);
             if (!Files.exists(dir))
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("asJettyDistribution {} does not exist", jettyHome);
+                LOG.debug("asDirectory {} does not exist", path);
                 return null;
             }
 
             if (!Files.isDirectory(dir))
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("asJettyDistribution {} is not a directory", jettyHome);
+                LOG.debug("asDirectory {} is not a directory", path);
                 return null;
             }
 
-            Path demoBase = dir.resolve("demo-base");
-            if (!Files.exists(demoBase) || !Files.isDirectory(demoBase))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("asJettyDistribution {} has no demo-base", jettyHome);
-                return null;
-            }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("asJettyDistribution {}", dir);
+            LOG.debug("asDirectory {}", dir);
             return dir.toAbsolutePath();
         }
         catch (Exception e)
