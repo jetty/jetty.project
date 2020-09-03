@@ -16,18 +16,18 @@
 // ========================================================================
 //
 
-[[eg-client-http2]]
+[[pg-client-http2]]
 === HTTP/2 Client Library
 
-In the vast majority of cases, client applications should use the generic, high-level, xref:eg-client-http[HTTP client library] that also provides HTTP/2 support via the pluggable xref:eg-client-http-transport-http2[HTTP/2 transport] or the xref:eg-client-http-transport-dynamic[dynamic transport].
+In the vast majority of cases, client applications should use the generic, high-level, xref:pg-client-http[HTTP client library] that also provides HTTP/2 support via the pluggable xref:pg-client-http-transport-http2[HTTP/2 transport] or the xref:pg-client-http-transport-dynamic[dynamic transport].
 
 The high-level HTTP library supports cookies, authentication, redirection, connection pooling and a number of other features that are absent in the low-level HTTP/2 library.
 
 The HTTP/2 client library has been designed for those applications that need low-level access to HTTP/2 features such as _sessions_, _streams_ and _frames_, and this is quite a rare use case.
 
-See also the correspondent xref:eg-server-http2[HTTP/2 server library].
+See also the correspondent xref:pg-server-http2[HTTP/2 server library].
 
-[[eg-client-http2-intro]]
+[[pg-client-http2-intro]]
 ==== Introducing HTTP2Client
 
 The Maven artifact coordinates for the HTTP/2 client library are the following:
@@ -61,14 +61,14 @@ A _session_ typically has a long life - once the TCP connection is established, 
 
 include::../../http2.adoc[tag=multiplex]
 
-[[eg-client-http2-flow-control]]
+[[pg-client-http2-flow-control]]
 ===== HTTP/2 Flow Control
 
 include::../../http2.adoc[tag=flowControl]
 
-How a client application should handle HTTP/2 flow control is discussed in details in xref:eg-client-http2-response[this section].
+How a client application should handle HTTP/2 flow control is discussed in details in xref:pg-client-http2-response[this section].
 
-[[eg-client-http2-connect]]
+[[pg-client-http2-connect]]
 ==== Connecting to the Server
 
 The first thing an application should do is to connect to the server and obtain a `Session`.
@@ -88,7 +88,7 @@ include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=encryp
 
 IMPORTANT: Applications must know in advance whether they want to connect to a clear-text or encrypted port, and pass the `SslContextFactory` parameter accordingly to the `connect(...)` method.
 
-[[eg-client-http2-configure]]
+[[pg-client-http2-configure]]
 ===== Configuring the Session
 
 The `connect(...)` method takes a `Session.Listener` parameter.
@@ -105,7 +105,7 @@ Please refer to the `Session.Listener` link:{JDURL}/org/eclipse/jetty/http2/api/
 
 Once a `Session` has been established, the communication with the server happens by exchanging _frames_, as specified in the link:https://tools.ietf.org/html/rfc7540#section-4[HTTP/2 specification].
 
-[[eg-client-http2-request]]
+[[pg-client-http2-request]]
 ==== Sending a Request
 
 Sending an HTTP request to the server, and receiving a response, creates a _stream_ that encapsulates the exchange of HTTP/2 frames that compose the request and the response.
@@ -120,7 +120,7 @@ include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=newStr
 ----
 
 Note how `Session.newStream(...)` takes a `Stream.Listener` parameter.
-This listener is notified of stream events originated by the server such as receiving `HEADERS` or `DATA` frames that are part of the response, discussed in more details in the xref:eg-client-http2-response[section below].
+This listener is notified of stream events originated by the server such as receiving `HEADERS` or `DATA` frames that are part of the response, discussed in more details in the xref:pg-client-http2-response[section below].
 Please refer to the `Stream.Listener` link:{JDURL}/org/eclipse/jetty/http2/api/Stream.Listener.html[javadocs] for the complete list of events.
 
 HTTP requests may have content, which is sent using the `Stream` APIs:
@@ -133,7 +133,7 @@ include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=newStr
 IMPORTANT: When sending two `DATA` frames consecutively, the second call to `Stream.data(...)` must be done only when the first is completed, or a `WritePendingException` will be thrown.
 Use the `Callback` APIs or `CompletableFuture` APIs to ensure that the second `Stream.data(...)` call is performed when the first completed successfully.
 
-[[eg-client-http2-response]]
+[[pg-client-http2-response]]
 ==== Receiving a Response
 
 Response events are delivered to the `Stream.Listener` passed to `Session.newStream(...)`.
@@ -151,7 +151,7 @@ include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=respon
 
 include::../../http2.adoc[tag=apiFlowControl]
 
-[[eg-client-http2-reset]]
+[[pg-client-http2-reset]]
 ==== Resetting a Request or Response
 
 In HTTP/2, clients and servers have the ability to tell to the other peer that they are not interested anymore in either the request or the response, using a `RST_STREAM` frame.
@@ -163,13 +163,13 @@ The `HTTP2Client` APIs allow client applications to send and receive this "reset
 include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=reset]
 ----
 
-[[eg-client-http2-push]]
+[[pg-client-http2-push]]
 ==== Receiving HTTP/2 Pushes
 
 HTTP/2 servers have the ability to push resources related to a primary resource.
 When an HTTP/2 server pushes a resource, it sends to the client a `PUSH_PROMISE` frame that contains the request URI and headers that a client would use to request explicitly that resource.
 
-Client applications can be configured to tell the server to never push resources, see xref:eg-client-http2-configure[this section].
+Client applications can be configured to tell the server to never push resources, see xref:pg-client-http2-configure[this section].
 
 Client applications can listen to the push events, and act accordingly:
 

@@ -17,7 +17,7 @@
 //
 
 [appendix]
-[[eg-troubleshooting]]
+[[pg-troubleshooting]]
 == Troubleshooting Jetty
 
 TODO: introduction
@@ -27,7 +27,7 @@ TODO: introduction
 // TODO: #3 take jvm/component dumps
 // TODO: #4 enable debug logging if you can
 
-[[eg-troubleshooting-logging]]
+[[pg-troubleshooting-logging]]
 === Logging
 
 The Jetty libraries (both client and server) use link:http://slf4j.org/[SLF4J] as logging APIs.
@@ -73,28 +73,28 @@ If you want to enable DEBUG logging but only for the HTTP/2 classes:
 java -Dorg.eclipse.jetty.http2.LEVEL=DEBUG --class-path ...
 ----
 
-[[eg-troubleshooting-thread-dump]]
+[[pg-troubleshooting-thread-dump]]
 === JVM Thread Dump
 TODO
 
-[[eg-troubleshooting-component-dump]]
+[[pg-troubleshooting-component-dump]]
 === Jetty Component Tree Dump
 
-Jetty components are organized in a xref:eg-arch-bean[component tree].
+Jetty components are organized in a xref:pg-arch-bean[component tree].
 
 At the root of the component tree there is typically a `ContainerLifeCycle` instance -- typically a `Server` instance on the server and an `HttpClient` instance on the client.
 
-`ContainerLifeCycle` has built-in _dump_ APIs that can be invoked either directly or xref:eg-arch-jmx[via JMX].
+`ContainerLifeCycle` has built-in _dump_ APIs that can be invoked either directly or xref:pg-arch-jmx[via JMX].
 
 // TODO: images from JMC?
 // TODO: Command line JMX will be in JMX section.
 
 TIP: You can get more details from a Jetty's `QueuedThreadPool` dump by enabling detailed dumps via `queuedThreadPool.setDetailedDump(true)`.
 
-[[eg-troubleshooting-debugging]]
+[[pg-troubleshooting-debugging]]
 === Debugging
 
-Sometimes, in order to figure out a problem, enabling xref:eg-troubleshooting-logging[DEBUG logging] is not enough and you really need to debug the code with a debugger.
+Sometimes, in order to figure out a problem, enabling xref:pg-troubleshooting-logging[DEBUG logging] is not enough and you really need to debug the code with a debugger.
 
 Debugging an embedded Jetty application is most easily done from your preferred IDE, so refer to your IDE instruction for how to debug Java applications.
 

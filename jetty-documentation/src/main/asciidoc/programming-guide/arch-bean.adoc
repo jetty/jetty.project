@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[eg-arch-bean]]
+[[pg-arch-bean]]
 === Jetty Component Architecture
 
 Applications that use the Jetty libraries (both client and server) create objects from Jetty classes and compose them together to obtain the desired functionalities.
@@ -31,11 +31,11 @@ The end result is that an application based on the Jetty libraries is a _tree_ o
 In server application the root of the component tree is a `Server` instance, while in client applications the root of the component tree is an `HttpClient` instance.
 
 Having all the Jetty components in a tree is beneficial in a number of use cases.
-It makes possible to register the components in the tree as xref:eg-arch-jmx[JMX MBeans] so that a JMX console can look at the internal state of the components.
-It also makes possible to xref:eg-troubleshooting-component-dump[dump the component tree] (and therefore each component's internal state) to a log file or to the console for xref:eg-troubleshooting[troubleshooting purposes].
+It makes possible to register the components in the tree as xref:pg-arch-jmx[JMX MBeans] so that a JMX console can look at the internal state of the components.
+It also makes possible to xref:pg-troubleshooting-component-dump[dump the component tree] (and therefore each component's internal state) to a log file or to the console for xref:pg-troubleshooting[troubleshooting purposes].
 // TODO: add a section on Dumpable?
 
-[[eg-arch-bean-lifecycle]]
+[[pg-arch-bean-lifecycle]]
 ==== Jetty Component Lifecycle
 
 Jetty components typically have a life cycle: they can be started and stopped.
@@ -110,11 +110,11 @@ The component tree should be used for long-lived or medium-lived components such
 
 It is not recommended adding to, and removing from, the component tree short-lived objects such as HTTP requests or TCP connections, for performance reasons.
 
-If you need component tree features such as automatic xref:eg-arch-jmx[export to JMX] or xref:eg-troubleshooting-component-dump[dump capabilities] for short-lived objects, consider having a long-lived container in the component tree instead.
+If you need component tree features such as automatic xref:pg-arch-jmx[export to JMX] or xref:pg-troubleshooting-component-dump[dump capabilities] for short-lived objects, consider having a long-lived container in the component tree instead.
 You can make the long-lived container efficient at adding/removing the short-lived components using a data structure that is not part of the component tree, and make the long-lived container handle the JMX and dump features for the short-lived components.
 ====
 
-[[eg-arch-bean-listener]]
+[[pg-arch-bean-listener]]
 ==== Jetty Component Listeners
 
 A component that extends `AbstractLifeCycle` inherits the possibility to add/remove event _listeners_ for various events emitted by components.
@@ -123,7 +123,7 @@ A component that implements `java.util.EventListener` that is added to a `Contai
 
 The following sections describe in details the various listeners available in the Jetty component architecture.
 
-[[eg-arch-bean-listener-lifecycle]]
+[[pg-arch-bean-listener-lifecycle]]
 ===== LifeCycle.Listener
 
 A `LifeCycle.Listener` emits events for life cycle events such as starting, stopping and failures:
@@ -135,7 +135,7 @@ include::{doc_code}/embedded/ComponentDocs.java[tags=lifecycleListener]
 
 For example, a life cycle listener attached to a `Server` instance could be used to create (for the _started_ event) and delete (for the _stopped_ event) a file containing the process ID of the JVM that runs the `Server`.
 
-[[eg-arch-bean-listener-container]]
+[[pg-arch-bean-listener-container]]
 ===== Container.Listener
 
 A component that implements `Container` is a container for other components and `ContainerLifeCycle` is the typical implementation.
@@ -154,13 +154,13 @@ A `Container.Listener` added as a bean will also be registered as a listener:
 include::{doc_code}/embedded/ComponentDocs.java[tags=containerSiblings]
 ----
 
-[[eg-arch-bean-listener-inherited]]
+[[pg-arch-bean-listener-inherited]]
 ===== Container.InheritedListener
 
 A `Container.InheritedListener` is a listener that will be added to all descendants that are also ``Container``s.
 
 Listeners of this type may be added to the component tree root only, but will be notified of every descendant component that is added to or removed from the component tree (not only first level children).
 
-The primary use of `Container.InheritedListener` within the Jetty Libraries is `MBeanContainer` from the xref:eg-arch-jmx[Jetty JMX support].
+The primary use of `Container.InheritedListener` within the Jetty Libraries is `MBeanContainer` from the xref:pg-arch-jmx[Jetty JMX support].
 
 `MBeanContainer` listens for every component added to the tree, converts it to an MBean and registers it to the MBeanServer; for every component removed from the tree, it unregisters the corresponding MBean from the MBeanServer.

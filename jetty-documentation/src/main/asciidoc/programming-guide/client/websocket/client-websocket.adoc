@@ -16,14 +16,7 @@
 // ========================================================================
 //
 
-[[pg-client-http]]
-=== HTTP Client
+[[pg-client-websocket]]
+=== WebSocket Client Libraries
 
-include::client-http-intro.adoc[]
-include::client-http-api.adoc[]
-include::client-http-configuration.adoc[]
-include::client-http-cookie.adoc[]
-include::client-http-authentication.adoc[]
-include::client-http-proxy.adoc[]
-include::client-http-transport.adoc[]
-
+TODO

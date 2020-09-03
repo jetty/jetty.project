@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[eg-client-http-cookie]]
+[[pg-client-http-cookie]]
 === HttpClient Cookie Support
 
 Jetty's `HttpClient` supports cookies out of the box.

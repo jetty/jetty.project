@@ -17,7 +17,7 @@
 //
 
 [appendix]
-[[eg-arch]]
+[[pg-arch]]
 == Jetty Architecture
 
 include::arch-bean.adoc[]

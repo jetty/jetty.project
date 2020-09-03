@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[eg-client-http-proxy]]
+[[pg-client-http-proxy]]
 === HttpClient Proxy Support
 
 Jetty's `HttpClient` can be configured to use proxies to connect to destinations.
@@ -37,10 +37,10 @@ Configured in this way, `HttpClient` makes requests to the HTTP proxy (for plain
 
 Proxying is supported for both HTTP/1.1 and HTTP/2.
 
-[[eg-client-http-proxy-authentication]]
+[[pg-client-http-proxy-authentication]]
 ==== Proxy Authentication Support
 
-Jetty's `HttpClient` supports proxy authentication in the same way it supports xref:eg-client-http-authentication[server authentication].
+Jetty's `HttpClient` supports proxy authentication in the same way it supports xref:pg-client-http-authentication[server authentication].
 
 In the example below, the proxy requires `BASIC` authentication, but the server requires `DIGEST` authentication, and therefore:
 
@@ -77,4 +77,4 @@ HttpClient -> Application : 200 OK
 
 The application does not receive events related to the responses with code 407 and 401 since they are handled internally by `HttpClient`.
 
-Similarly to the xref:eg-client-http-authentication[authentication section], the proxy authentication result and the server authentication result can be preempted to avoid, respectively, the 407 and 401 roundtrips.
+Similarly to the xref:pg-client-http-authentication[authentication section], the proxy authentication result and the server authentication result can be preempted to avoid, respectively, the 407 and 401 roundtrips.

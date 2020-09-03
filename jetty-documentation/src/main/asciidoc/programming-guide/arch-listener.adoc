@@ -16,10 +16,10 @@
 // ========================================================================
 //
 
-[[eg-arch-listener]]
+[[pg-arch-listener]]
 === Jetty Listeners
 
-The Jetty architecture is based on xref:eg-arch-bean[components], typically organized in a component tree.
+The Jetty architecture is based on xref:pg-arch-bean[components], typically organized in a component tree.
 These components have an internal state that varies with the component life cycle (that is, whether the component is started or stopped), as well as with the component use at runtime.
 The typical example is a thread pool, whose internal state -- such as the number of pooled threads or the job queue size -- changes as the thread pool is used by the running client or server.
 
@@ -28,6 +28,6 @@ Applications can register listeners to these components to be notified of the ev
 
 This section lists the listeners available in the Jetty components, but the events and listener APIs are discussed in the component specific sections.
 
-* xref:eg-arch-bean-listener[]
-* xref:eg-arch-io-connection-listener[]
-* xref:eg-server-http-channel-events[]
+* xref:pg-arch-bean-listener[]
+* xref:pg-arch-io-connection-listener[]
+* xref:pg-server-http-channel-events[]

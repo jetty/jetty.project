@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[eg-server-http-handler-implement]]
+[[pg-server-http-handler-implement]]
 ==== Implementing Handler
 
 The `Handler` API consist fundamentally of just one method:
@@ -33,7 +33,7 @@ However, a request could be forwarded to either a named resource, in which case 
 Applications may wrap the request or response (or both) and forward the wrapped request or response to a different URI (which may be possibly handled by a different `Handler`).
 This is the reason why there are two request parameters in the `Handler` APIs: the first is the unwrapped, original, request while the second is the application-wrapped request.
 
-[[eg-server-http-handler-impl-hello]]
+[[pg-server-http-handler-impl-hello]]
 ===== Hello World Handler
 
 A simple "Hello World" `Handler` is the following:
@@ -45,7 +45,7 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=handlerH
 
 Such a simple `Handler` extends from `AbstractHandler` and can access the request and response main features, such as reading request headers and content, or writing response headers and content.
 
-[[eg-server-http-handler-impl-filter]]
+[[pg-server-http-handler-impl-filter]]
 ===== Filtering Handler
 
 A filtering `Handler` is a handler that perform some modification to the request or response, and then either forwards the request to another `Handler` or produces an error response:

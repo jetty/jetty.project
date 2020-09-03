@@ -16,19 +16,19 @@
 // ========================================================================
 //
 
-[[eg-client-io-arch]]
+[[pg-client-io-arch]]
 === Client Libraries I/O Architecture
 
 The Jetty client libraries provide the basic components and APIs to implement a network client.
 
-They build on the common xref:eg-arch-io[Jetty I/O Architecture] and provide client specific concepts (such as establishing a connection to a server).
+They build on the common xref:pg-arch-io[Jetty I/O Architecture] and provide client specific concepts (such as establishing a connection to a server).
 
 There are conceptually two layers that compose the Jetty client libraries:
 
-. xref:eg-client-io-arch-network[The network layer], that handles the low level I/O and deals with buffers, threads, etc.
-. xref:eg-client-io-arch-protocol[The protocol layer], that handles the parsing of bytes read from the network and the generation of bytes to write to the network.
+. xref:pg-client-io-arch-network[The network layer], that handles the low level I/O and deals with buffers, threads, etc.
+. xref:pg-client-io-arch-protocol[The protocol layer], that handles the parsing of bytes read from the network and the generation of bytes to write to the network.
 
-[[eg-client-io-arch-network]]
+[[pg-client-io-arch-network]]
 ==== Client Libraries Network Layer
 
 The Jetty client libraries use the common I/O design described in link:#eg-arch-io[this section].
@@ -83,7 +83,7 @@ This time includes the DNS lookup time _and_ the TCP connect time.
 
 Please refer to the `ClientConnector` link:{JDURL}/org/eclipse/jetty/io/ClientConnector.html[javadocs] for the complete list of configurable parameters.
 
-[[eg-client-io-arch-protocol]]
+[[pg-client-io-arch-protocol]]
 ==== Client Libraries Protocol Layer
 
 The protocol layer builds on top of the network layer to generate the bytes to be written to the network and to parse the bytes read from the network.

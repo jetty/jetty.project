@@ -16,18 +16,18 @@
 // ========================================================================
 //
 
-[[eg-arch-jmx]]
+[[pg-arch-jmx]]
 == Jetty JMX Support
 
 The Java Management Extensions (JMX) APIs are standard API for managing and monitoring resources such as applications, devices, services, and the Java Virtual Machine itself.
 
 The JMX API includes remote access, so a remote management console such as link:https://openjdk.java.net/projects/jmc/[Java Mission Control] can interact with a running application for these purposes.
 
-Jetty architecture is based on xref:eg-arch-bean[components] organized in a tree. Every time a component is added to or removed from the component tree, an event is emitted, and xref:eg-arch-bean-listener-container[Container.Listener] implementations can listen to those events and perform additional actions.
+Jetty architecture is based on xref:pg-arch-bean[components] organized in a tree. Every time a component is added to or removed from the component tree, an event is emitted, and xref:pg-arch-bean-listener-container[Container.Listener] implementations can listen to those events and perform additional actions.
 
 `org.eclipse.jetty.jmx.MBeanContainer` listens to those events and registers/unregisters the Jetty components as MBeans into the platform MBeanServer.
 
-The Jetty components are annotated with xref:eg-arch-jmx-annotation[Jetty JMX annotations] so that they can provide specific JMX metadata such as attributes and operations that should be exposed via JMX.
+The Jetty components are annotated with xref:pg-arch-jmx-annotation[Jetty JMX annotations] so that they can provide specific JMX metadata such as attributes and operations that should be exposed via JMX.
 
 Therefore, when a component is added to the component tree, `MBeanContainer` is notified, it creates the MBean from the component POJO and registers it to the `MBeanServer`.
 Similarly, when a component is removed from the tree, `MBeanContainer` is notified, and unregisters the MBean from the `MBeanServer`.
@@ -66,12 +66,12 @@ include::{doc_code}/embedded/JMXDocs.java[tags=client]
 The MBeans exported to the platform MBeanServer can only be accessed locally (from the same machine), not from remote machines.
 
 This means that this configuration is enough for development, where you have easy access (with graphical user interface) to the machine where Jetty runs, but it is typically not enough when the machine where Jetty runs is remote, or only accessible via SSH or otherwise without graphical user interface support.
-In these cases, you have to enable xref:eg-arch-jmx-remote[JMX Remote Access].
+In these cases, you have to enable xref:pg-arch-jmx-remote[JMX Remote Access].
 ====
 
 // TODO: add a section about how to expose logging once #4830 is fixed.
 
-[[eg-arch-jmx-remote]]
+[[pg-arch-jmx-remote]]
 === Enabling JMX Remote Access
 
 There are two ways of enabling remote connectivity so that JMC can connect to the remote JVM to visualize MBeans.
@@ -106,7 +106,7 @@ rmi_registry_port = 1099
 ----
 
 With the default configuration, only clients that are local to the server machine can connect to the RMI registry and RMI server - this is done for security reasons.
-With this configuration it would still be possible to access the MBeans from remote using a xref:eg-arch-jmx-remote-ssh-tunnel[SSH tunnel].
+With this configuration it would still be possible to access the MBeans from remote using a xref:pg-arch-jmx-remote-ssh-tunnel[SSH tunnel].
 
 By specifying an appropriate `JMXServiceURL`, you can fine tune the network interfaces the RMI registry and the RMI server bind to, and the ports that the RMI registry and the RMI server listen to.
 The RMI server and RMI registry hosts and ports can be the same (as in the default configuration) because RMI is able to multiplex traffic arriving to a port to multiple RMI objects.
@@ -142,7 +142,7 @@ When `ConnectorServer` is started, its RMI stub is exported to the RMI registry.
 The RMI stub contains the IP address and port to connect to the RMI object, but the IP address is typically the machine host name, not the host specified in the `JMXServiceURL`.
 
 To control the IP address stored in the RMI stub you need to set the system property `java.rmi.server.hostname` with the desired value.
-This is especially important when binding the RMI server host to the loopback address for security reasons. See also xref:eg-arch-jmx-remote-ssh-tunnel[JMX Remote Access via SSH Tunnel.]
+This is especially important when binding the RMI server host to the loopback address for security reasons. See also xref:pg-arch-jmx-remote-ssh-tunnel[JMX Remote Access via SSH Tunnel.]
 ====
 
 To allow JMX remote access, create and configure a `ConnectorServer`:
@@ -152,7 +152,7 @@ To allow JMX remote access, create and configure a `ConnectorServer`:
 include::{doc_code}/embedded/JMXDocs.java[tags=remote]
 ----
 
-[[eg-arch-jmx-remote-authorization]]
+[[pg-arch-jmx-remote-authorization]]
 ==== JMX Remote Access Authorization
 
 The standard `JMXConnectorServer` provides several options to authorize access, for example via JAAS or via configuration files.
@@ -226,7 +226,7 @@ $ jmc -vmargs -Djavax.net.ssl.trustStore=/path/to/trustStore -Djavax.net.ssl.tru
 
 IMPORTANT: These system properties are required when launching the `ConnectorServer` too, on the server, because it acts as an RMI client with respect to the RMI registry.
 
-[[eg-arch-jmx-remote-ssh-tunnel]]
+[[pg-arch-jmx-remote-ssh-tunnel]]
 ===== JMX Remote Access with Port Forwarding via SSH Tunnel
 
 You can access JMX MBeans on a remote machine when the RMI ports are not open, for example because of firewall policies, but you have SSH access to the machine using local port forwarding via an SSH tunnel.
@@ -246,7 +246,7 @@ The traffic will be forwarded to `machine_host` and when there, SSH will forward
 When you configure `ConnectorServer` in this way, you must set the system property `-Djava.rmi.server.hostname=localhost`, on the server.
 This is required because when the RMI server is exported, its address and port are stored in the RMI stub. You want the address in the RMI stub to be `localhost` so that when the RMI stub is downloaded to the remote client, the RMI communication will go through the SSH tunnel.
 
-[[eg-arch-jmx-annotation]]
+[[pg-arch-jmx-annotation]]
 === Jetty JMX Annotations
 
 The Jetty JMX support, and in particular `MBeanContainer`, is notified every time a bean is added to the component tree.

@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[eg-server-http]]
+[[pg-server-http]]
 === HTTP Server Libraries
 
 The Eclipse Jetty Project has historically provided libraries to embed an HTTP server and a Servlet Container.
@@ -67,11 +67,11 @@ The example above shows the simplest HTTP/1.1 server; it has no support for HTTP
 All these features are provided by the Jetty Server Libraries, and server applications only need to put the required components together to provide all the required features.
 
 The ``Handler``s provided by the Jetty Server Libraries allow writing server applications that have functionalities similar to Apache HTTPD or Nginx (for example: URL redirection, URL rewriting, serving static content, reverse proxying, etc.), as well as generating content dynamically by processing incoming requests.
-Read xref:eg-server-http-handler[this section] for further details.
+Read xref:pg-server-http-handler[this section] for further details.
 
-If you are interested in writing your server application based on the Servlet APIs, jump to xref:eg-server-http-handler-use-servlet[this section].
+If you are interested in writing your server application based on the Servlet APIs, jump to xref:pg-server-http-handler-use-servlet[this section].
 
-[[eg-server-http-request-processing]]
+[[pg-server-http-request-processing]]
 ==== Server Request Processing
 
 The Jetty HTTP request processing is outlined below in the diagram below.
@@ -114,7 +114,7 @@ that in turn are converted into method calls to `HttpChannel`.
 
 When enough of the HTTP request is arrived, the `Connection` calls `HttpChannel.handle()` that calls the `Handler` chain, that eventually calls the server application code.
 
-[[eg-server-http-channel-events]]
+[[pg-server-http-channel-events]]
 ===== HttpChannel Events
 
 The central component processing HTTP requests is `HttpChannel`.
@@ -146,7 +146,7 @@ Currently, the following events are available:
 
 Please refer to the `HttpChannel.Listener` link:{JDURL}/org/eclipse/jetty/server/HttpChannel.Listener.html[javadocs] for the complete list of events.
 
-Server applications can register `HttpChannel.Listener` by adding them as xref:eg-arch-bean[beans] to the `Connector`:
+Server applications can register `HttpChannel.Listener` by adding them as xref:pg-arch-bean[beans] to the `Connector`:
 
 [source,java,indent=0]
 ----

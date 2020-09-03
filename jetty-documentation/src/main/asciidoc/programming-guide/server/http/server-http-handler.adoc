@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[eg-server-http-handler]]
+[[pg-server-http-handler]]
 === Server Handlers
 
 An `org.eclipse.jetty.server.Handler` is the component that processes incoming HTTP requests and eventually produces HTTP responses.
@@ -55,11 +55,11 @@ HandlerCollection
 ----
 
 Server applications should rarely write custom ``Handler``s, preferring instead to use existing ``Handler``s provided by the Jetty Server Libraries for managing web application contexts, security, HTTP sessions and Servlet support.
-Refer to xref:eg-server-http-handler-use[this section] for more information about how to use the ``Handler``s provided by the Jetty Server Libraries.
+Refer to xref:pg-server-http-handler-use[this section] for more information about how to use the ``Handler``s provided by the Jetty Server Libraries.
 
 However, in some cases the additional features are not required, or additional constraints on memory footprint, or performance, or just simplicity must be met.
 In these cases, implementing your own `Handler` may be a better solution.
-Refer to xref:eg-server-http-handler-implement[this section] for more information about how to write your own ``Handler``s.
+Refer to xref:pg-server-http-handler-implement[this section] for more information about how to write your own ``Handler``s.
 
 // TODO: document ScopedHandler? Is this really necessary or just an implementation detail that application will never worry about?
 

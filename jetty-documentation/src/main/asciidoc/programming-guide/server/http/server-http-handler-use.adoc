@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[eg-server-http-handler-use]]
+[[pg-server-http-handler-use]]
 ==== Using Provided Handlers
 
 Web applications are the unit of deployment in an HTTP server or Servlet container such as Jetty.
@@ -42,15 +42,15 @@ Many __context__s can be deployed together to enrich the web application offerin
 
 Web applications can be written using exclusively the Servlet APIs, since developers know well the Servlet API and because they guarantee better portability across Servlet container implementations.
 
-Embedded web applications based on the Servlet APIs are described in xref:eg-server-http-handler-use-servlet[this section].
+Embedded web applications based on the Servlet APIs are described in xref:pg-server-http-handler-use-servlet[this section].
 
 Embedded web applications may also require additional features such as access to Jetty specific APIs, or utility features such as redirection from HTTP to HTTPS, support for `gzip` content compression, etc.
-The Jetty Server Libraries provides a number of out-of-the-box __Handler__s that implement the most common functionalities and are described in xref:eg-server-http-handler-use-util[this section].
+The Jetty Server Libraries provides a number of out-of-the-box __Handler__s that implement the most common functionalities and are described in xref:pg-server-http-handler-use-util[this section].
 
-[[eg-server-http-handler-use-util]]
+[[pg-server-http-handler-use-util]]
 ==== Custom and Utility Handlers
 
-[[eg-server-http-handler-use-util-context]]
+[[pg-server-http-handler-use-util-context]]
 ===== ContextHandler
 
 `ContextHandler` is a `Handler` that represents a _context_ for a web application.
@@ -73,18 +73,18 @@ Server
     └── ShopHandler
 ----
 
-[[eg-server-http-handler-use-util-context-collection]]
+[[pg-server-http-handler-use-util-context-collection]]
 ===== ContextHandlerCollection
 
 Server applications may need to deploy to Jetty more than one web application.
 
-Recall from the xref:eg-server-http-handler[introduction] that Jetty offers `HandlerCollection` and `HandlerList` that may contain a sequence of children ``Handler``s.
+Recall from the xref:pg-server-http-handler[introduction] that Jetty offers `HandlerCollection` and `HandlerList` that may contain a sequence of children ``Handler``s.
 However, both of these have no knowledge of the concept of _context_ and just iterate through the sequence of ``Handler``s.
 
 A better choice for multiple web application is `ContextHandlerCollection`, that matches a _context_ from either its _context path_ or _virtual host_, without iterating through the ``Handler``s.
 
 If `ContextHandlerCollection` does not find a match, it just returns.
-What happens next depends on the `Handler` tree structure: other ``Handler``s may be invoked after `ContextHandlerCollection`, for example `DefaultHandler` (see xref:eg-server-http-handler-use-util-default-handler[this section]).
+What happens next depends on the `Handler` tree structure: other ``Handler``s may be invoked after `ContextHandlerCollection`, for example `DefaultHandler` (see xref:pg-server-http-handler-use-util-default-handler[this section]).
 Eventually, if `Request.setHandled(true)` is not called, Jetty returns an HTTP `404` response to the client.
 
 [source,java,indent=0]
@@ -104,7 +104,7 @@ Server
         └── RESTHandler
 ----
 
-[[eg-server-http-handler-use-util-resource-handler]]
+[[pg-server-http-handler-use-util-resource-handler]]
 ===== ResourceHandler -- Static Content
 
 Static content such as images or files (HTML, JavaScript, CSS) can be sent by Jetty very efficiently because Jetty can write the content asynchronously, using direct ``ByteBuffer``s to minimize data copy, and using a memory cache for faster access to the data to send.
@@ -124,7 +124,7 @@ Therefore, the traditional architecture where Nginx/Apache was the front-end ser
 This leads to simpler systems (less components to configure and manage) and more performance (no need to proxy dynamic requests from front-end servers to back-end servers).
 
 NOTE: It is common to use Nginx/Apache as load balancers, or as rewrite/redirect servers.
-We typically recommend link:https://haproxy.org[HAProxy] as load balancer, and Jetty has xref:eg-server-http-handler-use-util-rewrite-handler[rewrite/redirect features] as well.
+We typically recommend link:https://haproxy.org[HAProxy] as load balancer, and Jetty has xref:pg-server-http-handler-use-util-rewrite-handler[rewrite/redirect features] as well.
 
 This is how you configure a `ResourceHandler` to create a simple file server:
 
@@ -141,9 +141,9 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=multiple
 ----
 
 If the resource is not found, `ResourceHandler` will not call `Request.setHandled(true)` so what happens next depends on the `Handler` tree structure.
-See also xref:eg-server-http-handler-use-util-default-handler[how to use] `DefaultHandler`.
+See also xref:pg-server-http-handler-use-util-default-handler[how to use] `DefaultHandler`.
 
-[[eg-server-http-handler-use-util-gzip-handler]]
+[[pg-server-http-handler-use-util-gzip-handler]]
 ===== GzipHandler
 
 `GzipHandler` provides supports for automatic decompression of compressed request content and automatic compression of response content.
@@ -193,7 +193,7 @@ Server
 
 // TODO: does ServletContextHandler really need a special configuration?
 
-[[eg-server-http-handler-use-util-rewrite-handler]]
+[[pg-server-http-handler-use-util-rewrite-handler]]
 ===== RewriteHandler
 
 `RewriteHandler` provides support for URL rewriting, very similarly to link:https://httpd.apache.org/docs/current/mod/mod_rewrite.html[Apache's mod_rewrite] or link:https://nginx.org/en/docs/http/ngx_http_rewrite_module.html[Nginx rewrite module].
@@ -234,7 +234,7 @@ Server
         └── ContextHandler N
 ----
 
-[[eg-server-http-handler-use-util-stats-handler]]
+[[pg-server-http-handler-use-util-stats-handler]]
 ===== StatisticsHandler
 
 `StatisticsHandler` gathers and exposes a number of statistic values related to request processing such as:
@@ -245,7 +245,7 @@ Server
 * Number of responses grouped by HTTP code (i.e. how many `2xx` responses, how many `3xx` responses, etc.)
 * Total response content bytes
 
-Server applications can read these values and use them internally, or expose them via some service, or xref:eg-arch-jmx[export them to JMX].
+Server applications can read these values and use them internally, or expose them via some service, or xref:pg-arch-jmx[export them to JMX].
 
 `StatisticsHandler` can be configured at the server level or at the context level.
 
@@ -266,7 +266,7 @@ Server
         └── ContextHandler N
 ----
 
-[[eg-server-http-handler-use-util-secure-handler]]
+[[pg-server-http-handler-use-util-secure-handler]]
 ===== SecuredRedirectHandler -- Redirect from HTTP to HTTPS
 
 `SecuredRedirectHandler` allows to redirect requests made with the `http` scheme (and therefore to the clear-text port) to the `https` scheme (and therefore to the encrypted port).
@@ -282,7 +282,7 @@ Server applications must configure a `HttpConfiguration` object with the secure 
 include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=securedHandler]
 ----
 
-[[eg-server-http-handler-use-util-default-handler]]
+[[pg-server-http-handler-use-util-default-handler]]
 ===== DefaultHandler
 
 `DefaultHandler` is a terminal `Handler` that always calls `Request.setHandled(true)` and performs the following:
@@ -316,10 +316,10 @@ In the example above, `ContextHandlerCollection` will try to match a request to 
 NOTE: `DefaultHandler` just sends a nicer HTTP `404` response in case of wrong requests from clients.
 Jetty will send an HTTP `404` response anyway if `DefaultHandler` is not used.
 
-[[eg-server-http-handler-use-servlet]]
+[[pg-server-http-handler-use-servlet]]
 ==== Servlet API Handlers
 
-[[eg-server-http-handler-use-servlet-context]]
+[[pg-server-http-handler-use-servlet-context]]
 ===== ServletContextHandler
 
 ``Handler``s are easy to write, but often web applications have already been written using the Servlet APIs, using ``Servlet``s and ``Filter``s.
@@ -364,7 +364,7 @@ Server applications must be careful when creating the `Handler` tree to put ``Se
 // TODO: revise what above, as ServletContextHandler is not a terminal handler.
 // TODO: introduce the fact that ServletContextHandler can have a class loader that may be used to "isolate" web application classes.
 
-[[eg-server-http-handler-use-webapp-context]]
+[[pg-server-http-handler-use-webapp-context]]
 ===== WebAppContext
 
 `WebAppContext` is a `ServletContextHandler` that auto configures itself by reading a `web.xml` Servlet configuration file.
@@ -378,7 +378,7 @@ Where server applications using `ServletContextHandler` must manually invoke met
 include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=webAppContextHandler]
 ----
 
-[[eg-server-http-handler-use-webapp-context-class-loading]]
+[[pg-server-http-handler-use-webapp-context-class-loading]]
 ====== WebAppContext Class Loading
 
 The Servlet specification requires that a web application class loader must load the web application classes from `WEB-INF/classes` and `WEB_INF/lib`.
@@ -408,10 +408,10 @@ However, Jetty picks good defaults and allows server applications to customize _
 // TODO: add a section on Configuration (system/server classes)
 // TODO: add a section about how to setup JSP support
 
-[[eg-server-http-handler-use-default-servlet]]
+[[pg-server-http-handler-use-default-servlet]]
 ===== DefaultServlet -- Static Content for Servlets
 
-If you have a xref:eg-server-http-handler-use-servlet-context[Servlet web application], you may want to use a `DefaultServlet` instead of `ResourceHandler`.
+If you have a xref:pg-server-http-handler-use-servlet-context[Servlet web application], you may want to use a `DefaultServlet` instead of `ResourceHandler`.
 The features are similar, but `DefaultServlet` is more commonly used to serve static files for Servlet web applications.
 
 [source,java,indent=0]

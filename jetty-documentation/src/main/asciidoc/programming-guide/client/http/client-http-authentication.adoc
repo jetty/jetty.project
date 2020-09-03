@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[eg-client-http-authentication]]
+[[pg-client-http-authentication]]
 === HttpClient Authentication Support
 
 Jetty's `HttpClient` supports the `BASIC` and `DIGEST` authentication mechanisms defined by link:https://tools.ietf.org/html/rfc7235[RFC 7235], as well as the SPNEGO authentication mechanism defined in link:https://tools.ietf.org/html/rfc4559[RFC 4559].
@@ -78,4 +78,4 @@ It is also possible to preempt the authentication for a single request only, in 
 include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=requestPreemptedResult]
 ----
 
-See also the xref:eg-client-http-proxy-authentication[proxy authentication section] for further information about how authentication works with HTTP proxies.
+See also the xref:pg-client-http-proxy-authentication[proxy authentication section] for further information about how authentication works with HTTP proxies.

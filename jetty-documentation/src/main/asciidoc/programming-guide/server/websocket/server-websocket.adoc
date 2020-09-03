@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[eg-server-websocket]]
+[[pg-server-websocket]]
 === WebSocket Server Libraries
 
 TODO

@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[eg-server-http-connector]]
+[[pg-server-http-connector]]
 === Server Connectors
 
 A `Connector` is the component that handles incoming requests from clients, and works in conjunction with `ConnectionFactory` instances.
@@ -32,13 +32,13 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=configur
 ----
 
 The _acceptors_ are threads (typically only one) that compete to accept TCP connections on the listening port.
-When a connection is accepted, `ServerConnector` wraps the accepted `SocketChannel` and passes it to the xref:eg-arch-io-selector-manager[`SelectorManager`].
+When a connection is accepted, `ServerConnector` wraps the accepted `SocketChannel` and passes it to the xref:pg-arch-io-selector-manager[`SelectorManager`].
 Therefore, there is a little moment where the acceptor thread is not accepting new connections because it is busy wrapping the just accepted connection to pass it to the `SelectorManager`.
 Connections that are ready to be accepted but are not accepted yet are queued in a bounded queue (at the OS level) whose capacity can be configured with the `ServerConnector.acceptQueueSize` parameter.
 
 If your application must withstand a very high rate of connections opened, configuring more than one acceptor thread may be beneficial: when one acceptor thread accepts one connection, another acceptor thread can take over accepting connections.
 
-The _selectors_ are components that manage a set of connected sockets, implemented by xref:eg-arch-io-selector-manager[`ManagedSelector`].
+The _selectors_ are components that manage a set of connected sockets, implemented by xref:pg-arch-io-selector-manager[`ManagedSelector`].
 Each selector requires one thread and uses the Java NIO mechanism to efficiently handle a set of connected sockets.
 As a rule of thumb, a single selector can easily manage up to 1000-5000 sockets, although the number may vary greatly depending on the application.
 
@@ -54,15 +54,15 @@ It is possible to configure more than one `ServerConnector`, each listening on a
 include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=configureConnectors]
 ----
 
-[[eg-server-http-connector-protocol]]
+[[pg-server-http-connector-protocol]]
 ==== Configuring Protocols
 
-For each accepted TCP connection, `ServerConnector` asks a `ConnectionFactory` to create a `Connection` object that handles the network traffic on that TCP connection, parsing and generating bytes for a specific protocol (see xref:eg-arch-io[this section] for more details about `Connection` objects).
+For each accepted TCP connection, `ServerConnector` asks a `ConnectionFactory` to create a `Connection` object that handles the network traffic on that TCP connection, parsing and generating bytes for a specific protocol (see xref:pg-arch-io[this section] for more details about `Connection` objects).
 
 A `ServerConnector` can be configured with one or more ``ConnectionFactory``s.
 If no `ConnectionFactory` is specified then `HttpConnectionFactory` is implicitly configured.
 
-[[eg-server-http-connector-protocol-http11]]
+[[pg-server-http-connector-protocol-http11]]
 ===== Configuring HTTP/1.1
 
 `HttpConnectionFactory` creates `HttpConnection` objects that parse bytes and generate bytes for the HTTP/1.1 protocol.
@@ -81,7 +81,7 @@ Supporting encrypted HTTP/1.1 (that is, requests with the HTTPS scheme)is suppor
 include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=tlsHttp11]
 ----
 
-[[eg-server-http-connector-protocol-proxy-http11]]
+[[pg-server-http-connector-protocol-proxy-http11]]
 ===== Configuring Jetty behind a Load Balancer
 
 It is often the case that Jetty receives connections from a load balancer configured to distribute the load among many Jetty backend servers.
@@ -103,7 +103,7 @@ Note also how the PROXY `ConnectionFactory` needs to know its _next_ protocol (i
 Each `ConnectionFactory` is asked to create a `Connection` object for each accepted TCP connection; the `Connection` objects will be chained together to handle the bytes, each for its own protocol.
 Therefore the `ProxyConnection` will handle the PROXY protocol bytes and `HttpConnection` will handle the HTTP/1.1 bytes producing a request object and response object that will be processed by ``Handler``s.
 
-[[eg-server-http-connector-protocol-http2]]
+[[pg-server-http-connector-protocol-http2]]
 ===== Configuring HTTP/2
 
 It is well known that the HTTP ports are `80` (for clear-text HTTP) and `443` for encrypted HTTP.
@@ -124,7 +124,7 @@ Note how the ``ConnectionFactory``s passed to `ServerConnector` are in order: fi
 This is necessary to support both protocols on the same port: Jetty will start parsing the incoming bytes as HTTP/1.1, but then realize that they are HTTP/2 bytes and will therefore _upgrade_ from HTTP/1.1 to HTTP/2.
 
 This configuration is also typical when Jetty is installed in backend servers behind a load balancer that also takes care of offloading TLS.
-When Jetty is behind a load balancer, you can always prepend the PROXY protocol as described in xref:eg-server-http-connector-protocol-proxy-http11[this section].
+When Jetty is behind a load balancer, you can always prepend the PROXY protocol as described in xref:pg-server-http-connector-protocol-proxy-http11[this section].
 
 When using encrypted HTTP/2, the unencrypted protocol is negotiated by client and server using an extension to the TLS protocol called ALPN.
 

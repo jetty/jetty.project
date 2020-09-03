@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[eg-client-http-configuration]]
+[[pg-client-http-configuration]]
 === HttpClient Configuration
 
 `HttpClient` has a quite large number of configuration parameters.
@@ -24,13 +24,13 @@ Please refer to the `HttpClient` link:{JDURL}/org/eclipse/jetty/client/HttpClien
 
 The most common parameters are:
 
-* `HttpClient.idleTimeout`: same as `ClientConnector.idleTimeout` described in xref:eg-client-io-arch-network[this section].
-* `HttpClient.connectBlocking`: same as `ClientConnector.connectBlocking` described in xref:eg-client-io-arch-network[this section].
-* `HttpClient.connectTimeout`: same as `ClientConnector.connectTimeout` described in xref:eg-client-io-arch-network[this section].
+* `HttpClient.idleTimeout`: same as `ClientConnector.idleTimeout` described in xref:pg-client-io-arch-network[this section].
+* `HttpClient.connectBlocking`: same as `ClientConnector.connectBlocking` described in xref:pg-client-io-arch-network[this section].
+* `HttpClient.connectTimeout`: same as `ClientConnector.connectTimeout` described in xref:pg-client-io-arch-network[this section].
 * `HttpClient.maxConnectionsPerDestination`: the max number of TCP connections that are opened for a particular destination (defaults to 64).
 * `HttpClient.maxRequestsQueuedPerDestination`: the max number of requests queued (defaults to 1024).
 
-[[eg-client-http-configuration-tls]]
+[[pg-client-http-configuration-tls]]
 ==== HttpClient TLS Configuration
 
 `HttpClient` supports HTTPS requests out-of-the-box like a browser does.

@@ -16,12 +16,12 @@
 // ========================================================================
 //
 
-[[eg-arch-io]]
+[[pg-arch-io]]
 === Jetty I/O Architecture
 
 Jetty libraries (both client and server) use Java NIO to handle I/O, so that at its core Jetty I/O is completely non-blocking.
 
-[[eg-arch-io-selector-manager]]
+[[pg-arch-io-selector-manager]]
 ==== Jetty I/O: `SelectorManager`
 
 The core class of Jetty I/O is link:{JDURL}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`].
@@ -50,7 +50,7 @@ This example shows how a server accepts a client connection:
 include::{doc_code}/embedded/SelectorManagerDocs.java[tags=accept]
 ----
 
-[[eg-arch-io-endpoint-connection]]
+[[pg-arch-io-endpoint-connection]]
 ==== Jetty I/O: `EndPoint` and `Connection`
 
 ``SocketChannel``s that are passed to `SelectorManager` are wrapped into two related components: an link:{JDURL}/org/eclipse/jetty/io/EndPoint.html[`EndPoint`] and a link:{JDURL}/org/eclipse/jetty/io/Connection.html[`Connection`].
@@ -80,11 +80,11 @@ NOTE: TODO: add a section on `UpgradeFrom` and `UpgradeTo`?
 
 Creating `Connection` instances is performed on the server-side by link:{JDURL}/org/eclipse/jetty/server/ConnectionFactory.html[`ConnectionFactory`]s and on the client-side by link:{JDURL}/org/eclipse/jetty/io/ClientConnectionFactory.html[`ClientConnectionFactory`]s
 
-On the server-side, the component that aggregates a `SelectorManager` with a set of ``ConnectionFactory``s is link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`]s, see xref:eg-server-io-arch[].
+On the server-side, the component that aggregates a `SelectorManager` with a set of ``ConnectionFactory``s is link:{JDURL}/org/eclipse/jetty/server/ServerConnector.html[`ServerConnector`]s, see xref:pg-server-io-arch[].
 
-On the client-side, the components that aggregates a `SelectorManager` with a set of ``ClientConnectionFactory``s are link:{JDURL}/org/eclipse/jetty/client/HttpClientTransport.html[`HttpClientTransport`] subclasses, see xref:eg-client-io-arch[].
+On the client-side, the components that aggregates a `SelectorManager` with a set of ``ClientConnectionFactory``s are link:{JDURL}/org/eclipse/jetty/client/HttpClientTransport.html[`HttpClientTransport`] subclasses, see xref:pg-client-io-arch[].
 
-[[eg-arch-io-endpoint]]
+[[pg-arch-io-endpoint]]
 ==== Jetty I/O: `EndPoint`
 
 The Jetty I/O library use Java NIO to handle I/O, so that I/O is non-blocking.
@@ -99,9 +99,9 @@ In order to be notified when a `SocketChannel` uncongests and it is therefore wr
 In the Jetty I/O library, you can call `EndPoint.write(Callback, ByteBuffer...)` to write the ``ByteBuffer``s and the `Callback` parameter is the object that is notified when the whole write is finished (i.e. _all_ ``ByteBuffer``s have been fully written, even if they are delayed by TCP congestion/uncongestion).
 
 The `EndPoint` APIs abstract out the Java NIO details by providing non-blocking APIs based on `Callback` objects for I/O operations.
-The `EndPoint` APIs are typically called by `Connection` implementations, see xref:eg-arch-io-connection[this section].
+The `EndPoint` APIs are typically called by `Connection` implementations, see xref:pg-arch-io-connection[this section].
 
-[[eg-arch-io-connection]]
+[[pg-arch-io-connection]]
 ==== Jetty I/O: `Connection`
 
 `Connection` is the abstraction that deserializes incoming bytes into objects, for example a HTTP request object or a WebSocket frame object, that can be used by more abstract layers.
@@ -122,12 +122,12 @@ The example below shows a typical implementation that extends `AbstractConnectio
 include::{doc_code}/embedded/SelectorManagerDocs.java[tags=connection]
 ----
 
-[[eg-arch-io-connection-listener]]
+[[pg-arch-io-connection-listener]]
 ===== Jetty I/O: `Connection.Listener`
 
 // TODO: Introduce Connection.Listener
 
-[[eg-arch-io-echo]]
+[[pg-arch-io-echo]]
 ==== Jetty I/O: Network Echo
 
 With the concepts above it is now possible to write a simple, fully non-blocking, `Connection` implementation that simply echoes the bytes that it reads back to the other peer.

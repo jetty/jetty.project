@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[eg-client]]
+[[pg-client]]
 == Client Libraries
 
 The Eclipse Jetty Project provides client-side libraries that allow you to embed a client in your applications.
@@ -28,11 +28,11 @@ The client libraries are designed to be non-blocking and offer both synchronous 
 
 These are the available client libraries:
 
-* xref:eg-client-http[The HTTP Client Library]
-* xref:eg-client-http2[The HTTP/2 Client Library]
-* xref:eg-client-websocket[The WebSocket client library]
+* xref:pg-client-http[The HTTP Client Library]
+* xref:pg-client-http2[The HTTP/2 Client Library]
+* xref:pg-client-websocket[The WebSocket client library]
 
-If you are interested in the low-level details of how the Eclipse Jetty client libraries work, or are interested in writing a custom protocol, look at the xref:eg-client-io-arch[Client I/O Architecture].
+If you are interested in the low-level details of how the Eclipse Jetty client libraries work, or are interested in writing a custom protocol, look at the xref:pg-client-io-arch[Client I/O Architecture].
 
 include::http/client-http.adoc[]
 include::http2/client-http2.adoc[]
