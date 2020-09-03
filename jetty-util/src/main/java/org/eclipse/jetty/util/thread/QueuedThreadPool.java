@@ -715,9 +715,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
                 threads.add(baseThreadInfo + " @ " + (trace.length > 0 ? trace[0].toString() : "???"));
         }
 
-        dumpObjects(out, indent, new DumpableCollection("threads", threads));
+        DumpableCollection threadsDump = new DumpableCollection("threads", threads);
         if (isDetailedDump())
-            dumpObjects(out, indent, new DumpableCollection("jobs", new ArrayList<>(getQueue())));
+            dumpObjects(out, indent, threadsDump, new DumpableCollection("jobs", new ArrayList<>(getQueue())));
+        else
+            dumpObjects(out, indent, threadsDump);
     }
 
     private String getKnownMethod(StackTraceElement[] trace)
