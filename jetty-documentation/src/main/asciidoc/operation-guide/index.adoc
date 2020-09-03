@@ -16,20 +16,23 @@
 // ========================================================================
 //
 
-:doctitle: Eclipse Jetty: Quickstart Guide
+:doctitle: Eclipse Jetty: Operation Guide
 :author: Jetty Developers
 :email: jetty-dev@eclipse.org
 :revnumber: 1.0
 :revdate: {TIMESTAMP}
 :toc: left
-:toc-title: Quickstart Guide
+:toc-title: Operation Guide
 :toc-style:
 
 :header-style: eclipse-thin
 :breadcrumb-style: eclipse-thin
 :footer-style: default
+:breadcrumb: Home:../index.html | Operation Guide:./index.html
 
-:breadcrumb: Home:../index.html | Quickstart Guide:./index.html
+// docinfo lets you pull in shared content and/or influence via render type
+//:docinfodir: {DOCINFODIR}/documentation
+//:docinfo1:
 
 // html specific directives
 ifdef::backend-html5[]
@@ -52,6 +55,21 @@ endif::[]
 // suppress automatic id generation
 :sectids!:
 
-include::introduction/chapter.adoc[]
-include::getting-started/chapter.adoc[]
-include::configuring/chapter.adoc[]
+
+include::startup/chapter.adoc[]
+include::contexts/chapter.adoc[]
+include::deploying/chapter.adoc[]
+include::connectors/chapter.adoc[]
+include::http2/chapter.adoc[]
+include::logging/chapter.adoc[]
+include::security/chapter.adoc[]
+include::sessions/chapter.adoc[]
+include::jsp/chapter.adoc[]
+include::annotations/chapter.adoc[]
+include::jmx/chapter.adoc[]
+include::jndi/chapter.adoc[]
+include::alpn/chapter.adoc[]
+include::fastcgi/chapter.adoc[]
+include::extras/chapter.adoc[]
+include::runner/chapter.adoc[]
+include::tuning/chapter.adoc[]
