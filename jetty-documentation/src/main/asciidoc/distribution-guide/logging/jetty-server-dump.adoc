@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
-//  ========================================================================
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
 //
 
 [[jetty-server-dump]]
@@ -25,16 +25,13 @@ The dump feature in Jetty provides a snapshot of the bean containment tree of th
 ==== Configuring the Jetty Server Dump
 
 You can request that Jetty do a dump immediately after starting and just before stopping by calling the appropriate setters on the `Server` instance.
-For embedded usage this can be used by calling the setters directly.
+This functionality can be enabled using two properties to control this behaviour which are referenced in `jetty.xml` to call these setters.
 ```java
-server.setDumpAfterStart(true);
-server.setDumpBeforeStop(true);
+jetty.server.dumpAfterStart=true
+jetty.server.dumpBeforeStop=true
 ```
 
-Standalone Jetty uses two properties to control this behaviour which are referenced in `jetty.xml` to call these setters.
-These properties are `jetty.server.dumpAfterStart` and `jetty.server.dumpBeforeStop`.
-
-These can be temporarily enabled by supplying these properties as command line arguments,
+The server dump can be temporarily enabled by supplying either of these properties as command line arguments,
 or they can be enabled via the `server.ini` file (see xref:quick-start-configure[]).
 ```
 java -jar $JETTY_HOME/start.jar jetty.server.dumpAfterStart=true jetty.server.dumpBeforeStop=true
@@ -43,15 +40,10 @@ java -jar $JETTY_HOME/start.jar jetty.server.dumpAfterStart=true jetty.server.du
 [[extra-threadpool-info]]
 ==== Extra ThreadPool Information
 
-To get maximum detail from the `QueuedThreadPool` in the dump, you need to `setDetailDump(true)` on any instances of `QueuedThreadPool` you are using.
+To get maximum detail from the `QueuedThreadPool` in the dump, you need to enable a detailed dump on any instances of `QueuedThreadPool` you are using.
 This extra detail in the detailed dump consists of full stack traces for every running thread, and a list of queued jobs waiting to be run.
 
-For embedded usage this can be used by calling the setters directly.
-```java
-threadPool.setDetailedDump(true);
-```
-
-For standalone jetty you can enable the `threadpool` module and configure the `jetty.threadPool.detailedDump` property.
+This can be enabled using the `threadpool` module and configuring the `jetty.threadPool.detailedDump` property.
 See xref:startup-modules[] for information on how to enable a module.
 This same property can also be set via the command line the same as the server dump property.
 
