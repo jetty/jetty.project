@@ -1,0 +1,195 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[writing-custom-handlers]]
+=== Writing Custom Handlers
+
+The Handler is the Jetty component that deals with received requests.
+
+Many users of Jetty never need to write a Jetty Handler, but instead use the link:{JDURL}/org/eclipse/jetty/servlet/package-summary.html[Servlet API.]
+You can reuse the existing Jetty handlers for context, security, sessions and servlets without the need for extension.
+However, some users might have special requirements or footprint concerns that prohibit the use of the full servlet API.
+For them implementing a Jetty handler is a straight forward way to provide dynamic web content with a minimum of fuss.
+
+See the section on xref:basic-architecture[] to understand more about Handlers vs. Servlets.
+
+[[handler-api]]
+==== The Handler API
+
+The link:{JDURL}/org/eclipse/jetty/server/Handler.html[Handler] interface provides Jetty's core of content generation or manipulation.
+Classes that implement this interface are used to coordinate requests, filter requests and generate content.
+
+The core API of the Handler interface is:
+
+[source, java, subs="{sub-order}"]
+----
+public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    throws IOException, ServletException
+----
+
+An implementation of this method can handle a request and pass the request onto another handler (or servlet), or it can modify and/or wrap the request before passing it on.
+This gives three styles of handler:
+
+* Coordinating Handlers - Handlers that route requests to other handlers (`HandlerCollection`, `ContextHandlerCollection`)
+* Filtering Handlers - Handlers that augment a request and pass it on to other handlers (`HandlerWrapper`, `ContextHandler`, `SessionHandler`)
+* Generating Handlers - Handlers that produce content (`ResourceHandler` and `ServletHandler`)
+
+[[target]]
+===== The Target
+
+The target of a handler is an identifier for the resource that should handle the passed request.
+This is normally the URI that is parsed from an HTTP Request.
+However, in two key circumstances the target may differ from the URI of the passed request:
+
+* If the request has been dispatched to a named resource, such as a named servlet, the target is the name of that resource.
+* If the request is being made by a call to link:http://docs.oracle.com/javaee/7/api/javax/servlet/RequestDispatcher.html[`RequestDispatcher`], the target is the URI of the included resource and is different to the URI of the actual request.
+
+[[request-and-response]]
+===== The Request and Response
+
+The request and response objects used in the signature of the handle method are
+link:http://docs.oracle.com/javaee/7/api/javax/servlet/ServletRequest.html[`ServletRequest`] and link:http://docs.oracle.com/javaee/7/api/javax/servlet/ServletResponse.html[`ServletResponse`].
+These are the standard APIs and are moderately restricted in what they can do to the request and response.
+More often than not, access to the Jetty implementations of these classes is required: link:{JDURL}/org/eclipse/jetty/server/Request.html[`Request`] and link:{JDURL}/org/eclipse/jetty/server/Response.html[`Response`].
+However, as the request and response may be wrapped by handlers, filters and servlets, it is not possible to pass the implementation directly.
+The following mantra retrieves the core implementation objects from under any wrappers:
+
+[source, java, subs="{sub-order}"]
+----
+Request base_request = request instanceof Request ? (Request)request : HttpConnection.getCurrentConnection().getHttpChannel().getRequest();
+Response base_response = response instanceof Response ? (Response)response : HttpConnection.getCurrentConnection().getHttpChannel().getResponse();
+----
+
+Notice that if the handler passes the request on to another handler, it should use the Request/Response objects passed in, and not the base objects.
+This is to preserve any wrapping done by up stream handlers.
+
+[[dispatch]]
+===== The Dispatch
+
+The dispatch argument indicates the state of the handling of the call and may be:
+
+* `REQUEST == 1` - An original request received from a connector.
+* `FORWARD == 2` - A request being forwarded by a RequestDispatcher.
+* `INCLUDE == 4` - A request being included by a RequestDispatcher.
+* `ERROR == 8` - A request being forwarded to a error handler by the container.
+
+These mostly have significance for servlet and related handlers.
+For example, the security handler only applies authentication and authorization to REQUEST dispatches.
+
+[[handling-requests]]
+==== Handling Requests
+
+A Handler may handle a request by:
+
+* xref:generating-response[]
+* xref:filtering-request-or-response[]
+* xref:passing-request-and-response[]
+
+[[generating-response]]
+===== Generating a Response
+
+The link:{JDURL}/org/eclipse/jetty/embedded/OneHandler.html[`OneHandler`] embedded example shows how a simple handler can generate a response.
+
+You can use the standard servlet response API, which will typically set some status, content headers and then write out the content:
+
+[source, java, subs="{sub-order}"]
+----
+ response.setContentType("text/html");
+ response.setStatus(HttpServletResponse.SC_OK);
+ response.getWriter().println("<h1>Hello OneHandler</h1>");
+----
+
+It is also very important that a handler indicate that it has completed handling the request and that the request should not be passed to other handlers:
+
+[source, java, subs="{sub-order}"]
+----
+ Request base_request = (request instanceof Request) ? (Request)request:HttpConnection.getCurrentConnection().getHttpChannel().getRequest();
+ base_request.setHandled(true);
+----
+
+[[filtering-request-or-response]]
+===== Filtering the Request and/or Response
+
+Once the base request or response object is obtained, you can modify it.
+Typically you would make modifications to accomplish:
+
+* Breaking the URI into contextPath, servletPath and pathInfo components.
+* Associating a resource base with a request for static content.
+* Associating a session with a request.
+* Associating a security principal with a request.
+* Changing the URI and paths during a request dispatch forward to another resource.
+
+You can also update the context of the request:
+
+* Setting the current threads context classloader.
+* Setting thread locals to identify the current `ServletContext`.
+
+Typically Jetty passes a modified request to another handler and undoes modifications in a finally block afterwards:
+
+[source, java, subs="{sub-order}"]
+----
+ try
+ {
+    base_request.setSession(a_session);
+    next_handler.handle(target,request,response,dispatch);
+ }
+ finally
+ {
+    base_request.setSession(old_session);
+ }
+----
+
+The classes that implement the link:{JDURL}/org/eclipse/jetty/server/handler/HandlerWrapper.html[`HandlerWrapper`] class are typically handler filters of this style.
+
+[[passing-request-and-response]]
+===== Passing the Request and Response to Another Handler
+
+A handler might simply inspect the request and use the target, request URI or other information to select another handler to pass the request to.
+These handlers typically implement the link:{JDURL}/org/eclipse/jetty/server/HandlerContainer.html[`HandlerContainer`] interface.
+
+Examples include:
+
+* link:{JDURL}/org/eclipse/jetty/server/handler/HandlerCollection.html[Class `HandlerCollection`] -
+A collection of handlers, where each handler is called regardless of the state of the request.
+This is typically used to pass a request to a link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandlerCollection.html[`ContextHandlerCollection`,] and then the link:{JDURL}/org/eclipse/jetty/server/handler/RequestLogHandler.html[`RequestLogHandler`.]
+* link:{JDURL}/org/eclipse/jetty/server/handler/HandlerList.html[`HandlerList`] - A list of handlers that are called in turn until the request state is set as handled.
+* link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandlerCollection.html[`ContextHandlerCollection`] - A collection of Handlers, of which one is selected by best match for the context path.
+
+[[injecting-handlers]]
+==== Injecting Handlers
+
+The `Handler` needs to be added to the server classpath as described in xref:startup-classpath[].
+Then it can be added to the server, either by overriding some existing XML configuration files such as `jetty.xml` as shown below, or by defining a custom module as described in xref:custom-modules[].
+
+[source, xml]
+----
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+    <Call name="setHandler">
+        <Arg>
+            <New id="myCustomJettyHandler" class="com.my.handler.CustomJettyHandler" />
+        </Arg>
+    </Call>
+</Configure>
+----
+
+[[more-about-handlers]]
+==== More About Handlers
+
+See the link:{JDURL}/[latest Jetty JavaDoc] for detailed information on each Jetty handler.
