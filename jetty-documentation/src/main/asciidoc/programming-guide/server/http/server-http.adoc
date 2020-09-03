@@ -19,7 +19,11 @@
 [[pg-server-http]]
 === HTTP Server Libraries
 
-The Eclipse Jetty Project has historically provided libraries to embed an HTTP server and a Servlet Container.
+Web application development typically involves writing your web applications, packaging them into a web application archive, the `*.war` file, and then deploy the `*.war` file into a standalone Servlet Container that you have previously installed.
+
+The Eclipse Jetty server libraries allow you to write web applications components using either the Jetty APIs (by writing xref:pg-server-http-handler[Jetty ``Handler``s]) or using the standard xref:pg-server-http-handler-use-servlet[Servlet APIs] (by writing ``Servlet``s and Servlet ``Filter``s).
+These components can them be programmatically assembled together, without the need of creating a `+*.war+` file, added to a Jetty ``Server`` instance that is then started.
+This result in your web applications to be available to HTTP clients as if you deployed your `+*.war+` files in a standalone Jetty server.
 
 The Maven artifact coordinates are:
 
@@ -67,7 +71,7 @@ The example above shows the simplest HTTP/1.1 server; it has no support for HTTP
 All these features are provided by the Jetty Server Libraries, and server applications only need to put the required components together to provide all the required features.
 
 The ``Handler``s provided by the Jetty Server Libraries allow writing server applications that have functionalities similar to Apache HTTPD or Nginx (for example: URL redirection, URL rewriting, serving static content, reverse proxying, etc.), as well as generating content dynamically by processing incoming requests.
-Read xref:pg-server-http-handler[this section] for further details.
+Read xref:pg-server-http-handler[this section] for further details about ``Handler``s.
 
 If you are interested in writing your server application based on the Servlet APIs, jump to xref:pg-server-http-handler-use-servlet[this section].
 
@@ -75,6 +79,7 @@ If you are interested in writing your server application based on the Servlet AP
 ==== Server Request Processing
 
 The Jetty HTTP request processing is outlined below in the diagram below.
+You may want to refer to the xref:pg-arch-io[Jetty I/O architecture] for additional information about the classes mentioned below.
 
 Request handing is slightly different for each protocol; in HTTP/2 Jetty takes into account multiplexing, something that is not present in HTTP/1.1.
 

@@ -19,12 +19,11 @@
 [[pg-server]]
 == Server Libraries
 
-The Eclipse Jetty Project provides server-side libraries that allow you to embed an HTTP or WebSocket server in your applications.
+The Eclipse Jetty Project provides server-side libraries that allow you to configure and start programmatically an HTTP or WebSocket server from a main class, or embed it in your existing application.
 A typical example is a HTTP server that needs to expose a REST endpoint.
-Another example is a proxy application that receives HTTP requests and forwards them to third party services possibly using also the Jetty xref:pg-client[client libraries].
+Another example is a proxy application that receives HTTP requests, processes them, and then forwards them to third party services, for example using the Jetty xref:pg-client[client libraries].
 
 While historically Jetty is an HTTP server, it is possible to use the Jetty server-side libraries to write a generic network server that interprets any network protocol (not only HTTP).
-
 If you are interested in the low-level details of how the Eclipse Jetty server libraries work, or are interested in writing a custom protocol, look at the xref:pg-server-io-arch[Server I/O Architecture].
 
 The Jetty server-side libraries provide:

@@ -31,7 +31,7 @@ This is normally the URI that is parsed from an HTTP request.
 However, a request could be forwarded to either a named resource, in which case `target` will be the name of the resource, or to a different URI, in which case `target` will be the new URI.
 
 Applications may wrap the request or response (or both) and forward the wrapped request or response to a different URI (which may be possibly handled by a different `Handler`).
-This is the reason why there are two request parameters in the `Handler` APIs: the first is the unwrapped, original, request while the second is the application-wrapped request.
+This is the reason why there are two request parameters in the `Handler` APIs: the first is the unwrapped, original, request that also gives access to Jetty-specific APIs, while the second is the application-wrapped Servlet request.
 
 [[pg-server-http-handler-impl-hello]]
 ===== Hello World Handler
