@@ -50,7 +50,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
@@ -457,9 +456,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected Request newProxyRequest(HttpServletRequest request, String rewrittenTarget)
     {
+        // Do not copy the HTTP version, since the client-to-proxy
+        // version may be different from the proxy-to-server version.
         return getHttpClient().newRequest(rewrittenTarget)
             .method(request.getMethod())
-            .version(HttpVersion.fromString(request.getProtocol()))
             .attribute(CLIENT_REQUEST_ATTRIBUTE, request);
     }
 

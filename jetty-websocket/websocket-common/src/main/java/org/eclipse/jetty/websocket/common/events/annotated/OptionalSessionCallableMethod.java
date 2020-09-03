@@ -86,6 +86,11 @@ public class OptionalSessionCallableMethod extends CallableMethod
     @Override
     public String toString()
     {
-        return String.format("%s[%s]", this.getClass().getSimpleName(), method.toGenericString());
+        return String.format("%s[pojo=%s,method=%s,wantsSession=%b,streaming=%s]",
+            this.getClass().getSimpleName(),
+            pojo.getName(),
+            method.toGenericString(),
+            wantsSession,
+            streaming);
     }
 }
