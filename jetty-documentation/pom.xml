@@ -165,9 +165,9 @@
             <SRCDIR>${basedir}/..</SRCDIR>
             <GITBROWSEURL>https://github.com/eclipse/jetty.project/tree/master</GITBROWSEURL>
             <GITDOCURL>https://github.com/eclipse/jetty.project/tree/jetty-10.0.x-doc-refactor/jetty-documentation/src/main/asciidoc</GITDOCURL>
-            <DISTGUIDE>../distribution-guide/index.html</DISTGUIDE>
-            <EMBEDGUIDE>../embedded-guide/index.html</EMBEDGUIDE>
-            <QUICKGUIDE>../quickstart-guide/index.html</QUICKGUIDE>
+            <OPGUIDE>../operation-guide/index.html</OPGUIDE>
+            <PROGGUIDE>../programming-guide/index.html</PROGGUIDE>
+            <GSTARTGUIDE>../gettingstarted-guide/index.html</GSTARTGUIDE>
             <CONTRIBGUIDE>../contribution-guide/index.html</CONTRIBGUIDE>
             <MVNCENTRAL>http://central.maven.org/maven2</MVNCENTRAL>
             <VERSION>${project.version}</VERSION>
@@ -176,7 +176,7 @@
         </configuration>
         <executions>
           <execution>
-            <id>quickstart-guide</id>
+            <id>gettingstarted-guide</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>process-asciidoc</goal>
@@ -184,13 +184,13 @@
             <configuration>
               <backend>html5</backend>
               <templateDir>${web.resources.directory}/asciidoc/slim-template</templateDir>
-              <sourceDirectory>${basedir}/src/main/asciidoc/quickstart-guide</sourceDirectory>
+              <sourceDirectory>${basedir}/src/main/asciidoc/gettingstarted-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${project.build.directory}/html/quickstart-guide</outputDirectory>
+              <outputDirectory>${project.build.directory}/html/gettingstarted-guide</outputDirectory>
             </configuration>
           </execution>
           <execution>
-            <id>distribution-guide</id>
+            <id>operation-guide</id>
             <phase>generate-resources</phase>
             <goals>
               <goal>process-asciidoc</goal>
@@ -198,9 +198,9 @@
             <configuration>
               <backend>html5</backend>
               <templateDir>${web.resources.directory}/asciidoc/slim-template</templateDir>
-              <sourceDirectory>${basedir}/src/main/asciidoc/distribution-guide</sourceDirectory>
+              <sourceDirectory>${basedir}/src/main/asciidoc/operation-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${project.build.directory}/html/distribution-guide</outputDirectory>
+              <outputDirectory>${project.build.directory}/html/operation-guide</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -219,7 +219,7 @@
             </configuration>
           </execution>
           <execution>
-            <id>embedded-guide</id>
+            <id>programming-guide</id>
             <phase>prepare-package</phase>
             <goals>
               <goal>process-asciidoc</goal>
@@ -227,9 +227,9 @@
             <configuration>
               <backend>html5</backend>
               <templateDir>${web.resources.directory}/asciidoc/slim-template</templateDir>
-              <sourceDirectory>${basedir}/src/main/asciidoc/embedded-guide</sourceDirectory>
+              <sourceDirectory>${basedir}/src/main/asciidoc/programming-guide</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${project.build.directory}/html/embedded-guide</outputDirectory>
+              <outputDirectory>${project.build.directory}/html/programming-guide</outputDirectory>
               <sourceHighlighter>coderay</sourceHighlighter>
               <requires>
                 <require>asciidoctor-diagram</require>
