@@ -19,11 +19,12 @@
 [[eg-client]]
 == Client Libraries
 
-The Eclipse Jetty Project provides also provides client-side libraries that allow you to embed a client in your applications.
+The Eclipse Jetty Project provides client-side libraries that allow you to embed a client in your applications.
 A typical example is a client application that needs to contact a third party service via HTTP (for example a REST service).
-Another example is a proxy application that receives HTTP requests and forwards them as FCGI requests to a PHP application such as WordPress, or receives HTTP/1.1 requests and converts them to HTTP/2. Yet another example is a client application that needs to received events from a WebSocket server.
+Another example is a proxy application that receives HTTP requests and forwards them as FCGI requests to a PHP application such as WordPress, or receives HTTP/1.1 requests and converts them to HTTP/2.
+Yet another example is a client application that needs to receive events from a WebSocket server.
 
-The client libraries are designed to be non-blocking and offer both synchronous and asynchronous APIs and come with a large number of configuration options.
+The client libraries are designed to be non-blocking and offer both synchronous and asynchronous APIs and come with many configuration options.
 
 These are the available client libraries:
 

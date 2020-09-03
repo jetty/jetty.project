@@ -57,6 +57,7 @@ endif::[]
 :sectids!:
 
 include::.asciidoctorconfig[]
+include::introduction.adoc[]
 include::client/client.adoc[]
 include::server/server.adoc[]
 include::maven/maven.adoc[]
