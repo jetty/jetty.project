@@ -16,28 +16,32 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.websocket.api.exceptions;
+
+import org.eclipse.jetty.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
- * Exception when a message is too large for the internal buffers occurs and should trigger a connection close.
- *
- * @see StatusCode#MESSAGE_TOO_LARGE
+ * Indicating that the provided Class is not a valid WebSocket as defined by the API.
+ * <p>
+ * A valid WebSocket should do one of the following:
+ * <ul>
+ * <li>Implement {@link WebSocketListener}</li>
+ * <li>Extend {@link WebSocketAdapter}</li>
+ * <li>Declare the {@link WebSocket &#064;WebSocket} annotation on the type</li>
+ * </ul>
  */
 @SuppressWarnings("serial")
-public class MessageTooLargeException extends CloseException
+public class InvalidWebSocketException extends WebSocketException
 {
-    public MessageTooLargeException(String message)
+    public InvalidWebSocketException(String message)
     {
-        super(StatusCode.MESSAGE_TOO_LARGE, message);
+        super(message);
     }
 
-    public MessageTooLargeException(String message, Throwable t)
+    public InvalidWebSocketException(String message, Throwable cause)
     {
-        super(StatusCode.MESSAGE_TOO_LARGE, message, t);
-    }
-
-    public MessageTooLargeException(Throwable t)
-    {
-        super(StatusCode.MESSAGE_TOO_LARGE, t);
+        super(message, cause);
     }
 }

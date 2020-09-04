@@ -16,7 +16,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.websocket.api.exceptions;
+
+import org.eclipse.jetty.websocket.api.StatusCode;
 
 /**
  * Per spec, a protocol error should result in a Close frame of status code 1002 (PROTOCOL_ERROR)

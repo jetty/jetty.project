@@ -16,7 +16,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.websocket.api.exceptions;
+
+import org.eclipse.jetty.websocket.api.StatusCode;
 
 /**
  * Exception to terminate the connection because it has received data within a frame payload that was not consistent with the requirements of that frame
