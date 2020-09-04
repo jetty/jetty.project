@@ -704,11 +704,11 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
         for (Thread thread : _threads)
         {
             StackTraceElement[] trace = thread.getStackTrace();
-            String known = getKnownMethod(trace);
-            String baseThreadInfo = String.format("%s %s %s %d", thread.getId(), thread.getName(), thread.getState(), thread.getPriority());
+            String stackTag = getCompressedStackTag(trace);
+            String baseThreadInfo = String.format("%s %s tid=%d prio=%d", thread.getName(), thread.getState(), thread.getId(), thread.getPriority());
 
-            if (!StringUtil.isBlank(known))
-                threads.add(baseThreadInfo + " " + known);
+            if (!StringUtil.isBlank(stackTag))
+                threads.add(baseThreadInfo + " " + stackTag);
             else if (isDetailedDump())
                 threads.add((Dumpable)(o, i) -> Dumpable.dumpObjects(o, i, baseThreadInfo, (Object[])trace));
             else
@@ -722,7 +722,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
             dumpObjects(out, indent, threadsDump);
     }
 
-    private String getKnownMethod(StackTraceElement[] trace)
+    private String getCompressedStackTag(StackTraceElement[] trace)
     {
         for (StackTraceElement t : trace)
         {
