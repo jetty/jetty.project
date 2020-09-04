@@ -46,7 +46,7 @@ public interface Frame
             throw new IllegalArgumentException("OpCode " + op + " is not a valid Frame.Type");
         }
 
-        private byte opcode;
+        private final byte opcode;
 
         Type(byte code)
         {
