@@ -766,7 +766,7 @@ public class HttpParser
                         case LF:
                             // HTTP/0.9
                             if (complianceViolation(HttpComplianceSection.NO_HTTP_0_9, "No request version"))
-                                throw new BadMessageException("HTTP/0.9 not supported");
+                                throw new BadMessageException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "HTTP/0.9 not supported");
                             _requestHandler.startRequest(_methodString, _uri.toString(), HttpVersion.HTTP_0_9);
                             setState(State.CONTENT);
                             _endOfContent = EndOfContent.NO_CONTENT;
@@ -942,10 +942,10 @@ public class HttpParser
     private void checkVersion()
     {
         if (_version == null)
-            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Unknown Version");
+            throw new BadMessageException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "Unknown Version");
 
         if (_version.getVersion() < 10 || _version.getVersion() > 20)
-            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Version");
+            throw new BadMessageException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "Unsupported Version");
     }
 
     private void parsedHeader()
