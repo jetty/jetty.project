@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
+import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.ExtensionConfigParser;
 
 module org.eclipse.jetty.websocket.jetty.common
