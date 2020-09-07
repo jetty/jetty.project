@@ -24,6 +24,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import java.util.zip.Deflater;
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletContext;
@@ -773,6 +774,19 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /**
+     * Set of supported {@link DispatcherType} that this filter will operate on.
+     *
+     * @param dispatchers the set of {@link DispatcherType} that this filter will operate on
+     */
+    public void setDispatcherTypes(String... dispatchers)
+    {
+        setDispatcherTypes(Stream.of(dispatchers)
+            .flatMap(s -> Stream.of(StringUtil.csvSplit(s)))
+            .map(DispatcherType::valueOf)
+            .toArray(DispatcherType[]::new));
+    }
+
+    /**
      * Set the included filter list of HTTP methods (replacing any previously set)
      *
      * @param methods The methods to include in compression
@@ -902,7 +916,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         return String.format("%s@%x{%s,min=%s,inflate=%s}", getClass().getSimpleName(), hashCode(), getState(), _minGzipSize, _inflateBufferSize);
     }
 
-    private static class CaseInsensitiveSet extends HashSet<String>
+    public static class CaseInsensitiveSet extends HashSet<String>
     {
         @Override
         public boolean add(String s)
