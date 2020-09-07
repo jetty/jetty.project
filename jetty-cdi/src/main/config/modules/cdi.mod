@@ -27,8 +27,3 @@ etc/cdi/jetty-cdi.xml
 
 [lib]
 lib/jetty-cdi-${jetty.version}.jar
-lib/apache-jsp/org.mortbay.jasper.apache-el-*.jar
-
-[ini]
-jetty.webapp.addSystemClasses+=,org.eclipse.jetty.cdi.CdiServletContainerInitializer
-jetty.webapp.addServerClasses+=,-org.eclipse.jetty.cdi.CdiServletContainerInitializer

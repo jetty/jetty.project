@@ -18,20 +18,26 @@
 
 package org.eclipse.jetty.cdi;
 
-import org.eclipse.jetty.servlet.DecoratingListener;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.webapp.AbstractConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * A DecoratingListener that listens for "org.eclipse.jetty.cdi.decorator"
+ * <p>CDI Configuration</p>
+ * <p>This configuration configures the WebAppContext server/system classes to
+ * be able to see the {@link CdiServletContainerInitializer}.
+ * </p>
  */
-public class CdiDecoratingListener extends DecoratingListener
+public class CdiConfiguration extends AbstractConfiguration
 {
-    public static final String MODE = "CdiDecoratingListener";
-    public static final String ATTRIBUTE = "org.eclipse.jetty.cdi.decorator";
+    private static final Logger LOG = LoggerFactory.getLogger(CdiConfiguration.class);
 
-    public CdiDecoratingListener(ServletContextHandler contextHandler)
+    public CdiConfiguration()
     {
-        super(contextHandler, ATTRIBUTE);
-        contextHandler.setAttribute(CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, MODE);
+        protectAndExpose("org.eclipse.jetty.cdi.CdiServletContainerInitializer");
+        addDependents(AnnotationConfiguration.class, PlusConfiguration.class);
     }
 }
+

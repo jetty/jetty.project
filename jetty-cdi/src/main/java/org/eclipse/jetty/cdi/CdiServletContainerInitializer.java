@@ -86,8 +86,6 @@ public class CdiServletContainerInitializer implements ServletContainerInitializ
                 default:
                     throw new IllegalStateException(mode);
             }
-
-            context.setAttribute(CDI_INTEGRATION_ATTRIBUTE, mode);
             LOG.info("{} enabled in {}", mode, ctx);
         }
         catch (UnsupportedOperationException | ClassNotFoundException e)
