@@ -12,6 +12,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
+    <manual.test.port>28888</manual.test.port>
   </properties>
 
   <build>
@@ -98,7 +99,7 @@
                   <mainClass>org.eclipse.jetty.http2.server.H2SpecServer</mainClass>
                   <classpathScope>test</classpathScope>
                   <arguments>
-                    <argument>8080</argument>
+                    <argument>${manual.test.port}</argument>
                   </arguments>
                 </configuration>
                 <goals>
