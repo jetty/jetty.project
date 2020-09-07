@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -45,13 +46,13 @@ import org.eclipse.jetty.util.thread.Locker;
  * strategy passed or created in the constructor.  The available
  * strategies are:
  * <dl>
- *     <dt>{@link SearchStrategy}</dt>
+ *     <dt>{@link LinearSearchStrategy}</dt>
  *     <dd>This strategy iterates over all entries trying to acquire.
  *     </dd>
  *     <dt>{@link CompositeStrategy}</dt>
  *     <dd>This strategy combines two other strategies and is typically
  *     used to combine a strategy like {@link ThreadLocalStrategy} with
- *     {@link SearchStrategy}.
+ *     {@link LinearSearchStrategy}.
  *     </dd>
  *     <dt>{@link RoundRobinStrategy}</dt>
  *     <dd>Entries are tried in sequence so that all entries in the pool are
@@ -65,8 +66,16 @@ import org.eclipse.jetty.util.thread.Locker;
  *     <dd>This strategy is a threadlocal caching mechanism that remembers
  *     up to N entries previously used by the current thread.
  *     </dd>
+ *     <dt>{@link ThreadLocalIteratorStrategy}</dt>
+ *     <dd>Uses a {@link ThreadLocal} to hold a list iterator used to look for
+ *     an entry that can be acquired. The iterator is re-used on subsequent acquires.
+ *     If this strategy is initiated in roundrobin mode, the iterator is left on the
+ *     next entry after each acquire, other wise it is reset to the acquired entry.
+ *     </dd>
  *     <dt>{@link RandomStrategy}</dt>
  *     <dd>A random entry is tried</dd>
+ *     <dt>{@link RandomIterationStrategy}</dt>
+ *     <dd>An iteration started at a random entry is used to acquire</dd>
  *     <dt>{@link Pool.LeastRecentlyUsedStrategy}</dt>
  *     <dd>The least recently used entries are tried until one can be acquired</dd>
  * </dl>
@@ -80,7 +89,22 @@ public class Pool<T> implements AutoCloseable, Dumpable
 {
     private static final Logger LOGGER = Log.getLogger(Pool.class);
 
-    private final List<Entry> entries = new CopyOnWriteArrayList<>();
+    private final List<Entry> entries = new CopyOnWriteArrayList<Entry>()
+    {
+        @Override
+        public ListIterator<Entry> listIterator(int index)
+        {
+            try
+            {
+                return super.listIterator(index);
+            }
+            catch (IndexOutOfBoundsException e)
+            {
+                return listIterator();
+            }
+        }
+    };
+
     /*
      * The cache is used to avoid hammering on the first index of the entry list.
      * Caches can become poisoned (i.e.: containing entries that are in use) when
@@ -103,16 +127,16 @@ public class Pool<T> implements AutoCloseable, Dumpable
      *
      * @param maxEntries the maximum amount of entries that the pool will accept.
      * @param cacheSize the thread-local cache size. A value of 1 will use the
-     *                  {@link ThreadLocalStrategy} and {@link SearchStrategy},
+     *                  {@link ThreadLocalStrategy} and {@link LinearSearchStrategy},
      *                  a value greater than 1 will use a {@link ThreadLocalListStrategy}
-     *                  and {@link SearchStrategy},
-     *                  otherwise just a {@link SearchStrategy} will be used.
+     *                  and {@link LinearSearchStrategy},
+     *                  otherwise just a {@link LinearSearchStrategy} will be used.
      */
     public Pool(int maxEntries, int cacheSize)
     {
         this(maxEntries, cacheSize < 0 ? null : new CompositeStrategy<>(
             cacheSize == 1 ? new ThreadLocalStrategy<>() : new ThreadLocalListStrategy<>(cacheSize),
-            new SearchStrategy<>()));
+            new LinearSearchStrategy<>()));
     }
 
     /**
@@ -123,7 +147,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
     public Pool(int maxEntries, Strategy<T> strategy)
     {
         this.maxEntries = maxEntries;
-        this.strategy = strategy == null ? new SearchStrategy<>() : strategy;
+        this.strategy = strategy == null ? new LinearSearchStrategy<>() : strategy;
     }
 
     public int getReservedCount()
@@ -201,7 +225,8 @@ public class Pool<T> implements AutoCloseable, Dumpable
             pending.incrementAndGet();
 
             Entry entry = new Entry();
-            strategy.reserve(entries, entry);
+            entries.add(entry);
+            strategy.reserved(entry);
             return entry;
         }
     }
@@ -234,14 +259,13 @@ public class Pool<T> implements AutoCloseable, Dumpable
     /**
      * Acquire an entry from the pool.
      * Only enabled entries will be returned from this method and their enable method must not be called.
-     * The implementation first tries the pool strategy and then a brute force iteration over entries.
      * @return an entry from the pool or null if none is available.
      */
     public Entry acquire()
     {
         if (closed)
             return null;
-        return strategy.acquire(entries);
+        return strategy.tryAcquire(entries);
     }
 
     /**
@@ -297,7 +321,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
         if (closed)
             return false;
 
-        return strategy.release(entries, entry);
+        boolean released =  entry.tryRelease();
+        if (released)
+            strategy.released(entry);
+        return released;
     }
 
     /**
@@ -311,7 +338,21 @@ public class Pool<T> implements AutoCloseable, Dumpable
         if (closed)
             return false;
 
-        return strategy.remove(entries, entry);
+        if (!entry.tryRemove())
+        {
+            if (LOGGER.isDebugEnabled())
+                LOGGER.debug("Attempt to remove an object from the pool that is still in use: {}", entry);
+            return false;
+        }
+
+        boolean removed = entries.remove(entry);
+        if (removed)
+            strategy.removed(entry);
+        else if (LOGGER.isDebugEnabled())
+            LOGGER.debug("Attempt to remove an object from the pool that does not exist: {}", entry);
+
+        return removed;
+
     }
 
     public boolean isClosed()
@@ -447,7 +488,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
          * the multiplex count is maxMultiplex and the entry is not closed,
          * false otherwise.
          */
-        boolean tryAcquire()
+        public boolean tryAcquire()
         {
             while (true)
             {
@@ -571,40 +612,23 @@ public class Pool<T> implements AutoCloseable, Dumpable
          * @param entries The list of entries known to the pool. This may be concurrently modified.
          * @return An acquired entry or null if none can be acquired by this strategy
          */
-        Pool<T>.Entry acquire(List<Pool<T>.Entry> entries);
+        Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries);
 
         /**
          * Notification an entry has been release.  The notification comes after the entry
          * has been put back in the pool and it may already have been reacquired before or during this call.
-         * @param entries The list of entries known to the pool. This may be concurrently modified.
          * @param entry The entry to be released
          */
-        default boolean release(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
+        default void released(Pool<T>.Entry entry)
         {
-            return entry.tryRelease();
         }
 
-        default void reserve(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
+        default void reserved(Pool<T>.Entry entry)
         {
-            entries.add(entry);
         }
 
-        default boolean remove(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
+        default void removed(Pool<T>.Entry entry)
         {
-            if (!entry.tryRemove())
-            {
-                if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("Attempt to remove an object from the pool that is still in use: {}", entry);
-                return false;
-            }
-
-            boolean removed = entries.remove(entry);
-            if (!removed)
-            {
-                if (LOGGER.isDebugEnabled())
-                    LOGGER.debug("Attempt to remove an object from the pool that does not exist: {}", entry);
-            }
-            return removed;
         }
     }
     
@@ -622,38 +646,82 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         @Override
-        public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
+        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
         {
-            Pool<T>.Entry entry = planA.acquire(entries);
-            return entry == null ? planB.acquire(entries) : entry;
+            Pool<T>.Entry entry = planA.tryAcquire(entries);
+            return entry != null ? entry : planB.tryAcquire(entries);
         }
 
         @Override
-        public boolean release(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
+        public void released(Pool<T>.Entry entry)
         {
-            if (planA.release(entries, entry))
-                return true;
-            if (entry.isOverUsed())
-                return false;
-            return planB.release(entries, entry);
+            planA.released(entry);
+            planB.released(entry);
         }
 
         @Override
-        public boolean remove(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
+        public void removed(Pool<T>.Entry entry)
         {
-            return planA.remove(entries, entry) || planB.remove(entries, entry);
+            planA.removed(entry);
+            planB.removed(entry);
         }
     }
 
-    public static class SearchStrategy<T> implements Strategy<T>
+    public static class LinearSearchStrategy<T> implements Strategy<T>
     {
         @Override
-        public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
+        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
         {
             for (Pool<T>.Entry e : entries)
             {
                 if (e.tryAcquire())
                     return e;
+            }
+            return null;
+        }
+    }
+
+    public static class ThreadLocalIteratorStrategy<T> implements Strategy<T>
+    {
+        private final boolean roundrobin;
+        private final ThreadLocal<ListIterator<Pool<T>.Entry>> iterator = new ThreadLocal<>();
+
+        public ThreadLocalIteratorStrategy()
+        {
+            this(false);
+        }
+
+        public ThreadLocalIteratorStrategy(boolean roundrobin)
+        {
+            this.roundrobin = roundrobin;
+        }
+
+        @Override
+        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
+        {
+            ListIterator<Pool<T>.Entry> iter = iterator.get();
+            if (iter == null)
+                iter = entries.listIterator();
+
+            for (int tries = entries.size(); tries-- > 0; )
+            {
+                if (!iter.hasNext())
+                {
+                    iter = entries.listIterator();
+                    if (!iter.hasNext())
+                        return null;
+                }
+                Pool<T>.Entry entry = iter.next();
+                if (entry != null && entry.tryAcquire())
+                {
+                    if (iter.hasNext())
+                    {
+                        if (!roundrobin)
+                            iter.previous();
+                        iterator.set(iter);
+                    }
+                    return entry;
+                }
             }
             return null;
         }
@@ -669,7 +737,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         @Override
-        public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
+        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
         {
             Pool<T>.Entry entry = last.get();
             if (entry != null && entry.tryAcquire())
@@ -678,14 +746,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         @Override
-        public boolean release(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
+        public void released(Pool<T>.Entry entry)
         {
-            if (entry.tryRelease())
-            {
-                last.set(entry);
-                return true;
-            }
-            return false;
+            last.set(entry);
         }
     }
 
@@ -701,7 +764,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         @Override
-        public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
+        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
         {
             List<Pool<T>.Entry> cachedList = cache.get();
             while (!cachedList.isEmpty())
@@ -714,23 +777,18 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         @Override
-        public boolean release(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
+        public void released(Pool<T>.Entry entry)
         {
-            if (entry.tryRelease())
-            {
-                List<Pool<T>.Entry> cachedList = cache.get();
-                if (cachedList.size() < cacheSize)
-                    cachedList.add(entry);
-                return true;
-            }
-            return false;
+            List<Pool<T>.Entry> cachedList = cache.get();
+            if (cachedList.size() < cacheSize)
+                cachedList.add(entry);
         }
     }
 
-    private abstract static class IndexedCached<T> implements Strategy<T>
+    private abstract static class IndexedStrategy<T> implements Strategy<T>
     {
         @Override
-        public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
+        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
         {
             int size = entries.size();
             if (size == 0)
@@ -753,7 +811,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         protected abstract int nextIndex(int size);
     }
 
-    public static class RandomStrategy<T> extends IndexedCached<T>
+    public static class RandomStrategy<T> extends IndexedStrategy<T>
     {
         @Override
         protected int nextIndex(int size)
@@ -762,7 +820,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
-    public static class RoundRobinStrategy<T> extends IndexedCached<T>
+    public static class RoundRobinStrategy<T> extends IndexedStrategy<T>
     {
         AtomicInteger index = new AtomicInteger();
 
@@ -773,15 +831,77 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         @Override
-        public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
+        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
         {
             int tries = entries.size();
             while (tries-- > 0)
             {
-                Pool<T>.Entry entry = super.acquire(entries);
+                Pool<T>.Entry entry = super.tryAcquire(entries);
                 if (entry != null)
                     return entry;
             }
+            return null;
+        }
+    }
+
+    public static class RandomIterationStrategy<T> implements Strategy<T>
+    {
+        @Override
+        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
+        {
+            int r = ThreadLocalRandom.current().nextInt(entries.size());
+
+            ListIterator<Pool<T>.Entry> iter = entries.listIterator(r);
+            while (iter.hasNext())
+            {
+                Pool<T>.Entry entry = iter.next();
+                if (entry.tryAcquire())
+                    return entry;
+            }
+
+            iter = entries.listIterator();
+            while (iter.hasNext() && iter.nextIndex() != r)
+            {
+                Pool<T>.Entry entry = iter.next();
+                if (entry.tryAcquire())
+                    return entry;
+            }
+
+            return null;
+        }
+    }
+
+    public static class RoundRobinIterationStrategy<T> implements Strategy<T>
+    {
+        AtomicInteger index = new AtomicInteger();
+
+        @Override
+        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
+        {
+            int i = index.get();
+
+            ListIterator<Pool<T>.Entry> iter = entries.listIterator(i);
+            while (iter.hasNext())
+            {
+                Pool<T>.Entry entry = iter.next();
+                if (entry.tryAcquire())
+                {
+                    index.set(iter.nextIndex());
+                    return entry;
+                }
+            }
+
+            iter = entries.listIterator();
+            while (iter.hasNext() && iter.nextIndex() != i)
+            {
+                Pool<T>.Entry entry = iter.next();
+                if (entry.tryAcquire())
+                {
+                    index.set(iter.nextIndex());
+                    return entry;
+                }
+            }
+
             return null;
         }
     }
@@ -791,7 +911,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         Queue<Pool<T>.Entry> lru = new ConcurrentLinkedQueue<>();
 
         @Override
-        public Pool<T>.Entry acquire(List<Pool<T>.Entry> entries)
+        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
         {
             while (true)
             {
@@ -804,14 +924,15 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         @Override
-        public boolean release(List<Pool<T>.Entry> entries, Pool<T>.Entry entry)
+        public void released(Pool<T>.Entry entry)
         {
-            if (entry.tryRelease())
-            {
-                lru.add(entry);
-                return true;
-            }
-            return false;
+            lru.add(entry);
+        }
+
+        @Override
+        public void reserved(Pool<T>.Entry entry)
+        {
+            lru.add(entry);
         }
     }
 }
