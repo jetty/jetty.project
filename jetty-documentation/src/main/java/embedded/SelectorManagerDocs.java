@@ -23,16 +23,15 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.WritePendingException;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
 
 @SuppressWarnings("unused")
 public class SelectorManagerDocs
@@ -166,13 +165,9 @@ public class SelectorManagerDocs
     public void echoCorrect()
     {
         // tag::echo-correct[]
-        class EchoConnection extends AbstractConnection implements Callback
+        class EchoConnection extends AbstractConnection
         {
-            public static final int IDLE = 0;
-            public static final int WRITING = 1;
-            public static final int PENDING = 2;
-
-            private final AtomicInteger state = new AtomicInteger();
+            private final IteratingCallback callback = new EchoIteratingCallback();
 
             public EchoConnection(EndPoint endp, Executor executor)
             {
@@ -191,79 +186,71 @@ public class SelectorManagerDocs
             @Override
             public void onFillable()
             {
-                try
+                // Start the iteration loop that reads and echoes back.
+                callback.iterate();
+            }
+
+            class EchoIteratingCallback extends IteratingCallback
+            {
+                private ByteBuffer buffer;
+
+                @Override
+                protected Action process() throws Throwable
                 {
-                    ByteBuffer buffer = BufferUtil.allocate(1024);
-                    while (true)
+                    // Obtain a buffer if we don't already have one.
+                    if (buffer == null)
+                        buffer = BufferUtil.allocate(1024);
+
+                    int filled = getEndPoint().fill(buffer);
+                    if (filled > 0)
                     {
-                        int filled = getEndPoint().fill(buffer);
-                        if (filled > 0)
-                        {
-                            // We have filled some bytes, echo them back.
-                            if (write(buffer))
-                            {
-                                // If the write completed, continue to fill.
-                                continue;
-                            }
-                            else
-                            {
-                                // The write is pending, return to wait for completion.
-                                return;
-                            }
-                        }
-                        else if (filled == 0)
-                        {
-                            // No more bytes to read, declare
-                            // again interest for fill events.
-                            fillInterested();
-                            return;
-                        }
-                        else
-                        {
-                            // The other peer closed the connection.
-                            close();
-                            return;
-                        }
+                        // We have filled some bytes, echo them back.
+                        getEndPoint().write(this, buffer);
+
+                        // Signal that the iteration should resume
+                        // when the write() operation is completed.
+                        return Action.SCHEDULED;
+                    }
+                    else if (filled == 0)
+                    {
+                        // We don't need the buffer anymore, so
+                        // don't keep it around while we are idle.
+                        buffer = null;
+
+                        // No more bytes to read, declare
+                        // again interest for fill events.
+                        fillInterested();
+
+                        // Signal that the iteration is now IDLE.
+                        return Action.IDLE;
+                    }
+                    else
+                    {
+                        // The other peer closed the connection,
+                        // the iteration completed successfully.
+                        return Action.SUCCEEDED;
                     }
                 }
-                catch (Throwable x)
+
+                @Override
+                protected void onCompleteSuccess()
                 {
-                    getEndPoint().close(x);
+                    // The iteration completed successfully.
+                    getEndPoint().close();
                 }
-            }
 
-            private boolean write(ByteBuffer buffer)
-            {
-                // Check if we are writing concurrently.
-                if (!state.compareAndSet(IDLE, WRITING))
-                    throw new WritePendingException();
+                @Override
+                protected void onCompleteFailure(Throwable cause)
+                {
+                    // The iteration completed with a failure.
+                    getEndPoint().close(cause);
+                }
 
-                // Write the buffer using "this" as a callback.
-                getEndPoint().write(this, buffer);
-
-                // Check if the write is already completed.
-                boolean writeIsPending = state.compareAndSet(WRITING, PENDING);
-
-                // Return true if the write was completed.
-                return !writeIsPending;
-            }
-
-            @Override
-            public void succeeded()
-            {
-                // The write is complete, reset the state.
-                int prevState = state.getAndSet(IDLE);
-
-                // If the write was pending we need
-                // to resume reading from the network.
-                if (prevState == PENDING)
-                    onFillable();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                getEndPoint().close(x);
+                @Override
+                public InvocationType getInvocationType()
+                {
+                    return InvocationType.NON_BLOCKING;
+                }
             }
         }
         // end::echo-correct[]
