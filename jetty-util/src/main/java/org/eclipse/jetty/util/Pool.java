@@ -662,7 +662,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * @param <T> The type of entry the strategy is for
+     * Linear search strategy uses a fresh iterator to scan the
+     * entries, starting at 0, until it can acquire one.
+     * @param <T> The type of entry the strategy is for.
      */
     public static class LinearSearchStrategy<T> implements Strategy<T>
     {
@@ -679,7 +681,14 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * @param <T> The type of entry the strategy is for
+     * This strategy stores a {@link ListIterator} as a {@link ThreadLocal}
+     * which is used to scan the list of entries for one that can be acquired.
+     * Once an entry is acquired, if the strategy is in roundrobin mode, then
+     * it is left on the next entry, otherwise it is moved back so the current
+     * entry will be tried again on the next acquire.
+     * If the iterator reaches the end, then a new one is created.
+     * The strategy will only try as many times as there are entries.
+     * @param <T> The type of entry the strategy is for.
      */
     public static class ThreadLocalIteratorStrategy<T> implements Strategy<T>
     {
@@ -728,7 +737,12 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * @param <T> The type of entry the strategy is for
+     * This strategy stores the last entry released by a thread as in
+     * {@link ThreadLocal} so it can be the first tried on the next
+     * acquire.
+     * This strategy should be combined with an exhaustive strategy such
+     * as {@link LinearSearchStrategy}.
+     * @param <T> The type of entry the strategy is for.
      */
     public static class ThreadLocalStrategy<T> implements Strategy<T>
     {
@@ -756,7 +770,12 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * @param <T> The type of entry the strategy is for
+     * This strategy stores the entries released by a thread in a bounded list
+     * stored in a {@link ThreadLocal},  so they can be the first tried on the
+     * next acquire.
+     * This strategy should be combined with an exhaustive strategy such
+     * as {@link LinearSearchStrategy}.
+     * @param <T> The type of entry the strategy is for.
      */
     public static class ThreadLocalListStrategy<T> implements Strategy<T>
     {
@@ -818,6 +837,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
+     * This strategy tries to acquire a random entry.
+     * This strategy should be combined with an exhaustive strategy such
+     * as {@link LinearSearchStrategy}.
      * @param <T> The type of entry the strategy is for
      */
     public static class RandomStrategy<T> extends IndexedStrategy<T>
@@ -830,7 +852,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * @param <T> The type of entry the strategy is for
+     * This strategy uses an {@link AtomicInteger} to remember the index
+     * of the last acquired entry. Calls to acquire will commence trying
+     * to acquired from the next index.
+     * @param <T> The type of entry the strategy is for.
      */
     public static class RoundRobinStrategy<T> extends IndexedStrategy<T>
     {
@@ -857,7 +882,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * @param <T> The type of entry the strategy is for
+     * This strategy iterates over the entries, starting from a random location,
+     * to try to acquire an entry.
+     * @param <T> The type of entry the strategy is for.
      */
     public static class RandomIterationStrategy<T> implements Strategy<T>
     {
@@ -890,7 +917,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * @param <T> The type of entry the strategy is for
+     * This strategy commences an iteration over the entries from the
+     * position after the last successful acquire.
+     * @param <T> The type of entry the strategy is for.
      */
     public static class RoundRobinIterationStrategy<T> implements Strategy<T>
     {
@@ -928,7 +957,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
     }
 
     /**
-     * @param <T> The type of entry the strategy is for
+     * This strategy keeps a queue of the least recently used entry. If that queue is
+     * empty, then this strategy falls back to a linear search.
+     * @param <T> The type of entry the strategy is for.
      */
     public static class LeastRecentlyUsedStrategy<T> extends LinearSearchStrategy<T>
     {
