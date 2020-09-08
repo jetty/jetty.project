@@ -30,7 +30,7 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
 
     private final Queue<T> _pool;
     private final AtomicInteger _numObjects = new AtomicInteger(0);
-    private final int _capacity;
+    private int _capacity;
 
     /**
      * Create a Pool of {@link T} instances.
@@ -44,7 +44,17 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
     public CompressionPool(int capacity)
     {
         _capacity = capacity;
-        _pool = (_capacity == 0) ? null : new ConcurrentLinkedQueue<>();
+        _pool = new ConcurrentLinkedQueue<>();
+    }
+
+    public int getCapacity()
+    {
+        return _capacity;
+    }
+
+    public void setCapacity(int capacity)
+    {
+        _capacity = capacity;
     }
 
     protected abstract T newObject();
@@ -85,7 +95,6 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
         if (_capacity == 0 || !isRunning())
         {
             end(object);
-            return;
         }
         else if (_capacity < 0)
         {

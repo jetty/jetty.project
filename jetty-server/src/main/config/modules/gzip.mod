@@ -26,8 +26,11 @@ etc/jetty-gzip.xml
 ## Inflate request buffer size, or 0 for no request inflation
 # jetty.gzip.inflateBufferSize=0
 
-## Deflater pool max size (-1 for unlimited, 0 for no pool)
+## Deflater pool max size (-1 for unlimited, 0 for no pooling)
 # jetty.gzip.deflaterPoolCapacity=-1
+
+## Inflater pool max size (-1 for unlimited, 0 for no pooling)
+# jetty.gzip.inflaterPoolCapacity=-1
 
 ## Set the {@link Deflater} flush mode to use.
 # jetty.gzip.syncFlush=false

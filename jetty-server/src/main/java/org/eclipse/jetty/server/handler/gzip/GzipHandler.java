@@ -46,7 +46,9 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,8 +162,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     private static final HttpField TE_CHUNKED = new PreEncodedHttpField(HttpHeader.TRANSFER_ENCODING, HttpHeaderValue.CHUNKED.asString());
     private static final Pattern COMMA_GZIP = Pattern.compile(".*, *gzip");
 
-    private int poolCapacity = -1;
-    private DeflaterPool _deflaterPool = null;
+    private final InflaterPool _inflaterPool;
+    private final DeflaterPool _deflaterPool;
 
     private int _minGzipSize = DEFAULT_MIN_GZIP_SIZE;
     private boolean _syncFlush = false;
@@ -199,6 +201,11 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} mime types {}", this, _mimeTypes);
+
+        _deflaterPool = newDeflaterPool();
+        _inflaterPool = newInflaterPool();
+        addBean(_deflaterPool);
+        addBean(_inflaterPool);
     }
 
     /**
@@ -410,13 +417,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     @Override
-    protected void doStart() throws Exception
-    {
-        _deflaterPool = newDeflaterPool(poolCapacity);
-        super.doStart();
-    }
-
-    @Override
     public Deflater getDeflater(Request request, long contentLength)
     {
         if (contentLength >= 0 && contentLength < _minGzipSize)
@@ -566,7 +566,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} inflate {}", this, request);
-            baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(baseRequest.getHttpChannel().getByteBufferPool(), _inflateBufferSize));
+            baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(_inflaterPool, baseRequest.getHttpChannel().getByteBufferPool(), _inflateBufferSize));
         }
 
         // Are we already being gzipped?
@@ -891,7 +891,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public int getDeflaterPoolCapacity()
     {
-        return poolCapacity;
+        return _deflaterPool.getCapacity();
     }
 
     /**
@@ -902,12 +902,38 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         if (isStarted())
             throw new IllegalStateException(getState());
 
-        poolCapacity = capacity;
+        _deflaterPool.setCapacity(capacity);
     }
 
-    protected DeflaterPool newDeflaterPool(int capacity)
+    /**
+     * Gets the maximum number of Inflators that the DeflaterPool can hold.
+     *
+     * @return the Deflater pool capacity
+     */
+    public int getInflaterPoolCapacity()
     {
-        return new DeflaterPool(capacity, Deflater.DEFAULT_COMPRESSION, true);
+        return _inflaterPool.getCapacity();
+    }
+
+    /**
+     * Sets the maximum number of Inflators that the DeflaterPool can hold.
+     */
+    public void setInflaterPoolCapacity(int capacity)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+
+        _inflaterPool.setCapacity(capacity);
+    }
+
+    protected InflaterPool newInflaterPool()
+    {
+        return new InflaterPool(CompressionPool.INFINITE_CAPACITY, true);
+    }
+
+    protected DeflaterPool newDeflaterPool()
+    {
+        return new DeflaterPool(CompressionPool.INFINITE_CAPACITY, Deflater.DEFAULT_COMPRESSION, true);
     }
 
     @Override

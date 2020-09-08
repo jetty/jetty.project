@@ -29,6 +29,7 @@ import java.util.zip.ZipException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.compression.InflaterPool;
 
 /**
  * <p>Decoder for the "gzip" content encoding.</p>
@@ -41,9 +42,10 @@ public class GZIPContentDecoder implements Destroyable
     private static final long UINT_MAX = 0xFFFFFFFFL;
 
     private final List<ByteBuffer> _inflateds = new ArrayList<>();
-    private final Inflater _inflater = new Inflater(true);
+    private final InflaterPool _inflaterPool;
     private final ByteBufferPool _pool;
     private final int _bufferSize;
+    private Inflater _inflater;
     private State _state;
     private int _size;
     private long _value;
@@ -62,6 +64,13 @@ public class GZIPContentDecoder implements Destroyable
 
     public GZIPContentDecoder(ByteBufferPool pool, int bufferSize)
     {
+        this(null, pool, bufferSize);
+    }
+
+    public GZIPContentDecoder(InflaterPool inflaterPool, ByteBufferPool pool, int bufferSize)
+    {
+        _inflaterPool = inflaterPool;
+        _inflater = (inflaterPool == null) ? new Inflater(true) : inflaterPool.acquire();
         _bufferSize = bufferSize;
         _pool = pool;
         reset();
@@ -420,7 +429,12 @@ public class GZIPContentDecoder implements Destroyable
     @Override
     public void destroy()
     {
-        _inflater.end();
+        if (_inflaterPool == null)
+            _inflater.end();
+        else
+            _inflaterPool.release(_inflater);
+
+        _inflater = null;
     }
 
     public boolean isFinished()

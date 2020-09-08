@@ -16,6 +16,7 @@
         <Set name="checkGzExists" property="jetty.gzip.checkGzExists"/>
         <Set name="compressionLevel" property="jetty.gzip.compressionLevel"/>
         <Set name="inflateBufferSize" property="jetty.gzip.inflateBufferSize"/>
+        <Set name="inflaterPoolCapacity" property="jetty.gzip.inflaterPoolCapacity"/>
         <Set name="deflaterPoolCapacity" property="jetty.gzip.deflaterPoolCapacity"/>
         <Set name="syncFlush" property="jetty.gzip.syncFlush"/>
         <Set name="dispatcherTypes" property="jetty.gzip.dispatcherTypes"/>
