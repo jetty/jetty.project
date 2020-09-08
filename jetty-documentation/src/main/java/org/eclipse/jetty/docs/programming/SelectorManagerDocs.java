@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package embedded;
+package org.eclipse.jetty.docs.programming;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

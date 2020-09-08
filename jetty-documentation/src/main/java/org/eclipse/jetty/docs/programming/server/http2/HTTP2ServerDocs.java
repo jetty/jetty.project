@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package embedded.server.http2;
+package org.eclipse.jetty.docs.programming.server.http2;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;

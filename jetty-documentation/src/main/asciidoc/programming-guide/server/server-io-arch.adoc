@@ -37,7 +37,7 @@ For example, this is how clear-text HTTP/1.1 is configured:
 
 [source,java,indent=0]
 ----
-include::../{doc_code}/embedded/server/ServerDocs.java[tags=http]
+include::../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=http]
 ----
 
 With this configuration, the `ServerConnector` will listen on port `8080`.
@@ -73,7 +73,7 @@ Therefore, to support encrypted HTTP/1.1 (also known as `https`), you need to co
 
 [source,java,indent=0]
 ----
-include::../{doc_code}/embedded/server/ServerDocs.java[tags=tlsHttp]
+include::../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=tlsHttp]
 ----
 
 With this configuration, the `ServerConnector` will listen on port `8443`.
@@ -121,7 +121,7 @@ In the example below you can see how to support both clear-text and encrypted HT
 
 [source,java,indent=0]
 ----
-include::../{doc_code}/embedded/server/ServerDocs.java[tags=detector]
+include::../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=detector]
 ----
 
 With this configuration, the `ServerConnector` will listen on port 8181.
@@ -161,7 +161,7 @@ First, the `JSONHTTPConnectionFactory`:
 
 [source,java,indent=0]
 ----
-include::../{doc_code}/embedded/server/ServerDocs.java[tags=jsonHttpConnectionFactory]
+include::../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=jsonHttpConnectionFactory]
 ----
 
 Note how `JSONHTTPConnectionFactory` extends `AbstractConnectionFactory` to inherit facilities common to all `ConnectionFactory` implementations.
@@ -172,7 +172,7 @@ Furthermore, because the Jetty libraries are non-blocking and asynchronous, you 
 
 [source,java,indent=0]
 ----
-include::../{doc_code}/embedded/server/ServerDocs.java[tags=jsonHttpConnection]
+include::../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=jsonHttpConnection]
 ----
 
 Again, note how `JSONHTTPConnection` extends `AbstractConnection` to inherit facilities that you would otherwise need to re-implement from scratch.
@@ -191,7 +191,7 @@ This results in the following API:
 
 [source,java,indent=0]
 ----
-include::../{doc_code}/embedded/server/ServerDocs.java[tags=jsonHttpAPI]
+include::../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=jsonHttpAPI]
 ----
 
 The important part of this simple API example is the `Callback` parameter that makes the API non-blocking and asynchronous.

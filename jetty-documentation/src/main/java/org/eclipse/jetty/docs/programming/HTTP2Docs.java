@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package embedded;
+package org.eclipse.jetty.docs.programming;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;

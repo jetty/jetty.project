@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package embedded.client.http;
+package org.eclipse.jetty.docs.programming.client.http;
 
 import java.io.FileInputStream;
 import java.io.IOException;

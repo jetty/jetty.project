@@ -64,7 +64,7 @@ In order to use `HttpClient`, you must instantiate it, configure it, and then st
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=start]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=start]
 ----
 
 You may create multiple instances of `HttpClient`, but typically one instance is enough for an application.
@@ -84,7 +84,7 @@ It is recommended that when your application stops, you also stop the `HttpClien
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=stop]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=stop]
 ----
 
 Stopping `HttpClient` makes sure that the memory it holds (for example, authentication credentials, cookies, etc.) is released, and that the thread pool and scheduler are properly stopped allowing all threads used by `HttpClient` to exit.
@@ -130,7 +130,7 @@ You can access the `ConnectionPool` in this way:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=getConnectionPool]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=getConnectionPool]
 ----
 
 Jetty's client library provides the following `ConnectionPool` implementations:
@@ -143,7 +143,7 @@ The `ConnectionPool` implementation can be customized for each destination in by
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=setConnectionPool]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=setConnectionPool]
 ----
 
 [[pg-client-http-request-processing]]

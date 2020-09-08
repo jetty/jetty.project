@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package embedded.client;
+package org.eclipse.jetty.docs.programming.client;
 
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;

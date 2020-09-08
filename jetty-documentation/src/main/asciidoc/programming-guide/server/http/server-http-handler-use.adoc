@@ -61,7 +61,7 @@ The simplest use of `ContextHandler` is the following:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=contextHandler]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=contextHandler]
 ----
 
 The `Handler` tree structure looks like the following:
@@ -89,7 +89,7 @@ Eventually, if `Request.setHandled(true)` is not called, Jetty returns an HTTP `
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=contextHandlerCollection]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=contextHandlerCollection]
 ----
 
 The `Handler` tree structure looks like the following:
@@ -130,14 +130,14 @@ This is how you configure a `ResourceHandler` to create a simple file server:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=resourceHandler]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=resourceHandler]
 ----
 
 If you need to serve static resources from multiple directories:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=multipleResourcesHandler]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=multipleResourcesHandler]
 ----
 
 If the resource is not found, `ResourceHandler` will not call `Request.setHandled(true)` so what happens next depends on the `Handler` tree structure.
@@ -155,7 +155,7 @@ The decompression/compression is not performed until the web application reads r
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=serverGzipHandler]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=serverGzipHandler]
 ----
 
 The `Handler` tree structure looks like the following:
@@ -174,7 +174,7 @@ However, in less common cases, you can configure `GzipHandler` on a per-context 
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=contextGzipHandler]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=contextGzipHandler]
 ----
 
 The `Handler` tree structure looks like the following:
@@ -219,7 +219,7 @@ You typically want to configure `RewriteHandler` at the server level, although i
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=rewriteHandler]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=rewriteHandler]
 ----
 
 The `Handler` tree structure looks like the following:
@@ -251,7 +251,7 @@ Server applications can read these values and use them internally, or expose the
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=statsHandler]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=statsHandler]
 ----
 
 The `Handler` tree structure looks like the following:
@@ -279,7 +279,7 @@ Server applications must configure a `HttpConfiguration` object with the secure 
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=securedHandler]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=securedHandler]
 ----
 
 [[pg-server-http-handler-use-util-default-handler]]
@@ -295,7 +295,7 @@ include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=securedH
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=defaultHandler]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=defaultHandler]
 ----
 
 The `Handler` tree structure looks like the following:
@@ -339,7 +339,7 @@ The Maven artifact coordinates are:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=servletContextHandler]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=servletContextHandler]
 ----
 
 The `Handler` and Servlet components tree structure looks like the following:
@@ -375,7 +375,7 @@ Where server applications using `ServletContextHandler` must manually invoke met
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=webAppContextHandler]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=webAppContextHandler]
 ----
 
 [[pg-server-http-handler-use-webapp-context-class-loading]]
@@ -416,5 +416,5 @@ The features are similar, but `DefaultServlet` is more commonly used to serve st
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=defaultServlet]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=defaultServlet]
 ----

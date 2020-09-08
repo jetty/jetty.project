@@ -51,14 +51,14 @@ To enable JMX support on the server:
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/JMXDocs.java[tags=server]
+include::{doc_code}/org/eclipse/jetty/docs/programming/JMXDocs.java[tags=server]
 ----
 
 Similarly on the client:
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/JMXDocs.java[tags=client]
+include::{doc_code}/org/eclipse/jetty/docs/programming/JMXDocs.java[tags=client]
 ----
 
 [NOTE]
@@ -149,7 +149,7 @@ To allow JMX remote access, create and configure a `ConnectorServer`:
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/JMXDocs.java[tags=remote]
+include::{doc_code}/org/eclipse/jetty/docs/programming/JMXDocs.java[tags=remote]
 ----
 
 [[pg-arch-jmx-remote-authorization]]
@@ -162,7 +162,7 @@ In the sections below we detail one way to setup JMX authentication and authoriz
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/JMXDocs.java[tags=remoteAuthorization]
+include::{doc_code}/org/eclipse/jetty/docs/programming/JMXDocs.java[tags=remoteAuthorization]
 ----
 
 The `users.access` file format is defined in the `$JAVA_HOME/conf/management/jmxremote.access` file.
@@ -195,7 +195,7 @@ It is possible to configure the `ConnectorServer` with a `SslContextFactory` so 
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/JMXDocs.java[tags=tlsRemote]
+include::{doc_code}/org/eclipse/jetty/docs/programming/JMXDocs.java[tags=tlsRemote]
 ----
 
 It is possible to use the same `SslContextFactory.Server` used to configure the Jetty `ServerConnector` that supports TLS also for the JMX communication via RMI.
@@ -214,7 +214,7 @@ For example, trying to connect using the JDK standard `JMXConnector` with both t
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/JMXDocs.java[tags=tlsJMXConnector]
+include::{doc_code}/org/eclipse/jetty/docs/programming/JMXDocs.java[tags=tlsJMXConnector]
 ----
 
 Similarly, to launch JMC:
@@ -255,7 +255,7 @@ The bean is scanned for Jetty JMX annotations to obtain JMX metadata: the JMX at
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/JMXDocs.java[tags=jmxAnnotation]
+include::{doc_code}/org/eclipse/jetty/docs/programming/JMXDocs.java[tags=jmxAnnotation]
 ----
 
 The JMX metadata and the bean are wrapped by an instance of `org.eclipse.jetty.jmx.ObjectMBean` that exposes the JMX metadata and, upon request from JMX consoles, invokes methods on the bean to get/set attribute values and perform operations.
@@ -267,7 +267,7 @@ For example, class `com.acme.Foo` may have a custom `ObjectMBean` subclass named
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/JMXDocs.java[tags=jmxCustomMBean]
+include::{doc_code}/org/eclipse/jetty/docs/programming/JMXDocs.java[tags=jmxCustomMBean]
 ----
 
 The custom `ObjectMBean` subclass is also scanned for Jetty JMX annotations and overrides the JMX metadata obtained by scanning the bean class.
@@ -275,7 +275,7 @@ This allows to annotate only the custom `ObjectMBean` subclass and keep the bean
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/JMXDocs.java[tags=jmxCustomMBeanOverride]
+include::{doc_code}/org/eclipse/jetty/docs/programming/JMXDocs.java[tags=jmxCustomMBeanOverride]
 ----
 
 The scan for Jetty JMX annotations is performed on the bean class and all the interfaces implemented by the bean class, then on the super-class and all the interfaces implemented by the super-class and so on until `java.lang.Object` is reached.

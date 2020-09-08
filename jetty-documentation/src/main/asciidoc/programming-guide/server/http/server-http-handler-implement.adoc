@@ -23,7 +23,7 @@ The `Handler` API consist fundamentally of just one method:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=handlerAPI]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=handlerAPI]
 ----
 
 The `target` parameter is an identifier for the resource.
@@ -40,7 +40,7 @@ A simple "Hello World" `Handler` is the following:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=handlerHello]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=handlerHello]
 ----
 
 Such a simple `Handler` extends from `AbstractHandler` and can access the request and response main features, such as reading request headers and content, or writing response headers and content.
@@ -52,7 +52,7 @@ A filtering `Handler` is a handler that perform some modification to the request
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=handlerFilter]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=handlerFilter]
 ----
 
 Note how a filtering `Handler` extends from `HandlerWrapper` and as such needs another handler to forward the request processing to, and how the two ``Handler``s needs to be linked together to work properly.

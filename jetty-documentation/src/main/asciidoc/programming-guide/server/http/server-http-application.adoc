@@ -40,7 +40,7 @@ Thus a filter/servlet may inspect the headers of a request before getting the in
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=continue100]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=continue100]
 ----
 
 [[jetty-102-processing]]

@@ -39,7 +39,7 @@ The nested behavior is useful to enrich the request with additional services suc
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=handlerTree]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=handlerTree]
 ----
 
 The corresponding `Handler` tree structure looks like the following:

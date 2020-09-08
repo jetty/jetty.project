@@ -40,14 +40,14 @@ This example shows how a client can connect to a server:
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/SelectorManagerDocs.java[tags=connect]
+include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[tags=connect]
 ----
 
 This example shows how a server accepts a client connection:
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/SelectorManagerDocs.java[tags=accept]
+include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[tags=accept]
 ----
 
 [[pg-arch-io-endpoint-connection]]
@@ -119,7 +119,7 @@ The example below shows a typical implementation that extends `AbstractConnectio
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/SelectorManagerDocs.java[tags=connection]
+include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[tags=connection]
 ----
 
 [[pg-arch-io-connection-listener]]
@@ -136,7 +136,7 @@ A naive, but wrong, implementation may be the following:
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/SelectorManagerDocs.java[tags=echo-wrong]
+include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[tags=echo-wrong]
 ----
 
 WARNING: The implementation above is wrong and leads to `StackOverflowError`.
@@ -179,7 +179,7 @@ Now that you know how `IteratingCallback` works, a correct implementation for th
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/SelectorManagerDocs.java[tags=echo-correct]
+include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[tags=echo-correct]
 ----
 
 When `onFillable()` is called, for example the first time that bytes are available from the network, the iteration is started.

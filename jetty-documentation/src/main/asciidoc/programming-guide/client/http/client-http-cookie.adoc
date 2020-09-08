@@ -28,28 +28,28 @@ Applications can programmatically access the cookie store to find the cookies th
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=getCookies]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=getCookies]
 ----
 
 Applications can also programmatically set cookies as if they were returned from a HTTP response:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=setCookie]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=setCookie]
 ----
 
 Cookies may be added explicitly only for a particular request:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=requestCookie]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=requestCookie]
 ----
 
 You can remove cookies that you do not want to be sent in future HTTP requests:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=removeCookie]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=removeCookie]
 ----
 
 If you want to totally disable cookie handling, you can install a `HttpCookieStore.Empty`.
@@ -57,14 +57,14 @@ This must be done when `HttpClient` is used in a proxy application, in this way:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=emptyCookieStore]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=emptyCookieStore]
 ----
 
 You can enable cookie filtering by installing a cookie store that performs the filtering logic in this way:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=filteringCookieStore]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=filteringCookieStore]
 ----
 
 The example above will retain only cookies that come from the `google.com` domain or sub-domains.

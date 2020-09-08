@@ -68,14 +68,14 @@ HTTP/1.1 is the default transport.
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=defaultTransport]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=defaultTransport]
 ----
 
 If you want to customize the HTTP/1.1 transport, you can explicitly configure it in this way:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=http11Transport]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=http11Transport]
 ----
 
 [[pg-client-http-transport-http2]]
@@ -85,7 +85,7 @@ The HTTP/2 transport can be configured in this way:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=http2Transport]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=http2Transport]
 ----
 
 `HTTP2Client` is the lower-level client that provides an API based on HTTP/2 concepts such as _sessions_, _streams_ and _frames_ that are specific to HTTP/2. See xref:pg-client-http2[the HTTP/2 client section] for more information.
@@ -99,7 +99,7 @@ The FastCGI transport can be configured in this way:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=fcgiTransport]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=fcgiTransport]
 ----
 
 In order to make requests using the FastCGI transport, you need to have a FastCGI server such as https://en.wikipedia.org/wiki/PHP#PHPFPM[PHP-FPM] (see also http://php.net/manual/en/install.fpm.php).
@@ -122,21 +122,21 @@ By default, the dynamic transport only speaks HTTP/1.1:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=dynamicDefault]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicDefault]
 ----
 
 The dynamic transport can be configured with just one protocol, making it equivalent to the corresponding static transport:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=dynamicOneProtocol]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicOneProtocol]
 ----
 
 The dynamic transport, however, has been implemented to support multiple transports, in particular both HTTP/1.1 and HTTP/2:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=dynamicH1H2]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicH1H2]
 ----
 
 IMPORTANT: The order in which the protocols are specified to `HttpClientTransportDynamic` indicates what is the client preference.
@@ -147,7 +147,7 @@ Provided that the server supports both HTTP/1.1 and HTTP/2 clear-text, client ap
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=dynamicClearText]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=dynamicClearText]
 ----
 
 In case of TLS encrypted communication using the HTTPS scheme, things are a little more complicated.

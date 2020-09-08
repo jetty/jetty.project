@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package embedded.server;
+package org.eclipse.jetty.docs.programming.server;
 
 import java.nio.ByteBuffer;
 import java.util.Map;

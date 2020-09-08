@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package embedded;
+package org.eclipse.jetty.docs.programming;
 
 import java.util.Collection;
 import java.util.HashSet;

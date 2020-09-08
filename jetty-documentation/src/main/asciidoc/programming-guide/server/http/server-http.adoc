@@ -63,7 +63,7 @@ A `Server` must be created, configured and started:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=simple]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=simple]
 ----
 
 The example above shows the simplest HTTP/1.1 server; it has no support for HTTP sessions, for HTTP authentication, or for any of the features required by the Servlet specification.
@@ -155,7 +155,7 @@ Server applications can register `HttpChannel.Listener` by adding them as xref:p
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=httpChannelListener]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=httpChannelListener]
 ----
 
 include::server-http-connector.adoc[]

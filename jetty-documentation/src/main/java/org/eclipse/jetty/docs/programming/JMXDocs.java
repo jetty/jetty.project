@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package embedded;
+package org.eclipse.jetty.docs.programming;
 
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;

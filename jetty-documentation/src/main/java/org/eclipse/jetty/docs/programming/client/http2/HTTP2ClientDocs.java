@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package embedded.client.http2;
+package org.eclipse.jetty.docs.programming.client.http2;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;

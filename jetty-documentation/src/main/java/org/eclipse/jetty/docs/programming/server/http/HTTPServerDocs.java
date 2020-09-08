@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-package embedded.server.http;
+package org.eclipse.jetty.docs.programming.server.http;
 
 import java.io.IOException;
 import java.util.EnumSet;
