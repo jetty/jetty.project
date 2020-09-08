@@ -57,7 +57,7 @@ include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=stop]
 
 `HTTP2Client` allows client applications to connect to an HTTP/2 server.
 A _session_ represents a single TCP connection to an HTTP/2 server and is defined by class `org.eclipse.jetty.http2.api.Session`.
-A _session_ typically has a long life - once the TCP connection is established, it remains open until it is not used anymore (and therefore it is closed by the idle timeout mechanism), until a fatal error occurs (for example, a network failure), or if one of the peers decides unilaterally to close the TCP connection.
+A _session_ typically has a long life -- once the TCP connection is established, it remains open until it is not used anymore (and therefore it is closed by the idle timeout mechanism), until a fatal error occurs (for example, a network failure), or if one of the peers decides unilaterally to close the TCP connection.
 
 include::../../http2.adoc[tag=multiplex]
 

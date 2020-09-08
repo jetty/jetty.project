@@ -21,7 +21,7 @@
 
 Jetty's `HttpClient` supports the `BASIC` and `DIGEST` authentication mechanisms defined by link:https://tools.ietf.org/html/rfc7235[RFC 7235], as well as the SPNEGO authentication mechanism defined in link:https://tools.ietf.org/html/rfc4559[RFC 4559].
 
-The HTTP _conversation_ - the sequence of related HTTP requests - for a request that needs authentication is the following:
+The HTTP _conversation_, the sequence of related HTTP requests, for a request that needs authentication is the following:
 
 [plantuml]
 ----

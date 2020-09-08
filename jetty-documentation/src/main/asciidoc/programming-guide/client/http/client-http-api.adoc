@@ -84,7 +84,7 @@ In the example above, when the 5 seconds expire, the request/response cycle is a
 [[pg-client-http-non-blocking]]
 ==== HttpClient Non-Blocking APIs
 
-So far we have shown how to use Jetty HTTP client in a blocking style - that is, the thread that issues the request blocks until the request/response conversation is complete.
+So far we have shown how to use Jetty HTTP client in a blocking style -- that is, the thread that issues the request blocks until the request/response conversation is complete.
 
 This section will look at Jetty's `HttpClient` non-blocking, asynchronous APIs that are perfectly suited for large content downloads, for parallel processing of requests/responses and in cases where performance and efficient thread and resource utilization is a key factor.
 
@@ -98,7 +98,7 @@ If you need to execute application code that takes long time inside a listener, 
 Request and response processing are executed by two different threads and therefore may happen concurrently.
 A typical example of this concurrent processing is an echo server, where a large upload may be concurrent with the large download echoed back.
 
-NOTE: Remember that responses may be processed and completed _before_ requests; a typical example is a large upload that triggers a quick response - for example an error - by the server: the response may arrive and be completed while the request content is still being uploaded.
+NOTE: Remember that responses may be processed and completed _before_ requests; a typical example is a large upload that triggers a quick response, for example an error, by the server: the response may arrive and be completed while the request content is still being uploaded.
 
 The application thread that calls `Request.send(Response.CompleteListener)` performs the xref:pg-client-http-request-processing[processing of the request] until either the request is fully sent over the network or until it would block on I/O, then it returns (and therefore never blocks).
 If it would block on I/O, the thread asks the I/O system to emit an event when the I/O will be ready to continue, then returns.
@@ -109,7 +109,7 @@ Response processing continues until either the response is fully processed or un
 If it would block for I/O, the thread asks the I/O system to emit an event when the I/O will be ready to continue, then returns.
 When such an event is fired, a (possibly different) thread taken from the `HttpClient` thread pool will resume the processing of the response.
 
-When the request and the response are both fully processed, the thread that finished the last processing (usually the thread that processes the response, but may also be the thread that processes the request - if the request takes more time than the response to be processed) is used to dequeue the next request for the same destination and to process it.
+When the request and the response are both fully processed, the thread that finished the last processing (usually the thread that processes the response, but may also be the thread that processes the request -- if the request takes more time than the response to be processed) is used to dequeue the next request for the same destination and to process it.
 
 A simple non-blocking `GET` request that discards the response content can be written in this way:
 

@@ -48,7 +48,7 @@ This means that requests to public websites that have a valid certificate (such 
 
 However, requests made to sites (typically ``localhost``) that have an invalid (for example, expired or with a wrong host) or self-signed certificate will fail (like they will in a browser).
 
-Certificate validation is performed at two levels: at the TLS implementation level (in the JDK) and - optionally - at the application level.
+Certificate validation is performed at two levels: at the TLS implementation level (in the JDK) and, optionally, at the application level.
 
 By default, certificate validation at the TLS level is enabled, while certificate validation at the application level is disabled.
 

@@ -31,7 +31,7 @@ A `ServerConnector` manages a list of ``ConnectionFactory``s, that indicate what
 
 Recall from the xref:pg-arch-io-connection[`Connection` section] of the Jetty I/O architecture that `Connection` instances are responsible for parsing bytes read from a TCP connection and generating bytes to write to that TCP connection.
 
-On the server-side, a `ConnectionFactory` creates `Connection` instances that know how to parse and generate bytes for the specific protocol they support - it can be either HTTP/1.1, or TLS, or FastCGI, or the link:https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt[PROXY protocol].
+On the server-side, a `ConnectionFactory` creates `Connection` instances that know how to parse and generate bytes for the specific protocol they support -- it can be either HTTP/1.1, or TLS, or FastCGI, or the link:https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt[PROXY protocol].
 
 For example, this is how clear-text HTTP/1.1 is configured:
 
@@ -69,7 +69,7 @@ For every TCP connection there will be an `EndPoint` + `Connection` pair.
 ==== Wrapping a `ConnectionFactory`
 
 A `ConnectionFactory` may wrap another `ConnectionFactory`; for example, the TLS protocol provides encryption for any other protocol.
-Therefore, to support encrypted HTTP/1.1 (also known as `https`), you need to configure the `ServerConnector` with two ``ConnectionFactory``s - one for the TLS protocol and one for the HTTP/1.1 protocol, like in the example below:
+Therefore, to support encrypted HTTP/1.1 (also known as `https`), you need to configure the `ServerConnector` with two ``ConnectionFactory``s -- one for the TLS protocol and one for the HTTP/1.1 protocol, like in the example below:
 
 [source,java,indent=0]
 ----
