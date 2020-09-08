@@ -59,6 +59,7 @@ public class PoolTest
         data.add(new Object[]{new Pool.ThreadLocalIteratorStrategy<>()});
         data.add(new Object[]{new Pool.ThreadLocalIteratorStrategy<>(true)});
         data.add(new Object[]{new Pool.RoundRobinIterationStrategy<>()});
+        data.add(new Object[]{new Pool.LeastRecentlyUsedStrategy<>()});
         return data.stream();
     }
 

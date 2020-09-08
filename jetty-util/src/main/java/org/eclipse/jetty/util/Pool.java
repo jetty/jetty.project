@@ -228,7 +228,6 @@ public class Pool<T> implements AutoCloseable, Dumpable
 
             Entry entry = new Entry();
             entries.add(entry);
-            strategy.reserved(entry);
             return entry;
         }
     }
@@ -323,7 +322,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         if (closed)
             return false;
 
-        boolean released =  entry.tryRelease();
+        boolean released = entry.tryRelease();
         if (released)
             strategy.released(entry);
         return released;
@@ -348,13 +347,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
 
         boolean removed = entries.remove(entry);
-        if (removed)
-            strategy.removed(entry);
-        else if (LOGGER.isDebugEnabled())
+        if (!removed && LOGGER.isDebugEnabled())
             LOGGER.debug("Attempt to remove an object from the pool that does not exist: {}", entry);
 
         return removed;
-
     }
 
     public boolean isClosed()
@@ -624,14 +620,6 @@ public class Pool<T> implements AutoCloseable, Dumpable
         default void released(Pool<T>.Entry entry)
         {
         }
-
-        default void reserved(Pool<T>.Entry entry)
-        {
-        }
-
-        default void removed(Pool<T>.Entry entry)
-        {
-        }
     }
     
     public static class CompositeStrategy<T> implements Strategy<T>
@@ -659,13 +647,6 @@ public class Pool<T> implements AutoCloseable, Dumpable
         {
             planA.released(entry);
             planB.released(entry);
-        }
-
-        @Override
-        public void removed(Pool<T>.Entry entry)
-        {
-            planA.removed(entry);
-            planB.removed(entry);
         }
     }
 
@@ -911,7 +892,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
-    public static class LeastRecentlyUsedStrategy<T> implements Strategy<T>
+    public static class LeastRecentlyUsedStrategy<T> extends LinearSearchStrategy<T>
     {
         Queue<Pool<T>.Entry> lru = new ConcurrentLinkedQueue<>();
 
@@ -922,22 +903,14 @@ public class Pool<T> implements AutoCloseable, Dumpable
             {
                 Pool<T>.Entry entry = lru.poll();
                 if (entry == null)
-                    return null;
-                if (entry.tryAcquire())
-                    return entry;
+                    entry = super.tryAcquire(entries);
+                else if (!entry.tryAcquire())
+                    continue;
+
+                if (entry != null)
+                    lru.add(entry);
+                return entry;
             }
-        }
-
-        @Override
-        public void released(Pool<T>.Entry entry)
-        {
-            lru.add(entry);
-        }
-
-        @Override
-        public void reserved(Pool<T>.Entry entry)
-        {
-            lru.add(entry);
         }
     }
 }
