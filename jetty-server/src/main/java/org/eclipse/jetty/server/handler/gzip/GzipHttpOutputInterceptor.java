@@ -196,7 +196,6 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                 contentLength = content.remaining();
 
             _deflater = _factory.getDeflater(_channel.getRequest(), contentLength);
-
             if (_deflater == null)
             {
                 LOG.debug("{} exclude no deflater", this);
@@ -334,39 +333,16 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                     }
                     else
                     {
-                        // If there is more content available to compress, we have to make sure
-                        // it is available in an array for the current deflator API, maybe slicing
-                        // of content.
-                        ByteBuffer slice;
-                        if (_content.hasArray())
-                            slice = _content;
-                        else
-                        {
-                            if (_copy == null)
-                                _copy = _channel.getByteBufferPool().acquire(_bufferSize, false);
-                            else
-                                BufferUtil.clear(_copy);
-                            slice = _copy;
-                            BufferUtil.append(_copy, _content);
-                        }
-
-                        // transfer the data from the slice to the the deflator
-                        byte[] array = slice.array();
-                        int off = slice.arrayOffset() + slice.position();
-                        int len = slice.remaining();
-                        _crc.update(array, off, len);
-                        _deflater.setInput(array, off, len);  // TODO use ByteBuffer API in Jetty-10
-                        slice.position(slice.position() + len);
-                        if (_last && BufferUtil.isEmpty(_content))
+                        // TODO: this might be a bad place to use ByteBuffer API, the CRC can copy the buffer anyway.
+                        _crc.update(_content.slice());
+                        _deflater.setInput(_content.slice());
+                        if (_last)
                             _deflater.finish();
                     }
                 }
 
                 // deflate the content into the available space in the buffer
-                int off = _buffer.arrayOffset() + _buffer.limit();
-                int len = BufferUtil.space(_buffer);
-                int produced = _deflater.deflate(_buffer.array(), off, len, _syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH);
-                _buffer.limit(_buffer.limit() + produced);
+                _deflater.deflate(_buffer, _syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH);
             }
 
             // If we have finished deflation and there is room for the trailer.

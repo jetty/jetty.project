@@ -216,8 +216,7 @@ public class GZIPContentDecoder implements Destroyable
 
                             try
                             {
-                                int length = _inflater.inflate(buffer.array(), buffer.arrayOffset(), buffer.capacity());
-                                buffer.limit(length);
+                                _inflater.inflate(buffer);
                             }
                             catch (DataFormatException x)
                             {
@@ -235,23 +234,10 @@ public class GZIPContentDecoder implements Destroyable
                             {
                                 if (!compressed.hasRemaining())
                                     return;
-                                if (compressed.hasArray())
-                                {
-                                    _inflater.setInput(compressed.array(), compressed.arrayOffset() + compressed.position(), compressed.remaining());
-                                    compressed.position(compressed.limit());
-                                }
-                                else
-                                {
-                                    // TODO use the pool
-                                    byte[] input = new byte[compressed.remaining()];
-                                    compressed.get(input);
-                                    _inflater.setInput(input);
-                                }
+                                _inflater.setInput(compressed);
                             }
                             else if (_inflater.finished())
                             {
-                                int remaining = _inflater.getRemaining();
-                                compressed.position(compressed.limit() - remaining);
                                 _state = State.CRC;
                                 _size = 0;
                                 _value = 0;
@@ -395,7 +381,6 @@ public class GZIPContentDecoder implements Destroyable
                             if (_value != (_inflater.getBytesWritten() & UINT_MAX))
                                 throw new ZipException("Invalid input size");
 
-                            // TODO ByteBuffer result = output == null ? BufferUtil.EMPTY_BUFFER : ByteBuffer.wrap(output);
                             reset();
                             return;
                         }
