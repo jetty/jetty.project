@@ -124,12 +124,10 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
         assertThat("Response[ETag]", response.get("ETag"), startsWith("W/"));
         assertThat("Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP._etag));
+
+        assertThat("Response[Content-Length]", response.get("Content-Length"), is(nullValue()));
         // A HEAD request should have similar headers, but no body
-        if (method.equals("HEAD"))
-        {
-            assertThat("Response[Content-Length]", response.get("Content-Length"), is(not(nullValue())));
-        }
-        else
+        if (!method.equals("HEAD"))
         {
             assertThat("Response[Content-Length]", response.get("Content-Length"), is(nullValue()));
             // Response Content checks
