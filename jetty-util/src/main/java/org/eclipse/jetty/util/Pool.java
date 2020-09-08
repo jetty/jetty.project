@@ -134,7 +134,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
      */
     public Pool(int maxEntries, int cacheSize)
     {
-        this(maxEntries, cacheSize < 0 ? null : new CompositeStrategy<>(
+        this(maxEntries, cacheSize < 0
+            ? (cacheSize == -1 ? new ThreadLocalIteratorStrategy<>() : null)
+            : new CompositeStrategy<>(
             cacheSize == 1 ? new ThreadLocalStrategy<>() : new ThreadLocalListStrategy<>(cacheSize),
             new LinearSearchStrategy<>()));
     }
@@ -849,7 +851,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
         @Override
         public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
         {
-            int r = ThreadLocalRandom.current().nextInt(entries.size());
+            int size = entries.size();
+            if (size == 0)
+                return null;
+            int r = ThreadLocalRandom.current().nextInt(size);
 
             ListIterator<Pool<T>.Entry> iter = entries.listIterator(r);
             while (iter.hasNext())
