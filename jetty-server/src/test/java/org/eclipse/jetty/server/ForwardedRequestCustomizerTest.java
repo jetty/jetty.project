@@ -508,8 +508,8 @@ public class ForwardedRequestCustomizerTest
                         "X-Forwarded-Server: sub2.example.com"
                     ),
                 new Expectations()
-                    .scheme("https").serverName("sub1.example.com").serverPort(10002)
-                    .requestURL("https://sub1.example.com:10002/")
+                    .scheme("https").serverName("sub1.example.com").serverPort(10003)
+                    .requestURL("https://sub1.example.com:10003/")
                     .remoteAddr("127.0.0.1").remotePort(8888)
             ),
             Arguments.of(new Request("X-Forwarded-* (Multiple Ports - Server First)")
@@ -523,8 +523,8 @@ public class ForwardedRequestCustomizerTest
                         "X-Forwarded-Host: sub1.example.com:10003"
                     ),
                 new Expectations()
-                    .scheme("https").serverName("sub1.example.com").serverPort(10002)
-                    .requestURL("https://sub1.example.com:10002/")
+                    .scheme("https").serverName("sub1.example.com").serverPort(10003)
+                    .requestURL("https://sub1.example.com:10003/")
                     .remoteAddr("127.0.0.1").remotePort(8888)
             ),
             Arguments.of(new Request("X-Forwarded-* (Multiple Ports - setForwardedPortAsAuthority = false)")
@@ -645,7 +645,6 @@ public class ForwardedRequestCustomizerTest
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("cases")
-    @SuppressWarnings("unused")
     public void testDefaultBehavior(Request request, Expectations expectations) throws Exception
     {
         request.configure(customizer);
@@ -661,7 +660,6 @@ public class ForwardedRequestCustomizerTest
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("cases")
-    @SuppressWarnings("unused")
     public void testConfiguredBehavior(Request request, Expectations expectations) throws Exception
     {
         request.configure(customizerConfigured);

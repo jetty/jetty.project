@@ -598,18 +598,18 @@ public class ForwardedRequestCustomizer implements Customizer
         @SuppressWarnings("unused")
         public void handleHost(HttpField field)
         {
-            HostPort hp = new HostPort(getLeftMost(field.getValue()));
+            HostPort hostField = new HostPort(getLeftMost(field.getValue()));
 
             if (getForwardedPortAsAuthority() && !StringUtil.isEmpty(getForwardedPortHeader()))
             {
                 if (_host == null)
-                    _host = new PossiblyPartialHostPort(hp.getHost(), hp.getPort());
+                    _host = new PossiblyPartialHostPort(hostField.getHost(), hostField.getPort());
                 else if (_host instanceof PortSetHostPort)
-                    _host = new HostPort(hp.getHost(), _host.getPort());
+                    _host = new HostPort(hostField.getHost(), hostField.getPort() > 0 ? hostField.getPort() : _host.getPort());
             }
             else if (_host == null)
             {
-                _host = hp;
+                _host = hostField;
             }
         }
 
