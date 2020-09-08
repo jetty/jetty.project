@@ -56,7 +56,7 @@ public class PoolTest
         data.add(new Object[]{new Pool.CompositeStrategy<>(new Pool.ThreadLocalStrategy<>(), new Pool.LinearSearchStrategy<>())});
         data.add(new Object[]{new Pool.CompositeStrategy<>(new Pool.ThreadLocalListStrategy<>(2), new Pool.LinearSearchStrategy<>())});
         data.add(new Object[]{new Pool.RandomIterationStrategy<>()});
-        data.add(new Object[]{new Pool.ThreadLocalIteratorStrategy<>()});
+        data.add(new Object[]{new Pool.ThreadLocalIteratorStrategy<>(false)});
         data.add(new Object[]{new Pool.ThreadLocalIteratorStrategy<>(true)});
         data.add(new Object[]{new Pool.RoundRobinIterationStrategy<>()});
         data.add(new Object[]{new Pool.LeastRecentlyUsedStrategy<>()});

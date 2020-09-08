@@ -58,6 +58,12 @@ import org.eclipse.jetty.util.thread.Locker;
  *     <dd>Entries are tried in sequence so that all entries in the pool are
  *     used one after the other. If the next entry cannot be acquired, entries
  *     in the next slot are tried.
+ *     <dt>{@link RoundRobinIterationStrategy}</dt>
+ *     <dd>Alternate round robin implementation that reduces contention on the
+ *     shared round robing index.
+ *     Entries are tried in sequence so that all entries in the pool are
+ *     used one after the other. If the next entry cannot be acquired, entries
+ *     in the next slot are tried.
  *     <dt>{@link ThreadLocalStrategy}</dt>
  *     <dd>This strategy is a threadlocal strategy that remembers
  *     a single entry previously used by the current thread.
@@ -601,7 +607,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
-    /** A pluggable strategy to optimize pool acquisition
+    /** A pluggable strategy to for pool entry lookup
      * @param <T> The type of the items in the pool
      */
     public interface Strategy<T>
@@ -621,7 +627,12 @@ public class Pool<T> implements AutoCloseable, Dumpable
         {
         }
     }
-    
+
+    /** A Composite strategy used to combine multiple other strategies.
+     * Typically it is used to combine an optimistic strategy (eg {@link RandomStrategy})
+     * with an exhaustive strategy (eg {@link LinearSearchStrategy}).
+     * @param <T> The type of entry the strategy is for
+     */
     public static class CompositeStrategy<T> implements Strategy<T>
     {
         final Strategy<T> planA;
@@ -650,6 +661,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
+    /**
+     * @param <T> The type of entry the strategy is for
+     */
     public static class LinearSearchStrategy<T> implements Strategy<T>
     {
         @Override
@@ -664,6 +678,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
+    /**
+     * @param <T> The type of entry the strategy is for
+     */
     public static class ThreadLocalIteratorStrategy<T> implements Strategy<T>
     {
         private final boolean roundrobin;
@@ -710,6 +727,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
+    /**
+     * @param <T> The type of entry the strategy is for
+     */
     public static class ThreadLocalStrategy<T> implements Strategy<T>
     {
         private final ThreadLocal<Pool<T>.Entry> last;
@@ -735,6 +755,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
+    /**
+     * @param <T> The type of entry the strategy is for
+     */
     public static class ThreadLocalListStrategy<T> implements Strategy<T>
     {
         private final ThreadLocal<List<Pool<T>.Entry>> cache;
@@ -794,6 +817,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         protected abstract int nextIndex(int size);
     }
 
+    /**
+     * @param <T> The type of entry the strategy is for
+     */
     public static class RandomStrategy<T> extends IndexedStrategy<T>
     {
         @Override
@@ -803,6 +829,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
+    /**
+     * @param <T> The type of entry the strategy is for
+     */
     public static class RoundRobinStrategy<T> extends IndexedStrategy<T>
     {
         AtomicInteger index = new AtomicInteger();
@@ -827,6 +856,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
+    /**
+     * @param <T> The type of entry the strategy is for
+     */
     public static class RandomIterationStrategy<T> implements Strategy<T>
     {
         @Override
@@ -857,6 +889,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
+    /**
+     * @param <T> The type of entry the strategy is for
+     */
     public static class RoundRobinIterationStrategy<T> implements Strategy<T>
     {
         AtomicInteger index = new AtomicInteger();
@@ -892,6 +927,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
+    /**
+     * @param <T> The type of entry the strategy is for
+     */
     public static class LeastRecentlyUsedStrategy<T> extends LinearSearchStrategy<T>
     {
         Queue<Pool<T>.Entry> lru = new ConcurrentLinkedQueue<>();
