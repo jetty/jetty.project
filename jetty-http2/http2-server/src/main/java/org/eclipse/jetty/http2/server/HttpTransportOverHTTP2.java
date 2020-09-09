@@ -197,7 +197,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     System.lineSeparator(), HttpVersion.HTTP_2, info.getStatus(),
                     System.lineSeparator(), info.getFields());
             }
-            stream.send(new Stream.FrameList(hf, df, tf), c);
+            stream.send(new IStream.FrameList(hf, df, tf), c);
         });
     }
 

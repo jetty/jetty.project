@@ -48,6 +48,15 @@ public interface ISession extends Session
     void removeStream(IStream stream);
 
     /**
+     * <p>Sends the given list of frames to create a new {@link Stream}.</p>
+     *
+     * @param frames the list of frames to send
+     * @param promise the promise that gets notified of the stream creation
+     * @param listener the listener that gets notified of stream events
+     */
+    void newStream(IStream.FrameList frames, Promise<Stream> promise, Stream.Listener listener);
+
+    /**
      * <p>Enqueues the given frames to be written to the connection.</p>
      * @param stream the stream the frames belong to
      * @param frames additional frames to enqueue

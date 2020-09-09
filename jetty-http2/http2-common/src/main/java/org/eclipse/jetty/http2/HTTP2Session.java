@@ -589,11 +589,11 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void newStream(HeadersFrame frame, Promise<Stream> promise, Stream.Listener listener)
     {
-        newStream(new Stream.FrameList(frame), promise, listener);
+        newStream(new IStream.FrameList(frame), promise, listener);
     }
 
     @Override
-    public void newStream(Stream.FrameList frames, Promise<Stream> promise, Stream.Listener listener)
+    public void newStream(IStream.FrameList frames, Promise<Stream> promise, Stream.Listener listener)
     {
         streamCreator.newStream(frames, promise, listener);
     }
@@ -1697,7 +1697,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             return streamId;
         }
 
-        private void newStream(Stream.FrameList frameList, Promise<Stream> promise, Stream.Listener listener)
+        private void newStream(IStream.FrameList frameList, Promise<Stream> promise, Stream.Listener listener)
         {
             Slot slot = new Slot();
             int currentStreamId = frameList.getStreamId();

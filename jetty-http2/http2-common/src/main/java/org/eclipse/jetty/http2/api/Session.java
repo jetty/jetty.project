@@ -64,15 +64,6 @@ public interface Session
     void newStream(HeadersFrame frame, Promise<Stream> promise, Stream.Listener listener);
 
     /**
-     * <p>Sends the given list of frames to create a new {@link Stream}.</p>
-     *
-     * @param frames the list of frames to send
-     * @param promise the promise that gets notified of the stream creation
-     * @param listener the listener that gets notified of stream events
-     */
-    void newStream(Stream.FrameList frames, Promise<Stream> promise, Stream.Listener listener);
-
-    /**
      * <p>Sends the given PRIORITY {@code frame}.</p>
      * <p>If the {@code frame} references a {@code streamId} that does not exist
      * (for example {@code 0}), then a new {@code streamId} will be allocated, to

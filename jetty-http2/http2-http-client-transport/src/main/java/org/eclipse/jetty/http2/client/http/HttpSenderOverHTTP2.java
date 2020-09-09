@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -105,8 +106,8 @@ public class HttpSenderOverHTTP2 extends HttpSender
         }
 
         HttpChannelOverHTTP2 channel = getHttpChannel();
-        Stream.FrameList frameList = new Stream.FrameList(headersFrame, dataFrame, trailersFrame);
-        channel.getSession().newStream(frameList, new HeadersPromise(request, callback), channel.getStreamListener());
+        IStream.FrameList frameList = new IStream.FrameList(headersFrame, dataFrame, trailersFrame);
+        ((ISession)channel.getSession()).newStream(frameList, new HeadersPromise(request, callback), channel.getStreamListener());
     }
 
     private String relativize(String path)
