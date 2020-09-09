@@ -24,7 +24,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 /**
  * A DecoratingListener that listens for "org.eclipse.jetty.cdi.decorator"
  */
-class CdiDecoratingListener extends DecoratingListener
+public class CdiDecoratingListener extends DecoratingListener
 {
     public static final String MODE = "CdiDecoratingListener";
     public static final String ATTRIBUTE = "org.eclipse.jetty.cdi.decorator";
@@ -32,5 +32,6 @@ class CdiDecoratingListener extends DecoratingListener
     public CdiDecoratingListener(ServletContextHandler contextHandler)
     {
         super(contextHandler, ATTRIBUTE);
+        contextHandler.setAttribute(CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, MODE);
     }
 }

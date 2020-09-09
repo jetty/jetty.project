@@ -45,19 +45,19 @@ The main class is named `org.eclipse.jetty.http2.client.HTTP2Client`, and must b
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=start]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=start]
 ----
 
 When your application stops, or otherwise does not need `HTTP2Client` anymore, it should stop the `HTTP2Client` instance (or instances) that were started:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=stop]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=stop]
 ----
 
 `HTTP2Client` allows client applications to connect to an HTTP/2 server.
 A _session_ represents a single TCP connection to an HTTP/2 server and is defined by class `org.eclipse.jetty.http2.api.Session`.
-A _session_ typically has a long life - once the TCP connection is established, it remains open until it is not used anymore (and therefore it is closed by the idle timeout mechanism), until a fatal error occurs (for example, a network failure), or if one of the peers decides unilaterally to close the TCP connection.
+A _session_ typically has a long life -- once the TCP connection is established, it remains open until it is not used anymore (and therefore it is closed by the idle timeout mechanism), until a fatal error occurs (for example, a network failure), or if one of the peers decides unilaterally to close the TCP connection.
 
 include::../../http2.adoc[tag=multiplex]
 
@@ -76,14 +76,14 @@ The following example connects to the server on a clear-text port:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=clearTextConnect]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=clearTextConnect]
 ----
 
 The following example connects to the server on an encrypted port:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=encryptedConnect]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=encryptedConnect]
 ----
 
 IMPORTANT: Applications must know in advance whether they want to connect to a clear-text or encrypted port, and pass the `SslContextFactory` parameter accordingly to the `connect(...)` method.
@@ -97,7 +97,7 @@ Client applications can override this method to change the default configuration
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=configure]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=configure]
 ----
 
 The `Session.Listener` is notified of session events originated by the server such as receiving a `SETTINGS` frame from the server, or the server closing the connection, or the client timing out the connection due to idleness.
@@ -116,7 +116,7 @@ Sending the `HEADERS` frame opens the `Stream`:
 
 [source,java,indent=0,subs=normal]
 ----
-include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=newStream]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=newStream]
 ----
 
 Note how `Session.newStream(...)` takes a `Stream.Listener` parameter.
@@ -127,7 +127,7 @@ HTTP requests may have content, which is sent using the `Stream` APIs:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=newStreamWithData]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=newStreamWithData]
 ----
 
 IMPORTANT: When sending two `DATA` frames consecutively, the second call to `Stream.data(...)` must be done only when the first is completed, or a `WritePendingException` will be thrown.
@@ -146,7 +146,7 @@ A client application can therefore receive the HTTP/2 frames sent by the server 
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=responseListener]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=responseListener]
 ----
 
 include::../../http2.adoc[tag=apiFlowControl]
@@ -160,7 +160,7 @@ The `HTTP2Client` APIs allow client applications to send and receive this "reset
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=reset]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=reset]
 ----
 
 [[pg-client-http2-push]]
@@ -175,12 +175,12 @@ Client applications can listen to the push events, and act accordingly:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=push]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=push]
 ----
 
 If a client application does not want to handle a particular HTTP/2 push, it can just reset the pushed stream to tell the server to stop sending bytes for the pushed stream:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http2/HTTP2ClientDocs.java[tags=pushReset]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http2/HTTP2ClientDocs.java[tags=pushReset]
 ----

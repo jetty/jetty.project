@@ -66,7 +66,7 @@ Applications can also precisely control _when_ to demand more `DATA` frames, by 
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/HTTP2Docs.java[tags=dataDemanded]
+include::{doc_code}/org/eclipse/jetty/docs/programming/HTTP2Docs.java[tags=dataDemanded]
 ----
 
 IMPORTANT: Applications that implement `onDataDemanded(...)` must remember to call `Stream.demand(...)`.

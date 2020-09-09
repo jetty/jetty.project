@@ -32,8 +32,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;
 
 import static java.nio.charset.StandardCharsets.UTF_8;

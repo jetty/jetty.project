@@ -19,7 +19,7 @@
 :doctitle: Eclipse Jetty: Programming Guide
 :author: Jetty Developers
 :email: jetty-dev@eclipse.org
-:revnumber: 1.0
+:revnumber: {version}
 :revdate: {TIMESTAMP}
 :toc: left
 :toc-title: Programming Guide

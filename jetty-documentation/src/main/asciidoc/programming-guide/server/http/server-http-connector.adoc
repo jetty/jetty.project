@@ -28,7 +28,7 @@ Since `ServerConnector` wraps a `ServerSocketChannel`, it can be configured in a
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=configureConnector]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnector]
 ----
 
 The _acceptors_ are threads (typically only one) that compete to accept TCP connections on the listening port.
@@ -51,7 +51,7 @@ It is possible to configure more than one `ServerConnector`, each listening on a
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=configureConnectors]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnectors]
 ----
 
 [[pg-server-http-connector-protocol]]
@@ -63,7 +63,7 @@ A `ServerConnector` can be configured with one or more ``ConnectionFactory``s.
 If no `ConnectionFactory` is specified then `HttpConnectionFactory` is implicitly configured.
 
 [[pg-server-http-connector-protocol-http11]]
-===== Configuring HTTP/1.1
+===== Configuring Clear-Text HTTP/1.1
 
 `HttpConnectionFactory` creates `HttpConnection` objects that parse bytes and generate bytes for the HTTP/1.1 protocol.
 
@@ -71,14 +71,17 @@ This is how you configure Jetty to support clear-text HTTP/1.1:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=http11]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=http11]
 ----
 
-Supporting encrypted HTTP/1.1 (that is, requests with the HTTPS scheme)is supported by configuring an `SslContextFactory` that has access to the keyStore containing the private server key and public server certificate, in this way:
+[[pg-server-http-connector-protocol-http11-tls]]
+===== Configuring Encrypted HTTP/1.1 (https)
+
+Supporting encrypted HTTP/1.1 (that is, requests with the `https` scheme) is supported by configuring an `SslContextFactory` that has access to the keyStore containing the private server key and public server certificate, in this way:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=tlsHttp11]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=tlsHttp11]
 ----
 
 [[pg-server-http-connector-protocol-proxy-http11]]
@@ -94,7 +97,7 @@ To support this case, Jetty can be configured in this way:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=proxyHTTP]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=proxyHTTP]
 ----
 
 Note how the ``ConnectionFactory``s passed to `ServerConnector` are in order: first PROXY, then HTTP/1.1.
@@ -104,7 +107,7 @@ Each `ConnectionFactory` is asked to create a `Connection` object for each accep
 Therefore the `ProxyConnection` will handle the PROXY protocol bytes and `HttpConnection` will handle the HTTP/1.1 bytes producing a request object and response object that will be processed by ``Handler``s.
 
 [[pg-server-http-connector-protocol-http2]]
-===== Configuring HTTP/2
+===== Configuring Clear-Text HTTP/2
 
 It is well known that the HTTP ports are `80` (for clear-text HTTP) and `443` for encrypted HTTP.
 By using those ports, a client had _prior knowledge_ that the server would speak, respectively, the HTTP/1.x protocol and the TLS protocol (and, after decryption, the HTTP/1.x protocol).
@@ -117,7 +120,7 @@ Jetty can support both HTTP/1.1 and HTTP/2 on the same clear-text port by config
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=http11H2C]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=http11H2C]
 ----
 
 Note how the ``ConnectionFactory``s passed to `ServerConnector` are in order: first HTTP/1.1, then HTTP/2.
@@ -126,13 +129,16 @@ This is necessary to support both protocols on the same port: Jetty will start p
 This configuration is also typical when Jetty is installed in backend servers behind a load balancer that also takes care of offloading TLS.
 When Jetty is behind a load balancer, you can always prepend the PROXY protocol as described in xref:pg-server-http-connector-protocol-proxy-http11[this section].
 
+[[pg-server-http-connector-protocol-http2-tls]]
+===== Configuring Encrypted HTTP/2
+
 When using encrypted HTTP/2, the unencrypted protocol is negotiated by client and server using an extension to the TLS protocol called ALPN.
 
 Jetty supports ALPN and encrypted HTTP/2 with this configuration:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=tlsALPNHTTP]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=tlsALPNHTTP]
 ----
 
 Note how the ``ConnectionFactory``s passed to `ServerConnector` are in order: TLS, ALPN, HTTP/1.1, HTTP/2.

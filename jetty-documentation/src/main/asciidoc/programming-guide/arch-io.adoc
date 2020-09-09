@@ -40,14 +40,14 @@ This example shows how a client can connect to a server:
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/SelectorManagerDocs.java[tags=connect]
+include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[tags=connect]
 ----
 
 This example shows how a server accepts a client connection:
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/SelectorManagerDocs.java[tags=accept]
+include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[tags=accept]
 ----
 
 [[pg-arch-io-endpoint-connection]]
@@ -58,8 +58,8 @@ include::{doc_code}/embedded/SelectorManagerDocs.java[tags=accept]
 `EndPoint` is the Jetty abstraction for a `SocketChannel`: you can read bytes from an `EndPoint` via `EndPoint.fill(ByteBuffer)`, you can write bytes to an `EndPoint` via `EndPoint.flush(ByteBuffer...)` and `EndPoint.write(Callback, ByteBuffer...)`, you can close an `EndPoint` via `EndPoint.close()`, etc.
 
 `Connection` is the Jetty abstraction that is responsible to read bytes from the `EndPoint` and to deserialize the read bytes into objects.
-For example, a HTTP/1.1 server-side `Connection` implementation is responsible to deserialize HTTP/1.1 request bytes into a HTTP request object.
-Conversely, a HTTP/1.1 client-side `Connection` implementation is responsible to deserialize HTTP/1.1 response bytes into a HTTP response object.
+For example, an HTTP/1.1 server-side `Connection` implementation is responsible to deserialize HTTP/1.1 request bytes into an HTTP request object.
+Conversely, an HTTP/1.1 client-side `Connection` implementation is responsible to deserialize HTTP/1.1 response bytes into an HTTP response object.
 
 `Connection` is the abstraction that implements the reading side of a specific protocol such as HTTP/1.1, or HTTP/2, or WebSocket: it is able to read incoming communication in that protocol.
 
@@ -91,7 +91,7 @@ The Jetty I/O library use Java NIO to handle I/O, so that I/O is non-blocking.
 
 At the Java NIO level, in order to be notified when a `SocketChannel` has data to be read, the `SelectionKey.OP_READ` flag must be set.
 
-In the Jetty I/O library, you can call `EndPoint.fillInterested(Callback)` to declare interest in the "read" (or "fill") event, and the `Callback` parameter is the object that is notified when such event occurs.
+In the Jetty I/O library, you can call `EndPoint.fillInterested(Callback)` to declare interest in the "read" (or "fill") event, and the `Callback` parameter is the object that is notified when such an event occurs.
 
 At the Java NIO level, a `SocketChannel` is always writable, unless it becomes TCP congested.
 In order to be notified when a `SocketChannel` uncongests and it is therefore writable again, the `SelectionKey.OP_WRITE` flag must be set.
@@ -104,7 +104,7 @@ The `EndPoint` APIs are typically called by `Connection` implementations, see xr
 [[pg-arch-io-connection]]
 ==== Jetty I/O: `Connection`
 
-`Connection` is the abstraction that deserializes incoming bytes into objects, for example a HTTP request object or a WebSocket frame object, that can be used by more abstract layers.
+`Connection` is the abstraction that deserializes incoming bytes into objects, for example an HTTP request object or a WebSocket frame object, that can be used by more abstract layers.
 
 `Connection` instances have two lifecycle methods:
 
@@ -119,13 +119,13 @@ The example below shows a typical implementation that extends `AbstractConnectio
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/SelectorManagerDocs.java[tags=connection]
+include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[tags=connection]
 ----
 
 [[pg-arch-io-connection-listener]]
 ===== Jetty I/O: `Connection.Listener`
 
-// TODO: Introduce Connection.Listener
+TODO
 
 [[pg-arch-io-echo]]
 ==== Jetty I/O: Network Echo
@@ -136,7 +136,7 @@ A naive, but wrong, implementation may be the following:
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/SelectorManagerDocs.java[tags=echo-wrong]
+include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[tags=echo-wrong]
 ----
 
 WARNING: The implementation above is wrong and leads to `StackOverflowError`.
@@ -146,10 +146,10 @@ The problem with this implementation is that if the writes always complete synch
 ----
 Connection.onFillable()
   EndPoint.write()
-    Callback.succeeded()
+    Connection.succeeded()
       Connection.onFillable()
         EndPoint.write()
-          Callback.succeeded()
+          Connection.succeeded()
           ...
 ----
 
@@ -160,22 +160,48 @@ This is a typical side effect of asynchronous programming using non-blocking API
 NOTE: The callback is invoked synchronously for efficiency reasons.
 Submitting the invocation of the callback to an `Executor` to be invoked in a different thread would cause a context switch and make simple writes extremely inefficient.
 
-A correct implementation is the following:
+This side effect of asynchronous programming leading to `StackOverflowError` is so common that the Jetty libraries have a generic solution for it: a specialized `Callback` implementation named `org.eclipse.jetty.util.IteratingCallback` that turns recursion into iteration, therefore avoiding the `StackOverflowError`.
+
+`IteratingCallback` is a `Callback` implementation that should be passed to non-blocking APIs such as `EndPoint.write(Callback, ByteBuffer...)` when they are performed in a loop.
+
+`IteratingCallback` works by starting the loop with `IteratingCallback.iterate()`.
+In turn, this calls `IteratingCallback.process()`, an abstract method that must be implemented with the code that should be executed for each loop.
+
+Method `process()` must return:
+
+* `Action.SCHEDULED`, to indicate whether the loop has performed a non-blocking, possibly asynchronous, operation
+* `Action.IDLE`, to indicate that the loop should temporarily be suspended to be resumed later
+* `Action.SUCCEEDED` to indicate that the loop exited successfully
+
+Any exception thrown within `process()` exits the loops with a failure.
+
+Now that you know how `IteratingCallback` works, a correct implementation for the echo `Connection` is the following:
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/SelectorManagerDocs.java[tags=echo-correct]
+include::{doc_code}/org/eclipse/jetty/docs/programming/SelectorManagerDocs.java[tags=echo-correct]
 ----
 
-The correct implementation performs consecutive reads in a loop (rather than recursively), but _only_ if the correspondent write is completed successfully.
+When `onFillable()` is called, for example the first time that bytes are available from the network, the iteration is started.
+Starting the iteration calls `process()`, where a buffer is allocated and filled with bytes read from the network via `EndPoint.fill(ByteBuffer)`; the buffer is subsequently written back via `EndPoint.write(Callback, ByteBuffer...)` -- note that the callback passed to `EndPoint.write()` is `this`, i.e. the `IteratingCallback` itself; finally `Action.SCHEDULED` is returned, returning from the `process()` method.
 
-In order to detect whether the write is completed, a concurrent state machine is used.
-This is necessary because the notification of the completion of the write may happen in a different thread, while the original writing thread may still be changing the state.
+At this point, the call to `EndPoint.write(Callback, ByteBuffer...)` may have completed synchronously; `IteratingCallback` would know that and call `process()` again; within `process()`, the buffer has already been allocated so it will be reused, saving further allocations; the buffer will be filled and possibly written again; `Action.SCHEDULED` is returned again, returning again from the `process()` method.
 
-The original writing thread starts moves the state from `IDLE` to `WRITING`, then issues the actual `write()` call.
-The original writing thread then assumes that the `write()` did not complete and tries to move to the `PENDING` state just after the `write()`.
-If it fails to move from the `WRITING` state to the `PENDING` state, it means that the write was completed.
-Otherwise, the write is now `PENDING` and waiting for the callback to be notified of the completion at a later time.
-When the callback is notified of the `write()` completion, it checks whether the `write()` was `PENDING`, and if it was it resumes reading.
+At this point, the call to `EndPoint.write(Callback, ByteBuffer...)` may have not completed synchronously, so `IteratingCallback` will not call `process()` again; the processing thread is free to return to the Jetty I/O system where it may be put back into the thread pool.
+If this was the only active network connection, the system would now be idle, with no threads blocked, waiting that the `write()` completes. This thread-less wait is one of the most important features that make non-blocking asynchronous servers more scalable: they use less resources.
 
-NOTE: TODO: Introduce IteratingCallback?
+Eventually, the Jetty I/O system will notify that the `write()` completed; this notifies the `IteratingCallback` that can now resume the loop and call `process()` again.
+
+When `process()` is called, it is possible that zero bytes are read from the network; in this case, you want to deallocate the buffer since the other peer may never send more bytes for the `Connection` to read, or it may send them after a long pause -- in both cases we do not want to retain the memory allocated by the buffer; next, you want to call `fillInterested()` to declare again interest for read events, and return `Action.IDLE` since there is nothing to write back and therefore the loop may be suspended.
+When more bytes are again available to be read from the network, `onFillable()` will be called again and that will start the iteration again.
+
+Another possibility is that during `process()` the read returns `-1` indicating that the other peer has closed the connection; this means that there will not be more bytes to read and the loop can be exited, so you return `Action.SUCCEEDED`; `IteratingCallback` will then call `onCompleteSuccess()` where you can close the `EndPoint`.
+
+The last case is that during `process()` an exception is thrown, for example by `EndPoint.fill(ByteBuffer)` or, in more advanced implementations, by code that parses the bytes that have been read and finds them unacceptable; any exception thrown within `process()` will be caught by `IteratingCallback` that will exit the loop with a failure and call `onCompleteFailure(Throwable)` with the exception that has been thrown, where you can close the `EndPoint`, passing the exception that is the reason for closing prematurely the `EndPoint`.
+
+[IMPORTANT]
+====
+Asynchronous programming is hard.
+
+Rely on the Jetty classes to implement `Connection` to avoid mistakes that will be difficult to diagnose and reproduce.
+====

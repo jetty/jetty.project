@@ -40,7 +40,7 @@ If not explicitly configured, the `ClientConnector` will allocate a default one 
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=tlsExplicit]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=tlsExplicit]
 ----
 
 The default `SslContextFactory.Client` verifies the certificate sent by the server by verifying the certificate chain.
@@ -48,7 +48,7 @@ This means that requests to public websites that have a valid certificate (such 
 
 However, requests made to sites (typically ``localhost``) that have an invalid (for example, expired or with a wrong host) or self-signed certificate will fail (like they will in a browser).
 
-Certificate validation is performed at two levels: at the TLS implementation level (in the JDK) and - optionally - at the application level.
+Certificate validation is performed at two levels: at the TLS implementation level (in the JDK) and, optionally, at the application level.
 
 By default, certificate validation at the TLS level is enabled, while certificate validation at the application level is disabled.
 
@@ -56,14 +56,14 @@ You can configure the `SslContextFactory.Client` to skip certificate validation 
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=tlsNoValidation]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=tlsNoValidation]
 ----
 
 You can enable certificate validation at the application level:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=tlsAppValidation]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=tlsAppValidation]
 ----
 
 Please refer to the `SslContextFactory.Client` link:{JDURL}/org/eclipse/jetty/util/ssl/SslContextFactory.Client.html[javadocs] for the complete list of configurable parameters.

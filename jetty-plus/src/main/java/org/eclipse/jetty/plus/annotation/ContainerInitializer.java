@@ -124,9 +124,6 @@ public class ContainerInitializer
         {
             Set<Class<?>> classes = new HashSet<Class<?>>();
 
-            ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
-            Thread.currentThread().setContextClassLoader(context.getClassLoader());
-
             try
             {
                 for (String s : _applicableTypeNames)
@@ -147,7 +144,6 @@ public class ContainerInitializer
             finally
             {
                 context.getServletContext().setExtendedListenerTypes(false);
-                Thread.currentThread().setContextClassLoader(oldLoader);
             }
         }
     }

@@ -29,16 +29,16 @@ However, when all you need to do is to perform a `GET` request to a resource, Je
 Jetty's HTTP client supports xref:pg-client-http-transport[different transports]: HTTP/1.1, FastCGI and HTTP/2. This means that the semantic of an HTTP request: " ``GET`` the resource ``/index.html`` " can be carried over the network in different formats.
 The most common and default format is HTTP/1.1. That said, Jetty's HTTP client can carry the same request using the FastCGI format or the HTTP/2 format.
 
-The xref:pg-client-http-transport-fcgi[FastCGI transport] is heavily used in Jetty's xref:fastcgi[FastCGI support] that allows Jetty to work as a reverse proxy to PHP (exactly like Apache or Nginx do) and therefore be able to serve - for example - WordPress websites.
+The xref:pg-client-http-transport-fcgi[FastCGI transport] is heavily used in Jetty's xref:fastcgi[FastCGI support] that allows Jetty to work as a reverse proxy to PHP (exactly like Apache or Nginx do) and therefore be able to serve, for example, WordPress websites.
 
 The HTTP/2 transport allows Jetty's HTTP client to perform requests using HTTP/2 to HTTP/2 enabled web sites, see also Jetty's xref:pg-client-http2[HTTP/2 support].
 
 Out of the box features that you get with the Jetty HTTP client include:
 
-* Redirect support - redirect codes such as 302 or 303 are automatically followed.
-* Cookies support - cookies sent by servers are stored and sent back to servers in matching requests.
-* Authentication support - HTTP "Basic", "Digest" and "SPNEGO" authentications are supported, others are pluggable.
-* Forward proxy support - HTTP proxying and SOCKS4 proxying.
+* Redirect support -- redirect codes such as 302 or 303 are automatically followed.
+* Cookies support -- cookies sent by servers are stored and sent back to servers in matching requests.
+* Authentication support -- HTTP "Basic", "Digest" and "SPNEGO" authentications are supported, others are pluggable.
+* Forward proxy support -- HTTP proxying and SOCKS4 proxying.
 
 [[pg-client-http-start]]
 ==== Starting HttpClient
@@ -64,7 +64,7 @@ In order to use `HttpClient`, you must instantiate it, configure it, and then st
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=start]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=start]
 ----
 
 You may create multiple instances of `HttpClient`, but typically one instance is enough for an application.
@@ -84,7 +84,7 @@ It is recommended that when your application stops, you also stop the `HttpClien
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=stop]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=stop]
 ----
 
 Stopping `HttpClient` makes sure that the memory it holds (for example, authentication credentials, cookies, etc.) is released, and that the thread pool and scheduler are properly stopped allowing all threads used by `HttpClient` to exit.
@@ -130,7 +130,7 @@ You can access the `ConnectionPool` in this way:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=getConnectionPool]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=getConnectionPool]
 ----
 
 Jetty's client library provides the following `ConnectionPool` implementations:
@@ -143,7 +143,7 @@ The `ConnectionPool` implementation can be customized for each destination in by
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tags=setConnectionPool]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tags=setConnectionPool]
 ----
 
 [[pg-client-http-request-processing]]

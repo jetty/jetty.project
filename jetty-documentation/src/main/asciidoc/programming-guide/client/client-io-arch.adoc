@@ -48,21 +48,21 @@ The simplest example that creates and starts a `ClientConnector` is the followin
 
 [source,java,indent=0]
 ----
-include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=simplest]
+include::../{doc_code}/org/eclipse/jetty/docs/programming/client/ClientConnectorDocs.java[tags=simplest]
 ----
 
 A more typical example:
 
 [source,java,indent=0]
 ----
-include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=typical]
+include::../{doc_code}/org/eclipse/jetty/docs/programming/client/ClientConnectorDocs.java[tags=typical]
 ----
 
 A more advanced example that customizes the `ClientConnector` by overriding some of its methods:
 
 [source,java,indent=0]
 ----
-include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=advanced]
+include::../{doc_code}/org/eclipse/jetty/docs/programming/client/ClientConnectorDocs.java[tags=advanced]
 ----
 
 Since `ClientConnector` is the component that handles the low-level network, it is also the component where you want to configure the low-level network configuration.
@@ -98,7 +98,7 @@ This is done by passing a link:{JDURL}/org/eclipse/jetty/io/ClientConnectionFact
 
 [source,java,indent=0]
 ----
-include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=connect]
+include::../{doc_code}/org/eclipse/jetty/docs/programming/client/ClientConnectorDocs.java[tags=connect]
 ----
 
 When a `Connection` is created successfully, its `onOpen()` method is invoked, and then the promise is completed successfully.
@@ -107,7 +107,7 @@ It is now possible to write a super-simple `telnet` client that reads and writes
 
 [source,java,indent=0]
 ----
-include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=telnet]
+include::../{doc_code}/org/eclipse/jetty/docs/programming/client/ClientConnectorDocs.java[tags=telnet]
 ----
 
 Note how a very basic "telnet" API that applications could use is implemented in the form of the `onLine(Consumer<String>)` for the non-blocking receiving side and `writeLine(String, Callback)` for the non-blocking sending side.
@@ -127,7 +127,7 @@ The differences between the clear-text version and the TLS encrypted version are
 
 [source,java,indent=0]
 ----
-include::../{doc_code}/embedded/client/ClientConnectorDocs.java[tags=tlsTelnet]
+include::../{doc_code}/org/eclipse/jetty/docs/programming/client/ClientConnectorDocs.java[tags=tlsTelnet]
 ----
 
 The differences with the clear-text version are only:

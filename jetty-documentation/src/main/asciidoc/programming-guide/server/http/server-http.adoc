@@ -19,10 +19,10 @@
 [[pg-server-http]]
 === HTTP Server Libraries
 
-Web application development typically involves writing your web applications, packaging them into a web application archive, the `*.war` file, and then deploy the `*.war` file into a standalone Servlet Container that you have previously installed.
+Web application development typically involves writing your web applications, packaging them into a web application archive, the `+*.war+` file, and then deploy the `+*.war+` file into a standalone Servlet Container that you have previously installed.
 
 The Eclipse Jetty server libraries allow you to write web applications components using either the Jetty APIs (by writing xref:pg-server-http-handler[Jetty ``Handler``s]) or using the standard xref:pg-server-http-handler-use-servlet[Servlet APIs] (by writing ``Servlet``s and Servlet ``Filter``s).
-These components can them be programmatically assembled together, without the need of creating a `+*.war+` file, added to a Jetty ``Server`` instance that is then started.
+These components can then be programmatically assembled together, without the need of creating a `+*.war+` file, added to a Jetty ``Server`` instance that is then started.
 This result in your web applications to be available to HTTP clients as if you deployed your `+*.war+` files in a standalone Jetty server.
 
 The Maven artifact coordinates are:
@@ -63,7 +63,7 @@ A `Server` must be created, configured and started:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=simple]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=simple]
 ----
 
 The example above shows the simplest HTTP/1.1 server; it has no support for HTTP sessions, for HTTP authentication, or for any of the features required by the Servlet specification.
@@ -155,7 +155,7 @@ Server applications can register `HttpChannel.Listener` by adding them as xref:p
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/server/http/HTTPServerDocs.java[tags=httpChannelListener]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=httpChannelListener]
 ----
 
 include::server-http-connector.adoc[]

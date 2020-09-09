@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.util.DuplicateAnnotationException;
 import org.eclipse.jetty.websocket.util.InvalidSignatureException;
 import org.eclipse.jetty.websocket.util.messages.ByteArrayMessageSink;

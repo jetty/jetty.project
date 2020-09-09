@@ -28,7 +28,7 @@ The following is a typical configuration:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=proxy]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=proxy]
 ----
 
 You specify the proxy host and proxy port, and optionally also the addresses that you do not want to be proxied, and then add the proxy configuration on the `ProxyConfiguration` instance.
@@ -46,7 +46,7 @@ In the example below, the proxy requires `BASIC` authentication, but the server 
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=proxyAuthentication]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=proxyAuthentication]
 ----
 
 The HTTP conversation for successful authentications on both the proxy and the server is the following:

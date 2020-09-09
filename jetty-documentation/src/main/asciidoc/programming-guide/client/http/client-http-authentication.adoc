@@ -21,7 +21,7 @@
 
 Jetty's `HttpClient` supports the `BASIC` and `DIGEST` authentication mechanisms defined by link:https://tools.ietf.org/html/rfc7235[RFC 7235], as well as the SPNEGO authentication mechanism defined in link:https://tools.ietf.org/html/rfc4559[RFC 4559].
 
-The HTTP _conversation_ - the sequence of related HTTP requests - for a request that needs authentication is the following:
+The HTTP _conversation_, the sequence of related HTTP requests, for a request that needs authentication is the following:
 
 [plantuml]
 ----
@@ -45,7 +45,7 @@ You can configure authentication credentials in the `HttpClient` instance as fol
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=addAuthentication]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=addAuthentication]
 ----
 
 ``Authentication``s are matched against the server challenge first by mechanism (e.g. `BASIC` or `DIGEST`), then by realm and then by URI.
@@ -59,14 +59,14 @@ It is possible to clear ``Authentication.Result``s in order to force authenticat
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=clearResults]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=clearResults]
 ----
 
 Authentication results may be preempted to avoid the additional roundtrip due to the server challenge in this way:
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=preemptedResult]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=preemptedResult]
 ----
 
 In this way, requests for the given URI are enriched immediately with the `Authorization` header, and the server should respond with HTTP 200 (and the resource content) rather than with the 401 and the challenge.
@@ -75,7 +75,7 @@ It is also possible to preempt the authentication for a single request only, in 
 
 [source,java,indent=0]
 ----
-include::../../{doc_code}/embedded/client/http/HTTPClientDocs.java[tag=requestPreemptedResult]
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPClientDocs.java[tag=requestPreemptedResult]
 ----
 
 See also the xref:pg-client-http-proxy-authentication[proxy authentication section] for further information about how authentication works with HTTP proxies.

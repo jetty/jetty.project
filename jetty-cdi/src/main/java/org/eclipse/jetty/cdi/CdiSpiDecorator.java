@@ -21,8 +21,12 @@ package org.eclipse.jetty.cdi;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.Decorator;
@@ -61,11 +65,15 @@ public class CdiSpiDecorator implements Decorator
     private final MethodHandle _inject;
     private final MethodHandle _dispose;
     private final MethodHandle _release;
+    private final Set<String> _undecorated = new HashSet<>(Collections.singletonList("org.jboss.weld.environment.servlet.Listener"));
 
     public CdiSpiDecorator(ServletContextHandler context) throws UnsupportedOperationException
     {
         _context = context;
+        context.setAttribute(CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, MODE);
         ClassLoader classLoader = _context.getClassLoader();
+        if (classLoader == null)
+            classLoader = this.getClass().getClassLoader();
 
         try
         {
@@ -93,6 +101,54 @@ public class CdiSpiDecorator implements Decorator
     }
 
     /**
+     * Test if a class can be decorated.
+     * The default implementation checks the set from  {@link #getUndecoratable()}
+     * on the class and all it's super classes.
+     * @param clazz The class to check
+     * @return True if the class and all it's super classes can be decorated
+     */
+    protected boolean isDecoratable(Class<?> clazz)
+    {
+        if (Object.class == clazz)
+            return true;
+        if (getUndecoratable().contains(clazz.getName()))
+            return false;
+        return isDecoratable(clazz.getSuperclass());
+    }
+
+    /**
+     * Get the set of classes that will not be decorated. The default set includes the listener from Weld that will itself
+     * setup decoration.
+     * @return The modifiable set of class names that will not be decorated (ie {@link #isDecoratable(Class)} will return false.
+     * @see #isDecoratable(Class)
+     */
+    public Set<String> getUndecoratable()
+    {
+        return _undecorated;
+    }
+
+    /**
+     * @param classnames The set of class names that will not be decorated.
+     * @see #isDecoratable(Class)
+     */
+    public void setUndecoratable(Set<String> classnames)
+    {
+        _undecorated.clear();
+        if (classnames != null)
+            _undecorated.addAll(classnames);
+    }
+
+    /**
+     * @param classname A class name that will be added to the undecoratable classes set.
+     * @see #getUndecoratable()
+     * @see #isDecoratable(Class)
+     */
+    public void addUndecoratable(String... classname)
+    {
+        _undecorated.addAll(Arrays.asList());
+    }
+
+    /**
      * Decorate an object.
      * <p>The signature of this method must match what is introspected for by the
      * Jetty DecoratingListener class.  It is invoked dynamically.</p>
@@ -108,7 +164,8 @@ public class CdiSpiDecorator implements Decorator
             if (LOG.isDebugEnabled())
                 LOG.debug("decorate {} in {}", o, _context);
 
-            _decorated.put(o, new Decorated(o));
+            if (isDecoratable(o.getClass()))
+                _decorated.put(o, new Decorated(o));
         }
         catch (Throwable th)
         {

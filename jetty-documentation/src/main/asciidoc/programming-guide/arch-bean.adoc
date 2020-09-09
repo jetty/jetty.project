@@ -64,7 +64,7 @@ Applications should first compose components in the desired structure, and then 
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/ComponentDocs.java[tags=start]
+include::{doc_code}/org/eclipse/jetty/docs/programming/ComponentDocs.java[tags=start]
 ----
 
 The component tree is the following:
@@ -89,7 +89,7 @@ It is possible to stop and re-start any component in a tree, for example:
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/ComponentDocs.java[tags=restart]
+include::{doc_code}/org/eclipse/jetty/docs/programming/ComponentDocs.java[tags=restart]
 ----
 
 `Service` can be stopped independently of `Root`, and re-started.
@@ -99,7 +99,7 @@ Starting and stopping a non-root component does not alter the structure of the c
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/ComponentDocs.java[tags=getBeans]
+include::{doc_code}/org/eclipse/jetty/docs/programming/ComponentDocs.java[tags=getBeans]
 ----
 
 You can add your own beans to the component tree at application startup time, and later find them from your application code to access their services.
@@ -130,7 +130,7 @@ A `LifeCycle.Listener` emits events for life cycle events such as starting, stop
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/ComponentDocs.java[tags=lifecycleListener]
+include::{doc_code}/org/eclipse/jetty/docs/programming/ComponentDocs.java[tags=lifecycleListener]
 ----
 
 For example, a life cycle listener attached to a `Server` instance could be used to create (for the _started_ event) and delete (for the _stopped_ event) a file containing the process ID of the JVM that runs the `Server`.
@@ -144,14 +144,14 @@ A `Container` emits events when a component (also called _bean_) is added to or 
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/ComponentDocs.java[tags=containerListener]
+include::{doc_code}/org/eclipse/jetty/docs/programming/ComponentDocs.java[tags=containerListener]
 ----
 
 A `Container.Listener` added as a bean will also be registered as a listener:
 
 [source,java,indent=0]
 ----
-include::{doc_code}/embedded/ComponentDocs.java[tags=containerSiblings]
+include::{doc_code}/org/eclipse/jetty/docs/programming/ComponentDocs.java[tags=containerSiblings]
 ----
 
 [[pg-arch-bean-listener-inherited]]
