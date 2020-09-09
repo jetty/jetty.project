@@ -100,5 +100,13 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <!-- because directory server do not have yet junit5 extensions -->
+    <dependency>
+      <groupId>org.junit.vintage</groupId>
+      <artifactId>junit-vintage-engine</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 </project>
