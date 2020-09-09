@@ -22,11 +22,13 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.nio.channels.WritePendingException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
@@ -70,6 +72,9 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private final Negotiated negotiated;
     private final boolean demanding;
     private final Flusher flusher = new Flusher(this);
+
+    private int maxOutgoingFrames = -1;
+    private final AtomicInteger numOutgoingFrames = new AtomicInteger();
 
     private WebSocketConnection connection;
     private boolean autoFragment = WebSocketConstants.DEFAULT_AUTO_FRAGMENT;
@@ -522,6 +527,17 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     @Override
     public void sendFrame(Frame frame, Callback callback, boolean batch)
     {
+        if (maxOutgoingFrames > 0 && frame.isDataFrame())
+        {
+            // Increase the number of outgoing frames, will be decremented when callback is completed.
+            callback = Callback.from(callback, numOutgoingFrames::decrementAndGet);
+            if (numOutgoingFrames.incrementAndGet() > maxOutgoingFrames)
+            {
+                callback.failed(new WritePendingException());
+                return;
+            }
+        }
+
         try
         {
             assertValidOutgoing(frame);
@@ -543,9 +559,10 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
             boolean closeConnection = sessionState.onOutgoingFrame(frame);
             if (closeConnection)
             {
+                Callback c = callback;
                 Callback closeConnectionCallback = Callback.from(
-                    () -> closeConnection(sessionState.getCloseStatus(), callback),
-                    t -> closeConnection(sessionState.getCloseStatus(), Callback.from(callback, t)));
+                    () -> closeConnection(sessionState.getCloseStatus(), c),
+                    t -> closeConnection(sessionState.getCloseStatus(), Callback.from(c, t)));
 
                 flusher.sendFrame(frame, closeConnectionCallback, false);
             }
@@ -660,6 +677,18 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     public void setMaxTextMessageSize(long maxSize)
     {
         maxTextMessageSize = maxSize;
+    }
+
+    @Override
+    public int getMaxOutgoingFrames()
+    {
+        return maxOutgoingFrames;
+    }
+
+    @Override
+    public void setMaxOutgoingFrames(int maxOutgoingFrames)
+    {
+        this.maxOutgoingFrames = maxOutgoingFrames;
     }
 
     private class IncomingAdaptor implements IncomingFrames

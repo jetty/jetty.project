@@ -74,6 +74,28 @@ public interface Configuration
 
     void setMaxTextMessageSize(long maxSize);
 
+    /**
+     * Get the maximum number of data frames allowed to be waiting to be sent at any one time.
+     * The default value is -1, this indicates there is no limit on how many frames can be
+     * queued to be sent by the implementation. If the limit is exceeded, subsequent frames
+     * sent are failed with a {@link java.nio.channels.WritePendingException} but
+     * the connection is not failed and will remain open.
+     *
+     * @return the max number of frames.
+     */
+    int getMaxOutgoingFrames();
+
+    /**
+     * Set the maximum number of data frames allowed to be waiting to be sent at any one time.
+     * The default value is -1, this indicates there is no limit on how many frames can be
+     * queued to be sent by the implementation. If the limit is exceeded, subsequent frames
+     * sent are failed with a {@link java.nio.channels.WritePendingException} but
+     * the connection is not failed and will remain open.
+     *
+     * @param maxOutgoingFrames the max number of frames.
+     */
+    void setMaxOutgoingFrames(int maxOutgoingFrames);
+
     interface Customizer
     {
         void customize(Configuration configurable);
@@ -89,6 +111,7 @@ public interface Configuration
         private Integer inputBufferSize;
         private Long maxBinaryMessageSize;
         private Long maxTextMessageSize;
+        private Integer maxOutgoingFrames;
 
         @Override
         public Duration getIdleTimeout()
@@ -187,6 +210,18 @@ public interface Configuration
         }
 
         @Override
+        public int getMaxOutgoingFrames()
+        {
+            return maxOutgoingFrames == null ? WebSocketConstants.DEFAULT_MAX_OUTGOING_FRAMES : maxOutgoingFrames;
+        }
+
+        @Override
+        public void setMaxOutgoingFrames(int maxOutgoingFrames)
+        {
+            this.maxOutgoingFrames = maxOutgoingFrames;
+        }
+
+        @Override
         public void customize(Configuration configurable)
         {
             if (idleTimeout != null)
@@ -205,6 +240,8 @@ public interface Configuration
                 configurable.setMaxBinaryMessageSize(maxBinaryMessageSize);
             if (maxTextMessageSize != null)
                 configurable.setMaxTextMessageSize(maxTextMessageSize);
+            if (maxOutgoingFrames != null)
+                configurable.setMaxOutgoingFrames(maxOutgoingFrames);
         }
     }
 }
