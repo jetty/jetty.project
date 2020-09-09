@@ -103,10 +103,10 @@ public class ServerDocs
 
         // Create the detector ConnectionFactory to
         // detect whether the initial bytes are TLS.
-        DetectorConnectionFactory detector = new DetectorConnectionFactory(tls);
+        DetectorConnectionFactory tlsDetector = new DetectorConnectionFactory(tls); // <1>
 
         // Create the connector with both ConnectionFactories.
-        ServerConnector connector = new ServerConnector(server, detector, http);
+        ServerConnector connector = new ServerConnector(server, tlsDetector, http); // <2>
         connector.setPort(8181);
 
         server.addConnector(connector);
