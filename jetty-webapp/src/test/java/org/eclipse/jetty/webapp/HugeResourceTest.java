@@ -246,6 +246,31 @@ public class HugeResourceTest
 
     @ParameterizedTest
     @MethodSource("staticFiles")
+    public void testHead(String filename, long expectedSize) throws Exception
+    {
+        URI destUri = server.getURI().resolve("/" + filename);
+        InputStreamResponseListener responseListener = new InputStreamResponseListener();
+
+        Request request = client.newRequest(destUri)
+            .method(HttpMethod.HEAD);
+        request.send(responseListener);
+        Response response = responseListener.get(5, TimeUnit.SECONDS);
+
+        try (InputStream in = responseListener.getInputStream())
+        {
+            assertThat(in.read(), is(-1));
+        }
+
+        assertThat("HTTP Response Code", response.getStatus(), is(200));
+        // dumpResponse(response);
+
+        String contentLength = response.getHeaders().get(HttpHeader.CONTENT_LENGTH);
+        long contentLengthLong = Long.parseLong(contentLength);
+        assertThat("Http Response Header: \"Content-Length: " + contentLength + "\"", contentLengthLong, is(expectedSize));
+    }
+
+    @ParameterizedTest
+    @MethodSource("staticFiles")
     public void testUpload(String filename, long expectedSize) throws Exception
     {
         Path inputFile = staticBase.resolve(filename);

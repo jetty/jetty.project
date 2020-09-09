@@ -701,74 +701,41 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     public void dump(Appendable out, String indent) throws IOException
     {
         List<Object> threads = new ArrayList<>(getMaxThreads());
-        for (final Thread thread : _threads)
+        for (Thread thread : _threads)
         {
-            final StackTraceElement[] trace = thread.getStackTrace();
-            String knownMethod = "";
-            for (StackTraceElement t : trace)
-            {
-                if ("idleJobPoll".equals(t.getMethodName()) && t.getClassName().equals(Runner.class.getName()))
-                {
-                    knownMethod = "IDLE ";
-                    break;
-                }
+            StackTraceElement[] trace = thread.getStackTrace();
+            String stackTag = getCompressedStackTag(trace);
+            String baseThreadInfo = String.format("%s %s tid=%d prio=%d", thread.getName(), thread.getState(), thread.getId(), thread.getPriority());
 
-                if ("reservedWait".equals(t.getMethodName()) && t.getClassName().endsWith("ReservedThread"))
-                {
-                    knownMethod = "RESERVED ";
-                    break;
-                }
-
-                if ("select".equals(t.getMethodName()) && t.getClassName().endsWith("SelectorProducer"))
-                {
-                    knownMethod = "SELECTING ";
-                    break;
-                }
-
-                if ("accept".equals(t.getMethodName()) && t.getClassName().contains("ServerConnector"))
-                {
-                    knownMethod = "ACCEPTING ";
-                    break;
-                }
-            }
-            final String known = knownMethod;
-
-            if (isDetailedDump())
-            {
-                threads.add(new Dumpable()
-                {
-                    @Override
-                    public void dump(Appendable out, String indent) throws IOException
-                    {
-                        if (StringUtil.isBlank(known))
-                            Dumpable.dumpObjects(out, indent, String.format("%s %s %s %d", thread.getId(), thread.getName(), thread.getState(), thread.getPriority()), (Object[])trace);
-                        else
-                            Dumpable.dumpObjects(out, indent, String.format("%s %s %s %s %d", thread.getId(), thread.getName(), known, thread.getState(), thread.getPriority()));
-                    }
-
-                    @Override
-                    public String dump()
-                    {
-                        return null;
-                    }
-                });
-            }
+            if (!StringUtil.isBlank(stackTag))
+                threads.add(baseThreadInfo + " " + stackTag);
+            else if (isDetailedDump())
+                threads.add((Dumpable)(o, i) -> Dumpable.dumpObjects(o, i, baseThreadInfo, (Object[])trace));
             else
-            {
-                int p = thread.getPriority();
-                threads.add(thread.getId() + " " + thread.getName() + " " + known + thread.getState() + " @ " + (trace.length > 0 ? trace[0] : "???") + (p == Thread.NORM_PRIORITY ? "" : (" prio=" + p)));
-            }
+                threads.add(baseThreadInfo + " @ " + (trace.length > 0 ? trace[0].toString() : "???"));
         }
 
+        DumpableCollection threadsDump = new DumpableCollection("threads", threads);
         if (isDetailedDump())
-        {
-            List<Runnable> jobs = new ArrayList<>(getQueue());
-            dumpObjects(out, indent, new DumpableCollection("threads", threads), new DumpableCollection("jobs", jobs));
-        }
+            dumpObjects(out, indent, threadsDump, new DumpableCollection("jobs", new ArrayList<>(getQueue())));
         else
+            dumpObjects(out, indent, threadsDump);
+    }
+
+    private String getCompressedStackTag(StackTraceElement[] trace)
+    {
+        for (StackTraceElement t : trace)
         {
-            dumpObjects(out, indent, new DumpableCollection("threads", threads));
+            if ("idleJobPoll".equals(t.getMethodName()) && t.getClassName().equals(Runner.class.getName()))
+                return "IDLE";
+            if ("reservedWait".equals(t.getMethodName()) && t.getClassName().endsWith("ReservedThread"))
+                return "RESERVED";
+            if ("select".equals(t.getMethodName()) && t.getClassName().endsWith("SelectorProducer"))
+                return "SELECTING";
+            if ("accept".equals(t.getMethodName()) && t.getClassName().contains("ServerConnector"))
+                return  "ACCEPTING";
         }
+        return "";
     }
 
     @Override

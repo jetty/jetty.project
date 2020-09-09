@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -38,6 +40,7 @@ import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.frames.ReadOnlyDelegatedFrame;
 import org.eclipse.jetty.websocket.common.message.SimpleBinaryMessage;
 import org.eclipse.jetty.websocket.common.message.SimpleTextMessage;
+import org.eclipse.jetty.websocket.common.util.TextUtil;
 
 /**
  * Handler for {@link WebSocketListener} based User WebSocket implementations.
@@ -58,12 +61,26 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     public JettyListenerEventDriver(WebSocketPolicy policy, WebSocketConnectionListener listener)
     {
         super(policy, listener);
-        this.listener = listener;
+        this.listener = Objects.requireNonNull(listener, "Listener may not be null");
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("ctor / listener={}, policy={}", listener.getClass().getName(), policy);
+        }
     }
 
     @Override
     public void onBinaryFrame(ByteBuffer buffer, boolean fin) throws IOException
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onBinaryFrame({}, {}) - webSocketListener={}, webSocketPartialListener={}, listener={}, activeMessage={}",
+                BufferUtil.toDetailString(buffer), fin,
+                (listener instanceof WebSocketListener),
+                (listener instanceof WebSocketPartialListener),
+                listener.getClass().getName(),
+                activeMessage);
+        }
+
         if (listener instanceof WebSocketListener)
         {
             if (activeMessage == null)
@@ -98,6 +115,14 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     @Override
     public void onBinaryMessage(byte[] data)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onBinaryMessage([{}]) - webSocketListener={}, listener={}",
+                data.length,
+                (listener instanceof WebSocketListener),
+                this.listener.getClass().getName());
+        }
+
         if (listener instanceof WebSocketListener)
         {
             ((WebSocketListener)listener).onWebSocketBinary(data, 0, data.length);
@@ -116,6 +141,11 @@ public class JettyListenerEventDriver extends AbstractEventDriver
 
         int statusCode = close.getStatusCode();
         String reason = close.getReason();
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onClose({},{}) - listener={}", statusCode, reason, this.listener.getClass().getName());
+        }
         listener.onWebSocketClose(statusCode, reason);
     }
 
@@ -123,19 +153,34 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     public void onConnect()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("onConnect({})", session);
+        {
+            LOG.debug("onConnect({}) - listener={}", session, this.listener.getClass().getName());
+        }
         listener.onWebSocketConnect(session);
     }
 
     @Override
     public void onError(Throwable cause)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onError({}) - listener={}", cause.getClass().getName(), this.listener.getClass().getName());
+        }
         listener.onWebSocketError(cause);
     }
 
     @Override
     public void onFrame(Frame frame)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onFrame({}) - frameListener={}, pingPongListener={}, listener={}",
+                frame,
+                (listener instanceof WebSocketFrameListener),
+                (listener instanceof WebSocketPingPongListener),
+                this.listener.getClass().getName());
+        }
+
         if (listener instanceof WebSocketFrameListener)
         {
             ((WebSocketFrameListener)listener).onWebSocketFrame(new ReadOnlyDelegatedFrame(frame));
@@ -169,6 +214,17 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     @Override
     public void onTextFrame(ByteBuffer buffer, boolean fin) throws IOException
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onTextFrame({}, {}) - webSocketListener={}, webSocketPartialListener={}, listener={}, activeMessage={}",
+                BufferUtil.toDetailString(buffer),
+                fin,
+                (listener instanceof WebSocketListener),
+                (listener instanceof WebSocketPartialListener),
+                listener.getClass().getName(),
+                activeMessage);
+        }
+
         if (listener instanceof WebSocketListener)
         {
             if (activeMessage == null)
@@ -226,6 +282,15 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     @Override
     public void onTextMessage(String message)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onTextMessage([{}] \"{}\") - webSocketListener={}, listener={}",
+                message.length(),
+                TextUtil.maxStringLength(60, message),
+                (listener instanceof WebSocketListener),
+                listener.getClass().getName());
+        }
+
         if (listener instanceof WebSocketListener)
         {
             ((WebSocketListener)listener).onWebSocketText(message);
@@ -234,6 +299,16 @@ public class JettyListenerEventDriver extends AbstractEventDriver
 
     public void onContinuationFrame(ByteBuffer buffer, boolean fin) throws IOException
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onContinuationFrame({}, {}) - webSocketListener={}, webSocketPartialListener={}, listener={}, activeMessage={}",
+                BufferUtil.toDetailString(buffer), fin,
+                (listener instanceof WebSocketListener),
+                (listener instanceof WebSocketPartialListener),
+                listener.getClass().getName(),
+                activeMessage);
+        }
+
         if (listener instanceof WebSocketPartialListener)
         {
             switch (partialMode)

@@ -48,6 +48,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     private final HttpDestination destination;
     private final Callback requester;
     private final Pool<Connection> pool;
+    private boolean maximizeConnections;
 
     /**
      * @deprecated use {@link #AbstractConnectionPool(HttpDestination, int, boolean, Callback)} instead
@@ -151,9 +152,26 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     }
 
     @Override
+    @ManagedAttribute("Whether this pool is closed")
     public boolean isClosed()
     {
         return pool.isClosed();
+    }
+
+    @ManagedAttribute("Whether the pool tries to maximize the number of connections used")
+    public boolean isMaximizeConnections()
+    {
+        return maximizeConnections;
+    }
+
+    /**
+     * <p>Sets whether the number of connections should be maximized.</p>
+     *
+     * @param maximizeConnections whether the number of connections should be maximized
+     */
+    public void setMaximizeConnections(boolean maximizeConnections)
+    {
+        this.maximizeConnections = maximizeConnections;
     }
 
     @Override
@@ -164,7 +182,8 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
 
     /**
      * <p>Returns an idle connection, if available;
-     * if an idle connection is not available, and the given {@code create} parameter is {@code true},
+     * if an idle connection is not available, and the given {@code create} parameter is {@code true}
+     * or {@link #isMaximizeConnections()} is {@code true},
      * then schedules the opening of a new connection, if possible within the configuration of this
      * connection pool (for example, if it does not exceed the max connection count);
      * otherwise returns {@code null}.</p>
@@ -178,7 +197,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         if (LOG.isDebugEnabled())
             LOG.debug("Acquiring create={} on {}", create, this);
         Connection connection = activate();
-        if (connection == null && create)
+        if (connection == null && (create || isMaximizeConnections()))
         {
             tryCreate(destination.getQueuedRequestCount());
             connection = activate();
@@ -357,8 +376,8 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     }
 
     /**
-     * @deprecated Relying on this method indicates a reliance on the implementation details.
      * @return an unmodifiable queue working as a view of the idle connections.
+     * @deprecated Relying on this method indicates a reliance on the implementation details.
      */
     @Deprecated
     public Queue<Connection> getIdleConnections()
@@ -371,8 +390,8 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     }
 
     /**
-     * @deprecated Relying on this method indicates a reliance on the implementation details.
      * @return an unmodifiable collection working as a view of the active connections.
+     * @deprecated Relying on this method indicates a reliance on the implementation details.
      */
     @Deprecated
     public Collection<Connection> getActiveConnections()

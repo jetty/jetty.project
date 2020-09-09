@@ -20,14 +20,28 @@ package org.eclipse.jetty.util.ssl;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.X509ExtendedKeyManager;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.resource.Resource;
@@ -43,6 +57,8 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesRegex;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -361,5 +377,82 @@ public class SslContextFactoryTest
         cf.start();
 
         assertNull(cf.getEndpointIdentificationAlgorithm());
+    }
+
+    @Test
+    public void testSNIWithPKIX() throws Exception
+    {
+        SslContextFactory.Server serverTLS = new SslContextFactory.Server()
+        {
+            @Override
+            protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
+            {
+                SniX509ExtendedKeyManager result = new SniX509ExtendedKeyManager(keyManager, this);
+                result.setAliasMapper(alias ->
+                {
+                    // Workaround for https://bugs.openjdk.java.net/browse/JDK-8246262.
+                    Matcher matcher = Pattern.compile(".*\\..*\\.(.*)").matcher(alias);
+                    if (matcher.matches())
+                        return matcher.group(1);
+                    return alias;
+                });
+                return result;
+            }
+        };
+        // This test requires a SNI keystore so that the X509ExtendedKeyManager is wrapped.
+        serverTLS.setKeyStoreResource(Resource.newSystemResource("keystore_sni.p12"));
+        serverTLS.setKeyStorePassword("storepwd");
+        serverTLS.setKeyManagerPassword("keypwd");
+        serverTLS.setKeyManagerFactoryAlgorithm("PKIX");
+        // Don't pick a default certificate if SNI does not match.
+        serverTLS.setSniRequired(true);
+        serverTLS.start();
+
+        SslContextFactory.Client clientTLS = new SslContextFactory.Client(true);
+        clientTLS.start();
+
+        try (SSLServerSocket serverSocket = serverTLS.newSslServerSocket(null, 0, 128);
+             SSLSocket clientSocket = clientTLS.newSslSocket())
+        {
+            SSLParameters sslParameters = clientSocket.getSSLParameters();
+            String hostName = "jetty.eclipse.org";
+            sslParameters.setServerNames(Collections.singletonList(new SNIHostName(hostName)));
+            clientSocket.setSSLParameters(sslParameters);
+            clientSocket.connect(new InetSocketAddress("localhost", serverSocket.getLocalPort()), 5000);
+            try (SSLSocket sslSocket = (SSLSocket)serverSocket.accept())
+            {
+                byte[] data = "HELLO".getBytes(StandardCharsets.UTF_8);
+                new Thread(() ->
+                {
+                    try
+                    {
+                        // Start the TLS handshake and verify that
+                        // the client got the right server certificate.
+                        clientSocket.startHandshake();
+                        Certificate[] certificates = clientSocket.getSession().getPeerCertificates();
+                        assertThat(certificates.length, greaterThan(0));
+                        X509Certificate certificate = (X509Certificate)certificates[0];
+                        assertThat(certificate.getSubjectX500Principal().getName(), startsWith("CN=" + hostName));
+                        // Send some data to verify communication is ok.
+                        OutputStream output = clientSocket.getOutputStream();
+                        output.write(data);
+                        output.flush();
+                        clientSocket.close();
+                    }
+                    catch (Throwable x)
+                    {
+                        x.printStackTrace();
+                    }
+                }).start();
+                // Verify that we received the data the client sent.
+                sslSocket.setSoTimeout(5000);
+                InputStream input = sslSocket.getInputStream();
+                byte[] bytes = IO.readBytes(input);
+                assertArrayEquals(data, bytes);
+            }
+        }
+
+        clientTLS.stop();
+        serverTLS.stop();
     }
 }

@@ -915,11 +915,6 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         }
     }
 
-    /**
-     * @param clazz the class of the beans
-     * @param <T> the Bean type
-     * @return the list of beans of the given class from the entire Container hierarchy
-     */
     @Override
     public <T> Collection<T> getContainedBeans(Class<T> clazz)
     {
@@ -928,11 +923,6 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
         return beans;
     }
 
-    /**
-     * @param clazz the class of the beans
-     * @param <T> the Bean type
-     * @param beans the collection to add beans of the given class from the entire Container hierarchy
-     */
     protected <T> void getContainedBeans(Class<T> clazz, Collection<T> beans)
     {
         beans.addAll(getBeans(clazz));

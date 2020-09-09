@@ -16,22 +16,28 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.cdi;
+package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.servlet.DecoratingListener;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import java.util.concurrent.ThreadLocalRandom;
+
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
 /**
- * A DecoratingListener that listens for "org.eclipse.jetty.cdi.decorator"
+ * <p>An indexed {@link ConnectionPool} that provides connections
+ * randomly among the ones that are available.</p>
  */
-public class CdiDecoratingListener extends DecoratingListener
+@ManagedObject
+public class RandomConnectionPool extends IndexedConnectionPool
 {
-    public static final String MODE = "CdiDecoratingListener";
-    public static final String ATTRIBUTE = "org.eclipse.jetty.cdi.decorator";
-
-    public CdiDecoratingListener(ServletContextHandler contextHandler)
+    public RandomConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
-        super(contextHandler, ATTRIBUTE);
-        contextHandler.setAttribute(CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, MODE);
+        super(destination, maxConnections, requester, maxMultiplex);
+    }
+
+    @Override
+    protected int getIndex(int maxConnections)
+    {
+        return ThreadLocalRandom.current().nextInt(maxConnections);
     }
 }
