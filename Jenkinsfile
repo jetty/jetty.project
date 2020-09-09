@@ -12,7 +12,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk8", "-T3 clean install", "maven3", true )
+                mavenBuild( "jdk8", "clean install", "maven3", true )
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                        exclusionPattern: '' +
@@ -43,7 +43,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "-T3 clean install", "maven3", true )
+                mavenBuild( "jdk11", "clean install", "maven3", true )
                 warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
                 junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
               }
@@ -56,7 +56,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk14", "-T3 clean install", "maven3", true )
+                mavenBuild( "jdk14", "clean install", "maven3", true )
                 warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
                 junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
               }
