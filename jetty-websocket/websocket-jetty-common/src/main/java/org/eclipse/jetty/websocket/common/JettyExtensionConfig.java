@@ -26,7 +26,7 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 /**
  * Represents an Extension Configuration, as seen during the connection Handshake process.
  */
-public class JettyExtensionConfig implements org.eclipse.jetty.websocket.api.extensions.ExtensionConfig
+public class JettyExtensionConfig implements org.eclipse.jetty.websocket.api.ExtensionConfig
 {
 
     private final ExtensionConfig config;

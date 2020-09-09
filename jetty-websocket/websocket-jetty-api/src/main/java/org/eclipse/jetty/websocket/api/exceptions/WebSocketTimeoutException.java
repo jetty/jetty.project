@@ -16,16 +16,27 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.websocket.api.exceptions;
 
-public final class WebSocketConstants
+/**
+ * Exception thrown to indicate a connection I/O timeout.
+ */
+public class WebSocketTimeoutException extends WebSocketException
 {
-    public static final String SEC_WEBSOCKET_EXTENSIONS = "Sec-WebSocket-Extensions";
-    public static final String SEC_WEBSOCKET_PROTOCOL = "Sec-WebSocket-Protocol";
-    public static final String SEC_WEBSOCKET_VERSION = "Sec-WebSocket-Version";
-    public static final String SEC_WEBSOCKET_ACCEPT = "Sec-WebSocket-Accept";
-    public static final String SEC_WEBSOCKET_ORIGIN = "Sec-WebSocket-Origin";
-    public static final String SEC_WEBSOCKET_KEY = "Sec-WebSocket-Key";
-    public static final int SPEC_VERSION = 13;
-}
+    private static final long serialVersionUID = -6145098200250676673L;
 
+    public WebSocketTimeoutException(String message)
+    {
+        super(message);
+    }
+
+    public WebSocketTimeoutException(String message, Throwable cause)
+    {
+        super(message, cause);
+    }
+
+    public WebSocketTimeoutException(Throwable cause)
+    {
+        super(cause);
+    }
+}
