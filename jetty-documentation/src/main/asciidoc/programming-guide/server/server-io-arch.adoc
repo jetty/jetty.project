@@ -124,10 +124,18 @@ In the example below you can see how to support both clear-text and encrypted HT
 include::../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=detector]
 ----
 
-With this configuration, the `ServerConnector` will listen on port 8181.
-When a new connection is established, `DetectorConnectionFactory` is invoked to create a `Connection`.
+<1> Creates the `DetectorConnectionFactory` with the `SslConnectionFactory` as the only detecting `ConnectionFactory`.
+With this configuration, the detector will delegate to `SslConnectionFactory` to recognize the initial bytes, which will detect whether the bytes are TLS protocol bytes.
+<2> Creates the `ServerConnector` with `DetectorConnectionFactory` as the first `ConnectionFactory`, and `HttpConnectionFactory` as the next `ConnectionFactory` to invoke if the detection fails.
+
+In the example above `ServerConnector` will listen on port 8181.
+When a new TCP connection is established, `DetectorConnectionFactory` is invoked to create a `Connection`, because it is the first `ConnectionFactory` specified in the `ServerConnector` list.
 `DetectorConnectionFactory` reads the initial bytes and asks to its detecting ``ConnectionFactory``s if they recognize the bytes.
-If one of the detecting ``ConnectionFactory``s recognizes the bytes, it creates a `Connection`; otherwise `DetectorConnectionFactory` will try the next `ConnectionFactory` after itself in the `ServerConnector` list, which is `HttpConnectionFactory` in the example above.
+In the example above, the detecting ``ConnectionFactory`` is `SslConnectionFactory` which will therefore detect whether the initial bytes are TLS bytes.
+If one of the detecting ``ConnectionFactory``s recognizes the bytes, it creates a `Connection`; otherwise `DetectorConnectionFactory` will try the next `ConnectionFactory` after itself in the `ServerConnector` list.
+In the example above, the next `ConnectionFactory` after `DetectorConnectionFactory` is `HttpConnectionFactory`.
+
+The final result is that when new TCP connection is established, the initial bytes are examined: if they are TLS bytes, a `SslConnectionFactory` will create a `SslConnection` that wraps an `HttpConnection` as explained xref:pg-server-io-arch-connection-factory-wrapping[here], therefore supporting `https`; otherwise they are not TLS bytes and an `HttpConnection` is created, therefore supporting `http`.
 
 [[pg-server-io-arch-connection-factory-custom]]
 ==== Writing a Custom `ConnectionFactory`
