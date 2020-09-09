@@ -134,4 +134,15 @@ public abstract class CompressionPool<T> extends AbstractLifeCycle
         }
         _numObjects.set(0);
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{%s,size=%d,capacity=%s}",
+            getClass().getSimpleName(),
+            hashCode(),
+            getState(),
+            _pool.size(),
+            _capacity < 0 ? "UNLIMITED" : _capacity);
+    }
 }
