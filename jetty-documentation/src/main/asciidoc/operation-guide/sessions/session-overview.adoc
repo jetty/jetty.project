@@ -1,0 +1,55 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[jetty-sessions-architecture]]
+
+=== Session Overview
+
+==== Terminology 
+
+Before diving into the specifics of how to plug-in and configure various alternative http session management modules, let's review some useful terminology:
+
+SessionIdManager:: A jetty instance can have a single SessionIdManager that is responsible for managing session ids.
+HouseKeeper:: A jetty instance can have a single HouseKeeper that is responsible for finding and orchestrating the removal of expired sessions.
+SessionCache:: A context can have a single SessionCache that is an L1 cache of in-use session objects.
+SessionDataStore:: A context can have a single SessionDataStore that is responsible for all persistence operations on sessions.
+CachingSessionDataStore:: A context can have a single CachingSessionDataStore that is an L2 cache of session data.
+SessionHandler:: A context can have a single SessionHandler that is responsible for managing the lifecycle of sessions.
+
+More details on these concepts can be found in the [Programming Guide].
+
+==== Jetty Session Modules
+
+There are a number of modules that offer pluggable alternatives for http session management.
+You can design how you want to cache and store http sessions by selecting alternative combinations of session modules.
+
+For example, jetty ships with two alternative implementations of the `SessionCache`: one that caches sessions in memory (`session-cache-hash.mod`) and a trivial implementation that does not actually cache (`session-cache-null.mod`).
+
+There are at least six alternative implementations of the `SessionDataStore` that you can use to persist your http sessions.
+The list current includes support for:
+
+* file system storage (`session-store-file.mod`)
+* relational database storage (`session-store-jdbc.mod`)
+* NoSQL database storage (`session-store-mongo.mod`)
+* Google Cloud datastore storage (`session-store-gcloud.mod`)
+* Hazelcast storage (`session-store-hazelcast-remote.mod` or `session-store-hazelcast-embedded.mod`)
+* Infinispan storage (`session-store-infinispan-remote.mod` or `session-store-infinispan-embedded.mod`)
+
+You might like to consult the [use-cases] to help you decide which combinations best suit your needs.
+
+TIP: It is worth noting that if you do not configure _any_ session modules, jetty will still provide http sessions that are cached in memory but are never persisted.

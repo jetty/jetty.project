@@ -1,0 +1,95 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[configuring-sessions-file-system]]
+
+=== Persistent Sessions: File System
+
+The `session-store-file` module supports persistent storage of session data in a filesystem.
+
+IMPORTANT: Persisting sessions to the local file system should *never* be used in a clustered environment.
+
+==== Enabling File System Session Storage
+
+When using the Jetty distribution, you will first need to enable the `session-store-file` xref:startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+[source, screen, subs="{sub-order}"]
+----
+$ java -jar ../start.jar --create-startd
+INFO : Base directory was modified
+
+$ java -jar ../start.jar --add-to-start=session-store-file
+INFO  : server          transitively enabled, ini template available with --add-to-start=server
+INFO  : sessions        transitively enabled, ini template available with --add-to-start=sessions
+INFO  : session-store-file initialized in ${jetty.base}/start.d/session-store-file.ini
+MKDIR : ${jetty.base}/sessions
+INFO  : Base directory was modified
+----
+
+Doing this enables this and any dependent modules or files needed for it to run on the server.
+The example above is using a fresh `${jetty.base}` with nothing else enabled.
+
+Enabling this module also creates the `${jetty.base}/sessions` directory.
+By default session data will be saved to this directory, one file representing each session.
+
+File names follow this pattern:
+
++[expiry]_[context]_[id]+
+
+expiry::
+This is the expiry time in milliseconds since the epoch.
+context::
+This is a string representation of the context to which the session is scoped.
+It is comprised of the (sanitised) context path and the virtual host:
++[contextpath]_[virtualhost]+
+  contextpath:::
+  This is the context path with any special characters, including `/`, replaced by the `_` underscore character.
+  For example, a context path of `/catalog` would become `_catalog`.
+  A context path of simply `/` becomes just `__`.
+  virtualhost:::
+  This is the first virtual host associated with the context and has the form of 4 digits separated by `.` characters.
+  If there are no virtual hosts associated with a context, then `0.0.0.0` is used:
+  [digit].[digit].[digit].[digit]
+id::
+This is the unique id of the session.
+
+Putting all of the above together as an example, a session with an id of `node0ek3vx7x2y1e7pmi3z00uqj1k0` for the context with path `/test` with no virtual hosts and an expiry of `1599558193150` would have a file name of:
+
+`1599558193150__test_0.0.0.0_node0ek3vx7x2y1e7pmi3z00uqj1k0`
+
+
+==== Configuring
+
+The `$jetty.base/start.d/sessions.ini` file contains the following properties which may be modified to customise filesystem session storage:
+
+jetty.session.storeDir::
+Filesystem path.
+The default is `${jetty.base}/sessions`.
+This defines the location for storage of session files.
+
+jetty.session.file.deleteUnrestorableFiles::
+Boolean.
+Default is `false`.
+If set to `true`, unreadable files will be deleted.
+This is useful to prevent repeated logging of the same error when the scavenger periodically (re-)attempts to load the corrupted information for a session in order to expire it.
+
+jetty.session.savePeriod.seconds::
+Integer.
+Default is `0`.
+By default whenever the last concurrent request leaves a session, that session is always persisted, even if the only thing that changed on the session is its updated last access time.
+A non-zero value means that jetty will skip persisting the session if only the access time changed, unless the time since the last save exceeds the value of this property.

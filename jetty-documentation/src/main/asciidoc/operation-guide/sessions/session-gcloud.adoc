@@ -206,10 +206,7 @@ When the `--add-to-start` argument was added to the command line the first time,
 
 In addition to adding these modules to the classpath of the server it also added the respective configuration files to the `${jetty.base}start.d` directory.
 
-____
-[NOTE]
-If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
-____
+NOTE: If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
 
 ==== Configuring GCloud Session Properties
 
@@ -249,14 +246,14 @@ Amount of time, in seconds, to wait for other nodes to be checked to verify an e
 jetty.session.savePeriod.seconds=0::
 By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
 A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
-+
-____
+
 [NOTE]
+====
 Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
 In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
 This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
 Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
-____
+====
 
 jetty.session.gcloud.maxRetries::
 Maxmium number of tries to connect to GCloud DataStore to write sessions.

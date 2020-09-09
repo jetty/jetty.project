@@ -37,79 +37,29 @@ INFO  : session-store-jdbc initialized in ${jetty.base}/start.d/session-store-jd
 INFO  : Base directory was modified
 ----
 
-Doing this enables the JDBC Session module and any dependent modules or files needed for it to run on the server.
+Doing this enables the JDBC session module and any dependent modules or files needed for it to run on the server.
 The example above is using a fresh `${jetty.base}` with nothing else enabled.
 
-When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-jdbc` module as well as the `sessions` and `server` modules, which are required for JDBC session management to operate.
+==== Configuring
 
-In addition to adding these modules to the classpath of the server, several ini configuration files were added to the `${jetty.base}/start.d` directory.
-
-==== Configuring JDBC Session Properties
-
-Opening the `start.d/session-store-jdbc.ini` will show a list of all the configurable options for the JDBC module:
-
-[source, screen, subs="{sub-order}"]
-----
-# ---------------------------------------
-# Module: session-store-jdbc
-# Enables JDBC persistent/distributed session storage.
-# ---------------------------------------
---module=session-store-jdbc
-
-##
-##JDBC Session properties
-##
-
-#jetty.session.gracePeriod.seconds=3600
-
-## Connection type:Datasource
-db-connection-type=datasource
-#jetty.session.jdbc.datasourceName=/jdbc/sessions
-
-## Connection type:driver
-#db-connection-type=driver
-#jetty.session.jdbc.driverClass=
-#jetty.session.jdbc.driverUrl=
-
-## Session table schema
-#jetty.session.jdbc.schema.accessTimeColumn=accessTime
-#jetty.session.jdbc.schema.contextPathColumn=contextPath
-#jetty.session.jdbc.schema.cookieTimeColumn=cookieTime
-#jetty.session.jdbc.schema.createTimeColumn=createTime
-#jetty.session.jdbc.schema.expiryTimeColumn=expiryTime
-#jetty.session.jdbc.schema.lastAccessTimeColumn=lastAccessTime
-#jetty.session.jdbc.schema.lastSavedTimeColumn=lastSavedTime
-#jetty.session.jdbc.schema.idColumn=sessionId
-#jetty.session.jdbc.schema.lastNodeColumn=lastNode
-#jetty.session.jdbc.schema.virtualHostColumn=virtualHost
-#jetty.session.jdbc.schema.maxIntervalColumn=maxInterval
-#jetty.session.jdbc.schema.mapColumn=map
-#jetty.session.jdbc.schema.table=JettySessions
-# Optional name of the schema used to identify where the session table is defined in the database: 
-#  "" - empty string, no schema name 
-#  "INFERRED" - special string meaning infer from the current db connection
-#  name - a string defined by the user
-#jetty.session.jdbc.schema.schemaName
-# Optional name of the catalog used to identify where the session table is defined in the database: 
-#  "" - empty string, no catalog name
-#  "INFERRED" - special string meaning infer from the current db connection
-#  name - a string defined by the user
-#jetty.session.jdbc.schema.catalogName
-----
+The persistence of sessions via jdbc can be customized by editing the `${jetty.base}/start.d/session-store-jdbc.ini` file.
+The following properties are available:
 
 jetty.session.gracePeriod.seconds::
+Integer.
+
 Amount of time, in seconds, to wait for other nodes to be checked to verify an expired session is in fact expired throughout the cluster before closing it.
-jetty.session.savePeriod.seconds=0::
+jetty.session.savePeriod.seconds::
 By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
 A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
-+
-____
+
 [NOTE]
+====
 Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
 In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
 This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
 Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
-____
+====
 
 db-connection-type::
 Set to either `datasource` or `driver` depending on the type of connection being used.

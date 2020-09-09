@@ -42,7 +42,7 @@ If you have a high likelihood of simultaneous requests for the same session obje
 
 Without a sticky load balancer requests for the same session may arrive on any node in the cluster.
 This means it is likely that the copy of the Session object in any `SessionCache` is likely to be out-of-date, as the Session was probably last accessed on a different node.
-In this case, your `choices` are to use either the `NullSessionCache` or to de-tune the `DefaultSessionCache`.
+In this case, your choices are to use either the `NullSessionCache` or to de-tune the `DefaultSessionCache`.
 If you use the NullSessionCache all Session object caching is avoided.
 This means that every time a request references a session it must be brought in from persistent storage.
 It also means that there can be no sharing of Session objects for multiple requests for the same session: each will have their own Session object.
@@ -54,7 +54,7 @@ Again, due to the lack of Session transactionality, the ordering outcome of writ
 As the Session is cached while at least one request is accessing it, it is possible for multiple simultaneous requests to share the same Session object.
 
 
-==== Handling corrupted or unloadable session data
+==== Handling Corrupted or Unloadable Session Data
 
 For various reasons it might not be possible for the `SessionDataStore` to re-read a stored session.
 One scenario is that the session stores a serialized object in it's attributes, and after a redeployment there in an incompatible class change.
@@ -88,8 +88,8 @@ Below is an example of how you could configure a the link:#configuring-sessions-
 
 The example above functions in either a `jetty-web.xml` file or a link:#using-basic-descriptor-files[context xml descriptor file.]
 
-____
 [NOTE]
+====
 If you explicitly configure the `SessionCache` and `SessionDataStore` for a `SessionHandler` in a context xml file or `jetty-web.xml` file, any session modules you already have enabled are ignored.
 So, for example, if you had enabled the `session-store-gcloud module` for your sever, you could force a particular webapp to use the `FileSessionDataStore` by explicitly configuring it in either a context xml file or a `jetty-web.xml` file as shown above.
-____
+====
