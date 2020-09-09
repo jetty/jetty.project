@@ -158,14 +158,14 @@ public class HttpConnectionTest
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616);
         String request = "GET / HTTP/0.9\r\n\r\n";
         String response = connector.getResponse(request);
-        assertThat(response, containsString("400 Bad Request"));
-        assertThat(response, containsString("reason: Bad Version"));
+        assertThat(response, containsString("505 HTTP Version Not Supported"));
+        assertThat(response, containsString("reason: Unsupported Version"));
 
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC7230);
         request = "GET / HTTP/0.9\r\n\r\n";
         response = connector.getResponse(request);
-        assertThat(response, containsString("400 Bad Request"));
-        assertThat(response, containsString("reason: Bad Version"));
+        assertThat(response, containsString("505 HTTP Version Not Supported"));
+        assertThat(response, containsString("reason: Unsupported Version"));
     }
 
     /**

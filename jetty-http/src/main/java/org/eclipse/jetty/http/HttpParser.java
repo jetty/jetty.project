@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import static org.eclipse.jetty.http.HttpCompliance.RFC7230;
 import static org.eclipse.jetty.http.HttpCompliance.Violation;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.CASE_SENSITIVE_FIELD_NAME;
+import static org.eclipse.jetty.http.HttpCompliance.Violation.HTTP_0_9;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.MULTIPLE_CONTENT_LENGTHS;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.NO_COLON_AFTER_FIELD_NAME;
 import static org.eclipse.jetty.http.HttpCompliance.Violation.TRANSFER_ENCODING_WITH_CONTENT_LENGTH;
@@ -750,12 +751,19 @@ public class HttpParser
 
                         case LF:
                             // HTTP/0.9
-                            checkViolation(Violation.HTTP_0_9);
-                            _requestHandler.startRequest(_methodString, _uri.toString(), HttpVersion.HTTP_0_9);
-                            setState(State.CONTENT);
-                            _endOfContent = EndOfContent.NO_CONTENT;
-                            BufferUtil.clear(buffer);
-                            handle = handleHeaderContentMessage();
+                            if (Violation.HTTP_0_9.isAllowedBy(_complianceMode))
+                            {
+                                reportComplianceViolation(HTTP_0_9, HTTP_0_9.getDescription());
+                                _requestHandler.startRequest(_methodString, _uri.toString(), HttpVersion.HTTP_0_9);
+                                setState(State.CONTENT);
+                                _endOfContent = EndOfContent.NO_CONTENT;
+                                BufferUtil.clear(buffer);
+                                handle = handleHeaderContentMessage();
+                            }
+                            else
+                            {
+                                throw new BadMessageException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "HTTP/0.9 not supported");
+                            }
                             break;
 
                         case ALPHA:
@@ -924,10 +932,10 @@ public class HttpParser
     private void checkVersion()
     {
         if (_version == null)
-            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Unknown Version");
+            throw new BadMessageException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "Unknown Version");
 
         if (_version.getVersion() < 10 || _version.getVersion() > 20)
-            throw new BadMessageException(HttpStatus.BAD_REQUEST_400, "Bad Version");
+            throw new BadMessageException(HttpStatus.HTTP_VERSION_NOT_SUPPORTED_505, "Unsupported Version");
     }
 
     private void parsedHeader()
