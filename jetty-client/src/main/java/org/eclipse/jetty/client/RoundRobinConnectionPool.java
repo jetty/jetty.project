@@ -18,22 +18,39 @@
 
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.api.Connection;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.thread.AutoLock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+/**
+ * <p>A {@link ConnectionPool} that attempts to provide connections using a round-robin algorithm.</p>
+ * <p>The round-robin behavior is almost impossible to achieve for several reasons:</p>
+ * <ul>
+ *     <li>the server takes different times to serve different requests; if a request takes a long
+ *     time to be processed by the server, it would be a performance penalty to stall sending requests
+ *     waiting for that connection to be available - better skip it and try another connection</li>
+ *     <li>connections may be closed by the client or by the server, so it should be a performance
+ *     penalty to stall sending requests waiting for a new connection to be opened</li>
+ *     <li>thread scheduling on both client and server may temporarily penalize a connection</li>
+ * </ul>
+ * <p>Do not expect this class to provide connections in a perfect recurring sequence such as
+ * {@code c0, c1, ..., cN-1, c0, c1, ..., cN-1, c0, c1, ...} because that is impossible to
+ * achieve in a real environment.
+ * This class will just attempt a best-effort to provide the connections in a sequential order,
+ * but most likely the order will be quasi-random.</p>
+ * <p>Applications using this class should {@link #preCreateConnections(int) pre-create}
+ * the connections to ensure that they are already opened when the application starts to requests
+ * them, otherwise the first connection that is opened may be used multiple times before the others
+ * are opened, resulting in a behavior that is more random-like than more round-robin-like (and
+ * that confirms that round-robin behavior is almost impossible to achieve).</p>
+ *
+ * @see RandomConnectionPool
+ */
 @ManagedObject
-public class RoundRobinConnectionPool extends MultiplexConnectionPool
+public class RoundRobinConnectionPool extends IndexedConnectionPool
 {
-    private static final Logger LOG = LoggerFactory.getLogger(RoundRobinConnectionPool.class);
-
-    private final AutoLock lock = new AutoLock();
-    private final Pool<Connection> pool;
-    private int offset;
+    private final AtomicInteger offset = new AtomicInteger();
 
     public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
     {
@@ -42,37 +59,17 @@ public class RoundRobinConnectionPool extends MultiplexConnectionPool
 
     public RoundRobinConnectionPool(HttpDestination destination, int maxConnections, Callback requester, int maxMultiplex)
     {
-        super(destination, maxConnections, false, requester, maxMultiplex);
-        pool = destination.getBean(Pool.class);
-    }
-
-    @Override
-    public Connection acquire(boolean create)
-    {
+        super(destination, maxConnections, requester, maxMultiplex);
         // If there are queued requests and connections get
         // closed due to idle timeout or overuse, we want to
         // aggressively try to open new connections to replace
         // those that were closed to process queued requests.
-        return super.acquire(true);
+        setMaximizeConnections(true);
     }
 
     @Override
-    protected Connection activate()
+    protected int getIndex(int maxConnections)
     {
-        Pool<Connection>.Entry entry;
-        try (AutoLock l = lock.lock())
-        {
-            int index = Math.abs(offset % pool.getMaxEntries());
-            entry = pool.acquireAt(index);
-            if (LOG.isDebugEnabled())
-                LOG.debug("activated at index={} entry={}", index, entry);
-            if (entry != null)
-                ++offset;
-        }
-        if (entry == null)
-            return null;
-        Connection connection = entry.getPooled();
-        acquired(connection);
-        return connection;
+        return offset.getAndUpdate(v -> ++v == maxConnections ? 0 : v);
     }
 }
