@@ -21,9 +21,9 @@ package org.eclipse.jetty.server.handler.gzip;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.Deflater;
 import javax.servlet.DispatcherType;
@@ -44,6 +44,7 @@ import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.util.AsciiLowerCaseSet;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.compression.CompressionPool;
@@ -172,7 +173,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     // non-static, as other GzipHandler instances may have different configurations
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
     private final IncludeExclude<String> _paths = new IncludeExclude<>(PathSpecSet.class);
-    private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>(CaseInsensitiveSet.class);
+    private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>(AsciiLowerCaseSet.class);
     private HttpField _vary = GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING;
 
     /**
@@ -780,10 +781,10 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public void setDispatcherTypes(String... dispatchers)
     {
-        setDispatcherTypes(Stream.of(dispatchers)
+        _dispatchers = EnumSet.copyOf(Stream.of(dispatchers)
             .flatMap(s -> Stream.of(StringUtil.csvSplit(s)))
             .map(DispatcherType::valueOf)
-            .toArray(DispatcherType[]::new));
+            .collect(Collectors.toSet()));
     }
 
     /**
@@ -940,22 +941,5 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public String toString()
     {
         return String.format("%s@%x{%s,min=%s,inflate=%s}", getClass().getSimpleName(), hashCode(), getState(), _minGzipSize, _inflateBufferSize);
-    }
-
-    public static class CaseInsensitiveSet extends HashSet<String>
-    {
-        @Override
-        public boolean add(String s)
-        {
-            return super.add(s == null ? null : s.toLowerCase());
-        }
-
-        @Override
-        public boolean contains(Object o)
-        {
-            if (o instanceof String)
-                return super.contains(((String)o).toLowerCase());
-            return super.contains(o);
-        }
     }
 }
