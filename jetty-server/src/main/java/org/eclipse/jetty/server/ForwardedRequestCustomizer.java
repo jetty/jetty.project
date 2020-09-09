@@ -58,8 +58,76 @@ import static java.lang.invoke.MethodType.methodType;
  * the request came</p>
  * <p>Headers can also be defined so that forwarded SSL Session IDs and Cipher
  * suites may be customised</p>
+ * <p>
+ *     The Authority (host and port) is updated on the {@link Request} object based
+ *     on the host / port information in the following search order.
+ * </p>
+ * <table>
+ *     <caption>Request Authority Search Order</caption>
+ *     <thead>
+ *         <tr>
+ *             <td>#</td>
+ *             <td>Value Origin</td>
+ *             <td>Host</td>
+ *             <td>Port</td>
+ *             <td>Notes</td>
+ *         </tr>
+ *     </thead>
+ *     <tbody>
+ *         <tr>
+ *             <td>1</td>
+ *             <td><code>Forwarded</code> Header</td>
+ *             <td>Required</td>
+ *             <td>Authoritative</td>
+ *             <td>From left-most <code>host=[value]</code> parameter (see <a href="https://tools.ietf.org/html/rfc7239">rfc7239</a>)</td>
+ *         </tr>
+ *         <tr>
+ *             <td>2</td>
+ *             <td><code>X-Forwarded-Host</code> Header</td>
+ *             <td>Required</td>
+ *             <td>Optional</td>
+ *             <td>left-most value</td>
+ *         </tr>
+ *         <tr>
+ *             <td>3</td>
+ *             <td><code>X-Forwarded-Port</code> Header</td>
+ *             <td>n/a</td>
+ *             <td>Required</td>
+ *             <td>left-most value (only if {@link #getForwardedPortAsAuthority()} is true)</td>
+ *         </tr>
+ *         <tr>
+ *             <td>4</td>
+ *             <td><code>X-Forwarded-Server</code> Header</td>
+ *             <td>Required</td>
+ *             <td>Optional</td>
+ *             <td>left-most value</td>
+ *         </tr>
+ *         <tr>
+ *             <td>5</td>
+ *             <td>Request Metadata</td>
+ *             <td>Optional</td>
+ *             <td>Optional</td>
+ *             <td>found in Request Line absolute path and/or <code>Host</code> client request header value as value <code>host:port</code> or <code>host</code></td>
+ *         </tr>
+ *         <tr>
+ *             <td>6</td>
+ *             <td><code>X-Forwarded-Proto</code> Header</td>
+ *             <td>n/a</td>
+ *             <td>standard</td>
+ *             <td>left-most value as <code>http</code> (implied port 80) or <code>https</code> (implied port 443)</td>
+ *         </tr>
+ *         <tr>
+ *             <td>7</td>
+ *             <td><code>X-Proxied-Https</code> Header</td>
+ *             <td>n/a</td>
+ *             <td>boolean</td>
+ *             <td>left-most value as <code>on</code> (implied port 443) or <code>off</code> (implied port 80)</td>
+ *         </tr>
+ *     </tbody>
+ * </table>
  *
  * @see <a href="http://en.wikipedia.org/wiki/X-Forwarded-For">Wikipedia: X-Forwarded-For</a>
+ * @see <a href="https://tools.ietf.org/html/rfc7239">RFC 7239: Forwarded HTTP Extension</a>
  */
 public class ForwardedRequestCustomizer implements Customizer
 {
