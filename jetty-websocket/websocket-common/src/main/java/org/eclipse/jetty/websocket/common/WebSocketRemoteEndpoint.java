@@ -456,15 +456,15 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     }
 
     @Override
-    public void setMaxOutgoingFrames(int maxOutgoingFrames)
-    {
-        this.maxNumOutgoingFrames = maxOutgoingFrames;
-    }
-
-    @Override
     public int getMaxOutgoingFrames()
     {
         return maxNumOutgoingFrames;
+    }
+
+    @Override
+    public void setMaxOutgoingFrames(int maxOutgoingFrames)
+    {
+        this.maxNumOutgoingFrames = maxOutgoingFrames;
     }
 
     @Override
