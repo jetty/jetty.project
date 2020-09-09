@@ -303,7 +303,7 @@ public class NcsaRequestLogTest
         _connector.getResponse("METHOD /foo HTTP/9\n\n");
         String log = _entries.poll(5, TimeUnit.SECONDS);
         assertThat(log, containsString("\"- - -\""));
-        assertThat(log, containsString(" 400 "));
+        assertThat(log, containsString(" 505 "));
     }
 
     @ParameterizedTest()
