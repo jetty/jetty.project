@@ -47,6 +47,7 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     private final HttpDestination destination;
     private final Callback requester;
     private final Pool<Connection> pool;
+    private boolean maximizeConnections;
 
     protected AbstractConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester)
     {
@@ -130,18 +131,47 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
     }
 
     @Override
+    @ManagedAttribute("Whether this pool is closed")
     public boolean isClosed()
     {
         return pool.isClosed();
     }
 
+    @ManagedAttribute("Whether the pool tries to maximize the number of connections used")
+    public boolean isMaximizeConnections()
+    {
+        return maximizeConnections;
+    }
+
+    /**
+     * <p>Sets whether the number of connections should be maximized.</p>
+     *
+     * @param maximizeConnections whether the number of connections should be maximized
+     */
+    public void setMaximizeConnections(boolean maximizeConnections)
+    {
+        this.maximizeConnections = maximizeConnections;
+    }
+
+    /**
+     * <p>Returns an idle connection, if available;
+     * if an idle connection is not available, and the given {@code create} parameter is {@code true}
+     * or {@link #isMaximizeConnections()} is {@code true},
+     * then schedules the opening of a new connection, if possible within the configuration of this
+     * connection pool (for example, if it does not exceed the max connection count);
+     * otherwise returns {@code null}.</p>
+     *
+     * @param create whether to schedule the opening of a connection if no idle connections are available
+     * @return an idle connection or {@code null} if no idle connections are available
+     * @see #tryCreate(int)
+     */
     @Override
     public Connection acquire(boolean create)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Acquiring create={} on {}", create, this);
         Connection connection = activate();
-        if (connection == null && create)
+        if (connection == null && (create || isMaximizeConnections()))
         {
             tryCreate(destination.getQueuedRequestCount());
             connection = activate();
