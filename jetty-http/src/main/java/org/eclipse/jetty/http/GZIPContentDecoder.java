@@ -216,7 +216,9 @@ public class GZIPContentDecoder implements Destroyable
 
                             try
                             {
+                                int pos = BufferUtil.flipToFill(buffer);
                                 _inflater.inflate(buffer);
+                                BufferUtil.flipToFlush(buffer, pos);
                             }
                             catch (DataFormatException x)
                             {
