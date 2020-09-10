@@ -32,8 +32,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Locker;
@@ -232,7 +234,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 return null;
             pending.incrementAndGet();
 
-            Entry entry = new Entry();
+            Entry entry = new Entry(entries.size());
             entries.add(entry);
             return entry;
         }
@@ -396,18 +398,19 @@ public class Pool<T> implements AutoCloseable, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this);
+        Dumpable.dumpObjects(out, indent, this,
+            new DumpableCollection("entries", entries));
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x[size=%d closed=%s entries=%s]",
+        return String.format("%s@%x[size=%d closed=%s pending=%d]",
             getClass().getSimpleName(),
             hashCode(),
             entries.size(),
             closed,
-            entries);
+            pending.get());
     }
 
     public class Entry
@@ -415,15 +418,17 @@ public class Pool<T> implements AutoCloseable, Dumpable
         // hi: positive=open/maxUsage counter; negative=closed; MIN_VALUE pending
         // lo: multiplexing counter
         private final AtomicBiInteger state;
+        private final int index;
 
         // The pooled item.  This is not volatile as it is set once and then never changed.
         // Other threads accessing must check the state field above first, so a good before/after
         // relationship exists to make a memory barrier.
         private T pooled;
 
-        Entry()
+        Entry(int index)
         {
             this.state = new AtomicBiInteger(Integer.MIN_VALUE, 0);
+            this.index = index;
         }
 
         /** Enable a reserved entry {@link Entry}.
@@ -596,12 +601,17 @@ public class Pool<T> implements AutoCloseable, Dumpable
         public String toString()
         {
             long encoded = state.get();
-            return String.format("%s@%x{usage=%d/%d,multiplex=%d/%d,pooled=%s}",
+            int hi = AtomicBiInteger.getHi(encoded);
+            int lo = AtomicBiInteger.getLo(encoded);
+
+            String state = hi < 0 ? "CLOSED" : lo == 0 ? "IDLE" : "INUSE";
+
+            return String.format("%s@%x{%s, usage=%d, multiplex=%d/%d, pooled=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
-                AtomicBiInteger.getHi(encoded),
-                getMaxUsageCount(),
-                AtomicBiInteger.getLo(encoded),
+                state,
+                Math.max(hi, 0),
+                Math.max(lo, 0),
                 getMaxMultiplex(),
                 pooled);
         }
@@ -658,6 +668,42 @@ public class Pool<T> implements AutoCloseable, Dumpable
         {
             planA.released(entry);
             planB.released(entry);
+        }
+    }
+
+
+    /**
+     * This strategy retries a wrapped strategy looking for
+     * and Entry
+     * @param <T> The type of entry the strategy is for.
+     */
+    public static class RetryStategy<T> implements Strategy<T>
+    {
+        final Strategy<T> strategy;
+        final int retries;
+
+        public RetryStategy(Strategy<T> strategy)
+        {
+            this (strategy, -1);
+        }
+
+        public RetryStategy(Strategy<T> strategy, int retries)
+        {
+            this.strategy = strategy;
+            this.retries = retries;
+        }
+
+        @Override
+        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
+        {
+            int tries = retries < 0 ? entries.size() : retries;
+            while (tries-- > 0)
+            {
+                Pool<T>.Entry entry = strategy.tryAcquire(entries);
+                if (entry != null)
+                    return entry;
+            }
+            return null;
         }
     }
 
@@ -723,12 +769,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 Pool<T>.Entry entry = iter.next();
                 if (entry != null && entry.tryAcquire())
                 {
+                    if (!roundrobin)
+                        iter.previous();
                     if (iter.hasNext())
-                    {
-                        if (!roundrobin)
-                            iter.previous();
                         iterator.set(iter);
-                    }
                     return entry;
                 }
             }
@@ -825,7 +869,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 if (entry != null && entry.tryAcquire())
                     return entry;
             }
-            catch (Exception e)
+            catch (IndexOutOfBoundsException e)
             {
                 // Could be out of bounds
                 LOGGER.ignore(e);
@@ -851,6 +895,15 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
+    public static class ThreadIdStrategy<T> extends IndexedStrategy<T>
+    {
+        @Override
+        protected int nextIndex(int size)
+        {
+            return (int)Thread.currentThread().getId() % size;
+        }
+    }
+
     /**
      * This strategy uses an {@link AtomicInteger} to remember the index
      * of the last acquired entry. Calls to acquire will commence trying
@@ -864,20 +917,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         @Override
         protected int nextIndex(int size)
         {
-            return index.getAndUpdate(c -> Math.max(0, c + 1)) % size;
-        }
-
-        @Override
-        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
-        {
-            int tries = entries.size();
-            while (tries-- > 0)
-            {
-                Pool<T>.Entry entry = super.tryAcquire(entries);
-                if (entry != null)
-                    return entry;
-            }
-            return null;
+            return index.getAndUpdate(c -> ++c < size ? c : 0);
         }
     }
 
@@ -905,7 +945,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
             }
 
             iter = entries.listIterator();
-            while (iter.hasNext() && iter.nextIndex() != r)
+            while (iter.hasNext() && iter.nextIndex() <= r)
             {
                 Pool<T>.Entry entry = iter.next();
                 if (entry.tryAcquire())
@@ -942,7 +982,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
             }
 
             iter = entries.listIterator();
-            while (iter.hasNext() && iter.nextIndex() != i)
+            while (iter.hasNext() && iter.nextIndex() <= i)
             {
                 Pool<T>.Entry entry = iter.next();
                 if (entry.tryAcquire())
@@ -980,6 +1020,78 @@ public class Pool<T> implements AutoCloseable, Dumpable
                     lru.add(entry);
                 return entry;
             }
+        }
+    }
+
+    public static class OneStrategyToRuleThemAll<T> implements Strategy<T>
+    {
+        private final Mode mode;
+        private final ThreadLocal<Integer> last;
+        private final AtomicInteger next;
+
+        enum Mode
+        {
+            LINEAR,
+            RANDOM,
+            THREAD_LOCAL,
+            ROUND_ROBIN,
+        }
+
+        public OneStrategyToRuleThemAll(Mode mode)
+        {
+            this.mode = mode;
+            last = mode == Mode.THREAD_LOCAL ? ThreadLocal.withInitial(()->0) : null;
+            next = mode == Mode.ROUND_ROBIN ? new AtomicInteger() : null;
+        }
+
+        @Override
+        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
+        {
+            int size = entries.size();
+            if (size == 0)
+                return null;
+
+            int index;
+            switch (mode)
+            {
+                case LINEAR:
+                    index = 0;
+                    break;
+                case RANDOM:
+                    index = ThreadLocalRandom.current().nextInt(size);
+                    break;
+                case THREAD_LOCAL:
+                    index = last.get();
+                    break;
+                case ROUND_ROBIN:
+                    index = next.getAndUpdate(c -> ++c < size ? c : 0);
+                    break;
+                default:
+                    throw new IllegalArgumentException();
+            }
+
+            for (int tries = size; tries-- > 0;)
+            {
+                try
+                {
+                    Pool<T>.Entry entry = entries.get(index);
+                    if (entry != null && entry.tryAcquire())
+                        return entry;
+                }
+                catch (IndexOutOfBoundsException e)
+                {
+                    LOGGER.ignore(e);
+                }
+                index = (index + 1) % size;
+            }
+            return null;
+        }
+
+        @Override
+        public void released(Pool<T>.Entry entry)
+        {
+            if (last != null)
+                last.set(entry.index);
         }
     }
 }

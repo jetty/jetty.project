@@ -53,14 +53,20 @@ public class PoolTest
         data.add(new Object[]{null});
         data.add(new Object[]{new Pool.LinearSearchStrategy<>()});
         data.add(new Object[]{new Pool.CompositeStrategy<>(new Pool.RandomStrategy<>(), new Pool.LinearSearchStrategy<>())});
+        data.add(new Object[]{new Pool.CompositeStrategy<>(new Pool.ThreadIdStrategy<>(), new Pool.LinearSearchStrategy<>())});
         data.add(new Object[]{new Pool.CompositeStrategy<>(new Pool.ThreadLocalStrategy<>(), new Pool.LinearSearchStrategy<>())});
         data.add(new Object[]{new Pool.CompositeStrategy<>(new Pool.ThreadLocalListStrategy<>(2), new Pool.LinearSearchStrategy<>())});
         data.add(new Object[]{new Pool.RandomIterationStrategy<>()});
         data.add(new Object[]{new Pool.ThreadLocalIteratorStrategy<>(false)});
         data.add(new Object[]{new Pool.ThreadLocalIteratorStrategy<>(true)});
-        data.add(new Object[]{new Pool.RoundRobinStrategy<>()});
+        data.add(new Object[]{new Pool.CompositeStrategy<>(new Pool.RoundRobinStrategy<>(), new Pool.LinearSearchStrategy<>())});
+        data.add(new Object[]{new Pool.RetryStategy<>(new Pool.RoundRobinStrategy<>())});
         data.add(new Object[]{new Pool.RoundRobinIterationStrategy<>()});
         data.add(new Object[]{new Pool.LeastRecentlyUsedStrategy<>()});
+        data.add(new Object[]{new Pool.OneStrategyToRuleThemAll<>(Pool.OneStrategyToRuleThemAll.Mode.LINEAR)});
+        data.add(new Object[]{new Pool.OneStrategyToRuleThemAll<>(Pool.OneStrategyToRuleThemAll.Mode.RANDOM)});
+        data.add(new Object[]{new Pool.OneStrategyToRuleThemAll<>(Pool.OneStrategyToRuleThemAll.Mode.THREAD_LOCAL)});
+        data.add(new Object[]{new Pool.OneStrategyToRuleThemAll<>(Pool.OneStrategyToRuleThemAll.Mode.ROUND_ROBIN)});
         return data.stream();
     }
 
