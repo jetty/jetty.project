@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[op-session-hazelcast]]
+[[ops-session-hazelcast]]
 
 === Persistent Sessions: Hazelcast
 

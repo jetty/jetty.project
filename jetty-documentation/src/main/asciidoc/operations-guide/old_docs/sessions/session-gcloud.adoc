@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[op-session-gcloud]]
+[[ops-session-gcloud]]
 
 === Persistent Sessions: Google Cloud DataStore
 

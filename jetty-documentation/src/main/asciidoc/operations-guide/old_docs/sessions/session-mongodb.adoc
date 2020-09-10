@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[op-session-mongo]]
+[[ops-session-mongo]]
 
 === Persistent Sessions: MongoDB
 

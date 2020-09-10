@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[op-session-sessioncache]]
+[[ops-session-sessioncache]]
 === SessionCache Alternatives
 
 In this section we will look at the alternatives for the `SessionCache`, ie the L1 cache of in-use session objects.
