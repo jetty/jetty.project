@@ -611,7 +611,7 @@ public abstract class Pool<T> implements AutoCloseable, Dumpable
         @Override
         protected int startIndex(int size)
         {
-            return next.getAndUpdate(c -> ++c < size ? c : 0);
+            return next.getAndUpdate(n -> Math.max(0, n + 1)) % size;
         }
     }
 

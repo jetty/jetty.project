@@ -190,7 +190,12 @@ public class PoolStrategyBenchmark
         {
             poolA.reserve(1).enable(Integer.toString(i), false);
             poolB.reserve(1).enable(Integer.toString(i), false);
-            poolws.reserve(1).enable(Integer.toString(i), false);
+            poolC.reserve(1).enable(Integer.toString(i), false);
+            poolD.reserve(1).enable(Integer.toString(i), false);
+            if (poolws != null)
+                poolws.reserve(1).enable(Integer.toString(i), false);
+            if (pool != null)
+                pool.reserve(1).enable(Integer.toString(i), false);
         }
     }
 
@@ -199,8 +204,12 @@ public class PoolStrategyBenchmark
     {
         System.err.printf("%nMISSES = %d (%d%%)%n", misses.longValue(), 100 * misses.longValue() / (hits.longValue() + misses.longValue()));
         System.err.printf("AVERAGE = %d%n", total.longValue() / hits.longValue());
-        poolws.close();
+        if (poolws != null)
+            poolws.close();
         poolws = null;
+        if (pool != null)
+            pool.close();
+        pool = null;
     }
 
     @Benchmark
