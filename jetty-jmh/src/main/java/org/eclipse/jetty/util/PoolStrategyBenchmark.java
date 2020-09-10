@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.openjdk.jmh.annotations.Benchmark;
@@ -28,7 +27,6 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.Blackhole;
-import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -39,26 +37,19 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 public class PoolStrategyBenchmark
 {
     private PoolWithStrategy<String> poolws;
-    private PoolWithStrategy<String> poolA;
-    private PoolWithStrategy<String> poolB;
-
     private Pool<String> pool;
-    private Pool<String> poolC;
-    private Pool<String> poolD;
 
     @Param({
         "linear",
-        "OSTRTA(LINEAR)",
         "Pool.Linear",
         "threadlocal+linear",
-        "OSTRTA(THREAD_LOCAL)",
         "Pool.Thread",
-        "random-iteration",
-        "OSTRTA(RANDOM)",
+        "random+linear",
         "Pool.Random",
         "roundrobin+linear",
-        "OSTRTA(ROUND_ROBIN)",
         "Pool.RoundRobin",
+        "threadid+linear",
+        "Pool.ThreadId",
     })
     public static String POOL_TYPE;
 
@@ -75,49 +66,6 @@ public class PoolStrategyBenchmark
     public void setUp() throws Exception
     {
         misses.reset();
-
-        poolA = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.Strategy<String>()
-        {
-            @Override
-            public PoolWithStrategy<String>.Entry tryAcquire(List<PoolWithStrategy<String>.Entry> entries)
-            {
-                int i = (int)Thread.currentThread().getId() % entries.size();
-                PoolWithStrategy<String>.Entry entry = entries.get(i);
-                if (entry != null && entry.tryAcquire())
-                    return entry;
-                return null;
-            }
-        });
-
-        poolB = new PoolWithStrategy<String>(SIZE, new PoolWithStrategy.Strategy<String>()
-        {
-            @Override
-            public PoolWithStrategy<String>.Entry tryAcquire(List<PoolWithStrategy<String>.Entry> entries)
-            {
-                PoolWithStrategy<String>.Entry entry = entries.get(0);
-                if (entry != null && entry.tryAcquire())
-                    return entry;
-                return null;
-            }
-        });
-
-        poolC = new Pool<String>(SIZE)
-        {
-            @Override
-            protected int startIndex(int size)
-            {
-                return size / 2;
-            }
-        };
-
-        poolD = new Pool<String>(SIZE)
-        {
-            @Override
-            protected int startIndex(int size)
-            {
-                return size - 1;
-            }
-        };
 
         switch (POOL_TYPE)
         {
@@ -170,16 +118,19 @@ public class PoolStrategyBenchmark
                 poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.OneStrategyToRuleThemAll<>(PoolWithStrategy.OneStrategyToRuleThemAll.Mode.ROUND_ROBIN));
                 break;
             case "Pool.Linear" :
-                pool = new Pool.Linear<String>(SIZE);
+                pool = new Pool<>(Pool.Mode.LINEAR, SIZE);
                 break;
             case "Pool.Random" :
-                pool = new Pool.Random<String>(SIZE);
+                pool = new Pool<>(Pool.Mode.RANDOM, SIZE);
+                break;
+            case "Pool.ThreadId" :
+                pool = new Pool<>(Pool.Mode.THREAD_ID, SIZE, false);
                 break;
             case "Pool.Thread" :
-                pool = new Pool.Thread<String>(SIZE);
+                pool = new Pool<>(Pool.Mode.LINEAR, SIZE, true);
                 break;
             case "Pool.RoundRobin" :
-                pool = new Pool.RoundRobin<String>(SIZE);
+                pool = new Pool<>(Pool.Mode.ROUND_ROBIN, SIZE);
                 break;
 
             default:
@@ -188,10 +139,6 @@ public class PoolStrategyBenchmark
 
         for (int i = 0; i < SIZE; i++)
         {
-            poolA.reserve(1).enable(Integer.toString(i), false);
-            poolB.reserve(1).enable(Integer.toString(i), false);
-            poolC.reserve(1).enable(Integer.toString(i), false);
-            poolD.reserve(1).enable(Integer.toString(i), false);
             if (poolws != null)
                 poolws.reserve(1).enable(Integer.toString(i), false);
             if (pool != null)
@@ -217,16 +164,8 @@ public class PoolStrategyBenchmark
     {
         if (poolws == null)
         {
-            // force polymorphic pool optimization
-            Pool<String>.Entry entry = poolC.acquire();
-            if (entry != null)
-                entry.release();
-            entry = poolD.acquire();
-            if (entry != null)
-                entry.release();
-
             // Now really benchmark the strategy we are interested in
-            entry = pool.acquire();
+            Pool<String>.Entry entry = pool.acquire();
             if (entry == null || entry.isIdle())
             {
                 misses.increment();
@@ -243,16 +182,8 @@ public class PoolStrategyBenchmark
         }
         else
         {
-            // force polymorphic pool optimization
-            PoolWithStrategy<String>.Entry entry = poolA.acquire();
-            if (entry != null)
-                entry.release();
-            entry = poolB.acquire();
-            if (entry != null)
-                entry.release();
-
             // Now really benchmark the strategy we are interested in
-            entry = poolws.acquire();
+            PoolWithStrategy<String>.Entry entry = poolws.acquire();
             if (entry == null || entry.isIdle())
             {
                 misses.increment();
@@ -279,7 +210,7 @@ public class PoolStrategyBenchmark
             .threads(8)
             .resultFormat(ResultFormatType.JSON)
             .result("poolStrategy-" + System.currentTimeMillis() + ".json")
-            .addProfiler(GCProfiler.class)
+            // .addProfiler(GCProfiler.class)
             .build();
 
         new Runner(opt).run();

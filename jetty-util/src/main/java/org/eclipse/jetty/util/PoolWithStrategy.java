@@ -915,7 +915,7 @@ public class PoolWithStrategy<T> implements AutoCloseable, Dumpable
         @Override
         protected int nextIndex(int size)
         {
-            return index.getAndUpdate(c -> Math.max(0, c + 1) % size);
+            return index.getAndUpdate(c -> Math.max(0, c + 1)) % size;
         }
     }
 
@@ -1062,7 +1062,7 @@ public class PoolWithStrategy<T> implements AutoCloseable, Dumpable
                     index = last.get();
                     break;
                 case ROUND_ROBIN:
-                    index = next.getAndUpdate(c -> Math.max(0, c + 1) % size);
+                    index = next.getAndUpdate(c -> Math.max(0, c + 1)) % size;
                     break;
                 default:
                     throw new IllegalArgumentException();

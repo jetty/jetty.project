@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.thread.Locker;
  * </p>
  * @param <T>
  */
-public abstract class Pool<T> implements AutoCloseable, Dumpable
+public class Pool<T> implements AutoCloseable, Dumpable
 {
     private static final Logger LOGGER = Log.getLogger(Pool.class);
 
@@ -79,18 +79,42 @@ public abstract class Pool<T> implements AutoCloseable, Dumpable
     private final Locker locker = new Locker();
     private final int maxEntries;
     private final AtomicInteger pending = new AtomicInteger();
+    private final Mode mode;
+    private final ThreadLocal<Entry> cache;
+    private final AtomicInteger next;
     private volatile boolean closed;
     private volatile int maxMultiplex = 1;
     private volatile int maxUsageCount = -1;
+
+    public enum Mode
+    {
+        LINEAR,
+        RANDOM,
+        THREAD_ID,
+        ROUND_ROBIN,
+    }
 
     /**
      * Construct a Pool with the specified thread-local cache size.
      *
      * @param maxEntries the maximum amount of entries that the pool will accept.
      */
-    public Pool(int maxEntries)
+    public Pool(Mode mode, int maxEntries)
+    {
+        this(mode, maxEntries, false);
+    }
+
+    /**
+     * Construct a Pool with the specified thread-local cache size.
+     *
+     * @param maxEntries the maximum amount of entries that the pool will accept.
+     */
+    public Pool(Mode mode, int maxEntries, boolean cache)
     {
         this.maxEntries = maxEntries;
+        this.mode = mode;
+        this.cache = cache ? new ThreadLocal() : null;
+        next = mode == Mode.ROUND_ROBIN ? new AtomicInteger() : null;
     }
 
     public int getReservedCount()
@@ -208,10 +232,16 @@ public abstract class Pool<T> implements AutoCloseable, Dumpable
         if (closed)
             return null;
 
-
         int size = entries.size();
         if (size == 0)
             return null;
+
+        if (cache != null)
+        {
+            Pool<T>.Entry entry = cache.get();
+            if (entry != null && entry.tryAcquire())
+                return entry;
+        }
 
         int index = startIndex(size);
 
@@ -232,7 +262,22 @@ public abstract class Pool<T> implements AutoCloseable, Dumpable
         return null;
     }
 
-    protected abstract int startIndex(int size);
+    protected int startIndex(int size)
+    {
+        switch (mode)
+        {
+            case LINEAR:
+                return 0;
+            case RANDOM:
+                return ThreadLocalRandom.current().nextInt(size);
+            case ROUND_ROBIN:
+                return next.getAndUpdate(c -> Math.max(0, c + 1)) % size;
+            case THREAD_ID:
+                return (int)(Thread.currentThread().getId() % size);
+            default:
+                throw new IllegalArgumentException();
+        }
+    }
 
     /**
      * Utility method to acquire an entry from the pool,
@@ -287,7 +332,10 @@ public abstract class Pool<T> implements AutoCloseable, Dumpable
         if (closed)
             return false;
 
-        return entry.tryRelease();
+        boolean released = entry.tryRelease();
+        if (released && cache != null)
+            cache.set(entry);
+        return released;
     }
 
     /**
@@ -568,89 +616,6 @@ public abstract class Pool<T> implements AutoCloseable, Dumpable
                 Math.max(lo, 0),
                 getMaxMultiplex(),
                 pooled);
-        }
-    }
-
-    public static class Linear<T> extends Pool<T>
-    {
-        public Linear(int maxEntries)
-        {
-            super(maxEntries);
-        }
-
-        @Override
-        protected int startIndex(int size)
-        {
-            return 0;
-        }
-    }
-
-    public static class Random<T> extends Pool<T>
-    {
-        public Random(int maxEntries)
-        {
-            super(maxEntries);
-        }
-
-        @Override
-        protected int startIndex(int size)
-        {
-            return ThreadLocalRandom.current().nextInt(size);
-        }
-    }
-
-    public static class RoundRobin<T> extends Pool<T>
-    {
-        private final AtomicInteger next = new AtomicInteger();
-
-        public RoundRobin(int maxEntries)
-        {
-            super(maxEntries);
-        }
-
-        @Override
-        protected int startIndex(int size)
-        {
-            return next.getAndUpdate(n -> Math.max(0, n + 1)) % size;
-        }
-    }
-
-    public static class Thread<T> extends Pool<T>
-    {
-        private final ThreadLocal<Pool<T>.Entry> last = new ThreadLocal<>();
-
-        public Thread(int maxEntries)
-        {
-            super(maxEntries);
-        }
-
-        @Override
-        protected int startIndex(int size)
-        {
-            return 0;
-        }
-
-        @Override
-        public Entry acquire()
-        {
-
-            Entry entry = last.get();
-            if (entry != null)
-            {
-                if (entry.tryAcquire())
-                    return entry;
-                last.set(null);
-            }
-            return super.acquire();
-        }
-
-        @Override
-        public boolean release(Entry entry)
-        {
-            boolean released =  super.release(entry);
-            if (released)
-                last.set(entry);
-            return released;
         }
     }
 }

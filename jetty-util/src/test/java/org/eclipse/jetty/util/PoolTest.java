@@ -33,6 +33,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.stream.Collectors.toList;
+import static org.eclipse.jetty.util.Pool.Mode.LINEAR;
+import static org.eclipse.jetty.util.Pool.Mode.RANDOM;
+import static org.eclipse.jetty.util.Pool.Mode.ROUND_ROBIN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -56,10 +59,10 @@ public class PoolTest
     public static Stream<Object[]> strategy()
     {
         List<Object[]> data = new ArrayList<>();
-        data.add(new Object[]{(Factory)s -> new Pool.Linear<String>(s)});
-        data.add(new Object[]{(Factory)s -> new Pool.Random<String>(s)});
-        data.add(new Object[]{(Factory)s -> new Pool.Thread<String>(s)});
-        data.add(new Object[]{(Factory)s -> new Pool.RoundRobin<String>(s)});
+        data.add(new Object[]{(Factory)s -> new Pool<String>(LINEAR, s)});
+        data.add(new Object[]{(Factory)s -> new Pool<String>(RANDOM, s)});
+        data.add(new Object[]{(Factory)s -> new Pool<String>(LINEAR, s, true)});
+        data.add(new Object[]{(Factory)s -> new Pool<String>(ROUND_ROBIN, s)});
         return data.stream();
     }
 
@@ -253,7 +256,7 @@ public class PoolTest
     public void testClosingCloseable()
     {
         AtomicBoolean closed = new AtomicBoolean();
-        Pool<Closeable> pool = new Pool.Linear<>(1);
+        Pool<Closeable> pool = new Pool<>(LINEAR, 1);
         Closeable pooled = () -> closed.set(true);
         pool.reserve(-1).enable(pooled, false);
         assertThat(closed.get(), is(false));
@@ -548,9 +551,9 @@ public class PoolTest
     @Test
     public void testConfigLimits()
     {
-        assertThrows(IllegalArgumentException.class, () -> new Pool.Linear<String>(1).setMaxMultiplex(0));
-        assertThrows(IllegalArgumentException.class, () -> new Pool.Linear<String>(1).setMaxMultiplex(-1));
-        assertThrows(IllegalArgumentException.class, () -> new Pool.Linear<String>(1).setMaxUsageCount(0));
+        assertThrows(IllegalArgumentException.class, () -> new Pool<String>(LINEAR, 1).setMaxMultiplex(0));
+        assertThrows(IllegalArgumentException.class, () -> new Pool<String>(LINEAR, 1).setMaxMultiplex(-1));
+        assertThrows(IllegalArgumentException.class, () -> new Pool<String>(LINEAR, 1).setMaxUsageCount(0));
     }
 
     @ParameterizedTest
@@ -617,7 +620,7 @@ public class PoolTest
     @Test
     public void testRoundRobinStrategy()
     {
-        Pool<AtomicInteger> pool = new Pool.RoundRobin<>(4);
+        Pool<AtomicInteger> pool = new Pool<>(ROUND_ROBIN, 4);
 
         Pool<AtomicInteger>.Entry e1 = pool.acquire(e -> new AtomicInteger());
         Pool<AtomicInteger>.Entry e2 = pool.acquire(e -> new AtomicInteger());
@@ -650,7 +653,7 @@ public class PoolTest
     @Test
     public void testRandomStrategy()
     {
-        Pool<AtomicInteger> pool = new Pool.Random<>(4);
+        Pool<AtomicInteger> pool = new Pool<>(RANDOM, 4);
 
         Pool<AtomicInteger>.Entry e1 = pool.acquire(e -> new AtomicInteger());
         Pool<AtomicInteger>.Entry e2 = pool.acquire(e -> new AtomicInteger());
