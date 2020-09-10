@@ -16,9 +16,9 @@
 // ========================================================================
 //
 
-[[session-configuration-housekeeper]]
+[[op-session-base]]
 === The Base Sessions Module
-The `sessions` module is the base module that all other session modules depends upon.
+The `sessions` module is the base module that all other session modules depend upon.
 As such it will be _transitively_ enabled if you enable any of the other session modules: you need to _explicitly_ enable it if you wish to _change_ any settings from their defaults.
 
 Enabling the `sessions` module puts the `$jetty.home/etc/sessions/id-manager.xml` file onto the execution path and generates a `$jetty.base/start.d/sessions.ini` file.
@@ -28,7 +28,6 @@ The former is used to generate and manage session ids whilst the latter is respo
 
 The `sessions.ini` file can be used to configure them.
 
-[[session-idmanager-housekeeper-config]]
 ==== Configuration
 
 jetty.sessionIdManager.workerName::

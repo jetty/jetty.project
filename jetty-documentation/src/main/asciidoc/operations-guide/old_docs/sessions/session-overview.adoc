@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[jetty-sessions-architecture]]
+[[op-session-overview]]
 
 === Session Overview
 
