@@ -33,7 +33,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.stream.Collectors.toList;
-import static org.eclipse.jetty.util.Pool.Strategy.LINEAR;
+import static org.eclipse.jetty.util.Pool.Strategy.FIRST;
 import static org.eclipse.jetty.util.Pool.Strategy.RANDOM;
 import static org.eclipse.jetty.util.Pool.Strategy.ROUND_ROBIN;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,9 +59,9 @@ public class PoolTest
     public static Stream<Object[]> strategy()
     {
         List<Object[]> data = new ArrayList<>();
-        data.add(new Object[]{(Factory)s -> new Pool<String>(LINEAR, s)});
+        data.add(new Object[]{(Factory)s -> new Pool<String>(FIRST, s)});
         data.add(new Object[]{(Factory)s -> new Pool<String>(RANDOM, s)});
-        data.add(new Object[]{(Factory)s -> new Pool<String>(LINEAR, s, true)});
+        data.add(new Object[]{(Factory)s -> new Pool<String>(FIRST, s, true)});
         data.add(new Object[]{(Factory)s -> new Pool<String>(ROUND_ROBIN, s)});
         return data.stream();
     }
@@ -256,7 +256,7 @@ public class PoolTest
     public void testClosingCloseable()
     {
         AtomicBoolean closed = new AtomicBoolean();
-        Pool<Closeable> pool = new Pool<>(LINEAR, 1);
+        Pool<Closeable> pool = new Pool<>(FIRST, 1);
         Closeable pooled = () -> closed.set(true);
         pool.reserve(-1).enable(pooled, false);
         assertThat(closed.get(), is(false));
@@ -551,9 +551,9 @@ public class PoolTest
     @Test
     public void testConfigLimits()
     {
-        assertThrows(IllegalArgumentException.class, () -> new Pool<String>(LINEAR, 1).setMaxMultiplex(0));
-        assertThrows(IllegalArgumentException.class, () -> new Pool<String>(LINEAR, 1).setMaxMultiplex(-1));
-        assertThrows(IllegalArgumentException.class, () -> new Pool<String>(LINEAR, 1).setMaxUsageCount(0));
+        assertThrows(IllegalArgumentException.class, () -> new Pool<String>(FIRST, 1).setMaxMultiplex(0));
+        assertThrows(IllegalArgumentException.class, () -> new Pool<String>(FIRST, 1).setMaxMultiplex(-1));
+        assertThrows(IllegalArgumentException.class, () -> new Pool<String>(FIRST, 1).setMaxUsageCount(0));
     }
 
     @ParameterizedTest

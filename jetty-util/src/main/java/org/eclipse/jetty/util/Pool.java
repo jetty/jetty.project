@@ -67,21 +67,21 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     };
 
+    private final int maxEntries;
+    private final AtomicInteger pending = new AtomicInteger();
+    private final Strategy strategy;
+
     /*
      * The cache is used to avoid hammering on the first index of the entry list.
      * Caches can become poisoned (i.e.: containing entries that are in use) when
      * the release isn't done by the acquiring thread or when the entry pool is
      * undersized compared to the load applied on it.
      * When an entry can't be found in the cache, the global list is iterated
-     * normally so the cache has no visible effect besides performance.
+     * with the normal strategy so the cache has no visible effect besides performance.
      */
-
     private final Locker locker = new Locker();
-    private final int maxEntries;
-    private final AtomicInteger pending = new AtomicInteger();
-    private final Strategy strategy;
     private final ThreadLocal<Entry> cache;
-    private final AtomicInteger next;
+    private final AtomicInteger nextIndex;
     private volatile boolean closed;
     private volatile int maxMultiplex = 1;
     private volatile int maxUsageCount = -1;
@@ -89,10 +89,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
     public enum Strategy
     {
         /**
-         * The Linear strategy looks for an entry always starting from the first entry.
+         * The Zero strategy looks for an entry always starting from the firstOth entry.
          * It will favour the early entries in the pool, but may contend on them more.
          */
-        LINEAR,
+        FIRST,
 
         /**
          * The Random strategy looks for an entry by iterating from a random starting
@@ -142,7 +142,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         this.maxEntries = maxEntries;
         this.strategy = strategy;
         this.cache = cache ? new ThreadLocal() : null;
-        next = strategy == Strategy.ROUND_ROBIN ? new AtomicInteger() : null;
+        nextIndex = strategy == Strategy.ROUND_ROBIN ? new AtomicInteger() : null;
     }
 
     public int getReservedCount()
@@ -219,7 +219,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
                 return null;
             pending.incrementAndGet();
 
-            Entry entry = new Entry(entries.size());
+            Entry entry = new Entry();
             entries.add(entry);
             return entry;
         }
@@ -294,16 +294,16 @@ public class Pool<T> implements AutoCloseable, Dumpable
     {
         switch (strategy)
         {
-            case LINEAR:
+            case FIRST:
                 return 0;
             case RANDOM:
                 return ThreadLocalRandom.current().nextInt(size);
             case ROUND_ROBIN:
-                return next.getAndUpdate(c -> Math.max(0, c + 1)) % size;
+                return nextIndex.getAndUpdate(c -> Math.max(0, c + 1)) % size;
             case THREAD_ID:
                 return (int)(Thread.currentThread().getId() % size);
             default:
-                throw new IllegalArgumentException();
+                throw new IllegalArgumentException("Unknown strategy: " + strategy);
         }
     }
 
@@ -448,17 +448,15 @@ public class Pool<T> implements AutoCloseable, Dumpable
         // hi: positive=open/maxUsage counter; negative=closed; MIN_VALUE pending
         // lo: multiplexing counter
         private final AtomicBiInteger state;
-        private final int index;
 
         // The pooled item.  This is not volatile as it is set once and then never changed.
         // Other threads accessing must check the state field above first, so a good before/after
         // relationship exists to make a memory barrier.
         private T pooled;
 
-        Entry(int index)
+        Entry()
         {
             this.state = new AtomicBiInteger(Integer.MIN_VALUE, 0);
-            this.index = index;
         }
 
         /** Enable a reserved entry {@link Entry}.
@@ -527,7 +525,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
          * the multiplex count is maxMultiplex and the entry is not closed,
          * false otherwise.
          */
-        public boolean tryAcquire()
+        boolean tryAcquire()
         {
             while (true)
             {
@@ -631,17 +629,17 @@ public class Pool<T> implements AutoCloseable, Dumpable
         public String toString()
         {
             long encoded = state.get();
-            int hi = AtomicBiInteger.getHi(encoded);
-            int lo = AtomicBiInteger.getLo(encoded);
+            int usageCount = AtomicBiInteger.getHi(encoded);
+            int multiplexCount = AtomicBiInteger.getLo(encoded);
 
-            String state = hi < 0 ? "CLOSED" : lo == 0 ? "IDLE" : "INUSE";
+            String state = usageCount < 0 ? "CLOSED" : multiplexCount == 0 ? "IDLE" : "INUSE";
 
             return String.format("%s@%x{%s, usage=%d, multiplex=%d/%d, pooled=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 state,
-                Math.max(hi, 0),
-                Math.max(lo, 0),
+                Math.max(usageCount, 0),
+                Math.max(multiplexCount, 0),
                 getMaxMultiplex(),
                 pooled);
         }

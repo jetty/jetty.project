@@ -70,7 +70,7 @@ public class PoolStrategyBenchmark
         switch (POOL_TYPE)
         {
             case "Pool.Linear" :
-                pool = new Pool<>(Pool.Strategy.LINEAR, SIZE, CACHE);
+                pool = new Pool<>(Pool.Strategy.FIRST, SIZE, CACHE);
                 break;
             case "Pool.Random" :
                 pool = new Pool<>(Pool.Strategy.RANDOM, SIZE, CACHE);
