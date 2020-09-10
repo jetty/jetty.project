@@ -149,7 +149,7 @@ def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
                  mavenLocalRepo: localRepo ) {
         // Some common Maven command line + provided command line
         // sh "mvn -Premote-session-tests -Pci -V -B -e -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
-        sh "mvn -Premote-session-tests -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
+        sh "mvn -Djacoco.skip=true -Premote-session-tests -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
       }
     }
     finally
