@@ -89,19 +89,19 @@ public class Pool<T> implements AutoCloseable, Dumpable
     public enum Strategy
     {
         /**
-         * The Zero strategy looks for an entry always starting from the firstOth entry.
+         * A strategy that looks for an entry always starting from the first entry.
          * It will favour the early entries in the pool, but may contend on them more.
          */
         FIRST,
 
         /**
-         * The Random strategy looks for an entry by iterating from a random starting
+         * A strategy that looks for an entry by iterating from a random starting
          * index.  No entries are favoured and contention is reduced.
          */
         RANDOM,
 
         /**
-         * The Thread ID strategy uses the {@link Thread#getId()} of the current thread
+         * A strategy that uses the {@link Thread#getId()} of the current thread
          * to select a starting point for an entry search.  Whilst not as performant as
          * using the {@link ThreadLocal} cache, it may be suitable when the pool is substantially smaller
          * than the number of available threads.
@@ -110,7 +110,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         THREAD_ID,
 
         /**
-         * The Round Robin strategy looks for an entry by iterating from a starting point
+         * A strategy that looks for an entry by iterating from a starting point
          * that is incremented on every search. This gives similar results to the
          * random strategy but with more predictable behaviour.
          * No entries are favoured and contention is reduced.
