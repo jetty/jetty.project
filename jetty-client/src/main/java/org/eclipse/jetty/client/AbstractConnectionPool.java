@@ -66,7 +66,8 @@ public abstract class AbstractConnectionPool implements ConnectionPool, Dumpable
         Pool<Connection> pool = destination.getBean(Pool.class);
         if (pool == null)
         {
-            pool = new Pool<>(maxConnections, cache ? 1 : 0);
+
+            pool = cache ? new Pool.Thread<>(maxConnections) : new Pool.Linear<>(maxConnections);
             destination.addBean(pool);
         }
         this.pool = pool;

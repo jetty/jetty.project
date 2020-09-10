@@ -26,13 +26,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -44,56 +41,13 @@ import org.eclipse.jetty.util.thread.Locker;
  * A fast pool of objects, with optional support for
  * multiplexing, max usage count and optimal strategies such as thread-local caching.
  * <p>
- * When acquiring an entry in the pool, this class will call a
- * strategy passed or created in the constructor.  The available
- * strategies are:
- * <dl>
- *     <dt>{@link LinearSearchStrategy}</dt>
- *     <dd>This strategy iterates over all entries trying to acquire.
- *     </dd>
- *     <dt>{@link CompositeStrategy}</dt>
- *     <dd>This strategy combines two other strategies and is typically
- *     used to combine a strategy like {@link ThreadLocalStrategy} with
- *     {@link LinearSearchStrategy}.
- *     </dd>
- *     <dt>{@link RoundRobinStrategy}</dt>
- *     <dd>Entries are tried in sequence so that all entries in the pool are
- *     used one after the other. If the next entry cannot be acquired, entries
- *     in the next slot are tried.
- *     <dt>{@link RoundRobinIterationStrategy}</dt>
- *     <dd>Alternate round robin implementation that reduces contention on the
- *     shared round robing index.
- *     Entries are tried in sequence so that all entries in the pool are
- *     used one after the other. If the next entry cannot be acquired, entries
- *     in the next slot are tried.
- *     <dt>{@link ThreadLocalStrategy}</dt>
- *     <dd>This strategy is a threadlocal strategy that remembers
- *     a single entry previously used by the current thread.
- *     </dd>
- *     <dt>{@link ThreadLocalListStrategy}</dt>
- *     <dd>This strategy is a threadlocal caching mechanism that remembers
- *     up to N entries previously used by the current thread.
- *     </dd>
- *     <dt>{@link ThreadLocalIteratorStrategy}</dt>
- *     <dd>Uses a {@link ThreadLocal} to hold a list iterator used to look for
- *     an entry that can be acquired. The iterator is re-used on subsequent acquires.
- *     If this strategy is initiated in roundrobin mode, the iterator is left on the
- *     next entry after each acquire, other wise it is reset to the acquired entry.
- *     </dd>
- *     <dt>{@link RandomStrategy}</dt>
- *     <dd>A random entry is tried</dd>
- *     <dt>{@link RandomIterationStrategy}</dt>
- *     <dd>An iteration started at a random entry is used to acquire</dd>
- *     <dt>{@link Pool.LeastRecentlyUsedStrategy}</dt>
- *     <dd>The least recently used entries are tried until one can be acquired</dd>
- * </dl>
  * <p>
  * When the method {@link #close()} is called, all {@link Closeable}s in the pool
  * are also closed.
  * </p>
  * @param <T>
  */
-public class Pool<T> implements AutoCloseable, Dumpable
+public abstract class Pool<T> implements AutoCloseable, Dumpable
 {
     private static final Logger LOGGER = Log.getLogger(Pool.class);
 
@@ -122,7 +76,6 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * normally so the cache has no visible effect besides performance.
      */
 
-    private final Strategy<T> strategy;
     private final Locker locker = new Locker();
     private final int maxEntries;
     private final AtomicInteger pending = new AtomicInteger();
@@ -134,30 +87,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
      * Construct a Pool with the specified thread-local cache size.
      *
      * @param maxEntries the maximum amount of entries that the pool will accept.
-     * @param cacheSize the thread-local cache size. A value of 1 will use the
-     *                  {@link ThreadLocalStrategy} and {@link LinearSearchStrategy},
-     *                  a value greater than 1 will use a {@link ThreadLocalListStrategy}
-     *                  and {@link LinearSearchStrategy},
-     *                  otherwise just a {@link LinearSearchStrategy} will be used.
      */
-    public Pool(int maxEntries, int cacheSize)
-    {
-        this(maxEntries, cacheSize < 0
-            ? (cacheSize == -1 ? new ThreadLocalIteratorStrategy<>() : null)
-            : new CompositeStrategy<>(
-            cacheSize == 1 ? new ThreadLocalStrategy<>() : new ThreadLocalListStrategy<>(cacheSize),
-            new LinearSearchStrategy<>()));
-    }
-
-    /**
-     * @param maxEntries the maximum amount of entries that the pool will accept.
-     * @param strategy A strategy to use to optimise acquires. Only if the strategy fails to acquire an entry will the
-     *                 pool do a brute force iteration over the pool.
-     */
-    public Pool(int maxEntries, Strategy<T> strategy)
+    public Pool(int maxEntries)
     {
         this.maxEntries = maxEntries;
-        this.strategy = strategy == null ? new LinearSearchStrategy<>() : strategy;
     }
 
     public int getReservedCount()
@@ -274,8 +207,32 @@ public class Pool<T> implements AutoCloseable, Dumpable
     {
         if (closed)
             return null;
-        return strategy.tryAcquire(entries);
+
+
+        int size = entries.size();
+        if (size == 0)
+            return null;
+
+        int index = startIndex(size);
+
+        for (int tries = size; tries-- > 0;)
+        {
+            try
+            {
+                Pool<T>.Entry entry = entries.get(index);
+                if (entry != null && entry.tryAcquire())
+                    return entry;
+            }
+            catch (IndexOutOfBoundsException e)
+            {
+                LOGGER.ignore(e);
+            }
+            index = (index + 1) % size;
+        }
+        return null;
     }
+
+    protected abstract int startIndex(int size);
 
     /**
      * Utility method to acquire an entry from the pool,
@@ -330,10 +287,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
         if (closed)
             return false;
 
-        boolean released = entry.tryRelease();
-        if (released)
-            strategy.released(entry);
-        return released;
+        return entry.tryRelease();
     }
 
     /**
@@ -617,481 +571,86 @@ public class Pool<T> implements AutoCloseable, Dumpable
         }
     }
 
-    /** A pluggable strategy to for pool entry lookup
-     * @param <T> The type of the items in the pool
-     */
-    public interface Strategy<T>
+    public static class Linear<T> extends Pool<T>
     {
-        /** Acquire an entry
-         * @param entries The list of entries known to the pool. This may be concurrently modified.
-         * @return An acquired entry or null if none can be acquired by this strategy
-         */
-        Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries);
-
-        /**
-         * Notification an entry has been release.  The notification comes after the entry
-         * has been put back in the pool and it may already have been reacquired before or during this call.
-         * @param entry The entry to be released
-         */
-        default void released(Pool<T>.Entry entry)
+        public Linear(int maxEntries)
         {
+            super(maxEntries);
+        }
+
+        @Override
+        protected int startIndex(int size)
+        {
+            return 0;
         }
     }
 
-    /** A Composite strategy used to combine multiple other strategies.
-     * Typically it is used to combine an optimistic strategy (eg {@link RandomStrategy})
-     * with an exhaustive strategy (eg {@link LinearSearchStrategy}).
-     * @param <T> The type of entry the strategy is for
-     */
-    public static class CompositeStrategy<T> implements Strategy<T>
+    public static class Random<T> extends Pool<T>
     {
-        final Strategy<T> planA;
-        final Strategy<T> planB;
-
-        public CompositeStrategy(Strategy<T> planA, Strategy<T> planB)
+        public Random(int maxEntries)
         {
-            Objects.requireNonNull(planA);
-            Objects.requireNonNull(planB);
-            this.planA = planA;
-            this.planB = planB;
+            super(maxEntries);
         }
 
         @Override
-        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
-        {
-            Pool<T>.Entry entry = planA.tryAcquire(entries);
-            return entry != null ? entry : planB.tryAcquire(entries);
-        }
-
-        @Override
-        public void released(Pool<T>.Entry entry)
-        {
-            planA.released(entry);
-            planB.released(entry);
-        }
-    }
-
-
-    /**
-     * This strategy retries a wrapped strategy looking for
-     * and Entry
-     * @param <T> The type of entry the strategy is for.
-     */
-    public static class RetryStategy<T> implements Strategy<T>
-    {
-        final Strategy<T> strategy;
-        final int retries;
-
-        public RetryStategy(Strategy<T> strategy)
-        {
-            this (strategy, -1);
-        }
-
-        public RetryStategy(Strategy<T> strategy, int retries)
-        {
-            this.strategy = strategy;
-            this.retries = retries;
-        }
-
-        @Override
-        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
-        {
-            int tries = retries < 0 ? entries.size() : retries;
-            while (tries-- > 0)
-            {
-                Pool<T>.Entry entry = strategy.tryAcquire(entries);
-                if (entry != null)
-                    return entry;
-            }
-            return null;
-        }
-    }
-
-    /**
-     * Linear search strategy uses a fresh iterator to scan the
-     * entries, starting at 0, until it can acquire one.
-     * @param <T> The type of entry the strategy is for.
-     */
-    public static class LinearSearchStrategy<T> implements Strategy<T>
-    {
-        @Override
-        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
-        {
-            for (Pool<T>.Entry e : entries)
-            {
-                if (e.tryAcquire())
-                    return e;
-            }
-            return null;
-        }
-    }
-
-    /**
-     * This strategy stores a {@link ListIterator} as a {@link ThreadLocal}
-     * which is used to scan the list of entries for one that can be acquired.
-     * Once an entry is acquired, if the strategy is in roundrobin mode, then
-     * it is left on the next entry, otherwise it is moved back so the current
-     * entry will be tried again on the next acquire.
-     * If the iterator reaches the end, then a new one is created.
-     * The strategy will only try as many times as there are entries.
-     * @param <T> The type of entry the strategy is for.
-     */
-    public static class ThreadLocalIteratorStrategy<T> implements Strategy<T>
-    {
-        private final boolean roundrobin;
-        private final ThreadLocal<ListIterator<Pool<T>.Entry>> iterator = new ThreadLocal<>();
-
-        public ThreadLocalIteratorStrategy()
-        {
-            this(false);
-        }
-
-        public ThreadLocalIteratorStrategy(boolean roundrobin)
-        {
-            this.roundrobin = roundrobin;
-        }
-
-        @Override
-        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
-        {
-            ListIterator<Pool<T>.Entry> iter = iterator.get();
-            if (iter == null)
-                iter = entries.listIterator();
-
-            for (int tries = entries.size(); tries-- > 0; )
-            {
-                if (!iter.hasNext())
-                {
-                    iter = entries.listIterator();
-                    if (!iter.hasNext())
-                        return null;
-                }
-                Pool<T>.Entry entry = iter.next();
-                if (entry != null && entry.tryAcquire())
-                {
-                    if (!roundrobin)
-                        iter.previous();
-                    if (iter.hasNext())
-                        iterator.set(iter);
-                    return entry;
-                }
-            }
-            return null;
-        }
-    }
-
-    /**
-     * This strategy stores the last entry released by a thread as in
-     * {@link ThreadLocal} so it can be the first tried on the next
-     * acquire.
-     * This strategy should be combined with an exhaustive strategy such
-     * as {@link LinearSearchStrategy}.
-     * @param <T> The type of entry the strategy is for.
-     */
-    public static class ThreadLocalStrategy<T> implements Strategy<T>
-    {
-        private final ThreadLocal<Pool<T>.Entry> last;
-
-        ThreadLocalStrategy()
-        {
-            last = new ThreadLocal<>();
-        }
-
-        @Override
-        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
-        {
-            Pool<T>.Entry entry = last.get();
-            if (entry != null && entry.tryAcquire())
-                return entry;
-            return null;
-        }
-
-        @Override
-        public void released(Pool<T>.Entry entry)
-        {
-            last.set(entry);
-        }
-    }
-
-    /**
-     * This strategy stores the entries released by a thread in a bounded list
-     * stored in a {@link ThreadLocal},  so they can be the first tried on the
-     * next acquire.
-     * This strategy should be combined with an exhaustive strategy such
-     * as {@link LinearSearchStrategy}.
-     * @param <T> The type of entry the strategy is for.
-     */
-    public static class ThreadLocalListStrategy<T> implements Strategy<T>
-    {
-        private final ThreadLocal<List<Pool<T>.Entry>> cache;
-        private final int cacheSize;
-
-        ThreadLocalListStrategy(int size)
-        {
-            this.cacheSize = size;
-            this.cache = ThreadLocal.withInitial(() -> new ArrayList<>(cacheSize));
-        }
-
-        @Override
-        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
-        {
-            List<Pool<T>.Entry> cachedList = cache.get();
-            while (!cachedList.isEmpty())
-            {
-                Pool<T>.Entry cachedEntry = cachedList.remove(cachedList.size() - 1);
-                if (cachedEntry.tryAcquire())
-                    return cachedEntry;
-            }
-            return null;
-        }
-
-        @Override
-        public void released(Pool<T>.Entry entry)
-        {
-            List<Pool<T>.Entry> cachedList = cache.get();
-            if (cachedList.size() < cacheSize)
-                cachedList.add(entry);
-        }
-    }
-
-    private abstract static class IndexedStrategy<T> implements Strategy<T>
-    {
-        @Override
-        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
-        {
-            int size = entries.size();
-            if (size == 0)
-                return null;
-            int i = nextIndex(size);
-            try
-            {
-                Pool<T>.Entry entry = entries.get(i);
-                if (entry != null && entry.tryAcquire())
-                    return entry;
-            }
-            catch (IndexOutOfBoundsException e)
-            {
-                // Could be out of bounds
-                LOGGER.ignore(e);
-            }
-            return null;
-        }
-
-        protected abstract int nextIndex(int size);
-    }
-
-    /**
-     * This strategy tries to acquire a random entry.
-     * This strategy should be combined with an exhaustive strategy such
-     * as {@link LinearSearchStrategy}.
-     * @param <T> The type of entry the strategy is for
-     */
-    public static class RandomStrategy<T> extends IndexedStrategy<T>
-    {
-        @Override
-        protected int nextIndex(int size)
+        protected int startIndex(int size)
         {
             return ThreadLocalRandom.current().nextInt(size);
         }
     }
 
-    public static class ThreadIdStrategy<T> extends IndexedStrategy<T>
+    public static class RoundRobin<T> extends Pool<T>
     {
-        @Override
-        protected int nextIndex(int size)
+        private final AtomicInteger next = new AtomicInteger();
+
+        public RoundRobin(int maxEntries)
         {
-            return (int)Thread.currentThread().getId() % size;
+            super(maxEntries);
+        }
+
+        @Override
+        protected int startIndex(int size)
+        {
+            return next.getAndUpdate(c -> ++c < size ? c : 0);
         }
     }
 
-    /**
-     * This strategy uses an {@link AtomicInteger} to remember the index
-     * of the last acquired entry. Calls to acquire will commence trying
-     * to acquired from the next index.
-     * @param <T> The type of entry the strategy is for.
-     */
-    public static class RoundRobinStrategy<T> extends IndexedStrategy<T>
+    public static class Thread<T> extends Pool<T>
     {
-        AtomicInteger index = new AtomicInteger();
+        private final ThreadLocal<Pool<T>.Entry> last = new ThreadLocal<>();
 
-        @Override
-        protected int nextIndex(int size)
+        public Thread(int maxEntries)
         {
-            return index.getAndUpdate(c -> ++c < size ? c : 0);
+            super(maxEntries);
         }
-    }
 
-    /**
-     * This strategy iterates over the entries, starting from a random location,
-     * to try to acquire an entry.
-     * @param <T> The type of entry the strategy is for.
-     */
-    public static class RandomIterationStrategy<T> implements Strategy<T>
-    {
         @Override
-        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
+        protected int startIndex(int size)
         {
-            int size = entries.size();
-            if (size == 0)
-                return null;
-            int r = ThreadLocalRandom.current().nextInt(size);
+            return 0;
+        }
 
-            ListIterator<Pool<T>.Entry> iter = entries.listIterator(r);
-            while (iter.hasNext())
+        @Override
+        public Entry acquire()
+        {
+
+            Entry entry = last.get();
+            if (entry != null)
             {
-                Pool<T>.Entry entry = iter.next();
                 if (entry.tryAcquire())
                     return entry;
+                last.set(null);
             }
-
-            iter = entries.listIterator();
-            while (iter.hasNext() && iter.nextIndex() <= r)
-            {
-                Pool<T>.Entry entry = iter.next();
-                if (entry.tryAcquire())
-                    return entry;
-            }
-
-            return null;
-        }
-    }
-
-    /**
-     * This strategy commences an iteration over the entries from the
-     * position after the last successful acquire.
-     * @param <T> The type of entry the strategy is for.
-     */
-    public static class RoundRobinIterationStrategy<T> implements Strategy<T>
-    {
-        AtomicInteger index = new AtomicInteger();
-
-        @Override
-        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
-        {
-            int i = index.get();
-
-            ListIterator<Pool<T>.Entry> iter = entries.listIterator(i);
-            while (iter.hasNext())
-            {
-                Pool<T>.Entry entry = iter.next();
-                if (entry.tryAcquire())
-                {
-                    index.set(iter.nextIndex());
-                    return entry;
-                }
-            }
-
-            iter = entries.listIterator();
-            while (iter.hasNext() && iter.nextIndex() <= i)
-            {
-                Pool<T>.Entry entry = iter.next();
-                if (entry.tryAcquire())
-                {
-                    index.set(iter.nextIndex());
-                    return entry;
-                }
-            }
-
-            return null;
-        }
-    }
-
-    /**
-     * This strategy keeps a queue of the least recently used entry. If that queue is
-     * empty, then this strategy falls back to a linear search.
-     * @param <T> The type of entry the strategy is for.
-     */
-    public static class LeastRecentlyUsedStrategy<T> extends LinearSearchStrategy<T>
-    {
-        Queue<Pool<T>.Entry> lru = new ConcurrentLinkedQueue<>();
-
-        @Override
-        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
-        {
-            while (true)
-            {
-                Pool<T>.Entry entry = lru.poll();
-                if (entry == null)
-                    entry = super.tryAcquire(entries);
-                else if (!entry.tryAcquire())
-                    continue;
-
-                if (entry != null)
-                    lru.add(entry);
-                return entry;
-            }
-        }
-    }
-
-    public static class OneStrategyToRuleThemAll<T> implements Strategy<T>
-    {
-        private final Mode mode;
-        private final ThreadLocal<Integer> last;
-        private final AtomicInteger next;
-
-        enum Mode
-        {
-            LINEAR,
-            RANDOM,
-            THREAD_LOCAL,
-            ROUND_ROBIN,
-        }
-
-        public OneStrategyToRuleThemAll(Mode mode)
-        {
-            this.mode = mode;
-            last = mode == Mode.THREAD_LOCAL ? ThreadLocal.withInitial(()->0) : null;
-            next = mode == Mode.ROUND_ROBIN ? new AtomicInteger() : null;
+            return super.acquire();
         }
 
         @Override
-        public Pool<T>.Entry tryAcquire(List<Pool<T>.Entry> entries)
+        public boolean release(Entry entry)
         {
-            int size = entries.size();
-            if (size == 0)
-                return null;
-
-            int index;
-            switch (mode)
-            {
-                case LINEAR:
-                    index = 0;
-                    break;
-                case RANDOM:
-                    index = ThreadLocalRandom.current().nextInt(size);
-                    break;
-                case THREAD_LOCAL:
-                    index = last.get();
-                    break;
-                case ROUND_ROBIN:
-                    index = next.getAndUpdate(c -> ++c < size ? c : 0);
-                    break;
-                default:
-                    throw new IllegalArgumentException();
-            }
-
-            for (int tries = size; tries-- > 0;)
-            {
-                try
-                {
-                    Pool<T>.Entry entry = entries.get(index);
-                    if (entry != null && entry.tryAcquire())
-                        return entry;
-                }
-                catch (IndexOutOfBoundsException e)
-                {
-                    LOGGER.ignore(e);
-                }
-                index = (index + 1) % size;
-            }
-            return null;
-        }
-
-        @Override
-        public void released(Pool<T>.Entry entry)
-        {
-            if (last != null)
-                last.set(entry.index);
+            boolean released =  super.release(entry);
+            if (released)
+                last.set(entry);
+            return released;
         }
     }
 }
