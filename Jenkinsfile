@@ -31,8 +31,6 @@ pipeline {
                        execPattern: '**/target/jacoco.exec',
                        classPattern: '**/target/classes',
                        sourcePattern: '**/src/main/java'
-                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-                junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
               }
             }
           }
@@ -154,6 +152,8 @@ def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
     }
     finally
     {
+      warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
       archiveArtifacts artifacts: '**/jetty-webapp/target/**'
     }
   }
