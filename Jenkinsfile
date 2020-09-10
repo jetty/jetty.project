@@ -12,7 +12,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk8", "clean install", "maven3", true )
+                mavenBuild( "jdk8", "clean install -T3", "maven3", true )
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                        exclusionPattern: '' +
@@ -31,62 +31,61 @@ pipeline {
                        execPattern: '**/target/jacoco.exec',
                        classPattern: '**/target/classes',
                        sourcePattern: '**/src/main/java'
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
               }
             }
           }
         }
 
-//        stage("Build / Test - JDK11") {
-//          agent { node { label 'linux' } }
-//          steps {
-//            container( 'jetty-build' ) {
-//              timeout( time: 120, unit: 'MINUTES' ) {
-//                mavenBuild( "jdk11", "clean install", "maven3", true )
-//                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-//                junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
-//              }
-//            }
-//          }
-//        }
-//
-//        stage("Build / Test - JDK14") {
-//          agent { node { label 'linux' } }
-//          steps {
-//            container( 'jetty-build' ) {
-//              timeout( time: 120, unit: 'MINUTES' ) {
-//                mavenBuild( "jdk14", "clean install", "maven3", true )
-//                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-//                junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
-//              }
-//            }
-//          }
-//        }
+        stage("Build / Test - JDK11") {
+          agent { node { label 'linux' } }
+          steps {
+            container( 'jetty-build' ) {
+              timeout( time: 120, unit: 'MINUTES' ) {
+                mavenBuild( "jdk11", "clean install -T3", "maven3", true )
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+              }
+            }
+          }
+        }
 
-//        stage("Build Javadoc") {
-//          agent { node { label 'linux' } }
-//          steps {
-//            container( 'jetty-build' ) {
-//              timeout( time: 40, unit: 'MINUTES' ) {
-//                mavenBuild( "jdk11",
-//                            "install javadoc:javadoc javadoc:aggregate-jar -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
-//                            "maven3", true )
-//                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
-//              }
-//            }
-//          }
-//        }
-//
-//        stage("Build Compact3") {
-//          agent { node { label 'linux' } }
-//          steps {
-//            container( 'jetty-build' ) {
-//              timeout( time: 30, unit: 'MINUTES' ) {
-//                mavenBuild( "jdk8", "-T3 -Pcompact3 clean install -DskipTests", "maven3", true )
-//                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-//              }
-//            }
-//          }
-//        }
+        stage("Build / Test - JDK14") {
+          agent { node { label 'linux' } }
+          steps {
+            container( 'jetty-build' ) {
+              timeout( time: 120, unit: 'MINUTES' ) {
+                mavenBuild( "jdk14", "clean install -T3", "maven3", true )
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+              }
+            }
+          }
+        }
+
+        stage("Build Javadoc") {
+          agent { node { label 'linux' } }
+          steps {
+            container( 'jetty-build' ) {
+              timeout( time: 40, unit: 'MINUTES' ) {
+                mavenBuild( "jdk11",
+                            "install javadoc:javadoc javadoc:aggregate-jar -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
+                            "maven3", true )
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
+              }
+            }
+          }
+        }
+
+        stage("Build Compact3") {
+          agent { node { label 'linux' } }
+          steps {
+            container( 'jetty-build' ) {
+              timeout( time: 30, unit: 'MINUTES' ) {
+                mavenBuild( "jdk8", "-T3 -Pcompact3 clean install -DskipTests", "maven3", true )
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -157,9 +156,8 @@ def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
     }
     finally
     {
-      warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
       junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
-      archiveArtifacts artifacts: '**/jetty-webapp/target/**'
+      //archiveArtifacts artifacts: '**/jetty-webapp/target/**'
     }
   }
 }
