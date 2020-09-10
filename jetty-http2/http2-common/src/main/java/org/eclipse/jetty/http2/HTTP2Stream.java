@@ -22,6 +22,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -123,8 +124,14 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public void headers(HeadersFrame frame, Callback callback)
     {
+        send(new FrameList(frame), callback);
+    }
+
+    @Override
+    public void send(FrameList frameList, Callback callback)
+    {
         if (startWrite(callback))
-            session.frames(this, this, frame, Frame.EMPTY_ARRAY);
+            session.frames(this, frameList.getFrames(), this);
     }
 
     @Override
@@ -150,7 +157,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             localReset = true;
             failure = new EOFException("reset");
         }
-        session.frames(this, callback, frame, Frame.EMPTY_ARRAY);
+        session.frames(this, List.of(frame), callback);
     }
 
     private boolean startWrite(Callback callback)

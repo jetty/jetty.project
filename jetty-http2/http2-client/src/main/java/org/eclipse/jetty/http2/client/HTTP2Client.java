@@ -21,10 +21,10 @@ package org.eclipse.jetty.http2.client;
 import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
@@ -391,7 +391,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private Map<String, Object> contextFrom(ClientConnectionFactory factory, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
     {
         if (context == null)
-            context = new HashMap<>();
+            context = new ConcurrentHashMap<>();
         context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, this);
         context.put(HTTP2ClientConnectionFactory.SESSION_LISTENER_CONTEXT_KEY, listener);
         context.put(HTTP2ClientConnectionFactory.SESSION_PROMISE_CONTEXT_KEY, promise);

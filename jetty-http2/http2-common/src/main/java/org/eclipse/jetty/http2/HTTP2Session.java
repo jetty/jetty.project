@@ -26,6 +26,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
@@ -36,6 +37,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
@@ -53,6 +55,7 @@ import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.frames.StreamFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackException;
@@ -602,7 +605,13 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public void newStream(HeadersFrame frame, Promise<Stream> promise, Stream.Listener listener)
     {
-        streamCreator.newStream(frame, promise, listener);
+        newStream(new IStream.FrameList(frame), promise, listener);
+    }
+
+    @Override
+    public void newStream(IStream.FrameList frames, Promise<Stream> promise, Stream.Listener listener)
+    {
+        streamCreator.newStream(frames, promise, listener);
     }
 
     /**
@@ -617,11 +626,14 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
      */
     public IStream newLocalStream(HeadersFrame frameIn, HeadersFrame[] frameOut)
     {
-        int streamId = frameIn.getStreamId();
+        HeadersFrame frame = frameIn;
+        int streamId = frame.getStreamId();
         if (streamId <= 0)
+        {
             streamId = localStreamIds.getAndAdd(2);
+            frame = frame.withStreamId(streamId);
+        }
 
-        HeadersFrame frame = streamCreator.prepareHeadersFrame(streamId, frameIn);
         if (frameOut != null)
             frameOut[0] = frame;
 
@@ -749,46 +761,48 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     private void control(IStream stream, Callback callback, Frame frame)
     {
-        frames(stream, callback, frame, Frame.EMPTY_ARRAY);
+        frames(stream, List.of(frame), callback);
     }
 
     @Override
-    public void frames(IStream stream, Callback callback, Frame frame, Frame... frames)
+    public void frames(IStream stream, List<? extends Frame> frames, Callback callback)
     {
         // We want to generate as late as possible to allow re-prioritization;
         // generation will happen while processing the entries.
 
         // The callback needs to be notified only when the last frame completes.
 
-        int length = frames.length;
-        if (length == 0)
+        int count = frames.size();
+        if (count > 1)
+            callback = new CountingCallback(callback, count);
+        for (int i = 1; i <= count; ++i)
         {
-            frame(new ControlEntry(frame, stream, callback), true);
+            Frame frame = frames.get(i - 1);
+            HTTP2Flusher.Entry entry = newEntry(frame, stream, callback);
+            frame(entry, i == count);
         }
-        else
-        {
-            callback = new CountingCallback(callback, 1 + length);
-            frame(new ControlEntry(frame, stream, callback), false);
-            for (int i = 1; i <= length; ++i)
-            {
-                frame(new ControlEntry(frames[i - 1], stream, callback), i == length);
-            }
-        }
+    }
+
+    private HTTP2Flusher.Entry newEntry(Frame frame, IStream stream, Callback callback)
+    {
+        return frame.getType() == FrameType.DATA
+            ? new DataEntry((DataFrame)frame, stream, callback)
+            : new ControlEntry(frame, stream, callback);
     }
 
     @Override
     public void data(IStream stream, Callback callback, DataFrame frame)
     {
         // We want to generate as late as possible to allow re-prioritization.
-        frame(new DataEntry(frame, stream, callback), true);
+        frame(newEntry(frame, stream, callback), true);
     }
 
     private void frame(HTTP2Flusher.Entry entry, boolean flush)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} on {}", flush ? "Sending" : "Queueing", entry.frame, this);
+            LOG.debug("{} {} on {}", flush ? "Sending" : "Queueing", entry, this);
         // Ping frames are prepended to process them as soon as possible.
-        boolean queued = entry.frame.getType() == FrameType.PING ? flusher.prepend(entry) : flusher.append(entry);
+        boolean queued = entry.hasHighPriority() ? flusher.prepend(entry) : flusher.append(entry);
         if (queued && flush)
         {
             if (entry.stream != null)
@@ -1357,6 +1371,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
 
         @Override
+        boolean hasHighPriority()
+        {
+            return frame.getType() == FrameType.PING;
+        }
+
+        @Override
         public void succeeded()
         {
             bytesWritten.addAndGet(frameBytes);
@@ -1700,7 +1720,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
         private void complete()
         {
-            frames(null, Callback.NOOP, newGoAwayFrame(CloseState.CLOSED, ErrorCode.NO_ERROR.code, null), new DisconnectFrame());
+            frames(null, List.of(newGoAwayFrame(CloseState.CLOSED, ErrorCode.NO_ERROR.code, null), new DisconnectFrame()), Callback.NOOP);
         }
     }
 
@@ -1760,67 +1780,63 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             int streamId = reserveSlot(slot, currentStreamId);
 
             if (currentStreamId <= 0)
-                frame = new PriorityFrame(streamId, frame.getParentStreamId(), frame.getWeight(), frame.isExclusive());
+                frame = frame.withStreamId(streamId);
 
-            assignSlotAndFlush(slot, new ControlEntry(frame, null, callback));
+            assignSlotAndFlush(slot, newEntry(frame, null, callback));
             return streamId;
         }
 
-        private void newStream(HeadersFrame frame, Promise<Stream> promise, Stream.Listener listener)
+        private void newStream(IStream.FrameList frameList, Promise<Stream> promise, Stream.Listener listener)
         {
             Slot slot = new Slot();
-            int currentStreamId = frame.getStreamId();
+            int currentStreamId = frameList.getStreamId();
             int streamId = reserveSlot(slot, currentStreamId);
 
-            frame = prepareHeadersFrame(streamId, frame);
+            List<StreamFrame> frames = frameList.getFrames();
+            if (currentStreamId <= 0)
+            {
+                frames = frames.stream()
+                    .map(frame -> frame.withStreamId(streamId))
+                    .collect(Collectors.toList());
+            }
 
             try
             {
-                IStream stream = HTTP2Session.this.createLocalStream(streamId, (MetaData.Request)frame.getMetaData());
+                HeadersFrame headersFrame = (HeadersFrame)frameList.getFrames().get(0);
+                IStream stream = HTTP2Session.this.createLocalStream(streamId, (MetaData.Request)headersFrame.getMetaData());
                 stream.setListener(listener);
                 stream.process(new PrefaceFrame(), Callback.NOOP);
-                assignSlotAndFlush(slot, new ControlEntry(frame, stream, new StreamPromiseCallback(promise, stream)));
+
+                int count = frames.size();
+                Callback streamCallback = new StreamPromiseCallback(promise, stream);
+                Callback callback = count == 1 ? streamCallback : new CountingCallback(streamCallback, count);
+                List<HTTP2Flusher.Entry> entries = frames.stream()
+                    .map(frame -> newEntry(frame, stream, callback))
+                    .collect(Collectors.toList());
+                assignSlotAndFlush(slot, entries);
             }
             catch (Throwable x)
             {
                 releaseSlotFlushAndFail(slot, promise, x);
             }
-        }
-
-        private HeadersFrame prepareHeadersFrame(int streamId, HeadersFrame frame)
-        {
-            if (frame.getStreamId() <= 0)
-            {
-                PriorityFrame priority = frame.getPriority();
-                priority = priority == null ? null : new PriorityFrame(streamId, priority.getParentStreamId(), priority.getWeight(), priority.isExclusive());
-                frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
-            }
-            return frame;
         }
 
         private void push(PushPromiseFrame frame, Promise<Stream> promise, Stream.Listener listener)
         {
             Slot slot = new Slot();
             int streamId = reserveSlot(slot, 0);
-            frame = new PushPromiseFrame(frame.getStreamId(), streamId, frame.getMetaData());
+            frame = frame.withStreamId(streamId);
 
             try
             {
                 IStream stream = HTTP2Session.this.createLocalStream(streamId, frame.getMetaData());
                 stream.setListener(listener);
-                assignSlotAndFlush(slot, new ControlEntry(frame, stream, new StreamPromiseCallback(promise, stream)));
+                assignSlotAndFlush(slot, newEntry(frame, stream, new StreamPromiseCallback(promise, stream)));
             }
             catch (Throwable x)
             {
                 releaseSlotFlushAndFail(slot, promise, x);
             }
-        }
-
-        private void assignSlotAndFlush(Slot slot, ControlEntry entry)
-        {
-            // Every time a slot entry is assigned, we must flush.
-            slot.entry = entry;
-            flush();
         }
 
         private int reserveSlot(Slot slot, int streamId)
@@ -1843,6 +1859,18 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             return streamId;
         }
 
+        private void assignSlotAndFlush(Slot slot, HTTP2Flusher.Entry entry)
+        {
+            assignSlotAndFlush(slot, List.of(entry));
+        }
+
+        private void assignSlotAndFlush(Slot slot, List<HTTP2Flusher.Entry> entries)
+        {
+            // Every time a slot entry is assigned, we must flush.
+            slot.entries = entries;
+            flush();
+        }
+
         private void releaseSlotFlushAndFail(Slot slot, Promise<Stream> promise, Throwable x)
         {
             try (AutoLock l = lock.lock())
@@ -1854,16 +1882,18 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         }
 
         /**
-         * Flush goes over the entries of the slots queue to flush the entries,
-         * until either one of the following two conditions is true:
-         *  - The queue is empty.
-         *  - It reaches a slot with a null entry.
-         *  When a slot with a null entry is encountered, this means a concurrent thread reserved a slot
-         *  but hasn't set its entry yet. Since entries must be flushed in order, the thread encountering
-         *  the null entry must bail out and it is up to the concurrent thread to finish up flushing.
-         *  Note that only one thread can flush at any one time, if two threads happen to call flush
-         *  concurrently, one will do the work while the other will bail out, so it is safe that all
-         *  threads call flush after they're done reserving a slot and setting the entry.
+         * <p>Iterates over the entries of the slot queue to flush them.</p>
+         * <p>The flush proceeds until either one of the following two conditions is true:</p>
+         * <ul>
+         *     <li>the queue is empty</li>
+         *     <li>a slot with a no entries is encountered</li>
+         * </ul>
+         * <p>When a slot with a no entries is encountered, then it means that a concurrent thread reserved
+         * a slot but hasn't set its entries yet. Since slots must be flushed in order, the thread encountering
+         * the slot with no entries must bail out and it is up to the concurrent thread to finish up flushing.</p>
+         * <p>Note that only one thread can flush at any time; if two threads happen to call this method
+         * concurrently, one will do the work while the other will bail out, so it is safe that all
+         * threads call this method after they are done reserving a slot and setting the entries.</p>
          */
         private void flush()
         {
@@ -1871,7 +1901,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             boolean queued = false;
             while (true)
             {
-                ControlEntry entry;
+                List<HTTP2Flusher.Entry> entries;
                 try (AutoLock l = lock.lock())
                 {
                     if (flushing == null)
@@ -1880,18 +1910,18 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
                         return; // Another thread is flushing.
 
                     Slot slot = slots.peek();
-                    entry = slot == null ? null : slot.entry;
+                    entries = slot == null ? null : slot.entries;
 
-                    if (entry == null)
+                    if (entries == null)
                     {
                         flushing = null;
-                        // No more slots or null entry, so we may iterate on the flusher.
+                        // No more slots or null entries, so we may iterate on the flusher.
                         break;
                     }
 
                     slots.poll();
                 }
-                queued |= flusher.append(entry);
+                queued |= flusher.append(entries);
             }
             if (queued)
                 flusher.iterate();
@@ -1899,7 +1929,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
         private class Slot
         {
-            private volatile ControlEntry entry;
+            private volatile List<HTTP2Flusher.Entry> entries;
         }
     }
 }
