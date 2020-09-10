@@ -24,6 +24,7 @@ Hazelcast can be used to cluster session information in one of two modes: either
 Remote mode means that Hazelcast will create a client to talk to other instances, possibly on other nodes.
 Embedded mode means that Hazelcast will start a local instance and communicate with that.
 
+[[ops-session-hazelcast-remote]]
 ==== Enabling Remote Hazelcast Clustering
 
 Enable the `session-store-hazelcast-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
@@ -79,9 +80,11 @@ Thorough consideration of the `maxIdleTime` of the session when setting the `sav
 
 IMPORTANT: Be aware that if your session attributes contain classes from inside your webapp (or Jetty classes) then you will need to put these classes onto the classpath of all of your Hazelcast instances.
 
+[[ops-session-hazelcast-embedded]]
 ==== Enabling Embedded Hazelcast Clustering
 
-During testing, it can be helpful to run an in-process instance of Hazelcast.
+This will run an in-process instance of Hazelcast.
+This can be useful for example during testing.
 To enable this you enable the `session-store-hazelcast-embedded` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
 Because Hazelcast is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case).

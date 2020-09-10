@@ -28,12 +28,13 @@ Session::
 is a means of retaining information across requests for a particular user.
 The Servlet Specification defines the semantics of sessions.
 Some of the most important characteristics of sessions is that they have a unique id, and that their contents cannot be shared between different contexts (although the id can be).
+If a session is invalidated in a context, then all other sessions that share the same id in other contexts will also be invalidated.
 SessionIdManager:: 
 is responsible for allocating session ids.
 Any Jetty server can have at most 1 SessionIdManager.
 HouseKeeper:: 
 is responsible for periodically orchestrating the removal of expired sessions.
-This process is referred to as "scavenging".
+This process is referred to as xref:ops-session-base-scavenge["scavenging"].
 SessionHandler:: 
 is responsible for managing the lifecycle of sessions.
 A context can have at most 1 `SessionHandler`.
@@ -53,27 +54,27 @@ More details on these concepts can be found in the link:${PROGGUIDE}/server/sess
 ====
 `SessionDataStores` interface with other, usually third party, systems responsible for storing and/or distributing session information.
 Sessions can be distributed without being persisted.
-They can also be persisted without being persisted.
-Because persisting session information to a shared store is one very common way of distributing or "clustering" sessions, in the documentation we will often refer to just "persisting".
+They can also be persisted without being distributed.
+Because persisting session information to a shared store is a very common way of distributing (also known as "clustering") sessions, in the documentation we will often refer to just "persisting".
 ====
 
-==== Jetty Session Modules
+==== Session Modules
 
 There are a number of modules that offer pluggable alternatives for http session management.
 You can design how you want to cache and store http sessions by selecting alternative combinations of session modules.
 
-For example, jetty ships with two alternative implementations of the `SessionCache`: one that caches sessions in memory (`session-cache-hash`) and a trivial implementation that does not actually cache (`session-cache-null`).
+For example, Jetty ships with two alternative implementations of the `SessionCache`:
 
-There are at least 6 alternative implementations of the `SessionDataStore` that you can use to persist your http sessions.
-The list currently includes support for:
+* one that caches sessions in memory: xref:ops-session-hash[`session-cache-hash`]
+* one that does not actually cache: xref:ops-session-null[`session-cache-null`]
 
-* file system storage (`session-store-file`)
-* relational database storage (`session-store-jdbc`)
-* NoSQL database storage (`session-store-mongo`)
-* Google Cloud datastore storage (`session-store-gcloud`)
-* Hazelcast storage (`session-store-hazelcast-remote` or `session-store-hazelcast-embedded`)
-* Infinispan storage (`session-store-infinispan-remote` or `session-store-infinispan-embedded`)
+There are at least 6 alternative implementations of the `SessionDataStore` that you can use to persist/distribute your http sessions:
 
-You might like to consult the xref:ops-session-usecases[use cases] to help you decide which combinations best suit your needs.
+* file system storage: xref:ops-session-filesystem[`session-store-file`]
+* relational database storage: xref:ops-session-jdbc[`session-store-jdbc`]
+* NoSQL database storage: xref:ops-session-mongo[`session-store-mongo`]
+* Google Cloud datastore storage: xref:ops-session-gcloud[`session-store-gcloud`]
+* Hazelcast: xref:ops-session-hazelcast-remote[`session-store-hazelcast-remote`] or xref:ops-session-hazelcast-embedded[`session-store-hazelcast-embedded`]
+* Infinispan: xref:ops-session-infinispan[`session-store-infinispan-remote`] or xref:ops-session-infinispan-embedded[`session-store-infinispan-embedded`]
 
 TIP: It is worth noting that if you do not configure _any_ session modules, jetty will still provide http sessions that are cached in memory but are never persisted.

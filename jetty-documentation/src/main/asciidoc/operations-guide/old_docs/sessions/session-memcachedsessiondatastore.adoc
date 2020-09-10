@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[session-configuration-memcachedsessiondatastore]]
+[[ops-session-memcachedsessiondatastore]]
 
 === Persistent Sessions: The L2 Session Data Cache
 

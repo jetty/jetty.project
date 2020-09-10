@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[configuring-sessions-jdbc]]
+[[ops-sessions-jdbc]]
 
 === Persistent Sessions: JDBC
 

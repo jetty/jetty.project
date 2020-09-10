@@ -27,7 +27,7 @@ The `id-manager.xml` file instantiates a `DefaultSessionIdManager` and `HouseKee
 The former is used to generate and manage session ids whilst the latter is responsible for periodic xref:ops-session-base-scavenge[scavenging] of expired sessions.
 
 ==== Configuration
-The `start.d/sessions.ini` file contains thse configuration properties:
+The `start.d/sessions.ini` file contains these configuration properties:
 
 jetty.sessionIdManager.workerName::
 This uniquely identifies the jetty server instance and is applied to the `SessionIdManager`.
@@ -44,12 +44,12 @@ IMPORTANT: If you have more than one Jetty instance, it is *crucial* that you co
 jetty.sessionScavengeInterval.seconds::
 This is the period in _seconds_ between runs of the `HouseKeeper`, responsible for orchestrating the removal of expired sessions.
 By default it will run every 600 secs (ie 10 mins).
-As a rule of thumb, you should ensure that the xref:op-session-base-scavenge[scavenge] interval is shorter than the `<session-timeout>` of your sessions to ensure that they are promptly scavenged.
-On the other hand, if you have a backend store configured for your sessions, xref:op-session-base-scavenge[scavenging] too frequently can increase the load on it.
+As a rule of thumb, you should ensure that the xref:ops-session-base-scavenge[scavenge] interval is shorter than the `<session-timeout>` of your sessions to ensure that they are promptly scavenged.
+On the other hand, if you have a backend store configured for your sessions, xref:ops-session-base-scavenge[scavenging] too frequently can increase the load on it.
 
 TIP: Don't forget that the `<session-timeout>` is specified in web.xml in _minutes_ and the value of the `jetty.sessionScavengeInterval.seconds` is in _seconds_.
 
-[[op-session-base-scavenge]]
+[[ops-session-base-scavenge]]
 ==== Session Scavenging
 
 The `HouseKeeper` is responsible for the periodic initiation of session scavenge cycles.
@@ -63,8 +63,8 @@ The `HouseKeeper` sequentially asks the `SessionHandler` in each context to find
 The `SessionHandler` works with the `SessionDataStore` to evaluate candidates for expiry held in the `SessionCache`, and also to sweep the persistence mechanism to find expired sessions.
 
 The sweep takes two forms: once per cycle the `SessionDataStore` searches for sessions for it's own context that have expired; infrequently, the `SessionDataStore` will widen the search to expired sessions in any context.
-The former finds sessions that are no longer in this node's SessionCache, and using some heuristics, are unlikely to be in the `SessionCache` of another node either.
-These sessions can be safely loaded and fully expired, meaning that `HttpSessionListener.destroy()` can be called for them.
+The former finds sessions that are no longer in this node's `SessionCache`, and using some heuristics, are unlikely to be in the `SessionCache` of another node either.
+These sessions will be loaded and fully expired, meaning that `HttpSessionListener.destroy()` will be called for them.
 The latter finds sessions that have not been disposed of by scavenge cycles on any other context/node.
 As these will be sessions that expired a long time ago, and may not be appropriate to load by the context of the `SessionDataStore`, these are summarily deleted without `HttpSessionListener.destroy()` being called.
 

@@ -20,12 +20,13 @@
 == Session Management
 
 Sessions are a concept within the Servlet API which allow requests to store and retrieve information across the time a user spends in an application.
-Choosing the correct session manager implementation is an important consideration for every application as each can fit and perform optimally in different situations.
+Jetty offers a number of pluggable alternatives for managing and distributing/persisting sessions.
+Choosing the best alternative is an important consideration for every application as is the correct configuration to achieve optimum performance.
 
 include::session-overview.adoc[]
 include::session-base.adoc[]
 include::session-sessioncache.adoc[]
-include::session-file-system.adoc[]
+include::session-filesystem.adoc[]
 include::session-jdbc.adoc[]
 include::session-mongodb.adoc[]
 include::session-infinispan.adoc[]

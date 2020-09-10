@@ -16,10 +16,11 @@
 // ========================================================================
 //
 
-[[configuring-sessions-infinispan]]
+[[ops-sessions-infinispan]]
 
 === Persistent Sessions: Inifinspan
 
+[[ops-session-infinispan-remote]]
 ==== Enabling Infinispan Sessions
 
 When using the Jetty distribution, you will first need to enable the `session-store-infinispan-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
@@ -117,8 +118,8 @@ Note that this is an *additional* module, to be used in conjuction with the `ses
 
 There are no configuration properties associated with this module.
 
-
-==== Configuring Embedded Inifinspan Clustering
+[[ops-session-infinispan-embedded]]
+==== Configuring Embedded Infinispan Clustering
 
 During testing, it can be helpful to run an in-process instance of Infinispan.
 To enable this you will first need to enable the `session-store-infinispan-embedded` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
@@ -157,7 +158,7 @@ It also downloaded the needed Infinispan-specific jar files and created a direct
 
 In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `${jetty.base}/start.d` directory.
 
-==== Configuring Inifinspan Embedded Properties
+==== Configuring Infinispan Embedded Properties
 
 Opening the `start.d/session-store-infinispan-remote.ini` will show a list of all the configurable options for the JDBC module:
 
