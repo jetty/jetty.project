@@ -39,8 +39,8 @@ import org.eclipse.jetty.util.thread.Locker;
 
 /**
  * A fast pool of objects, with optional support for
- * multiplexing, max usage count and optimal strategies such as thread-local caching.
- * <p>
+ * multiplexing, max usage count and several optimized strategies plus
+ * an optional {@link ThreadLocal} cache of the last release entry.
  * <p>
  * When the method {@link #close()} is called, all {@link Closeable}s in the pool
  * are also closed.
@@ -79,42 +79,70 @@ public class Pool<T> implements AutoCloseable, Dumpable
     private final Locker locker = new Locker();
     private final int maxEntries;
     private final AtomicInteger pending = new AtomicInteger();
-    private final Mode mode;
+    private final Strategy strategy;
     private final ThreadLocal<Entry> cache;
     private final AtomicInteger next;
     private volatile boolean closed;
     private volatile int maxMultiplex = 1;
     private volatile int maxUsageCount = -1;
 
-    public enum Mode
+    public enum Strategy
     {
+        /**
+         * The Linear strategy looks for an entry always starting from the first entry.
+         * It will favour the early entries in the pool, but may contend on them more.
+         */
         LINEAR,
+
+        /**
+         * The Random strategy looks for an entry by iterating from a random starting
+         * index.  No entries are favoured and contention is reduced.
+         */
         RANDOM,
+
+        /**
+         * The Thread ID strategy uses the {@link Thread#getId()} of the current thread
+         * to select a starting point for an entry search.  Whilst not as performant as
+         * using the {@link ThreadLocal} cache, it may be suitable when the pool is substantially smaller
+         * than the number of available threads.
+         * No entries are favoured and contention is reduced.
+         */
         THREAD_ID,
+
+        /**
+         * The Round Robin strategy looks for an entry by iterating from a starting point
+         * that is incremented on every search. This gives similar results to the
+         * random strategy but with more predictable behaviour.
+         * No entries are favoured and contention is reduced.
+         */
         ROUND_ROBIN,
     }
 
     /**
-     * Construct a Pool with the specified thread-local cache size.
+     * Construct a Pool with a specified lookup strategy and no
+     * {@link ThreadLocal} cache.
      *
+     * @param strategy The strategy to used for looking up entries.
      * @param maxEntries the maximum amount of entries that the pool will accept.
      */
-    public Pool(Mode mode, int maxEntries)
+    public Pool(Strategy strategy, int maxEntries)
     {
-        this(mode, maxEntries, false);
+        this(strategy, maxEntries, false);
     }
 
     /**
-     * Construct a Pool with the specified thread-local cache size.
-     *
+     * Construct a Pool with the specified thread-local cache size and
+     * an optional {@link ThreadLocal} cache.
+     * @param strategy The strategy to used for looking up entries.
      * @param maxEntries the maximum amount of entries that the pool will accept.
+     * @param cache True if a {@link ThreadLocal} cache should be used to try the most recently released entry.
      */
-    public Pool(Mode mode, int maxEntries, boolean cache)
+    public Pool(Strategy strategy, int maxEntries, boolean cache)
     {
         this.maxEntries = maxEntries;
-        this.mode = mode;
+        this.strategy = strategy;
         this.cache = cache ? new ThreadLocal() : null;
-        next = mode == Mode.ROUND_ROBIN ? new AtomicInteger() : null;
+        next = strategy == Strategy.ROUND_ROBIN ? new AtomicInteger() : null;
     }
 
     public int getReservedCount()
@@ -262,9 +290,9 @@ public class Pool<T> implements AutoCloseable, Dumpable
         return null;
     }
 
-    protected int startIndex(int size)
+    private int startIndex(int size)
     {
-        switch (mode)
+        switch (strategy)
         {
             case LINEAR:
                 return 0;

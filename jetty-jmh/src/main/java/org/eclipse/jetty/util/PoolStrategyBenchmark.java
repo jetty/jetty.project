@@ -36,24 +36,24 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @State(Scope.Benchmark)
 public class PoolStrategyBenchmark
 {
-    private PoolWithStrategy<String> poolws;
     private Pool<String> pool;
 
     @Param({
-        "linear",
         "Pool.Linear",
-        "threadlocal+linear",
-        "Pool.Thread",
-        "random+linear",
         "Pool.Random",
-        "roundrobin+linear",
         "Pool.RoundRobin",
-        "threadid+linear",
         "Pool.ThreadId",
     })
     public static String POOL_TYPE;
 
     @Param({
+        "false",
+        "true",
+    })
+    public static boolean CACHE;
+
+    @Param({
+        "4",
         "16"
     })
     public static int SIZE;
@@ -69,68 +69,17 @@ public class PoolStrategyBenchmark
 
         switch (POOL_TYPE)
         {
-            case "linear":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.LinearSearchStrategy<>());
-                break;
-            case "random+linear":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.CompositeStrategy<>(new PoolWithStrategy.RandomStrategy<>(), new PoolWithStrategy.LinearSearchStrategy<>()));
-                break;
-            case "threadlocal+linear":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.CompositeStrategy<>(new PoolWithStrategy.ThreadLocalStrategy<>(), new PoolWithStrategy.LinearSearchStrategy<>()));
-                break;
-            case "threadid+linear":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.CompositeStrategy<>(new PoolWithStrategy.ThreadIdStrategy<>(), new PoolWithStrategy.LinearSearchStrategy<>()));
-                break;
-            case "threadlocallist+linear":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.CompositeStrategy<>(new PoolWithStrategy.ThreadLocalListStrategy<>(2), new PoolWithStrategy.LinearSearchStrategy<>()));
-                break;
-            case "random-iteration":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.RandomIterationStrategy<>());
-                break;
-            case "threadlocal-iteration":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.ThreadLocalIteratorStrategy<>(false));
-                break;
-            case "threadlocal-iteration-roundrobin":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.ThreadLocalIteratorStrategy<>(true));
-                break;
-            case "retry+roundrobin":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.RetryStategy<>(new PoolWithStrategy.RoundRobinStrategy<>()));
-                break;
-            case "roundrobin+linear":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.CompositeStrategy<>(new PoolWithStrategy.RoundRobinStrategy<>(), new PoolWithStrategy.LinearSearchStrategy<>()));
-                break;
-            case "roundrobin-iteration":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.RoundRobinIterationStrategy<>());
-                break;
-            case "lru":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.LeastRecentlyUsedStrategy<>());
-                break;
-            case "OSTRTA(LINEAR)":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.OneStrategyToRuleThemAll<>(PoolWithStrategy.OneStrategyToRuleThemAll.Mode.LINEAR));
-                break;
-            case "OSTRTA(RANDOM)":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.OneStrategyToRuleThemAll<>(PoolWithStrategy.OneStrategyToRuleThemAll.Mode.RANDOM));
-                break;
-            case "OSTRTA(THREAD_LOCAL)":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.OneStrategyToRuleThemAll<>(PoolWithStrategy.OneStrategyToRuleThemAll.Mode.THREAD_LOCAL));
-                break;
-            case "OSTRTA(ROUND_ROBIN)":
-                poolws = new PoolWithStrategy<>(SIZE, new PoolWithStrategy.OneStrategyToRuleThemAll<>(PoolWithStrategy.OneStrategyToRuleThemAll.Mode.ROUND_ROBIN));
-                break;
             case "Pool.Linear" :
-                pool = new Pool<>(Pool.Mode.LINEAR, SIZE);
+                pool = new Pool<>(Pool.Strategy.LINEAR, SIZE, CACHE);
                 break;
             case "Pool.Random" :
-                pool = new Pool<>(Pool.Mode.RANDOM, SIZE);
+                pool = new Pool<>(Pool.Strategy.RANDOM, SIZE, CACHE);
                 break;
             case "Pool.ThreadId" :
-                pool = new Pool<>(Pool.Mode.THREAD_ID, SIZE, false);
-                break;
-            case "Pool.Thread" :
-                pool = new Pool<>(Pool.Mode.LINEAR, SIZE, true);
+                pool = new Pool<>(Pool.Strategy.THREAD_ID, SIZE, CACHE);
                 break;
             case "Pool.RoundRobin" :
-                pool = new Pool<>(Pool.Mode.ROUND_ROBIN, SIZE);
+                pool = new Pool<>(Pool.Strategy.ROUND_ROBIN, SIZE, CACHE);
                 break;
 
             default:
@@ -139,10 +88,7 @@ public class PoolStrategyBenchmark
 
         for (int i = 0; i < SIZE; i++)
         {
-            if (poolws != null)
-                poolws.reserve(1).enable(Integer.toString(i), false);
-            if (pool != null)
-                pool.reserve(1).enable(Integer.toString(i), false);
+            pool.reserve(1).enable(Integer.toString(i), false);
         }
     }
 
@@ -151,53 +97,28 @@ public class PoolStrategyBenchmark
     {
         System.err.printf("%nMISSES = %d (%d%%)%n", misses.longValue(), 100 * misses.longValue() / (hits.longValue() + misses.longValue()));
         System.err.printf("AVERAGE = %d%n", total.longValue() / hits.longValue());
-        if (poolws != null)
-            poolws.close();
-        poolws = null;
-        if (pool != null)
-            pool.close();
+        pool.close();
         pool = null;
     }
 
     @Benchmark
     public void testAcquireReleasePoolWithStrategy()
     {
-        if (poolws == null)
+        // Now really benchmark the strategy we are interested in
+        Pool<String>.Entry entry = pool.acquire();
+        if (entry == null || entry.isIdle())
         {
-            // Now really benchmark the strategy we are interested in
-            Pool<String>.Entry entry = pool.acquire();
-            if (entry == null || entry.isIdle())
-            {
-                misses.increment();
-                Blackhole.consumeCPU(20);
-                return;
-            }
-            // do some work
-            hits.increment();
-            total.add(Long.parseLong(entry.getPooled()));
-            Blackhole.consumeCPU(entry.getPooled().hashCode() % 20);
-
-            // release the entry
-            entry.release();
+            misses.increment();
+            Blackhole.consumeCPU(20);
+            return;
         }
-        else
-        {
-            // Now really benchmark the strategy we are interested in
-            PoolWithStrategy<String>.Entry entry = poolws.acquire();
-            if (entry == null || entry.isIdle())
-            {
-                misses.increment();
-                Blackhole.consumeCPU(20);
-                return;
-            }
-            // do some work
-            hits.increment();
-            total.add(Long.parseLong(entry.getPooled()));
-            Blackhole.consumeCPU(entry.getPooled().hashCode() % 20);
+        // do some work
+        hits.increment();
+        total.add(Long.parseLong(entry.getPooled()));
+        Blackhole.consumeCPU(entry.getPooled().hashCode() % 20);
 
-            // release the entry
-            entry.release();
-        }
+        // release the entry
+        entry.release();
     }
 
     public static void main(String[] args) throws RunnerException
@@ -209,7 +130,7 @@ public class PoolStrategyBenchmark
             .forks(1)
             .threads(8)
             .resultFormat(ResultFormatType.JSON)
-            .result("poolStrategy-" + System.currentTimeMillis() + ".json")
+            .result("/tmp/poolStrategy-" + System.currentTimeMillis() + ".json")
             // .addProfiler(GCProfiler.class)
             .build();
 
