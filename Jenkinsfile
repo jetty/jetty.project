@@ -38,31 +38,31 @@ pipeline {
           }
         }
 
-//        stage("Build / Test - JDK11") {
-//          agent { node { label 'linux' } }
-//          steps {
-//            container( 'jetty-build' ) {
-//              timeout( time: 120, unit: 'MINUTES' ) {
-//                mavenBuild( "jdk11", "clean install", "maven3", true )
-//                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-//                junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
-//              }
-//            }
-//          }
-//        }
-//
-//        stage("Build / Test - JDK14") {
-//          agent { node { label 'linux' } }
-//          steps {
-//            container( 'jetty-build' ) {
-//              timeout( time: 120, unit: 'MINUTES' ) {
-//                mavenBuild( "jdk14", "clean install", "maven3", true )
-//                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-//                junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
-//              }
-//            }
-//          }
-//        }
+        stage("Build / Test - JDK11") {
+          agent { node { label 'linux' } }
+          steps {
+            container( 'jetty-build' ) {
+              timeout( time: 120, unit: 'MINUTES' ) {
+                mavenBuild( "jdk11", "clean install", "maven3", true )
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+                junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+              }
+            }
+          }
+        }
+
+        stage("Build / Test - JDK14") {
+          agent { node { label 'linux' } }
+          steps {
+            container( 'jetty-build' ) {
+              timeout( time: 120, unit: 'MINUTES' ) {
+                mavenBuild( "jdk14", "clean install", "maven3", true )
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+                junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+              }
+            }
+          }
+        }
 
         stage("Build Javadoc") {
           agent { node { label 'linux' } }
