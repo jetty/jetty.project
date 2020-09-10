@@ -34,5 +34,6 @@ The Jetty server-side libraries provide:
 
 include::http/server-http.adoc[]
 include::http2/server-http2.adoc[]
+include::sessions/sessions.adoc[]
 include::websocket/server-websocket.adoc[]
 include::server-io-arch.adoc[]

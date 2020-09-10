@@ -63,10 +63,7 @@ It also downloaded the needed Infinispan-specific jar files and created a direct
 
 In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `${jetty.base}/start.d` directory.
 
-____
-[NOTE]
-If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
-____
+NOTE: If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
 
 ==== Configuring Inifinspan Remote Properties
 
@@ -100,13 +97,13 @@ jetty.session.savePeriod.seconds=0::
 By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
 A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
 
-____
 [NOTE]
+====
 Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
 In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
 This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
 Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
-____
+====
 
 ==== Configuring the Remote Infinispan Query Module
 
@@ -126,10 +123,7 @@ There are no configuration properties associated with this module.
 During testing, it can be helpful to run an in-process instance of Infinispan.
 To enable this you will first need to enable the `session-store-infinispan-embedded` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
 
-____
-[IMPORTANT]
-If you are running Jetty with JDK 9 or greater, enable `session-store-infinispan-embedded-910.mod` instead.
-____
+IMPORTANT: If you are running Jetty with JDK 9 or greater, enable `session-store-infinispan-embedded-910.mod` instead.
 
 [source,screen,subs="{sub-order}"]
 ----
@@ -184,15 +178,14 @@ Amount of time, in seconds, to wait for other nodes to be checked to verify an e
 jetty.session.savePeriod.seconds=0::
 By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
 A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
-+
-____
+
 [NOTE]
+====
 Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
 In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
 This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
 Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
-____
-
+====
 
 ==== Configuring Inifinspan Embedded Query
 
@@ -213,10 +206,8 @@ Prior to release 9.4.13 we used the default Infinispan serialization, however th
 See issue https://github.com/eclipse/jetty.project/issues/2919 for more background.
 
 We have provided a conversion program which will convert any sessions stored in Infinispan to the new format.
-____
-[IMPORTANT]
-We recommend that you backup your stored sessions before running the conversion program.
-____
+
+IMPORTANT: We recommend that you backup your stored sessions before running the conversion program.
 
 How to use the converter:
 

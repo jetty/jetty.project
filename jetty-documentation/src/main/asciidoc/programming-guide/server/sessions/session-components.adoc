@@ -1,0 +1,168 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-session-components]]
+==== Session Components
+
+===== SessionIdManager
+
+There is a maximum of one `SessionIdManager` per `Server` instance.
+Its purpose is to generate fresh, unique session ids and to coordinate the re-use of session ids amongst co-operating contexts.
+
+The `SessionIdManager` is agnostic with respect to the type of clustering technology chosen.
+
+Jetty provides a default implementation - the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionIdManager.html[DefaultSessionIdManager]  - which should meet the needs of most users.
+If you do not explicitly configure a `SessionIdManager`, then when the `SessionHandler` starts, it will use an instance of the `DefaultSessionIdManager`.
+
+====== Using the DefaultSessionIdManager
+
+TODO
+- description of what the SessionHandler.doStart() does to create a DefaultSessionIdManager if none configured
+- code example of setting up the DefaultSessionIdManager
+
+====== Implementing a Custom SessionIdManager
+
+If the `DefaultSessionIdManager` does not meet your needs, you can extend it, or implement the `SessionIdManager` interface directly.
+
+When implementing a `SessionIdManager` pay particular attention to the following:
+
+* the `getWorkerName()` method must return a name that is unique to the `Server` instance.
+The `workerName` becomes important in clustering scenarios because sessions can migrate from node to node:  the `workerName` identifies which node was last managing a `Session`.
+* the contract of the `isIdInUse(String id)` method is very specific: a session id may _only_ be reused _iff_ it is already in use by another context.
+This restriction is important to support cross-context dispatch.
+* you should be _very_ careful to ensure that the `newSessionId(HttpServletRequest request, long created)` method does not return duplicate or predictable session ids.
+
+[[pg-server-session-housekeeper]]
+===== HouseKeeper
+
+There is a maximum of one link:{JDURL}/org/eclipse/jetty/server/session/HouseKeeper.html[HouseKeeper] per `SessionIdManager`.
+Its purpose is to periodically poll the link:{JDURL}/org/eclipse/jetty/server/session/SessionHandler.html[SessionHandlers] to clean out expired sessions.
+This operation is usually referred to as "scavenging" expired sessions.
+
+====== Using the HouseKeeper
+
+TODO 
+- description of the SessionHandler.doStart() creating a HouseKeeper
+- code example of setting up the HouseKeeper
+- configuring the scavenge interval
+
+===== SessionCache
+
+There is one `SessionCache` per `SessionHandler`, and thus one per context.
+Its purpose is to provide an L1 cache of `Session` objects.
+Having a working set of `Session` objects in memory allows multiple simultaneous requests for the same session to share the same `Session` object.
+A `SessionCache` uses a `SessionDataStore` to create, read, store and delete the `SessionData` associated with the `Session`.
+
+Jetty provides two `SessionCache` implementations: the link:{JDURL}/org/eclipse/jetty/server/session/DefaultSessionCache.html[DefaultSessionCache] and the link:{JDURL}/org/eclipse/jetty/server/session/NullSessionCache.html[NullSessionCache].
+
+====== Using the DefaultSessionCache
+The `DefaultSessionCache` retains `Session` objects in memory in a cache and has a number of configuration options to control cache behavior.
+It is suitable for non-clustered and clustered deployments with a sticky load balancer, as well as clustered deployments with a non-sticky load balancer, with some caveats.
+
+====== Using the NullSessionCache
+The `NullSessionCache` does not actually cache any objects: each request uses a fresh `Session` object.
+It is suitable for clustered deployments without a sticky load balancer and non-clustered deployments when purely minimal support for sessions is needed.
+
+``SessionCache``s always write out a Session to the link:{JDURL}/org/eclipse/jetty/server/session/SessionDataStore.html[SessionDataStore] whenever the last request for the `Session` exits.
+
+They can also be configured to do an immediate, eager write of a freshly created session.
+This can be useful if you are likely to experience multiple, near simultaneous requests referencing the same session, e.g. with HTTP/2 and you don't have a sticky load balancer.
+Alternatively, if the eager write is not done, application paths which create and then invalidate a session within a single request never incur the cost of writing to persistent storage.
+
+Additionally, if the `EVICT_ON_INACTIVITY` eviction policy is in use, you can xref:#pg-server-session-sessioncache[configure] the `DefaultSessionCache` to force a write of the `Session` to the `SessionDataStore` just before the `Session` is evicted.
+
+See xref:pg-server-session-sessioncache[the L1 Session Cache] for more information.
+
+===== SessionDataStore
+
+There is one link:{JDURL}/org/eclipse/jetty/server/session/SessionDataStore.html[SessionDataStore] per `SessionCache`.
+Its purpose is to create, store, read and delete the `SessionData` related to a `Session`.
+The server libraries provide a number of alternative `SessionDataStore` implementations.
+
+[plantuml]
+----
+title SessionDataStores
+
+interface SessionDataStore
+class AbstractSessionDataStore
+class FileSessionDataStore
+class GCloudSessionDataStore
+class HazelcastSessionDataStore
+class InfinispanSessionDataStore
+class JDBCSessionDataStore
+class MongoSessionDataStore
+class CachingSessionDataStore
+
+
+SessionDataStore <|-- AbstractSessionDataStore
+AbstractSessionDataStore <|-- FileSessionDataStore
+AbstractSessionDataStore <|-- GCloudSessionDataStore
+AbstractSessionDataStore <|-- HazelcastSessionDataStore
+AbstractSessionDataStore <|-- InfinispanSessionDataStore
+AbstractSessionDataStore <|-- JDBCSessionDataStore
+AbstractSessionDataStore <|-- MongoSessionDataStore
+SessionDataStore <|-- CachingSessionDataStore
+----
+
+The `AbstractSessionDataStore` provides most of the behaviour common to ``SessionDataStore``s.
+The common characteristics for all ``SessionDataStore``s that derive from `AbstractSessionDataStore` are:
+
+passivation::
+Supporting passivation means that session data is serialized.
+Some persistence mechanisms serialize, such as JDBC, GCloud Datastore etc.
+Others store an object in shared memory, e.g. Infinispan.
+Whether or not a clustering technology entails passivation controls whether or not ``HttpSessionActivationListener``s will be called.
+When implementing a custom `SessionDataStore` you need to decide whether or not passivation will be supported.
+savePeriod::
+This is an interval defined in seconds.
+It is used to reduce the frequency with which `SessionData` is written.
+Normally, whenever the last concurrent request leaves a `Session`, the `SessionData` for that `Session` is always persisted, even if the only thing that changed is the `lastAccessTime`.
+If the `savePeriod` is non-zero, the `SessionData` will not be persisted if no session attributes changed, unless the time since the last save exceeds the `savePeriod`.
+Setting a non-zero value can reduce the load on the persistence mechanism, but in a clustered environment runs the risk that other nodes will see the session as expired because it has not been persisted sufficiently recently.
+gracePeriod::
+The `gracePeriod` is an interval defined in seconds. 
+It is an attempt to deal with the non-transactional nature of sessions with regard to finding sessions that have expired.
+Because the servlet api does not define session transactions, in a clustered configuration - even with a sticky load balancer - it is always possible that a session is live on a node but not yet updated in the persistent store.
+This means that it can be hard to determine at any given moment whether a clustered session has truly expired.
+Thus, we use the `gracePeriod` to provide a bit of leeway around the moment of expiry.
+The `AbstraceSessionDataStore` uses the `gracePeriod` in the following manner to help xref:pg-server-session-housekeeper[scavenge] expired sessions:
+
+* on every scavenge cycle it searches for sessions that belong to our context that expired at least one `gracePeriod` ago
+* infrequently we also do a scan to find and summarily delete sessions - from any context - that expired at least 10 `gracePeriod``s ago
+
+The trivial link:{JDURL}/org/eclipse/jetty/server/session/NullSessionDataStore.html[NullSessionDataStore] - which does not persist sessions - is the default used by the `SessionHandler`.
+
+===== CachingSessionDataStore
+[plantuml]
+----
+interface SessionDataMap
+class CachingSessionDataStore
+interface SessionDataStore
+
+CachingSessionDataStore "1" *-down- "1" SessionDataMap
+CachingSessionDataStore "`" *-down- "1" SessionDataStore
+----
+
+The `CachingSessionDataStore` is a special type of `SessionDataStore` that acts as an L2 cache for `SessionData`.
+It has 2 components: the cache, and the actual backing `SessionDataStore`.
+The cache is an instance of a link:{JDURL}/org/eclipse/jetty/server/session/SessionDataMap.html[SessionDataMap].
+The `CachingSessionDataStore` consults this cache before consulting the actual `SessionDataStore`.
+Using a cache for the `SessionData` can improve the performance of slow stores.
+
+Jetty provides one implementation of this L2 cache based on `Memcached`, link:{JDURL}/org/eclipse/jetty/memcached/session/MemcachedSessionDataMap.html[MemcachedSessionDataMap].
+

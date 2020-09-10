@@ -122,7 +122,7 @@ public abstract class Negotiation
             ? Collections.emptyList()
             : extensions.getValues().stream()
             .map(ExtensionConfig::parse)
-            .filter(ec -> available.contains(ec.getName().toLowerCase()) && !ec.getName().startsWith("@"))
+            .filter(ec -> available.contains(ec.getName()) && !ec.getName().startsWith("@"))
             .collect(Collectors.toList());
 
         // Remove any parameters starting with "@", these are not to be negotiated by client (internal parameters).
