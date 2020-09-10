@@ -135,20 +135,25 @@ def slackNotif() {
  * @return the Jenkinsfile step representing a maven build
  */
 def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
-  def localRepo = ".repository"
-  def mavenOpts = '-Xms2g -Xmx4g -Djava.awt.headless=true'
+  script {
+    try {
+      def localRepo = ".repository"
+      def mavenOpts = '-Xms2g -Xmx4g -Djava.awt.headless=true'
 
-  withMaven(
-      maven: mvnName,
-      jdk: "$jdk",
-      publisherStrategy: 'EXPLICIT',
-      options: [junitPublisher(disabled: junitPublishDisabled),mavenLinkerPublisher(disabled: false),pipelineGraphPublisher(disabled: false)],
-      mavenOpts: mavenOpts,
-      mavenLocalRepo: localRepo) {
-    // Some common Maven command line + provided command line
-    // sh "mvn -Premote-session-tests -Pci -V -B -e -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
-    sh "mvn -Premote-session-tests -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
-  }
+      withMaven(
+          maven: mvnName,
+          jdk: "$jdk",
+          publisherStrategy: 'EXPLICIT',
+          options: [junitPublisher(disabled: junitPublishDisabled),mavenLinkerPublisher(disabled: false),pipelineGraphPublisher(disabled: false)],
+          mavenOpts: mavenOpts,
+          mavenLocalRepo: localRepo) {
+        // Some common Maven command line + provided command line
+        // sh "mvn -Premote-session-tests -Pci -V -B -e -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
+        sh "mvn -Premote-session-tests -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
+      }
+    } finally {
+      archiveArtifacts artifacts: '**/jetty-webapp/target/**'
+    }
 }
 
 
