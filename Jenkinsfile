@@ -136,7 +136,7 @@ def slackNotif() {
  */
 def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
   def localRepo = ".repository"
-  def mavenOpts = '-Xms2g -Xmx6g -Djava.awt.headless=true'
+  def mavenOpts = '-Xms2g -Xmx4g -Djava.awt.headless=true'
 
   withMaven(
       maven: mvnName,
