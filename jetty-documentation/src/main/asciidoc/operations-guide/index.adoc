@@ -16,19 +16,20 @@
 // ========================================================================
 //
 
-:doctitle: Eclipse Jetty: Operation Guide
+:doctitle: Eclipse Jetty: Operations Guide
 :author: Jetty Developers
 :email: jetty-dev@eclipse.org
-:revnumber: 1.0
+:revnumber: {version}
 :revdate: {TIMESTAMP}
 :toc: left
-:toc-title: Operation Guide
+:toc-title: Operations Guide
 :toc-style:
 
 :header-style: eclipse-thin
 :breadcrumb-style: eclipse-thin
 :footer-style: default
-:breadcrumb: Home:../index.html | Operation Guide:./index.html
+
+:breadcrumb: Home:../index.html | Operations Guide:./index.html
 
 // docinfo lets you pull in shared content and/or influence via render type
 //:docinfodir: {DOCINFODIR}/documentation
@@ -55,21 +56,35 @@ endif::[]
 // suppress automatic id generation
 :sectids!:
 
+// download and install
+include::introduction.adoc[]
+// TODO: jetty.home vs jetty.base
 
-include::startup/chapter.adoc[]
-include::contexts/chapter.adoc[]
-include::deploying/chapter.adoc[]
-include::connectors/chapter.adoc[]
-include::http2/chapter.adoc[]
-include::logging/chapter.adoc[]
-include::security/chapter.adoc[]
-include::sessions/sessions.adoc[]
-include::jsp/chapter.adoc[]
-include::annotations/chapter.adoc[]
-include::jmx/chapter.adoc[]
-include::jndi/chapter.adoc[]
-include::alpn/chapter.adoc[]
-include::fastcgi/chapter.adoc[]
-include::extras/chapter.adoc[]
-include::runner/chapter.adoc[]
-include::tuning/chapter.adoc[]
+// TODO: how jetty standalone work what start.jar does, command line options, modules, etc.
+// TODO: this is mostly in old_docs/startup.
+// TODO: [[quick-start-configure]]
+
+// TODO: list of modules, how to write a custom module, examples e.g. http2, etc.
+
+== OLD DOCUMENTATION
+
+include::old_docs/gettingstarted/introduction/chapter.adoc[]
+include::old_docs/gettingstarted/getting-started/chapter.adoc[]
+// TODO: how about other directories under old_docs/gettingstarted/?
+include::old_docs/startup/chapter.adoc[]
+include::old_docs/contexts/chapter.adoc[]
+include::old_docs/deploying/chapter.adoc[]
+include::old_docs/connectors/chapter.adoc[]
+include::old_docs/http2/chapter.adoc[]
+include::old_docs/logging/chapter.adoc[]
+include::old_docs/security/chapter.adoc[]
+include::old_docs/sessions/sessions.adoc[]
+include::old_docs/jsp/chapter.adoc[]
+include::old_docs/annotations/chapter.adoc[]
+include::old_docs/jmx/chapter.adoc[]
+include::old_docs/jndi/chapter.adoc[]
+include::old_docs/alpn/chapter.adoc[]
+include::old_docs/fastcgi/chapter.adoc[]
+include::old_docs/extras/chapter.adoc[]
+include::old_docs/runner/chapter.adoc[]
+include::old_docs/tuning/chapter.adoc[]
