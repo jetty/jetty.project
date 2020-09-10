@@ -240,6 +240,18 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         batchMode = mode;
     }
 
+    @Override
+    public int getMaxOutgoingFrames()
+    {
+        return coreSession.getMaxOutgoingFrames();
+    }
+
+    @Override
+    public void setMaxOutgoingFrames(int maxOutgoingFrames)
+    {
+        coreSession.setMaxOutgoingFrames(maxOutgoingFrames);
+    }
+
     private boolean isBatch()
     {
         return BatchMode.ON == batchMode;
