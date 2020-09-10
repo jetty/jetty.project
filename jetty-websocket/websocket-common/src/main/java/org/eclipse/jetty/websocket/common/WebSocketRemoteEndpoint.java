@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.common;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritePendingException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -81,7 +82,9 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     private final OutgoingFrames outgoing;
     private final AtomicInteger msgState = new AtomicInteger();
     private final BlockingWriteCallback blocker = new BlockingWriteCallback();
+    private final AtomicInteger numOutgoingFrames = new AtomicInteger();
     private volatile BatchMode batchMode;
+    private int maxNumOutgoingFrames = -1;
 
     public WebSocketRemoteEndpoint(LogicalConnection connection, OutgoingFrames outgoing)
     {
@@ -303,6 +306,19 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         BatchMode batchMode = BatchMode.OFF;
         if (frame.isDataFrame())
             batchMode = getBatchMode();
+
+        if (maxNumOutgoingFrames > 0 && frame.isDataFrame())
+        {
+            // Increase the number of outgoing frames, will be decremented when callback is completed.
+            int outgoingFrames = numOutgoingFrames.incrementAndGet();
+            callback = from(callback, numOutgoingFrames::decrementAndGet);
+            if (outgoingFrames > maxNumOutgoingFrames)
+            {
+                callback.writeFailed(new WritePendingException());
+                return;
+            }
+        }
+
         outgoing.outgoingFrame(frame, callback, batchMode);
     }
 
@@ -440,6 +456,18 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     }
 
     @Override
+    public int getMaxOutgoingFrames()
+    {
+        return maxNumOutgoingFrames;
+    }
+
+    @Override
+    public void setMaxOutgoingFrames(int maxOutgoingFrames)
+    {
+        this.maxNumOutgoingFrames = maxOutgoingFrames;
+    }
+
+    @Override
     public void flush() throws IOException
     {
         lockMsg(MsgType.ASYNC);
@@ -458,5 +486,37 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
     public String toString()
     {
         return String.format("%s@%x[batching=%b]", getClass().getSimpleName(), hashCode(), getBatchMode());
+    }
+
+    private static WriteCallback from(WriteCallback callback, Runnable completed)
+    {
+        return new WriteCallback()
+        {
+            @Override
+            public void writeFailed(Throwable x)
+            {
+                try
+                {
+                    callback.writeFailed(x);
+                }
+                finally
+                {
+                    completed.run();
+                }
+            }
+
+            @Override
+            public void writeSuccess()
+            {
+                try
+                {
+                    callback.writeSuccess();
+                }
+                finally
+                {
+                    completed.run();
+                }
+            }
+        };
     }
 }
