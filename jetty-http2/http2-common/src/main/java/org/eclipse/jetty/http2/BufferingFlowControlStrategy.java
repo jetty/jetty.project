@@ -18,11 +18,11 @@
 
 package org.eclipse.jetty.http2;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
@@ -171,7 +171,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
 
     protected void sendWindowUpdate(IStream stream, ISession session, WindowUpdateFrame frame)
     {
-        session.frames(stream, Callback.NOOP, frame, Frame.EMPTY_ARRAY);
+        session.frames(stream, List.of(frame), Callback.NOOP);
     }
 
     @Override

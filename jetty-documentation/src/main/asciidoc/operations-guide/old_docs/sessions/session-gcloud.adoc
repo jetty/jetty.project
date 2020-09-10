@@ -1,0 +1,152 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[op-session-gcloud]]
+
+=== Persistent Sessions: Google Cloud DataStore
+
+Jetty can store http session information into GCloud by enabling the `session-store-gcloud` module.
+
+==== Preparation
+
+You will first need to create a project and enable the Google Cloud api: https://cloud.google.com/docs/authentication#preparation.
+Take note of the project id that you create in this step as you need to supply it in later steps.
+
+===== Communicating with GCloudDataStore
+
+====== When Running Jetty Outside of Google Infrastructure
+
+Before running Jetty, you will need to choose one of the following methods to set up the local environment to enable remote GCloud DataStore communications.
+
+1. Using the GCloud SDK:
+  * Ensure you have the GCloud SDK installed:  https://cloud.google.com/sdk/?hl=en.
+  * Use the GCloud tool to set up the project you created in the preparation step: `gcloud config set project PROJECT_ID`
+  * Use the GCloud tool to authenticate a google account associated with the project created in the preparation step: `gcloud auth login ACCOUNT`
+
+2. Using environment variables
+  * Define the environment variable `GCLOUD_PROJECT` with the project id you created in the preparation step.
+  * Generate a JSON link:https://cloud.google.com/storage/docs/authentication?hl=en#service_accounts[service account key] and then define the environment variable `GOOGLE_APPLICATION_CREDENTIALS=/path/to/my/key.json`
+
+
+====== When Running Jetty Inside of Google Infrastructure
+
+The Google deployment tools will automatically configure the project and authentication information for you.
+
+==== Configuring Indexes for Session Data
+
+Using some special, composite indexes can speed up session search operations, although it may make write operations slower.
+By default, indexes will _not_ be used.
+In order to use them, you will need to manually upload a file that defines the indexes.
+This file is named `index.yaml` and you can find it in your distribution in `${jetty.base}/etc/sessions/gcloud/index.yaml`.
+
+Follow the instructions link:https://cloud.google.com/datastore/docs/tools/#the_development_workflow_using_gcloud[here] to upload the pre-generated `index.yaml` file.
+
+===== Communicating with the GCloudDataStore Emulator
+
+To enable communication using the GCloud Emulator:
+
+   * Ensure you have the GCloud SDK installed:  https://cloud.google.com/sdk/?hl=en
+   * Follow the instructions link:https://cloud.google.com/datastore/docs/tools/datastore-emulator[here] on how to start the GCloud datastore emulator, and how to propagate the environment variables that it creates to the terminal in which you run Jetty.
+
+==== Enabling the Google Cloud DataStore Module
+
+The `session-store-gcloud` module provides GCloud support for storing session data.
+
+Because the Google Cloud DataStore is not a technology provided by the Eclipse Foundation, when enabling the module you will be prompted to assent to the licenses of the external vendor.
+
+As GCloud requires certain Java Commons Logging features to work correctly, Jetty routes these through SLF4J by transitively enabling the `jcl-slf4j` module during installation.
+Therefore, you will _also_ need to enable one of the SLF4J implementation modules.
+You can either choose one ahead of time and enable it at the same time as the `session-store-gcloud` module, or you can just enable `session-store-gcloud` module and it will print out a list of available SLF4J implementations.
+You can then choose one and enable it.
+
+IMPORTANT: If you want to use updated versions of the jar files automatically downloaded during the module enablement, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+
+==== Configuring GCloud Session Properties
+
+The `start.d/session-store-gcloud.ini` file contains all of the configurable properties for the `session-store-gcloud` module:
+
+jetty.session.gcloud.maxRetries::
+Integer.
+Default 5.
+Maximum number of retries to connect to GCloud DataStore to write a session.
+jetty.session.gcloud.backoffMs::
+Integer in milliseconds.
+Default 1000.
+Number of milliseconds between successive attempts to connect to the GCloud DataStore to write a session.
+jetty.session.gracePeriod.seconds::
+Integer, in seconds.
+Default 3600.
+Used during session scavenging.
+Multiples of this period are used to define how long ago a stored session must have expired before it should be scavenged.
+jetty.session.savePeriod.seconds::
+By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
+A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
+
+[NOTE]
+====
+Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
+In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
+This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+====
+
+jetty.session.gcloud.namespace::
+Optional.
+Sets the namespace for GCloud Datastore to use.
+If set, partitions the visibility of session data between webapps, which is helpful for multi-tenant deployments.
+More information can be found link:https://cloud.google.com/datastore/docs/concepts/multitenancy[here.]
+Configuration of the stored session object and its fields names-::
+You should very rarely, if ever, need to change these defaults.
+   jetty.session.gcloud.model.kind:::
+   The default is "GCloudSession".
+   This is the type of the object that is stored in GCloud.
+   jetty.session.gcloud.model.id:::
+   The default is "id".
+   This is the session id.
+   jetty.session.gcloud.model.contextPath:::
+   The default is "contextPath".
+   This is the canonicalized context path of the context to which the session belongs.
+   jetty.session.gcloud.model.vhost:::
+   The default is "vhost".
+   This is the canonicalized virtual host of the context to which the session belongs.
+   jetty.session.gcloud.model.accessed:::
+   The default is "accessed".
+   This is the current access time of the session.
+   jetty.session.gcloud.model.lastAccessed:::
+   The default is "lastAccessed".
+   This is the last access time of the session.
+   jetty.session.gcloud.model.createTime:::
+   The default is "createTime".
+   This is the time, in ms since the epoch, at which the session was created.
+   jetty.session.gcloud.model.cookieSetTime:::
+   The default is "cookieSetTime".
+   This is the time at which the session cookie was last set.
+   jetty.session.gcloud.model.lastNode:::
+   The default is "lastNode".
+   This is the `workerName` of the last node to manage the session.
+   jetty.session.gcloud.model.expiry:::
+   The default is "expiry".
+   This is the time, in ms since the epoch, at which the session will expire.
+   jetty.session.gcloud.model.maxInactive:::
+   The default is "maxInactive".
+   This is the session timeout in ms.
+   jetty.session.gcloud.model.attributes:::
+   The default is "attributes".
+   This is a map of all the session attributes.
+
+

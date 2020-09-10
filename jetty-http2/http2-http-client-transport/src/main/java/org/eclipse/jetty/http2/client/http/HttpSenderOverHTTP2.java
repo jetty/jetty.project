@@ -20,7 +20,6 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpExchange;
@@ -32,6 +31,8 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ISession;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -57,7 +58,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
     }
 
     @Override
-    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, final Callback callback)
+    protected void sendHeaders(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         HttpRequest request = exchange.getRequest();
         boolean isTunnel = HttpMethod.CONNECT.is(request.getMethod());
@@ -88,38 +89,52 @@ public class HttpSenderOverHTTP2 extends HttpSender
         }
 
         HeadersFrame headersFrame;
-        Promise<Stream> promise;
+        DataFrame dataFrame = null;
+        HeadersFrame trailersFrame = null;
+
         if (isTunnel)
         {
             headersFrame = new HeadersFrame(metaData, null, false);
-            promise = new HeadersPromise(request, callback, stream -> callback.succeeded());
         }
         else
         {
-            Supplier<HttpFields> trailerSupplier = request.getTrailers();
-            if (BufferUtil.isEmpty(contentBuffer) && lastContent)
+            boolean hasContent = BufferUtil.hasContent(contentBuffer);
+            if (hasContent)
             {
-                HttpFields trailers = trailerSupplier == null ? null : trailerSupplier.get();
-                boolean endStream = trailers == null || trailers.size() == 0;
-                headersFrame = new HeadersFrame(metaData, null, endStream);
-                promise = new HeadersPromise(request, callback, stream ->
+                headersFrame = new HeadersFrame(metaData, null, false);
+                if (lastContent)
                 {
-                    if (endStream)
-                        callback.succeeded();
-                    else
-                        sendTrailers(stream, trailers, callback);
-                });
+                    HttpFields trailers = retrieveTrailers(request);
+                    boolean hasTrailers = trailers != null;
+                    dataFrame = new DataFrame(contentBuffer, !hasTrailers);
+                    if (hasTrailers)
+                        trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_2, trailers), null, true);
+                }
+                else
+                {
+                    dataFrame = new DataFrame(contentBuffer, false);
+                }
             }
             else
             {
-                headersFrame = new HeadersFrame(metaData, null, false);
-                promise = new HeadersPromise(request, callback, stream ->
-                    sendContent(stream, contentBuffer, lastContent, trailerSupplier, callback));
+                if (lastContent)
+                {
+                    HttpFields trailers = retrieveTrailers(request);
+                    boolean hasTrailers = trailers != null;
+                    headersFrame = new HeadersFrame(metaData, null, !hasTrailers);
+                    if (hasTrailers)
+                        trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_2, trailers), null, true);
+                }
+                else
+                {
+                    headersFrame = new HeadersFrame(metaData, null, false);
+                }
             }
         }
-        // TODO optimize the send of HEADERS and DATA frames.
+
         HttpChannelOverHTTP2 channel = getHttpChannel();
-        channel.getSession().newStream(headersFrame, promise, channel.getStreamListener());
+        IStream.FrameList frameList = new IStream.FrameList(headersFrame, dataFrame, trailersFrame);
+        ((ISession)channel.getSession()).newStream(frameList, new HeadersPromise(request, callback), channel.getStreamListener());
     }
 
     private String relativize(String path)
@@ -140,29 +155,30 @@ public class HttpSenderOverHTTP2 extends HttpSender
         }
     }
 
+    private HttpFields retrieveTrailers(HttpRequest request)
+    {
+        Supplier<HttpFields> trailerSupplier = request.getTrailers();
+        HttpFields trailers = trailerSupplier == null ? null : trailerSupplier.get();
+        return trailers == null || trailers.size() == 0 ? null : trailers;
+    }
+
     @Override
     protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
         Stream stream = getHttpChannel().getStream();
-        Supplier<HttpFields> trailerSupplier = exchange.getRequest().getTrailers();
-        sendContent(stream, contentBuffer, lastContent, trailerSupplier, callback);
-    }
-
-    private void sendContent(Stream stream, ByteBuffer buffer, boolean lastContent, Supplier<HttpFields> trailerSupplier, Callback callback)
-    {
-        boolean hasContent = buffer.hasRemaining();
+        boolean hasContent = contentBuffer.hasRemaining();
         if (lastContent)
         {
             // Call the trailers supplier as late as possible.
-            HttpFields trailers = trailerSupplier == null ? null : trailerSupplier.get();
+            HttpFields trailers = retrieveTrailers(exchange.getRequest());
             boolean hasTrailers = trailers != null && trailers.size() > 0;
             if (hasContent)
             {
-                DataFrame dataFrame = new DataFrame(stream.getId(), buffer, !hasTrailers);
-                Callback dataCallback = callback;
+                DataFrame dataFrame = new DataFrame(stream.getId(), contentBuffer, !hasTrailers);
                 if (hasTrailers)
-                    dataCallback = Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed);
-                stream.data(dataFrame, dataCallback);
+                    stream.data(dataFrame, Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed));
+                else
+                    stream.data(dataFrame, callback);
             }
             else
             {
@@ -172,7 +188,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
                 }
                 else
                 {
-                    DataFrame dataFrame = new DataFrame(stream.getId(), buffer, true);
+                    DataFrame dataFrame = new DataFrame(stream.getId(), contentBuffer, true);
                     stream.data(dataFrame, callback);
                 }
             }
@@ -181,7 +197,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
         {
             if (hasContent)
             {
-                DataFrame dataFrame = new DataFrame(stream.getId(), buffer, false);
+                DataFrame dataFrame = new DataFrame(stream.getId(), contentBuffer, false);
                 stream.data(dataFrame, callback);
             }
             else
@@ -203,13 +219,11 @@ public class HttpSenderOverHTTP2 extends HttpSender
     {
         private final HttpRequest request;
         private final Callback callback;
-        private final Consumer<Stream> succeed;
 
-        private HeadersPromise(HttpRequest request, Callback callback, Consumer<Stream> succeed)
+        private HeadersPromise(HttpRequest request, Callback callback)
         {
             this.request = request;
             this.callback = callback;
-            this.succeed = succeed;
         }
 
         @Override
@@ -218,7 +232,7 @@ public class HttpSenderOverHTTP2 extends HttpSender
             long idleTimeout = request.getIdleTimeout();
             if (idleTimeout >= 0)
                 stream.setIdleTimeout(idleTimeout);
-            succeed.accept(stream);
+            callback.succeeded();
         }
 
         @Override

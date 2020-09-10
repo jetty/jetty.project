@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http2;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.Callback;
@@ -44,12 +47,13 @@ public class SimpleFlowControlStrategy extends AbstractFlowControlStrategy
         // This method is called when a whole flow controlled frame has been consumed.
         // We send a WindowUpdate every time, even if the frame was very small.
 
-        final WindowUpdateFrame sessionFrame = new WindowUpdateFrame(0, length);
+        List<Frame> frames = new ArrayList<>(2);
+        WindowUpdateFrame sessionFrame = new WindowUpdateFrame(0, length);
+        frames.add(sessionFrame);
         session.updateRecvWindow(length);
         if (LOG.isDebugEnabled())
             LOG.debug("Data consumed, increased session recv window by {} for {}", length, session);
 
-        Frame[] streamFrame = Frame.EMPTY_ARRAY;
         if (stream != null)
         {
             if (stream.isRemotelyClosed())
@@ -59,14 +63,14 @@ public class SimpleFlowControlStrategy extends AbstractFlowControlStrategy
             }
             else
             {
-                streamFrame = new Frame[1];
-                streamFrame[0] = new WindowUpdateFrame(stream.getId(), length);
+                WindowUpdateFrame streamFrame = new WindowUpdateFrame(stream.getId(), length);
+                frames.add(streamFrame);
                 stream.updateRecvWindow(length);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Data consumed, increased stream recv window by {} for {}", length, stream);
             }
         }
 
-        session.frames(stream, Callback.NOOP, sessionFrame, streamFrame);
+        session.frames(stream, frames, Callback.NOOP);
     }
 }

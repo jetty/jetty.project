@@ -84,158 +84,172 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     }
 
     @Override
-    public void send(MetaData.Request request, final MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
+    public void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
+        if (response != null)
+            sendHeaders(request, response, content, lastContent, callback);
+        else
+            sendContent(request, content, lastContent, callback);
+    }
+
+    public void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
+    {
+        metaData = response;
+
+        HeadersFrame headersFrame;
+        DataFrame dataFrame = null;
+        HeadersFrame trailersFrame = null;
+
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        if (response != null)
+        int status = response.getStatus();
+        boolean interimResponse = status == HttpStatus.CONTINUE_100 || status == HttpStatus.PROCESSING_102;
+        if (interimResponse)
         {
-            metaData = response;
-            int status = response.getStatus();
-            boolean interimResponse = status == HttpStatus.CONTINUE_100 || status == HttpStatus.PROCESSING_102;
-            if (interimResponse)
+            // Must not commit interim responses.
+            if (hasContent)
             {
-                // Must not commit interim responses.
+                callback.failed(new IllegalStateException("Interim response cannot have content"));
+                return;
+            }
+            headersFrame = new HeadersFrame(stream.getId(), metaData, null, false);
+        }
+        else
+        {
+            if (commit.compareAndSet(false, true))
+            {
+                if (lastContent)
+                {
+                    long realContentLength = BufferUtil.length(content);
+                    long contentLength = response.getContentLength();
+                    if (contentLength < 0)
+                    {
+                        metaData = new MetaData.Response(
+                            response.getHttpVersion(),
+                            response.getStatus(),
+                            response.getReason(),
+                            response.getFields(),
+                            realContentLength,
+                            response.getTrailerSupplier()
+                        );
+                    }
+                    else if (hasContent && contentLength != realContentLength)
+                    {
+                        callback.failed(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
+                        return;
+                    }
+                }
+
                 if (hasContent)
                 {
-                    callback.failed(new IllegalStateException("Interim response cannot have content"));
+                    headersFrame = new HeadersFrame(stream.getId(), metaData, null, false);
+                    if (lastContent)
+                    {
+                        HttpFields trailers = retrieveTrailers();
+                        if (trailers == null)
+                        {
+                            dataFrame = new DataFrame(stream.getId(), content, true);
+                        }
+                        else
+                        {
+                            dataFrame = new DataFrame(stream.getId(), content, false);
+                            trailersFrame = new HeadersFrame(stream.getId(), new MetaData(HttpVersion.HTTP_2, trailers), null, true);
+                        }
+                    }
+                    else
+                    {
+                        dataFrame = new DataFrame(stream.getId(), content, false);
+                    }
                 }
                 else
                 {
-                    transportCallback.send(callback, false, c ->
-                        sendHeadersFrame(metaData, false, c));
+                    if (lastContent)
+                    {
+                        if (isTunnel(request, metaData))
+                        {
+                            headersFrame = new HeadersFrame(stream.getId(), metaData, null, false);
+                        }
+                        else
+                        {
+                            HttpFields trailers = retrieveTrailers();
+                            if (trailers == null)
+                            {
+                                headersFrame = new HeadersFrame(stream.getId(), metaData, null, true);
+                            }
+                            else
+                            {
+                                headersFrame = new HeadersFrame(stream.getId(), metaData, null, false);
+                                trailersFrame = new HeadersFrame(stream.getId(), new MetaData(HttpVersion.HTTP_2, trailers), null, true);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        headersFrame = new HeadersFrame(stream.getId(), metaData, null, false);
+                    }
                 }
             }
             else
             {
-                if (commit.compareAndSet(false, true))
-                {
-                    if (lastContent)
-                    {
-                        long realContentLength = BufferUtil.length(content);
-                        long contentLength = response.getContentLength();
-                        if (contentLength < 0)
-                        {
-                            metaData = new MetaData.Response(
-                                response.getHttpVersion(),
-                                response.getStatus(),
-                                response.getReason(),
-                                response.getFields(),
-                                realContentLength,
-                                response.getTrailerSupplier()
-                            );
-                        }
-                        else if (hasContent && contentLength != realContentLength)
-                        {
-                            callback.failed(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, String.format("Incorrect Content-Length %d!=%d", contentLength, realContentLength)));
-                            return;
-                        }
-                    }
+                callback.failed(new IllegalStateException("committed"));
+                return;
+            }
+        }
 
-                    if (hasContent)
-                    {
-                        Callback commitCallback = new Callback.Nested(callback)
-                        {
-                            @Override
-                            public void succeeded()
-                            {
-                                if (lastContent)
-                                {
-                                    HttpFields trailers = retrieveTrailers();
-                                    if (trailers != null)
-                                    {
-                                        transportCallback.send(new SendTrailers(getCallback(), trailers), false, c ->
-                                            sendDataFrame(content, true, false, c));
-                                    }
-                                    else
-                                    {
-                                        transportCallback.send(getCallback(), false, c ->
-                                            sendDataFrame(content, true, true, c));
-                                    }
-                                }
-                                else
-                                {
-                                    transportCallback.send(getCallback(), false, c ->
-                                        sendDataFrame(content, false, false, c));
-                                }
-                            }
-                        };
-                        transportCallback.send(commitCallback, true, c ->
-                            sendHeadersFrame(metaData, false, c));
-                    }
-                    else
-                    {
-                        if (lastContent)
-                        {
-                            if (isTunnel(request, metaData))
-                            {
-                                transportCallback.send(callback, true, c ->
-                                    sendHeadersFrame(metaData, false, c));
-                            }
-                            else
-                            {
-                                HttpFields trailers = retrieveTrailers();
-                                if (trailers != null)
-                                {
-                                    transportCallback.send(new SendTrailers(callback, trailers), true, c ->
-                                        sendHeadersFrame(metaData, false, c));
-                                }
-                                else
-                                {
-                                    transportCallback.send(callback, true, c ->
-                                        sendHeadersFrame(metaData, true, c));
-                                }
-                            }
-                        }
-                        else
-                        {
-                            transportCallback.send(callback, true, c ->
-                                sendHeadersFrame(metaData, false, c));
-                        }
-                    }
+        HeadersFrame hf = headersFrame;
+        DataFrame df = dataFrame;
+        HeadersFrame tf = trailersFrame;
+
+        transportCallback.send(callback, true, c ->
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("HTTP2 Response #{}/{}:{}{} {}{}{}",
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    System.lineSeparator(), HttpVersion.HTTP_2, metaData.getStatus(),
+                    System.lineSeparator(), metaData.getFields());
+            }
+            stream.send(new IStream.FrameList(hf, df, tf), c);
+        });
+    }
+
+    public void sendContent(MetaData.Request request, ByteBuffer content, boolean lastContent, Callback callback)
+    {
+        boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
+        boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
+        if (hasContent || (lastContent && !isTunnel(request, metaData)))
+        {
+            if (lastContent)
+            {
+                HttpFields trailers = retrieveTrailers();
+                if (trailers == null)
+                {
+                    transportCallback.send(callback, false, c ->
+                        sendDataFrame(content, true, true, c));
                 }
                 else
                 {
-                    callback.failed(new IllegalStateException("committed"));
+                    SendTrailers sendTrailers = new SendTrailers(callback, trailers);
+                    if (hasContent)
+                    {
+                        transportCallback.send(sendTrailers, false, c ->
+                            sendDataFrame(content, true, false, c));
+                    }
+                    else
+                    {
+                        sendTrailers.succeeded();
+                    }
                 }
+            }
+            else
+            {
+                transportCallback.send(callback, false, c ->
+                    sendDataFrame(content, false, false, c));
             }
         }
         else
         {
-            if (hasContent || (lastContent && !isTunnel(request, metaData)))
-            {
-                if (lastContent)
-                {
-                    HttpFields trailers = retrieveTrailers();
-                    if (trailers != null)
-                    {
-                        SendTrailers sendTrailers = new SendTrailers(callback, trailers);
-                        if (hasContent)
-                        {
-                            transportCallback.send(sendTrailers, false, c ->
-                                sendDataFrame(content, true, false, c));
-                        }
-                        else
-                        {
-                            sendTrailers.succeeded();
-                        }
-                    }
-                    else
-                    {
-                        transportCallback.send(callback, false, c ->
-                            sendDataFrame(content, true, true, c));
-                    }
-                }
-                else
-                {
-                    transportCallback.send(callback, false, c ->
-                        sendDataFrame(content, false, false, c));
-                }
-            }
-            else
-            {
-                callback.succeeded();
-            }
+            callback.succeeded();
         }
     }
 
@@ -289,20 +303,6 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     LOG.debug("Could not push {}", request, x);
             }
         }, new Stream.Listener.Adapter()); // TODO: handle reset from the client ?
-    }
-
-    private void sendHeadersFrame(MetaData.Response info, boolean endStream, Callback callback)
-    {
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("HTTP2 Response #{}/{}:{}{} {}{}{}",
-                stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
-                System.lineSeparator(), HttpVersion.HTTP_2, info.getStatus(),
-                System.lineSeparator(), info.getFields());
-        }
-
-        HeadersFrame frame = new HeadersFrame(stream.getId(), info, null, endStream);
-        stream.headers(frame, callback);
     }
 
     private void sendDataFrame(ByteBuffer content, boolean lastContent, boolean endStream, Callback callback)

@@ -1,0 +1,78 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2020 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under
+// the terms of the Eclipse Public License 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0
+//
+// This Source Code may also be made available under the following
+// Secondary Licenses when the conditions for such availability set
+// forth in the Eclipse Public License, v. 2.0 are satisfied:
+// the Apache License v2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[op-session-mongo]]
+
+=== Persistent Sessions: MongoDB
+
+==== Enabling MongoDB Sessions
+
+Enable the `session-store-mongo` xref:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+
+Doing this enables the MongoDB Session module and any dependent modules or files needed for it to run on the server.
+
+Because MongoDB is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case) during the install.
+Jars needed by MongoDB are downloaded and stored into a directory named `${jetty.base}/lib/nosql/`.
+
+IMPORTANT: If you want to use updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
+
+==== Configuring MongoDB Session Properties
+
+The `start.d/session-store-mongo.ini` file contains all the configurable options for the MongoDB module:
+
+jetty.session.mongo.dbName::
+The default is "HttpSessions".
+This is the name of the database in MongoDB used to store the session collection.
+jetty.session.mongo.collectionName::
+The default is "jettySessions".
+This is the name of the collection in MongoDB used to store all of the sessions.
+The connection type-::
+You can connect to MongoDB either using a host/port combination, or a URI.
+By default, the host/port method is selected, but you can change this by commenting out the unwanted method, and uncommenting the other one.
+   connection-type=address:::
+   Used when utilizing a direct connection to the MongoDB server.
+    jetty.session.mongo.host::::
+    Host name or address for the remote MongoDB instance.
+    jetty.session.mongo.port::::
+    Port number for the remote MongoDB instance.
+   connection-type=uri:::
+   Used when utilizing MongoURI for secured connections.
+    jetty.session.mongo.connectionString::::
+    The string defining the MongoURI value, such as `mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]`.
+    More information on how to format the MongoURI string can be found in the https://docs.mongodb.com/manual/reference/connection-string/[official documentation for mongo.]
+[NOTE]
+====
+You will only use *one* `connection-type` at a time, either `address` or `uri`.
+If both are utilized in your `session-store-mongo.ini`, only the _last_ `connection-type` configured in the file will be used.
+====
+jetty.session.gracePeriod.seconds::
+Integer, in seconds.
+Default 3600.
+Used during session scavenging.
+Multiples of this period are used to define how long ago a stored session must have expired before it should be scavenged.
+jetty.session.savePeriod.seconds::
+By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
+A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
+
+[NOTE]
+====
+Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
+In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
+This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+====

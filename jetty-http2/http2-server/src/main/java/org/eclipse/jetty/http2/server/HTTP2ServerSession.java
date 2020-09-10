@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.server;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MetaData;
@@ -73,9 +74,9 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         }
 
         if (windowFrame == null)
-            frames(null, Callback.NOOP, settingsFrame, Frame.EMPTY_ARRAY);
+            frames(null, List.of(settingsFrame), Callback.NOOP);
         else
-            frames(null, Callback.NOOP, settingsFrame, windowFrame);
+            frames(null, List.of(settingsFrame, windowFrame), Callback.NOOP);
     }
 
     @Override

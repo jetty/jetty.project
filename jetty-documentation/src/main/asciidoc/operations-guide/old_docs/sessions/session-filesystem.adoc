@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[configuring-sessions-file-system]]
+[[op-session-filesystem]]
 
 === Persistent Sessions: File System
 
@@ -78,18 +78,17 @@ Putting all of the above together as an example, a session with an id of `node0e
 The `$jetty.base/start.d/sessions.ini` file contains the following properties which may be modified to customise filesystem session storage:
 
 jetty.session.storeDir::
-Filesystem path.
 The default is `${jetty.base}/sessions`.
-This defines the location for storage of session files.
-
+This is a path that defines the location for storage of session files.
 jetty.session.file.deleteUnrestorableFiles::
-Boolean.
-Default is `false`.
+Boolean, default `false`.
 If set to `true`, unreadable files will be deleted.
 This is useful to prevent repeated logging of the same error when the scavenger periodically (re-)attempts to load the corrupted information for a session in order to expire it.
-
+jetty.session.gracePeriod.seconds::
+Integer, default 3600.
+Used during session scavenging.
+Multiples of this period are used to define how long ago a stored session must have expired before it should be scavenged.
 jetty.session.savePeriod.seconds::
-Integer.
-Default is `0`.
+Integer, default is `0`.
 By default whenever the last concurrent request leaves a session, that session is always persisted, even if the only thing that changed on the session is its updated last access time.
 A non-zero value means that jetty will skip persisting the session if only the access time changed, unless the time since the last save exceeds the value of this property.

@@ -16,7 +16,7 @@
 // ========================================================================
 //
 
-[[session-management]]
+[[op-session]]
 == Session Management
 
 Sessions are a concept within the Servlet API which allow requests to store and retrieve information across the time a user spends in an application.
