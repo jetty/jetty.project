@@ -164,7 +164,7 @@ public interface RemoteEndpoint
     void setBatchMode(BatchMode mode);
 
     /**
-     * Get the maximum number of frames which allowed to be waiting to be sent at any one time.
+     * Get the maximum number of data frames allowed to be waiting to be sent at any one time.
      * The default value is -1, this indicates there is no limit on how many frames can be
      * queued to be sent by the implementation. If the limit is exceeded, subsequent frames
      * sent are failed with a {@link java.nio.channels.WritePendingException} but
@@ -175,7 +175,7 @@ public interface RemoteEndpoint
     int getMaxOutgoingFrames();
 
     /**
-     * Set the maximum number of frames which allowed to be waiting to be sent at any one time.
+     * Set the maximum number of data frames allowed to be waiting to be sent at any one time.
      * The default value is -1, this indicates there is no limit on how many frames can be
      * queued to be sent by the implementation. If the limit is exceeded, subsequent frames
      * sent are failed with a {@link java.nio.channels.WritePendingException} but
