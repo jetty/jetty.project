@@ -7,36 +7,36 @@ pipeline {
   stages {
     stage("Parallel Stage") {
       parallel {
-        stage("Build / Test - JDK8") {
-          agent { node { label 'linux' } }
-          steps {
-            container('jetty-build') {
-              timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk8", "clean install", "maven3", true )
-                // Collect up the jacoco execution results (only on main build)
-                jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-                       exclusionPattern: '' +
-                               // build tools
-                               '**/org/eclipse/jetty/ant/**' + ',**/org/eclipse/jetty/maven/**' +
-                               ',**/org/eclipse/jetty/jspc/**' +
-                               // example code / documentation
-                               ',**/org/eclipse/jetty/embedded/**' + ',**/org/eclipse/jetty/asyncrest/**' +
-                               ',**/org/eclipse/jetty/demo/**' +
-                               // special environments / late integrations
-                               ',**/org/eclipse/jetty/gcloud/**' + ',**/org/eclipse/jetty/infinispan/**' +
-                               ',**/org/eclipse/jetty/osgi/**' + ',**/org/eclipse/jetty/spring/**' +
-                               ',**/org/eclipse/jetty/http/spi/**' +
-                               // test classes
-                               ',**/org/eclipse/jetty/tests/**' + ',**/org/eclipse/jetty/test/**',
-                       execPattern: '**/target/jacoco.exec',
-                       classPattern: '**/target/classes',
-                       sourcePattern: '**/src/main/java'
-                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
-                junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
-              }
-            }
-          }
-        }
+//        stage("Build / Test - JDK8") {
+//          agent { node { label 'linux' } }
+//          steps {
+//            container('jetty-build') {
+//              timeout( time: 120, unit: 'MINUTES' ) {
+//                mavenBuild( "jdk8", "clean install", "maven3", true )
+//                // Collect up the jacoco execution results (only on main build)
+//                jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
+//                       exclusionPattern: '' +
+//                               // build tools
+//                               '**/org/eclipse/jetty/ant/**' + ',**/org/eclipse/jetty/maven/**' +
+//                               ',**/org/eclipse/jetty/jspc/**' +
+//                               // example code / documentation
+//                               ',**/org/eclipse/jetty/embedded/**' + ',**/org/eclipse/jetty/asyncrest/**' +
+//                               ',**/org/eclipse/jetty/demo/**' +
+//                               // special environments / late integrations
+//                               ',**/org/eclipse/jetty/gcloud/**' + ',**/org/eclipse/jetty/infinispan/**' +
+//                               ',**/org/eclipse/jetty/osgi/**' + ',**/org/eclipse/jetty/spring/**' +
+//                               ',**/org/eclipse/jetty/http/spi/**' +
+//                               // test classes
+//                               ',**/org/eclipse/jetty/tests/**' + ',**/org/eclipse/jetty/test/**',
+//                       execPattern: '**/target/jacoco.exec',
+//                       classPattern: '**/target/classes',
+//                       sourcePattern: '**/src/main/java'
+//                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+//                junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
+//              }
+//            }
+//          }
+//        }
 
         stage("Build / Test - JDK11") {
           agent { node { label 'linux' } }
