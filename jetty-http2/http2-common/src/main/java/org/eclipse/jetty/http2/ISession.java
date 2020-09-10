@@ -59,7 +59,7 @@ public interface ISession extends Session
     /**
      * <p>Enqueues the given frames to be written to the connection.</p>
      * @param stream the stream the frames belong to
-     * @param frames additional frames to enqueue
+     * @param frames the frames to enqueue
      * @param callback the callback that gets notified when the frames have been sent
      */
     void frames(IStream stream, List<? extends Frame> frames, Callback callback);

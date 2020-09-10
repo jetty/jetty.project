@@ -52,8 +52,7 @@ public interface Stream
 
     /**
      * <p>Sends the given HEADERS {@code frame}.</p>
-     * <p>Typically used to send an HTTP response with no content and no trailers,
-     * or to send the HTTP response trailers.</p>
+     * <p>Typically used to send an HTTP response or to send the HTTP response trailers.</p>
      *
      * @param frame the HEADERS frame to send
      * @param callback the callback that gets notified when the frame has been sent

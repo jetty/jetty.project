@@ -61,7 +61,7 @@ public interface IStream extends Stream, Attachable, Closeable
 
     /**
      * <p>Sends the given list of frames.</p>
-     * <p>Typically used to send an HTTP response along with content and possibly trailers.</p>
+     * <p>Typically used to send HTTP headers along with content and possibly trailers.</p>
      *
      * @param frameList the list of frames to send
      * @param callback the callback that gets notified when the frames have been sent
