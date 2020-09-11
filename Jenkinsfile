@@ -14,8 +14,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "clean install -T3", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java']])
+                mavenBuild( "jdk11", "-T3 clean install", "maven3", true ) // -Pautobahn
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                        exclusionPattern: '' +
@@ -34,18 +33,20 @@ pipeline {
                        execPattern: '**/target/jacoco.exec',
                        classPattern: '**/target/classes',
                        sourcePattern: '**/src/main/java'
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+                junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
               }
             }
           }
         }
-
-        stage("Build / Test - JDK14") {
+        stage( "Build / Test - JDK14" ) {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk14", "clean install -T3 -Djacoco.skip=true ", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java']])
+                mavenBuild( "jdk14", "-T3 clean install", "maven3", true )
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
+                junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
               }
             }
           }
@@ -57,8 +58,9 @@ pipeline {
             container( 'jetty-build' ) {
               timeout( time: 30, unit: 'MINUTES' ) {
                 mavenBuild( "jdk11",
-                            "install javadoc:javadoc javadoc:aggregate-jar -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
-                            "maven3", [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']])
+                            "package source:jar javadoc:jar javadoc:aggregate-jar -Peclipse-release  -DskipTests -Dpmd.skip=true -Dcheckstyle.skip=true",
+                            "maven3", true )
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'JavaDoc'], [parserName: 'Java']]
               }
             }
           }
@@ -68,8 +70,8 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 30, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "-T3 -Pcompact3 clean install -DskipTests", "maven3",
-                            [[parserName: 'Maven'], [parserName: 'Java']])
+                mavenBuild( "jdk11", "-T3 -Pcompact3 clean install -DskipTests", "maven3", true )
+                warnings consoleParsers: [[parserName: 'Maven'], [parserName: 'Java']]
               }
             }
           }
@@ -119,23 +121,19 @@ def slackNotif() {
  * @paran mvnName maven installation to use
  * @return the Jenkinsfile step representing a maven build
  */
-def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
-  script {
-    try {
-      withEnv(["JAVA_HOME=${ tool "$jdk" }",
-               "PATH+MAVEN=${env.JAVA_HOME}/bin:${tool "$mvnName"}/bin",
-               "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
-        sh "mvn -Dmaven.test.failure.ignore=true -Dmaven.repo.local=.repository -Premote-session-tests -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
-      }
-    }
-    finally
-    {
-      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml'
-      //archiveArtifacts artifacts: '**/jetty-webapp/target/**'
-      if(consoleParsers!=null){
-        warnings consoleParsers: consoleParsers
-      }
-    }
+def mavenBuild(jdk, cmdline, mvnName, junitPublishDisabled) {
+  def localRepo = ".repository"
+  def mavenOpts = '-Xms1g -Xmx4g -Djava.awt.headless=true'
+
+  withMaven(
+    maven: mvnName,
+    jdk: "$jdk",
+    publisherStrategy: 'EXPLICIT',
+    options: [junitPublisher(disabled: junitPublishDisabled), mavenLinkerPublisher(disabled: false), pipelineGraphPublisher(disabled: false)],
+    mavenOpts: mavenOpts,
+    mavenLocalRepo: localRepo) {
+    // Some common Maven command line + provided command line
+    sh "mvn -Premote-session-tests -Pci -V -B -e -fae -Dmaven.test.failure.ignore=true -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
   }
 }
 
