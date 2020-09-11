@@ -62,66 +62,81 @@ import static java.lang.invoke.MethodType.methodType;
  *     The Authority (host and port) is updated on the {@link Request} object based
  *     on the host / port information in the following search order.
  * </p>
- * <table>
- *     <caption>Request Authority Search Order</caption>
- *     <thead>
+ * <table style="border: 1px solid black; border-collapse: separate; border-spacing: 0px;">
+ *     <caption style="font-weight: bold; font-size: 1.2em">Request Authority Search Order</caption>
+ *     <colgroup>
+ *         <col><col style="width: 15%"><col><col><col><col>
+ *     </colgroup>
+ *     <thead style="background-color: lightgray">
  *         <tr>
- *             <td>#</td>
- *             <td>Value Origin</td>
- *             <td>Host</td>
- *             <td>Port</td>
- *             <td>Notes</td>
+ *             <th>#</th>
+ *             <th>Value Origin</th>
+ *             <th>Host</th>
+ *             <th>Port</th>
+ *             <th>Protocol</th>
+ *             <th>Notes</th>
  *         </tr>
  *     </thead>
- *     <tbody>
+ *     <tbody style="text-align: left; vertical-align: top;">
  *         <tr>
  *             <td>1</td>
  *             <td><code>Forwarded</code> Header</td>
- *             <td>Required</td>
- *             <td>Authoritative</td>
- *             <td>From left-most <code>host=[value]</code> parameter (see <a href="https://tools.ietf.org/html/rfc7239">rfc7239</a>)</td>
+ *             <td>"{@code host=<host>}" param (Required)</td>
+ *             <td>"{@code host=<host>:<port>} param (Implied)</td>
+ *             <td>"{@code proto=<value>}" param (Optional)</td>
+ *             <td>From left-most relevant parameter (see <a href="https://tools.ietf.org/html/rfc7239">rfc7239</a>)</td>
  *         </tr>
  *         <tr>
  *             <td>2</td>
- *             <td><code>X-Forwarded-Port</code> Header</td>
- *             <td>n/a</td>
- *             <td>Required</td>
- *             <td>left-most value (only if {@link #getForwardedPortAsAuthority()} is true)</td>
- *         </tr>
- *         <tr>
- *             <td>3</td>
  *             <td><code>X-Forwarded-Host</code> Header</td>
  *             <td>Required</td>
  *             <td>Implied</td>
+ *             <td>n/a</td>
  *             <td>left-most value</td>
+ *         </tr>
+ *         <tr>
+ *             <td>3</td>
+ *             <td><code>X-Forwarded-Port</code> Header</td>
+ *             <td>n/a</td>
+ *             <td>Required</td>
+ *             <td>n/a</td>
+ *             <td>left-most value (only if {@link #getForwardedPortAsAuthority()} is true)</td>
  *         </tr>
  *         <tr>
  *             <td>4</td>
  *             <td><code>X-Forwarded-Server</code> Header</td>
  *             <td>Required</td>
  *             <td>Optional</td>
+ *             <td>n/a</td>
  *             <td>left-most value</td>
  *         </tr>
  *         <tr>
  *             <td>5</td>
- *             <td>Request Metadata</td>
- *             <td>Optional</td>
- *             <td>Optional</td>
- *             <td>found in Request Line absolute path and/or <code>Host</code> client request header value as value <code>host:port</code> or <code>host</code></td>
+ *             <td><code>X-Forwarded-Proto</code> Header</td>
+ *             <td>n/a</td>
+ *             <td>Implied from value</td>
+ *             <td>Required</td>
+ *             <td>
+ *                 <p>left-most value becomes protocol.</p>
+ *                 <ul>
+ *                     <li>Value of "<code>http</code>" means port=80.</li>
+ *                     <li>Value of "{@link HttpConfiguration#getSecureScheme()}" means port={@link HttpConfiguration#getSecurePort()}.</li>
+ *                 </ul>
+ *             </td>
  *         </tr>
  *         <tr>
  *             <td>6</td>
- *             <td><code>X-Forwarded-Proto</code> Header</td>
- *             <td>n/a</td>
- *             <td>standard</td>
- *             <td>left-most value as <code>http</code> (implied port 80) or <code>https</code> (implied port 443)</td>
- *         </tr>
- *         <tr>
- *             <td>7</td>
  *             <td><code>X-Proxied-Https</code> Header</td>
  *             <td>n/a</td>
+ *             <td>Implied from value</td>
  *             <td>boolean</td>
- *             <td>left-most value as <code>on</code> (implied port 443) or <code>off</code> (implied port 80)</td>
+ *             <td>
+ *                 <p>left-most value determines protocol and port.</p>
+ *                 <ul>
+ *                     <li>Value of "<code>on</code>" means port={@link HttpConfiguration#getSecurePort()}, and protocol={@link HttpConfiguration#getSecureScheme()}).</li>
+ *                     <li>Value of "<code>off</code>" means port=80, and protocol=http.</li>
+ *                 </ul>
+ *             </td>
  *         </tr>
  *     </tbody>
  * </table>
