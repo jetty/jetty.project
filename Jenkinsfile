@@ -125,7 +125,7 @@ def mavenBuild(jdk, cmdline, mvnName, consoleParsers) {
       withEnv(["JAVA_HOME=${ tool "$jdk" }",
                "PATH+MAVEN=${env.JAVA_HOME}/bin:${tool "$mvnName"}/bin",
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
-        sh "mvn -Dmaven.repo.local=.repository -Premote-session-tests -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
+        sh "mvn -Dmaven.test.failure.ignore=true -Dmaven.repo.local=.repository -Premote-session-tests -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=" + env.JENKINS_HOME
       }
     }
     finally
