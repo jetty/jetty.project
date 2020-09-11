@@ -5,7 +5,7 @@ Enable the InetAccessHandler to apply a include/exclude
 control of the remote IP of requests.
 
 [tags]
-handler
+connector
 
 [depend]
 server

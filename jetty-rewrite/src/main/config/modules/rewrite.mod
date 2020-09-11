@@ -4,6 +4,9 @@
 Enables the jetty-rewrite handler.  Specific rewrite
 rules must be added to either to etc/jetty-rewrite.xml or a custom xml/module
 
+[tags]
+server
+
 [provides]
 rewrite|default
 

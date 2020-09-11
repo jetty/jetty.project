@@ -221,6 +221,10 @@ public class Main
     public void listConfig(StartArgs args)
     {
         StartLog.endStartLog();
+        Modules modules = args.getAllModules();
+
+        // Dump Enabled Modules
+        modules.listEnabled();
 
         // Dump Jetty Home / Base
         args.dumpEnvironment();
@@ -244,20 +248,17 @@ public class Main
     public void listModules(StartArgs args)
     {
         final List<String> tags = args.getListModules();
-
         StartLog.endStartLog();
-        System.out.println();
-        System.out.println("Available Modules:");
-        System.out.println("==================");
-        System.out.println("tags: " + tags);
-        args.getAllModules().dump(tags);
+        String t = tags.toString();
+        System.out.printf("%nModules %s:%n", t);
+        System.out.printf("=========%s%n", "=".repeat(t.length()));
+        args.getAllModules().listModules(tags);
+    }
 
-        // Dump Enabled Modules
-        System.out.println();
-        System.out.println("Enabled Modules:");
-        System.out.println("================");
-        Modules modules = args.getAllModules();
-        modules.dumpEnabled();
+    public void showModules(StartArgs args)
+    {
+        StartLog.endStartLog();
+        args.getAllModules().showModules(args.getShowModules());
     }
 
     /**
@@ -388,10 +389,16 @@ public class Main
             listConfig(args);
         }
 
-        // Show modules
+        // List modules
         if (args.getListModules() != null)
         {
             listModules(args);
+        }
+
+        // Show modules
+        if (args.getShowModules() != null)
+        {
+            showModules(args);
         }
 
         // Generate Module Graph File

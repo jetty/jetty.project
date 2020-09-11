@@ -3,6 +3,11 @@
 [description]
 Enables the ALPN (Application Layer Protocol Negotiation) TLS extension.
 
+[tag]
+connector
+ssl
+internal
+
 [depend]
 ssl
 alpn-impl/alpn-${java.version.platform}

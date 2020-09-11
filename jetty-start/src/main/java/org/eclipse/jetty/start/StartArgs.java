@@ -223,6 +223,7 @@ public class StartArgs
     private boolean help = false;
     private boolean stopCommand = false;
     private List<String> listModules = null;
+    private List<String> showModules = null;
     private boolean listClasspath = false;
     private boolean listConfig = false;
     private boolean version = false;
@@ -346,7 +347,6 @@ public class StartArgs
             System.out.println();
         }
 
-        // Jetty Se
         System.out.println();
     }
 
@@ -999,6 +999,11 @@ public class StartArgs
         return listModules;
     }
 
+    public List<String> getShowModules()
+    {
+        return showModules;
+    }
+
     public boolean isRun()
     {
         return run;
@@ -1245,16 +1250,31 @@ public class StartArgs
         }
 
         // Module Management
-        if ("--list-modules".equals(arg))
+        if ("--list-module".equals(arg) || "--list-modules".equals(arg))
         {
             listModules = Collections.singletonList("-internal");
             run = false;
             return;
         }
 
-        if (arg.startsWith("--list-modules="))
+        if (arg.startsWith("--list-module=") || arg.startsWith("--list-modules="))
         {
             listModules = Props.getValues(arg);
+            run = false;
+            return;
+        }
+
+        // Module Management
+        if ("--show-module".equals(arg) || "--show-modules".equals(arg))
+        {
+            showModules = Collections.emptyList();
+            run = false;
+            return;
+        }
+
+        if (arg.startsWith("--show-module=") || arg.startsWith("--show-modules="))
+        {
+            showModules = Props.getValues(arg);
             run = false;
             return;
         }

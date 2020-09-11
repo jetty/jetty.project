@@ -5,7 +5,7 @@ Enable detailed statistics collection for the server,
 available via JMX.
 
 [tags]
-handler
+server
 
 [depend]
 server

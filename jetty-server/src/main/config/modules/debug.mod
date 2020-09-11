@@ -6,6 +6,7 @@ logging regarding detailed request handling events.
 Renames threads to include request URI.
 
 [tags]
+server
 debug
 
 [depend]
