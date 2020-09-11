@@ -87,7 +87,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <additionalparam>-Xdoclint:none &#45;&#45;allow-script-in-comments</additionalparam>
+          <!-- up to date javadoc syntax isn't supported under the compact3 limitations -->
+          <additionalOptions>-Xdoclint:none</additionalOptions>
+          <additionalJOption>-Xdoclint:none</additionalJOption>
         </configuration>
         <executions>
           <execution>
