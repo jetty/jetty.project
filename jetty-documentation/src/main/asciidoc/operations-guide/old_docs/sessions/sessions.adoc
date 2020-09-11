@@ -19,7 +19,7 @@
 [[op-session]]
 == Session Management
 
-Sessions are a concept within the Servlet API which allow requests to store and retrieve information across the time a user spends in an application.
+Http sessions are a concept within the Servlet API which allow requests to store and retrieve information across the time a user spends in an application.
 Jetty offers a number of pluggable alternatives for managing and distributing/persisting sessions.
 Choosing the best alternative is an important consideration for every application as is the correct configuration to achieve optimum performance.
 

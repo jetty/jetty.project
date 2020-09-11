@@ -18,29 +18,24 @@
 
 [[ops-session-hazelcast]]
 
-=== Persistent Sessions: Hazelcast
+=== Modules for Persistent Sessions: Hazelcast
 
 Hazelcast can be used to cluster session information in one of two modes: either remote or embedded.
 Remote mode means that Hazelcast will create a client to talk to other instances, possibly on other nodes.
 Embedded mode means that Hazelcast will start a local instance and communicate with that.
 
 [[ops-session-hazelcast-remote]]
-==== Enabling Remote Hazelcast Clustering
+==== Remote Hazelcast Clustering
 
-Enable the `session-store-hazelcast-remote` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+Enabling the `session-store-hazelcast-remote` module allows jetty to communicate with a remote Hazelcast instance to cluster session data.
 
-Doing this enables the Hazelcast Session module and any dependent modules or files needed for it to run on the server.
-The example above is using a fresh `${jetty.base}` with nothing else enabled.
-Because Hazelcast is not a technology provided by the Eclipse Foundation, users are prompted to assent to the licenses of the external vendor (Apache in this case).
+Because Hazelcast is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case).
 
-When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-hazelcast-remote` module as well as the `sessions` and `server` modules, which are required for Hazelcast session management to operate.
-It also downloaded the needed Hazelcast-specific jar files and created a directory named `${jetty.base}/lib/hazelcast/` to house them.
-
-In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `${jetty.base}/start.d` directory.
+Hazelcast-specific jar files will be downloaded and saved to a directory named `${jetty.base}/lib/hazelcast/`.
 
 NOTE: If you have updated versions of the jar files automatically downloaded by Jetty, you can place them in the associated `${jetty.base}/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
 
-===== Configuring
+===== Configuration
 
 The `start.d/session-store-hazelcast-remote.ini` contains a list of all the configurable options for the Hazelcast module:
 
@@ -55,46 +50,43 @@ Optional.
 This is the path to an external Hazelcast xml configuration file.
 jetty.session.hazelcast.useQueries::
 Boolean, default `false`.
-If `true`, Jetty will use Hazelcast queries to find sessions to scavenge.
-If `false` sessions that are not currently in a xref:op-session-sessioncache[session cache] cannot be scavenged, and will need to be removed by some external process.
+If `true`, Jetty will use Hazelcast queries to find sessions to xref:session-base-scavenge[scavenge].
+If `false` sessions that are not currently in a xref:op-session-sessioncache[session cache] cannot be xref:session-base-scavenge[scavenged], and will need to be removed by some external process.
 jetty.session.hazelcast.addresses::
 Optional.
 These are the addresses of remote Hazelcast instances with which to communicate.
 jetty.session.gracePeriod.seconds::
 Integer, in seconds.
 Default 3600.
-Used during session scavenging.
-Multiples of this period are used to define how long ago a stored session must have expired before it should be scavenged.
+Used during session xref:session-base-scavenge[scavenging].
+Multiples of this period are used to define how long ago a stored session must have expired before it should be xref:session-base-scavenge[scavenged].
 jetty.session.savePeriod.seconds::
-Integer, default `0`.
-By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
-A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
+Integer, in seconds, default is `0`.
+Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.
+Even if your sessions are read-mostly, the `lastAccessTime` and  `expiry` will always change.
+For heavily-used, read-mostly sessions you can save some time by skipping some writes for sessions for which only these fields have changed (ie no session attributes changed).
+The value of this property is used to skip writes for these kinds of sessions: the session will only be written out if the time since the last write exceeds the value of this property.
 
-[NOTE]
+[WARNING]
 ====
-Configuring `savePeriod` is useful if writes are slow/costly.
-In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
-This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
-Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+You should be careful in the use of this property in clustered environments: if you set too large a value for this property, the session may not be written out sufficiently often to update its `expiry` time thus making it appear to other nodes that it has expired.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
 ====
 
 IMPORTANT: Be aware that if your session attributes contain classes from inside your webapp (or Jetty classes) then you will need to put these classes onto the classpath of all of your Hazelcast instances.
 
 [[ops-session-hazelcast-embedded]]
-==== Enabling Embedded Hazelcast Clustering
+==== Embedded Hazelcast Clustering
 
 This will run an in-process instance of Hazelcast.
 This can be useful for example during testing.
-To enable this you enable the `session-store-hazelcast-embedded` link:#startup-modules[module] for your link:#startup-base-and-home[Jetty base] using the `--add-to-start` argument on the command line.
+To enable this you enable the `session-store-hazelcast-embedded` module.
 
 Because Hazelcast is not a technology provided by the Eclipse Foundation, you will be prompted to assent to the licenses of the external vendor (Apache in this case).
 
-When the `--add-to-start` argument was added to the command line, it enabled the the `session-store-hazelcast-embedded` module as well as the `sessions` and `server` modules, which are required for Hazelcast session management to operate.
-It also downloaded the needed Hazelcast-specific jar files and created a directory named `${jetty.base}/lib/hazelcast/` to house them.
+Hazelcast-specific jar files will be downloaded to a directory named `${jetty.base}/lib/hazelcast/`.
 
-In addition to adding these modules to the classpath of the server it also added several ini configuration files to the `${jetty.base}/start.d` directory.
-
-===== Configuring
+===== Configuration
 
 The `start.d/start.d/session-store-hazelcast-embedded.ini` contains a list of all the configurable options for the Hazelcast module:
 
@@ -109,24 +101,25 @@ Optional.
 This is the path to an external Hazelcast xml configuration file.
 jetty.session.hazelcast.useQueries::
 Boolean, default `false'.
-If `true`, Jetty will use Hazelcast queries to find expired sessions to scavenge.
-If `false` sessions that are not currently in a xref:op-session-sessioncache[session cache] cannot be scavenged, and will need to be removed by some external process.
+If `true`, Jetty will use Hazelcast queries to find expired sessions to xref:session-base-scavenge[scavenge].
+If `false` sessions that are not currently in a xref:op-session-sessioncache[session cache] cannot be xref:session-base-scavenge[scavenged], and will need to be removed by some external process.
 jetty.session.gracePeriod.seconds::
 Integer, in seconds.
 Default 3600.
-Used during session scavenging.
-Multiples of this period are used to define how long ago a stored session must have expired before it should be scavenged.
+Used during session xref:session-base-scavenge[scavenging].
+Multiples of this period are used to define how long ago a stored session must have expired before it should be xref:session-base-scavenge[scavenged].
 jetty.session.savePeriod.seconds::
-Integer, default `0`.
-By default whenever the last concurrent request leaves a session, that session is always persisted via the `SessionDataStore`, even if the only thing that changed on the session is its updated last access time.
-A non-zero value means that the `SessionDataStore` will skip persisting the session if only the access time changed, and it has been less than `savePeriod` seconds since the last time the session was written.
+Integer, in seconds, default is `0`.
+Whenever a session is accessed by a request, its `lastAccessTime` and `expiry` are updated.
+Even if your sessions are read-mostly, the `lastAccessTime` and  `expiry` will always change.
+For heavily-used, read-mostly sessions you can save some time by skipping some writes for sessions for which only these fields have changed (ie no session attributes changed).
+The value of this property is used to skip writes for these kinds of sessions: the session will only be written out if the time since the last write exceeds the value of this property.
 
-[NOTE]
+[WARNING]
 ====
-Configuring `savePeriod` is useful if your persistence technology is very slow/costly for writes.
-In a clustered environment, there is a risk of the last access time of the session being out-of-date in the shared store for up to `savePeriod` seconds.
-This allows the possibility that a node may prematurely expire the session, even though it is in use by another node.
-Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - there is no point in setting a `savePeriod` that is larger than the `maxIdleTime`.
+You should be careful in the use of this property in clustered environments: if you set too large a value for this property, the session may not be written out sufficiently often to update its `expiry` time thus making it appear to other nodes that it has expired.
+Thorough consideration of the `maxIdleTime` of the session when setting the `savePeriod` is imperative - it would be undesirable to set a `savePeriod` that is larger than the `maxIdleTime`.
+====
 
-If your session attributes contain classes from inside your webapp (or jetty classes) then you will need to put these classes onto the classpath of all of your hazelcast instances. In the case of embedded hazelcast, as it is started before your webapp, it will NOT have access to your webapp's classes - you will need to extract these classes and put them onto the jetty server's classpath.
-====
+IMPORTANT: If your session attributes contain classes from inside your webapp (or jetty classes) then you will need to put these classes onto the classpath of all of your hazelcast instances. In the case of embedded hazelcast, as it is started before your webapp, it will NOT have access to your webapp's classes - you will need to extract these classes and put them onto the jetty server's classpath.
+

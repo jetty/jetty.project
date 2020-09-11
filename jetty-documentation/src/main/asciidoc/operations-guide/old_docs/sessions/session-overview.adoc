@@ -27,8 +27,8 @@ Before diving into the specifics of how to plug-in and configure various alterna
 Session::
 is a means of retaining information across requests for a particular user.
 The Servlet Specification defines the semantics of sessions.
-Some of the most important characteristics of sessions is that they have a unique id, and that their contents cannot be shared between different contexts (although the id can be).
-If a session is invalidated in a context, then all other sessions that share the same id in other contexts will also be invalidated.
+Some of the most important characteristics of sessions is that they have a unique id and that their contents cannot be shared between different contexts (although the id can be): if a session is invalidated in one context, then all other sessions that share the same id in other contexts will also be invalidated.
+Sessions can expire or they can be explicitly invalidated.
 SessionIdManager:: 
 is responsible for allocating session ids.
 Any Jetty server can have at most 1 SessionIdManager.
@@ -77,4 +77,4 @@ There are at least 6 alternative implementations of the `SessionDataStore` that 
 * Hazelcast: xref:ops-session-hazelcast-remote[`session-store-hazelcast-remote`] or xref:ops-session-hazelcast-embedded[`session-store-hazelcast-embedded`]
 * Infinispan: xref:ops-session-infinispan[`session-store-infinispan-remote`] or xref:ops-session-infinispan-embedded[`session-store-infinispan-embedded`]
 
-TIP: It is worth noting that if you do not configure _any_ session modules, jetty will still provide http sessions that are cached in memory but are never persisted.
+TIP: It is worth noting that if you do not configure _any_ session modules, Jetty will still provide http sessions that are cached in memory but are never persisted.

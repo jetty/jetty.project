@@ -18,7 +18,7 @@
 
 [[ops-session-memcachedsessiondatastore]]
 
-=== Persistent Sessions: The L2 Session Data Cache
+=== Modules for Persistent Sessions: The L2 Session Data Cache
 
 If your chosen persistence technology is slow, it can be helpful to locally cache the session data.
 The `CachingSessionDataStore` is a special type of `SessionDataStore` that locally caches session data, which makes reads faster. It writes-through to your chosen type of `SessionDataStore` when session data changes.
