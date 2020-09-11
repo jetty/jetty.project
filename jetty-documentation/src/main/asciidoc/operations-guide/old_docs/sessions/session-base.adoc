@@ -17,7 +17,7 @@
 //
 
 [[ops-session-base]]
-=== The Base Sessions Module
+=== The Base Session Module
 The `sessions` module is the base module that all other session modules depend upon.
 As such it will be _transitively_ enabled if you enable any of the other session modules: you need to _explicitly_ enable it if you wish to _change_ any settings from their defaults.
 
@@ -56,17 +56,17 @@ The `HouseKeeper` is responsible for the periodic initiation of session scavenge
 The `jetty.sessionScavengeInterval.seconds` property in `start.d/sessions.ini` controls the periodicity of the cycle.
 
 A session whose expiry time has been exceeded is considered eligible for scavenging.
-The session can either exist in a `SessionCache` or be passivated out into the session persistence/clustering mechanism.
+The session might be present in a `SessionCache` and/or present in the session persistence/clustering mechanism.
 
 Scavenging occurs for all contexts on a server at every cycle.
 The `HouseKeeper` sequentially asks the `SessionHandler` in each context to find and remove expired sessions.
 The `SessionHandler` works with the `SessionDataStore` to evaluate candidates for expiry held in the `SessionCache`, and also to sweep the persistence mechanism to find expired sessions.
 
-The sweep takes two forms: once per cycle the `SessionDataStore` searches for sessions for it's own context that have expired; infrequently, the `SessionDataStore` will widen the search to expired sessions in any context.
-The former finds sessions that are no longer in this node's `SessionCache`, and using some heuristics, are unlikely to be in the `SessionCache` of another node either.
+The sweep takes two forms: once per cycle the `SessionDataStore` searches for sessions for it's own context that have expired; infrequently, the `SessionDataStore` will widen the search to expired sessions in all contexts.
+The former finds sessions that are no longer in this context's `SessionCache`, and using some heuristics, are unlikely to be in the `SessionCache` of the same context on another node either.
 These sessions will be loaded and fully expired, meaning that `HttpSessionListener.destroy()` will be called for them.
 The latter finds sessions that have not been disposed of by scavenge cycles on any other context/node.
-As these will be sessions that expired a long time ago, and may not be appropriate to load by the context of the `SessionDataStore`, these are summarily deleted without `HttpSessionListener.destroy()` being called.
+As these will be sessions that expired a long time ago, and may not be appropriate to load by the context doing the scavenging, these are summarily deleted without `HttpSessionListener.destroy()` being called.
 
 A combination of these sweeps should ensure that the persistence mechanism does not fill over time with expired sessions.
 
